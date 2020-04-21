@@ -187,6 +187,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   CompleteComms(geometry, config, SOLUTION_EDDY);
       
   /*--- Initialize lower and upper limits---*/
+  
   const su2double kine_Inf_Dim  = config->GetTke_FreeStream();
   const su2double omega_Inf_Dim = config->GetOmega_FreeStream();
 

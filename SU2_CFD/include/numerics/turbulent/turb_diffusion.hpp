@@ -73,13 +73,9 @@ protected:
 
   /*!
    * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void CorrectJacobian(su2double **Jacobian_i,
-                               su2double **Jacobian_j,
-                               const CConfig *config) { }
+  virtual void CorrectJacobian(const CConfig *config) { }
 
 public:
   /*!
@@ -129,13 +125,9 @@ private:
 
   /*!
    * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  inline void CorrectJacobian(su2double **Jacobian_i,
-                              su2double **Jacobian_j,
-                              const CConfig *config) { }
+  inline void CorrectJacobian(const CConfig *config) { }
 
 public:
   /*!
@@ -173,13 +165,9 @@ private:
 
   /*!
    * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  inline void CorrectJacobian(su2double **Jacobian_i,
-                              su2double **Jacobian_j,
-                              const CConfig *config) { }
+  inline void CorrectJacobian(const CConfig *config) { }
 
 public:
   /*!
@@ -222,13 +210,9 @@ private:
 
   /*!
    * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void CorrectJacobian(su2double **Jacobian_i,
-                       su2double **Jacobian_j,
-                       const CConfig *config) override;
+  void CorrectJacobian(const CConfig *config) override;
 
 public:
   /*!

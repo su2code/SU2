@@ -135,7 +135,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
         proj_vector_ij += Normal[iDim]*Normal[iDim]/NormalEdge;
       }
       Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-      (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+                                    (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
     }
   }
 
@@ -265,14 +265,12 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[0][0] = diff_kine*proj_on_rho;   Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_omega*proj_on_rho;
 
-    if (correct_gradient) CorrectJacobian(Jacobian_i, Jacobian_j, config);
+    if (correct_gradient) CorrectJacobian(config);
   }
 
 }
 
-void CAvgGrad_TurbSST::CorrectJacobian(su2double **Jacobian_i,
-                                       su2double **Jacobian_j,
-                                       const CConfig *config) {
+void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
