@@ -516,7 +516,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    // if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
@@ -563,7 +563,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    // if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
