@@ -315,14 +315,14 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  
+
   su2double a1 = constants[7];
   
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Set the primitive variables ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     su2double rhokine  = nodes->GetSolution(iPoint, 0);
     su2double rhoomega = nodes->GetSolution(iPoint, 1);
