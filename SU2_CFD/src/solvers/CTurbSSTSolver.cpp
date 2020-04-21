@@ -315,9 +315,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
+  
   su2double a1 = constants[7];
-  unsigned long iPoint;
   
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
@@ -336,7 +335,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     }
 
-    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
@@ -377,10 +376,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the eddy viscosity ---*/
 
-    kine  = nodes->GetPrimitive(iPoint,0);
-    omega = nodes->GetPrimitive(iPoint,1);
-    zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    muT   = max(rho*kine*zeta,0.0);
+    su2double kine  = nodes->GetPrimitive(iPoint,0);
+    su2double omega = nodes->GetPrimitive(iPoint,1);
+    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    su2double muT   = max(rho*kine*zeta,0.0);
+
     nodes->SetmuT(iPoint,muT);
 
   }
