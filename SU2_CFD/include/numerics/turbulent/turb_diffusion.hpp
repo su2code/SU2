@@ -79,7 +79,7 @@ protected:
    */
   virtual void CorrectJacobian(su2double **Jacobian_i,
                                su2double **Jacobian_j,
-                               CConfig *config) { }
+                               const CConfig *config) { }
 
 public:
   /*!
@@ -135,7 +135,7 @@ private:
    */
   inline void CorrectJacobian(su2double **Jacobian_i,
                               su2double **Jacobian_j,
-                              CConfig *config) { }
+                              const CConfig *config) { }
 
 public:
   /*!
@@ -179,7 +179,7 @@ private:
    */
   inline void CorrectJacobian(su2double **Jacobian_i,
                               su2double **Jacobian_j,
-                              CConfig *config) { }
+                              const CConfig *config) { }
 
 public:
   /*!

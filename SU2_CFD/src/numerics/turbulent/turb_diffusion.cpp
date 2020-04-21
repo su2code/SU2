@@ -272,7 +272,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
 void CAvgGrad_TurbSST::CorrectJacobian(su2double **Jacobian_i,
                                        su2double **Jacobian_j,
-                                       CConfig *config) {
+                                       const CConfig *config) {
   
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
