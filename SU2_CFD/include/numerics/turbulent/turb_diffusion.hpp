@@ -220,6 +220,16 @@ private:
    */
   void FinishResidualCalc(const CConfig* config) override;
 
+  /*!
+   * \brief Model-specific steps to include gradient terms in Jacobian
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CorrectJacobian(su2double **Jacobian_i,
+                       su2double **Jacobian_j,
+                       const CConfig *config) override;
+
 public:
   /*!
    * \brief Constructor of the class.
