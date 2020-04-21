@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ## \file fsi_computation.py
 #  \brief Python wrapper code for adjoint computation by coupling pyBeam and SU2.

@@ -942,7 +942,7 @@ class AdjointInterface:
        """
        
        if printing == True:
-          if myid == self.rootProcess: 
+          if self.haveSolidSolver:
              print("Saving displacement adjoints to check convergence")              
              s = open("Boundary_Nodes_Sensitivity_" + str(int(self.FSIIter)) + ".dat", "w")    
              for i in range(0, self.nFluidInterfacePhysicalNodes):
