@@ -111,11 +111,17 @@ class AdjointInterface:
         self.globalFluidCoordinates = None
         self.globalSolidCoordinates = None
 
+        self.globalFluidIndex = None
+
         self.sendCounts = None
         self.globalFluidDispX = None
         self.globalFluidDispY = None
         self.globalFluidDispZ = None
 
+        self.globalFluidDispX_nord = None
+        self.globalFluidDispY_nord = None
+        self.globalFluidDispZ_nord = None
+        
         self.globalFluidLoadSensX = None
         self.globalFluidLoadSensY = None
         self.globalFluidLoadSensZ = None
@@ -127,15 +133,27 @@ class AdjointInterface:
         self.globalSolidLoadSensX = None
         self.globalSolidLoadSensY = None
         self.globalSolidLoadSensZ = None
+        
+        self.globalFluidLoadSensX_nord = None    
+        self.globalFluidLoadSensY_nord = None
+        self.globalFluidLoadSensZ_nord = None
 
         self.globalFluidLoadX = None
         self.globalFluidLoadY = None
         self.globalFluidLoadZ = None
+        
+        self.globalFluidLoadX_nord = None
+        self.globalFluidLoadY_nord = None
+        self.globalFluidLoadZ_nord = None        
 
         self.globalDispFlowAdjointX = None
         self.globalDispFlowAdjointY = None
         self.globalDispFlowAdjointZ = None
-
+        
+        self.globalDispFlowAdjointX_nord = None
+        self.globalDispFlowAdjointY_nord = None
+        self.globalDispFlowAdjointZ_nord = None 
+        
         self.globalSolidLoadX = None
         self.globalSolidLoadY = None
         self.globalSolidLoadZ = None
@@ -147,7 +165,7 @@ class AdjointInterface:
         self.globalDispSolidAdjointXOld = None
         self.globalDispSolidAdjointYOld = None
         self.globalDispSolidAdjointZOld = None
-
+             
         self.haloNodesPositionsInit = {}  # initial position of the halo nodes (fluid side only)
 
         self.solidInterface_array_DispX = None  # solid interface displacement
@@ -385,10 +403,13 @@ class AdjointInterface:
         localFluidInterface_array_X_init = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
         localFluidInterface_array_Y_init = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
         localFluidInterface_array_Z_init = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
+        localGlobalIndex_array           = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
 
         for iVertex in range(self.nLocalFluidInterfaceNodes):
             GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
             posx, posy, posz = FluidSolver.GetVertex_UndeformedCoord(self.fluidInterfaceIdentifier, iVertex)
+            #print("Global index = {}".format(GlobalIndex))
+            #print("Undeformed coordinates = {} {} {} ".format(posx, posy, posz))
 
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
                 self.haloNodesPositionsInit[GlobalIndex] = (posx, posy, posz)
@@ -397,6 +418,7 @@ class AdjointInterface:
                 localFluidInterface_array_X_init[localIndex] = posx
                 localFluidInterface_array_Y_init[localIndex] = posy
                 localFluidInterface_array_Z_init[localIndex] = posz
+                localGlobalIndex_array[localIndex] = GlobalIndex                
                 self.localFluidInterface_vertex_indices[localIndex] = int(iVertex)
                 localIndex += 1
 
@@ -410,6 +432,7 @@ class AdjointInterface:
             bufXCoor = np.array(localFluidInterface_array_X_init)
             bufYCoor = np.array(localFluidInterface_array_Y_init)
             bufZCoor = np.array(localFluidInterface_array_Z_init)
+            bufGlobalIndex = np.array(localGlobalIndex_array)            
             self.sendCounts = np.array(self.comm.gather(self.nLocalFluidInterfacePhysicalNodes, 0))
 
             if myid == self.rootProcess:
@@ -417,24 +440,28 @@ class AdjointInterface:
                 self.globalFluidInterfaceXcoor = np.empty(sum(self.sendCounts))
                 self.globalFluidInterfaceYcoor = np.empty(sum(self.sendCounts))
                 self.globalFluidInterfaceZcoor = np.empty(sum(self.sendCounts))
-
+                self.globalFluidIndex          = np.empty(sum(self.sendCounts))   
             self.comm.Gatherv(sendbuf=bufXCoor, recvbuf=(self.globalFluidInterfaceXcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYCoor, recvbuf=(self.globalFluidInterfaceYcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidInterfaceZcoor, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufGlobalIndex, recvbuf=(self.globalFluidIndex, self.sendCounts), root=0)
 
         else:
             self.fluidIndexing = fluidIndexing_temp.copy()
             self.globalFluidInterfaceXcoor = localFluidInterface_array_X_init.copy()
             self.globalFluidInterfaceYcoor = localFluidInterface_array_Y_init.copy()
             self.globalFluidInterfaceZcoor = localFluidInterface_array_Z_init.copy()
+            self.globalFluidIndex          = localGlobalIndex_array.copy()
 
         # Store the global fluid coordinates
         if myid == self.rootProcess:
             self.globalFluidCoordinates = np.zeros((self.nFluidInterfacePhysicalNodes, 3))
             for i in range(0, self.nFluidInterfacePhysicalNodes):
-                self.globalFluidCoordinates[i][0] = self.globalFluidInterfaceXcoor[i]
-                self.globalFluidCoordinates[i][1] = self.globalFluidInterfaceYcoor[i]
-                self.globalFluidCoordinates[i][2] = self.globalFluidInterfaceZcoor[i]
+                GlobalIndex = int(self.globalFluidIndex[i])
+                self.globalFluidCoordinates[GlobalIndex][0] = self.globalFluidInterfaceXcoor[i]
+                self.globalFluidCoordinates[GlobalIndex][1] = self.globalFluidInterfaceYcoor[i]
+                self.globalFluidCoordinates[GlobalIndex][2] = self.globalFluidInterfaceZcoor[i]
+
 
         del fluidIndexing_temp, localFluidInterface_array_X_init, \
             localFluidInterface_array_Y_init, localFluidInterface_array_Z_init
@@ -510,19 +537,24 @@ class AdjointInterface:
 
             # Initialize the global load array
             if myid == self.rootProcess:
+                # Not ordered
+                self.globalFluidLoadX_nord = np.empty(sum(self.sendCounts))
+                self.globalFluidLoadY_nord = np.empty(sum(self.sendCounts))
+                self.globalFluidLoadZ_nord = np.empty(sum(self.sendCounts))
+                # Ordered
                 self.globalFluidLoadX = np.empty(sum(self.sendCounts))
                 self.globalFluidLoadY = np.empty(sum(self.sendCounts))
-                self.globalFluidLoadZ = np.empty(sum(self.sendCounts))
+                self.globalFluidLoadZ = np.empty(sum(self.sendCounts))                
 
             # Gatherv using self.sendCounts maintains the ordering of the coordinates
-            self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalFluidLoadX, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalFluidLoadY, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalFluidLoadZ, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalFluidLoadX_nord, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalFluidLoadY_nord, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalFluidLoadZ_nord, self.sendCounts), root=0)
 
         else:
-            self.globalFluidLoadX = localFluidLoadX.copy()
-            self.globalFluidLoadY = localFluidLoadY.copy()
-            self.globalFluidLoadZ = localFluidLoadZ.copy()
+            self.globalFluidLoadX_nord = localFluidLoadX.copy()
+            self.globalFluidLoadY_nord = localFluidLoadY.copy()
+            self.globalFluidLoadZ_nord = localFluidLoadZ.copy()
 
         # Delete local variables
         del localFluidLoadX, localFluidLoadY, localFluidLoadZ
@@ -534,6 +566,14 @@ class AdjointInterface:
         # ---> Input: self.globalFluidLoadX, self.globalFluidLoadY, self.globalFluidLoadZ
 
         if myid == self.rootProcess:
+            
+            # ordering forces according to the global index           
+            for i in range(0, self.nFluidInterfacePhysicalNodes):
+                GlobalIndex = int(self.globalFluidIndex[i])
+                self.globalFluidLoadX[GlobalIndex] = self.globalFluidLoadX_nord[i]
+                self.globalFluidLoadY[GlobalIndex] = self.globalFluidLoadY_nord[i]
+                self.globalFluidLoadZ[GlobalIndex] = self.globalFluidLoadZ_nord[i]
+ 
             self.globalSolidLoadX = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadX)
             self.globalSolidLoadY = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadY)
             self.globalSolidLoadZ = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadZ)
@@ -636,19 +676,24 @@ class AdjointInterface:
 
             # Initialize the global load array
             if myid == self.rootProcess:
+                # Not ordered                            
+                self.globalDispFlowAdjointX_nord = np.empty(sum(self.sendCounts))
+                self.globalDispFlowAdjointY_nord = np.empty(sum(self.sendCounts))
+                self.globalDispFlowAdjointZ_nord = np.empty(sum(self.sendCounts))
+                # Ordered
                 self.globalDispFlowAdjointX = np.empty(sum(self.sendCounts))
                 self.globalDispFlowAdjointY = np.empty(sum(self.sendCounts))
                 self.globalDispFlowAdjointZ = np.empty(sum(self.sendCounts))
 
             # Gatherv using self.sendCounts maintains the ordering of the coordinates
-            self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalDispFlowAdjointX, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalDispFlowAdjointY, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalDispFlowAdjointZ, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalDispFlowAdjointX_nord, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalDispFlowAdjointY_nord, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalDispFlowAdjointZ_nord, self.sendCounts), root=0)
 
         else:
-            self.globalDispFlowAdjointX = localDispFlowAdjointX.copy()
-            self.globalDispFlowAdjointY = localDispFlowAdjointY.copy()
-            self.globalDispFlowAdjointZ = localDispFlowAdjointZ.copy()
+            self.globalDispFlowAdjointX_nord = localDispFlowAdjointX.copy()
+            self.globalDispFlowAdjointY_nord = localDispFlowAdjointY.copy()
+            self.globalDispFlowAdjointZ_nord = localDispFlowAdjointZ.copy()
 
         ################################################################################################################
         # --- STEP 2: Interpolate
@@ -657,6 +702,14 @@ class AdjointInterface:
         # ---> Input: self.globalFluidLoadX, self.globalFluidLoadY, self.globalFluidLoadZ
 
         if myid == self.rootProcess:
+            
+            # ordering displacements adjoint according to the global index 
+            for i in range(0, self.nFluidInterfacePhysicalNodes):
+                GlobalIndex = int(self.globalFluidIndex[i])
+                self.globalDispSolidAdjointX[GlobalIndex] = self.globalDispFlowAdjointX_nord[i]
+                self.globalDispSolidAdjointY[GlobalIndex] = self.globalDispFlowAdjointY_nord[i]
+                self.globalDispSolidAdjointZ[GlobalIndex] = self.globalDispFlowAdjointZ_nord[i]
+            
             self.globalDispSolidAdjointX = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointX)
             self.globalDispSolidAdjointY = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointY)
             self.globalDispSolidAdjointZ = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointZ)
@@ -737,11 +790,24 @@ class AdjointInterface:
             self.globalFluidLoadSensY = MLSSolver.interpolation_matrix.dot(self.globalSolidLoadSensY)
             self.globalFluidLoadSensZ = MLSSolver.interpolation_matrix.dot(self.globalSolidLoadSensZ)
 
+            # Non ordered as they were extracted by the various processors
+            self.globalFluidLoadSensX_nord = np.empty(sum(self.sendCounts))
+            self.globalFluidLoadSensY_nord = np.empty(sum(self.sendCounts))
+            self.globalFluidLoadSensZ_nord = np.empty(sum(self.sendCounts))
+
         # ---> Output: self.globalFluidDispX, self.globalFluidDispY, self.globalFluidDispZ
 
         ################################################################################################################
         # --- STEP 3: Transfer to the fluid solver
         ################################################################################################################
+
+        # It's necessary to reorder them in the way the various processors provided them at the beginning (from global to local order)
+        if myid == self.rootProcess:
+           for i in range(0, self.nFluidInterfacePhysicalNodes):
+               GlobalIndex = int(self.globalFluidIndex[i])
+               self.globalFluidLoadSensX_nord[i] = self.globalFluidLoadSensX[GlobalIndex]
+               self.globalFluidLoadSensY_nord[i] = self.globalFluidLoadSensY[GlobalIndex]
+               self.globalFluidLoadSensZ_nord[i] = self.globalFluidLoadSensZ[GlobalIndex]
 
         # --- Recover them from the interpolated vectors
         localFluidLoadSensX = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
@@ -750,9 +816,9 @@ class AdjointInterface:
 
         if self.have_MPI:
 
-            self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensX, self.sendCounts), recvbuf=localFluidLoadSensX, root=0)
-            self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensY, self.sendCounts), recvbuf=localFluidLoadSensY, root=0)
-            self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensZ, self.sendCounts), recvbuf=localFluidLoadSensZ, root=0)
+            self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensX_nord, self.sendCounts), recvbuf=localFluidLoadSensX, root=0)
+            self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensY_nord, self.sendCounts), recvbuf=localFluidLoadSensY, root=0)
+            self.comm.Scatterv(sendbuf=(self.globalFluidLoadSensZ_nord, self.sendCounts), recvbuf=localFluidLoadSensZ, root=0)
 
         else:
             localFluidLoadSensX = self.globalFluidLoadSensX.copy()

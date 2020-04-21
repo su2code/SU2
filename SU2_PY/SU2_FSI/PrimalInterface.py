@@ -255,8 +255,10 @@ class Interface:
         else:
             pass
 
-        # --- Identify the solid interface and store the number of nodes (single core) ---#
-        if SolidSolver != None:
+        #####################################################################################
+        # --- Identify the solid interface and store the number of nodes (single core)   ---#
+        #####################################################################################        if SolidSolver != None:
+        if SolidSolver != None:        
             print('Solid solver is initialized on process {}'.format(myid))
             self.haveSolidSolver = True
             self.nSolidInterfaceNodes = SolidSolver.nPoint
@@ -437,11 +439,9 @@ class Interface:
 
         # Store the global fluid coordinates
         if myid == self.rootProcess:
-            print('self.globalFluidIndex = {}'.format(self.globalFluidIndex))
             self.globalFluidCoordinates = np.zeros((self.nFluidInterfacePhysicalNodes, 3))
             for i in range(0, self.nFluidInterfacePhysicalNodes):
                 GlobalIndex = int(self.globalFluidIndex[i])
-                print('Global index = {}'.format(GlobalIndex))
                 self.globalFluidCoordinates[GlobalIndex][0] = self.globalFluidInterfaceXcoor[i]
                 self.globalFluidCoordinates[GlobalIndex][1] = self.globalFluidInterfaceYcoor[i]
                 self.globalFluidCoordinates[GlobalIndex][2] = self.globalFluidInterfaceZcoor[i]
@@ -518,7 +518,6 @@ class Interface:
 
             # Initialize the global load array
             if myid == self.rootProcess:
-                print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
                 # Not ordered
                 self.globalFluidLoadX_nord = np.empty(sum(self.sendCounts))
                 self.globalFluidLoadY_nord = np.empty(sum(self.sendCounts))
@@ -725,9 +724,9 @@ class Interface:
             # print("rank: {}, local_array Z: {}".format(myid, localFluidDispZ))
 
         else:
-            localFluidDispX = self.globalFluidDispX.copy()
-            localFluidDispY = self.globalFluidDispY.copy()
-            localFluidDispZ = self.globalFluidDispZ.copy()
+            localFluidDispX = self.globalFluidDispX_nord.copy()
+            localFluidDispY = self.globalFluidDispY_nord.copy()
+            localFluidDispZ = self.globalFluidDispZ_nord.copy()
 
         # For the vertices that belong to the interface
         localIndex = 0
