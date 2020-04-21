@@ -539,13 +539,6 @@ public:
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
 
   /*!
-   * \brief Set the initial mean residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_RMS_Init(unsigned short val_var, su2double val_residual) { Residual_RMS_Init[val_var] = val_residual; }
-
-  /*!
    * \brief Set the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
