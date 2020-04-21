@@ -122,6 +122,10 @@ class Interface:
         self.globalFluidDispY = None
         self.globalFluidDispZ = None
 
+        self.globalFluidDispX_nord = None
+        self.globalFluidDispY_nord = None
+        self.globalFluidDispZ_nord = None
+
         self.globalSolidDispX = None
         self.globalSolidDispY = None
         self.globalSolidDispZ = None
@@ -133,6 +137,10 @@ class Interface:
         self.globalFluidLoadX = None
         self.globalFluidLoadY = None
         self.globalFluidLoadZ = None
+
+        self.globalFluidLoadX_nord = None
+        self.globalFluidLoadY_nord = None
+        self.globalFluidLoadZ_nord = None
 
         self.globalSolidLoadX = None
         self.globalSolidLoadY = None
@@ -375,7 +383,7 @@ class Interface:
         localGlobalIndex_array           = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
 
         for iVertex in range(self.nLocalFluidInterfaceNodes):
-            GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
+            GlobalIndex = int(FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex))
             posx, posy, posz = FluidSolver.GetVertex_UndeformedCoord(self.fluidInterfaceIdentifier, iVertex)
             #print("Global index = {}".format(GlobalIndex))
             #print("Undeformed coordinates = {} {} {} ".format(posx, posy, posz))
@@ -390,7 +398,7 @@ class Interface:
                 localGlobalIndex_array[localIndex] = GlobalIndex
                 self.localFluidInterface_vertex_indices[localIndex] = int(iVertex)
                 localIndex += 1
-
+        #print("Local index array in processor {}: {}".format(myid,localGlobalIndex_array))
         #print("rank: {}, local_vertex_indices: {}".format(myid, self.localFluidInterface_vertex_indices))
 
         if self.have_MPI:
@@ -405,13 +413,12 @@ class Interface:
             bufZCoor = np.array(localFluidInterface_array_Z_init)
             bufGlobalIndex = np.array(localGlobalIndex_array)
             self.sendCounts = np.array(self.comm.gather(self.nLocalFluidInterfacePhysicalNodes, 0))
-            print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
             if myid == self.rootProcess:
                 print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
                 self.globalFluidInterfaceXcoor = np.empty(sum(self.sendCounts))
                 self.globalFluidInterfaceYcoor = np.empty(sum(self.sendCounts))
                 self.globalFluidInterfaceZcoor = np.empty(sum(self.sendCounts))
-                self.globalFluidIndex          = np.empty(sum(self.sendCounts))
+                self.globalFluidIndex          = np.empty(sum(self.sendCounts))   
             self.comm.Gatherv(sendbuf=bufXCoor, recvbuf=(self.globalFluidInterfaceXcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYCoor, recvbuf=(self.globalFluidInterfaceYcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidInterfaceZcoor, self.sendCounts), root=0)
@@ -430,9 +437,11 @@ class Interface:
 
         # Store the global fluid coordinates
         if myid == self.rootProcess:
+            print('self.globalFluidIndex = {}'.format(self.globalFluidIndex))
             self.globalFluidCoordinates = np.zeros((self.nFluidInterfacePhysicalNodes, 3))
             for i in range(0, self.nFluidInterfacePhysicalNodes):
-                GlobalIndex = self.globalFluidIndex[i]
+                GlobalIndex = int(self.globalFluidIndex[i])
+                print('Global index = {}'.format(GlobalIndex))
                 self.globalFluidCoordinates[GlobalIndex][0] = self.globalFluidInterfaceXcoor[i]
                 self.globalFluidCoordinates[GlobalIndex][1] = self.globalFluidInterfaceYcoor[i]
                 self.globalFluidCoordinates[GlobalIndex][2] = self.globalFluidInterfaceZcoor[i]
@@ -542,7 +551,7 @@ class Interface:
             
             # ordering forces according to the global index           
             for i in range(0, self.nFluidInterfacePhysicalNodes):
-                GlobalIndex = self.globalFluidIndex[i]
+                GlobalIndex = int(self.globalFluidIndex[i])
                 self.globalFluidLoadX[GlobalIndex] = self.globalFluidLoadX_nord[i]
                 self.globalFluidLoadY[GlobalIndex] = self.globalFluidLoadY_nord[i]
                 self.globalFluidLoadZ[GlobalIndex] = self.globalFluidLoadZ_nord[i]
@@ -648,6 +657,11 @@ class Interface:
             self.globalFluidDispY = MLSSolver.interpolation_matrix.dot(relaxedSolidDispY)
             self.globalFluidDispZ = MLSSolver.interpolation_matrix.dot(relaxedSolidDispZ)
 
+            # Non ordered as they were extracted by the various processors
+            self.globalFluidDispX_nord = np.empty(sum(self.sendCounts))
+            self.globalFluidDispY_nord = np.empty(sum(self.sendCounts))
+            self.globalFluidDispZ_nord = np.empty(sum(self.sendCounts))
+ 
         # ---> Output: self.globalFluidDispX, self.globalFluidDispY, self.globalFluidDispZ
 
         ################################################################################################################
@@ -686,6 +700,15 @@ class Interface:
         # --- STEP 4: Transfer to the fluid solver
         ################################################################################################################
 
+        # It's necessary to reorder them in the way the various processors provided them at the beginning (from global to local order)
+        if myid == self.rootProcess:
+           for i in range(0, self.nFluidInterfacePhysicalNodes):
+               GlobalIndex = int(self.globalFluidIndex[i])
+               self.globalFluidDispX_nord[i] = self.globalFluidDispX[GlobalIndex]
+               self.globalFluidDispY_nord[i] = self.globalFluidDispY[GlobalIndex]
+               self.globalFluidDispZ_nord[i] = self.globalFluidDispZ[GlobalIndex]
+
+
         # --- Recover them from the interpolated vectors
         localFluidDispX = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
         localFluidDispY = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
@@ -693,9 +716,9 @@ class Interface:
 
         if self.have_MPI:
 
-            self.comm.Scatterv(sendbuf=(self.globalFluidDispX, self.sendCounts), recvbuf=localFluidDispX, root=0)
-            self.comm.Scatterv(sendbuf=(self.globalFluidDispY, self.sendCounts), recvbuf=localFluidDispY, root=0)
-            self.comm.Scatterv(sendbuf=(self.globalFluidDispZ, self.sendCounts), recvbuf=localFluidDispZ, root=0)
+            self.comm.Scatterv(sendbuf=(self.globalFluidDispX_nord, self.sendCounts), recvbuf=localFluidDispX, root=0)
+            self.comm.Scatterv(sendbuf=(self.globalFluidDispY_nord, self.sendCounts), recvbuf=localFluidDispY, root=0)
+            self.comm.Scatterv(sendbuf=(self.globalFluidDispZ_nord, self.sendCounts), recvbuf=localFluidDispZ, root=0)
 
             # print("rank: {}, local_array X: {}".format(myid, localFluidDispX))
             # print("rank: {}, local_array Y: {}".format(myid, localFluidDispY))
