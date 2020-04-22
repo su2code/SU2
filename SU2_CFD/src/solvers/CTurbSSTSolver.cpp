@@ -325,10 +325,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+    const su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    const su2double rhoomega = nodes->GetSolution(iPoint, 1);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
-    if((rhokine < 0.) || (rhoomega < 0.)) {
+    /*--- Turb vars are already clipped so check density ---*/
+    if(rho < 0.) {
       rhokine  = nodes->GetSolution_Old(iPoint, 0);
       rhoomega = nodes->GetSolution_Old(iPoint, 1);
       nodes->SetSolution(iPoint, 0, rhokine);
@@ -336,7 +338,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     }
 
-    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
@@ -361,26 +362,26 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute blending functions and cross diffusion ---*/
 
-    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    su2double dist = geometry->node[iPoint]->GetWall_Distance();
+    const su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
     const su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-    su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-                                  Vorticity[1]*Vorticity[1] +
-                                  Vorticity[2]*Vorticity[2]);
+    const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+                                        Vorticity[1]*Vorticity[1] +
+                                        Vorticity[2]*Vorticity[2]);
     
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
-    su2double F2 = nodes->GetF2blending(iPoint);
+    const su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
 
-    su2double kine  = nodes->GetPrimitive(iPoint,0);
-    su2double omega = nodes->GetPrimitive(iPoint,1);
-    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    su2double muT   = max(rho*kine*zeta,0.0);
+    const su2double kine  = nodes->GetPrimitive(iPoint,0);
+    const su2double omega = nodes->GetPrimitive(iPoint,1);
+    const su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    const su2double muT   = max(rho*kine*zeta,0.0);
 
     nodes->SetmuT(iPoint,muT);
 
