@@ -9793,41 +9793,6 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   } // iMarker
 }
 
-void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
-  su2double scalar_prod, norm_Normal, diff_coord, *Normal, *Coord_Old;
-  unsigned long Point_Normal, jPoint;
-  unsigned short iNeigh, iMarker, iDim;
-  unsigned long iPoint, iVertex;
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if (config->GetViscous_Wall(iMarker)) {
-
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          jPoint = vertex[iMarker][iVertex]->GetNormal_Neighbor();
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          Coord_Old = node[jPoint]->GetCoord_Old();
-
-          scalar_prod = 0.0;
-          norm_Normal = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            diff_coord = Coord_Old[iDim]-node[iPoint]->GetCoord(iDim);
-            scalar_prod += diff_coord*Normal[iDim];
-            norm_Normal += Normal[iDim]*Normal[iDim];
-          }
-          norm_Normal = sqrt(norm_Normal);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            node[jPoint]->SetCoord(iDim, scalar_prod*Normal[iDim]/norm_Normal+node[iPoint]->GetCoord(iDim));
-          }
-        }
-      }
-    }
-  }
-}
-
 void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   unsigned short iMarker, icommas;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
