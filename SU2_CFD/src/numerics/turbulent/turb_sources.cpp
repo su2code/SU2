@@ -778,8 +778,8 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
   omegaAmb = val_omega_Inf;
 
   /*--- "Allocate" the Jacobian using the static buffer. ---*/
-  Jacobian_i[0] = Jacobian_Buffer;
-  Jacobian_i[1] = Jacobian_Buffer+2;
+  Jacobian_i[0] = &Jacobian_Buffer;
+  Jacobian_i[1] = &Jacobian_Buffer+2;
 
 }
 
