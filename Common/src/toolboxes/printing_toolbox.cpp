@@ -111,7 +111,14 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
     
     std::stringstream ss;
     
-    ss << column_headers_.at(i).substr(0, column_widths_.at(i));
+    ss << column_headers_.at(i);
+    std::string header = ss.str();
+    /*--- If header name is longer than the size of the column, only show the first and last couple of chars ---*/
+    if (ss.str().size() > column_widths_.at(i)){
+      const int div = column_widths_.at(i)/2 - 1;
+      const int size = ss.str().size();
+      header = ss.str().substr(0,div) + "~" + ss.str().substr(size-div-1,size-1);
+    }
     
     indent = 0;
 
@@ -121,10 +128,10 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
       *out_stream_ << std::right; 
     else if (align_ == CENTER) {
       *out_stream_ << std::right; 
-      indent = (int)(column_widths_.at(i) - ss.str().size()) / 2;
+      indent = (int)(column_widths_.at(i) - header.size()) / 2;
     }
 
-    *out_stream_ << std::setw(column_widths_.at(i) - indent) << column_headers_.at(i).substr(0, column_widths_.at(i));
+    *out_stream_ << std::setw(column_widths_.at(i) - indent) << header;
     if (i != GetNumColumns()-1){
       *out_stream_ << std::setw(indent+(int)inner_separator_.size()) << inner_separator_;
     }
