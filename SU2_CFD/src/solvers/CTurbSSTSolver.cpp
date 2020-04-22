@@ -325,8 +325,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    const su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    const su2double rhoomega = nodes->GetSolution(iPoint, 1);
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
     /*--- Turb vars are already clipped so check density ---*/
