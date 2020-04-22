@@ -286,15 +286,15 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) {
 
 }
 
-// unsigned long CDriver::GetnTimeIter() {
+unsigned long CDriver::GetnTimeIter() {
 
-//     return config_container[ZONE_0]->GetnTime_Iter();
-// }
+    return config_container[ZONE_0]->GetnTime_Iter();
+}
 
-// unsigned long CDriver::GetTime_Iter(){
+unsigned long CDriver::GetTime_Iter(){
 
-//   return TimeIter;
-// }
+  return TimeIter;
+}
 
 // unsigned long CDriver::GetnIter() {
 
