@@ -510,7 +510,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Relax and store the adjoint solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      nodes->AddSolution(iPoint,iVar, relax*(Solution[iVar]-nodes->GetSolution(iPoint,iVar)));
+      nodes->AddSolution(iPoint,iVar, relax*(Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar)));
   }
 
   if (time_n_needed) {
@@ -548,8 +548,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
     }
   }
-
-  if(multizone) nodes->Set_OldSolution();
 
   SetResidual_RMS(geometry, config);
 
