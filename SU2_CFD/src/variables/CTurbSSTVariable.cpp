@@ -32,6 +32,8 @@
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  nPrimVar = nVar;
+
   Primitive.resize(nPoint, nVar) = su2double(0.0);
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
