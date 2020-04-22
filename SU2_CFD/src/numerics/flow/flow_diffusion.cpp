@@ -635,6 +635,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
 
   unsigned short iVar, jVar, iDim;
 
@@ -825,6 +826,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
 
   unsigned short iVar, jVar, iDim;
 
@@ -1128,6 +1130,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
 
   unsigned short iVar, jVar, iDim;
 
