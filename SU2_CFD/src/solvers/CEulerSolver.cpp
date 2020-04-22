@@ -2614,6 +2614,13 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
+  /*--- Store the old solution ---*/
+  if(!Output) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
+        nodes->SetSolution_Old(iPoint, iVar, nodes->GetSolution(iPoint, iVar));
+  }
+
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
