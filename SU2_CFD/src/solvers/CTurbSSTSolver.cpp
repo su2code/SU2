@@ -290,6 +290,13 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
 
+  /*--- Store the old solution ---*/
+  if(!Output) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
+    }
+  }
+
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy) {
