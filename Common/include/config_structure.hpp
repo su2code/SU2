@@ -572,7 +572,9 @@ private:
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
-  nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_WallFunctions,    /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_DeformNormal,
+  nMarker_DeformTangential;
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
@@ -581,7 +583,9 @@ private:
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
-  *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_WallFunctions, /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_DeformNormal,
+  *Marker_DeformTangential;
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -596,6 +600,8 @@ private:
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
+  *Marker_All_DeformNormal,
+  *Marker_All_DeformTangential,
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
@@ -607,7 +613,9 @@ private:
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PerBound,     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_DeformNormal,
+  *Marker_CfgFile_DeformTangential;
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
   su2double *nBlades;						/*!< \brief number of blades for turbomachinery computation. */
@@ -1984,7 +1992,21 @@ public:
    * \return Value of the Froude number.
    */
   void SetOmega_Ref(su2double val_omega_ref);
-  
+
+    /*!
+* \brief Set if a marker <i>val_marker</i> is going to be moved <i>val_moving</i>
+*        (read from the config file).
+* \param[in] val_marker - Index of the marker in which we are interested.
+* \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
+*/
+    void SetMarker_All_DeformNormal(unsigned short val_marker, unsigned short val_def_tan);
+    /*!
+     * \brief Set if a marker <i>val_marker</i> is going to be moved <i>val_moving</i>
+     *        (read from the config file).
+     * \param[in] val_marker - Index of the marker in which we are interested.
+     * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
+     */
+    void SetMarker_All_DeformTangential(unsigned short val_marker, unsigned short val_def_tan);
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
@@ -2003,6 +2025,20 @@ public:
    */
   void SetGas_Constant(su2double val_gas_constant);
   
+  /*!
+   * \brief Get the motion information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+   * \return 0 or 1 depending if the marker is going to be moved.
+   */
+  unsigned short GetMarker_All_DeformNormal(unsigned short val_marker);
+
+  /*!
+   * \brief Get the motion information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+   * \return 0 or 1 depending if the marker is going to be moved.
+   */
+  unsigned short GetMarker_All_DeformTangential(unsigned short val_marker);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
@@ -5479,7 +5515,19 @@ public:
    * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_EngineExhaust(string val_marker);
-  
+
+    /*!
+   * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
+   * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+    unsigned short GetMarker_CfgFile_DeformNormal(string val_marker);
+
+    /*!
+     * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
+     * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
+     */
+    unsigned short GetMarker_CfgFile_DeformTangential(string val_marker);
+
   /*!
    * \brief Get the internal index for a moving boundary <i>val_marker</i>.
    * \return Internal index for a moving boundary <i>val_marker</i>.
