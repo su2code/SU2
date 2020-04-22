@@ -82,7 +82,6 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Read farfield conditions from config ---*/
   Temperature_Inf = config->GetTemperature_FreeStreamND();

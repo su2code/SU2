@@ -137,13 +137,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
     case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
     case (GENERALIZED_ALPHA):
-      solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, numerics, config);
       break;
   }
 
@@ -154,16 +154,16 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
       case CLAMPED_BOUNDARY:
         solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
         break;
+      case SYMMETRY_PLANE:
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
       case DISP_DIR_BOUNDARY:
         solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
-        break;
-      case DISPLACEMENT_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
   }
 
-  /*--- Solver linearized system ---*/
+  /*--- Solver linear system ---*/
 
   solver_container[MainSolver]->Solve_System(geometry, config);
 
@@ -171,13 +171,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
     case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
     case (GENERALIZED_ALPHA):
-      solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
+      solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, config);
       break;
   }
 
@@ -190,10 +190,5 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
         break;
     }
   }
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
-  solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }

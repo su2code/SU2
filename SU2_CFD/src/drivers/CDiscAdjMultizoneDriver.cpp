@@ -179,7 +179,7 @@ void CDiscAdjMultizoneDriver::Run() {
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
   SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-  SetRecording(FLOW_CONS_VARS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  SetRecording(SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   RecordingState = NONE;
 
   AD::ClearAdjoints();
@@ -212,9 +212,9 @@ void CDiscAdjMultizoneDriver::Run() {
      *
      *    To set the tape appropriately, the following recording methods are provided:
      *    (1) NONE: All information from a previous recording is removed.
-     *    (2) FLOW_CONS_VARS: State variables of all solvers in a zone as input.
-     *    (3) MESH_COORDS: Mesh coordinates as input.
-     *    (4) COMBINED: Mesh coordinates and state variables as input.
+     *    (2) SOLUTION_VARIABLES: State variables of all solvers in a zone as input.
+     *    (3) MESH_COORDS / MESH_DEFORM: Mesh coordinates as input.
+     *    (4) SOLUTION_AND_MESH: Mesh coordinates and state variables as input.
      *
      *    By default, all (state and mesh coordinate variables) will be declared as output,
      *    since it does not change the computational effort. ---*/
@@ -223,9 +223,9 @@ void CDiscAdjMultizoneDriver::Run() {
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
-    if (!retape && (RecordingState != FLOW_CONS_VARS)) {
+    if (!retape && (RecordingState != SOLUTION_VARIABLES)) {
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-      SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
 
     /*-- Start loop over zones. ---*/
@@ -234,7 +234,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       if (retape) {
         SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-        SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
+        SetRecording(SOLUTION_VARIABLES, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
       /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
@@ -428,9 +428,9 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
-    case NONE:           cout << "Clearing the computational graph." << endl; break;
-    case MESH_COORDS:    cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
-    case FLOW_CONS_VARS: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    case NONE:        cout << "Clearing the computational graph." << endl; break;
+    case MESH_COORDS: cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
+    case SOLUTION_VARIABLES:   cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
     }
   }
 
@@ -533,7 +533,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
   /*--- Print residuals in the first iteration ---*/
 
-  if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
+  if (rank == MASTER_NODE && kind_recording == SOLUTION_VARIABLES) {
 
     auto solvers = solver_container[iZone][INST_0][MESH_0];
 
@@ -734,21 +734,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         switch(config->GetKind_ObjFunc()) {
 
           case REFERENCE_NODE:
-            solvers[FEA_SOL]->Compute_OFRefNode(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFRefNode(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefNode()*Weight_ObjFunc;
             break;
           case REFERENCE_GEOMETRY:
-            solvers[FEA_SOL]->Compute_OFRefGeom(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFRefGeom(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
             break;
           case TOPOL_COMPLIANCE:
             static_cast<CFEASolver*>(solvers[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
-            solvers[FEA_SOL]->Compute_OFCompliance(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFCompliance(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
             break;
           case VOLUME_FRACTION:
           case TOPOL_DISCRETENESS:
-            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
             break;
 
@@ -762,14 +762,14 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         break;
     }
 
-    if (ObjectiveNotCovered && (rank == MASTER_NODE) && (kind_recording == FLOW_CONS_VARS))
+    if (ObjectiveNotCovered && (rank == MASTER_NODE) && (kind_recording == SOLUTION_VARIABLES))
       cout << " Objective function not covered in Zone " << iZone << endl;
   }
 
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
-    if (kind_recording == FLOW_CONS_VARS) {
+    if (kind_recording == SOLUTION_VARIABLES) {
       cout << " Objective function                   : " << ObjFunc;
       if (driver_config->GetWrt_AD_Statistics()){
         cout << " (" << ObjFunc_Index << ")\n";

@@ -155,11 +155,7 @@ void CMultizoneDriver::StartSolver() {
     config_container[iZone]->SetTotal_UnstTimeND(config_container[iZone]->GetTotal_UnstTime() / Time_Ref);
   }
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   driver_config->Set_StartTime(StartTime);
 
@@ -254,13 +250,10 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
-    if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() ==  RANS) ||
-        (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() ==  INC_RANS) ) {
-        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
+    if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetFluidProblem()) {
+      solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+                                                                             solver_container[iZone][INST_0],
+                                                                             config_container[iZone], TimeIter);
     }
 
   }
@@ -270,10 +263,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 #endif
 
   /*--- Run a predictor step ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]->GetPredictor())
-      iteration_container[iZone][INST_0]->Predictor(output_container[iZone], integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+      iteration_container[iZone][INST_0]->Predictor(output_container[iZone], integration_container, geometry_container,
+                                                    solver_container, numerics_container, config_container, surface_movement,
+                                                    grid_movement, FFDBox, iZone, INST_0);
   }
 
   /*--- Perform a dynamic mesh update if required. ---*/
@@ -480,17 +474,12 @@ void CMultizoneDriver::Update() {
 void CMultizoneDriver::Output(unsigned long TimeIter) {
 
   /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+
+  StopTime = SU2_MPI::Wtime();
+
   UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+
+  StartTime = SU2_MPI::Wtime();
 
   bool wrote_files = false;
 
@@ -502,19 +491,14 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
   if (wrote_files){
 
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
+    StopTime = SU2_MPI::Wtime();
+
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
+
+    StartTime = SU2_MPI::Wtime();
+
     driver_config->Set_StartTime(StartTime);
   }
 

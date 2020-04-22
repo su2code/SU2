@@ -470,55 +470,67 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
     SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", MassFlow, iMarker_Analyze);
     Tot_Surface_MassFlow += MassFlow;
+    config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
 
     su2double Mach = Surface_Mach_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_MACH", Mach, iMarker_Analyze);
     Tot_Surface_Mach += Mach;
+    config->SetSurface_Mach(iMarker_Analyze, Mach);
 
     su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TEMP", Temperature, iMarker_Analyze);
     Tot_Surface_Temperature += Temperature;
+    config->SetSurface_Temperature(iMarker_Analyze, Temperature);
 
     su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_PRESS", Pressure, iMarker_Analyze);
     Tot_Surface_Pressure += Pressure;
+    config->SetSurface_Pressure(iMarker_Analyze, Pressure);
 
     su2double Density = Surface_Density_Total[iMarker_Analyze] * config->GetDensity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_DENSITY", Density, iMarker_Analyze);
     Tot_Surface_Density += Density;
+    config->SetSurface_Density(iMarker_Analyze, Density);
 
     su2double Enthalpy = Surface_Enthalpy_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY", Enthalpy, iMarker_Analyze);
     Tot_Surface_Enthalpy += Enthalpy;
+    config->SetSurface_Enthalpy(iMarker_Analyze, Enthalpy);
 
     su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL", NormalVelocity, iMarker_Analyze);
     Tot_Surface_NormalVelocity += NormalVelocity;
+    config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
 
     su2double Uniformity = sqrt(Surface_StreamVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("UNIFORMITY", Uniformity, iMarker_Analyze);
     Tot_Surface_StreamVelocity2 += Uniformity;
+    config->SetSurface_Uniformity(iMarker_Analyze, Uniformity);
 
     su2double SecondaryStrength = sqrt(Surface_TransvVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH", SecondaryStrength, iMarker_Analyze);
     Tot_Surface_TransvVelocity2 += SecondaryStrength;
+    config->SetSurface_SecondaryStrength(iMarker_Analyze, SecondaryStrength);
 
     su2double MomentumDistortion = Surface_MomentumDistortion_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION", MomentumDistortion, iMarker_Analyze);
     Tot_Momentum_Distortion += MomentumDistortion;
+    config->SetSurface_MomentumDistortion(iMarker_Analyze, MomentumDistortion);
 
     su2double SecondOverUniform = SecondaryStrength/Uniformity;
     SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY", SecondOverUniform, iMarker_Analyze);
     Tot_SecondOverUniformity += SecondOverUniform;
+    config->SetSurface_SecondOverUniform(iMarker_Analyze, SecondOverUniform);
 
     su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP", TotalTemperature, iMarker_Analyze);
     Tot_Surface_TotalTemperature += TotalTemperature;
+    config->SetSurface_TotalTemperature(iMarker_Analyze, TotalTemperature);
 
     su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS", TotalPressure, iMarker_Analyze);
     Tot_Surface_TotalPressure += TotalPressure;
-    config->SetSurface_TotalPressure(0, Tot_Surface_TotalPressure); //TK:: otherwise the OBJ_FUNCTION SURFACE_TOTAL_PRESSURE cannot be used in singlezonem mode
+    config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
   }
 
@@ -532,11 +544,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     su2double Pressure_Drop = 0.0;
     if (nMarker_Analyze == 2) {
-      Pressure_Drop = (Surface_TotalPressure_Total[1]-Surface_TotalPressure_Total[0]) * config->GetPressure_Ref(); //TK:: changed to total pressure
+      Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
       config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
     }
     SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
-    Tot_Surface_PressureDrop = Pressure_Drop; //TK:: was += before, therefore it was counted double for 2 analyze markers
+    Tot_Surface_PressureDrop += Pressure_Drop;
   }
 
   SetHistoryOutputValue("AVG_MASSFLOW", Tot_Surface_MassFlow);

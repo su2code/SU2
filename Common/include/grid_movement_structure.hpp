@@ -36,7 +36,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
-#include <ctime>
 
 #include "geometry/CGeometry.hpp"
 #include "CConfig.hpp"

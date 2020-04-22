@@ -130,7 +130,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry*,
+  inline su2double Get_ValCoord(const CGeometry*,
                                 unsigned long indexNode,
                                 unsigned short iDim) const override {
     return nodes->GetMesh_Coord(indexNode,iDim);

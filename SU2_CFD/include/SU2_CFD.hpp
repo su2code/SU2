@@ -31,8 +31,6 @@
 #include "../../Common/include/omp_structure.hpp"
 #include "CLI11.hpp"
 
-#include <ctime>
-
 #include "drivers/CDriver.hpp"
 #include "drivers/CSinglezoneDriver.hpp"
 #include "drivers/CMultizoneDriver.hpp"

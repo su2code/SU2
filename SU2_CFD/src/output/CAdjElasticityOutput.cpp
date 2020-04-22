@@ -101,6 +101,8 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
   AddHistoryOutput("SENS_NU","Sens[Nu]", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
 
+  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
+
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -110,22 +112,24 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
   if (nVar_FEM == 3){
     SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_RMS(2)));
   }
+
   su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;
-  if (config->GetnElasticityMod() == 1){
+  if (config->GetnElasticityMod() == 1) {
     Total_SensE = solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
     Total_SensNu = solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
   }
-  else{
-    // TODO: Update this and change tests
+  else {
     for (unsigned short iVar = 0; iVar < config->GetnElasticityMod(); iVar++){
-      Total_SensE += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_E(0),2);
-      Total_SensNu += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0),2);
+      Total_SensE += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_E(iVar),2);
+      Total_SensNu += pow(solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar),2);
     }
-  Total_SensE = sqrt(Total_SensE);
-  Total_SensNu = sqrt(Total_SensNu);
+    Total_SensE = sqrt(Total_SensE);
+    Total_SensNu = sqrt(Total_SensNu);
   }
   SetHistoryOutputValue("SENS_E", Total_SensE);
   SetHistoryOutputValue("SENS_NU", Total_SensNu);
+
+  SetHistoryOutputValue("COMBO", solver[FEA_SOL]->GetTotal_ComboObj());
 
 }
 
