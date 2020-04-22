@@ -12177,7 +12177,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
-      su2double      weights[8];
+      su2double      weights[4];
 
       WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
                                        elemID, rankID, weights);
