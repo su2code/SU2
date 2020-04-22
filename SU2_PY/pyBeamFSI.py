@@ -157,14 +157,14 @@ def main():
         try:
             MLS = Spline_Module.pyMLSInterface(MLS_confFile, FSIInterface.globalFluidCoordinates, 
                                                FSIInterface.globalSolidCoordinates)
-           # Save spline matrix
-           print('Saving spline matrix')
-           scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
-           np.save('./Spline.npy', MLS.interpolation_matrix)
-           #Load spline matrix
-           print('Loading spline matrix')
-           MLS.interpolation_matrix = None
-           np.load('./Spline.npy')
+            # Save spline matrix
+            print('Saving spline matrix')
+            scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
+            np.save('./Spline.npy', MLS.interpolation_matrix)
+            #Load spline matrix
+            print('Loading spline matrix')
+            MLS.interpolation_matrix = None
+            np.load('./Spline.npy')
            
            
         except TypeError as exception:
