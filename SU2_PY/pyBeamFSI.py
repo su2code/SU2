@@ -164,7 +164,7 @@ def main():
             #Load spline matrix
             print('Loading spline matrix')
             MLS.interpolation_matrix = None
-            np.load('./Spline.npy')
+            MLS.interpolation_matrix = np.load('./Spline.npy')
            
            
         except TypeError as exception:
