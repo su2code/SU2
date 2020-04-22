@@ -506,7 +506,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1 = constants[4];
+  su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -526,12 +526,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set wall values ---*/
 
-      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+      density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint)
+      density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+      laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      Solution[1] = min(max(Solution[1], lowerlimit[1]), upperlimit[1])*solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+      Solution[1] = min(max(Solution[1], lowerlimit[1]), upperlimit[1]);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
@@ -1342,7 +1343,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       Solution[1] = density*Omega;
 
       for (iVar = 1; iVar < nVar; iVar++) {
-        Solution[iVar] = min(max(Solution[iVar]/density, lowerlimit[iVar]), upperlimit[iVar])*density;
+        Solution[iVar] = min(max(Solution[iVar], lowerlimit[iVar]), upperlimit[iVar]);
         nodes->SetSolution_Old(jPoint,iVar,Solution[iVar]);
         nodes->SetSolution(jPoint,iVar,Solution[iVar]);
         LinSysRes.SetBlock_Zero(jPoint,iVar);
