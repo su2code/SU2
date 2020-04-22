@@ -118,14 +118,4 @@ public:
    * \param[in] val_face_normal - Normal vector to be added.
    */
   virtual void AddNormal(const su2double *val_face_normal) = 0;
-
-  /*!
-   * \brief A pure virtual member.
-   */
-  virtual inline su2double GetEdgeWeights(unsigned short val_Point) const = 0;
-
-  /*!
-   * \brief A pure virtual member.
-   */
-  virtual inline void SetEdgeWeights(su2double val_Weight, unsigned short val_Point) = 0;
 };

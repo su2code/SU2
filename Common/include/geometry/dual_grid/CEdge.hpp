@@ -39,8 +39,6 @@ private:
   su2double *Coord_CG;      /*!< \brief Center-of-gravity of the element. */
   unsigned long *Nodes;     /*!< \brief Vector to store the global nodes of an element. */
   su2double *Normal;        /*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
-  su2double *EdgeWeights; /*!< \brief Portion of CV belonging to node for each edge. */
-
 
 public:
 
@@ -176,17 +174,5 @@ public:
    *        definition of the function in all the derived classes).
    */
   inline void SetCoord(const su2double *val_coord) override { }
-
-  /*!
-   * \brief Get weight of the partial control volume.
-   * \return Weight of the control volume.
-   */
-  inline su2double GetEdgeWeights(unsigned short val_Point) const { return EdgeWeights[val_Point]; }
-
-  /*!
-   * \brief Set the weight of the partial control volume.
-   * \param[in] val_Weight - Weight to be added to the total one.
-   */
-  inline void SetEdgeWeights(su2double val_Weight, unsigned short val_Point) { EdgeWeights[val_Point] = val_Weight; }
 
 };

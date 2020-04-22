@@ -50,10 +50,6 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short 
   Nodes[0] = val_iPoint;
   Nodes[1] = val_jPoint;
 
-  /*--- BCM: partial CV for flux calcs ---*/
-  EdgeWeights = NULL;
-  EdgeWeights = new su2double[2];
-
 }
 
 CEdge::~CEdge() {
@@ -61,8 +57,6 @@ CEdge::~CEdge() {
   if (Coord_CG != NULL) delete[] Coord_CG;
   if (Normal   != NULL) delete[] Normal;
   if (Nodes    != NULL) delete[] Nodes;
-
-  if (EdgeWeights != NULL) delete[] EdgeWeights;
 
 }
 

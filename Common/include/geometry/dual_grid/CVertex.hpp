@@ -404,16 +404,5 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VarRot[iDim] = val[iDim];
   }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline su2double GetEdgeWeights(unsigned short val_Point) const override { return 0.0; };
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline void SetEdgeWeights(su2double val_Weight, unsigned short val_Point) { }
+  
 };
