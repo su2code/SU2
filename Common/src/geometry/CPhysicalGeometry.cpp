@@ -9747,8 +9747,6 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   unsigned long Point_Normal, jPoint;
   unsigned short iNeigh, iMarker, iDim;
   unsigned long iPoint, iVertex;
-  unsigned short jNeigh;
-  unsigned long kPoint;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -9765,27 +9763,22 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
         Point_Normal = 0; cos_max = -1.0;
         for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
           jPoint = node[iPoint]->GetPoint(iNeigh);
-          // for (jNeigh = 0; jNeigh < node[jPoint]->GetnPoint(); jNeigh++) {
-          //   kPoint = node[jPoint]->GetPoint(jNeigh);
-          //   if (!node[kPoint]->GetSolidBoundary()) {
-              scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) {
-                diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
-                scalar_prod += diff_coord*Normal[iDim];
-                norm_vect += diff_coord*diff_coord;
-                norm_Normal += Normal[iDim]*Normal[iDim];
-              }
-              norm_vect = sqrt(norm_vect);
-              norm_Normal = sqrt(norm_Normal);
-              cos_alpha = scalar_prod/(norm_vect*norm_Normal);
+          scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+            scalar_prod += diff_coord*Normal[iDim];
+            norm_vect += diff_coord*diff_coord;
+            norm_Normal += Normal[iDim]*Normal[iDim];
+          }
+          norm_vect = sqrt(norm_vect);
+          norm_Normal = sqrt(norm_Normal);
+          cos_alpha = scalar_prod/(norm_vect*norm_Normal);
 
-              /*--- Get maximum cosine ---*/
-              if (cos_alpha >= cos_max) {
-                Point_Normal = jPoint;
-                cos_max = cos_alpha;
-              } // if cos(alpha)
-            // } // !SolidBoundary
-          // } // jNeigh
+          /*--- Get maximum cosine ---*/
+          if (cos_alpha >= cos_max) {
+            Point_Normal = jPoint;
+            cos_max = cos_alpha;
+          } // if cos(alpha)
         } // iNeigh
         vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
       } // iVertex
