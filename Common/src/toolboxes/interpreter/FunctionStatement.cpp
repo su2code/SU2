@@ -2,6 +2,7 @@
 #include <cstring> // For strchr
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "shunting-yard-exceptions.h"
 #include "../../../include/toolboxes/interpreter/FunctionStatement.hpp"
@@ -146,6 +147,22 @@ namespace interpreter {
       throw syntax_error("No arguments allowed for specific user function type " + type);
     }
     return packToken(new UserFunction(args, body, name, funcType));
+  }
+
+  std::vector<interpreter::UserFunction*> GetUserFunctions(const TokenMap& scope,
+                                                           std::list<interpreter::FunctionType> functionType) {
+    std::vector<interpreter::UserFunction*> userFunctions;
+    for (auto iter = scope.map().begin();
+         iter != scope.map().end(); iter++){
+      interpreter::UserFunction* function = dynamic_cast<interpreter::UserFunction*>(iter->second.token());
+      if (function != NULL){
+        if (std::any_of(functionType.begin(), functionType.end(),
+                        [&](const interpreter::FunctionType& item){return item == function->getType();})){
+          userFunctions.push_back(function);
+        }
+      }
+    }
+    return userFunctions;
   }
 
 }

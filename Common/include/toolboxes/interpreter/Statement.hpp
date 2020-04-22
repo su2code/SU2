@@ -4,6 +4,8 @@
 
 namespace interpreter {
 
+  extern GlobalScope globalScope;
+
   enum returnType {
     NORMAL, FINISH, RETURN,
     YIELD, BREAK, CONTINUE, THROW

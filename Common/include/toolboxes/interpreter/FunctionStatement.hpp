@@ -82,4 +82,6 @@ namespace interpreter {
     }
   };
 
+  std::vector<interpreter::UserFunction*> GetUserFunctions(const TokenMap& scope, std::list<interpreter::FunctionType> functionType);
+
 }

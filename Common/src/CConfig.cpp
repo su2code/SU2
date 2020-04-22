@@ -34,8 +34,6 @@
 
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
-#define STATIC_CPARSE_STARTUP
-#include "./builtin-features.inc"
 
 using namespace PrintingToolbox;
 
@@ -4945,13 +4943,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     functionFile.close();
   }
-  globalScope["config"] = configTokens;
+  interpreter::globalScope["config"] = configTokens;
   interpreter::BlockStatement code;
 
   string blockAsString = "{" + UserFunctionCode + "}";
 
   try{
-    code.compile(blockAsString.c_str(), nullptr, globalScope);
+    code.compile(blockAsString.c_str(), nullptr, interpreter::globalScope);
+    code.exec(interpreter::globalScope);
   } catch (syntax_error e){
     SU2_MPI::Error(std::string("Error in functions.su2x: ") + e.what(), CURRENT_FUNCTION);
   }

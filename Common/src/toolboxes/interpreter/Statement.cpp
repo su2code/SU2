@@ -4,8 +4,12 @@
 #include "../../../include/toolboxes/interpreter/ExpressionStatement.hpp"
 #include "../../../include/toolboxes/interpreter/FunctionStatement.hpp"
 #include "../../../include/toolboxes/interpreter/ReturnStatement.hpp"
+#define STATIC_CPARSE_STARTUP
+#include "./builtin-features.inc"
 
 namespace interpreter {
+
+  GlobalScope globalScope;
 
   bool checkStatement(const char* code, const char *literal, uint size){
     uint i=0;

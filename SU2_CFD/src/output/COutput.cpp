@@ -173,13 +173,13 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   headerNeeded = false;
 
 
-  historyFieldsAll.SetScope(config->GetGlobalScope());
-  volumeFieldsAll.SetScope(config->GetGlobalScope());
+  historyFieldsAll.SetScope(interpreter::globalScope);
+  volumeFieldsAll.SetScope(interpreter::globalScope);
 
-  historyUserFunctions = config->GetUserFunctions({interpreter::FunctionType::HISTFIELD});
-  volumeUserFunctions  = config->GetUserFunctions({interpreter::FunctionType::VOLUMEFIELD,
-                                                   interpreter::FunctionType::VOLUMEINTEGRAL,
-                                                   interpreter::FunctionType::SURFACEINTEGRAL});
+  historyUserFunctions = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::HISTFIELD});
+  volumeUserFunctions  = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::VOLUMEFIELD,
+                                                                                  interpreter::FunctionType::VOLUMEINTEGRAL,
+                                                                                  interpreter::FunctionType::SURFACEINTEGRAL});
 
 
 }
