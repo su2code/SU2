@@ -289,7 +289,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-  const bool disc_adjoint = config->GetDiscrete_Adjoint();
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -329,13 +328,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double rhoomega = nodes->GetSolution(iPoint, 1);
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
-    /*--- Turb vars are already clipped so check density ---*/
-    if(rho < 0.) {
-      rhokine  = nodes->GetSolution_Old(iPoint, 0);
-      rhoomega = nodes->GetSolution_Old(iPoint, 1);
-      nodes->SetSolution(iPoint, 0, rhokine);
-      nodes->SetSolution(iPoint, 1, rhoomega);
-    }
+    /*--- Turb vars are already clipped so just set primitive ---*/
 
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
