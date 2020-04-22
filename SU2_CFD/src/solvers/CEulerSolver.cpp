@@ -2549,6 +2549,13 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
 
+  /*--- Store the old solution ---*/
+  if(!Output) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
+    }
+  }
+
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     SU2_OMP_BARRIER
     SU2_OMP_MASTER
@@ -2612,13 +2619,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     LinSysRes.SetValZero();
     if (implicit && !disc_adjoint) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
-  }
-
-  /*--- Store the old solution ---*/
-  if(!Output) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      for (unsigned long iVar = 0; iVar < nVar; iVar++)
-        nodes->SetSolution_Old(iPoint, iVar, nodes->GetSolution(iPoint, iVar));
   }
 
 }
