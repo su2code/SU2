@@ -444,29 +444,17 @@ public:
    */
   bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex);
 
-  // /*!
-  //  * \brief Get the number of external iterations.
-  //  * \return Number of external iterations.
-  //  */
-  // unsigned long GetnTimeIter();
+  /*!
+   * \brief Get the number of external iterations.
+   * \return Number of external iterations.
+   */
+  unsigned long GetnTimeIter();
 
-  // /*!
-  //  * \brief Get the current external iteration.
-  //  * \return Current external iteration.
-  //  */
-  // unsigned long GetTime_Iter();
-
-  // /*!
-  //  * \brief Get the number of iterations.
-  //  * \return Number of iterations.
-  //  */
-  // unsigned long GetnIter();
-
-  // /*!
-  //  * \brief Get the current iteration.
-  //  * \return Current iteration.
-  //  */
-  // unsigned long GetIter();
+  /*!
+   * \brief Get the current external iteration.
+   * \return Current external iteration.
+   */
+  unsigned long GetTime_Iter();
 
   /*!
    * \brief Get the unsteady time step.

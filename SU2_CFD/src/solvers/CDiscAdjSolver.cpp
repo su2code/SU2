@@ -919,7 +919,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Read all lines in the restart file ---*/
 
-  long iPoint_Local; unsigned long iPoint_Global = 0;
+  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
@@ -960,6 +960,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       nodes->SetSolution(iPoint_Local,Solution);
+      iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
@@ -969,7 +970,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Detect a wrong solution file ---*/
 
-  if (counter != nPointDomain) { sbuf_NotMatching = 1; }
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
 
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 
