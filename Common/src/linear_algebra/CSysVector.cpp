@@ -221,7 +221,9 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
     sum += vec_val[i]*u.vec_val[i];
 
   /*--- Update shared variable with "our" partial sum. ---*/
+#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   atomicAdd(sum, dotRes);
+#endif
 
 #ifdef HAVE_MPI
   /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
