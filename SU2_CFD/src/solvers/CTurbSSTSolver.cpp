@@ -333,7 +333,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     su2double rhokine  = nodes->GetSolution(iPoint, 0);
     su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint, 0);
 
     /*--- Turb vars are already clipped so just set primitive ---*/
 
