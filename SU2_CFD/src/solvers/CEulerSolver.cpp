@@ -7197,9 +7197,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
-      
-//      for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-//        SetCharacPrimVar(val_marker, iVertex, iVar, V_infty[iVar]);
 
       /*--- Set various quantities in the numerics class ---*/
 
@@ -7229,17 +7226,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-//        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
-        
-        for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-          SetCharacPrimVar(val_marker, iVertex, iVar, V_infty[iVar]);
+        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
 
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->node[Point_Normal]->GetCoord(),
+                                geometry->node[iPoint]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
 
