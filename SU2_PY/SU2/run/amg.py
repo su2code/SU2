@@ -187,11 +187,11 @@ def amg ( config , kind='' ):
     for opt in adap_options:
         config_cfd.pop(opt, None)
 
+    #--- Only write CSV if both WRT_BINARY and READ_BINARY exist and are set to NO
+    sol_ext = ".dat"
     if ('WRT_BINARY_RESTART' in config) and ('READ_BINARY_RESTART' in config):
         if (config_cfd.WRT_BINARY_RESTART == "NO") and (config_cfd.READ_BINARY_RESTART == "NO"):
             sol_ext = ".csv"
-        else:
-            sol_ext = ".dat"
 
     config_cfd.VOLUME_OUTPUT = "COORDINATES, SOLUTION, PRIMITIVE"
         
