@@ -563,9 +563,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
                    (config->GetKind_Turb_Model() == SA_COMP)   ||
                    (config->GetKind_Turb_Model() == SA_E_COMP));
 
-  bool sst_model = ((config->GetKind_Turb_Model() == SST) ||
-                    (config->GetKind_Turb_Model() == SST_SUST));
-
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 

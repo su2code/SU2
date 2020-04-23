@@ -192,9 +192,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   const su2double omega_Inf_Dim = config->GetOmega_FreeStream();
 
   lowerlimit[0] = 1.0e-10*kine_Inf/kine_Inf_Dim;
-  upperlimit[0] = 1.0e15*kine_Inf/kine_Inf_Dim;
+  upperlimit[0] = 1.0e10*kine_Inf/kine_Inf_Dim;
 
-  lowerlimit[1] = 1.0e-10*omega_Inf/omega_Inf_Dim;
+  lowerlimit[1] = 1.0e-4*omega_Inf/omega_Inf_Dim;
   upperlimit[1] = 1.0e15*omega_Inf/omega_Inf_Dim;
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/

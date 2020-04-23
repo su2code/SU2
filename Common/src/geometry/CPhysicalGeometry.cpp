@@ -4991,7 +4991,7 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
       }
     }
 
-    delete jElem_Bound;
+    delete [] jElem_Bound;
     
     /*--- Update config file lists in order to store the boundary
      information for this marker in the correct place. ---*/
