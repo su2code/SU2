@@ -958,8 +958,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     
   if((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
     solver[MESH_0][TURB_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, PRIMITIVE);
-    solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, PRIMITIVE);
   }
 
   solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
