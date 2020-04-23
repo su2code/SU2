@@ -955,15 +955,15 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- MPI solution and compute the eddy viscosity ---*/
-
-  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
     
   if((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
     solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
     solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, PRIMITIVE);
     solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, PRIMITIVE);
   }
+
+  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
   SU2_OMP_BARRIER

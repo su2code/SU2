@@ -289,6 +289,21 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
+  
+  /*--- Set the primitive variables ---*/
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+    /*--- Turb vars are already clipped so just set primitive ---*/
+
+    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
+    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
+  }
+
 
   /*--- Store the old solution ---*/
   if(!Output) {
@@ -327,20 +342,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
-  /*--- Set the primitive variables ---*/
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-    /*--- Turb vars are already clipped so just set primitive ---*/
-
-    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
-    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
-  }
-
   /*--- Compute mean flow and turbulence gradients ---*/
 
   if (config->GetReconstructionGradientRequired()) {
@@ -378,8 +379,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the eddy viscosity ---*/
 
-    const su2double kine  = nodes->GetPrimitive(iPoint,0);
-    const su2double omega = nodes->GetPrimitive(iPoint,1);
+    const su2double kine  = nodes->GetSolution(iPoint,0)/rho;
+    const su2double omega = nodes->GetSolution(iPoint,1)/rho;
     const su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
     const su2double muT   = max(rho*kine*zeta,0.0);
 
