@@ -626,8 +626,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++)
-      Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
+      for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
       
       su2double Velocity2 = 0.;
       for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
@@ -642,8 +641,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] = -Normal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
       /*--- Grid Movement ---*/
