@@ -2549,13 +2549,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
 
-  /*--- Store the old solution ---*/
-  if(!Output) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
-    }
-  }
-
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     SU2_OMP_BARRIER
     SU2_OMP_MASTER
