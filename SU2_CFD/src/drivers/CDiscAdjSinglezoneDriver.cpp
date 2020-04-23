@@ -234,9 +234,6 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
     for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
       unsigned short* FileFormat = config->GetVolumeOutputFiles();
       direct_output->WriteToFile(config, geometry, FileFormat[iFile]);
-
-      /*--- For now we need ASCII restarts for AMGIO ---*/
-      direct_output->WriteToFile(config, geometry, RESTART_ASCII);
     }
   }
 
