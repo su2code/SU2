@@ -959,7 +959,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
+      if (geometry[MESH_0]->node[iPoint]->GetDomain()) nodes->SetSolution(iPoint_Local,Solution);
       iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -982,10 +982,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. ---*/
   
-  int iSol = ADJFLOW_SOL;
-  if (KindDirect_Solver== RUNTIME_TURB_SYS) iSol = ADJTURB_SOL;
-  solver[MESH_0][iSol]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][iSol]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+//  int iSol = ADJFLOW_SOL;
+//  if (KindDirect_Solver== RUNTIME_TURB_SYS) iSol = ADJTURB_SOL;
+//  solver[MESH_0][iSol]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+//  solver[MESH_0][iSol]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -1001,8 +1001,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       }
       solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
     }
-    solver[iMesh][iSol]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][iSol]->CompleteComms(geometry[iMesh], config, SOLUTION);
+//    solver[iMesh][iSol]->InitiateComms(geometry[iMesh], config, SOLUTION);
+//    solver[iMesh][iSol]->CompleteComms(geometry[iMesh], config, SOLUTION);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
