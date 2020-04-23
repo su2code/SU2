@@ -170,9 +170,11 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
           GlobalIndex[iSend] = new long [numCoeff];
           DonorIndex[iSend] = new long [numCoeff];
           DonorCoeff[iSend] = new su2double [numCoeff];
+#ifdef HAVE_MPI
           SU2_MPI::Recv(GlobalIndex[iSend], numCoeff, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           SU2_MPI::Recv(DonorIndex[iSend],  numCoeff, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           SU2_MPI::Recv(DonorCoeff[iSend], numCoeff, MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+#endif
         }
         else if (rank == jProcessor) {
           /*--- "I'm" the donor, send. ---*/
