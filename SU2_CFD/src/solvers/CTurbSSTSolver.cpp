@@ -522,7 +522,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Set wall values ---*/
 
       density_s = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
-      density_v = solver_container[FLOW_SOL]->GetNodes()->GetSolution_OLd(jPoint,0);
+      density_v = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(jPoint,0);
       laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
       Solution[0] = 0.0;
