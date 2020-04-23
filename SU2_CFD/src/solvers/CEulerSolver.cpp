@@ -7230,7 +7230,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 //        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
         
         V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
-        V_infty[nDim+6] = config->GetViscosity_FreeStreamND()/config->GetTurb2LamViscRatio_FreeStream();
+        V_infty[nDim+6] = config->GetViscosity_FreeStreamND()*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
 
