@@ -304,7 +304,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
 
-
   /*--- Store the old solution ---*/
   if(!Output) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {

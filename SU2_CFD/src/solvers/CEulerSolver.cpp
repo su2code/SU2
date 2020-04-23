@@ -7205,8 +7205,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
       
-      for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-        SetCharacPrimVar(val_marker, iVertex, iVar, V_infty[iVar]);
+//      for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+//        SetCharacPrimVar(val_marker, iVertex, iVar, V_infty[iVar]);
 
       /*--- Set various quantities in the numerics class ---*/
 
@@ -7236,8 +7236,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+//        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+//        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
         
         for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
           SetCharacPrimVar(val_marker, iVertex, iVar, V_infty[iVar]);
