@@ -7239,8 +7239,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->node[Point_Normal]->GetCoord(),
+                                geometry->node[iPoint]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
 
