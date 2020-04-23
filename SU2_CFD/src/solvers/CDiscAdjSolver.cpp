@@ -981,6 +981,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. ---*/
+  
+  int iSol = ADJFLOW_SOL;
+  if (KindDirect_Solver== RUNTIME_TURB_SYS) iSol = ADJTURB_SOL;
+  solver[MESH_0][iSol]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][iSol]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -996,6 +1001,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       }
       solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
     }
+    solver[iMesh][iSol]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][iSol]->CompleteComms(geometry[iMesh], config, SOLUTION);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
