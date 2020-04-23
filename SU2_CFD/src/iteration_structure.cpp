@@ -2178,7 +2178,6 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
 
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  bool sst = ((config[iZone]->GetKind_Turb_Model() == SST) || (config[iZone]->GetKind_Turb_Model() == SST_SUST));
 
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)){
 
@@ -2191,9 +2190,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
-  if (sst) {
-    solver[iZone][iInst][MESH_0][TURB_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0], config[iZone], MESH_0, NO_RK_ITER, RUNTIME_TURB_SYS, true);
-  }
+
   solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0], config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   solver[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
   solver[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
