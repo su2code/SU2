@@ -379,8 +379,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the eddy viscosity ---*/
 
-    const su2double kine  = nodes->GetSolution(iPoint,0)/rho;
-    const su2double omega = nodes->GetSolution(iPoint,1)/rho;
+    const su2double kine  = nodes->GetPrimitive(iPoint,0);
+    const su2double omega = nodes->GetPrimitive(iPoint,1);
     const su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
     const su2double muT   = max(rho*kine*zeta,0.0);
 
