@@ -7226,8 +7226,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+//        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+//        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        
+        V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
+        V_infty[nDim+6] = config->GetViscosity_FreeStreamND()*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -7245,9 +7248,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
+//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+                                              GetTke_Inf());
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
