@@ -480,9 +480,6 @@ def amg ( config , kind='' ):
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
                 config_cfd.CFL_NUMBER         = float(adap_cfl[iSiz])
                 
-                config_cfd.WRT_BINARY_RESTART  = "NO"
-                config_cfd.READ_BINARY_RESTART = "NO"
-                
                 SU2_CFD(config_cfd)
                 
                 if not os.path.exists(cur_solfil) :
