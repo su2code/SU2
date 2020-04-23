@@ -332,6 +332,25 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   su2double a1 = constants[7];
+  
+  /*--- Set the primitive variables ---*/
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+    /*--- Turb vars are already clipped so just set primitive ---*/
+
+    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
+    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
+  }
+  
+  /*--- Compute mean flow and turbulence gradients ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
