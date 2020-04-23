@@ -7027,7 +7027,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double Density_Infty, Pressure_Infty, Vel_Infty[3] = {0.0,0.0,0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
-  su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
+  su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty, Kine_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
 
@@ -7187,7 +7187,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) {
+        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+        Energy += Kine_Infty;
+      }
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -7253,7 +7257,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 //                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              GetTke_Inf());
+                                              Kine_Infty);
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
