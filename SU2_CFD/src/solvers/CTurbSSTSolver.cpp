@@ -296,7 +296,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
     su2double rhokine  = nodes->GetSolution(iPoint, 0);
     su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
 
     /*--- Turb vars are already clipped so just set primitive ---*/
 
@@ -521,8 +521,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set wall values ---*/
 
-      density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+      density_s = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
+      density_v = solver_container[FLOW_SOL]->GetNodes()->GetSolution_OLd(jPoint,0);
       laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
       Solution[0] = 0.0;
