@@ -186,9 +186,12 @@ def amg ( config , kind='' ):
     config_cfd = copy.deepcopy(config)
     for opt in adap_options:
         config_cfd.pop(opt, None)
-    
-    config_cfd.WRT_BINARY_RESTART  = "NO"
-    config_cfd.READ_BINARY_RESTART = "NO"
+
+    if ('WRT_BINARY_RESTART' in config) and ('READ_BINARY_RESTART' in config):
+        if (config_cfd.WRT_BINARY_RESTART == "NO") and (config_cfd.READ_BINARY_RESTART == "NO"):
+            sol_ext = ".csv"
+        else:
+            sol_ext = ".dat"
 
     config_cfd.VOLUME_OUTPUT = "COORDINATES, SOLUTION, PRIMITIVE"
         
@@ -209,7 +212,7 @@ def amg ( config , kind='' ):
             sav_stderr, sys.stderr = sys.stderr, stderr_hdl
         
             cur_meshfil = config['MESH_FILENAME']
-            cur_solfil  = "restart_flow.csv"
+            cur_solfil  = "restart_flow" + sol_ext
             
             config_cfd.CONV_FILENAME    = "history"
             config_cfd.RESTART_FILENAME = cur_solfil
@@ -220,7 +223,7 @@ def amg ( config , kind='' ):
             SU2_CFD(config_cfd)
                         
             if adap_sensor == 'GOAL':
-                cur_solfil_adj = "restart_adj.csv"
+                cur_solfil_adj = "restart_adj" + sol_ext
 
                 config_cfd.CONV_FILENAME        = "history_adj"
                 config_cfd.RESTART_ADJ_FILENAME = cur_solfil_adj
@@ -270,8 +273,8 @@ def amg ( config , kind='' ):
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
         cur_meshfil    = config['MESH_FILENAME']
-        cur_solfil     = "restart_flow.csv"
-        cur_solfil_adj = "restart_adj.csv"
+        cur_solfil     = "restart_flow" + sol_ext
+        cur_solfil_adj = "restart_adj" + sol_ext
 
         #--- Run an iteration of the flow to get history info
         config_cfd.ITER             = 1
@@ -421,12 +424,12 @@ def amg ( config , kind='' ):
             os.chdir(os.path.join('..',cur_dir))
             
             cur_meshfil = "adap.su2"
-            cur_solfil  = "flo.csv"
+            cur_solfil  = "flo" + sol_ext
                             
             su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
 
             if adap_sensor == 'GOAL':
-                cur_solfil_adj = "adj.csv"
+                cur_solfil_adj = "adj" + sol_ext
                 sol_adj = su2amg.split_adj_sol(mesh_new)
                 su2amg.write_sol(cur_solfil_adj, sol_adj)
 
@@ -455,13 +458,13 @@ def amg ( config , kind='' ):
                 sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
                 sav_stderr, sys.stderr = sys.stderr, stderr_hdl
                 
-                cur_solfil_ini = "flo_ini.csv"
+                cur_solfil_ini = "flo_ini" + sol_ext
                 os.rename(cur_solfil, cur_solfil_ini)
 
-                cur_solfil_adj_ini = "adj_ini.csv"
+                cur_solfil_adj_ini = "adj_ini" + sol_ext
                 cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
                 os.rename(cur_solfil_adj, cur_solfil_adj_ini)
-                cur_solfil_adj_ini = "adj_ini.csv"
+                cur_solfil_adj_ini = "adj_ini" + sol_ext
                 
                 config_cfd.MESH_FILENAME     = cur_meshfil
                 config_cfd.CONV_FILENAME     = "history"
