@@ -621,16 +621,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Allocate the value at the infinity ---*/
 
       V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      conv_numerics->SetPrimitive(V_domain, V_infty);
-
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
-
-      for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
       
       su2double Velocity2 = 0.;
       for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
@@ -642,6 +632,16 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       V_infty[nDim+5] = FluidModel->GetLaminarViscosity();
       V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
       Omega_Infty = Density*Kine_Infty/(V_infty[nDim+6]);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      conv_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Set turbulent variable at the wall, and at infinity ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       Primitive_j[0] = Kine_Infty;
       Primitive_j[1] = Omega_Infty;
