@@ -5178,6 +5178,7 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
                                unsigned long              iPoint,
                                vector<vector<su2double> > &weights) {
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varTur    = solver[TURB_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
@@ -5255,11 +5256,17 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
     if (sst) {
       for (iVar = 0; iVar < nVarTur; ++iVar){
         const su2double adjx = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 0),
-                        adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1);
+                        adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1),
+                        val  = varTur->GetPrimitive(iPoint, iVar);
         weights[1][nVarFlo+iVar] += - u*adjx - v*adjy;
+        weights[1][0]            += val*u*adjx + val*v*adjy;
+        weights[1][1]            += - val*adjx;
+        weights[1][2]            += - val*adjy;
         if (nDim == 3) {
           const su2double adjz = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 2);
-          weights[1][nVarFlo+iVar] += -w*adjz;
+          weights[1][nVarFlo+iVar] += - w*adjz;
+          weights[1][0]            += val*w*adjz;
+          weights[1][3]            += - val*adjz;
         }
       }
     }
