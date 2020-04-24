@@ -5106,7 +5106,7 @@ void CPhysicalGeometry::BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) {
   for (unsigned long iElem = 0; iElem < nElem; iElem++){
 
     /*--- Easier storage of the element type, store the element ID and set
-          a summy for the marker ID, as this is only relevant for a surface
+          a dummy for the marker ID, as this is only relevant for a surface
           search. ---*/
     unsigned short VTK_Type = elem[iElem]->GetVTK_Type();
 
@@ -6371,7 +6371,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   delete[] AuxCoord;
   delete[] AuxGlobalIndex;
 
-  /*--- Set the new conectivities ---*/
+  /*--- Set the new connectivities ---*/
 
   unsigned long *InvResult;
   InvResult = new unsigned long [nPoint];
@@ -6421,6 +6421,13 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
   delete[] InvResult;
 
+  /* Adapt the array Local_to_Global_Point and the map Global_to_Local_Point
+     to the new numbering. */
+  Global_to_Local_Point.clear();
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    Local_to_Global_Point[iPoint] = node[iPoint]->GetGlobalIndex();
+    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+  }
 }
 
 void CPhysicalGeometry::SetElement_Connectivity(void) {
