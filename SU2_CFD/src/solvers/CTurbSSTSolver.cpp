@@ -596,15 +596,11 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
-  su2double Kine_Infty = 0., Omega_Infty = 0.;
-  const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
   unsigned short iVar, iDim;
 
   Normal = new su2double[nDim];
-  
-  CFluidModel *FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -613,25 +609,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Allocate the value at the infinity ---*/
 
       V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-      
-      su2double Velocity2 = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-      Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
-      const su2double Density = V_infty[nDim+2];
-      const su2double Energy = V_infty[nDim+3];
-      const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
-      FluidModel->SetTDState_rhoe(Density, StaticEnergy);
-      V_infty[nDim+5] = FluidModel->GetLaminarViscosity();
-      V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
-      Omega_Infty = Density*Kine_Infty/(V_infty[nDim+6]);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -643,15 +624,16 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
-      Primitive_j[0] = Kine_Infty;
-      Primitive_j[1] = Omega_Infty;
+      Primitive_j[0] = kine_Inf;
+      Primitive_j[1] = omega_Inf;
 
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
       /*--- Grid Movement ---*/
