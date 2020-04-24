@@ -2551,8 +2551,8 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
   if (sst) {
-    solver_container[FLOW_SOL]->InitiateComms(geometry, config, PRIMITIVE);
-    solver_container[FLOW_SOL]->CompleteComms(geometry, config, PRIMITIVE);
+    InitiateComms(geometry, config, PRIMITIVE);
+    CompleteComms(geometry, config, PRIMITIVE);
   }
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
