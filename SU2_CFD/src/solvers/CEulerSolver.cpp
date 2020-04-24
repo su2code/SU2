@@ -7244,42 +7244,42 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
         V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
 
-        /*--- Set the normal vector and the coordinates ---*/
-
-        visc_numerics->SetNormal(Normal);
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+////        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+////                                geometry->node[Point_Normal]->GetCoord());
 //        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-//                                geometry->node[Point_Normal]->GetCoord());
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[iPoint]->GetCoord());
-
-        /*--- Primitive variables, and gradient ---*/
-
-        visc_numerics->SetPrimitive(V_domain, V_infty);
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          nodes->GetGradient_Primitive(iPoint));
-
-        /*--- Turbulent kinetic energy ---*/
-
+//                                geometry->node[iPoint]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_infty);
+//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+//                                          nodes->GetGradient_Primitive(iPoint));
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+////        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+////          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+////                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              GetTke_Inf());
-
-        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-
-        visc_numerics->SetTauWall(-1.0, -1.0);
-
-        /*--- Compute and update viscous residual ---*/
-
-        auto residual = visc_numerics->ComputeResidual(config);
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Viscous Jacobian contribution for implicit integration ---*/
-
-        if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+//                                              GetTke_Inf());
+//
+//        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+//
+//        visc_numerics->SetTauWall(-1.0, -1.0);
+//
+//        /*--- Compute and update viscous residual ---*/
+//
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
+//
+//        /*--- Viscous Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
 
