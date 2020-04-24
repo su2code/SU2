@@ -295,8 +295,8 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
         weight_j = Normal[iDim]*halfOnVol_j;
       }
       else {
-        weight_i = 1./Volume_i;
-        weight_j = 1./Volume_j;
+        weight_i = 2./Volume_i;
+        weight_j = 2./Volume_j;
       }
       
       Jacobian_i[0][0] -= 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0]/proj_vector_ij;
