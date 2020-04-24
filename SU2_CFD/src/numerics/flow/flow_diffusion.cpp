@@ -516,7 +516,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
@@ -563,7 +563,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
@@ -597,6 +597,15 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
       for (unsigned short jVar = 0; jVar < nVar; jVar++) {
         jac_i[iVar][jVar] = val_Proj_Jac_Tensor_i[iVar][jVar];
         jac_j[iVar][jVar] = val_Proj_Jac_Tensor_j[iVar][jVar];
+      }
+    }
+    
+    if (!correct_gradient) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+          val_Proj_Jac_Tensor_i[iVar][jVar] = 0.;
+          val_Proj_Jac_Tensor_j[iVar][jVar] = 0.;
+        }
       }
     }
     
@@ -722,22 +731,23 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    if (dist_ij_2 == 0.0) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_i[iVar][jVar] = 0.0;
-          Jacobian_j[iVar][jVar] = 0.0;
-        }
-      }
-    } else {
+//    if (dist_ij_2 == 0.0) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          Jacobian_i[iVar][jVar] = 0.0;
+//          Jacobian_j[iVar][jVar] = 0.0;
+//        }
+//      }
+//    } else {
       // const su2double dist_ij = sqrt(dist_ij_2);
+    if (!correct_gradient) proj_vector_ij = 1.0;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
                           Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
       GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
-    }
+//    }
 
   }
 

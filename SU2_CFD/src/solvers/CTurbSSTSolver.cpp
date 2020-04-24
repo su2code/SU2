@@ -663,7 +663,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[Point_Normal]->GetCoord(),
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                               geometry->node[iPoint]->GetCoord());
       visc_numerics->SetNormal(Normal);
 

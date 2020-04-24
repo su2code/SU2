@@ -137,6 +137,9 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
       Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
     }
+    else {
+      proj_vector_ij = 1.0;
+    }
   }
 
   FinishResidualCalc(config);
@@ -265,7 +268,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[0][0] = diff_kine*proj_on_rho;   Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_omega*proj_on_rho;
 
-    if (correct_gradient) CorrectJacobian(config);
+    CorrectJacobian(config);
   }
 
 }
@@ -279,6 +282,11 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
     
     su2double jac_i[2] = {Jacobian_i[0][0], Jacobian_i[1][1]},
               jac_j[2] = {Jacobian_j[0][0], Jacobian_j[1][1]};
+    
+    if (!correct_gradient) {
+      Jacobian_i[0][0] = 0.; Jacobian_i[1][1] = 0.;
+      Jacobian_j[0][0] = 0.; Jacobian_j[1][1] = 0.;
+    }
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       const su2double weight_i = Normal[iDim]*halfOnVol_i;
