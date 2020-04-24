@@ -603,6 +603,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   unsigned short iVar, iDim;
 
   Normal = new su2double[nDim];
+  
+  CFluidModel *FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -633,7 +635,13 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       su2double Velocity2 = 0.;
       for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
       Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
-      Omega_Infty = V_infty[nDim+2]*Kine_Infty/(V_infty[nDim+6]);
+      const su2double Density = V_infty[nDim+2];
+      const su2double Energy = V_infty[nDim+3];
+      const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
+      GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+      V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+      V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+      Omega_Infty = Density*Kine_Infty/(V_infty[nDim+6]);
 
       Primitive_j[0] = Kine_Infty;
       Primitive_j[1] = Omega_Infty;

@@ -7232,8 +7232,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-//        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
         su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
