@@ -886,7 +886,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent;
   const su2double *Solution_Fine = nullptr;
-  bool sst = (config[iZone]->GetKind_Turb_Model() == SST) || (config[iZone]->GetKind_Turb_Model() == SST);
+  bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
