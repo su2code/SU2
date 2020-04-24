@@ -7028,6 +7028,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
+  su2double Kine_Infty = 0., Omega_Infty;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
 
@@ -7187,7 +7188,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) {
+        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+        Energy += Kine_Infty;
+      }
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -7225,9 +7230,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       if (viscous) {
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
+        su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
+        GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+        V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
 

@@ -599,6 +599,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
   unsigned short iVar, iDim;
+  const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
 
   Normal = new su2double[nDim];
 
@@ -623,9 +624,16 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
+      
+      su2double Velocity2 = 0.;
+      for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+      const su2double Density     = V_infty[nDim+2];
+      const su2double muT_Infty   = V_infty[nDim+6];
+      const su2double Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+      const su2double Omega_Infty = Density*Kine_Infty/(muT_Infty);
 
-      Primitive_j[0] = kine_Inf;
-      Primitive_j[1] = omega_Inf;
+      Primitive_j[0] = Kine_Infty;
+      Primitive_j[1] = Omega_Infty;
 
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
