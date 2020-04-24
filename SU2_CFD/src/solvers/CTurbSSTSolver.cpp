@@ -632,7 +632,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       Primitive_j[0] = kine_Inf;
-      Primitive_j[1] = kine_Inf;
+      Primitive_j[1] = omega_Inf;
 
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
