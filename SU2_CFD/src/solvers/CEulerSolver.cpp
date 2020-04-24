@@ -7027,7 +7027,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double Density_Infty, Pressure_Infty, Vel_Infty[3] = {0.0,0.0,0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
-  su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty, Kine_Infty = 0.;
+  su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
+  su2double Kine_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
 
@@ -7230,40 +7231,46 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+//        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+//        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
+        GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+        V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+        V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
         
-//        /*--- Set the normal vector and the coordinates ---*/
-//
-//        visc_numerics->SetNormal(Normal);
+        /*--- Set the normal vector and the coordinates ---*/
+
+        visc_numerics->SetNormal(Normal);
 //        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
 //                                geometry->node[Point_Normal]->GetCoord());
-//
-//        /*--- Primitive variables, and gradient ---*/
-//
-//        visc_numerics->SetPrimitive(V_domain, V_infty);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-//                                          nodes->GetGradient_Primitive(iPoint));
-//
-//        /*--- Turbulent kinetic energy ---*/
-//
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
-//
-//        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-//
-//        visc_numerics->SetTauWall(-1.0, -1.0);
-//
-//        /*--- Compute and update viscous residual ---*/
-//
-//        auto residual = visc_numerics->ComputeResidual(config);
-//        LinSysRes.SubtractBlock(iPoint, residual);
-//
-//        /*--- Viscous Jacobian contribution for implicit integration ---*/
-//
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                                geometry->node[iPoint]->GetCoord());
+
+        /*--- Primitive variables, and gradient ---*/
+
+        visc_numerics->SetPrimitive(V_domain, V_infty);
+        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                          nodes->GetGradient_Primitive(iPoint));
+
+        /*--- Turbulent kinetic energy ---*/
+
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+
+        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+
+        visc_numerics->SetTauWall(-1.0, -1.0);
+
+        /*--- Compute and update viscous residual ---*/
+
+        auto residual = visc_numerics->ComputeResidual(config);
+        LinSysRes.SubtractBlock(iPoint, residual);
+
+        /*--- Viscous Jacobian contribution for implicit integration ---*/
+
+        if (implicit)
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
 

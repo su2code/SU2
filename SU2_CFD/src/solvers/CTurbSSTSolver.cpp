@@ -600,7 +600,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   su2double *Normal, *V_infty, *V_domain;
   su2double Kine_Infty = 0., Omega_Infty = 0.;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-  const su2double MuL_Infty = config->GetViscosity_FreeStreamND();
   const su2double ViscRatio = config->GetTurb2LamViscRatio_FreeStream();
   unsigned short iVar, iDim;
 
@@ -635,8 +634,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       su2double Velocity2 = 0.;
       for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
       Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
-      Omega_Infty = V_infty[nDim+2]*Kine_Infty/(MuL_Infty*ViscRatio);
-      V_infty[nDim+6] = V_infty[nDim+2]*Kine_Infty/Omega_Infty;
+      Omega_Infty = V_infty[nDim+2]*Kine_Infty/(V_infty[nDim+5]*ViscRatio);
 
       Primitive_j[0] = Kine_Infty;
       Primitive_j[1] = Omega_Infty;
@@ -662,6 +660,28 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       LinSysRes.AddBlock(iPoint, residual);
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      
+      /*--- Viscous contribution ---*/
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                              geometry->node[iPoint]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+      visc_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+
+      /*--- Menter's first blending function ---*/
+      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
+
+      /*--- Compute residual, and Jacobians ---*/
+      auto visc_residual = visc_numerics->ComputeResidual(config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+      LinSysRes.SubtractBlock(iPoint, visc_residual);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
   }
