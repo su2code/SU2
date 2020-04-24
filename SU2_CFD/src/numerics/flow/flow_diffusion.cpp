@@ -740,7 +740,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 //      }
 //    } else {
       // const su2double dist_ij = sqrt(dist_ij_2);
-      if (!correct_gradient) proj_vector_ij = 1.0;
+      if (!correct_gradient) proj_vector_ij = Area;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
