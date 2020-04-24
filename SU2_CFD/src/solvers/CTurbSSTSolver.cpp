@@ -602,7 +602,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex, Point_Normal;
   su2double *Normal, *V_infty, *V_domain;
   unsigned short iVar, iDim;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
@@ -616,6 +616,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Index of the closest interior node ---*/
+
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Allocate the value at the infinity ---*/
 
@@ -659,7 +663,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+      visc_numerics->SetCoord(geometry->node[Point_Normal]->GetCoord(),
                               geometry->node[iPoint]->GetCoord());
       visc_numerics->SetNormal(Normal);
 
