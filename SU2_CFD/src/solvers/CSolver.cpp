@@ -2320,8 +2320,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {
 
-  /// TODO: Add OpenMP stuff to this method.
-
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
@@ -2364,6 +2362,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Check that we are meeting our nonlinear residual reduction target
      over time so that we do not get stuck in limit cycles. */
+
+    SU2_OMP_MASTER
+    { /* Only the master thread updates the shared variables. */
 
     Old_Func = New_Func;
     unsigned short Res_Count = 100;
@@ -2408,17 +2409,30 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      Reset the array so that we delay the next decrease for some iterations. */
 
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-      reduceCFL = true;
       NonLinRes_Counter = 0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
     }
 
+    } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+    SU2_OMP_BARRIER
+
+    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+      reduceCFL = true;
+    }
+
     /* Loop over all points on this grid and apply CFL adaption. */
 
-    su2double myCFLMin = 1e30;
-    su2double myCFLMax = 0.0;
-    su2double myCFLSum = 0.0;
+    su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+
+    SU2_OMP_MASTER
+    if (iMesh == MESH_0) {
+      Min_CFL_Local = 1e30;
+      Max_CFL_Local = 0.0;
+      Avg_CFL_Local = 0.0;
+    }
+
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
 
       /* Get the current local flow CFL number at this point. */
@@ -2476,20 +2490,37 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
       }
 
-      /* Store min and max CFL for reporting on fine grid. */
+      /* Store min and max CFL for reporting on the fine grid. */
 
-      myCFLMin = min(CFL,myCFLMin);
-      myCFLMax = max(CFL,myCFLMax);
-      myCFLSum += CFL;
+      if (iMesh == MESH_0) {
+        myCFLMin = min(CFL,myCFLMin);
+        myCFLMax = max(CFL,myCFLMax);
+        myCFLSum += CFL;
+      }
 
     }
 
     /* Reduce the min/max/avg local CFL numbers. */
 
-    SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
+    if (iMesh == MESH_0) {
+      SU2_OMP_CRITICAL
+      { /* OpenMP reduction. */
+        Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
+        Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
+        Avg_CFL_Local += myCFLSum;
+      }
+      SU2_OMP_BARRIER
+
+      SU2_OMP_MASTER
+      { /* MPI reduction. */
+        myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
+        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
+      }
+      SU2_OMP_BARRIER
+    }
 
   }
 
