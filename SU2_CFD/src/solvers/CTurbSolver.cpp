@@ -886,6 +886,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent;
   const su2double *Solution_Fine = nullptr;
+  bool sst = (config[iZone]->GetKind_Turb_Model() == SST) || (config[iZone]->GetKind_Turb_Model() == SST);
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
@@ -961,6 +962,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
   SU2_OMP_BARRIER
 
+  if (sst) solver[MESH_0][TURB_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TURB_SYS, false);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
