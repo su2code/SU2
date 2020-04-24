@@ -256,11 +256,12 @@ def read_mesh(mesh_name):
 def read_sol(solution_name, mesh):
     
     NbrVer = len(mesh['xyz'])
+    Dim    = mesh['dimension']
 
     Sol = []
     SolTag = []
     
-    amgio.py_ReadSol(solution_name, Sol, SolTag, NbrVer)
+    amgio.py_ReadSol(solution_name, Sol, SolTag, NbrVer, Dim)
         
     SolSiz = int(len(Sol)/NbrVer)
     Sol = np.array(Sol).reshape(NbrVer,SolSiz).tolist()
