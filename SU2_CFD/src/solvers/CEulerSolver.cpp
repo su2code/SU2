@@ -7246,7 +7246,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetNormal(Normal);
 //        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
 //                                geometry->node[Point_Normal]->GetCoord());
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+        visc_numerics->SetCoord(geometry->node[Point_Normal]->GetCoord(),
                                 geometry->node[iPoint]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
@@ -7257,9 +7257,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
+//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+        visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                            Kine_Infty);
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 

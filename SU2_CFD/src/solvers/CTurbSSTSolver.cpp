@@ -600,7 +600,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   su2double *Normal, *V_infty, *V_domain;
   su2double Kine_Infty = 0., Omega_Infty = 0.;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-  const su2double ViscRatio = config->GetTurb2LamViscRatio_FreeStream();
   unsigned short iVar, iDim;
 
   Normal = new su2double[nDim];
@@ -634,7 +633,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       su2double Velocity2 = 0.;
       for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
       Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
-      Omega_Infty = V_infty[nDim+2]*Kine_Infty/(V_infty[nDim+5]*ViscRatio);
+      Omega_Infty = V_infty[nDim+2]*Kine_Infty/(V_infty[nDim+6]);
 
       Primitive_j[0] = Kine_Infty;
       Primitive_j[1] = Omega_Infty;
