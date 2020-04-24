@@ -7202,6 +7202,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
+      V_infty[nDim+4] = SoundSpeed;
 
       /*--- Set various quantities in the numerics class ---*/
 
@@ -7237,6 +7238,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
         V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+        V_infty[nDim+7] = GetFluidModel()->GetThermalConductivity();
+        V_infty[nDim+8] = GetFluidModel()->GetCp();
         
         /*--- Set the normal vector and the coordinates ---*/
 
