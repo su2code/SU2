@@ -7265,6 +7265,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
         visc_numerics->SetTauWall(-1.0, -1.0);
+        
+        /*--- Set values for gradient Jacobian ---*/
+        
+        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                                 geometry->node[iPoint]->GetVolume());
 
         /*--- Compute and update viscous residual ---*/
 

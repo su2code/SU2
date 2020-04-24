@@ -678,6 +678,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Menter's first blending function ---*/
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
                                    nodes->GetF1blending(iPoint));
+      
+      /*--- Set values for gradient Jacobian ---*/
+      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                               geometry->node[iPoint]->GetVolume());
 
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);
