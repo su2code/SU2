@@ -2531,6 +2531,8 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
                               (config->GetKind_Upwind_Flow() == ROE ||
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2);
+  bool sst                  = (config->GetKind_Turb_Model() == SST) ||
+                              (config->GetKind_Turb_Model() == SST_SUST);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
@@ -2548,6 +2550,10 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+  if (sst) {
+    solver_container[FLOW_SOL]->InitiateComms(geometry, config, PRIMITIVE);
+    solver_container[FLOW_SOL]->CompleteComms(geometry, config, PRIMITIVE);
+  }
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     SU2_OMP_BARRIER
@@ -7231,7 +7237,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
         
-        su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
+        const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
 
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();

@@ -303,6 +303,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
+  
+  solver_container[TURB_SOL]->InitiateComms(geometry, config, PRIMITIVE);
+  solver_container[TURB_SOL]->CompleteComms(geometry, config, PRIMITIVE);
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -346,6 +349,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
+  
+  solver_container[TURB_SOL]->InitiateComms(geometry, config, PRIMITIVE);
+  solver_container[TURB_SOL]->CompleteComms(geometry, config, PRIMITIVE);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
