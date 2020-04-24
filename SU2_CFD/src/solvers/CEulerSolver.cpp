@@ -7034,7 +7034,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
-  su2double Kine_Infty = 0., Omega_Infty;
+  su2double Kine_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
 
@@ -11548,8 +11548,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local, Solution);
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
