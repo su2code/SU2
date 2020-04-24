@@ -7245,7 +7245,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Primitive variables, and gradient ---*/
 
-        visc_numerics->SetPrimitive(V_domain, V_infty);
+//        visc_numerics->SetPrimitive(V_domain, V_infty);
+        visc_numerics->SetPrimitive(V_domain, V_domain);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
 
