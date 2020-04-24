@@ -48,8 +48,6 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   Total_CFEA = 0.0;
   WAitken_Dyn = 0.0;
   WAitken_Dyn_tn1 = 0.0;
-  idxIncrement = 0;
-  loadIncrement = 1.0;
 
   element_container = new CElement** [MAX_TERMS]();
   for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
@@ -124,8 +122,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   Total_CFEA        = 0.0;
   WAitken_Dyn       = 0.0;
   WAitken_Dyn_tn1   = 0.0;
-  idxIncrement      = 0;
-  loadIncrement     = 0.0;
 
   SetFSI_ConvValue(0,0.0);
   SetFSI_ConvValue(1,0.0);
