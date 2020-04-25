@@ -132,6 +132,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   switch( config->GetKind_SGS_Model() ) {
     /* No LES, so no SGS model needed.
      Set the pointer to NULL and the boolean to false. */
+    case NO_SGS_MODEL: case IMPLICIT_LES:
+      SGSModel = NULL;
+      SGSModelUsed = false;
     case SMAGORINSKY:
       SGSModel     = new CSmagorinskyModel;
       SGSModelUsed = true;
