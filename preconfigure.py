@@ -3,20 +3,20 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.3 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -119,7 +119,9 @@ def main():
             conf_environ, made_codi  = init_codi(argument_dict,modes,options.mpi_enabled, options.update)
 
         if not options.inria_disabled:
-            made_inria  = init_inria(argument_dict,modes,options.update)
+            # Require at least python 3.7 for pyamg
+            if sys.version_info >= (3, 7):
+                made_inria  = init_inria(argument_dict,modes,options.update)
 
         configure(argument_dict,
                   conf_environ,
@@ -145,7 +147,6 @@ def prepare_source(replace = False, remove = False, revert = False):
                  "SU2_DOT",
                  "SU2_GEO",
                  "SU2_SOL",
-                 "SU2_MET",
                  "SU2_MSH"]
 
     file_list = ""
@@ -341,13 +342,12 @@ def init_inria(argument_dict, modes, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_amg = '0abd5b88a760736e6e5f2966c101a3d263ea030d'
+    sha_version_amg = '902e7cca802ac94428af00adc80855552db92998'
     github_repo_amg = 'https://github.com/bmunguia/AMGIO'
 
-    amg_name = 'amg'
+    amg_name = 'AMGIO'
 
     alt_name_amg = 'externals/AMGIO'
-    alt_name_amgint  = 'SU2_PY/SU2/amginria'
 
     # Some log and error files
     log = open( 'preconf_inria.log', 'w' )
@@ -365,28 +365,33 @@ def init_inria(argument_dict, modes, update = False):
     submodule_check(amg_name, alt_name_amg, github_repo_amg, sha_version_amg, log, err, update)
 
     # Setup AMG interface
-    subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
+    import pkg_resources
+    required = {'pyamg','_amgio'}
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = required - installed
+
+    if '_amgio' in missing:
+        print('Installing _amgio.')
+        cmd = sys.executable
+        amg_ext_dir  = alt_name_amg + '/su2io'
+        subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
+        subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
 
     # Install pyAMG
-    try:
-        import pyamg
-    except ImportError:
+    if 'pyamg' in missing:
         if sys.platform == 'linux' or sys.platform == 'linux2':
             print('Installing pyAMG for Linux.')
-            import sysconfig
-            if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
-                pyamg_whl = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
-            else:
-                pyamg_whl = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
+            pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
 
         elif sys.platform == 'darwin':
             print('Installing pyAMG for Mac.')
-            pyamg_whl = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
-          
+            pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
+
+        pyamg_whl = alt_name_amg + '/pyamg/Python3/' + pyamg_whl
         try:
-            subprocess.check_call('pip install --user externals/AMGIO/pyamg/Python2/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-            log.close()
-            err.close()
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--user', pyamg_whl], stdout=log, stderr = err)
+          log.close()
+          err.close()
         except:
             print('pyAMG installation failed')
 
@@ -551,7 +556,6 @@ def configure(argument_dict,
               '\tSU2_DEF            -> Mesh Deformation Code.\n'  \
               '\tSU2_MSH            -> Mesh Adaption Code.\n' \
               '\tSU2_SOL            -> Solution Export Code.\n' \
-              '\tSU2_MET            -> Metric Computation Code.\n' \
               '\tSU2_GEO            -> Geometry Definition Code.\n')
     if modes['SU2_AD']:
         print('\tSU2_CFD_AD         -> Discrete Adjoint Solver and general AD support.')
@@ -627,7 +631,7 @@ def header():
 
     print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 6.2.0 \'Falcon\'                            | \n'\
+          '|   / __| | | |_  )   Release 7.0.2 \'Blackbird\'                         | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -646,7 +650,7 @@ def header():
           '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       | \n'\
+          '| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       | \n'\
           '|                      Tim Albring, and the SU2 contributors.           | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\

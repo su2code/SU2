@@ -277,7 +277,7 @@ enum { FLUSH, FLUSH_CLOSE };
 
     /** Assumed machine variable sizes for the currently supported
         machines. For ordering of data see the Figure_Machine_Format
-	function.  Note that when openning a new file not in the machine
+	function.  Note that when opening a new file not in the machine
 	format these are the sizes used!! **/
 enum { TO_FILE_FORMAT, FROM_FILE_FORMAT } ;
 #define NUMBER_KNOWN_MACHINES 5
@@ -377,7 +377,7 @@ void	ADFI_ASCII_Hex_2_unsigned_int(
 unsigned int	i,	/** Index from 0 to string_length - 1 **/
 		ir,	/** Index from string_length - 1 to 0 **/
 		j,	/** Temoprary integer variable **/
-		num ;	/** Working value of ther number **/
+		num ;	/** Working value of the number **/
 
 if( string == NULL ) {
    *error_return = NULL_STRING_POINTER ;
@@ -857,7 +857,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -870,7 +870,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: 23-bit mantissa, 8-bit exponent, sign-bit
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -999,7 +999,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -1013,7 +1013,7 @@ R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
 Note: Exponent sign:  1 in this bits indicates a positive exponent sign,
    thus bit 62 is the inverse of bit 61 (the sign in the exponent).
    The exception to this is a zero, in which all 64 bits are zero!
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> .mantissia(fraction) X 2^exponent. <<<
    The mantissia is left justified (the leftmost bit is a 1).
      This MUST be done!
@@ -1277,7 +1277,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -1290,7 +1290,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: 23-bit mantissa, 8-bit exponent, sign-bit
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -1841,7 +1841,7 @@ for( i=0; i<MIN( new_length, ADF_NAME_LENGTH ); i++ ) {
    } /* end for */
 
 	/** Name mattched for the length of the new name.
-	    The existing node name must only contian blanks from here
+	    The existing node name must only contain blanks from here
 	**/
 for( ; i<ADF_NAME_LENGTH; i++ ) {
    if( name[i] != ' ' ) {
@@ -1892,7 +1892,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -1905,7 +1905,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: 23-bit mantissa, 8-bit exponent, sign-bit
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -1919,7 +1919,7 @@ R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
 Note: Exponent sign:  1 in this bits indicates a positive exponent sign,
    thus bit 62 is the inverse of bit 61 (the sign in the exponent).
    The exception to this is a zero, in which all 64 bits are zero!
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> .mantissia(fraction) X 2^exponent. <<<
    The mantissia is left justified (the leftmost bit is a 1).
      This MUST be done!
@@ -2148,7 +2148,7 @@ if( (ndim <= 0) || (ndim > 12) ) {
 
 *error_return = NO_ERROR ;
 
-	/** Chek the inputs **/
+	/** Check the inputs **/
 for( i=0; i<ndim; i++ ) {
 
 	/** Check dims[] >=1 **/
@@ -2230,7 +2230,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -2244,7 +2244,7 @@ R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
 Note: Exponent sign:  1 in this bits indicates a positive exponent sign,
    thus bit 62 is the inverse of bit 61 (the sign in the exponent).
    The exception to this is a zero, in which all 64 bits are zero!
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> .mantissia(fraction) X 2^exponent. <<<
    The mantissia is left justified (the leftmost bit is a 1).
      This MUST be done!
@@ -2484,7 +2484,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -2498,7 +2498,7 @@ R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
 Note: Exponent sign:  1 in this bits indicates a positive exponent sign,
    thus bit 62 is the inverse of bit 61 (the sign in the exponent).
    The exception to this is a zero, in which all 64 bits are zero!
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> .mantissia(fraction) X 2^exponent. <<<
    The mantissia is left justified (the leftmost bit is a 1).
      This MUST be done!
@@ -3603,8 +3603,8 @@ if( OK == TRUE ) {
    if( sizeof( double )		!= machine_sizes[i][10] ) OK = FALSE ;
 /* This causes the machine type to not be detected on 64-bit Windows
  * since ints and longs are still 32-bit (IEEE_LITTLE_32_FORMAT),
- * but pointers are 64-bit instead of 32-bit. I dont think it's
- * neccessary to check pointer sizes, since pointers are read or
+ * but pointers are 64-bit instead of 32-bit. I don't think it's
+ * necessary to check pointer sizes, since pointers are read or
  * written to the file - Bruce */
 #if 0
    if( sizeof( char * )		!= machine_sizes[i][11] ) OK = FALSE ;
@@ -3706,7 +3706,7 @@ void  ADFI_file_and_machine_compare(
    } else if( ADF_file[file_index].format  == ADF_this_machine_format ) {
         /** If the file and machine binary type are the same and only the
 	    sizes may be different (like long is 32 or 64), then if all the
-	    sizes are the same then no converion is necessary and ws can avoid
+	    sizes are the same then no conversion is necessary and ws can avoid
 	    the conversion overhead and just do direct read/writes. **/
       if ( tokenized_data_type == NULL ) return ;
       token = -1 ;
@@ -4348,7 +4348,7 @@ if( memory_found != TRUE ) { /* Append memory at end of file **/
 	see if the new allocated chunk will span a block boundary.
 	If it will, then start at the new block if it will fit within
 	the block. This helps efficiency to have file control headers
-        located within a block boundry.
+        located within a block boundary.
 	**/
    if( file_header.end_of_file.offset != DISK_BLOCK_SIZE - 1 ) {
       if( (file_header.end_of_file.offset+size_bytes) >= DISK_BLOCK_SIZE  &&
@@ -5033,7 +5033,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -5046,7 +5046,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: 23-bit mantissa, 8-bit exponent, sign-bit
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -5175,7 +5175,7 @@ I4:	Byte0	Byte1	Byte2	Byte3
 R4:	Byte0	Byte1	Byte2	Byte3
     Bits: sign-bit, 8-bit exponent, 23-bit mantissa
     The sign of the exponent is:  1=positive, 0=negative (NOT 2's complement)
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> 2.mantissia(fraction) X 2^exponent. <<<
 
 R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
@@ -5189,7 +5189,7 @@ R8:	Byte0	Byte1	Byte2	Byte 3	Byte 4	Byte5	Byte6	Byte7
 Note: Exponent sign:  1 in this bits indicates a positive exponent sign,
    thus bit 62 is the inverse of bit 61 (the sign in the exponent).
    The exception to this is a zero, in which all 64 bits are zero!
-    The interpreation of the floating-point number is:
+    The interpretation of the floating-point number is:
 	>>> .mantissia(fraction) X 2^exponent. <<<
    The mantissia is left justified (the leftmost bit is a 1).
      This MUST be done!
@@ -5592,7 +5592,7 @@ ADFI read chunk length:
 	If NOT variable, then determine what type of chunk it is
 	and return a pointer to the end_of_chunk-tag:
 
-	If the incomming pointers are 0 0, then we are looking
+	If the incoming pointers are 0 0, then we are looking
 	at the file header.
 
 input:  const unsigned int file_index	The file index.
@@ -7254,7 +7254,7 @@ if( ((int)file_index >= maximum_files || ADF_file[file_index].in_use == 0) &&
 	     return NO_ERROR;
 	   } /* end if */
 	   else {
-	     /* Type dosn't match so delete the bad entry */
+	     /* Type doesn't match so delete the bad entry */
 	     free(PRISTK[i].stack_data);
 	     PRISTK[i].file_index     = -1;
 	     PRISTK[i].file_block     = 0;
@@ -7460,7 +7460,7 @@ void	ADFI_unsigned_int_2_ASCII_Hex(
 unsigned int	i,	/** Index from 0 to string_length - 1 **/
 		ir,	/** Index from string_length - 1 to 0 **/
 		j,	/** Temoprary integer variable **/
-		num ;	/** Working value of ther number **/
+		num ;	/** Working value of the number **/
 
 if( string == NULL ) {
    *error_return = NULL_STRING_POINTER ;
@@ -8000,7 +8000,7 @@ if( (int)file_index >= maximum_files || ADF_file[file_index].in_use == 0 ) {
 *error_return = NO_ERROR ;
 
      /** If the read buffer overlaps the buffer then reset it to make
-         sure its currrent **/
+         sure its current **/
 
 end_block = file_block+(block_offset+data_length)/DISK_BLOCK_SIZE+1;
 if ( last_rd_file == (int) file_index && last_rd_block >= (cglong_t) file_block &&
@@ -8035,7 +8035,7 @@ if( ( (cgulong_t) data_length + block_offset > DISK_BLOCK_SIZE ||
    } /* end if */
 
      /** If the write buffer overlaps the buffer then reset it to make
-         sure its currrent, set flush buffer flag to false. **/
+         sure its current, set flush buffer flag to false. **/
    if ( last_wr_file == (int) file_index && last_wr_block >= (cglong_t) file_block &&
        last_wr_block <= (cglong_t) end_block ) {
       last_wr_block = -2;
@@ -8067,7 +8067,7 @@ if( data_length + block_offset > DISK_BLOCK_SIZE ) {
 } /* end if */
 
     /** For smaller pieces of data, write a block at a time.  This will improve
-        performance if neighboring data is writen a small piece at a time
+        performance if neighboring data is written a small piece at a time
         (strided reads, file overhead).
 
         Some assumptions apply to the block size.  With some experimenting,
@@ -8910,14 +8910,14 @@ ADFI_stack_control(file_index, block_offset->block,
 /* file ADFI_strtok.c */
 /***********************************************************************
 ADFI get string token: This routine simulates strtok except it returns the
-current postion in the string tobe used later. Thas avoids the problem of
-trying using strtok in a recrusive subroutine call which does not work!
+current position in the string tobe used later. Thas avoids the problem of
+trying using strtok in a recursive subroutine call which does not work!
 
 input/output:  *string     - the string to parse tokens from.
                              returns string with token replaced by nil.
 input/output:  *string_pos - the string position to begin parsing should
                              be placed at the beginning of the string.
-                             returns postion after last token to continue
+                             returns position after last token to continue
 			     string parsing. Token may change from last call.
 input:         *token      - The token to search for.
 function return:           - a pointer to the desired substring.
@@ -8954,7 +8954,7 @@ char   *ADFI_strtok(
      } /* end while */
   if ( string_len == 0 ) return NULL ;
 
-  /* Set the begining fof the sub string */
+  /* Set the beginning of the sub string */
   sub_string = tmp_ptr ;
 
   /* Find the next token or the end of the string */

@@ -3,30 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.2.0 "Falcon"
+# \version 7.0.3 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -64,36 +54,53 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
   ../src/fluid_model_inc.cpp \
-  ../src/integration_structure.cpp \
-  ../src/integration_time.cpp \
+  ../src/integration/CIntegration.cpp \
+  ../src/integration/CSingleGridIntegration.cpp \
+  ../src/integration/CMultiGridIntegration.cpp \
+  ../src/integration/CStructuralIntegration.cpp \
+  ../src/integration/CFEM_DG_Integration.cpp \
+  ../src/integration/CIntegrationFactory.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjMultizoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
-  ../src/drivers/CErrorEstimationDriver.cpp \
   ../src/iteration_structure.cpp \
-  ../src/numerics_adjoint_mean.cpp \
-  ../src/numerics_adjoint_turbulent.cpp \
-  ../src/numerics_direct_heat.cpp \
-  ../src/numerics_direct_mean.cpp \
-  ../src/numerics_direct_mean_inc.cpp \
-  ../src/numerics_direct_transition.cpp \
-  ../src/numerics_direct_turbulent.cpp \
-  ../src/numerics_direct_elasticity_nonlinear.cpp \
-  ../src/numerics_direct_elasticity_linear.cpp \
-  ../src/numerics_direct_elasticity.cpp \
-  ../src/numerics/CFEAMeshElasticity.cpp \
-  ../src/numerics_structure.cpp \
-  ../src/numerics_template.cpp \
+  ../src/numerics/CNumerics.cpp \
+  ../src/numerics/template.cpp \
+  ../src/numerics/transition.cpp \
+  ../src/numerics/heat.cpp \
+  ../src/numerics/radiation.cpp \
+  ../src/numerics/flow/convection/roe.cpp \
+  ../src/numerics/flow/convection/fds.cpp \
+  ../src/numerics/flow/convection/fvs.cpp \
+  ../src/numerics/flow/convection/cusp.cpp \
+  ../src/numerics/flow/convection/hllc.cpp \
+  ../src/numerics/flow/convection/ausm_slau.cpp \
+  ../src/numerics/flow/convection/centered.cpp \
+  ../src/numerics/flow/flow_diffusion.cpp \
+  ../src/numerics/flow/flow_sources.cpp \
+  ../src/numerics/continuous_adjoint/adj_convection.cpp \
+  ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
+  ../src/numerics/continuous_adjoint/adj_sources.cpp \
+  ../src/numerics/turbulent/turb_convection.cpp \
+  ../src/numerics/turbulent/turb_diffusion.cpp \
+  ../src/numerics/turbulent/turb_sources.cpp \
+  ../src/numerics/elasticity/CFEAElasticity.cpp \
+  ../src/numerics/elasticity/CFEALinearElasticity.cpp \
+  ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
+  ../src/numerics/elasticity/nonlinear_models.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
+  ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
   ../src/output/filewriter/CFVMDataSorter.cpp \
   ../src/output/filewriter/CInriaFileWriter.cpp \
   ../src/output/filewriter/CParallelDataSorter.cpp \
   ../src/output/filewriter/CParallelFileWriter.cpp \
   ../src/output/filewriter/CParaviewBinaryFileWriter.cpp \
+  ../src/output/filewriter/CParaviewXMLFileWriter.cpp \
+  ../src/output/filewriter/CParaviewVTMFileWriter.cpp \
   ../src/output/filewriter/CParaviewFileWriter.cpp \
   ../src/output/filewriter/CSurfaceFEMDataSorter.cpp \
   ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
@@ -102,6 +109,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CSU2MeshFileWriter.cpp \
   ../src/output/filewriter/CTecplotFileWriter.cpp \
   ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
+  ../src/output/tools/CWindowingTools.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
   ../src/output/CMeshOutput.cpp \
@@ -117,23 +125,37 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
+  ../src/output/COutputFactory.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
-  ../src/solver_adjoint_mean.cpp \
-  ../src/solver_adjoint_turbulent.cpp \
-  ../src/solver_adjoint_discrete.cpp \
-  ../src/solver_adjoint_elasticity.cpp \
+  ../src/solvers/CAdjEulerSolver.cpp \
+  ../src/solvers/CAdjNSSolver.cpp \
+  ../src/solvers/CAdjTurbSolver.cpp \
+  ../src/solvers/CBaselineSolver.cpp \
+  ../src/solvers/CBaselineSolver_FEM.cpp \
+  ../src/solvers/CDiscAdjFEASolver.cpp \
   ../src/solvers/CDiscAdjMeshSolver.cpp \
-  ../src/solver_direct_heat.cpp \
-  ../src/solver_direct_mean.cpp \
-  ../src/solver_direct_mean_fem.cpp \
-  ../src/solver_direct_mean_inc.cpp \
-  ../src/solver_direct_transition.cpp \
-  ../src/solver_direct_turbulent.cpp \
-  ../src/solver_direct_elasticity.cpp \
+  ../src/solvers/CDiscAdjSolver.cpp \
+  ../src/solvers/CEulerSolver.cpp \
+  ../src/solvers/CFEASolver.cpp \
+  ../src/solvers/CFEM_DG_EulerSolver.cpp \
+  ../src/solvers/CFEM_DG_NSSolver.cpp \
+  ../src/solvers/CHeatSolver.cpp \
+  ../src/solvers/CIncEulerSolver.cpp \
+  ../src/solvers/CIncNSSolver.cpp \
   ../src/solvers/CMeshSolver.cpp \
-  ../src/solver_structure.cpp \
-  ../src/solver_template.cpp \
+  ../src/solvers/CRadSolver.cpp \
+  ../src/solvers/CRadP1Solver.cpp \
+  ../src/solvers/CNSSolver.cpp \
+  ../src/solvers/CSolver.cpp \
+  ../src/solvers/CTemplateSolver.cpp \
+  ../src/solvers/CTransLMSolver.cpp \
+  ../src/solvers/CTurbSolver.cpp \
+  ../src/solvers/CTurbSASolver.cpp \
+  ../src/solvers/CTurbSSTSolver.cpp \
+  ../src/solvers/CSolverFactory.cpp \
+  ../src/limiters/CLimiterDetails.cpp \
+  ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
   ../src/interfaces/cfd/CMixingPlaneInterface.cpp \
@@ -142,15 +164,15 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDisplacementsInterface.cpp \
   ../src/interfaces/fsi/CFlowTractionInterface.cpp \
   ../src/interfaces/fsi/CDiscAdjFlowTractionInterface.cpp \
-  ../src/interfaces/fsi/CDisplacementsInterfaceLegacy.cpp \
-  ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEABoundVariable.cpp \
+  ../src/variables/CRadVariable.cpp \
+  ../src/variables/CRadP1Variable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
   ../src/variables/CMeshVariable.cpp \
-  ../src/variables/CHeatFVMVariable.cpp \
+  ../src/variables/CHeatVariable.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
@@ -170,7 +192,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CEulerVariable.cpp
 
 su2_cfd_sources = \
-  ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC -std=c++11

@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 6.2.0 "Falcon"
+# \version 7.0.3 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -49,6 +49,7 @@ bin_SCRIPTS = \
     package_tests.py \
     shape_optimization.py \
     merge_solution.py \
+    set_corner_points.py \
     set_ffd_design_var.py \
     compute_polar.py \
     compute_multipoint.py \
@@ -61,8 +62,6 @@ bin_SCRIPTS = \
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA= \
     SU2/__init__.py \
-    SU2/amginria/_amgio.py \
-    SU2/amginria/_amgio.so \
     SU2/amginria/interface.py \
     SU2/amginria/tools.py \
     SU2/amginria/__init__.py \

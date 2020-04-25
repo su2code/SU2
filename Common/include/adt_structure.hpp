@@ -4,24 +4,14 @@
  *        alternating digital tree (ADT).
  *        The subroutines and functions are in the <i>adt_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +30,7 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <cmath>
@@ -96,7 +87,7 @@ private:
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  */
 class CBBoxTargetClass {
 public:
@@ -332,7 +323,7 @@ private:
  * \class CADTElemClass
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  */
 class CADTElemClass : public CADTBaseClass {
 private:
@@ -420,7 +411,8 @@ public:
                                su2double       &dist,
                                unsigned short  &markerID,
                                unsigned long   &elemID,
-                               int             &rankID);
+                               int             &rankID,
+                               su2double       *weightsInterpol);
 private:
 
   /*!
@@ -596,7 +588,8 @@ private:
    */
   void Dist2ToElement(const unsigned long elemID,
                       const su2double     *coor,
-                      su2double           &dist2Elem);
+                      su2double           &dist2Elem,
+                      su2double           *weightsInterpol);
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
@@ -610,7 +603,8 @@ private:
   void Dist2ToLine(const unsigned long i0,
                    const unsigned long i1,
                    const su2double     *coor,
-                   su2double           &dist2Line);
+                   su2double           &dist2Line,
+                   su2double           *weightsInterpol);
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
@@ -636,7 +630,8 @@ private:
                             const su2double     *coor,
                             su2double           &r,
                             su2double           &s,
-                            su2double           &dist2Quad);
+                            su2double           &dist2Quad,
+                            su2double           *weightsInterpol);
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear triangular element if the projection is inside the triangle.
@@ -658,7 +653,8 @@ private:
                        const su2double     *coor,
                        su2double           &dist2Tria,
                        su2double           &r,
-                       su2double           &s);
+                       su2double           &s,
+                       su2double           *weightsInterpol);
   /*!
    * \brief Default constructor of the class, disabled.
    */

@@ -1,12 +1,17 @@
 tec_cxx_flags = ['-fpermissive', '-DUSEENUM','-DTECIOMPI', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS', '-DTP_PROJECT_USES_BOOST', '-DBOOST_ALL_NO_LIB']
 
-if (build_machine.system() == 'darwin')
+if (host_machine.system() == 'darwin')
   tec_cxx_flags += ['-DDARWIN', '-DMAC64']
 endif
 
-if (build_machine.system() == 'linux')
+if (host_machine.system() == 'linux')
   tec_cxx_flags += ['-DLINUX', '-DLINUX64']
 endif
+
+if (host_machine.system() == 'windows')
+  tec_cxx_flags += ['-DMSWIN']
+endif
+
 
 teciompi_include = include_directories(['../', './'])
 

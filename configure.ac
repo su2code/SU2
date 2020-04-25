@@ -3,30 +3,20 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 6.2.0 "Falcon"
+# \version 7.0.3 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -121,9 +111,6 @@ AC_ARG_ENABLE(DEF,
 AC_ARG_ENABLE(SOL,
    	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]),
 	[build_SOL=$enableval], [build_SOL="yes"])
-AC_ARG_ENABLE(MET,
-    AS_HELP_STRING([--disable-], [build the SU2_MET executable (default = no)]),
-    [build_MET=$enableval], [build_MET="no"])
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
@@ -358,7 +345,6 @@ AC_OUTPUT(Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \
 	SU2_SOL/obj/Makefile \
-  SU2_MET/obj/Makefile \
 	SU2_GEO/obj/Makefile \
 	SU2_PY/Makefile \
 	SU2_PY/pySU2/Makefile)
@@ -390,7 +376,7 @@ AC_MSG_RESULT([
 | - Prof. Edwin van der Weide's group at the University of Twente.      |
 | - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |
 -------------------------------------------------------------------------
-| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |
+| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       |
 |                      Tim Albring, and the SU2 contributors.           |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
@@ -439,7 +425,6 @@ Build Configuration Summary:
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
-    Build SU2_MET:        $build_MET
     Build SU2_GEO:        $build_GEO
     Build Py Wrapper:     $build_PY_WRAPPER
 

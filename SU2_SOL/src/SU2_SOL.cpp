@@ -2,24 +2,14 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,20 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../include/SU2_SOL.hpp"
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  unsigned short iZone, nZone = SINGLE_ZONE, iInst;
+  unsigned short iZone, iInst;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 
   char config_file_name[MAX_STRING_SIZE];
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  bool fem_solver = false;
-  bool multizone = false;
 
   /*--- MPI initialization ---*/
 
@@ -59,12 +46,12 @@ int main(int argc, char *argv[]) {
   SU2_Comm MPICommunicator(0);
 #endif
 
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
+  const int rank = SU2_MPI::GetRank();
+  const int size = SU2_MPI::GetSize();
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
-  COutput **output                 = NULL;
+  COutput **output                = NULL;
   CGeometry ***geometry_container = NULL;
   CSolver ***solver_container     = NULL;
   CConfig **config_container      = NULL;
@@ -80,23 +67,19 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_SOL);
 
-  nZone = config->GetnZone();
+  const auto nZone = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
 
-  solver_container = new CSolver**[nZone];
-  config_container = new CConfig*[nZone];
-  geometry_container = new CGeometry**[nZone];
+  solver_container = new CSolver**[nZone] ();
+  config_container = new CConfig*[nZone] ();
+  geometry_container = new CGeometry**[nZone] ();
   nInst = new unsigned short[nZone];
   driver_config = NULL;
-  output   = new COutput*[nZone];
-  
+  output = new COutput*[nZone] ();
+
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone]       = NULL;
-    config_container[iZone]       = NULL;
-    geometry_container[iZone]     = NULL;
-    nInst[iZone]                  = 1;
-    output[iZone]                 = NULL;
+    nInst[iZone] = 1;
   }
 
   /*--- Initialize the configuration of the driver ---*/
@@ -106,7 +89,7 @@ int main(int argc, char *argv[]) {
   char zone_file_name[MAX_STRING_SIZE];
 
   /*--- Store a boolean for multizone problems ---*/
-  multizone = (config->GetMultizone_Problem());
+  const bool multizone = config->GetMultizone_Problem();
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -131,7 +114,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Set the multizone part of the problem. ---*/
-  if (config->GetMultizone_Problem()){
+  if (multizone) {
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
@@ -143,13 +126,7 @@ int main(int argc, char *argv[]) {
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
-    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)          ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)           ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_LES)            ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+    const bool fem_solver = config_container[iZone]->GetFEMSolver();
 
     /*--- Read the number of instances for each zone ---*/
 
@@ -178,8 +155,7 @@ int main(int argc, char *argv[]) {
       if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
       else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-      /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
+      /*--- Allocate the memory of the current domain, and divide the grid between the nodes ---*/
 
       geometry_container[iZone][iInst] = NULL;
 
@@ -204,7 +180,7 @@ int main(int argc, char *argv[]) {
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
-      
+
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
@@ -220,9 +196,9 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone][iInst]->SetGlobal_to_Local_Point();
 
       /*--- Create the point-to-point MPI communication structures for the fvm solver. ---*/
-      
+
       if (!fem_solver) geometry_container[iZone][iInst]->PreprocessP2PComms(geometry_container[iZone][iInst], config_container[iZone]);
-      
+
       /* Test for a fem solver, because some more work must be done. */
 
       if (fem_solver) {
@@ -244,27 +220,20 @@ int main(int argc, char *argv[]) {
 
   }
 
-  /*--- Determine whether the simulation is a FSI simulation ---*/
-
-  bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  const bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  const bool fem_solver = config_container[ZONE_0]->GetFEMSolver();
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
-#ifdef HAVE_MPI
-  StartTime = MPI_Wtime();
-#else
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
-  
+
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
 
-  if (multizone){
-    
-
+  if (multizone) {
 
     bool TimeDomain = driver_config->GetTime_Domain();
 
@@ -287,11 +256,11 @@ int main(int argc, char *argv[]) {
         config_container[iZone]->SetiInst(INST_0);
         config_container[iZone]->SetTimeIter(TimeIter);
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
-        
+
         output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
         output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
         output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
-        
+
       }
 
       /*--- Loop over the whole time domain ---*/
@@ -318,11 +287,11 @@ int main(int argc, char *argv[]) {
             solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], TimeIter, true);
           }
 
-          
+
           for (iZone = 0; iZone < nZone; iZone++){
-            
+
             WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
-            
+
           }
         }
 
@@ -341,12 +310,12 @@ int main(int argc, char *argv[]) {
         output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
         output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
         output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
-      
+
       }
       for (iZone = 0; iZone < nZone; iZone++){
-        
-        WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);      
-        
+
+        WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);
+
       }
     }
 
@@ -419,7 +388,7 @@ int main(int argc, char *argv[]) {
           output[ZONE_0] = new CBaselineOutput(config_container[ZONE_0], geometry_container[ZONE_0][INST_0]->GetnDim(), solver_container[ZONE_0][INST_0]);
           output[ZONE_0]->PreprocessVolumeOutput(config_container[ZONE_0]);
           output[ZONE_0]->PreprocessHistoryOutput(config_container[ZONE_0], false);
-         
+
           SolutionInstantiatedFlow = true;
         }
           solver_container[ZONE_0][INST_0]->LoadRestart_FSI(geometry_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
@@ -441,9 +410,9 @@ int main(int argc, char *argv[]) {
 
         if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
         for (iZone = 0; iZone < nZone; iZone++){
-          
+
           WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
-          
+
         }
       }
 
@@ -510,18 +479,18 @@ int main(int argc, char *argv[]) {
 
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
-              
+
               for (iZone = 0; iZone < nZone; iZone++){
-                
+
                 WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
-                
+
               }
         }
-        
+
         TimeIter++;
         if (StopCalc) break;
       }
-      
+
     } else {
 
     /*--- Steady simulation: merge the single solution file. ---*/
@@ -535,14 +504,14 @@ int main(int argc, char *argv[]) {
       output[iZone]->PreprocessHistoryOutput(config_container[ZONE_0], false);
       solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], 0, true);
     }
-    
+
     for (iZone = 0; iZone < nZone; iZone++){
-      
+
       WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);
-      
-    }   
+
     }
-    
+    }
+
   }
   else {
 
@@ -597,23 +566,23 @@ int main(int argc, char *argv[]) {
                   output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
                   output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
                   output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
-                  
+
                   SolutionInstantiated[iZone] = true;
                 }
                   config_container[iZone]->SetiInst(INST_0);
                   solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], TimeIter, true);
               }
-              
+
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
-              
+
               for (iZone = 0; iZone < nZone; iZone++){
-                
+
                 WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
-                
-              } 
-              
-              
+
+              }
+
+
         }
 
         TimeIter++;
@@ -635,7 +604,7 @@ int main(int argc, char *argv[]) {
           /*--- Either instantiate the solution class or load a restart file. ---*/
           solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
           solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], iInst, true);
-          output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst]->GetnDim(), solver_container[iZone][iInst]);          
+          output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst]->GetnDim(), solver_container[iZone][iInst]);
           output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
           output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
 
@@ -644,13 +613,8 @@ int main(int argc, char *argv[]) {
             cout << "Storing the volume solution for time instance " << iInst << "." << endl;
           }
 
-          for (iZone = 0; iZone < nZone; iZone++){
-            
-            WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], iInst);
-            
-          } 
-          
-          
+          WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], iInst);
+
         }
 
       }
@@ -705,7 +669,7 @@ int main(int argc, char *argv[]) {
                   output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
                   output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
                   output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
-                  
+
                   SolutionInstantiated = true;
                 }
                 config_container[iZone]->SetiInst(INST_0);
@@ -715,22 +679,22 @@ int main(int argc, char *argv[]) {
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
               for (iZone = 0; iZone < nZone; iZone++){
-                
+
                 WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], TimeIter);
-                
-              }        
+
+              }
         }
-        
+
         TimeIter++;
         if (StopCalc) break;
       }
-      
+
 		  }
-    
+
     else {
 
       /*--- Steady simulation: merge the single solution file. ---*/
-      
+
       for (iZone = 0; iZone < nZone; iZone++) {
         config_container[iZone]->SetiInst(INST_0);
         /*--- Definition of the solution class ---*/
@@ -739,23 +703,23 @@ int main(int argc, char *argv[]) {
         output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
         output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
         output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
-        
+
       }
       for (iZone = 0; iZone < nZone; iZone++){
-        
+
         WriteFiles(config_container[iZone], geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], output[iZone], 0);
-        
-      }  
+
+      }
     }
-    
+
   }
-  
+
   delete config;
   config = NULL;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
-  
+
   if (geometry_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -769,7 +733,7 @@ int main(int argc, char *argv[]) {
     delete [] geometry_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
-  
+
   if (solver_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -783,7 +747,7 @@ int main(int argc, char *argv[]) {
     delete [] solver_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
-  
+
   if (config_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone] != NULL) {
@@ -793,7 +757,7 @@ int main(int argc, char *argv[]) {
     delete [] config_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-  
+
   if (output != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (output[iZone] != NULL) {
@@ -803,54 +767,50 @@ int main(int argc, char *argv[]) {
     delete [] output;
   }
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
-  
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
-  
-#ifdef HAVE_MPI
-  StopTime = MPI_Wtime();
-#else
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
-  
+
+  StopTime = SU2_MPI::Wtime();
+
   /*--- Compute/print the total time for performance benchmarking. ---*/
-  
+
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
     cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
-  
+
   /*--- Exit the solver cleanly ---*/
-  
+
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_SOL) ------------------------" << endl << endl;
-  
+
   /*--- Finalize MPI parallelization ---*/
-  
+
 #ifdef HAVE_MPI
   SU2_MPI::Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
 }
 
 void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput *output, unsigned long TimeIter){
-  
+
   /*--- Load history data (volume output might require some values) --- */
-  
+
   output->SetHistory_Output(geometry, solver_container, config, TimeIter, 0, 0);
-  
+
   /*--- Load the data --- */
-  
+
   output->Load_Data(geometry, config, solver_container);
-  
+
   /*--- Set the filenames ---*/
-  
+
   output->SetVolume_Filename(config->GetVolume_FileName());
-  
+
   output->SetSurface_Filename(config->GetSurfCoeff_FileName());
-  
+
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
     unsigned short* FileFormat = config->GetVolumeOutputFiles();
     if (FileFormat[iFile] != RESTART_ASCII &&
@@ -858,5 +818,5 @@ void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container
         FileFormat[iFile] != CSV)
       output->WriteToFile(config, geometry, FileFormat[iFile]);
   }
-  
+
 }

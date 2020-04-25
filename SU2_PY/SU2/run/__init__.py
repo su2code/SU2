@@ -8,7 +8,6 @@ from .interface import (
     DEF               ,
     DOT               ,
     SOL               ,
-    MET               ,
     SOL_FSI)
 
 from .direct     import direct

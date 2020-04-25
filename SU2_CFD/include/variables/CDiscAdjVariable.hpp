@@ -2,24 +2,14 @@
  * \file CDiscAdjVariable.hpp
  * \brief Main class for defining the variables of the adjoint solver.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,15 +42,10 @@ private:
   MatrixType DualTime_Derivative;
   MatrixType DualTime_Derivative_n;
 
-  MatrixType Cross_Term_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative_Flow;
-
   MatrixType Solution_Geometry;
   MatrixType Solution_Geometry_Old;
   MatrixType Geometry_Direct;
 
-  MatrixType Solution_BGS;
   MatrixType Solution_Geometry_BGS_k;
 
 public:
@@ -154,40 +139,6 @@ public:
   }
 
   /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const override {
-    return Geometry_CrossTerm_Derivative(iPoint,iVar);
-  }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] der - cross term derivative.
-   */
-  inline void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iDim, su2double der) override {
-    Geometry_CrossTerm_Derivative(iPoint,iDim) = der;
-  }
-
-  /*!
-   * \brief Get the mesh cross term derivative from the flow solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iVar) const override {
-    return Geometry_CrossTerm_Derivative_Flow(iPoint,iVar);
-  }
-
-  /*!
-   * \brief Set the value of the mesh cross term derivative from the flow solution (adjoint).
-   * \param[in] der - cross term derivative.
-   */
-  inline void SetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iDim, su2double der) override {
-    Geometry_CrossTerm_Derivative_Flow(iPoint,iDim) = der;
-  }
-
-  /*!
    * \brief Set the value of the mesh solution (adjoint).
    */
   void Set_OldSolution_Geometry() override;
@@ -198,33 +149,6 @@ public:
    */
   inline su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
     return Solution_Geometry_Old(iPoint,iDim);
-  }
-
-  /*!
-   * \brief Set the value of the adjoint solution in the current BGS subiteration.
-   */
-  inline void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double val_solution) override {
-    Solution_BGS(iPoint,iDim) = val_solution;
-  }
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const override { return Solution_BGS(iPoint,iDim);}
-
-  /*!
-   * \brief Set the contribution of crossed terms into the derivative.
-   */
-  inline void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
-    Cross_Term_Derivative(iPoint,iVar) = der;
-  }
-
-  /*!
-   * \brief Get the contribution of crossed terms into the derivative.
-   */
-  inline su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const override {
-    return Cross_Term_Derivative(iPoint,iVar);
   }
 
 };

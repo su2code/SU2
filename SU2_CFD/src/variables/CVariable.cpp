@@ -2,24 +2,14 @@
  * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/variables/CVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 
 CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) {
@@ -51,6 +43,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+
 }
 
 CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
@@ -74,92 +67,93 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
-	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
-	  Solution_Adj_Old.resize(nPoint,nVar);
-	}
-
-  Non_Physical.resize(nPoint) = false;
+  if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
+    Solution_Adj_Old.resize(nPoint,nVar);
+  }
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-    Input_AdjIndices.resize(nPoint,nVar) = -1;
-    Output_AdjIndices.resize(nPoint,nVar) = -1;
+    AD_InputIndex.resize(nPoint,nVar) = -1;
+    AD_OutputIndex.resize(nPoint,nVar) = -1;
   }
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
-    AnisoGrad.resize(nPoint,nDim*nVar) = su2double(0.0);
-    AnisoHess.resize(nPoint,3*(nDim-1)*nVar) = su2double(0.0);
+  if (config->GetBool_Compute_Metric()) {
+    Gradient_Adaptation.resize(nPoint,nVar,nDim,0.0);
+    Hessian.resize(nPoint,nVar,3*(nDim-1),0.0);
+    if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) &&
+        (config->GetKind_Centered_Flow() == JST)) {
+      AuxVar_Adaptation.resize(nPoint,1) = su2double(0.0);
+      GradientAuxVar_Adaptation.resize(nPoint,1,nDim,0.0);
+      HessianAuxVar.resize(nPoint,1,3*(nDim-1),0.0);
+    }
   }
 }
 
-void CVariable::Set_OldSolution() { Solution_Old = Solution; }
+void CVariable::Set_OldSolution() {
+  assert(Solution_Old.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_Old.data());
+}
 
-void CVariable::Set_Solution() { Solution = Solution_Old; }
+void CVariable::Set_Solution() {
+  assert(Solution.size() == Solution_Old.size());
+  parallelCopy(Solution_Old.size(), Solution_Old.data(), Solution.data());
+}
 
-void CVariable::Set_Solution_time_n() { Solution_time_n = Solution; }
+void CVariable::Set_Solution_time_n() {
+  assert(Solution_time_n.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_time_n.data());
+}
 
-void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
+void CVariable::Set_Solution_time_n1() {
+  assert(Solution_time_n1.size() == Solution_time_n.size());
+  parallelCopy(Solution_time_n.size(), Solution_time_n.data(), Solution_time_n1.data());
+}
 
-void CVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
+void CVariable::Set_BGSSolution_k() {
+  assert(Solution_BGS_k.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_BGS_k.data());
+}
 
-void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
+void CVariable::Restore_BGSSolution_k() {
+  assert(Solution.size() == Solution_BGS_k.size());
+  parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
+}
 
-void CVariable::SetAuxVarGradientZero() { Grad_AuxVar.setConstant(0.0); }
+void CVariable::SetUnd_LaplZero() { parallelSet(Undivided_Laplacian.size(), 0.0, Undivided_Laplacian.data()); }
 
-void CVariable::SetGradientZero() { Gradient.storage.setConstant(0.0); }
+void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
-void CVariable::SetRmatrixZero() { Rmatrix.storage.setConstant(0.0); }
-
-void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }
-
-void CVariable::SetExternalZero() { External.setConstant(0.0); }
-
-void CVariable::Set_OldExternal() { External_Old = External; }
-
-void CVariable::RegisterSolution(bool input) {
-  if (input) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
-        AD::RegisterInput(Solution(iPoint,iVar));
-  }
-  else {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
+void CVariable::RegisterSolution(bool input, bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      if(input) {
+        if(push_index) {
+          AD::RegisterInput(Solution(iPoint,iVar));
+        }
+        else {
+          AD::RegisterInput(Solution(iPoint,iVar), false);
+          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
+        }
+      }
+      else {
         AD::RegisterOutput(Solution(iPoint,iVar));
+        if(!push_index)
+          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
+      }
+    }
   }
 }
 
 void CVariable::RegisterSolution_time_n() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+      AD::RegisterInput(Solution_time_n(iPoint, iVar));
 }
 
 void CVariable::RegisterSolution_time_n1() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
-}
-
-void CVariable::RegisterSolution_intIndexBased(bool input) {
-  if (input) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
-        AD::RegisterInput_intIndexBased(Solution(iPoint,iVar));
-  }
-  else {
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      for(unsigned long iVar=0; iVar<nVar; ++iVar)
-        AD::RegisterOutput(Solution(iPoint,iVar));
-  }
-}
-
-void CVariable::SetAdjIndices(bool input) {
-  su2matrix<int>& indices = input? Input_AdjIndices : Output_AdjIndices;
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar < nVar; ++iVar)
-      AD::SetAdjIndex(indices(iPoint,iVar), Solution(iPoint,iVar));
+      AD::RegisterInput(Solution_time_n1(iPoint, iVar));
 }

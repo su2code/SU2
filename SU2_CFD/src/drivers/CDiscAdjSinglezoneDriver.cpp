@@ -2,24 +2,14 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +26,9 @@
  */
 
 #include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "../../include/output/tools/CWindowingTools.hpp"
+#include "../../include/output/COutputFactory.hpp"
+#include "../../include/output/COutputLegacy.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -46,7 +39,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
-  
+
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -61,7 +54,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
-  
+
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
@@ -77,12 +70,12 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
       direct_iteration = new CTurboIteration(config);
-      output_legacy = new COutputLegacy(config_container[ZONE_0]);
+      output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
     }
     else       direct_iteration = new CFluidIteration(config);
-    if (compressible) direct_output = new CFlowCompOutput(config, nDim);
-    else direct_output = new CFlowIncOutput(config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    if (compressible) direct_output = COutputFactory::createOutput(EULER, config, nDim);
+    else direct_output =  COutputFactory::createOutput(INC_EULER, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
     break;
@@ -91,8 +84,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
-    direct_output = new CFlowCompFEMOutput(config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    direct_output = COutputFactory::createOutput(FEM_EULER, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -100,32 +93,35 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
-    direct_output = new CElasticityOutput(config, nDim);
-    MainVariables = FEA_DISP_VARS;
-    SecondaryVariables = NONE;
+    direct_output = COutputFactory::createOutput(FEM_ELASTICITY, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
+    SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_HEAT:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
-    direct_output = new CHeatOutput(config, nDim);    
-    MainVariables = FLOW_CONS_VARS;
+    direct_output = COutputFactory::createOutput(HEAT_EQUATION, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
   }
-  
+
  direct_output->PreprocessHistoryOutput(config, false);
 
 }
 
 CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
+  
+  delete direct_iteration;
+  delete direct_output;
 
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-  
+
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
@@ -150,6 +146,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
+  bool steady = !config->GetTime_Domain();
   unsigned long Adjoint_Iter;
 
   for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
@@ -177,6 +174,7 @@ void CDiscAdjSinglezoneDriver::Run() {
                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
+
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -184,7 +182,14 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-    
+
+    /*--- Output files for steady state simulations. ---*/
+
+    if (steady) {
+      iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
+                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
+    }
+
     if (StopCalc) break;
 
   }
@@ -204,13 +209,33 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
     case DISC_ADJ_FEM :
 
-      /*--- Apply the boundary condition to clamped nodes ---*/
-      iteration->Postprocess(output_container[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,
-                             config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+      /*--- Compute the geometrical sensitivities ---*/
+      SecondaryRecording();
 
-      RecordingState = NONE;
+      iteration->Postprocess(output_container[ZONE_0], integration_container, geometry_container,
+                             solver_container, numerics_container, config_container,
+                             surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
       break;
   }//switch
+
+  if (config->GetBool_Compute_Metric()) {
+    /*--- Compute metric for anisotropic mesh adaptation ---*/
+    ComputeMetric();
+
+    direct_output->PreprocessVolumeOutput(config);
+    
+    /*--- Load the data --- */
+    direct_output->Load_Data(geometry, config, solver);
+    
+    /*--- Set the filenames ---*/
+    direct_output->SetVolume_Filename(config->GetVolume_FileName());
+    direct_output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+    
+    for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config->GetVolumeOutputFiles();
+      direct_output->WriteToFile(config, geometry, FileFormat[iFile]);
+    }
+  }
 
 }
 
@@ -270,9 +295,12 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
+  CWindowingTools windowEvaluator = CWindowingTools();
+
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
-      seeding = 1.0/((su2double)IterAvg_Obj);
+      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
+      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
     else{
       seeding = 0.0;
@@ -284,7 +312,6 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
   }
-
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
@@ -293,7 +320,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
-  
+
   direct_output->SetHistory_Output(geometry, solver, config,
                                    config->GetTimeIter(),
                                    config->GetOuterIter(),
@@ -302,7 +329,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
@@ -340,15 +367,18 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
       output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
+      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
+      unsigned short nSpanSections = config->GetnSpanWiseSections();
+
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
         break;
       default:
         break;
@@ -362,17 +392,21 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case DISC_ADJ_FEM:
     switch (config->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-        break;
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+      break;
     case REFERENCE_NODE:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-        break;
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+      break;
+    case TOPOL_COMPLIANCE:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
+      break;
     case VOLUME_FRACTION:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-        break;
+    case TOPOL_DISCRETENESS:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+      break;
     default:
-        ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-        break;
+      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+      break;
     }
     break;
   }
@@ -432,6 +466,9 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
       if (config->GetWeakly_Coupled_Heat()){
         cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
       }
+      if ( config->AddRadiation()) {
+        cout <<"log10[E(rad)]: " << log10(solver[RAD_SOL]->GetRes_RMS(0)) << endl;
+      }
       break;
 
     case DISC_ADJ_FEM:
@@ -489,7 +526,7 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   * as argument ensures that all information from a previous recording is removed. ---*/
+   *    as argument ensures that all information from a previous recording is removed. ---*/
 
   SetRecording(NONE);
 
@@ -511,17 +548,82 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ComputeAdjoint();
 
   /*--- Extract the computed sensitivity values. ---*/
-  switch(SecondaryVariables){
-  case MESH_COORDS:
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
-    break;
-  case MESH_DEFORM:
-    solver[ADJMESH_SOL]->SetSensitivity(geometry, solver, config);
-    break;
+
+  int IDX_SOL;
+
+  if (config->GetKind_Solver() == DISC_ADJ_FEM) {
+    IDX_SOL = ADJFEA_SOL;
+  } else if(SecondaryVariables == MESH_COORDS) {
+    IDX_SOL = ADJFLOW_SOL;
+  } else if(SecondaryVariables == MESH_DEFORM) {
+    IDX_SOL = ADJMESH_SOL;
+  } else {
+    IDX_SOL = -1;
   }
+
+  if(IDX_SOL >= 0)
+    solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
   AD::ClearAdjoints();
 
+}
+
+void CDiscAdjSinglezoneDriver::ComputeMetric() {
+
+  CSolver *solver_flow    = solver[FLOW_SOL],
+          *solver_turb    = solver[TURB_SOL],
+          *solver_adjflow = solver[ADJFLOW_SOL],
+          *solver_adjturb = solver[ADJTURB_SOL];
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
+  
+  if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
+    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    
+    if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+    solver_flow->SetHessian_GG(geometry, config);
+    
+    /*
+    if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) &&
+        (config->GetKind_Centered_Flow() == JST)) {
+      if(rank == MASTER_NODE) cout << "Computing enthalpy Hessians." << endl;
+      solver_flow->SetAuxVar_Hessian_GG(geometry, config);
+    }
+    */
+    
+    if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+    solver_adjflow->SetHessian_GG(geometry, config);
+    
+    if ( config->GetKind_Turb_Model() != NONE) {
+      if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+      solver_turb->SetHessian_GG(geometry, config);
+      
+      if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+      solver_adjturb->SetHessian_GG(geometry, config);
+    }
+  }
+  else {
+    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    
+    if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+    solver_flow->SetHessian_LS(geometry, config);
+    
+    if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+    solver_adjflow->SetHessian_LS(geometry, config);
+    
+    if ( config->GetKind_Turb_Model() != NONE) {
+      if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+      solver_turb->SetHessian_LS(geometry, config);
+      
+      if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+      solver_adjturb->SetHessian_LS(geometry, config);
+    }
+  }
+
+  //--- Metric
+  if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+  solver_flow->ComputeMetric(solver, geometry, config);
 }

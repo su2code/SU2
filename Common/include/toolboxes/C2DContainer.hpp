@@ -2,24 +2,14 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,9 +27,11 @@
 
 #pragma once
 
-#include <stdlib.h>
+#include "allocation_toolbox.hpp"
+#include "../datatype_structure.hpp"
+
 #include <utility>
-#include <cassert>
+#include <type_traits>
 
 /*!
  * \enum StorageType
@@ -81,7 +73,7 @@ protected:
   alignas(AlignSize) Scalar_t m_data[StaticRows*StaticCols];
 
   /*!
-   * Static size specializations use this do-nothing macro.
+   * Static size specializations use this do-nothing allocation macro.
    */
 #define DUMMY_ALLOCATOR \
   void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {}
@@ -92,15 +84,12 @@ protected:
    * members for e.g. number of rows and cols (static size optimization).
    */
 #define REAL_ALLOCATOR(EXTRA)                                           \
-  static_assert(AlignSize % alignof(Scalar_t)==0,                         \
-      "AlignSize is not a multiple of the type's alignment spec.");       \
-                                                                          \
-  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {       \
-      EXTRA;                                                              \
-      if(AlignSize==0)                                                    \
-          m_data = static_cast<Scalar_t*>(malloc(sz));                    \
-      else                                                                \
-          m_data = static_cast<Scalar_t*>(aligned_alloc(AlignSize,sz));   \
+  static_assert(MemoryAllocation::is_power_of_two(AlignSize),           \
+                "AlignSize is not a power of two.");                    \
+                                                                        \
+  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {     \
+    EXTRA;                                                              \
+    m_data = MemoryAllocation::aligned_alloc<Scalar_t>(AlignSize,sz);   \
   }
 
   DUMMY_ALLOCATOR
@@ -124,12 +113,15 @@ public:
                                                                         \
   AccessorImpl& operator= (AccessorImpl&& other) noexcept               \
   {                                                                     \
-    if(m_data!=nullptr) free(m_data);                                   \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
     MOVE; m_data=other.m_data; other.m_data=nullptr;                    \
     return *this;                                                       \
   }                                                                     \
                                                                         \
-  ~AccessorImpl() {if(m_data!=nullptr) free(m_data);}
+  ~AccessorImpl()                                                       \
+  {                                                                     \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
+  }
   /*!
    * Shorthand for when specialization has only one more member than m_data.
    */
@@ -368,12 +360,17 @@ template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, 
 class C2DContainer :
   public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
+  static_assert(std::is_integral<Index_t>::value,"");
+
 private:
   using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
   using Base::m_allocate;
 public:
   using Base::size;
+  using Index = Index_t;
+  using Scalar = Scalar_t;
+  static constexpr StorageType Storage = Store;
 
 private:
   /*!
@@ -383,7 +380,7 @@ private:
   {
     /*--- fully static, no allocation needed ---*/
     if(StaticRows!=DynamicSize && StaticCols!=DynamicSize)
-        return StaticRows*StaticCols;
+      return StaticRows*StaticCols;
 
     /*--- dynamic row vector, swap size specification ---*/
     if(StaticRows==1 && StaticCols==DynamicSize) {cols = rows; rows = 1;}
@@ -402,19 +399,14 @@ private:
     /*--- compare with current dimensions to determine if deallocation
      is needed, also makes the container safe against self assignment
      no need to check for 0 size as the allocators handle that ---*/
-    if(m_data!=nullptr)
-    {
-        if(rows==this->rows() && cols==this->cols())
-            return reqSize;
-        free(m_data);
-    }
+    if(rows==this->rows() && cols==this->cols())
+      return reqSize;
 
-    /*--- round up size to a multiple of the alignment specification if necessary ---*/
-    size_t bytes = reqSize*sizeof(Scalar_t);
-    size_t allocSize = (AlignSize==0)? bytes : ((bytes+AlignSize-1)/AlignSize)*AlignSize;
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);
 
     /*--- request actual allocation to base class as it needs specialization ---*/
-    m_allocate(allocSize,rows,cols);
+    size_t bytes = reqSize*sizeof(Scalar_t);
+    m_allocate(bytes,rows,cols);
 
     return reqSize;
   }
@@ -429,16 +421,18 @@ public:
    * \brief Sizing ctor (no initialization of data).
    * For matrices size1 is rows and size2 columns, for vectors size1 is lenght and size2 is ignored.
    */
-  C2DContainer(const Index_t size1, const Index_t size2 = 1) noexcept :
-      Base() {m_resize(size1,size2);}
+  C2DContainer(const Index_t size1, const Index_t size2 = 1) noexcept : Base()
+  {
+    m_resize(size1,size2);
+  }
 
   /*!
    * \brief Copy ctor.
    */
   C2DContainer(const C2DContainer& other) noexcept : Base()
   {
-      size_t sz = m_resize(other.rows(),other.cols());
-      for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
+    size_t sz = m_resize(other.rows(),other.cols());
+    for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
   }
 
   /*!
@@ -446,9 +440,9 @@ public:
    */
   C2DContainer& operator= (const C2DContainer& other) noexcept
   {
-      size_t sz = m_resize(other.rows(),other.cols());
-      for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
-      return *this;
+    size_t sz = m_resize(other.rows(),other.cols());
+    for(size_t i=0; i<sz; ++i) m_data[i] = other.m_data[i];
+    return *this;
   }
 
   /*!
@@ -466,8 +460,8 @@ public:
    */
   C2DContainer& operator= (const Scalar_t& value) noexcept
   {
-      setConstant(value);
-      return *this;
+    setConstant(value);
+    return *this;
   }
 
   /*!
@@ -478,8 +472,8 @@ public:
    */
   C2DContainer& resize(const Index_t size1, const Index_t size2 = 1) noexcept
   {
-      m_resize(size1,size2);
-      return *this;
+    m_resize(size1,size2);
+    return *this;
   }
 
   /*!
@@ -487,10 +481,74 @@ public:
    */
   void setConstant(const Scalar_t& value) noexcept
   {
-      for(size_t i=0; i<size(); ++i) m_data[i] = value;
+    for(size_t i=0; i<size(); ++i) m_data[i] = value;
   }
 };
 
+
+/*!
+ * \class C2DDummyLastView
+ * \brief Helper class, adds dummy trailing dimension to a reference of a
+ *        vector object making it a dummy matrix.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated vector.
+ */
+template<class T>
+struct C2DDummyLastView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C2DDummyLastView() = delete;
+
+  C2DDummyLastView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index) noexcept
+  {
+    return data(i);
+  }
+
+  const Scalar& operator() (Index i, Index) const noexcept
+  {
+    return data(i);
+  }
+};
+
+/*!
+ * \class C3DDummyMiddleView
+ * \brief Helper class, adds dummy middle dimension to a reference of a
+ *        matrix object making it a dummy 3D array.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated matrix.
+ */
+template<class T>
+struct C3DDummyMiddleView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C3DDummyMiddleView() = delete;
+
+  C3DDummyMiddleView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index, Index k) noexcept
+  {
+    return data(i,k);
+  }
+
+  const Scalar& operator() (Index i, Index, Index k) const noexcept
+  {
+    return data(i,k);
+  }
+};
 
 /*!
  * \brief Useful typedefs with default template parameters

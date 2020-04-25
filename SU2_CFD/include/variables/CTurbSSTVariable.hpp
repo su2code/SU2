@@ -2,24 +2,14 @@
  * \file CTurbSSTVariable.hpp
  * \brief Declaration of the variables of the SST turbulence model.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +44,13 @@ protected:
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
 
+  MatrixType Primitive; /*!< \brief Primitive form of the solution. */
+  
+  MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
+  MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
+  
+  su2vector<long> WallMap; /*!< \brief Node indices corresponding to wall value matrix entries. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -68,7 +65,7 @@ public:
    */
   CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint,
                    unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config);
-                   
+
   /*!
    * \brief Destructor of the class.
    */
@@ -96,4 +93,68 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  inline const MatrixType& GetPrimitive(void) const final { return Primitive; }
+
+  /*!
+   * \brief Get the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iVar - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
+    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++)
+      Primitive(iPoint,iVar) = val_prim[iVar];
+  }
+
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
+
+  /*!
+   * \brief Add a value to the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Number of the variable.
+   * \param[in] solution - Value that we want to add to the solution.
+   */
+  inline void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
+                              su2double val_density, su2double lowerlimit, su2double upperlimit) override {
+    su2double val_new = (Solution_Old(iPoint,iVar) + solution)/val_density;
+    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit)*val_density;
+  }
+  
+  inline void InitializeWallSolution(unsigned long nWallElem) override {
+    WallDensity.resize(nWallElem,4) = su2double(0.0);
+    WallLamVisc.resize(nWallElem,4) = su2double(0.0);
+  }
+  
+  inline void SetWallMap(unsigned long iPoint, long index) override { WallMap(iPoint) = index; }
+  
+  inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) override { WallDensity(WallMap(iPoint),jNode) = density; }
+  
+  inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) override { WallLamVisc(WallMap(iPoint),jNode) = lamvisc; }
+  
+  inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) override { return WallDensity(WallMap(iPoint),jNode); }
+  
+  inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) override { return WallLamVisc(WallMap(iPoint),jNode); }
 };

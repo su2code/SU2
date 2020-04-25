@@ -1,26 +1,16 @@
-/*!
+﻿/*!
  * \file driver_structure.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,55 +29,29 @@
 #pragma once
 
 #include "../../../Common/include/mpi_structure.hpp"
+
 #include "../iteration_structure.hpp"
-#include "../solver_structure.hpp"
-#include "../integration_structure.hpp"
-
-#include "../numerics_structure.hpp"
-/*--- Transfer includes ---*/
+#include "../integration/CIntegration.hpp"
+#include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
-#include "../interfaces/cfd/CConservativeVarsInterface.hpp"
-#include "../interfaces/cfd/CMixingPlaneInterface.hpp"
-#include "../interfaces/cfd/CSlidingInterface.hpp"
-#include "../interfaces/cht/CConjugateHeatInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterface.hpp"
-#include "../interfaces/fsi/CFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
-#include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../numerics/CFEAMeshElasticity.hpp"
-#include "../solvers/CDiscAdjMeshSolver.hpp"
-#include "../solvers/CMeshSolver.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
-#include "../../../Common/include/config_structure.hpp"
-#include "../../../Common/include/interpolation_structure.hpp"
-
-#include "../output/COutputLegacy.hpp"
-
-#include "../output/COutput.hpp"
-#include "../output/CMultizoneOutput.hpp"
-#include "../output/CElasticityOutput.hpp"
-#include "../output/CAdjElasticityOutput.hpp"
-#include "../output/CFlowCompOutput.hpp"
-#include "../output/CAdjFlowOutput.hpp"
-#include "../output/CFlowCompFEMOutput.hpp"
-#include "../output/CFlowIncOutput.hpp"
-#include "../output/CAdjFlowIncOutput.hpp"
-#include "../output/CHeatOutput.hpp"
-#include "../output/CAdjHeatOutput.hpp"
 
 using namespace std;
 
-/*! 
+class COutputLegacy;
+class CInterpolator;
+
+/*!
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
  */
 class CDriver {
 protected:
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
+  int rank,   /*!< \brief MPI Rank. */
+  size;         /*!< \brief MPI Size. */
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
   char runtime_file_name[MAX_STRING_SIZE];
   su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
@@ -100,12 +64,12 @@ protected:
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
-  su2double Mpoints;                              /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
-  su2double MpointsDomain;                        /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
+  su2double Mpoints;                            /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
+  su2double MpointsDomain;                      /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-  unsigned long TimeIter;                        /*!< \brief External iteration.*/
-  ofstream **ConvHist_file;                       /*!< \brief Convergence history file.*/
+  unsigned long TimeIter;                       /*!< \brief External iteration.*/
+  ofstream **ConvHist_file;                     /*!< \brief Convergence history file.*/
   ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
@@ -113,22 +77,22 @@ protected:
                 nDim,                           /*!< \brief Number of dimensions.*/
                 iInst,                          /*!< \brief Iterator on instance levels.*/
                 *nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
-                **interface_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
+                **interface_types;              /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi,                                     /*!< \brief FSI simulation flag.*/
        fem_solver;                              /*!< \brief FEM fluid solver simulation flag. */
-  CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
-  COutput **output_container;                              /*!< \brief Pointer to the COutput class. */
-  CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
-  CGeometry ****geometry_container;              /*!< \brief Geometrical definition of the problem. */
-  CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
-  CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
+  CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
+  COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
+  CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
+  CGeometry ****geometry_container;             /*!< \brief Geometrical definition of the problem. */
+  CSolver *****solver_container;                /*!< \brief Container vector with all the solutions. */
+  CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
-  COutput *driver_output;                 /*!< \brief Definition of the driver output. */
+  COutput *driver_output;                       /*!< \brief Definition of the driver output. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
+  CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
@@ -136,11 +100,11 @@ protected:
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
-  bool dummy_geometry;
-  
+  bool dry_run;                                 /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
+
 public:
 
-  /*! 
+  /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
@@ -158,16 +122,16 @@ public:
 
   /*!
    * \brief A virtual member.
-   */  
+   */
   virtual void Run() { };
 
 protected:
-  
+
   /*!
    * \brief Init_Containers
    */
   void SetContainers_Null();
-  
+
   /*!
    * \brief Read in the config and mesh files.
    */
@@ -177,7 +141,7 @@ protected:
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
   void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry, bool dummy);
-  
+
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    */
@@ -187,7 +151,7 @@ protected:
    * \brief Geometrical_Preprocessing_FVM
    */
   void Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry);
-  
+
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
@@ -222,11 +186,11 @@ protected:
 
   /*!
    * \brief Definition and allocation of all integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -240,8 +204,8 @@ protected:
    * \brief Definition and allocation of all interface classes.
    */
   void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry,
-                               unsigned short **interface_types, CInterface ***&interface,
-                               CInterpolator ***&interpolation);
+                               unsigned short **interface_types, CInterface ***interface,
+                               CInterpolator ***interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -293,7 +257,7 @@ protected:
   void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
 
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
@@ -337,7 +301,7 @@ protected:
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
   virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
-  
+
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
@@ -347,23 +311,23 @@ protected:
    * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
    */
   virtual void Run_Jacobi(){}
-  
+
   /*!
    * \brief A virtual member.
    */
   virtual void Update() {}
-  
+
 public:
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
   virtual void StartSolver() {}
-  
+
   /*!
    * \brief Deallocation routine
    */
-  void Postprocessing();  
+  void Postprocessing();
 
   /*!
    * \brief A virtual member.
@@ -478,31 +442,19 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the specified vertex is a halo node.
    */
-  bool IsAHaloNode(unsigned short iMarker, unsigned short iVertex);
+  bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex);
 
-  // /*!
-  //  * \brief Get the number of external iterations.
-  //  * \return Number of external iterations.
-  //  */
-  // unsigned long GetnTimeIter();
+  /*!
+   * \brief Get the number of external iterations.
+   * \return Number of external iterations.
+   */
+  unsigned long GetnTimeIter();
 
-  // /*!
-  //  * \brief Get the current external iteration.
-  //  * \return Current external iteration.
-  //  */
-  // unsigned long GetTime_Iter();
-
-  // /*!
-  //  * \brief Get the number of iterations.
-  //  * \return Number of iterations.
-  //  */
-  // unsigned long GetnIter();
-
-  // /*!
-  //  * \brief Get the current iteration.
-  //  * \return Current iteration.
-  //  */
-  // unsigned long GetIter();
+  /*!
+   * \brief Get the current external iteration.
+   * \return Current external iteration.
+   */
+  unsigned long GetTime_Iter();
 
   /*!
    * \brief Get the unsteady time step.
@@ -516,7 +468,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vertex global index.
    */
-  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
+  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x coordinate of a vertex on a specified marker.
@@ -524,7 +476,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x coordinate of the vertex.
    */
-  passivedouble GetVertexCoordX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexCoordX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y coordinate of a vertex on a specified marker.
@@ -532,7 +484,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y coordinate of the vertex.
    */
-  passivedouble GetVertexCoordY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexCoordY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z coordinate of a vertex on a specified marker.
@@ -540,7 +492,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z coordinate of the vertex.
    */
-  passivedouble GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexCoordZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Compute the total force (pressure and shear stress) at a vertex on a specified marker (3 components).
@@ -548,7 +500,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the vertex is a halo node (non physical force).
    */
-  bool ComputeVertexForces(unsigned short iMarker, unsigned short iVertex);
+  bool ComputeVertexForces(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x component of the force at a vertex on a specified marker.
@@ -556,7 +508,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x component of the force at the vertex.
    */
-  passivedouble GetVertexForceX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y component of the force at a vertex on a specified marker.
@@ -564,7 +516,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y component of the force at the vertex.
    */
-  passivedouble GetVertexForceY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z component of the force at a vertex on a specified marker.
@@ -572,7 +524,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z component of the force at the vertex.
    */
-  passivedouble GetVertexForceZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x component of the force density at a vertex on a specified marker.
@@ -580,7 +532,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x component of the force density at the vertex.
    */
-  passivedouble GetVertexForceDensityX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceDensityX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y component of the force density at a vertex on a specified marker.
@@ -588,7 +540,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y component of the force density at the vertex.
    */
-  passivedouble GetVertexForceDensityY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceDensityY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z component of the force density at a vertex on a specified marker.
@@ -596,7 +548,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z component of the force density at the vertex.
    */
-  passivedouble GetVertexForceDensityZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexForceDensityZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the x coordinate of a vertex on a specified marker.
@@ -604,7 +556,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] newPosX - New x coordinate of the vertex.
    */
-  void SetVertexCoordX(unsigned short iMarker, unsigned short iVertex, passivedouble newPosX);
+  void SetVertexCoordX(unsigned short iMarker, unsigned long iVertex, passivedouble newPosX);
 
   /*!
    * \brief Set the y coordinate of a vertex on a specified marker.
@@ -612,7 +564,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] newPosY - New y coordinate of the vertex.
    */
-  void SetVertexCoordY(unsigned short iMarker, unsigned short iVertex, passivedouble newPosY);
+  void SetVertexCoordY(unsigned short iMarker, unsigned long iVertex, passivedouble newPosY);
 
   /*!
    * \brief Set the z coordinate of a vertex on a specified marker.
@@ -620,7 +572,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] newPosZ - New z coordinate of the vertex.
    */
-  void SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, passivedouble newPosZ);
+  void SetVertexCoordZ(unsigned short iMarker, unsigned long iVertex, passivedouble newPosZ);
 
   /*!
    * \brief Set the VarCoord of a vertex on a specified marker.
@@ -628,7 +580,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Norm of the VarCoord.
    */
-  passivedouble SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
+  passivedouble SetVertexVarCoord(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the temperature at a vertex on a specified marker.
@@ -636,7 +588,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Temperature of the vertex.
    */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the temperature of a vertex on a specified marker.
@@ -644,7 +596,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_WallTemp - Value of the temperature.
    */
-  void SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallTemp);
+  void SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp);
 
   /*!
    * \brief Compute the heat flux at a vertex on a specified marker (3 components).
@@ -652,7 +604,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the vertex is a halo node.
    */
-  bool ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex);
+  bool ComputeVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x component of the heat flux at a vertex on a specified marker.
@@ -660,7 +612,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x component of the heat flux at the vertex.
    */
-  passivedouble GetVertexHeatFluxX(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexHeatFluxX(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the y component of the heat flux at a vertex on a specified marker.
@@ -668,7 +620,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return y component of the heat flux at the vertex.
    */
-  passivedouble GetVertexHeatFluxY(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexHeatFluxY(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the z component of the heat flux at a vertex on a specified marker.
@@ -676,7 +628,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return z component of the heat flux at the vertex.
    */
-  passivedouble GetVertexHeatFluxZ(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexHeatFluxZ(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
@@ -684,7 +636,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Wall normal component of the heat flux at the vertex.
    */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
@@ -692,7 +644,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_WallHeatFlux - Value of the normal heat flux.
    */
-  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallHeatFlux);
+  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux);
 
   /*!
    * \brief Get the thermal conductivity at a vertex on a specified marker.
@@ -700,7 +652,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Thermal conductivity at the vertex.
    */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
+  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Preprocess the inlets via file input for all solvers.
@@ -717,7 +669,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Unit normal (vector) at the vertex.
    */
-  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get all the boundary markers tags.
@@ -788,7 +740,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of sensitivities.
    */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the load in X direction for the structural solver.
@@ -798,7 +750,7 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  void SetFEA_Loads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+  void SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX,
                     passivedouble LoadY, passivedouble LoadZ);
 
   /*!
@@ -807,7 +759,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of displacements.
    */
-  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -815,7 +767,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities.
    */
-  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -823,7 +775,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities at time n.
    */
-  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
@@ -833,7 +785,7 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
@@ -841,7 +793,7 @@ public:
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Set the adjoint of the flow tractions (from the extra step -
@@ -852,7 +804,7 @@ public:
    * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
    * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
    */
-  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                     passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
@@ -863,7 +815,7 @@ public:
    * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
    * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
    */
-  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                  passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
@@ -872,11 +824,11 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Undeformed Vertex Coordinates
    */
-  vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex);
+  vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned long iVertex);
 
-  /*!
-   * \brief Return a pointer to a config container.
-   */
+  // /*!
+  //  * \brief Return a pointer to a config container.
+  //  */
   // CConfig* GetConfig(unsigned short val_iZone);
 
   // /*!
@@ -926,6 +878,23 @@ public:
   //                                   CSolver ***&solver, 
   //                                   vector<vector<passivedouble> > const &SolAdap);
 
+  /*!
+   * \brief Set the position of the heat source.
+   * \param[in] alpha - Angle of rotation respect to Z axis.
+   * \param[in] pos_x - Position X.
+   * \param[in] pos_y - Position Y.
+   * \param[in] pos_z - Position Z.
+   */
+  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+
+  /*!
+   * \brief Set the direction of the inlet.
+   * \param[in] iMarker - Marker index.
+   * \param[in] alpha - Angle (Zpos).
+   */
+  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+
+
 };
 
 /*!
@@ -939,7 +908,7 @@ protected:
    unsigned long Max_Iter;
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -955,7 +924,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CFluidDriver(void);
-  
+
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
@@ -970,21 +939,21 @@ public:
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
-  
+
   /*!
    * \brief Output the solution in solution file.
    */
   void Output(unsigned long InnerIter);
-  
+
   /*!
    * \brief Monitor the computation.
    */
   bool Monitor(unsigned long ExtIter);
-  
+
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  void Preprocess(unsigned long Iter);  
+  void Preprocess(unsigned long Iter);
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
@@ -1017,7 +986,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_Ttotal - Value of the total (stagnation) temperature.
    */
-  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ttotal);
+  void SetVertexTtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ttotal);
 
   /*!
    * \brief Set the total pressure of a vertex on a specified inlet marker.
@@ -1025,7 +994,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_Ptotal - Value of the total (stagnation) pressure.
    */
-  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ptotal);
+  void SetVertexPtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ptotal);
 
   /*!
    * \brief Set the flow direction of a vertex on a specified inlet marker.
@@ -1034,7 +1003,7 @@ public:
    * \param[in] iDim - Index of the flow direction unit vector
    * \param[in] val_FlowDir - Component of a unit vector representing the flow direction
    */
-  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_FlowDir);
+  void SetVertexFlowDir(unsigned short iMarker, unsigned long iVertex, unsigned short iDim, passivedouble val_FlowDir);
 
   /*!
    * \brief Set a turbulence variable on a specified inlet marker.
@@ -1043,7 +1012,7 @@ public:
    * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
    * \param[in] val_turb_var - Value of the turbulence variable to be used.
    */
-  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_tub_var);
+  void SetVertexTurbVar(unsigned short iMarker, unsigned long iVertex, unsigned short iDim, passivedouble val_tub_var);
 
 };
 
@@ -1056,7 +1025,7 @@ public:
 class CTurbomachineryDriver : public CFluidDriver {
 private:
   COutputLegacy* output_legacy;
-  
+
 public:
 
   /*!
@@ -1142,7 +1111,7 @@ public:
    * \param[in] iZone - Current zone number.
    */
   void SetHarmonicBalance(unsigned short iZone);
-	
+
   /*!
    * \brief Precondition Harmonic Balance source term for stability
    * \author J. Howison
@@ -1164,271 +1133,4 @@ public:
    * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
    */
   void ResetConvergence();
-};
-
-/*!
- * \class CDiscAdjFSIDriver
- * \brief Overload: Class for driving a discrete adjoint FSI iteration.
- * \author R. Sanchez.
- * \version 6.2.0 "Falcon"
- */
-class CDiscAdjFSIDriver : public CDriver {
-  
-  COutputLegacy* output_legacy;
-  CIteration** direct_iteration;
-  unsigned short RecordingState;
-  unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
-  unsigned short Kind_Objective_Function;   /*!< \brief Stores the kind of objective function of the recording. */
-
-  su2double *init_res_flow,     /*!< \brief Stores the initial residual for the flow. */
-            *init_res_struct,   /*!< \brief Stores the initial residual for the structure. */
-            *residual_flow,     /*!< \brief Stores the current residual for the flow. */
-            *residual_struct,   /*!< \brief Stores the current residual for the structure. */
-            *residual_flow_rel,
-            *residual_struct_rel;
-
-  su2double flow_criteria,
-            flow_criteria_rel,
-            structure_criteria,
-            structure_criteria_rel;
-
-
-  enum OF_KIND{
-    NO_OBJECTIVE_FUNCTION = 0,               /*!< \brief Indicates that there is no objective function. */
-    FLOW_OBJECTIVE_FUNCTION = 1,            /*!< \brief Indicates that the objective function is only flow-dependent. */
-    FEM_OBJECTIVE_FUNCTION = 2              /*!< \brief Indicates that the objective function is only structural-dependent. */
-  };
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Total number of dimensions.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CDiscAdjFSIDriver(char* confFile,
-                    unsigned short val_nZone,
-                    SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjFSIDriver(void);
-
-  /*!
-   * \brief Run a Discrete Adjoint iteration for the FSI problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-
-  void Run();
-
-  /*!
-   * \brief Iterate the direct solver for recording.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-
-  void Iterate_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording);
-
-  /*!
-   * \brief Run a direct flow iteration.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Run a direct structural iteration.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Structural_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Run a direct mesh deformation.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Set the recording for a Discrete Adjoint iteration for the FSI problem.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-
-  void SetRecording(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Load the restarts for fluid, structure and mesh.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Preprocess(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Iterate a certain block for adjoint FSI - may be the whole set of variables or independent and subiterate
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Iterate_Block(unsigned short ZONE_FLOW,
-                       unsigned short ZONE_STRUCT,
-                       unsigned short kind_recording);
-
-  /*!
-   * \brief Initialize the adjoint - set the objective funcition and the output of the adjoint iteration
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void InitializeAdjoint(unsigned short ZONE_FLOW,
-                            unsigned short ZONE_STRUCT,
-                            unsigned short kind_recording);
-
-  /*!
-   * \brief Extract the adjoint solution variables
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void ExtractAdjoint(unsigned short ZONE_FLOW,
-                         unsigned short ZONE_STRUCT,
-                         unsigned short kind_recording);
-
-
-  /*!
-   * \brief Check the convergence of the problem
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  bool CheckConvergence(unsigned long IntIter,
-                          unsigned short ZONE_FLOW,
-                          unsigned short ZONE_STRUCT,
-                          unsigned short kind_recording);
-
-  /*!
-   * \brief Check the convergence of BGS subiteration process
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  bool BGSConvergence(unsigned long IntIter,
-                         unsigned short ZONE_FLOW,
-                         unsigned short ZONE_STRUCT);
-
-
-  /*!
-   * \brief Output the convergence history
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void ConvergenceHistory(unsigned long IntIter,
-                             unsigned long nIntIter,
-                             unsigned short ZONE_FLOW,
-                             unsigned short ZONE_STRUCT,
-                             unsigned short kind_recording);
-
-  /*!
-   * \brief Load the restarts for fluid, structure and mesh.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void PrintDirect_Residuals(unsigned short ZONE_FLOW,
-                                unsigned short ZONE_STRUCT,
-                                unsigned short kind_recording);
-
-  /*!
-   * \brief Restart the variables to the converged solution.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void PrepareRecording(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Register the input variables for adjoint FSI problems: flow conservative, fluid mesh position and structural displacements.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void RegisterInput(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Register the input variables for adjoint FSI problems: flow conservative, fluid mesh position and structural displacements.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void SetDependencies(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Restart the output variables for adjoint FSI problems: flow conservative, fluid mesh position and structural displacements.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void RegisterOutput(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Run the post-processing routines.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Postprocess(unsigned short ZONE_FLOW,
-                     unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Overload, does nothing but avoids updates in adjoint FSI problems before the iteration
-   */
-  void Update(void);
-
-  /*!
-   * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
-   */
-  void DynamicMeshUpdate(unsigned long TimeIter);
-
-  /*!
-   * \brief Transfer the displacements computed on the structural solver into the fluid solver.
-   * \param[in] donorZone - zone in which the displacements will be transferred.
-   * \param[in] targetZone - zone which receives the tractions transferred.
-   */
-  void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone);
-
-  /*!
-   * \brief Transfer the tractions computed on the fluid solver into the structural solver.
-   * \param[in] donorZone - zone from which the tractions will be transferred.
-   * \param[in] targetZone - zone which receives the tractions transferred.
-   */
-  void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone);
-
 };

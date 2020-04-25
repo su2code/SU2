@@ -155,7 +155,7 @@ def main():
     konfig = copy.deepcopy(config)
     ztate  = copy.deepcopy(state)
 
-    konfig.ERROR_ESTIMATE = 'YES'
+    konfig.COMPUTE_METRIC = 'YES'
     konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
 
     konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME

@@ -2,24 +2,14 @@
  * \file CInviscidVortexSolution.cpp
  * \brief Implementations of the member functions of CInviscidVortexSolution.
  * \author T. Economon, E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +34,7 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
                                                  unsigned short val_iMesh,
                                                  CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the
    inviscid vortex test case. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -106,7 +96,7 @@ CInviscidVortexSolution::~CInviscidVortexSolution(void) { }
 
 void CInviscidVortexSolution::GetBCState(const su2double *val_coords,
                                          const su2double val_t,
-                                         su2double       *val_solution) {
+                                         su2double       *val_solution) const {
 
   /*--- For the case that the inviscid vortex is run with boundary
         conditions (other possibility is with periodic conditions),
@@ -116,7 +106,7 @@ void CInviscidVortexSolution::GetBCState(const su2double *val_coords,
 
 void CInviscidVortexSolution::GetSolution(const su2double *val_coords,
                                           const su2double val_t,
-                                          su2double       *val_solution) {
+                                          su2double       *val_solution) const {
 
   /* Compute the free stream velocities in x- and y-direction. */
   const su2double VelInf = MachVortex*sqrt(Gamma);
