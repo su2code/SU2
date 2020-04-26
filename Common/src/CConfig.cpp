@@ -5307,11 +5307,11 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
     for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface])
-            indexMarker = (int)(iMarker_ZoneInterface/2+1);
+        indexMarker = iMarker_ZoneInterface/2+1;
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
   }
 
-/*--- Identification of Turbomachinery markers and flag them---*/
+  /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     unsigned short indexMarker=0;
@@ -7065,7 +7065,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   return true;
 }
 
-unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) const {
 
   unsigned short iMarker_CfgFile;
 
@@ -7077,157 +7077,145 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
   return 0;
 }
 
-string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
+string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) const {
   return Marker_CfgFile_TagBound[val_marker];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_KindBC[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Monitoring(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Monitoring(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Monitoring[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_GeoEval(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_GeoEval(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_GeoEval[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Designing(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Designing(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Designing[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Plotting[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Analyze(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Analyze(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Analyze[iMarker_CfgFile];
 }
 
-
-unsigned short CConfig::GetMarker_CfgFile_ZoneInterface(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_ZoneInterface(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Turbomachinery[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_DV(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_DV(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_DV[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Deform_Mesh[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Fluid_Load[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker){
+unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_PyCustom[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_PerBound[iMarker_CfgFile];
 }
 
-int CConfig::GetMarker_ZoneInterface(string val_marker) {
-    unsigned short iMarker_CfgFile;
-    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
-
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
-        return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
-    return 0;
+unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker) const{
-
-  if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-      Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-      Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
-      Marker_All_KindBC[iMarker] == EULER_WALL){
-    return true;
-  }
-
-  return false;
+  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
+          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
+          Marker_All_KindBC[iMarker] == EULER_WALL);
 }
 
-bool CConfig::GetViscous_Wall(unsigned short iMarker) const{
+bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
-  if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-      Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-      Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE){
-    return true;
-  }
-
-  return false;
+  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
+          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
 }
 
-void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement){
+void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {
 
   unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
   string* new_marker_moving = new string[nMarker_Moving+1];

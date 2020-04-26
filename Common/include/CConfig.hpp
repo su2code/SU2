@@ -6016,116 +6016,116 @@ public:
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Index in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TagBound(string val_marker);
+  unsigned short GetMarker_CfgFile_TagBound(string val_marker) const;
 
   /*!
    * \brief Get the name in the config information of the marker number <i>val_marker</i>.
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Name of the marker in the config information of the marker <i>val_marker</i>.
    */
-  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker) const;
 
   /*!
    * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
    * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_KindBC(string val_marker);
+  unsigned short GetMarker_CfgFile_KindBC(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Monitoring(string val_marker);
+  unsigned short GetMarker_CfgFile_Monitoring(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_GeoEval(string val_marker);
+  unsigned short GetMarker_CfgFile_GeoEval(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Designing(string val_marker);
+  unsigned short GetMarker_CfgFile_Designing(string val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Plotting(string val_marker);
+  unsigned short GetMarker_CfgFile_Plotting(string val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Analyze(string val_marker);
+  unsigned short GetMarker_CfgFile_Analyze(string val_marker) const;
 
   /*!
    * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker);
+  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker);
+  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker);
+  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker) const;
 
   /*!
    * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
+  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker) const;
 
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
    * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_DV(string val_marker);
+  unsigned short GetMarker_CfgFile_DV(string val_marker) const;
 
   /*!
    * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Moving(string val_marker);
+  unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
    * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker);
+  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker) const;
 
   /*!
    * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
    * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker);
+  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker) const;
 
   /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PyCustom(string val_marker);
+  unsigned short GetMarker_CfgFile_PyCustom(string val_marker) const;
 
   /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
    * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PerBound(string val_marker);
+  unsigned short GetMarker_CfgFile_PerBound(string val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_marker</i>.
    * \return The interface which owns that marker <i>val_marker</i>.
    */
-  int GetMarker_ZoneInterface(string val_marker);
+  unsigned short GetMarker_ZoneInterface(string val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_iMarker</i>.
@@ -6138,7 +6138,6 @@ public:
    * \return The number markers in the multizone interface
    */
   unsigned short GetnMarker_ZoneInterface(void) const { return nMarker_ZoneInterface; }
-
 
   /*!
    * \brief Determines whether a marker with index iMarker is a solid boundary.
