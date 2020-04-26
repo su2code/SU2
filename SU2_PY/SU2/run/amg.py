@@ -285,40 +285,42 @@ def amg ( config , kind='' ):
         config_cfd.MATH_PROBLEM     = 'DIRECT'
         SU2_CFD(config_cfd)
 
-        config_cfd.CONV_FILENAME         = "history_adj"
-        config_cfd.RESTART_FILENAME      = cur_solfil
-        config_cfd.RESTART_ADJ_FILENAME  = cur_solfil_adj
-        config_cfd.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
-        config_cfd.SOLUTION_ADJ_FILENAME = config['SOLUTION_ADJ_FILENAME']
-        config_cfd.VOLUME_OUTPUT         = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
-        config_cfd.HISTORY_OUTPUT         = ['ITER', 'RMS_RES', 'SENSITIVITY']
-        config_cfd.COMPUTE_METRIC        = 'YES'
-        config_cfd.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
-        config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
-        config_cfd.ADAP_HMIN             = config.PYADAP_HMIN
-        config_cfd.ADAP_COMPLEXITY       = int(mesh_sizes[0])
+        if adap_sensor == 'GOAL':
 
-        #--- Run an adjoint if the adjoint solution file doesn't exist
-        cur_solfil_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME    
-        func_name          = config.OBJECTIVE_FUNCTION
-        suffix             = su2io.get_adjointSuffix(func_name)
-        cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
-        if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
-            config_cfd.ITER        = config.ITER
-            config_cfd.RESTART_SOL = 'NO'
-            SU2_CFD(config_cfd)
+            config_cfd.CONV_FILENAME         = "history_adj"
+            config_cfd.RESTART_FILENAME      = cur_solfil
+            config_cfd.RESTART_ADJ_FILENAME  = cur_solfil_adj
+            config_cfd.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
+            config_cfd.SOLUTION_ADJ_FILENAME = config['SOLUTION_ADJ_FILENAME']
+            config_cfd.VOLUME_OUTPUT         = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+            config_cfd.HISTORY_OUTPUT         = ['ITER', 'RMS_RES', 'SENSITIVITY']
+            config_cfd.COMPUTE_METRIC        = 'YES'
+            config_cfd.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
+            config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
+            config_cfd.ADAP_HMIN             = config.PYADAP_HMIN
+            config_cfd.ADAP_COMPLEXITY       = int(mesh_sizes[0])
 
-            cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
+            #--- Run an adjoint if the adjoint solution file doesn't exist
+            cur_solfil_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME    
+            func_name          = config.OBJECTIVE_FUNCTION
+            suffix             = su2io.get_adjointSuffix(func_name)
+            cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+            if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
+                config_cfd.ITER        = config.ITER
+                config_cfd.RESTART_SOL = 'NO'
+                SU2_CFD(config_cfd)
 
-        #--- Otherwise just compute the metric
-        else:
-            os.symlink(os.path.join(cwd, cur_solfil_adj_ini), cur_solfil_adj_ini)
-            config_cfd.ITER = 1
-            SU2_CFD(config_cfd)
-            sav_stdout.write('Initial adjoint CFD solution is provided.\n')
-            sav_stdout.flush()
+                cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
-            cur_solfil_adj = cur_solfil_adj_ini
+            #--- Otherwise just compute the metric
+            else:
+                os.symlink(os.path.join(cwd, cur_solfil_adj_ini), cur_solfil_adj_ini)
+                config_cfd.ITER = 1
+                SU2_CFD(config_cfd)
+                sav_stdout.write('Initial adjoint CFD solution is provided.\n')
+                sav_stdout.flush()
+
+                cur_solfil_adj = cur_solfil_adj_ini
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
@@ -352,8 +354,8 @@ def amg ( config , kind='' ):
     
     for iSiz in range(len(mesh_sizes)):
         
-        mesh_size   = int(mesh_sizes[iSiz])
-        nSub        = int(sub_iter[iSiz])
+        mesh_size = int(mesh_sizes[iSiz])
+        nSub     = int(sub_iter[iSiz])
                         
         sys.stdout.write("\nIteration %d - Mesh size coefficient %.1lf\n" % (iSiz, mesh_size))
         sys.stdout.flush()
@@ -371,7 +373,7 @@ def amg ( config , kind='' ):
             #--- Write solution
             su2amg.write_mesh_and_sol("flo.meshb", "flo.solb", mesh)
 
-            config_amg['size']    = mesh_size
+            config_amg['size'] = mesh_size
                 
             #--- Use pyAmg interface
             
@@ -461,10 +463,11 @@ def amg ( config , kind='' ):
                 cur_solfil_ini = "flo_ini" + sol_ext
                 os.rename(cur_solfil, cur_solfil_ini)
 
-                cur_solfil_adj_ini = "adj_ini" + sol_ext
-                cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
-                os.rename(cur_solfil_adj, cur_solfil_adj_ini)
-                cur_solfil_adj_ini = "adj_ini" + sol_ext
+                if adap_sensor == 'GOAL':
+                    cur_solfil_adj_ini = "adj_ini" + sol_ext
+                    cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+                    os.rename(cur_solfil_adj, cur_solfil_adj_ini)
+                    cur_solfil_adj_ini = "adj_ini" + sol_ext
                 
                 config_cfd.MESH_FILENAME     = cur_meshfil
                 config_cfd.CONV_FILENAME     = "history"
