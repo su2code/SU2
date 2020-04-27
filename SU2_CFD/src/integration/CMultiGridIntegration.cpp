@@ -43,6 +43,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   switch (config[iZone]->GetKind_Solver()) {
     case EULER:
     case NAVIER_STOKES:
+    case NEMO_EULER:
+    case NEMO_NAVIER_STOKES:
     case RANS:
     case FEM_EULER:
     case FEM_NAVIER_STOKES:
@@ -695,6 +697,22 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
 
       break;
+
+    case RUNTIME_NEMO_SYS:
+
+     /*--- Calculate the inviscid and viscous forces ---*/
+
+     solver_container[FinestMesh][NEMO_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+     solver_container[FinestMesh][NEMO_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+     solver_container[FinestMesh][NEMO_SOL]->Friction_Forces(geometry[FinestMesh], config);
+
+     /*--- Evaluate the buffet metric if requested ---*/
+
+     if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+         solver_container[FinestMesh][NEMO_SOL]->Buffet_Monitoring(geometry[FinestMesh], config);
+     }
+
+     break;  
 
     case RUNTIME_ADJFLOW_SYS:
 

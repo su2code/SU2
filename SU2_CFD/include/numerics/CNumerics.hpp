@@ -34,6 +34,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
+#include "../variables/CNEMOEulerVariable.hpp"
 
 using namespace std;
 
@@ -75,6 +76,8 @@ protected:
   su2double
   Thermal_Conductivity_i,    /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
+  Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
@@ -219,6 +222,25 @@ protected:
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
   su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
+
+  /* Supporting data structures for NEMO solver */
+
+  unsigned short nSpecies; /*!< \brief Number of species present in plasma */
+  
+  su2double *dPdU_i, *dPdU_j;
+  su2double *dTdU_i, *dTdU_j;
+  su2double *dTvedU_i, *dTvedU_j;
+
+  su2double *hs, *Cvtr;
+  su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
+  su2double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
+  su2double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
+
+  su2double *Ys, **dFdVi, **dFdVj, **dFdYj, **dFdYi, **dVdUi, **dVdUj,
+  *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  CNEMOEulerVariable *variable;
 
 public:
   /*!
@@ -513,6 +535,18 @@ public:
     Thermal_Conductivity_j = val_thermal_conductivity_j;
   }
 
+    /*!
+   * \brief Set the thermal conductivity (translational/rotational)
+   * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
+   * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
+   * \param[in] iSpecies - Value of the species.
+   */
+  inline void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
+                                     su2double val_thermal_conductivity_ve_j) {
+    Thermal_Conductivity_ve_i = val_thermal_conductivity_ve_i;
+    Thermal_Conductivity_ve_j = val_thermal_conductivity_ve_j;
+  }
+
   /*!
    * \brief Set the thermal diffusivity (translational/rotational)
    * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
@@ -746,6 +780,17 @@ public:
                            su2double *val_normal, su2double *val_Proj_Flux);
 
   /*!
+   * \Overload
+   * \brief Compute the projected inviscid flux vector.
+   * \param[in] val_U - Pointer to the conserved variables.
+   * \param[in] val_V - Pointer to the primitive variables.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_Proj_Flux - Pointer to the projected flux.
+   */
+  void GetInviscidProjFlux(su2double *val_U, su2double *val_V,
+                           su2double *val_normal, su2double *val_Proj_Flux);
+
+  /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -770,6 +815,20 @@ public:
   void GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
                           su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor);
+
+  /*!
+   * \overload
+   * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
+   * \param[in] val_U - Vector conserved variables.
+   * \param[in] val_V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of partial derivatives of pressure w.r.t. conserved vars.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_scale - Scale of the projection.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetInviscidProjJac(su2double *val_U, su2double *val_V, su2double *val_dPdU,
+                          su2double *val_normal, su2double val_scale,
+                          su2double **val_Proj_Jac_Tensor);
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -893,6 +952,22 @@ public:
                   su2double **val_p_tensor);
 
   /*!
+   * \overload
+   * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables (really only need rhoEve)
+   * \param[in] V - Vector of primitive variables
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
+  void GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
+                  su2double *val_normal, su2double *l, su2double *m,
+                  su2double **val_p_tensor) ;
+
+  /*!
    * \brief Computation of the matrix Rinv*Pe.
    * \param[in] Beta2 - A variable in used to define Pe matrix.
    * \param[in] val_enthalpy - value of the enthalpy.
@@ -1007,6 +1082,23 @@ public:
                       su2double *val_soundspeed, su2double *val_normal,
                       su2double **val_invp_tensor);
 
+
+  /*!
+   * \overload
+   * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables.
+   * \param[in] V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
+  void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
+                     su2double *val_normal, su2double *l, su2double *m,
+                     su2double **val_invp_tensor) ;
+
   /*!
    * \brief Compute viscous residual and jacobian.
    */
@@ -1091,6 +1183,18 @@ public:
 
   /*!
    * \overload
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeResidual(su2double *val_resconv, su2double *val_resvisc,
+                               su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                               CConfig *config) {}
+
+  /*!
+   * \overload
    * \param[in] config - Definition of the particular problem.
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
@@ -1110,6 +1214,30 @@ public:
                                               su2double **val_Jacobian_j, CConfig* config,
                                               su2double &gamma_sep) { }
 
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeAxisymmetric(su2double *val_residual, su2double *val_source, su2double **val_Jacobian,
+                                    CConfig *config) {}
+
+
+  /*!
+   * \brief Calculation of the translational-vibrational energy exchange source term
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] val_residual - residual of the source terms
+   * \param[out] val_Jacobian_i - Jacobian of the source terms
+   */
+  inline virtual void ComputeVibRelaxation(su2double *val_residual, su2double *val_source, su2double **val_Jacobian_i, CConfig *config){}
+  
+  /*!
+   * \brief Calculation of the chemistry source term
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] val_residual - residual of the source terms
+   * \param[out] val_Jacobian_i - Jacobian of the source terms
+   */
+  inline virtual void ComputeChemistry(su2double *val_residual, su2double *val_source, su2double **val_Jacobian_i, CConfig *config){}
   /*!
    * \brief Set intermittency for numerics (used in SA with LM transition model)
    */
@@ -1314,6 +1442,40 @@ public:
    * \param[in] n: order of matrix V
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
+
+  /*!
+   * \brief Set variable indexes for NEMO solver.
+   */
+
+  inline void SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
+  
+  inline void SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
+  
+  inline void SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
+  
+  inline void SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
+  
+  inline void SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
+  
+  inline void SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
+  
+  inline void SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
+  
+  inline void SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
+  
+  inline void SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
+  
+  inline void SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
+  
+  inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
+  
+  inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
+  
+  inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
+  
+  inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j) {eve_i = val_Eve_i; eve_j = val_Eve_j; }
+  
+  inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j) {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
 
 };
 
