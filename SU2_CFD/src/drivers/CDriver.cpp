@@ -824,6 +824,9 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   geometry[MESH_0]->SetBoundVolume();
 
+  /*--- Not needed when a wall treatment is used, because this has
+              already been done. ---*/
+
   if( !wall_models ) {
     if (config->GetReorientElements()) {
       if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
