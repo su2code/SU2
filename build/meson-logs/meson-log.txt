@@ -1,0 +1,86 @@
+Build started at 2020-04-24T15:22:58.745350
+Main binary: /usr/bin/python3
+Build Options: -Dwith-mpi=enabled -Dbackend=ninja -Dbuildtype=debug -Dprefix=/home/catarina/Codes/SU2/SU2-TNE2/SU2-develop -Denable-tecio=false
+Python system: Linux
+The Meson build system
+Version: 0.52.999
+Source dir: /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop
+Build dir: /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build
+Build type: native build
+Project name: SU2
+Project version: 7.0.3 "Blackbird"
+C compiler for the build machine: cc (gcc 5.4.0 "cc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609")
+C linker for the build machine: GNU ld.bfd 2.26.1
+C++ compiler for the build machine: c++ (gcc 5.4.0 "c++ (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609")
+C++ linker for the build machine: GNU ld.bfd 2.26.1
+C compiler for the host machine: cc (gcc 5.4.0 "cc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609")
+C linker for the host machine: GNU ld.bfd 2.26.1
+C++ compiler for the host machine: c++ (gcc 5.4.0 "c++ (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609")
+C++ linker for the host machine: GNU ld.bfd 2.26.1
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+Program python3 found: YES (/usr/bin/python3)
+Dependency mpi found: YES 1.10.2 (cached)
+Dependency mpi found: YES 1.10.2 (cached)
+Message: -------------------------------------------------------------------------
+         |    ___ _   _ ___                                                      |
+         |   / __| | | |_  )   Release 7.0.3 "Blackbird"                         |
+         |   \__ \ |_| |/ /                                                      |
+         |   |___/\___//___|   Meson Configuration Summary                       |
+         |                                                                       |
+         -------------------------------------------------------------------------
+         
+         Option          Value
+         ---------------------
+         TecIO:          false
+         CGNS:           true
+         AD (reverse):   false
+         AD (forward):   false
+         Python Wrapper: false
+         Intel-MKL:      false
+         OpenBlas:       false
+         PaStiX:         false
+
+         Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
+         and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
+
+         Based on the input to this configuration, add these lines to your .bashrc file:
+
+         export SU2_RUN=/home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/bin
+         export SU2_HOME=/home/catarina/Codes/SU2/SU2-TNE2/SU2-develop
+         export PATH=$PATH:$SU2_RUN
+         export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+         Use './ninja -C build install' to compile and install SU2
+
+Build targets in project: 10
+Option buildtype is: debug [default: release]
+Found ninja-1.9.0.git at /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/ninja
+Running compile:
+Working directory:  /tmp/tmp_i1p3ccl
+Command line:  c++ /tmp/tmp_i1p3ccl/testfile.cpp -o /tmp/tmp_i1p3ccl/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
+
+Code:
+ int i = static_cast<int>(0);
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler accepts -std=c++11: YES
+Running compile:
+Working directory:  /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpcs299n8o
+Command line:  c++ /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpcs299n8o/testfile.cpp -o /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpcs299n8o/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/5/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../x86_64-linux-gnu/5/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../lib/:/lib/x86_64-linux-gnu/5/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/5/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/5/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ 

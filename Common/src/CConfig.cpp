@@ -804,6 +804,8 @@ void CConfig::SetPointersNull(void) {
   Marker_Inlet                = NULL;    Marker_Outlet           = NULL;
   Marker_Supersonic_Inlet     = NULL;    Marker_Supersonic_Outlet= NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
+  Marker_IsothermalCatalytic  = NULL;    Marker_IsothermalNonCatalytic = NULL;
+  Marker_HeatFluxNonCatalytic = NULL;    Marker_HeatFluxCatalytic      = NULL;
   Marker_Load                 = NULL;    Marker_Disp_Dir         = NULL;
   Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
   Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
@@ -824,7 +826,7 @@ void CConfig::SetPointersNull(void) {
 
   Inlet_Ttotal    = NULL;    Inlet_Ptotal      = NULL;
   Inlet_FlowDir   = NULL;    Inlet_Temperature = NULL;    Inlet_Pressure = NULL;
-  Inlet_Velocity  = NULL;
+  Inlet_Velocity  = NULL;    Inlet_MassFrac    = NULL;
   Outlet_Pressure = NULL;
 
   /*--- Engine Boundary Condition settings ---*/
@@ -1044,6 +1046,17 @@ void CConfig::SetPointersNull(void) {
   Total_UnstTime   = 0.0;
   Total_UnstTimeND = 0.0;
 
+  Reactions               = NULL; Omega00               = NULL; Omega11        = NULL;
+  Gas_Composition         = NULL; Enthalpy_Formation    = NULL; Blottner       = NULL;
+  Species_Ref_Temperature = NULL; nElStates      = NULL;
+  CharElTemp              = NULL; degen                 = NULL;
+  Molar_Mass              = NULL; 
+  ArrheniusCoefficient    = NULL; ArrheniusEta          = NULL; ArrheniusTheta  = NULL;
+  CharVibTemp             = NULL; RotationModes         = NULL; Ref_Temperature = NULL;
+  Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
+  Diss=NULL;
+
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -1159,6 +1172,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
+   /* DESCRIPTION: Specify chemical model for multi-species simulations */
+  addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, N2);
+  /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
+  addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
+  /* DESCRIPTION: Specify mass fraction of each species */
+  addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
   /* DESCRIPTION: Critical Temperature, default value for AIR */
@@ -1235,6 +1255,9 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+  /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
+
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -1264,8 +1287,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
 
-  /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
-  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
   default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
@@ -1507,6 +1528,18 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /* DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) */
+  addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
+  /* DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) */
+  addStringDoubleListOption("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
+  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  addStringDoubleListOption("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
+  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
@@ -1648,6 +1681,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_RADIATION", Kind_TimeIntScheme_Radiation, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
+  /* DESCRIPTION: Time discretization */
+  addEnumOption("TIME_DISCRE_NEMO", Kind_TimeIntScheme_NEMO, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
 
@@ -1798,6 +1833,16 @@ void CConfig::SetConfig_Options() {
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
 
+  /*!\brief CONV_NUM_METHOD_NEMO
+   *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
+  addConvectOption("CONV_NUM_METHOD_NEMO", Kind_ConvNumScheme_NEMO, Kind_Centered_NEMO, Kind_Upwind_NEMO);
+  /*!\brief MUSCL_NEMO \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_NEMO", MUSCL_NEMO, true);
+  /*!\brief SLOPE_LIMITER_NEMO
+   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_NEMO", Kind_SlopeLimit_NEMO, Limiter_Map, VENKATAKRISHNAN);
+  default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
+  
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
@@ -3271,6 +3316,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set limiter for no MUSCL reconstructions ---*/
 
   if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
+  if ((!MUSCL_NEMO) || (Kind_ConvNumScheme_NEMO == SPACE_CENTERED)) Kind_SlopeLimit_NEMO = NO_LIMITER;
   if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
   if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
   if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
@@ -3422,6 +3468,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
       Kind_Solver == RANS ||
+      Kind_Solver == NEMO_EULER ||
+      Kind_Solver == NEMO_NAVIER_STOKES ||
       Kind_Solver == FEM_EULER ||
       Kind_Solver == FEM_NAVIER_STOKES ||
       Kind_Solver == FEM_RANS ||
@@ -4032,6 +4080,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == EULER ||
       Kind_Solver == INC_EULER ||
+      Kind_Solver == NEMO_EULER ||
       Kind_Solver == FEM_EULER)
     Kind_Turb_Model = NONE;
 
@@ -4331,6 +4380,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set a flag for viscous simulations ---*/
 
   Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+             ( Kind_Solver == NEMO_NAVIER_STOKES     ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
@@ -4339,6 +4389,702 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == FEM_LES                ) ||
              ( Kind_Solver == INC_NAVIER_STOKES      ) ||
              ( Kind_Solver == INC_RANS               ) );
+
+  /*--- Reacting flows iniatilization ---*/
+  if (( Kind_Solver == NEMO_EULER             ) ||
+      ( Kind_Solver == NEMO_NAVIER_STOKES     ) )
+      /*( Kind_Solver == NEMO_RANS              )) */{
+
+    bool init_err;
+    unsigned short maxEl = 0;
+    unsigned short iSpecies, jSpecies, iEl;
+    su2double mf;
+
+    switch (Kind_GasModel) {
+    case ONESPECIES:
+      /*--- Define parameters of the gas model ---*/
+      nSpecies    = 1;
+      ionization  = false;
+
+      /*--- Allocate vectors for gas properties ---*/
+      Molar_Mass         = new su2double[nSpecies];
+      CharVibTemp        = new su2double[nSpecies];
+      RotationModes      = new su2double[nSpecies];
+      Enthalpy_Formation = new su2double[nSpecies];
+      Wall_Catalycity    = new su2double[nSpecies];
+      Ref_Temperature    = new su2double[nSpecies];
+      nElStates          = new unsigned short[nSpecies];
+
+      MassFrac_FreeStream = new su2double[nSpecies];
+      MassFrac_FreeStream[0] = 1.0;
+
+      /*--- Assign gas properties ---*/
+      // Rotational modes of energy storage
+      RotationModes[0] = 2.0;
+      // Molar mass [kg/kmol]
+      Molar_Mass[0] = 14.0067+15.9994;
+      // Characteristic vibrational temperatures for calculating e_vib [K]
+      //CharVibTemp[0] = 3395.0;
+      CharVibTemp[0] = 1000.0;
+      // Formation enthalpy: (JANAF values, [KJ/Kmol])
+      Enthalpy_Formation[0] = 0.0;          //N2
+      // Reference temperature (JANAF values, [K])
+      Ref_Temperature[0] = 0.0;
+
+      /*        nElStates[0] = 0;
+           CharElTemp   = new double *[nSpecies];
+           degen        = new double *[nSpecies];
+
+           OSPthetae    = new double[nElStates[0]];
+           OSPthetae[0] = 1.0;
+           OSPg         = new double[nElStates[0]];
+           OSPg[0]      = 1.0;
+
+           CharElTemp[0] = OSPthetae;
+           degen[0] = OSPg;*/
+
+      break;
+
+    case N2:
+
+      /*--- Check for errors in the initialization ---*/
+      init_err = false;
+      if (nSpecies != 2) {
+        cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+        init_err = true;
+      }
+      mf = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        mf += Gas_Composition[iSpecies];
+      if (mf != 1.0) {
+        cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+        init_err = true;
+      }
+
+      /*--- Define parameters of the gas model ---*/
+      nReactions  = 2;
+      ionization  = false;
+
+      /*--- Allocate vectors for gas properties ---*/
+      Wall_Catalycity      = new su2double[nSpecies];
+      Molar_Mass           = new su2double[nSpecies];
+      CharVibTemp          = new su2double[nSpecies];
+      RotationModes        = new su2double[nSpecies];
+      Enthalpy_Formation   = new su2double[nSpecies];
+      Ref_Temperature      = new su2double[nSpecies];
+      Diss                 = new su2double[nSpecies];
+      ArrheniusCoefficient = new su2double[nReactions];
+      ArrheniusEta         = new su2double[nReactions];
+      ArrheniusTheta       = new su2double[nReactions];
+      Tcf_a                = new su2double[nReactions];
+      Tcf_b                = new su2double[nReactions];
+      Tcb_a                = new su2double[nReactions];
+      Tcb_b                = new su2double[nReactions];
+      nElStates            = new unsigned short[nSpecies];
+      Reactions = new int**[nReactions];
+      for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+        Reactions[iRxn] = new int*[2];
+        for (unsigned short ii = 0; ii < 2; ii++)
+          Reactions[iRxn][ii] = new int[6];
+      }
+
+      Blottner  = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Blottner[iSpecies] = new su2double[3];
+
+      // Omega[iSpecies][jSpecies][iCoeff]
+      Omega00 = new su2double**[nSpecies];
+      Omega11 = new su2double**[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Omega00[iSpecies] = new su2double*[nSpecies];
+        Omega11[iSpecies] = new su2double*[nSpecies];
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+          Omega00[iSpecies][jSpecies] = new su2double[4];
+          Omega11[iSpecies][jSpecies] = new su2double[4];
+        }
+      }
+
+      MassFrac_FreeStream = new su2double[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
+
+      /*--- Assign gas properties ---*/
+
+      // Wall mass fractions for catalytic boundaries
+      Wall_Catalycity[0] = 0.999;
+      Wall_Catalycity[1] = 0.001;
+
+      // Rotational modes of energy storage
+      RotationModes[0] = 2.0;
+      RotationModes[1] = 0.0;
+
+      // Molar mass [kg/kmol]
+      Molar_Mass[0] = 2.0*14.0067;
+      Molar_Mass[1] = 14.0067;
+
+      // Characteristic vibrational temperatures
+      CharVibTemp[0] = 3395.0;
+      CharVibTemp[1] = 0.0;
+
+      // Formation enthalpy: (JANAF values [KJ/Kmol])
+      // J/kg - from Scalabrin
+      Enthalpy_Formation[0] = 0.0;          //N2
+      Enthalpy_Formation[1] = 3.36E7;   //N
+
+      // Reference temperature (JANAF values, [K])
+      Ref_Temperature[0] = 0.0;
+      Ref_Temperature[1] = 0.0;
+
+      // Blottner viscosity coefficients
+      // A                        // B                        // C
+      Blottner[0][0] = 2.68E-2;   Blottner[0][1] = 3.18E-1;   Blottner[0][2] = -1.13E1;  // N2
+      Blottner[1][0] = 1.16E-2;   Blottner[1][1] = 6.03E-1;   Blottner[1][2] = -1.24E1;  // N
+
+      // Number of electron states
+      nElStates[0] = 15;                    // N2
+      nElStates[1] = 3;                     // N
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        maxEl = max(maxEl, nElStates[iSpecies]);
+
+      /*--- Allocate electron data arrays ---*/
+      CharElTemp = new su2double*[nSpecies];
+      degen      = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        CharElTemp[iSpecies] = new su2double[maxEl];
+        degen[iSpecies]      = new su2double[maxEl];
+      }
+
+      /*--- Initialize the arrays ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (iEl = 0; iEl < maxEl; iEl++) {
+          CharElTemp[iSpecies][iEl] = 0.0;
+          degen[iSpecies][iEl] = 0.0;
+        }
+      }
+
+      /*--- Assign values to data structures ---*/
+      // N2: 15 states
+      CharElTemp[0][0]  = 0.000000000000000E+00;
+      CharElTemp[0][1]  = 7.223156514095200E+04;
+      CharElTemp[0][2]  = 8.577862640384000E+04;
+      CharElTemp[0][3]  = 8.605026716160000E+04;
+      CharElTemp[0][4]  = 9.535118627874400E+04;
+      CharElTemp[0][5]  = 9.805635702203200E+04;
+      CharElTemp[0][6]  = 9.968267656935200E+04;
+      CharElTemp[0][7]  = 1.048976467715200E+05;
+      CharElTemp[0][8]  = 1.116489555200000E+05;
+      CharElTemp[0][9]  = 1.225836470400000E+05;
+      CharElTemp[0][10] = 1.248856873600000E+05;
+      CharElTemp[0][11] = 1.282476158188320E+05;
+      CharElTemp[0][12] = 1.338060936000000E+05;
+      CharElTemp[0][13] = 1.404296391107200E+05;
+      CharElTemp[0][14] = 1.504958859200000E+05;
+      degen[0][0]  = 1;
+      degen[0][1]  = 3;
+      degen[0][2]  = 6;
+      degen[0][3]  = 6;
+      degen[0][4]  = 3;
+      degen[0][5]  = 1;
+      degen[0][6]  = 2;
+      degen[0][7]  = 2;
+      degen[0][8]  = 5;
+      degen[0][9]  = 1;
+      degen[0][10] = 6;
+      degen[0][11] = 6;
+      degen[0][12] = 10;
+      degen[0][13] = 6;
+      degen[0][14] = 6;
+      // N: 3 states
+      CharElTemp[1][0] = 0.000000000000000E+00;
+      CharElTemp[1][1] = 2.766469645581980E+04;
+      CharElTemp[1][2] = 4.149309313560210E+04;
+      degen[1][0] = 4;
+      degen[1][1] = 10;
+      degen[1][2] = 6;
+
+      /*--- Set Arrhenius coefficients for chemical reactions ---*/
+      // Note: Data lists coefficients in (cm^3/mol-s) units, need to convert
+      //       to (m^3/kmol-s) to be consistent with the rest of the code
+      // Pre-exponential factor
+      ArrheniusCoefficient[0]  = 7.0E21;
+      ArrheniusCoefficient[1]  = 3.0E22;
+      // Rate-controlling temperature exponent
+      ArrheniusEta[0]  = -1.60;
+      ArrheniusEta[1]  = -1.60;
+      // Characteristic temperature
+      ArrheniusTheta[0] = 113200.0;
+      ArrheniusTheta[1] = 113200.0;
+
+      /*--- Set reaction maps ---*/
+      // N2 + N2 -> 2N + N2
+      Reactions[0][0][0]=0;   Reactions[0][0][1]=0;   Reactions[0][0][2]=nSpecies;
+      Reactions[0][1][0]=1;   Reactions[0][1][1]=1;   Reactions[0][1][2] =0;
+      // N2 + N -> 2N + N
+      Reactions[1][0][0]=0;   Reactions[1][0][1]=1;   Reactions[1][0][2]=nSpecies;
+      Reactions[1][1][0]=1;   Reactions[1][1][1]=1;   Reactions[1][1][2]=1;
+
+      /*--- Set rate-controlling temperature exponents ---*/
+      //  -----------  Tc = Ttr^a * Tve^b  -----------
+      //
+      // Forward Reactions
+      //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+      //   Exchange:          a = 1,   b = 0
+      //   Impact ionization: a = 0,   b = 1
+      //
+      // Backward Reactions
+      //   Recomb ionization:      a = 0, b = 1
+      //   Impact ionization:      a = 0, b = 1
+      //   N2 impact dissociation: a = 0, b = 1
+      //   Others:                 a = 1, b = 0
+      Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
+      Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
+
+      /*--- Dissociation potential [KJ/kg] ---*/
+      Diss[0] = 3.36E4;
+      Diss[1] = 0.0;
+
+      /*--- Collision integral data ---*/
+      Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+      Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+      Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+      Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+
+      Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+      Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+      Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+      Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+
+      break;
+
+    case AIR5:
+
+      /*--- Check for errors in the initialization ---*/
+      init_err = false;
+      if (nSpecies != 5) {
+        cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+        init_err = true;
+      }
+      mf = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        mf += Gas_Composition[iSpecies];
+      if (mf != 1.0) {
+        cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+        init_err = true;
+      }
+
+      /*--- Define parameters of the gas model ---*/
+      nReactions  = 17;
+      ionization  = false;
+
+      /*--- Allocate vectors for gas properties ---*/
+      Wall_Catalycity      = new su2double[nSpecies];
+      Molar_Mass           = new su2double[nSpecies];
+      CharVibTemp          = new su2double[nSpecies];
+      RotationModes        = new su2double[nSpecies];
+      Enthalpy_Formation   = new su2double[nSpecies];
+      Ref_Temperature      = new su2double[nSpecies];
+      ArrheniusCoefficient = new su2double[nReactions];
+      ArrheniusEta         = new su2double[nReactions];
+      ArrheniusTheta       = new su2double[nReactions];
+      Tcf_a                = new su2double[nReactions];
+      Tcf_b                = new su2double[nReactions];
+      Tcb_a                = new su2double[nReactions];
+      Tcb_b                = new su2double[nReactions];
+      nElStates            = new unsigned short[nSpecies];
+      Reactions            = new int**[nReactions];
+      for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+        Reactions[iRxn] = new int*[2];
+        for (unsigned short ii = 0; ii < 2; ii++)
+          Reactions[iRxn][ii] = new int[6];
+      }
+
+      Blottner  = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Blottner[iSpecies] = new su2double[3];
+
+      // Omega[iSpecies][jSpecies][iCoeff]
+      Omega00 = new su2double**[nSpecies];
+      Omega11 = new su2double**[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Omega00[iSpecies] = new su2double*[nSpecies];
+        Omega11[iSpecies] = new su2double*[nSpecies];
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+          Omega00[iSpecies][jSpecies] = new su2double[4];
+          Omega11[iSpecies][jSpecies] = new su2double[4];
+        }
+      }
+
+      // Wall mass fractions for catalytic boundaries
+      Wall_Catalycity[0] = 0.4;
+      Wall_Catalycity[1] = 0.4;
+      Wall_Catalycity[2] = 0.1;
+      Wall_Catalycity[3] = 0.05;
+      Wall_Catalycity[4] = 0.05;
+
+      // Free stream mass fractions
+      MassFrac_FreeStream = new su2double[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
+
+      /*--- Assign gas properties ---*/
+      // Rotational modes of energy storage
+      RotationModes[0] = 2.0;
+      RotationModes[1] = 2.0;
+      RotationModes[2] = 2.0;
+      RotationModes[3] = 0.0;
+      RotationModes[4] = 0.0;
+
+      // Molar mass [kg/kmol]
+      Molar_Mass[0] = 2.0*14.0067;
+      Molar_Mass[1] = 2.0*15.9994;
+      Molar_Mass[2] = 14.0067+15.9994;
+      Molar_Mass[3] = 14.0067;
+      Molar_Mass[4] = 15.9994;
+
+      //Characteristic vibrational temperatures
+      CharVibTemp[0] = 3395.0;
+      CharVibTemp[1] = 2239.0;
+      CharVibTemp[2] = 2817.0;
+      CharVibTemp[3] = 0.0;
+      CharVibTemp[4] = 0.0;
+
+      // Formation enthalpy: (Scalabrin values, J/kg)
+      Enthalpy_Formation[0] = 0.0;      //N2
+      Enthalpy_Formation[1] = 0.0;      //O2
+      Enthalpy_Formation[2] = 3.0E6;    //NO
+      Enthalpy_Formation[3] = 3.36E7;   //N
+      Enthalpy_Formation[4] = 1.54E7;   //O
+
+      // Reference temperature (JANAF values, [K])
+      Ref_Temperature[0] = 0.0;
+      Ref_Temperature[1] = 0.0;
+      Ref_Temperature[2] = 0.0;
+      Ref_Temperature[3] = 0.0;
+      Ref_Temperature[4] = 0.0;
+      //        Ref_Temperature[2] = 298.15;
+      //        Ref_Temperature[3] = 298.15;
+      //        Ref_Temperature[4] = 298.15;
+
+      // Blottner viscosity coefficients
+      // A                        // B                        // C
+      Blottner[0][0] = 2.68E-2;   Blottner[0][1] =  3.18E-1;  Blottner[0][2] = -1.13E1;  // N2
+      Blottner[1][0] = 4.49E-2;   Blottner[1][1] = -8.26E-2;  Blottner[1][2] = -9.20E0;  // O2
+      Blottner[2][0] = 4.36E-2;   Blottner[2][1] = -3.36E-2;  Blottner[2][2] = -9.58E0;  // NO
+      Blottner[3][0] = 1.16E-2;   Blottner[3][1] =  6.03E-1;  Blottner[3][2] = -1.24E1;  // N
+      Blottner[4][0] = 2.03E-2;   Blottner[4][1] =  4.29E-1;  Blottner[4][2] = -1.16E1;  // O
+
+      // Number of electron states
+      nElStates[0] = 15;                    // N2
+      nElStates[1] = 7;                     // O2
+      nElStates[2] = 16;                    // NO
+      nElStates[3] = 3;                     // N
+      nElStates[4] = 5;                     // O
+
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        maxEl = max(maxEl, nElStates[iSpecies]);
+
+      /*--- Allocate electron data arrays ---*/
+      CharElTemp = new su2double*[nSpecies];
+      degen      = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        CharElTemp[iSpecies] = new su2double[maxEl];
+        degen[iSpecies]      = new su2double[maxEl];
+      }
+
+      /*--- Initialize the arrays ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (iEl = 0; iEl < maxEl; iEl++) {
+          CharElTemp[iSpecies][iEl] = 0.0;
+          degen[iSpecies][iEl] = 0.0;
+        }
+      }
+
+      //N2: 15 states
+      CharElTemp[0][0]  = 0.000000000000000E+00;
+      CharElTemp[0][1]  = 7.223156514095200E+04;
+      CharElTemp[0][2]  = 8.577862640384000E+04;
+      CharElTemp[0][3]  = 8.605026716160000E+04;
+      CharElTemp[0][4]  = 9.535118627874400E+04;
+      CharElTemp[0][5]  = 9.805635702203200E+04;
+      CharElTemp[0][6]  = 9.968267656935200E+04;
+      CharElTemp[0][7]  = 1.048976467715200E+05;
+      CharElTemp[0][8]  = 1.116489555200000E+05;
+      CharElTemp[0][9]  = 1.225836470400000E+05;
+      CharElTemp[0][10] = 1.248856873600000E+05;
+      CharElTemp[0][11] = 1.282476158188320E+05;
+      CharElTemp[0][12] = 1.338060936000000E+05;
+      CharElTemp[0][13] = 1.404296391107200E+05;
+      CharElTemp[0][14] = 1.504958859200000E+05;
+      degen[0][0]  = 1;
+      degen[0][1]  = 3;
+      degen[0][2]  = 6;
+      degen[0][3]  = 6;
+      degen[0][4]  = 3;
+      degen[0][5]  = 1;
+      degen[0][6]  = 2;
+      degen[0][7]  = 2;
+      degen[0][8]  = 5;
+      degen[0][9]  = 1;
+      degen[0][10] = 6;
+      degen[0][11] = 6;
+      degen[0][12] = 10;
+      degen[0][13] = 6;
+      degen[0][14] = 6;
+
+      // O2: 7 states
+      CharElTemp[1][0] = 0.000000000000000E+00;
+      CharElTemp[1][1] = 1.139156019700800E+04;
+      CharElTemp[1][2] = 1.898473947826400E+04;
+      CharElTemp[1][3] = 4.755973576639200E+04;
+      CharElTemp[1][4] = 4.991242097343200E+04;
+      CharElTemp[1][5] = 5.092268575561600E+04;
+      CharElTemp[1][6] = 7.189863255967200E+04;
+      degen[1][0] = 3;
+      degen[1][1] = 2;
+      degen[1][2] = 1;
+      degen[1][3] = 1;
+      degen[1][4] = 6;
+      degen[1][5] = 3;
+      degen[1][6] = 3;
+
+      // NO: 16 states
+      CharElTemp[2][0]  = 0.000000000000000E+00;
+      CharElTemp[2][1]  = 5.467345760000000E+04;
+      CharElTemp[2][2]  = 6.317139627802400E+04;
+      CharElTemp[2][3]  = 6.599450342445600E+04;
+      CharElTemp[2][4]  = 6.906120960000000E+04;
+      CharElTemp[2][5]  = 7.049998480000000E+04;
+      CharElTemp[2][6]  = 7.491055017560000E+04;
+      CharElTemp[2][7]  = 7.628875293968000E+04;
+      CharElTemp[2][8]  = 8.676188537552000E+04;
+      CharElTemp[2][9]  = 8.714431182368000E+04;
+      CharElTemp[2][10] = 8.886077063728000E+04;
+      CharElTemp[2][11] = 8.981755614528000E+04;
+      CharElTemp[2][12] = 8.988445919208000E+04;
+      CharElTemp[2][13] = 9.042702132000000E+04;
+      CharElTemp[2][14] = 9.064283760000000E+04;
+      CharElTemp[2][15] = 9.111763341600000E+04;
+      degen[2][0]  = 4;
+      degen[2][1]  = 8;
+      degen[2][2]  = 2;
+      degen[2][3]  = 4;
+      degen[2][4]  = 4;
+      degen[2][5]  = 4;
+      degen[2][6]  = 4;
+      degen[2][7]  = 2;
+      degen[2][8]  = 4;
+      degen[2][9]  = 2;
+      degen[2][10] = 4;
+      degen[2][11] = 4;
+      degen[2][12] = 2;
+      degen[2][13] = 2;
+      degen[2][14] = 2;
+      degen[2][15] = 4;
+
+      // N: 3 states
+      CharElTemp[3][0] = 0.000000000000000E+00;
+      CharElTemp[3][1] = 2.766469645581980E+04;
+      CharElTemp[3][2] = 4.149309313560210E+04;
+      degen[3][0] = 4;
+      degen[3][1] = 10;
+      degen[3][2] = 6;
+
+      // O: 5 states
+      CharElTemp[4][0] = 0.000000000000000E+00;
+      CharElTemp[4][1] = 2.277077570280000E+02;
+      CharElTemp[4][2] = 3.265688785704000E+02;
+      CharElTemp[4][3] = 2.283028632262240E+04;
+      CharElTemp[4][4] = 4.861993036434160E+04;
+      degen[4][0] = 5;
+      degen[4][1] = 3;
+      degen[4][2] = 1;
+      degen[4][3] = 5;
+      degen[4][4] = 1;
+
+      /*--- Set reaction maps ---*/
+      // N2 dissociation
+      Reactions[0][0][0]=0;   Reactions[0][0][1]=0;   Reactions[0][0][2]=nSpecies;    Reactions[0][1][0]=3;   Reactions[0][1][1]=3;   Reactions[0][1][2] =0;
+      Reactions[1][0][0]=0;   Reactions[1][0][1]=1;   Reactions[1][0][2]=nSpecies;    Reactions[1][1][0]=3;   Reactions[1][1][1]=3;   Reactions[1][1][2] =1;
+      Reactions[2][0][0]=0;   Reactions[2][0][1]=2;   Reactions[2][0][2]=nSpecies;    Reactions[2][1][0]=3;   Reactions[2][1][1]=3;   Reactions[2][1][2] =2;
+      Reactions[3][0][0]=0;   Reactions[3][0][1]=3;   Reactions[3][0][2]=nSpecies;    Reactions[3][1][0]=3;   Reactions[3][1][1]=3;   Reactions[3][1][2] =3;
+      Reactions[4][0][0]=0;   Reactions[4][0][1]=4;   Reactions[4][0][2]=nSpecies;    Reactions[4][1][0]=3;   Reactions[4][1][1]=3;   Reactions[4][1][2] =4;
+      // O2 dissociation
+      Reactions[5][0][0]=1;   Reactions[5][0][1]=0;   Reactions[5][0][2]=nSpecies;    Reactions[5][1][0]=4;   Reactions[5][1][1]=4;   Reactions[5][1][2] =0;
+      Reactions[6][0][0]=1;   Reactions[6][0][1]=1;   Reactions[6][0][2]=nSpecies;    Reactions[6][1][0]=4;   Reactions[6][1][1]=4;   Reactions[6][1][2] =1;
+      Reactions[7][0][0]=1;   Reactions[7][0][1]=2;   Reactions[7][0][2]=nSpecies;    Reactions[7][1][0]=4;   Reactions[7][1][1]=4;   Reactions[7][1][2] =2;
+      Reactions[8][0][0]=1;   Reactions[8][0][1]=3;   Reactions[8][0][2]=nSpecies;    Reactions[8][1][0]=4;   Reactions[8][1][1]=4;   Reactions[8][1][2] =3;
+      Reactions[9][0][0]=1;   Reactions[9][0][1]=4;   Reactions[9][0][2]=nSpecies;    Reactions[9][1][0]=4;   Reactions[9][1][1]=4;   Reactions[9][1][2] =4;
+      // NO dissociation
+      Reactions[10][0][0]=2;    Reactions[10][0][1]=0;    Reactions[10][0][2]=nSpecies;   Reactions[10][1][0]=3;    Reactions[10][1][1]=4;    Reactions[10][1][2] =0;
+      Reactions[11][0][0]=2;    Reactions[11][0][1]=1;    Reactions[11][0][2]=nSpecies;   Reactions[11][1][0]=3;    Reactions[11][1][1]=4;    Reactions[11][1][2] =1;
+      Reactions[12][0][0]=2;    Reactions[12][0][1]=2;    Reactions[12][0][2]=nSpecies;   Reactions[12][1][0]=3;    Reactions[12][1][1]=4;    Reactions[12][1][2] =2;
+      Reactions[13][0][0]=2;    Reactions[13][0][1]=3;    Reactions[13][0][2]=nSpecies;   Reactions[13][1][0]=3;    Reactions[13][1][1]=4;    Reactions[13][1][2] =3;
+      Reactions[14][0][0]=2;    Reactions[14][0][1]=4;    Reactions[14][0][2]=nSpecies;   Reactions[14][1][0]=3;    Reactions[14][1][1]=4;    Reactions[14][1][2] =4;
+      // N2 + O -> NO + N
+      Reactions[15][0][0]=0;    Reactions[15][0][1]=4;    Reactions[15][0][2]=nSpecies;   Reactions[15][1][0]=2;    Reactions[15][1][1]=3;    Reactions[15][1][2]= nSpecies;
+      // NO + O -> O2 + N
+      Reactions[16][0][0]=2;    Reactions[16][0][1]=4;    Reactions[16][0][2]=nSpecies;   Reactions[16][1][0]=1;    Reactions[16][1][1]=3;    Reactions[16][1][2]= nSpecies;
+
+      /*--- Set Arrhenius coefficients for reactions ---*/
+      // Pre-exponential factor
+      ArrheniusCoefficient[0]  = 7.0E21;
+      ArrheniusCoefficient[1]  = 7.0E21;
+      ArrheniusCoefficient[2]  = 7.0E21;
+      ArrheniusCoefficient[3]  = 3.0E22;
+      ArrheniusCoefficient[4]  = 3.0E22;
+      ArrheniusCoefficient[5]  = 2.0E21;
+      ArrheniusCoefficient[6]  = 2.0E21;
+      ArrheniusCoefficient[7]  = 2.0E21;
+      ArrheniusCoefficient[8]  = 1.0E22;
+      ArrheniusCoefficient[9]  = 1.0E22;
+      ArrheniusCoefficient[10] = 5.0E15;
+      ArrheniusCoefficient[11] = 5.0E15;
+      ArrheniusCoefficient[12] = 5.0E15;
+      ArrheniusCoefficient[13] = 1.1E17;
+      ArrheniusCoefficient[14] = 1.1E17;
+      ArrheniusCoefficient[15] = 6.4E17;
+      ArrheniusCoefficient[16] = 8.4E12;
+
+      // Rate-controlling temperature exponent
+      ArrheniusEta[0]  = -1.60;
+      ArrheniusEta[1]  = -1.60;
+      ArrheniusEta[2]  = -1.60;
+      ArrheniusEta[3]  = -1.60;
+      ArrheniusEta[4]  = -1.60;
+      ArrheniusEta[5]  = -1.50;
+      ArrheniusEta[6]  = -1.50;
+      ArrheniusEta[7]  = -1.50;
+      ArrheniusEta[8]  = -1.50;
+      ArrheniusEta[9]  = -1.50;
+      ArrheniusEta[10] = 0.0;
+      ArrheniusEta[11] = 0.0;
+      ArrheniusEta[12] = 0.0;
+      ArrheniusEta[13] = 0.0;
+      ArrheniusEta[14] = 0.0;
+      ArrheniusEta[15] = -1.0;
+      ArrheniusEta[16] = 0.0;
+
+      // Characteristic temperature
+      ArrheniusTheta[0]  = 113200.0;
+      ArrheniusTheta[1]  = 113200.0;
+      ArrheniusTheta[2]  = 113200.0;
+      ArrheniusTheta[3]  = 113200.0;
+      ArrheniusTheta[4]  = 113200.0;
+      ArrheniusTheta[5]  = 59500.0;
+      ArrheniusTheta[6]  = 59500.0;
+      ArrheniusTheta[7]  = 59500.0;
+      ArrheniusTheta[8]  = 59500.0;
+      ArrheniusTheta[9]  = 59500.0;
+      ArrheniusTheta[10] = 75500.0;
+      ArrheniusTheta[11] = 75500.0;
+      ArrheniusTheta[12] = 75500.0;
+      ArrheniusTheta[13] = 75500.0;
+      ArrheniusTheta[14] = 75500.0;
+      ArrheniusTheta[15] = 38400.0;
+      ArrheniusTheta[16] = 19450.0;
+
+      /*--- Set rate-controlling temperature exponents ---*/
+      //  -----------  Tc = Ttr^a * Tve^b  -----------
+      //
+      // Forward Reactions
+      //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+      //   Exchange:          a = 1,   b = 0
+      //   Impact ionization: a = 0,   b = 1
+      //
+      // Backward Reactions
+      //   Recomb ionization:      a = 0, b = 1
+      //   Impact ionization:      a = 0, b = 1
+      //   N2 impact dissociation: a = 0, b = 1
+      //   Others:                 a = 1, b = 0
+      Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
+      Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
+      Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
+      Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
+      Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
+
+      Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
+      Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
+      Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
+      Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
+      Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
+
+      Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
+      Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
+      Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
+      Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
+      Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
+
+      Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
+      Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
+
+      /*--- Collision integral data ---*/
+      // Omega(0,0) ----------------------
+      //N2
+      Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+      Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
+      Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
+      Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
+      Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+      //O2
+      Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
+      Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
+      Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
+      Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
+      Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+      //NO
+      Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
+      Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
+      Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
+      Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
+      Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+      //N
+      Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
+      Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
+      Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
+      Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
+      Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+      //O
+      Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
+      Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
+      Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
+      Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
+      Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
+
+      // Omega(1,1) ----------------------
+      //N2
+      Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+      Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
+      Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
+      Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
+      Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+      //O2
+      Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
+      Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
+      Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
+      Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
+      Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+      //NO
+      Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
+      Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
+      Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
+      Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
+      Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+      //N
+      Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
+      Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
+      Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
+      Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
+      Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+      //O
+      Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
+      Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
+      Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
+      Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
+      Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
+
+      break;
+    }
+  }
 
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
@@ -4930,8 +5676,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
-  iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
-  iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
+  iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
+  iMarker_Isothermal, iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic,
+  iMarker_HeatFlux, iMarker_HeatFluxCatalytic, iMarker_HeatFluxNoncatalytic,
+  iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
@@ -4952,7 +5700,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic + nMarker_IsothermalNonCatalytic +
+  nMarker_HeatFlux + nMarker_HeatFluxCatalytic + nMarker_HeatFluxNonCatalytic +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
@@ -5348,10 +6097,34 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL;
     iMarker_CfgFile++;
   }
+ 
+  for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL_CATALYTIC;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL_NONCATALYTIC;
+    iMarker_CfgFile++;
+  }
 
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFlux[iMarker_HeatFlux];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX_CATALYTIC;
+    iMarker_CfgFile++;
+  }
+  
+  for (iMarker_HeatFluxNoncatalytic = 0; iMarker_HeatFluxNoncatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNoncatalytic++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNoncatalytic];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX_NONCATALYTIC;
     iMarker_CfgFile++;
   }
 
@@ -5545,6 +6318,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Fluid_Load,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_HeatFluxCatalytic, iMarker_HeatFluxNonCatalytic,
+  iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
@@ -5607,6 +6382,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
+      case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
+        break;
+        case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        break;
       case FEM_LES:
         if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
@@ -5650,7 +6431,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
+          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
+          (Kind_Solver == NEMO_NAVIER_STOKES)/* || (Kind_Solver == NEMO_RANS)*/)
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -6168,6 +6950,70 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
+    if ( (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES)// || (Kind_Solver == NEMO_RANS) ||
+         /*(Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) ||
+         (Kind_Solver == DISC_ADJ_NEMO_RANS)*/) {
+
+      if (Kind_ConvNumScheme_NEMO == SPACE_CENTERED) {
+        //if (Kind_Centered_NEMO == JST) {
+        //  cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
+        //  cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_NEMO << ", " << Kappa_4th_NEMO <<"." << endl;
+        //  cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        //}
+        if (Kind_Centered_NEMO== LAX) {
+          cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
+          cout << "Lax viscous coefficients (1st): " << Kappa_1st_NEMO << "." << endl;
+          cout << "First order integration." << endl;
+        }
+      }
+
+      if (Kind_ConvNumScheme_NEMO == SPACE_UPWIND) {
+        if (Kind_Upwind_NEMO == ROE)   cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_NEMO == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_NEMO == AUSMPLUSUP2)  cout << "AUSM+ -Up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_NEMO == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_NEMO == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
+
+        if (Kind_Regime == COMPRESSIBLE) {
+          switch (Kind_RoeLowDiss) {
+          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+          }
+        }
+
+        if (MUSCL_NEMO) {
+          cout << "Second order integration in space, with slope limiter." << endl;
+          switch (Kind_SlopeLimit_NEMO) {
+          case NO_LIMITER:
+            cout << "No slope-limiting method. "<< endl;
+            break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case VENKATAKRISHNAN_WANG:
+            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case BARTH_JESPERSEN:
+            cout << "Barth-Jespersen slope-limiting method." << endl;
+            break;
+          case VAN_ALBADA_EDGE:
+            cout << "Van Albada slope-limiting method implemented by edges." << endl;
+            break;
+          }
+        }
+        else {
+          cout << "First order integration in space." << endl;
+        }
+
+      }
+
+    }
+
+
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
@@ -6298,8 +7144,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_NAVIER_STOKES) || //|| (Kind_Solver == NEMO_RANS) ||
         (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
+        //(Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)||
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -6453,6 +7301,61 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           break;
       }
     }
+
+      if ((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) //|| (Kind_Solver == NEMO_RANS) ||
+         /*(Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)*/) {
+      switch (Kind_TimeIntScheme_NEMO) {
+        case RUNGE_KUTTA_EXPLICIT:
+          cout << "Runge-Kutta explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << nRKStep << endl;
+          cout << "Alpha coefficients: ";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << "\t" << RK_Alpha_Step[iRKStep];
+          }
+          cout << endl;
+          break;
+        case EULER_EXPLICIT:
+          cout << "Euler explicit method for the flow equations." << endl;
+          break;
+        case EULER_IMPLICIT:
+          cout << "Euler implicit method for the flow equations." << endl;
+          switch (Kind_Linear_Solver) {
+            case BCGSTAB:
+            case FGMRES:
+            case RESTARTED_FGMRES:
+              if (Kind_Linear_Solver == BCGSTAB)
+                cout << "BCGSTAB is used for solving the linear system." << endl;
+              else
+                cout << "FGMRES is used for solving the linear system." << endl;
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
+                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
+              }
+              break;
+            case SMOOTHER:
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
+                case LINELET: cout << "A Linelet"; break;
+                case LU_SGS:  cout << "A LU-SGS"; break;
+                case JACOBI:  cout << "A Jacobi"; break;
+              }
+              cout << " method is used for smoothing the linear system." << endl;
+              break;
+          }
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
+          break;
+        case CLASSICAL_RK4_EXPLICIT:
+          cout << "Classical RK4 explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << 4 << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+          break;
+      }
+    }
+
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
@@ -6946,11 +7849,47 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_IsothermalCatalytic != 0) {
+    BoundaryTable << "Catalytic Isothermal wall";
+    for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
+      BoundaryTable << Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
+      if (iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+   if (nMarker_IsothermalNonCatalytic != 0) {
+    BoundaryTable << "Non-catalytic Isothermal wall";
+    for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
+      BoundaryTable << Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
+      if (iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_HeatFlux != 0) {
     BoundaryTable << "Heat flux wall";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       BoundaryTable << Marker_HeatFlux[iMarker_HeatFlux];
       if (iMarker_HeatFlux < nMarker_HeatFlux-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_HeatFluxCatalytic != 0) {
+    BoundaryTable << "Catalytic Heat flux wall";
+    for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
+      BoundaryTable << Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
+      if (iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_HeatFluxNonCatalytic  != 0) {
+    BoundaryTable << "Non-Catalytic Heat flux wall";
+    for (iMarker_HeatFluxNonCatalytic  = 0; iMarker_HeatFluxNonCatalytic  < nMarker_HeatFluxNonCatalytic ; iMarker_HeatFluxNonCatalytic ++) {
+      BoundaryTable << Marker_HeatFluxNonCatalytic [iMarker_HeatFluxNonCatalytic ];
+      if (iMarker_HeatFluxNonCatalytic  < nMarker_HeatFluxNonCatalytic -1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -7352,6 +8291,10 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker){
 
   if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
       Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+      Marker_All_KindBC[iMarker] == HEAT_FLUX_NONCATALYTIC  ||
+      Marker_All_KindBC[iMarker] == ISOTHERMAL_NONCATALYTIC ||
+      Marker_All_KindBC[iMarker] == HEAT_FLUX_CATALYTIC  ||
+      Marker_All_KindBC[iMarker] == ISOTHERMAL_CATALYTIC ||
       Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
       Marker_All_KindBC[iMarker] == EULER_WALL){
     return true;
@@ -7364,6 +8307,10 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker){
 
   if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
       Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+      Marker_All_KindBC[iMarker] == HEAT_FLUX_NONCATALYTIC  ||
+      Marker_All_KindBC[iMarker] == ISOTHERMAL_NONCATALYTIC ||
+      Marker_All_KindBC[iMarker] == HEAT_FLUX_CATALYTIC  ||
+      Marker_All_KindBC[iMarker] == ISOTHERMAL_CATALYTIC ||
       Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE){
     return true;
   }
@@ -7681,6 +8628,12 @@ CConfig::~CConfig(void) {
     delete [] Inlet_Velocity;
   }
 
+  if (Inlet_MassFrac != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
+      delete [] Inlet_MassFrac[iMarker];
+    delete [] Inlet_MassFrac;
+  }
+
   if (Riemann_FlowDir != NULL) {
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
       delete [] Riemann_FlowDir[iMarker];
@@ -7764,6 +8717,8 @@ CConfig::~CConfig(void) {
   if (Marker_Supersonic_Outlet != NULL )   delete[] Marker_Supersonic_Outlet;
   if (Marker_Outlet != NULL )             delete[] Marker_Outlet;
   if (Marker_Isothermal != NULL )         delete[] Marker_Isothermal;
+  if (Marker_IsothermalCatalytic != NULL )      delete[] Marker_IsothermalCatalytic;
+  if (Marker_IsothermalNonCatalytic != NULL )   delete[] Marker_IsothermalNonCatalytic;
   if (Marker_EngineInflow != NULL )      delete[] Marker_EngineInflow;
   if (Marker_EngineExhaust != NULL )     delete[] Marker_EngineExhaust;
   if (Marker_Displacement != NULL )       delete[] Marker_Displacement;
@@ -7775,6 +8730,8 @@ CConfig::~CConfig(void) {
   if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
   if (Marker_Internal != NULL )            delete[] Marker_Internal;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
+  if (Marker_HeatFluxCatalytic != NULL )        delete[] Marker_HeatFluxCatalytic;
+  if (Marker_HeatFluxNonCatalytic != NULL )               delete[] Marker_HeatFluxNonCatalytic;
   if (Marker_Emissivity != NULL )         delete[] Marker_Emissivity;
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
@@ -8029,6 +8986,8 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
+    case RUNTIME_NEMO_SYS:      return NEMO_SOL;
+    //case RUNTIME_ADJNEMO_SYS:   return ADJNEMO_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
@@ -8074,6 +9033,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
+    case NEMO_EULER:
+      if (val_system == RUNTIME_NEMO_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_NEMO, Kind_Centered_NEMO,
+                              Kind_Upwind_NEMO, Kind_SlopeLimit_NEMO,
+                              MUSCL_NEMO, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_NEMO);
+      }
+      break;
     case NAVIER_STOKES: case INC_NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
@@ -8084,6 +9051,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+      }
+      break;
+    case NEMO_NAVIER_STOKES:
+      if (val_system == RUNTIME_NEMO_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_NEMO, Kind_Centered_NEMO,
+                              Kind_Upwind_NEMO, Kind_SlopeLimit_NEMO,
+                              MUSCL_NEMO, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_NEMO);
       }
       break;
     case RANS: case INC_RANS:
@@ -8557,6 +9532,13 @@ su2double* CConfig::GetInlet_Velocity(string val_marker) {
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
 }
 
+su2double* CConfig::GetInlet_MassFrac(string val_marker) {
+  unsigned short iMarker_Supersonic_Inlet;
+  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
+    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
+  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
+}
+
 su2double CConfig::GetOutlet_Pressure(string val_marker) {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
@@ -8838,6 +9820,8 @@ su2double CConfig::GetIsothermal_Temperature(string val_marker) {
   return Isothermal_Temperature[iMarker_Isothermal];
 }
 
+/* Missing equivalent for NEMO solver isothermal catalytic and isothermal non-catalytic wall*/
+
 su2double CConfig::GetWall_HeatFlux(string val_marker) {
   unsigned short iMarker_HeatFlux = 0;
 
@@ -8848,6 +9832,8 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
 
   return Heat_Flux[iMarker_HeatFlux];
 }
+
+/* Missing equivalent for NEMO solver heat-flux catalytic and heat-flux non-catalytic wall*/
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {
   unsigned short WallFunction = NO_WALL_FUNCTION;
@@ -9733,6 +10719,167 @@ void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
 
 }
 
+void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction) {
+
+  switch (Kind_GasModel) {
+
+  case O2:
+
+    //O2 + M -> 2O + M
+    RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
+    RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
+    RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
+    RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
+    RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
+    RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
+
+    break;
+
+  case N2:
+
+    //N2 + M -> 2N + M
+    RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+    RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+    RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+    RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+    RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+    RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    break;
+
+  case ARGON_SID:
+
+    //N2 + M -> 2N + M
+    RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+    RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+    RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+    RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+    RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+    RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    break;
+
+  case AIR5:
+
+    if (iReaction <= 4) {
+
+      //N2 + M -> 2N + M
+      RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+      RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+      RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+      RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+      RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+      RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    } else if (iReaction > 4 && iReaction <= 9) {
+
+      //O2 + M -> 2O + M
+      RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
+      RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
+      RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
+      RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
+      RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
+      RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
+
+    } else if (iReaction > 9 && iReaction <= 14) {
+
+      //NO + M -> N + O + M
+      RxnConstantTable[0][0] = 2.1649;  RxnConstantTable[0][1] = 0.078577;  RxnConstantTable[0][2] = 2.8508;  RxnConstantTable[0][3] = -8.5422; RxnConstantTable[0][4] = 0.053043;
+      RxnConstantTable[1][0] = 1.0072;  RxnConstantTable[1][1] = 0.53545;   RxnConstantTable[1][2] = 1.1911;  RxnConstantTable[1][3] = -7.8098; RxnConstantTable[1][4] = 0.004394;
+      RxnConstantTable[2][0] = 0.63817; RxnConstantTable[2][1] = 0.68189;   RxnConstantTable[2][2] = 0.66336; RxnConstantTable[2][3] = -7.5773; RxnConstantTable[2][4] = -0.011025;
+      RxnConstantTable[3][0] = 0.55889; RxnConstantTable[3][1] = 0.71558;   RxnConstantTable[3][2] = 0.55396; RxnConstantTable[3][3] = -7.5304; RxnConstantTable[3][4] = -0.014089;
+      RxnConstantTable[4][0] = 0.5150;  RxnConstantTable[4][1] = 0.73286;   RxnConstantTable[4][2] = 0.49096; RxnConstantTable[4][3] = -7.5025; RxnConstantTable[4][4] = -0.015938;
+      RxnConstantTable[5][0] = 0.50765; RxnConstantTable[5][1] = 0.73575;   RxnConstantTable[5][2] = 0.48042; RxnConstantTable[5][3] = -7.4979; RxnConstantTable[5][4] = -0.016247;
+
+    } else if (iReaction == 15) {
+
+      //N2 + O -> NO + N
+      RxnConstantTable[0][0] = 1.3261;  RxnConstantTable[0][1] = 0.75268; RxnConstantTable[0][2] = 1.2474;  RxnConstantTable[0][3] = -4.1857; RxnConstantTable[0][4] = 0.02184;
+      RxnConstantTable[1][0] = 1.0653;  RxnConstantTable[1][1] = 0.85417; RxnConstantTable[1][2] = 0.87093; RxnConstantTable[1][3] = -4.0188; RxnConstantTable[1][4] = 0.010721;
+      RxnConstantTable[2][0] = 0.96794; RxnConstantTable[2][1] = 0.89131; RxnConstantTable[2][2] = 0.7291;  RxnConstantTable[2][3] = -3.9555; RxnConstantTable[2][4] = 0.006488;
+      RxnConstantTable[3][0] = 0.97646; RxnConstantTable[3][1] = 0.89043; RxnConstantTable[3][2] = 0.74572; RxnConstantTable[3][3] = -3.9642; RxnConstantTable[3][4] = 0.007123;
+      RxnConstantTable[4][0] = 0.96188; RxnConstantTable[4][1] = 0.89617; RxnConstantTable[4][2] = 0.72479; RxnConstantTable[4][3] = -3.955;  RxnConstantTable[4][4] = 0.006509;
+      RxnConstantTable[5][0] = 0.96921; RxnConstantTable[5][1] = 0.89329; RxnConstantTable[5][2] = 0.73531; RxnConstantTable[5][3] = -3.9596; RxnConstantTable[5][4] = 0.006818;
+
+    } else if (iReaction == 16) {
+
+      //NO + O -> O2 + N
+      RxnConstantTable[0][0] = 0.35438;   RxnConstantTable[0][1] = -1.8821; RxnConstantTable[0][2] = -0.72111;  RxnConstantTable[0][3] = -1.1797;   RxnConstantTable[0][4] = -0.030831;
+      RxnConstantTable[1][0] = 0.093613;  RxnConstantTable[1][1] = -1.7806; RxnConstantTable[1][2] = -1.0975;   RxnConstantTable[1][3] = -1.0128;   RxnConstantTable[1][4] = -0.041949;
+      RxnConstantTable[2][0] = -0.003732; RxnConstantTable[2][1] = -1.7434; RxnConstantTable[2][2] = -1.2394;   RxnConstantTable[2][3] = -0.94952;  RxnConstantTable[2][4] = -0.046182;
+      RxnConstantTable[3][0] = 0.004815;  RxnConstantTable[3][1] = -1.7443; RxnConstantTable[3][2] = -1.2227;   RxnConstantTable[3][3] = -0.95824;  RxnConstantTable[3][4] = -0.045545;
+      RxnConstantTable[4][0] = -0.009758; RxnConstantTable[4][1] = -1.7386; RxnConstantTable[4][2] = -1.2436;   RxnConstantTable[4][3] = -0.949;    RxnConstantTable[4][4] = -0.046159;
+      RxnConstantTable[5][0] = -0.002428; RxnConstantTable[5][1] = -1.7415; RxnConstantTable[5][2] = -1.2331;   RxnConstantTable[5][3] = -0.95365;  RxnConstantTable[5][4] = -0.04585;
+    }
+
+    break;
+
+  case AIR7:
+
+    if (iReaction <= 6) {
+
+      //N2 + M -> 2N + M
+      RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+      RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+      RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+      RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+      RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+      RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    } else if (iReaction > 6 && iReaction <= 13) {
+
+      //O2 + M -> 2O + M
+      RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
+      RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
+      RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
+      RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
+      RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
+      RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
+
+    } else if (iReaction > 13 && iReaction <= 20) {
+
+      //NO + M -> N + O + M
+      RxnConstantTable[0][0] = 2.1649;  RxnConstantTable[0][1] = 0.078577;  RxnConstantTable[0][2] = 2.8508;  RxnConstantTable[0][3] = -8.5422; RxnConstantTable[0][4] = 0.053043;
+      RxnConstantTable[1][0] = 1.0072;  RxnConstantTable[1][1] = 0.53545;   RxnConstantTable[1][2] = 1.1911;  RxnConstantTable[1][3] = -7.8098; RxnConstantTable[1][4] = 0.004394;
+      RxnConstantTable[2][0] = 0.63817; RxnConstantTable[2][1] = 0.68189;   RxnConstantTable[2][2] = 0.66336; RxnConstantTable[2][3] = -7.5773; RxnConstantTable[2][4] = -0.011025;
+      RxnConstantTable[3][0] = 0.55889; RxnConstantTable[3][1] = 0.71558;   RxnConstantTable[3][2] = 0.55396; RxnConstantTable[3][3] = -7.5304; RxnConstantTable[3][4] = -0.014089;
+      RxnConstantTable[4][0] = 0.5150;  RxnConstantTable[4][1] = 0.73286;   RxnConstantTable[4][2] = 0.49096; RxnConstantTable[4][3] = -7.5025; RxnConstantTable[4][4] = -0.015938;
+      RxnConstantTable[5][0] = 0.50765; RxnConstantTable[5][1] = 0.73575;   RxnConstantTable[5][2] = 0.48042; RxnConstantTable[5][3] = -7.4979; RxnConstantTable[5][4] = -0.016247;
+
+    } else if (iReaction == 21) {
+
+      //N2 + O -> NO + N
+      RxnConstantTable[0][0] = 1.3261;  RxnConstantTable[0][1] = 0.75268; RxnConstantTable[0][2] = 1.2474;  RxnConstantTable[0][3] = -4.1857; RxnConstantTable[0][4] = 0.02184;
+      RxnConstantTable[1][0] = 1.0653;  RxnConstantTable[1][1] = 0.85417; RxnConstantTable[1][2] = 0.87093; RxnConstantTable[1][3] = -4.0188; RxnConstantTable[1][4] = 0.010721;
+      RxnConstantTable[2][0] = 0.96794; RxnConstantTable[2][1] = 0.89131; RxnConstantTable[2][2] = 0.7291;  RxnConstantTable[2][3] = -3.9555; RxnConstantTable[2][4] = 0.006488;
+      RxnConstantTable[3][0] = 0.97646; RxnConstantTable[3][1] = 0.89043; RxnConstantTable[3][2] = 0.74572; RxnConstantTable[3][3] = -3.9642; RxnConstantTable[3][4] = 0.007123;
+      RxnConstantTable[4][0] = 0.96188; RxnConstantTable[4][1] = 0.89617; RxnConstantTable[4][2] = 0.72479; RxnConstantTable[4][3] = -3.955;  RxnConstantTable[4][4] = 0.006509;
+      RxnConstantTable[5][0] = 0.96921; RxnConstantTable[5][1] = 0.89329; RxnConstantTable[5][2] = 0.73531; RxnConstantTable[5][3] = -3.9596; RxnConstantTable[5][4] = 0.006818;
+
+    } else if (iReaction == 22) {
+
+      //NO + O -> O2 + N
+      RxnConstantTable[0][0] = 0.35438;   RxnConstantTable[0][1] = -1.8821; RxnConstantTable[0][2] = -0.72111;  RxnConstantTable[0][3] = -1.1797;   RxnConstantTable[0][4] = -0.030831;
+      RxnConstantTable[1][0] = 0.093613;  RxnConstantTable[1][1] = -1.7806; RxnConstantTable[1][2] = -1.0975;   RxnConstantTable[1][3] = -1.0128;   RxnConstantTable[1][4] = -0.041949;
+      RxnConstantTable[2][0] = -0.003732; RxnConstantTable[2][1] = -1.7434; RxnConstantTable[2][2] = -1.2394;   RxnConstantTable[2][3] = -0.94952;  RxnConstantTable[2][4] = -0.046182;
+      RxnConstantTable[3][0] = 0.004815;  RxnConstantTable[3][1] = -1.7443; RxnConstantTable[3][2] = -1.2227;   RxnConstantTable[3][3] = -0.95824;  RxnConstantTable[3][4] = -0.045545;
+      RxnConstantTable[4][0] = -0.009758; RxnConstantTable[4][1] = -1.7386; RxnConstantTable[4][2] = -1.2436;   RxnConstantTable[4][3] = -0.949;    RxnConstantTable[4][4] = -0.046159;
+      RxnConstantTable[5][0] = -0.002428; RxnConstantTable[5][1] = -1.7415; RxnConstantTable[5][2] = -1.2331;   RxnConstantTable[5][3] = -0.95365;  RxnConstantTable[5][4] = -0.04585;
+
+    } else if (iReaction == 23) {
+
+      //N + O -> NO+ + e-
+      RxnConstantTable[0][0] = -2.1852;   RxnConstantTable[0][1] = -6.6709; RxnConstantTable[0][2] = -4.2968; RxnConstantTable[0][3] = -2.2175; RxnConstantTable[0][4] = -0.050748;
+      RxnConstantTable[1][0] = -1.0276;   RxnConstantTable[1][1] = -7.1278; RxnConstantTable[1][2] = -2.637;  RxnConstantTable[1][3] = -2.95;   RxnConstantTable[1][4] = -0.0021;
+      RxnConstantTable[2][0] = -0.65871;  RxnConstantTable[2][1] = -7.2742; RxnConstantTable[2][2] = -2.1096; RxnConstantTable[2][3] = -3.1823; RxnConstantTable[2][4] = 0.01331;
+      RxnConstantTable[3][0] = -0.57924;  RxnConstantTable[3][1] = -7.3079; RxnConstantTable[3][2] = -1.9999; RxnConstantTable[3][3] = -3.2294; RxnConstantTable[3][4] = 0.016382;
+      RxnConstantTable[4][0] = -0.53538;  RxnConstantTable[4][1] = -7.3252; RxnConstantTable[4][2] = -1.937;  RxnConstantTable[4][3] = -3.2572; RxnConstantTable[4][4] = 0.01823;
+      RxnConstantTable[5][0] = -0.52801;  RxnConstantTable[5][1] = -7.3281; RxnConstantTable[5][2] = -1.9264; RxnConstantTable[5][3] = -3.2618; RxnConstantTable[5][4] = 0.01854;
+    }
+    break;
+  }
+}
+
 void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
 
   for (unsigned short iZone = 0; iZone < nZone; iZone++){
@@ -9812,6 +10959,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES: //case NEMO_RANS:    
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:

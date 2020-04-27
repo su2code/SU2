@@ -129,6 +129,8 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if ((config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
+      (config_container[ZONE_0]->GetKind_Solver() ==  NEMO_EULER) ||
+      (config_container[ZONE_0]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  INC_EULER) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
