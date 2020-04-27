@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
@@ -55,6 +55,7 @@ protected:
   *PrimVar_i = nullptr,
   *PrimVar_j = nullptr;                   /*!< \brief Primitives variables at point i and j. */
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
+  *Mean_GradTurbVar = nullptr,            /*!< \brief Mean value of the turbulent gradient. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
@@ -62,10 +63,14 @@ protected:
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
   Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
-  *Proj_Mean_GradPrimVar_Edge = nullptr;  /*!< \brief Inner product of the Mean gradient and the edge vector. */
+  *Proj_Mean_GradPrimVar_Edge = nullptr,  /*!< \brief Inner product of the Mean gradient and the edge vector. */
+  Proj_Mean_GradTurbVar_Edge;                  /*!< \brief Inner product of the Mean turbulent gradient and the edge vector. */
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
+  
+  su2double sigma_k1, sigma_k2;
+  su2double F1_i, F1_j;
 
   /*!
    * \brief Add a correction using a Quadratic Constitutive Relation
@@ -275,6 +280,20 @@ public:
    * \return The component of the heat flux vector at iDim
    */
   inline su2double GetHeatFluxVector(unsigned short iDim) const { return heat_flux_vector[iDim]; }
+  
+  /*!
+   * \brief Sets value of first blending function.
+   */
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
+    F1_i = val_F1_i; F1_j = val_F1_j;
+  }
+  
+  /*!
+   * \brief Sets value of first blending function.
+   */
+  void SetSigma_k(su2double val_k1, su2double val_k2) {
+    sigma_k1 = val_k1; sigma_k2 = val_k2;
+  }
 
 };
 

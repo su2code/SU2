@@ -46,6 +46,9 @@ CNumerics::CNumerics(void) {
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
+  
+  TurbVar_Grad_i = NULL;
+  TurbVar_Grad_j = NULL;
 
   Vector = NULL;
 
@@ -74,6 +77,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
+  
+  TurbVar_Grad_i = NULL;
+  TurbVar_Grad_j = NULL;
 
   l = NULL;
   m = NULL;

@@ -48,8 +48,14 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   Mean_GradPrimVar = new su2double* [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
+        
+  Mean_GradTurbVar = new su2double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Mean_GradTurbVar[iDim] = 0.;
+  }
 
   Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
+  Proj_Mean_GradTurbVar_Edge = 0.0;
 
   tau_jacobian_i = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -76,6 +82,8 @@ CAvgGrad_Base::~CAvgGrad_Base() {
       delete [] Mean_GradPrimVar[iVar];
     delete [] Mean_GradPrimVar;
   }
+  
+  if (Mean_GradTurbVar != nullptr) delete [] Mean_GradTurbVar;
 
   delete [] Proj_Mean_GradPrimVar_Edge;
 
@@ -105,16 +113,6 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_edge_vector,
                                     const su2double val_proj_vector,
                                     const unsigned short val_nPrimVar) {
-//  for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-//    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-//    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-//      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
-//    }
-//    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-//      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-//                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_dist_ij_2;
-//    }
-//  }
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -123,6 +121,17 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
                                  (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Normal[iDim] / val_proj_vector;
+    }
+  }
+  
+  if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
+    Proj_Mean_GradTurbVar_Edge = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Proj_Mean_GradTurbVar_Edge += Mean_GradTurbVar[iDim]*val_edge_vector[iDim];
+    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradTurbVar[iDim] -= (Proj_Mean_GradTurbVar_Edge -
+                                (turb_ke_j - turb_ke_i))*Normal[iDim] / val_proj_vector;
     }
   }
 }
@@ -451,6 +460,14 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[2][1] = tau[1][1];
     Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
         heat_flux_vector[1];
+    
+    if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
+      su2double Mean_F1 = 0.5*(F1_i + F1_j);
+      su2double sigma_k = Mean_F1*sigma_k1 + (1.0 - Mean_F1)*sigma_k2;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Flux_Tensor[3][iDim] += (Mean_Laminar_Viscosity + sigma_k*Mean_Eddy_Viscosity)*Mean_GradTurbVar[iDim];
+      }
+    }
   } else {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
@@ -470,6 +487,14 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[3][2] = tau[2][2];
     Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_vector[2];
+    
+    if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
+      su2double Mean_F1 = 0.5*(F1_i + F1_j);
+      su2double sigma_k = Mean_F1*sigma_k1 + (1.0 - Mean_F1)*sigma_k2;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Flux_Tensor[4][iDim] += (Mean_Laminar_Viscosity + sigma_k*Mean_Eddy_Viscosity)*Mean_GradTurbVar[iDim];
+      }
+    }
   }
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -651,8 +676,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+  
+  if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
+    AD::SetPreaccIn(TurbVar_Grad_i, 2, nDim);
+    AD::SetPreaccIn(TurbVar_Grad_j, 2, nDim);
+    AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
+  }
 
-  unsigned short iVar, jVar, iDim;
+  unsigned short iVar, iDim;
 
   /*--- Normalized normal vector ---*/
 
@@ -700,6 +731,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
     }
   }
+  
+  
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 

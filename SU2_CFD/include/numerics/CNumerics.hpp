@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNumerics.hpp
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
@@ -464,6 +464,8 @@ public:
    * \param[in] val_F1_j - Value of the second Menter blending function at point j.
    */
   virtual void SetF2blending(su2double val_F1_i, su2double val_F1_j) {/* empty */};
+  
+  virtual void SetSigma_k(su2double val_k1, su2double val_k2) {/* empty */}
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
