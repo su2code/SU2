@@ -2245,14 +2245,16 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
   if (config->GetConservativeInterpolation()) return;
 
   unordered_map<unsigned long, su2double> vertexArea;
+  unordered_set<short> processedMarkers({-1});
 
   /*--- Compute current area associated with each vertex. ---*/
 
   for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
     /*--- Find the marker index associated with the pair. ---*/
     const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
-    /*--- The current mpi rank may not have this marker. ---*/
-    if (iMarker < 0) continue;
+    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
+    if (processedMarkers.count(iMarker) > 0) continue;
+    processedMarkers.insert(iMarker);
 
     for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
       /*--- Define the boundary element. ---*/

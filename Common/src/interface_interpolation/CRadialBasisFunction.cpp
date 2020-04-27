@@ -230,7 +230,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
     if (iProcessor < 0) continue;
 
     /*--- Setup target information. ---*/
-    const int markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
     unsigned long nVertexTarget = 0;
     if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
 
