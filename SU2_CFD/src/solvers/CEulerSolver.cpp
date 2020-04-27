@@ -7249,6 +7249,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         if (tkeNeeded) {
           if (Qn_Infty < 0.0) StaticEnergy -= GetTke_Inf();
           else StaticEnergy -= solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+        }
 //        const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
 
