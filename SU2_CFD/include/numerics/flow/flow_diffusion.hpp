@@ -69,7 +69,7 @@ protected:
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
   
-  su2double sigma_k1, sigma_k2;
+  su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
   su2double F1_i, F1_j;
 
   /*!
@@ -286,13 +286,6 @@ public:
    */
   void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
     F1_i = val_F1_i; F1_j = val_F1_j;
-  }
-  
-  /*!
-   * \brief Sets value of first blending function.
-   */
-  void SetSigma_k(su2double val_k1, su2double val_k2) {
-    sigma_k1 = val_k1; sigma_k2 = val_k2;
   }
 
 };

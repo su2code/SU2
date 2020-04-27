@@ -6997,7 +6997,6 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
                                        solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
-          visc_numerics->SetSigma_k(0.85, 1.0);
         }
 
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
@@ -7275,7 +7274,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
                                        solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
-          visc_numerics->SetSigma_k(0.85, 1.0);
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/

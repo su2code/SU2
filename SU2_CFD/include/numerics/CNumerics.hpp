@@ -465,8 +465,6 @@ public:
    */
   virtual void SetF2blending(su2double val_F1_i, su2double val_F1_j) {/* empty */};
   
-  virtual void SetSigma_k(su2double val_k1, su2double val_k2) {/* empty */}
-
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.

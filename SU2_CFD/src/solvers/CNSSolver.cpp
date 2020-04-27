@@ -345,7 +345,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
                                    turbNodes->GetGradient(jPoint));
       numerics->SetF1blending(turbNodes->GetF1blending(iPoint), turbNodes->GetF1blending(jPoint));
-      numerics->SetSigma_k(0.85, 1.0);
     }
     else
       numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
