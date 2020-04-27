@@ -46,11 +46,7 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 
 void CSinglezoneDriver::StartSolver() {
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
 
@@ -185,17 +181,12 @@ void CSinglezoneDriver::Update() {
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+
+  StopTime = SU2_MPI::Wtime();
+
   UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+
+  StartTime = SU2_MPI::Wtime();
 
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
@@ -204,19 +195,14 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   if (wrote_files){
 
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
+    StopTime = SU2_MPI::Wtime();
+
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
+
+    StartTime = SU2_MPI::Wtime();
+
     config_container[ZONE_0]->Set_StartTime(StartTime);
   }
 }
