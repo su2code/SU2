@@ -46,11 +46,7 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 
 void CSinglezoneDriver::StartSolver() {
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
 
@@ -127,13 +123,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
-  if ((config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  INC_EULER) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  INC_RANS) ) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
+  if (config_container[ZONE_0]->GetFluidProblem()) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                            solver_container[ZONE_0][INST_0],
+                                                                            config_container[ZONE_0], TimeIter);
   }
 
 #ifdef HAVE_MPI
@@ -188,17 +181,12 @@ void CSinglezoneDriver::Update() {
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+
+  StopTime = SU2_MPI::Wtime();
+
   UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+
+  StartTime = SU2_MPI::Wtime();
 
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
@@ -207,19 +195,14 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   if (wrote_files){
 
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
+    StopTime = SU2_MPI::Wtime();
+
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
+
+    StartTime = SU2_MPI::Wtime();
+
     config_container[ZONE_0]->Set_StartTime(StartTime);
   }
 }

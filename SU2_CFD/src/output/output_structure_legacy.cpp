@@ -17601,11 +17601,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   /*--- Set a timer for the binary file writing. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
 #ifndef HAVE_MPI
 
@@ -17768,11 +17764,8 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   /*--- Compute and store the write time. ---*/
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime-StartTime;
 
   /*--- Communicate the total file size for the restart ---*/
