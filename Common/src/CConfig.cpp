@@ -776,7 +776,6 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
   Marker_CfgFile_Deform_Mesh   = NULL;  Marker_All_Deform_Mesh   = NULL;
-  Marker_CfgFile_Deform_Free   = NULL;  Marker_All_Deform_Free   = NULL;
   Marker_CfgFile_Fluid_Load    = NULL;  Marker_All_Fluid_Load    = NULL;
 
   Marker_CfgFile_Turbomachinery       = NULL; Marker_All_Turbomachinery       = NULL;
@@ -801,7 +800,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
   Marker_SymWall              = NULL;    Marker_PerBound         = NULL;
   Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;
-  Marker_Deform_Mesh          = NULL;    Marker_Deform_Free      = NULL;    Marker_Fluid_Load     = NULL;
+  Marker_Deform_Mesh          = NULL;    Marker_Fluid_Load       = NULL;
   Marker_Inlet                = NULL;    Marker_Outlet           = NULL;
   Marker_Supersonic_Inlet     = NULL;    Marker_Supersonic_Outlet= NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
@@ -1376,8 +1375,6 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
   /*!\brief MARKER_DEFORM_MESH\n DESCRIPTION: Deformable marker(s) at the interface \ingroup Config*/
   addStringListOption("MARKER_DEFORM_MESH", nMarker_Deform_Mesh, Marker_Deform_Mesh);
-  /*!\brief MARKER_DEFORM_FREE\n DESCRIPTION: Free markers during deformation. \ingroup Config*/
-  addStringListOption("MARKER_DEFORM_FREE", nMarker_Deform_Free, Marker_Deform_Free);
   /*!\brief MARKER_FLUID_LOAD\n DESCRIPTION: Marker(s) in which the flow load is computed/applied \ingroup Config*/
   addStringListOption("MARKER_FLUID_LOAD", nMarker_Fluid_Load, Marker_Fluid_Load);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
@@ -4918,7 +4915,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
-  iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Free,
+  iMarker_Fluid_Load, iMarker_Deform_Mesh,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
@@ -4963,7 +4960,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_DV             = new unsigned short[nMarker_All] (); // Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All] (); // Store whether the boundary should be in motion.
   Marker_All_Deform_Mesh    = new unsigned short[nMarker_All] (); // Store whether the boundary is deformable.
-  Marker_All_Deform_Free    = new unsigned short[nMarker_All] (); // Store whether the boundary is free.
   Marker_All_Fluid_Load     = new unsigned short[nMarker_All] (); // Store whether the boundary computes/applies fluid loads.
   Marker_All_PyCustom       = new unsigned short[nMarker_All] (); // Store whether the boundary is Python customizable.
   Marker_All_PerBound       = new short[nMarker_All] ();          // Store whether the boundary belongs to a periodic boundary.
@@ -4988,7 +4984,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile] ();
-  Marker_CfgFile_Deform_Free          = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
@@ -5380,13 +5375,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Deform_Mesh[iMarker_Deform_Mesh])
         Marker_CfgFile_Deform_Mesh[iMarker_CfgFile] = YES;
-  }
-
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_Deform_Free[iMarker_CfgFile] = NO;
-    for (iMarker_Deform_Free = 0; iMarker_Deform_Free < nMarker_Deform_Free; iMarker_Deform_Free++)
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Deform_Free[iMarker_Deform_Free])
-        Marker_CfgFile_Deform_Free[iMarker_CfgFile] = YES;
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -7182,13 +7170,6 @@ unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) const {
   return Marker_CfgFile_Deform_Mesh[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Deform_Free(string val_marker) const {
-  unsigned short iMarker_CfgFile;
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
-    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return Marker_CfgFile_Deform_Free[iMarker_CfgFile];
-}
-
 unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -7361,9 +7342,6 @@ CConfig::~CConfig(void) {
 
   if (Marker_CfgFile_Deform_Mesh != NULL) delete[] Marker_CfgFile_Deform_Mesh;
   if (Marker_All_Deform_Mesh     != NULL) delete[] Marker_All_Deform_Mesh;
-
-  if (Marker_CfgFile_Deform_Free != NULL) delete[] Marker_CfgFile_Deform_Free;
-  if (Marker_All_Deform_Free     != NULL) delete[] Marker_All_Deform_Free;
 
   if (Marker_CfgFile_Fluid_Load != NULL) delete[] Marker_CfgFile_Fluid_Load;
   if (Marker_All_Fluid_Load     != NULL) delete[] Marker_All_Fluid_Load;
@@ -7621,7 +7599,6 @@ CConfig::~CConfig(void) {
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
   if (Marker_Deform_Mesh != NULL )        delete[] Marker_Deform_Mesh;
-  if (Marker_Deform_Free != NULL )        delete[] Marker_Deform_Free;
   if (Marker_Fluid_Load != NULL )         delete[] Marker_Fluid_Load;
   if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
