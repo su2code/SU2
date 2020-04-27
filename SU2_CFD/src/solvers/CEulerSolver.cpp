@@ -7199,12 +7199,14 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
-//      if (tkeNeeded) {
+//      if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) {
+        if (Qn_Infty < 0.0) Energy += GetTke_Inf();
+        else Energy += solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
 //        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
 //        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
 //        Energy += Kine_Infty;
-//      }
+      }
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -7270,8 +7272,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
 //                                                Kine_Infty);
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              GetTke_Inf());
+          if (Qn_Infty < 0.0)
+            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                                GetTke_Inf());
+          else
+            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                                solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+          
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),

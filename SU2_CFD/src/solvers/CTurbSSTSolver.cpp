@@ -667,13 +667,12 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 //      const su2double muT_Infty   = V_infty[nDim+6];
 //      const su2double Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
 
-      Primitive_j[0] = kine_Inf;
-      Primitive_j[1] = omega_Inf;
+//      Primitive_j[0] = kine_Inf;
+//      Primitive_j[1] = omega_Inf;
 //      Primitive_j[0] = Kine_Infty;
 //      Primitive_j[1] = Omega_Infty;
-                                                          
 
-      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
+//      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -681,6 +680,22 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       for (iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
+      
+      su2double Vn_Infty = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vn_Infty += V_infty[iDim+1]*Normal[iDim];
+      }
+      
+      if (Vn_Infty < 0.) {
+        Primitive_j[0] = nodes->GetPrimitive(iPoint,0);
+        Primitive_j[1] = nodes->GetPrimitive(iPoint,1);
+      }
+      else {
+        Primitive_j[0] = kine_Inf;
+        Primitive_j[1] = omega_Inf;
+      }
+      
+      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Grid Movement ---*/
 
