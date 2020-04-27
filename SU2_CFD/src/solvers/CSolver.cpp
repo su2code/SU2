@@ -5549,7 +5549,8 @@ void CSolver::ViscousMetric(CSolver                    **solver,
     }
     factor += cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
     if (sst) {
-      factor += gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+      factor += gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+                            +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
               + gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
   }
