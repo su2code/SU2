@@ -792,6 +792,17 @@ public:
                            const su2double *val_normal, su2double *val_Proj_Flux);
 
   /*!
+   * \Overload
+   * \brief Compute the projected inviscid flux vector.
+   * \param[in] val_U - Pointer to the conserved variables.
+   * \param[in] val_V - Pointer to the primitive variables.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_Proj_Flux - Pointer to the projected flux.
+   */
+  void GetInviscidProjFlux(su2double *val_U, su2double *val_V,
+                           su2double *val_normal, su2double *val_Proj_Flux);
+
+  /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -829,6 +840,20 @@ public:
    */
   void GetInviscidProjJac(const su2double *val_U, const su2double *val_V, const su2double *val_dPdU,
                           const su2double *val_normal, const su2double val_scale,
+                          su2double **val_Proj_Jac_Tensor);
+
+  /*!
+   * \overload
+   * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
+   * \param[in] val_U - Vector conserved variables.
+   * \param[in] val_V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of partial derivatives of pressure w.r.t. conserved vars.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_scale - Scale of the projection.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetInviscidProjJac(su2double *val_U, su2double *val_V, su2double *val_dPdU,
+                          su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_Tensor);
 
   /*!
@@ -969,6 +994,22 @@ public:
                   su2double **val_p_tensor) ;
 
   /*!
+   * \overload
+   * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables (really only need rhoEve)
+   * \param[in] V - Vector of primitive variables
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
+  void GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
+                  su2double *val_normal, su2double *l, su2double *m,
+                  su2double **val_p_tensor) ;
+
+  /*!
    * \brief Computation of the matrix Rinv*Pe.
    * \param[in] Beta2 - A variable in used to define Pe matrix.
    * \param[in] val_enthalpy - value of the enthalpy.
@@ -1082,6 +1123,23 @@ public:
   void GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
                       const su2double *val_soundspeed, const su2double *val_normal,
                       su2double **val_invp_tensor) const;
+
+
+  /*!
+   * \overload
+   * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables.
+   * \param[in] V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
+  void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
+                     su2double *val_normal, su2double *l, su2double *m,
+                     su2double **val_invp_tensor) ;
 
 
   /*!
