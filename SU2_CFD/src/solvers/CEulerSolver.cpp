@@ -7199,12 +7199,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-//      if (tkeNeeded) Energy += GetTke_Inf();
-      if (tkeNeeded) {
-        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        Energy += Kine_Infty;
-      }
+      if (tkeNeeded) Energy += GetTke_Inf();
+//      if (tkeNeeded) {
+//        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+//        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+//        Energy += Kine_Infty;
+//      }
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -7243,8 +7243,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
         
-//        const su2double StaticEnergy = Energy - 0.5*Velocity2 - GetTke_Inf();
-        const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
+        const su2double StaticEnergy = Energy - 0.5*Velocity2 - GetTke_Inf();
+//        const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
 
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
@@ -7268,8 +7268,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+//                                                Kine_Infty);
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                                Kine_Infty);
+                                              GetTke_Inf());
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
