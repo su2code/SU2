@@ -41,6 +41,8 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
+  dynamic_grid = config->GetDynamic_Grid();
+
   psi_i = new su2double [nVar];
   psi_j = new su2double [nVar];
 
@@ -51,6 +53,10 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   invP_Tensor = new su2double* [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
+
+  Conservatives_i = new su2double [nVar];
+  Conservatives_j = new su2double [nVar];
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
@@ -78,6 +84,9 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   delete [] Jacobian_i;
   delete [] Jacobian_j;
 
+  delete [] Conservatives_i;
+  delete [] Conservatives_j;
+
 }
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure)
@@ -97,7 +106,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(const CConfig* co
 void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   unsigned short iDim, iVar, jVar, kVar;
-  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
+  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, ProjGridVel, sq_vel, Energy_i, Energy_j;
+  ProjGridVel = 0.0;
 
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
@@ -115,6 +125,14 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+
+  /*--- Projected velocity adjustment due to mesh motion ---*/
+  if (dynamic_grid) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
+    }
+    ProjVelocity -= ProjGridVel;
+  }
 
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
@@ -144,6 +162,14 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
       val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
       val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+    }
+  }
+
+  /*--- Jacobian contributions due to grid motion ---*/
+  if (dynamic_grid) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel*Area;
+      val_Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel*Area;
     }
   }
 
@@ -315,6 +341,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2dou
 CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim, iVar;
+  su2double ProjGridVel, Energy_i, Energy_j;
+  ProjGridVel = 0.0;
 
   /*--- Space to start preaccumulation ---*/
 
@@ -322,6 +350,10 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+4);
   AD::SetPreaccIn(V_j, nDim+4);
+
+  if (dynamic_grid) {
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
 
   /*--- Variables for the general form and primitives for mass flux and pressure calculation.  ---*/
   /*--- F_{1/2} = ||A|| ( 0.5 * mdot * (psi_i+psi_j) - 0.5 * |mdot| * (psi_i-psi_j) + N * pf ) ---*/
@@ -353,6 +385,26 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
+  /*--- Compute projected grid velocity ---*/
+  if (dynamic_grid) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel += 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * UnitNormal[iDim];
+    }
+  }
+
+  /*--- Reconstruct conservative variables for grid velocity correction of flux---*/
+  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  Conservatives_i[0] = Density_i;
+  Conservatives_j[0] = Density_j;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Conservatives_i[iDim+1] = Density_i*Velocity_i[iDim];
+    Conservatives_j[iDim+1] = Density_j*Velocity_j[iDim];
+  }
+  Conservatives_i[nDim+1] = Density_i*Energy_i;
+  Conservatives_j[nDim+1] = Density_j*Energy_j;
+
   /*--- Mass and pressure fluxes defined by derived classes ---*/
 
   ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
@@ -367,6 +419,13 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
 
   Flux[nVar-1] = 0.5*MassFlux*(psi_i[nVar-1]+psi_j[nVar-1]) +
                  0.5*DissFlux*(psi_i[nVar-1]-psi_j[nVar-1]);
+
+
+  if (dynamic_grid) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Flux[iVar] -= ProjGridVel*0.5*(Conservatives_i[iVar]+Conservatives_j[iVar]);
+    }
+  }
 
   for (iVar = 0; iVar < nVar; iVar++) Flux[iVar] *= Area;
 

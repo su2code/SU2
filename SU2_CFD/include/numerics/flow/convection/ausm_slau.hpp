@@ -41,6 +41,7 @@ protected:
   bool implicit;
   bool UseAccurateJacobian;
   bool HasAnalyticalDerivatives;
+  bool dynamic_grid;
   su2double FinDiffStep;
 
   su2double MassFlux, DissFlux, Pressure;
@@ -56,7 +57,10 @@ protected:
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
-  /*!
+  su2double *Conservatives_i = nullptr;
+  su2double *Conservatives_j = nullptr;
+
+    /*!
    * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
    * \note See the body of the (empty) default implementation for instructions on how to implement the method.
    * \param[in] config - Definition of the particular problem.
