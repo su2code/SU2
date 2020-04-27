@@ -91,12 +91,12 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
   /*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
   /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
 
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /*--- Check if this interface connects the two zones, if not continue. ---*/
 
-    Marker_Donor = CInterpolator::FindInterfaceMarker(donor_config, iMarkerInt);
-    Marker_Target = CInterpolator::FindInterfaceMarker(target_config, iMarkerInt);
+    Marker_Donor = donor_config->FindInterfaceMarker(iMarkerInt);
+    Marker_Target = target_config->FindInterfaceMarker(iMarkerInt);
 
     if(!CInterpolator::CheckInterfaceBoundary(Marker_Donor, Marker_Target)) continue;
 

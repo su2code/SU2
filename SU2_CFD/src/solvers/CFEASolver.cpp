@@ -2244,21 +2244,15 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
   /*--- The conservative approach transfers forces directly, no integration needed. ---*/
   if (config->GetConservativeInterpolation()) return;
 
-  const auto nMarker = config->GetnMarker_All();
-  const auto nMarkerInt = config->GetMarker_n_ZoneInterface()/2u;
-
   unordered_map<unsigned long, su2double> vertexArea;
 
   /*--- Compute current area associated with each vertex. ---*/
 
-  for (auto iMarkerInt = 1u; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
     /*--- Find the marker index associated with the pair. ---*/
-    unsigned short iMarker;
-    for (iMarker = 0; iMarker < nMarker; ++iMarker)
-      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
-        break;
+    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
     /*--- The current mpi rank may not have this marker. ---*/
-    if (iMarker == nMarker) continue;
+    if (iMarker < 0) continue;
 
     for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
       /*--- Define the boundary element. ---*/

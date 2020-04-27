@@ -6079,7 +6079,7 @@ public:
   unsigned short GetMarker_CfgFile_Analyze(string val_marker) const;
 
   /*!
-   * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
+   * \brief Get the multi-physics interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker) const;
@@ -9386,5 +9386,12 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Find the marker index (if any) that is part of a given interface pair.
+   * \param[in] iInterface - Number of the interface pair being tested, starting at 0.
+   * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
+   */
+  short FindInterfaceMarker(unsigned short iInterface) const;
 
 };

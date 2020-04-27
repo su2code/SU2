@@ -53,7 +53,7 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
   const auto nMarkerInt = (config[targetZone]->GetMarker_n_ZoneInterface())/2;
 
   /*--- For the number of markers on the interface... ---*/
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
    /* High level procedure:
     * - Gather the interpolation matrix of the donor geometry;
@@ -61,10 +61,10 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
     */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;

@@ -5305,15 +5305,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Analyze[iMarker_CfgFile] = YES;
   }
 
-  /*--- Identification of Fluid-Structure interface markers ---*/
+  /*--- Identification of multi-physics interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    unsigned short indexMarker = 0;
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
     for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface])
-        indexMarker = iMarker_ZoneInterface/2+1;
-    Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = YES;
   }
 
   /*--- Identification of Turbomachinery markers and flag them---*/
@@ -7216,7 +7214,7 @@ unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
+  return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
 bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
@@ -9087,12 +9085,25 @@ su2double CConfig::GetWall_Emissivity(string val_marker) const {
   return Wall_Emissivity[iMarker_Emissivity];
 }
 
-
 su2double CConfig::GetFlowLoad_Value(string val_marker) const {
   unsigned short iMarker_FlowLoad;
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
     if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
   return FlowLoad_Value[iMarker_FlowLoad];
+}
+
+short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
+
+  /*--- The names of the two markers that form the interface. ---*/
+  const auto& sideA = Marker_ZoneInterface[2*iInterface];
+  const auto& sideB = Marker_ZoneInterface[2*iInterface+1];
+
+  for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
+    /*--- If the marker is sideA or sideB of the interface (order does not matter). ---*/
+    const auto& tag = Marker_All_TagBound[iMarker];
+    if ((tag == sideA) || (tag == sideB)) return iMarker;
+  }
+  return -1;
 }
 
 void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
