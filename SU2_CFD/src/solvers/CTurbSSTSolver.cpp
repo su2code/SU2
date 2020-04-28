@@ -493,31 +493,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     LinSysRes.SubtractBlock(iPoint, residual);
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-    
-//    /*--- Contribution of TurbVar_j to cross diffusion gradient Jacobian at i ---*/
-//    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-//      if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
-//        const su2double F1_i     = nodes->GetF1blending(iPoint);
-//        const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-//        const su2double om_i     = nodes->GetPrimitive(iPoint,1);
-//        for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-//          const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-//          const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
-//          const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-//          const su2double r_j      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-//          Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
-//          Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
-//          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-//            Jacobian_j[1][0] -= (1. - F1_i)*constants[3]*r_i
-//                              * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
-//            Jacobian_j[1][1] -= (1. - F1_i)*constants[3]*r_i
-//                              * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
-//          }
-//          if (iPoint < jPoint) Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-//          else                 Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-//        }
-//      }
-//    }
 
   }
   
@@ -531,7 +506,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iDim, iVar;
+  unsigned short iVar;
   su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -542,12 +517,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- distance to closest neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      // distance = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   distance += pow(geometry->node[iPoint]->GetCoord(iDim)-
-      //                   geometry->node[jPoint]->GetCoord(iDim), 2);
-      // }
-      // distance = sqrt(distance);
       distance = geometry->node[jPoint]->GetWall_Distance();
 
       /*--- Set wall values ---*/
@@ -576,51 +545,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                         CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iDim, iVar;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- distance to closest neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      distance = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
-        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-      }
-      distance = sqrt(distance);
-
-      /*--- Set wall values ---*/
-
-      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-
-      beta_1 = constants[4];
-
-      // Solution[0] = 0.0;
-      // Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      Solution[1] = min(max(Solution[1], lowerlimit[1]), upperlimit[1])*solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-      /*--- Set the solution values and zero the residual ---*/
-      nodes->SetSolution_Old(iPoint,Solution);
-      nodes->SetSolution(iPoint,Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-
-    }
-  }
+  /*--- Call the equivalent heat flux wall boundary condition. ---*/
+  BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 
 }
 
@@ -630,7 +556,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint, iVertex, Point_Normal;
   su2double *Normal, *V_infty, *V_domain;
   unsigned short iVar, iDim;
-  const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
 
   Normal = new su2double[nDim];
 
@@ -659,20 +584,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
-      
-//      su2double Velocity2 = 0.;
-//      for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-//      const su2double Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-//      const su2double Rho_Infty   = V_infty[nDim+2];
-//      const su2double muT_Infty   = V_infty[nDim+6];
-//      const su2double Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
 
 //      Primitive_j[0] = kine_Inf;
 //      Primitive_j[1] = omega_Inf;
-//      Primitive_j[0] = Kine_Infty;
-//      Primitive_j[1] = Omega_Infty;
-
-//      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
