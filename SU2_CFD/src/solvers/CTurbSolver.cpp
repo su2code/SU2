@@ -962,7 +962,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
   SU2_OMP_BARRIER
   
-  solver[MESH_0][TURB_SOL]->Set_OldSolution(geometry[MESH_0]);
+  nodes->Set_OldSolution();
 
   if (sst) solver[MESH_0][TURB_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TURB_SYS, false);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
