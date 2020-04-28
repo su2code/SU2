@@ -403,8 +403,8 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
 
   for(Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge)
   {
-    Index_t iPoint = geometry.edge[iEdge]->GetNode(0);
-    Index_t jPoint = geometry.edge[iEdge]->GetNode(1);
+    Index_t iPoint = geometry.edges->GetNode(iEdge,0);
+    Index_t jPoint = geometry.edges->GetNode(iEdge,1);
 
     edgeMap(iEdge,0) = pattern.quickFindInnerIdx(iPoint,jPoint);
     edgeMap(iEdge,1) = pattern.quickFindInnerIdx(jPoint,iPoint);

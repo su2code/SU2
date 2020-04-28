@@ -221,14 +221,14 @@ void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Points in edge ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and normal vector ---*/
 
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                        geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Radiation variables w/o reconstruction, and its gradients ---*/
 
@@ -601,10 +601,11 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
-  su2double *Normal, Area, Vol, Lambda;
+  su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
   su2double CFL = config->GetCFL_Rad();
   su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
+  const su2double* Normal;
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
@@ -618,11 +619,11 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Get the edge's normal vector to compute the edge's area ---*/
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
     /*--- Viscous contribution ---*/

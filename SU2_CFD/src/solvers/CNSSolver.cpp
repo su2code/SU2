@@ -315,13 +315,13 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
-  auto iPoint = geometry->edge[iEdge]->GetNode(0);
-  auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
 
   numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                      geometry->node[jPoint]->GetCoord());
 
-  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
   /*--- Primitive and secondary variables. ---*/
 

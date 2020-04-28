@@ -270,9 +270,9 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge and normal vectors ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Conservative variables w/o reconstruction ---*/
     U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
@@ -307,14 +307,14 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and normal vector ---*/
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                      geometry->node[jPoint]->GetCoord());
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Conservative variables w/o reconstruction ---*/
     numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint),

@@ -53,7 +53,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
 }
 
-void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(const su2double* const* val_coord) {
   unsigned short iDim, iNode, NodeFace, iFace;
 
   AD::StartPreacc();

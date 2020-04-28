@@ -191,7 +191,7 @@ public:
   CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
   CPoint** node;                         /*!< \brief Node vector (dual grid information). */
-  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
+  CEdge* edges;                          /*!< \brief Edge vector (dual grid information). */
   CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */

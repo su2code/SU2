@@ -106,8 +106,7 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
 template<class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
 
-  if (vec_val != nullptr)
-    MemoryAllocation::aligned_free(vec_val);
+  MemoryAllocation::aligned_free(vec_val);
 }
 
 template<class ScalarType>
