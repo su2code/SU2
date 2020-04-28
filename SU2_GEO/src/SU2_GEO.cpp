@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -146,13 +146,9 @@ int main(int argc, char *argv[]) {
   bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_TECPLOT;
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
-  
-#ifdef HAVE_MPI
-  StartTime = MPI_Wtime();
-#else
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
-  
+
+  StartTime = SU2_MPI::Wtime();
+
   /*--- Evaluation of the objective function ---*/
   
   if (rank == MASTER_NODE)
@@ -1283,13 +1279,9 @@ int main(int argc, char *argv[]) {
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
-  
-#ifdef HAVE_MPI
-  StopTime = MPI_Wtime();
-#else
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
-  
+
+  StopTime = SU2_MPI::Wtime();
+
   /*--- Compute/print the total time for performance benchmarking. ---*/
   
   UsedTime = StopTime-StartTime;

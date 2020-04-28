@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1403,7 +1403,7 @@ void COutput::CheckHistoryOutput(){
   }
 
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(convFields.empty()){
       cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
     }
     else{
@@ -1435,7 +1435,7 @@ void COutput::CheckHistoryOutput(){
     wndConvFields.erase(std::find(wndConvFields.begin(), wndConvFields.end(), FieldsToRemove[iField_Conv]));
   }
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(wndConvFields.empty()){
       cout << "Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive."<<  endl;
     }
     else{
@@ -2038,11 +2038,8 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
   su2double StopTime, UsedTime;
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+
+  StopTime = SU2_MPI::Wtime();
 
   UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
 

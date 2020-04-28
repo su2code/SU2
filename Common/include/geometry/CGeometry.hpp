@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,6 +48,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <climits>
+#include <memory>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -59,6 +60,7 @@ extern "C" {
 #include "../CConfig.hpp"
 #include "../geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
+#include "../adt_structure.hpp"
 
 using namespace std;
 
@@ -574,12 +576,6 @@ public:
    */
   inline virtual bool FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                                unsigned short &face_second_elem) {return false;}
-
-  /*!
-   * \brief Computes the wall distance.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeWall_Distance(CConfig *config) {}
 
   /*!
    * \brief Sets area to be positive in Z direction.
@@ -1603,12 +1599,6 @@ public:
   inline unsigned short GetMGLevel(void) const { return MGLevel; }
 
   /*!
-   * \brief Compute and store the volume of the elements.
-   * \param[in] config - Problem configuration.
-   */
-  void UpdateBoundaries(CConfig *config);
-
-  /*!
    * \brief A virtual member.
    * \param config - Config
    */
@@ -1621,7 +1611,7 @@ public:
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl);
+  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
    * \brief Get the edge to sparse pattern map.
@@ -1631,11 +1621,24 @@ public:
   const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
 
   /*!
+   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the map.
+   */
+  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \param[out] efficiency - optional output of the coloring efficiency.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetEdgeColoring(void);
+  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) edge coloring.
+   */
+  void SetNaturalEdgeColoring();
 
   /*!
    * \brief Get the group size used in edge coloring.
@@ -1646,15 +1649,48 @@ public:
   /*!
    * \brief Get the element coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \param[out] efficiency - optional output of the coloring efficiency.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetElementColoring(void);
+  const CCompressedSparsePatternUL& GetElementColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) element coloring.
+   */
+  void SetNaturalElementColoring();
 
   /*!
    * \brief Get the group size used in element coloring.
    * \return Group size.
    */
   inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const { return nullptr; }
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  virtual void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {}
+
+  /*!
+   * \brief Set wall distances a specific value
+   *  \param[in] val - new value for the wall distance at all points.
+   */
+  virtual void SetWallDistance(su2double val) {}
+
+  /*!
+   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   */
+  static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
 
 };
 

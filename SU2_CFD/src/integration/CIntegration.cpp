@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -331,12 +331,11 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver **solver_co
     case (CD_EXPLICIT):
       break;
     case (NEWMARK_IMPLICIT):
-      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, solver_container, config);
+      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, config);
       break;
     case (GENERALIZED_ALPHA):
-      //if (fsi)  solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
+      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, config);
+      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, config);
       break;
   }
 

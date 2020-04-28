@@ -2,7 +2,7 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -192,8 +192,18 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (axisymmetric) {
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-            else
-              AxiFactor = 1.0;
+            else {
+              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
+              AxiFactor = 0.0;
+              for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+                auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+                if (geometry->node[jPoint]->GetVertex(iMarker) >= 0) {
+                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+                  AxiFactor = PI_NUMBER * geometry->node[jPoint]->GetCoord(1);
+                  break;    
+                }
+              }
+            }
           } else {
             AxiFactor = 1.0;
           }
@@ -269,9 +279,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
         }
       }
-
     }
-
   }
 
   /*--- Copy to the appropriate structure ---*/
@@ -460,54 +468,67 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
     SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", MassFlow, iMarker_Analyze);
     Tot_Surface_MassFlow += MassFlow;
+    config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
 
     su2double Mach = Surface_Mach_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_MACH", Mach, iMarker_Analyze);
     Tot_Surface_Mach += Mach;
+    config->SetSurface_Mach(iMarker_Analyze, Mach);
 
     su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TEMP", Temperature, iMarker_Analyze);
     Tot_Surface_Temperature += Temperature;
+    config->SetSurface_Temperature(iMarker_Analyze, Temperature);
 
     su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_PRESS", Pressure, iMarker_Analyze);
     Tot_Surface_Pressure += Pressure;
+    config->SetSurface_Pressure(iMarker_Analyze, Pressure);
 
     su2double Density = Surface_Density_Total[iMarker_Analyze] * config->GetDensity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_DENSITY", Density, iMarker_Analyze);
     Tot_Surface_Density += Density;
+    config->SetSurface_Density(iMarker_Analyze, Density);
 
     su2double Enthalpy = Surface_Enthalpy_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY", Enthalpy, iMarker_Analyze);
     Tot_Surface_Enthalpy += Enthalpy;
+    config->SetSurface_Enthalpy(iMarker_Analyze, Enthalpy);
 
     su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL", NormalVelocity, iMarker_Analyze);
     Tot_Surface_NormalVelocity += NormalVelocity;
+    config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
 
     su2double Uniformity = sqrt(Surface_StreamVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("UNIFORMITY", Uniformity, iMarker_Analyze);
     Tot_Surface_StreamVelocity2 += Uniformity;
+    config->SetSurface_Uniformity(iMarker_Analyze, Uniformity);
 
     su2double SecondaryStrength = sqrt(Surface_TransvVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH", SecondaryStrength, iMarker_Analyze);
     Tot_Surface_TransvVelocity2 += SecondaryStrength;
+    config->SetSurface_SecondaryStrength(iMarker_Analyze, SecondaryStrength);
 
     su2double MomentumDistortion = Surface_MomentumDistortion_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION", MomentumDistortion, iMarker_Analyze);
     Tot_Momentum_Distortion += MomentumDistortion;
+    config->SetSurface_MomentumDistortion(iMarker_Analyze, MomentumDistortion);
 
     su2double SecondOverUniform = SecondaryStrength/Uniformity;
     SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY", SecondOverUniform, iMarker_Analyze);
     Tot_SecondOverUniformity += SecondOverUniform;
+    config->SetSurface_SecondOverUniform(iMarker_Analyze, SecondOverUniform);
 
     su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP", TotalTemperature, iMarker_Analyze);
     Tot_Surface_TotalTemperature += TotalTemperature;
+    config->SetSurface_TotalTemperature(iMarker_Analyze, TotalTemperature);
 
     su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS", TotalPressure, iMarker_Analyze);
     Tot_Surface_TotalPressure += TotalPressure;
+    config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
   }
 
@@ -1350,7 +1371,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.0.2 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.0.3 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";

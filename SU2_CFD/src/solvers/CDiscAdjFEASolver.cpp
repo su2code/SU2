@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -741,7 +741,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   bool dynamic = (config->GetTime_Domain());
-  bool fsi = config->GetFSI_Simulation();
   bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
 
   unsigned short iVar;
@@ -751,21 +750,11 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     }
-    if (fsi) {
-      for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += nodes->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
-      }
-      for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += nodes->GetCross_Term_Derivative(iPoint,iVar);
-      }
-    }
-
     if(deform_mesh){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += nodes->GetSourceTerm_DispAdjoint(iPoint,iVar);
       }
     }
-
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Accel[iVar] = nodes->GetSolution_Accel(iPoint,iVar);
@@ -811,47 +800,6 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
         nodes->SetDynamic_Derivative_Vel_n(iPoint, iVar, nodes->GetSolution_Vel_time_n(iPoint, iVar));
       }
     }
-  }
-
-}
-
-void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Extract the adjoint solution ---*/
-
-    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-
-    for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
-
-  }
-
-}
-
-void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-
-  su2double relax = config->GetAitkenStatRelax();
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Extract the adjoint solution ---*/
-
-    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-
-    /*--- Relax and set the solution ---*/
-
-    for(iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*nodes->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
-
-    for (iVar = 0; iVar < nVar; iVar++) nodes->SetGeometry_CrossTerm_Derivative(iPoint,iVar, Solution[iVar]);
-
   }
 
 }
@@ -907,40 +855,6 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
-
-}
-
-void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual, bgs_sol;
-
-  /*--- Set Residuals to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++){
-    SetRes_BGS(iVar,0.0);
-    SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Compute the BGS solution (adding the cross term) ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      bgs_sol = nodes->GetSolution(iPoint, iVar) + nodes->GetGeometry_CrossTerm_Derivative(iPoint, iVar);
-      nodes->Set_BGSSolution(iPoint,iVar, bgs_sol);
-    }
-  }
-
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = nodes->Get_BGSSolution(iPoint, iVar) - nodes->Get_BGSSolution_k(iPoint, iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-    }
-  }
-
-  SetResidual_BGS(geometry, config);
 
 }
 

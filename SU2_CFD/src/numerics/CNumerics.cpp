@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -162,7 +162,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     uq_urlx = config->GetUQ_URLX();
     uq_permute = config->GetUQ_Permute();
 
-    /* define barycentric traingle corner points */
+    /* define barycentric triangle corner points */
     Corners[0][0] = 1.0;
     Corners[0][1] = 0.0;
     Corners[1][0] = 0.0;

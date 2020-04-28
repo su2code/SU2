@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -208,6 +208,57 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+#ifdef HAVE_OMP
+  /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
+   *    reducer strategy. Where one loop is performed over edges followed by a point loop to
+   *    sum the fluxes for each cell and set the diagonal of the system matrix. ---*/
+
+  su2double parallelEff = 1.0;
+  const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
+
+  /*--- The decision to use the strategy is local to each rank. ---*/
+  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  /*--- When using the reducer force a single color to reduce the color loop overhead. ---*/
+  if (ReducerStrategy && (coloring.getOuterSize()>1))
+    geometry->SetNaturalEdgeColoring();
+
+  if (!coloring.empty()) {
+    /*--- If the reducer strategy is used we are not constrained by group
+     *    size as we have no other edge loops in the Euler/NS solvers. ---*/
+    auto groupSize = ReducerStrategy? 1ul : geometry->GetEdgeColorGroupSize();
+    auto nColor = coloring.getOuterSize();
+    EdgeColoring.reserve(nColor);
+
+    for(auto iColor = 0ul; iColor < nColor; ++iColor)
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
+  }
+
+  /*--- If the reducer strategy is not being forced (by EDGE_COLORING_GROUP_SIZE=0) print some messages. ---*/
+  if (config->GetEdgeColoringGroupSize() != 1<<30) {
+
+    su2double minEff = 1.0;
+    SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+
+    int tmp = ReducerStrategy, numRanksUsingReducer = 0;
+    SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (minEff < COLORING_EFF_THRESH) {
+      cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
+           << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
+           << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
+           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+    }
+  }
+
+  if (ReducerStrategy)
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
+#endif
+
   /*--- Jacobians and vector structures for implicit computations ---*/
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
@@ -222,7 +273,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -420,32 +471,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-#ifdef HAVE_OMP
-  /*--- Get the edge coloring, on coarse grids (which are difficult to color) setup the reducer strategy,
-   *    if required (i.e. in parallel). One loop is performed over edges followed by a point loop to sum
-   *    the fluxes for each cell and set the diagonal of the system matrix. ---*/
-
-  const auto& coloring = geometry->GetEdgeColoring();
-
-  if (!coloring.empty()) {
-    auto nColor = coloring.getOuterSize();
-    EdgeColoring.reserve(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
-    }
-  }
-  ColorGroupSize = geometry->GetEdgeColorGroupSize();
-
-  if ((MGLevel != MESH_0) && (omp_get_max_threads() > 1)) {
-    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-  }
-
-  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
-#else
-  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
-#endif
-
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
@@ -485,7 +510,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 
     if ((rank == MASTER_NODE) && (counter_global != 0))
-      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+      cout << "Warning. The original solution contains " << counter_global << " points that are not physical." << endl;
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
@@ -538,6 +563,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";
 
+  /*--- Finally, check that the static arrays will be large enough (keep this
+   *    check at the bottom to make sure we consider the "final" values). ---*/
+  if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
+    SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -2462,17 +2491,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
     if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == DT_STEPPING_2ND)) {
 
-      SU2_OMP_MASTER
-      {
-        /*--- Load an additional restart file for a 2nd-order restart ---*/
+      /*--- Load an additional restart file for a 2nd-order restart ---*/
 
-        solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
 
-        /*--- Load an additional restart file for the turbulence model ---*/
-        if (rans)
-          solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
-      }
-      SU2_OMP_BARRIER
+      /*--- Load an additional restart file for the turbulence model ---*/
+      if (rans)
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
 
       /*--- Push back this new solution to time level N. ---*/
 
@@ -2489,22 +2514,18 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 }
 
-void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                       unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
+  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
                               (config->GetKind_Upwind_Flow() == ROE ||
@@ -2567,33 +2588,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SU2_OMP_BARRIER
   }
 
-  /*--- Upwind second order reconstruction ---*/
-
-  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
-
-    /*--- Gradient computation for MUSCL reconstruction. ---*/
-
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-
-    /*--- Limiter computation ---*/
-
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
-      SetPrimitive_Limiter(geometry, config);
-  }
-
   /*--- Artificial dissipation ---*/
 
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
+    if (center_jst)
+      SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(geometry, config);
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
@@ -2605,9 +2605,51 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
   }
 
-  /*--- Initialize the Jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
+   *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if(!ReducerStrategy && !Output) {
+    LinSysRes.SetValZero();
+    if (implicit && !disc_adjoint) Jacobian.SetValZero();
+    else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
+  }
+
+}
+
+void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
+  unsigned long InnerIter = config->GetInnerIter();
+  bool cont_adjoint     = config->GetContinuous_Adjoint();
+  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+
+  /*--- Common preprocessing steps. ---*/
+
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+  /*--- Upwind second order reconstruction ---*/
+
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+
+    /*--- Gradient computation for MUSCL reconstruction. ---*/
+
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
+    }
+
+    /*--- Limiter computation ---*/
+
+    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
+      SetPrimitive_Limiter(geometry, config);
+  }
 
 }
 
@@ -2628,11 +2670,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     /* Check for non-realizable states for reporting. */
 
     if (!physical) nonPhysicalPoints++;
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
   }
 
   return nonPhysicalPoints;
@@ -2910,14 +2947,11 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  /*--- Determine if using the reducer strategy is necessary, see CEulerSolver::SumEdgeFluxes(). ---*/
-  const bool reducer_strategy = (MGLevel != MESH_0) && (omp_get_num_threads() > 1);
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -2959,16 +2993,14 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Update convective and artificial dissipation residuals. ---*/
 
-    if (reducer_strategy) {
+    if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       if (implicit)
-        Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-
-      /*--- Set implicit computation ---*/
       if (implicit)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
@@ -2980,7 +3012,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   }
   } // end color loop
 
-  if (reducer_strategy) {
+  if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
       Jacobian.SetDiagonalAsColumnSum();
@@ -2990,9 +3022,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-
-  assert(nDim <= MAXNDIM && nPrimVar <= MAXNVAR && nSecondaryVar <= MAXNVAR &&
-         "Oops! The CEulerSolver static array sizes are not large enough.");
 
   const auto InnerIter        = config->GetInnerIter();
   const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -3020,14 +3049,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
-  /*--- Determine if using the reducer strategy is necessary, see CEulerSolver::SumEdgeFluxes(). ---*/
-  const bool reducer_strategy = (MGLevel != MESH_0) && (omp_get_num_threads() > 1);
-
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -3193,10 +3219,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Update residual value ---*/
 
-    if (reducer_strategy) {
+    if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       if (implicit)
-        Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
@@ -3214,7 +3240,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   } // end color loop
 
-  if (reducer_strategy) {
+  if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
       Jacobian.SetDiagonalAsColumnSum();
@@ -3244,6 +3270,8 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
 
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 
@@ -3632,142 +3660,82 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
 
-  nodes->SetUnd_LaplZero();
+  /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
 
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
-  for(auto k = 0ul; k < color.size; ++k) {
+  const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
 
-    auto iEdge = color.indices[k];
+  /*--- Loop domain points. ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    /*--- Solution differences ---*/
+    const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    const su2double Pressure_i = nodes->GetPressure(iPoint);
 
-    su2double Diff[MAXNVAR] = {0.0};
-
+    /*--- Initialize. ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
+      nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
-    /*--- Correction for compressible flows which use the enthalpy ---*/
+    iPoint_UndLapl[iPoint] = 0.0;
+    jPoint_UndLapl[iPoint] = 0.0;
 
-    Diff[nVar-1] += nodes->GetPressure(iPoint) - nodes->GetPressure(jPoint);
+    /*--- Loop over the neighbors of point i. ---*/
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    {
+      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+      if (boundary_i && !boundary_j) continue;
 
-    /*--- Both points inside the domain, or both in the boundary ---*/
+      /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
 
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
+
+      su2double Pressure_j = nodes->GetPressure(jPoint);
+      nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
+
+      /*--- Dissipation sensor, add pressure difference and pressure sum. ---*/
+      iPoint_UndLapl[iPoint] += Pressure_j - Pressure_i;
+      jPoint_UndLapl[iPoint] += Pressure_j + Pressure_i;
     }
 
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
-
+    if (!isPeriodic)
+      nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
-  } // end color loop
+
+  if (isPeriodic) {
+    /*--- Correct the Laplacian and sensor values across any periodic boundaries. ---*/
+
+    SU2_OMP_MASTER
+    {
+      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+
+        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      }
+    }
+    SU2_OMP_BARRIER
+
+    /*--- Set final pressure switch for each point ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+      nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+  }
 
   SU2_OMP_MASTER
   {
-    /*--- Correct the Laplacian values across any periodic boundaries. ---*/
-
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-    }
-
     /*--- MPI parallelization ---*/
 
     InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
     CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  }
-  SU2_OMP_BARRIER
 
-}
-
-void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
-
-  /*--- Reset variables to store the undivided pressure ---*/
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    iPoint_UndLapl[iPoint] = 0.0;
-    jPoint_UndLapl[iPoint] = 0.0;
-  }
-
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
-  for(auto k = 0ul; k < color.size; ++k) {
-
-    auto iEdge = color.indices[k];
-
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
-
-    su2double Pressure_i = nodes->GetPressure(iPoint);
-    su2double Pressure_j = nodes->GetPressure(jPoint);
-
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
-
-    /*--- Both points inside the domain, or both on the boundary ---*/
-
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) { iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i); jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j); }
-      if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
-    }
-
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) { iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i); jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j); }
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
-  }
-  } // end color loop
-
-  /*--- Correct the sensor values across any periodic boundaries. ---*/
-
-  SU2_OMP_MASTER
-  {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-    }
-  }
-  SU2_OMP_BARRIER
-
-  /*--- Set pressure switch for each point ---*/
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
-
-  /*--- MPI parallelization ---*/
-
-  SU2_OMP_MASTER
-  {
     InitiateComms(geometry, config, SENSOR);
     CompleteComms(geometry, config, SENSOR);
   }
@@ -11508,26 +11476,24 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
+
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  su2double Area_Children, Area_Parent;
+  const su2double* Solution_Fine = nullptr;
+  const passivedouble* Coord = nullptr;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool static_fsi = ((config->GetTime_Marching() == STEADY) &&
-                      config->GetFSI_Simulation());
+  bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
   bool steady_restart = config->GetSteadyRestart();
-  bool turbulent     = (config->GetKind_Turb_Model() != NONE);
+  bool turbulent = (config->GetKind_Turb_Model() != NONE);
 
-  string  restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
-  Coord = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord[iDim] = 0.0;
-
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER
+  {
 
   /*--- Skip coordinates ---*/
 
@@ -11551,13 +11517,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  unsigned long counter = 0, iPoint_Global = 0;
+  for (; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
 
@@ -11565,9 +11531,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
-      iPoint_Global_Local++;
+      for (iVar = 0; iVar < nVar; ++iVar)
+        nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
@@ -11578,15 +11543,14 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
 
-        su2double GridVel[3] = {0.0,0.0,0.0};
+        /*--- Rewind the index to retrieve the Coords. ---*/
+        index = counter*Restart_Vars[1];
+        Coord = &Restart_Data[index];
+
+        su2double GridVel[MAXNDIM] = {0.0};
         if (!steady_restart) {
-
-          /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[1];
-          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
-
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar + turbVars;
+          index += skipVars + nVar + turbVars;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -11596,10 +11560,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         }
       }
 
+      /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
+       grid coordinates for each node (but not the grid velocities, as there are none). ---*/
+
       if (static_fsi && val_update_geo) {
        /*--- Rewind the index to retrieve the Coords. ---*/
         index = counter*Restart_Vars[1];
-        for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim];}
+        Coord = &Restart_Data[index];
 
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
@@ -11614,55 +11581,24 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) {
-      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
-  /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. We alo call the preprocessing routine
-   on the fine level in order to have all necessary quantities updated,
-   especially if this is a turbulent simulation (eddy viscosity). ---*/
+  /*--- Update the geometry for flows on deforming meshes ---*/
 
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-
-  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-    }
-
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  }
-
-  /*--- Update the geometry for flows on dynamic meshes ---*/
-
-  if (dynamic_grid && val_update_geo) {
+  if ((dynamic_grid || static_fsi) && val_update_geo) {
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
     geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
     geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+    if (dynamic_grid) {
+      geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+      geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+    }
 
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -11680,51 +11616,77 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
-      geometry[iMesh]->SetMaxLength(config);
+      if (dynamic_grid) {
+        geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
       }
-    }
-
-  /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
-
-  if (static_fsi && val_update_geo) {
-
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-    /*--- Recompute the edges and  dual mesh control volumes in the
-     domain and on the boundaries. ---*/
-
-    geometry[MESH_0]->SetCoord_CG();
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
-
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetMaxLength(config);
     }
   }
 
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We also call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  } // end SU2_OMP_MASTER, preprocessing is thread-safe.
+  SU2_OMP_BARRIER
+
+  /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
+   *    after it loads its variables (they are needed to compute flow primitives). ---*/
+  if (!turbulent) {
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      su2double Solution_Coarse[MAXNVAR] = {0.0};
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution_Coarse[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
+    }
+
+    SU2_OMP_MASTER
+    {
+      solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+      solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    }
+    SU2_OMP_BARRIER
+
+    if (!turbulent) {
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy. ---*/
-  if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION))
+  if (dual_time && config->GetGrid_Movement() && !config->GetDeform_Mesh() &&
+      (config->GetKind_GridMovement() != RIGID_MOTION)) {
     Restart_OldGeometry(geometry[MESH_0], config);
-
-  delete [] Coord;
+  }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
+
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }
 

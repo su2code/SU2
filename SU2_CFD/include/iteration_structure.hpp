@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,8 +27,6 @@
  */
 
 #pragma once
-
-#include <ctime>
 
 #include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
@@ -291,12 +289,6 @@ public:
                             unsigned short val_iInst);
 
   virtual void InitializeAdjoint(CSolver *****solver,
-                                 CGeometry ****geometry,
-                                 CConfig **config,
-                                 unsigned short iZone,
-                                 unsigned short iInst){}
-
-  virtual void InitializeAdjoint_CrossTerm(CSolver *****solver,
                                  CGeometry ****geometry,
                                  CConfig **config,
                                  unsigned short iZone,
@@ -576,7 +568,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CFEMFluidIteration : public CFluidIteration {
 public:
@@ -763,7 +755,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CFEAIteration : public CIteration {
 public:
@@ -1195,7 +1187,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the instance.
-   * \param[in] kind_recording - Kind of recording, either FLOW_CONS_VARS or MESH_COORDS
+   * \param[in] kind_recording - Kind of recording, either FLOW_SOLUTION_VARIABLES or MESH_COORDS
    */
   void RegisterInput(CSolver *****solver,
                      CGeometry ****geometry,
@@ -1218,16 +1210,6 @@ public:
                       COutput* output,
                       unsigned short iZone,
                       unsigned short iInst);
-
-  /*!
-   * \brief Initializes the adjoints of the output variables of the meanflow iteration - without the contribution of the objective function
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] iInst - Index of the instance.
-   */
-  void InitializeAdjoint_CrossTerm(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Record a single iteration of the direct mean flow system.
@@ -1498,16 +1480,6 @@ public:
    * \param[in] iInst - Index of the zone.
    */
   void InitializeAdjoint(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst);
-
-  /*!
-   * \brief Initializes the adjoints of the output variables of the FEM iteration - without the contribution of the objective function
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] iInst - Index of the zone.
-   */
-  void InitializeAdjoint_CrossTerm(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
