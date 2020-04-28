@@ -11,8 +11,8 @@ config.GRADIENT_METHOD= 'DISCRETE_ADJOINT'
 #config.CONSOLE= 'CONCISE'
 project = SU2.opt.Project(config,state)
 
-project.config["MOTION_FILENAME"] = "mesh_motion.dat"
-project.state.FILES["MOTION_FILE"] = project.config["MOTION_FILENAME"]
+project.config["DV_FILENAME"] = "mesh_motion.dat"
+project.state.FILES["MOTION_FILE"] = project.config["DV_FILENAME"]
 
 obj = []
 dobj = []
