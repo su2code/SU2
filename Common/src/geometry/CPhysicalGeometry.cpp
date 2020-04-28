@@ -8340,7 +8340,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         iEdge = FindEdge(face_iPoint, face_jPoint);
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
+          Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
           Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
