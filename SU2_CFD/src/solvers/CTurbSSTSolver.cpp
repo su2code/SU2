@@ -298,8 +298,10 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     su2double rhoomega = nodes->GetSolution(iPoint, 1);
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
-    /*--- Turb vars are already clipped so just set primitive ---*/
-
+    /*--- Clip primitives ---*/
+    rhokine = max(rhokine, 1.e-10);
+    rhoomega = max(rhoomega, 1.e-10);
+    
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
