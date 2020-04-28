@@ -46,7 +46,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
 }
 
-CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;

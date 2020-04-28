@@ -1,0 +1,246 @@
+
+-------------------------------------------------------------------------
+|    ___ _   _ ___                                                      |
+|   / __| | | |_  )   Release 7.0.3 "Blackbird"                         |
+|   \__ \ |_| |/ /                                                      |
+|   |___/\___//___|   Suite (Computational Fluid Dynamics Code)         |
+|                                                                       |
+-------------------------------------------------------------------------
+| SU2 Project Website: https://su2code.github.io                        |
+|                                                                       |
+| The SU2 Project is maintained by the SU2 Foundation                   |
+| (http://su2foundation.org)                                            |
+-------------------------------------------------------------------------
+| Copyright 2012-2020, SU2 Contributors                                 |
+|                                                                       |
+| SU2 is free software; you can redistribute it and/or                  |
+| modify it under the terms of the GNU Lesser General Public            |
+| License as published by the Free Software Foundation; either          |
+| version 2.1 of the License, or (at your option) any later version.    |
+|                                                                       |
+| SU2 is distributed in the hope that it will be useful,                |
+| but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
+| Lesser General Public License for more details.                       |
+|                                                                       |
+| You should have received a copy of the GNU Lesser General Public      |
+| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |
+-------------------------------------------------------------------------
+
+Parsing config file for zone 0
+
+----------------- Physical Case Definition ( Zone 0 ) -------------------
+Compressible two-temperature thermochemical non-equilibrium Euler equations.
+Mach number: 0.
+Angle of attack (AoA): 0 deg, and angle of sideslip (AoS): 0 deg.
+No restart solution, use the values at infinity (freestream).
+Dimensional simulation.
+The reference area is 1 m^2.
+The semi-span will be computed using the max y(3D) value.
+The reference length is 1 m.
+Input mesh file name: 5x5Mesh.su2
+
+--------------- Space Numerical Integration ( Zone 0 ) ------------------
+AUSM solver for the flow inviscid terms.
+Standard Roe without low-dissipation function.
+First order integration in space.
+Gradient for upwind reconstruction: inverse-distance weighted Least-Squares.
+Gradient for viscous and source terms: inverse-distance weighted Least-Squares.
+
+--------------- Time Numerical Integration  ( Zone 0 ) ------------------
+Unsteady simulation using a time stepping strategy.
+Unsteady time step provided by the user (s): 1e-09.
+Euler explicit method for the flow equations.
+No CFL adaptation.
+
+------------------ Convergence Criteria  ( Zone 0 ) ---------------------
+Maximum number of solver subiterations: 1.
+Maximum number of physical time-steps: 1.
+Begin convergence monitoring at iteration 100000.
+Residual minimum value: 1e-14.
+Cauchy series min. value: 1e-06.
+Number of Cauchy elements: 100.
+Begin windowed time average at iteration 15.
+
+-------------------- Output Information ( Zone 0 ) ----------------------
+Writing solution files every 100 iterations.
+Writing the convergence history file every 0 inner iterations.
+Writing the convergence history file every 1 time iterations.
+Writing the screen convergence history every 1 inner iterations.
+Writing the screen convergence history every 1 time iterations.
+The tabular file format is Tecplot (.dat).
+Convergence history file name: history.
+Forces breakdown file name: forces_breakdown.dat.
+Surface file name: surface_flow.
+Volume file name: test_flow.
+Restart file name: restart_flow.dat.
+
+------------- Config File Boundary Information ( Zone 0 ) ---------------
++-----------------------------------------------------------------------+
+|                        Marker Type|                        Marker Name|
++-----------------------------------------------------------------------+
+|                          Far-field|                               left|
+|                                   |                             bottom|
+|                                   |                                top|
+|                                   |                              right|
++-----------------------------------------------------------------------+
+
+-------------------- Output Preprocessing ( Zone 0 ) --------------------
+  Info: Ignoring the following screen output fields:
+  RMS_DENSITY_O2, RMS_DENSITY_NO, RMS_DENSITY_O
+Screen output fields: TIME_ITER, INNER_ITER, RMS_DENSITY_N2, RMS_DENSITY_N, RMS_MOMENTUM-X, RMS_MOMENTUM-Y, RMS_ENERGY, RMS_ENERGY_VE
+History output group(s): ITER, RMS_RES
+Ignoring Convergence Field(s): RMS_DENSITY 
+Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive.
+Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive.
+Volume output fields: COORDINATES, SOLUTION, PRIMITIVE
+
+------------------- Geometry Preprocessing ( Zone 0 ) -------------------
+Two dimensional problem.
+36 grid points.
+25 volume elements.
+4 surface markers.
+5 boundary elements in index 0 (Marker = bottom).
+5 boundary elements in index 1 (Marker = left).
+5 boundary elements in index 2 (Marker = right).
+5 boundary elements in index 3 (Marker = top).
+25 quadrilaterals.
+Setting point connectivity.
+Renumbering points (Reverse Cuthill McKee Ordering).
+Recomputing point connectivity.
+Setting element connectivity.
+Checking the numerical grid orientation.
+Identifying edges and vertices.
+Computing centers of gravity.
+Setting the control volume structure.
+Area of the computational grid: 1.
+Searching for the closest normal neighbors to the surfaces.
+Storing a mapping from global to local point index.
+Compute the surface curvature.
+Max K: 7.07107. Mean K: 2.35702. Standard deviation K: 3.33333.
+Checking for periodicity.
+Computing mesh quality statistics for the dual control volumes.
++--------------------------------------------------------------+
+|           Mesh Quality Metric|        Minimum|        Maximum|
++--------------------------------------------------------------+
+|    Orthogonality Angle (deg.)|             90|             90|
+|     CV Face Area Aspect Ratio|              1|              2|
+|           CV Sub-Volume Ratio|              1|              1|
++--------------------------------------------------------------+
+Finding max control volume width.
+Wetted area = 0 m.
+Area projection in the x-plane = 0 m, y-plane = 0 m.
+Max. coordinate in the x-direction = -1e+10 m, y-direction = -1e+10 m.
+Min. coordinate in the x-direction = 1e+10 m, y-direction = 1e+10 m.
+
+-------------------- Solver Preprocessing ( Zone 0 ) --------------------
+Cat: new cnemoeulersolver
+
+Inviscid flow: Computing density based on free-stream
+temperature and pressure using the ideal gas law.
+Force coefficients computed using free-stream values.
+-- Input conditions:
+Fluid Model: STANDARD_AIR 
+Specific gas constant: 356.163 N.m/kg.K.
+Specific gas constant (non-dim): 356.163
+Specific Heat Ratio: 1.4
+Free-stream static pressure: 101325 Pa.
+Free-stream total pressure: 101325 Pa.
+Free-stream temperature: 288.15 K.
+Free-stream density: -1 kg/m^3.
+Free-stream velocity: (0, 0) m/s. Magnitude: 0 m/s (0 KTS).
+Free-stream total energy per unit mass: 1.14281e+07 m^2/s^2.
+Total time: 0 s. Time step: 1e-09 s.
+-- Reference values:
+Reference specific gas constant: 1 N.m/kg.K.
+Reference pressure: 1 Pa.
+Reference temperature: 1 K.
+Reference density: 1 kg/m^3.
+Reference velocity: 1 m/s.
+Reference energy per unit mass: 40.0873 m^2/s^2.
+Reference time: 1 s.
+-- Resulting non-dimensional state:
+Mach number (non-dim): 0
+Specific gas constant (non-dim): 356.163
+Free-stream temperature (non-dim): 288.15
+Free-stream pressure (non-dim): 101325
+Free-stream density (non-dim): 0.888569
+Free-stream velocity (non-dim): (0, 0). Magnitude: 0
+Free-stream total energy per unit mass (non-dim): 285079
+Total time (non-dim): 0
+Time step (non-dim): 1e-09
+
+Explicit Scheme. No Jacobian structure (Euler). MG level: 0.
+Cat: cnemoeulersolver::preprocessing
+
+
+------------------- Numerics Preprocessing ( Zone 0 ) -------------------
+Cat: cdriver::numerics_preprocessing
+
+Cat: CUpwAUSM_NEMO::CUpwAUSM_NEMO
+
+Cat: CUpwAUSM_NEMO::CUpwAUSM_NEMO
+
+
+----------------- Integration Preprocessing ( Zone 0 ) ------------------
+Cat: CMultiGridIntegration::CMultiGridIntegration
+
+
+------------------- Iteration Preprocessing ( Zone 0 ) ------------------
+: NEMO Two-Temp Euler/Navier-Stokes/RANS fluid iteration.
+Cat: CNEMOIteration::CNEMOIteration
+
+
+------------------------------ Begin Solver -----------------------------
+
+Simulation Run using the Single-zone Driver
+The simulation will run for 1 time steps.
+Cat: CNEMOIteration::Preprocess
+
+Cat: CNEMOIteration::Iterate
+
+Cat: CMultiGridIntegration::MultiGrid_Iteration   RunTime_EqSystem=25
+
+Cat: CMultiGridIntegration::MultiGrid_Iteration   Solver_Position=0
+
+Cat: CMultiGridIntegration::MultiGrid_Iteration
+
+Cat: cnemoeulersolver::preprocessing
+
+Cat: CIntegration::Space_Integration MainSolver=0
+
+Cat: cnemoeulersolver::preprocessing
+
++-------------------------------------------------------------------------------------------------------+
+|   Time_Iter|  Inner_Iter| rms[Rho_N2]|  rms[Rho_N]|   rms[RhoU]|   rms[RhoV]|   rms[RhoE]| rms[RhoEve]|
++-------------------------------------------------------------------------------------------------------+
+|           0|           0|  -32.000000|  -32.000000|    4.005717|    4.005717|  -32.000000|  -32.000000|
+
+----------------------------- Solver Exit -------------------------------
+Maximum number of time iterations reached (TIME_ITER = 1).
+-------------------------------------------------------------------------
++-----------------------------------------------------------------------+
+|        File Writing Summary       |              Filename             |
++-----------------------------------------------------------------------+
+|SU2 ASCII restart                  |restart_flow_00000.csv             |
+|Tecplot ASCII                      |test_flow_00000.dat                |
++-----------------------------------------------------------------------+
+
+------------------------- Solver Postprocessing -------------------------
+Deleted CNumerics container.
+Deleted CIntegration container.
+Deleted CSolver container.
+Deleted CIteration container.
+Deleted CInterpolator container.
+Deleted CInterface container.
+Deleted CGeometry container.
+Deleted CFreeFormDefBox class.
+Deleted CSurfaceMovement class.
+Deleted CVolumetricMovement class.
+Deleted CConfig container.
+Deleted nInst container.
+Deleted COutput class.
+-------------------------------------------------------------------------
+
+------------------------- Exit Success (SU2_CFD) ------------------------
+

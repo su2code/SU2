@@ -185,6 +185,17 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
+
+  std::ofstream outfile;
+
+  outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
+
+  for (iVar = 0; iVar < nVar; iVar++){
+
+     outfile << "val_residual[" << iVar << "]=" << val_residual[iVar] << endl; 
+
+  }
+
   if (implicit) {
 
     /*--- Initialize the Jacobians ---*/

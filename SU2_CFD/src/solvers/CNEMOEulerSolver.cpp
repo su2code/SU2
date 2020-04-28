@@ -814,8 +814,6 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool nonPhys;
 
   
- //std::cout << "CNEMOEulerSolver::Preprocessing" << std::endl << std::endl;
-
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
@@ -1676,7 +1674,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 //}
 
 //sean copeland
-void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
+void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
   unsigned long iEdge, iPoint, jPoint;
   unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
@@ -1693,6 +1691,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
   unsigned long InnerIter = config->GetInnerIter();
   
+  CNumerics* numerics = numerics_container[CONV_TERM];
+
   /*--- Set booleans based on config settings ---*/
    /*--- Set booleans based on config settings ---*/
   bool implicit   = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
@@ -1922,8 +1922,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 }
 
 
-void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-                                       CNumerics *second_solver, CConfig *config, unsigned short iMesh) {
+void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   unsigned short iVar, jVar;
   unsigned long iPoint;
@@ -1934,6 +1933,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   /*--- Assign booleans ---*/
   bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
   bool err = false;
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
   /*--- Initialize the error counter ---*/
   eAxi_local = 0;
@@ -1951,7 +1952,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   numerics->SetAIndex      ( nodes->GetAIndex()       );
   numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
   numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -2001,29 +2001,30 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     }
 
     /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
+    //numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
 
     /*--- Check for errors before applying source to the linear system ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (Residual[iVar] != Residual[iVar]) err = true;
-    if (implicit)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-
-    /*--- Apply the chemical sources to the linear system ---*/
-    if (!err) {
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    } else
-      eChm_local++;
+    //err = false;
+    //for (iVar = 0; iVar < nVar; iVar++)
+    //  if (Residual[iVar] != Residual[iVar]) err = true;
+    //if (implicit)
+    //  for (iVar = 0; iVar < nVar; iVar++)
+    //    for (jVar = 0; jVar < nVar; jVar++)
+    //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+//
+    ///*--- Apply the chemical sources to the linear system ---*/
+    //if (!err) {
+    //  LinSysRes.SubtractBlock(iPoint, Residual);
+    //  if (implicit)
+    //    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    //} else
+    //  eChm_local++;
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
-    numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
 
+    numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
+    
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
