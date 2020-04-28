@@ -320,7 +320,7 @@ CSolver* CSolverFactory::createTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver
         break;
       case SST: case SST_SUST:
         turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
-        solver[TURB_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TURB_SYS, false);
+        turbSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_TURB_SYS, false);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
