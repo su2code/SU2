@@ -292,17 +292,17 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Set the primitive variables ---*/
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
-
-    /*--- Clip primitives ---*/
-    
-    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
-    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
-  }
+//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+//
+//    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+//    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+//    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
+//
+//    /*--- Clip primitives ---*/
+//
+//    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
+//    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
+//  }
   
 //  InitiateComms(geometry, config, PRIMITIVE);
 //  CompleteComms(geometry, config, PRIMITIVE);
