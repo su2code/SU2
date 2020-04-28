@@ -92,7 +92,7 @@ public:
   CNEMOEulerVariable(unsigned long npoint,
                      unsigned long ndim,
                      unsigned long nvar, unsigned long nvalprim,
-                     unsigned long nvarprimgrad, CConfig *config);
+                     unsigned long nvarprimgrad, const CConfig *config);
 
   /*!
    * \brief Constructor of the class.

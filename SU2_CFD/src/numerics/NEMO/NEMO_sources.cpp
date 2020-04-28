@@ -507,8 +507,9 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
       num   += X[jSpecies];
       denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
     }
-    tauMW[iSpecies] = num / denom;
 
+    tauMW[iSpecies] = num / denom;
+  
     /*--- Park limiting cross section ---*/
     Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
     sig_s = 1E-20*(5E4*5E4)/(T*T);
@@ -525,6 +526,7 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
     val_residual[nEv] += rhos * (estar[iSpecies] -
                                  eve_i[iSpecies]) / taus[iSpecies] * Volume;
   }
+
 
   /*---Set source term ---*/
   for (iVar = 0; iVar < nVar; iVar++)

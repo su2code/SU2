@@ -362,7 +362,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve",          "PRIMITIVE", "Temperature_ve");
 
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
-  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+//  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
   if (/*config->GetKind_Solver() == NEMO_RANS ||*/ config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
@@ -527,7 +527,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     VelMag += pow(solver[NEMO_SOL]->GetVelocity_Inf(iDim),2.0);
   }
   su2double factor = 1.0/(0.5*solver[NEMO_SOL]->GetDensity_Inf()*VelMag);
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[NEMO_SOL]->GetPressure_Inf())*factor);
+  //SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[NEMO_SOL]->GetPressure_Inf())*factor);
 
   if (/*config->GetKind_Solver() == NEMO_RANS ||*/ config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));

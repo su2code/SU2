@@ -109,6 +109,62 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Dissipation_ij = 1.0;
 
+  if ((config->GetKind_Solver() == NEMO_EULER)                 ||
+      (config->GetKind_Solver() == NEMO_NAVIER_STOKES) ) { //         ||
+      //(config->GetKind_Solver() == DISC_ADJ_NEMO_EULER)        ||
+      //(config->GetKind_Solver() == DISC_ADJ_NEMO_NAVIER_STOKES) ) {
+    nSpecies = nVar - nDim - 2;
+
+    hs     = new su2double[nSpecies];
+    Cvtr   = new su2double[nSpecies];
+    eve_i  = new su2double[nSpecies];  eve_j  = new su2double[nSpecies];
+    Cvve_i = new su2double[nSpecies];  Cvve_j = new su2double[nSpecies];
+    Ys_i   = new su2double[nSpecies];  Ys_j   = new su2double[nSpecies];
+    In     = new su2double[nSpecies];
+    dYdr_i = new su2double*[nSpecies]; dYdr_j = new su2double*[nSpecies];
+    dIdr_i = new su2double*[nSpecies]; dIdr_j = new su2double*[nSpecies];
+    dJdr_i = new su2double*[nSpecies]; dJdr_j = new su2double*[nSpecies];
+
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      dYdr_i[iSpecies] = new su2double[nSpecies];
+      dYdr_j[iSpecies] = new su2double[nSpecies];
+      dIdr_i[iSpecies] = new su2double[nSpecies];
+      dIdr_j[iSpecies] = new su2double[nSpecies];
+      dJdr_i[iSpecies] = new su2double[nSpecies];
+      dJdr_j[iSpecies] = new su2double[nSpecies];
+    }
+    dFdVi = new su2double*[nVar];
+    dFdVj = new su2double*[nVar];
+    dVdUi = new su2double*[nVar];
+    dVdUj = new su2double*[nVar];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      dFdVi[iVar] = new su2double[nVar];
+      dFdVj[iVar] = new su2double[nVar];
+      dVdUi[iVar] = new su2double[nVar];
+      dVdUj[iVar] = new su2double[nVar];
+    }
+
+    Ys = new su2double[nSpecies];
+    dFdYi = new su2double *[nSpecies];
+    dFdYj = new su2double *[nSpecies];
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      dFdYi[iSpecies] = new su2double[nSpecies];
+      dFdYj[iSpecies] = new su2double[nSpecies];
+    }
+    sumdFdYih   = new su2double[nSpecies];
+    sumdFdYjh   = new su2double[nSpecies];
+    sumdFdYieve = new su2double[nSpecies];
+    sumdFdYjeve = new su2double[nSpecies];
+
+    Diffusion_Coeff_i = new su2double[nSpecies];
+    Diffusion_Coeff_j = new su2double[nSpecies];
+    unsigned short nPrimVar     = nSpecies+nDim+8;
+    unsigned short nPrimVarGrad = nSpecies+nDim+8;
+//    cout << "delete me: ln242" << endl;
+    unsigned long nPoint = 1;
+    variable = new CNEMOEulerVariable(nPoint, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+  }
+
   /* --- Initializing variables for the UQ methodology --- */
   using_uq = config->GetUsing_UQ();
   if (using_uq){

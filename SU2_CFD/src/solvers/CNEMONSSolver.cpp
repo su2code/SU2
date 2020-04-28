@@ -1193,6 +1193,8 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
   numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
+  std::cout << "Cat: CNEMONSSolver::Viscous_Residual" << std::endl << std::endl;
+
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 

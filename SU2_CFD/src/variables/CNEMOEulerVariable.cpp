@@ -43,7 +43,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
                                        unsigned long val_nvar,
                                        unsigned long val_nprimvar,
                                        unsigned long val_nprimvargrad,
-                                       CConfig *config) : CVariable(npoint,
+                                       const CConfig *config) : CVariable(npoint,
                                                                     val_ndim,
                                                                     val_nvar,
                                                                     config) {

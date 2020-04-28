@@ -46,6 +46,8 @@ enum class SUB_SOLVER_TYPE {
   DISC_ADJ_HEAT,           /*!< \brief Discrete adjoint heat solver */
   EULER,                   /*!< \brief Compressible Euler solver */
   NAVIER_STOKES,           /*!< \brief Compressible Navier-Stokes solver */
+  NEMO_EULER,              /*!< \brief NEMO Euler solver */
+  NEMO_NAVIER_STOKES,      /*!< \brief NEMO Navier-Stokes solver */
   INC_EULER,               /*!< \brief Incompressible Euler solver */
   INC_NAVIER_STOKES,       /*!< \brief Incompressible Navier-stokes solver */
   FEA,                     /*!< \brief Structural Finite-Element solver */
@@ -140,6 +142,17 @@ private:
    * \return                   - A pointer to the allocated flow solver
    */
   static CSolver* createFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+
+    /*!
+   * \brief Create a NEMO flow solver 
+   * \param[in] kindNEMOSolver - Kind of flow solver
+   * \param[in] solver         - The solver container
+   * \param[in] geometry       - The geometry definition
+   * \param[in] config         - The configuration
+   * \param[in] iMGLevel       - The multigrid level
+   * \return                   - A pointer to the allocated flow solver
+   */
+  static CSolver* createNEMOSolver(SUB_SOLVER_TYPE kindNEMOSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Generic routine to create a solver 
