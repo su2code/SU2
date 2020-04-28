@@ -449,9 +449,10 @@ public:
    * the latter are needed for compatibility with shape derivatives, there is no problem registering
    * because inactive variables are ignored.
    */
-  inline void SetPreaccIn_Coords(void) {
+  inline void SetPreaccIn_Coords(bool nonlinear = true) {
     AD::SetPreaccIn(RefCoord.data(), nNodes*nDim);
-    AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
+    if (nonlinear)
+      AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
   }
 
   /*!
@@ -460,6 +461,13 @@ public:
    */
   inline void SetPreaccOut_Kt_a(void) {
     AD::SetPreaccOut(Kt_a.data(), nNodes*nDim);
+  }
+
+  /*!
+   * \brief Register the mass matrix as a pre-accumulation output.
+   */
+  inline void SetPreaccOut_Mab(void) {
+    AD::SetPreaccOut(Mab.data(), nNodes*nNodes);
   }
 
 };
