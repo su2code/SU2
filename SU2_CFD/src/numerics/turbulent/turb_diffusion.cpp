@@ -277,8 +277,8 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
-    const su2double oneOnVol_i = 0.5 / (Volume_i);
-    const su2double oneOnVol_j = 0.5 / (Volume_j);
+    const su2double oneOnVol_i = 1.0 / (Volume_i);
+    const su2double oneOnVol_j = 1.0 / (Volume_j);
     
     su2double jac_i[2] = {Jacobian_i[0][0], Jacobian_i[1][1]},
               jac_j[2] = {Jacobian_j[0][0], Jacobian_j[1][1]};
