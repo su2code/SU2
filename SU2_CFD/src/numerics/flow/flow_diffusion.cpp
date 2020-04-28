@@ -614,8 +614,8 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
 
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
-    const su2double halfOnVol_i = 0.5 / (Volume_i);
-    const su2double halfOnVol_j = 0.5 / (Volume_j);
+    const su2double oneOnVol_i = 0.5 / (Volume_i);
+    const su2double oneOnVol_j = 0.5 / (Volume_j);
     
     su2double jac_i[nVar][nVar], jac_j[nVar][nVar];
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -637,12 +637,12 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       su2double weight_i, weight_j;
       if (correct_gradient) {
-        weight_i = Normal[iDim]*halfOnVol_i;
-        weight_j = Normal[iDim]*halfOnVol_j;
+        weight_i = 0.5*Normal[iDim]*oneOnVol_i;
+        weight_j = 0.5*Normal[iDim]*oneOnVol_j;
       }
       else {
-        weight_i = 2.*Normal[iDim]/Volume_i;
-        weight_j = 2.*Normal[iDim]/Volume_j;
+        weight_i = Normal[iDim]*oneOnVol_i;
+        weight_j = Normal[iDim]*oneOnVol_j;
       }
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
