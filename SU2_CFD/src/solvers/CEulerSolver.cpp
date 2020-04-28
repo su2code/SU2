@@ -7039,7 +7039,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
-  su2double Kine_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
 
@@ -7253,8 +7252,14 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 //        const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
 
-        V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
-        V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+        if(Qn_Infty < 0.0) {
+          V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+          V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+        }
+        else {
+          V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+          V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        }
 
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -7264,7 +7269,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Primitive variables, and gradient ---*/
 
-        visc_numerics->SetPrimitive(V_domain, V_infty);
+        visc_numerics->SetPrimitive(V_domain, V_domain);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
 
@@ -7274,12 +7279,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
-          if (Qn_Infty < 0.0)
-            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                                GetTke_Inf());
-          else
-            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                                solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
           
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
