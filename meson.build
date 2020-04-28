@@ -149,7 +149,7 @@ elif get_option('enable-openblas')
   su2_deps += blas_dep
 
 endif
-
+catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 subdir('externals/cparse')
 
 # compile common library
@@ -168,6 +168,8 @@ subdir('SU2_MSH/src')
 subdir('SU2_SOL/src')
 # install python scripts
 subdir('SU2_PY')
+# unit tests
+subdir('UnitTests')
 
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
