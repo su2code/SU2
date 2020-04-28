@@ -7243,16 +7243,14 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       if (viscous) {
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        su2double StaticEnergy = Energy - 0.5*Velocity2;
-        if (tkeNeeded) {
-          if (Qn_Infty < 0.0) StaticEnergy -= GetTke_Inf();
-          else StaticEnergy -= solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
-        }
-//        const su2double StaticEnergy = Energy - 0.5*Velocity2 - Kine_Infty;
-        GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
 
         if(Qn_Infty < 0.0) {
+          su2double StaticEnergy = Energy - 0.5*Velocity2;
+          if (tkeNeeded) {
+            if (Qn_Infty < 0.0) StaticEnergy -= GetTke_Inf();
+            else StaticEnergy -= solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+          }
+          GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
           V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
           V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
         }
