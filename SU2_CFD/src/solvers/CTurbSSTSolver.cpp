@@ -303,9 +303,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
-  
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -349,9 +346,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
   }
-  
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
@@ -728,7 +722,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 //      /*--- Menter's first blending function ---*/
 //      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
 //                                   nodes->GetF1blending(iPoint));
-//      
+//
 //      /*--- Set values for gradient Jacobian ---*/
 //      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
 //                               geometry->node[iPoint]->GetVolume());

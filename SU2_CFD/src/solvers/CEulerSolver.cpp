@@ -2550,10 +2550,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
-  if (sst) {
-    InitiateComms(geometry, config, PRIMITIVE);
-    CompleteComms(geometry, config, PRIMITIVE);
-  }
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     SU2_OMP_BARRIER

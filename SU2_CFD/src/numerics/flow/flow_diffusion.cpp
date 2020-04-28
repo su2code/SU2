@@ -462,8 +462,8 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
         heat_flux_vector[1];
     
     if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
-      su2double Mean_F1 = 0.5*(F1_i + F1_j);
-      su2double sigma_k = Mean_F1*sigma_k1 + (1.0 - Mean_F1)*sigma_k2;
+      const su2double Mean_F1 = 0.5*(F1_i + F1_j);
+      const su2double sigma_k = Mean_F1*sigma_k1 + (1.0 - Mean_F1)*sigma_k2;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         Flux_Tensor[3][iDim] += (Mean_Laminar_Viscosity + sigma_k*Mean_Eddy_Viscosity)*Mean_GradTurbVar[iDim];
       }
@@ -489,8 +489,8 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
         heat_flux_vector[2];
     
     if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
-      su2double Mean_F1 = 0.5*(F1_i + F1_j);
-      su2double sigma_k = Mean_F1*sigma_k1 + (1.0 - Mean_F1)*sigma_k2;
+      const su2double Mean_F1 = 0.5*(F1_i + F1_j);
+      const su2double sigma_k = Mean_F1*sigma_k1 + (1.0 - Mean_F1)*sigma_k2;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         Flux_Tensor[4][iDim] += (Mean_Laminar_Viscosity + sigma_k*Mean_Eddy_Viscosity)*Mean_GradTurbVar[iDim];
       }
