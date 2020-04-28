@@ -2328,6 +2328,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+  const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
@@ -2426,7 +2427,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
 
     SU2_OMP_MASTER
-    if (iMesh == MESH_0) {
+    if ((iMesh == MESH_0) && fullComms) {
       Min_CFL_Local = 1e30;
       Max_CFL_Local = 0.0;
       Avg_CFL_Local = 0.0;
@@ -2492,7 +2493,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Store min and max CFL for reporting on the fine grid. */
 
-      if (iMesh == MESH_0) {
+      if ((iMesh == MESH_0) && fullComms) {
         myCFLMin = min(CFL,myCFLMin);
         myCFLMax = max(CFL,myCFLMax);
         myCFLSum += CFL;
@@ -2502,7 +2503,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Reduce the min/max/avg local CFL numbers. */
 
-    if (iMesh == MESH_0) {
+    if ((iMesh == MESH_0) && fullComms) {
       SU2_OMP_CRITICAL
       { /* OpenMP reduction. */
         Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
