@@ -11676,8 +11676,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   } // end SU2_OMP_MASTER, preprocessing is thread-safe.
   SU2_OMP_BARRIER
   
-  nodes->Set_OldSolution();
-
   /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
    *    after it loads its variables (they are needed to compute flow primitives). ---*/
   if (!turbulent) {

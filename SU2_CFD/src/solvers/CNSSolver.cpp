@@ -339,16 +339,11 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   /*--- Turbulent kinetic energy. ---*/
 
   if (tkeNeeded) {
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
-      numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
-                                     turbNodes->GetPrimitive(jPoint,0));
-      numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
-                                   turbNodes->GetGradient(jPoint));
-      numerics->SetF1blending(turbNodes->GetF1blending(iPoint), turbNodes->GetF1blending(jPoint));
-    }
-    else
-      numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
-                                     turbNodes->GetSolution(jPoint,0));
+    numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                   turbNodes->GetPrimitive(jPoint,0));
+    numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
+                                 turbNodes->GetGradient(jPoint));
+    numerics->SetF1blending(turbNodes->GetF1blending(iPoint), turbNodes->GetF1blending(jPoint));
   }
 
   /*--- Wall shear stress values (wall functions) ---*/
