@@ -600,13 +600,15 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
         Vn_Infty += V_infty[iDim+1]*Normal[iDim];
       }
       
+      /*--- Inflow ---*/
       if (Vn_Infty < 0.) {
-        Primitive_j[0] = nodes->GetPrimitive(iPoint,0);
-        Primitive_j[1] = nodes->GetPrimitive(iPoint,1);
-      }
-      else {
         Primitive_j[0] = kine_Inf;
         Primitive_j[1] = omega_Inf;
+      }
+      /*--- Outflow ---*/
+      else {
+        Primitive_j[0] = nodes->GetPrimitive(iPoint,0);
+        Primitive_j[1] = nodes->GetPrimitive(iPoint,1);
       }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
