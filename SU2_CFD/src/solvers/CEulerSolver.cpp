@@ -11713,6 +11713,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     if (!turbulent) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
+    else {
+      solver[iMesh][FLOW_SOL]->GetNodes()->Set_OldSolution();
+    }
   }
 
   /*--- Go back to single threaded execution. ---*/
