@@ -101,7 +101,7 @@ public:
   inline unsigned long GetnNodes() const { return 2; }
 
   /*!
-   * \brief Compute the volume associated with an each edge (3D version).
+   * \brief Compute the volume associated with an edge (3D version).
    * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
    * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
@@ -114,7 +114,7 @@ public:
                              const su2double* coord_Point);
 
   /*!
-   * \brief Compute the volume associated with an each edge (2D version).
+   * \brief Compute the volume associated with an edge (2D version).
    * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] coord_Point - Coordinates of the point that form the control volume.
@@ -125,7 +125,7 @@ public:
                              const su2double* coord_Point);
 
   /*!
-   * \brief Set the face that correspond to an edge (3D version).
+   * \brief Set the face that corresponds to an edge (3D version).
    * \param[in] iEdge - Edge index.
    * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
@@ -139,7 +139,7 @@ public:
                       const su2double* coord_Elem_CG);
 
   /*!
-   * \brief Set the face that correspond to an edge (2D version).
+   * \brief Set the face that corresponds to an edge (2D version).
    * \param[in] iEdge - Edge index.
    * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.

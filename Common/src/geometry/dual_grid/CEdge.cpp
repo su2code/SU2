@@ -33,6 +33,8 @@ using namespace GeometryToolbox;
 
 CEdge::CEdge(unsigned long nEdge, unsigned long nDim) :
   Nodes(nEdge,2), Normal(nEdge,nDim), Coord_CG(nEdge,nDim) {
+  Normal = su2double(0.0);
+  Coord_CG = su2double(0.0);
 }
 
 void CEdge::SetZeroValues(void) {
