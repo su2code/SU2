@@ -296,7 +296,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
     su2double rhokine  = nodes->GetSolution(iPoint, 0);
     su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
 
     /*--- Clip primitives ---*/
     
