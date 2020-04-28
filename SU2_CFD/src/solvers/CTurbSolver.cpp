@@ -524,7 +524,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           su2double density_old = density;
 
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-            nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
+            nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
                                       lowerlimit[iVar], upperlimit[iVar]);
         }
         break;
