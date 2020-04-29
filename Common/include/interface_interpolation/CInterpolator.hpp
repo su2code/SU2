@@ -110,13 +110,6 @@ public:
   virtual void PrintStatistics(void) const { }
 
   /*!
-   * \brief Find the index of the interface marker shared by that zone
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker_interface - Interface tag.
-   */
-  static int FindInterfaceMarker(const CConfig *config, unsigned short val_marker_interface);
-
-  /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.

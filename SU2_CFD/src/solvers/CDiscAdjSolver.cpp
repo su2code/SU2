@@ -476,26 +476,26 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
-  bool multizone = config->GetMultizone_Problem();
+  const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
+  const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  const bool multizone = config->GetMultizone_Problem();
 
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
+  const su2double relax = (config->GetInnerIter()==0)? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
   /*--- Set Residuals to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar,0.0);
-      SetRes_Max(iVar,0.0,0);
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar,0.0);
+    SetRes_Max(iVar,0.0,0);
   }
 
-  /*--- Set the old solution ---*/
+  /*--- Set the old solution and compute residuals. ---*/
 
   if(!multizone) nodes->Set_OldSolution();
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+
+    const su2double isdomain = (iPoint < nPointDomain)? 1.0 : 0.0;
 
     /*--- Extract the adjoint solution ---*/
 
@@ -506,13 +506,22 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     }
 
-    /*--- Store the adjoint solution ---*/
+    /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
-    nodes->SetSolution(iPoint,Solution);
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      su2double residual = relax*(Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar));
+      nodes->AddSolution(iPoint, iVar, residual);
+
+      residual *= isdomain;
+      AddRes_RMS(iVar,pow(residual,2));
+      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
   }
 
+  SetResidual_RMS(geometry, config);
+
   if (time_n_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
 
       /*--- Extract the adjoint solution at time n ---*/
 
@@ -523,8 +532,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
   }
+
   if (time_n1_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
 
       /*--- Extract the adjoint solution at time n-1 ---*/
 
@@ -535,21 +545,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n1(iPoint,Solution);
     }
   }
-
-  /*--- Set the residuals ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      residual = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution_Old(iPoint,iVar);
-
-      AddRes_RMS(iVar,residual*residual);
-      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-    }
-  }
-
-  if(multizone) nodes->Set_OldSolution();
-
-  SetResidual_RMS(geometry, config);
 
 }
 

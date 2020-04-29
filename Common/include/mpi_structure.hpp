@@ -332,6 +332,7 @@ public:
 #define MPI_MAX 10
 #define MPI_INT 11
 #define MPI_PROD 12
+#define MPI_STATUS_IGNORE nullptr
 class CBaseMPIWrapper {
 
 public:
@@ -448,7 +449,6 @@ public:
 };
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
-extern CBaseMPIWrapper::Status* MPI_STATUS_IGNORE;
 
 #endif
 

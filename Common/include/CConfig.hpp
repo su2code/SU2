@@ -570,7 +570,7 @@ private:
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
-  su2double Relaxation_Factor_AdjFlow;  /*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
+  su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;       /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -2827,6 +2827,7 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void) const { return nMarker_NearFieldBound; }
+
   /*!
    * \brief Get the total number of deformable markers at the boundary.
    * \return Total number of deformable markers at the boundary.
@@ -3351,7 +3352,7 @@ public:
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
    */
-  void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface) { Marker_All_Deform_Mesh[val_marker] = val_interface; }
+  void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_deform) { Marker_All_Deform_Mesh[val_marker] = val_deform; }
 
   /*!
    * \brief Set if a in marker <i>val_marker</i> the flow load will be computed/employed.
@@ -3998,10 +3999,9 @@ public:
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
 
   /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   * \brief Get the relaxation factor for solution updates of adjoint solvers.
    */
-  su2double GetRelaxation_Factor_AdjFlow(void) const { return Relaxation_Factor_AdjFlow; }
+  su2double GetRelaxation_Factor_Adjoint(void) const { return Relaxation_Factor_Adjoint; }
 
   /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
@@ -6016,116 +6016,116 @@ public:
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Index in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TagBound(string val_marker);
+  unsigned short GetMarker_CfgFile_TagBound(string val_marker) const;
 
   /*!
    * \brief Get the name in the config information of the marker number <i>val_marker</i>.
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Name of the marker in the config information of the marker <i>val_marker</i>.
    */
-  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker) const;
 
   /*!
    * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
    * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_KindBC(string val_marker);
+  unsigned short GetMarker_CfgFile_KindBC(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Monitoring(string val_marker);
+  unsigned short GetMarker_CfgFile_Monitoring(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_GeoEval(string val_marker);
+  unsigned short GetMarker_CfgFile_GeoEval(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Designing(string val_marker);
+  unsigned short GetMarker_CfgFile_Designing(string val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Plotting(string val_marker);
+  unsigned short GetMarker_CfgFile_Plotting(string val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Analyze(string val_marker);
+  unsigned short GetMarker_CfgFile_Analyze(string val_marker) const;
 
   /*!
-   * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
+   * \brief Get the multi-physics interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker);
+  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker);
+  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker);
+  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker) const;
 
   /*!
    * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
+  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker) const;
 
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
    * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_DV(string val_marker);
+  unsigned short GetMarker_CfgFile_DV(string val_marker) const;
 
   /*!
    * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Moving(string val_marker);
+  unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
    * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker);
+  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker) const;
 
   /*!
    * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
    * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker);
+  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker) const;
 
   /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PyCustom(string val_marker);
+  unsigned short GetMarker_CfgFile_PyCustom(string val_marker) const;
 
   /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
    * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PerBound(string val_marker);
+  unsigned short GetMarker_CfgFile_PerBound(string val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_marker</i>.
    * \return The interface which owns that marker <i>val_marker</i>.
    */
-  int GetMarker_ZoneInterface(string val_marker);
+  unsigned short GetMarker_ZoneInterface(string val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_iMarker</i>.
@@ -6138,7 +6138,6 @@ public:
    * \return The number markers in the multizone interface
    */
   unsigned short GetnMarker_ZoneInterface(void) const { return nMarker_ZoneInterface; }
-
 
   /*!
    * \brief Determines whether a marker with index iMarker is a solid boundary.
@@ -9364,5 +9363,12 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Find the marker index (if any) that is part of a given interface pair.
+   * \param[in] iInterface - Number of the interface pair being tested, starting at 0.
+   * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
+   */
+  short FindInterfaceMarker(unsigned short iInterface) const;
 
 };
