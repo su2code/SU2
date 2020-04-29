@@ -289,23 +289,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-  
-  /*--- Set the primitive variables ---*/
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
-
-    /*--- Clip primitives ---*/
-
-    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
-    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
-  }
-  
-//  InitiateComms(geometry, config, PRIMITIVE);
-//  CompleteComms(geometry, config, PRIMITIVE);
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -336,22 +319,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   su2double a1 = constants[7];
   
-  /*--- Set the primitive variables ---*/
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-    /*--- Turb vars are already clipped so just set primitive ---*/
-
-    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
-    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
-  }
-  
-//  InitiateComms(geometry, config, PRIMITIVE);
-//  CompleteComms(geometry, config, PRIMITIVE);
+  SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
@@ -389,6 +357,28 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
 
 }
+
+void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+    /*--- Turb vars are already clipped so just set primitive ---*/
+
+    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
+    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
+    
+  }
+    
+  //  InitiateComms(geometry, config, PRIMITIVE);
+  //  CompleteComms(geometry, config, PRIMITIVE);
+
+
+}
+
 
 //--- This is hacky, fix later
 void CTurbSSTSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {

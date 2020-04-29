@@ -83,6 +83,10 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
+  
+public:
+  
+  virtual void SetPrimitive_Variables(CSolver **solver_container) { }
 
 private:
 
