@@ -4476,7 +4476,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
   const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
-  const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
+  const su2double RK_TimeCoeff[] = {1.0, 0.5, 0.5, 1.0};
 
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
