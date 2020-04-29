@@ -597,7 +597,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Local_Sens_Temp   = SU2_TYPE::GetDerivative(Temperature);
 
     Local_Sens_SWPressureDrop = SU2_TYPE::GetDerivative(SWPressureDrop);
-    cout << "Local_Sens_SWPressureDrop: " << Local_Sens_SWPressureDrop << endl;
+    //cout << "Local_Sens_SWPressureDrop: " << Local_Sens_SWPressureDrop << endl;
 
     SU2_MPI::Allreduce(&Local_Sens_ModVel, &Total_Sens_ModVel, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
