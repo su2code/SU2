@@ -3110,7 +3110,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetDensity(iPoint)*base_nodes->GetEnthalpy(iPoint));
   
   //--- communicate the solution values via MPI
