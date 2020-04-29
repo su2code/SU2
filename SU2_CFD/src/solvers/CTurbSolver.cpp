@@ -404,6 +404,121 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics, CConfig *config) {
+
+  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+  su2double *PrimVar_j = new su2double[nPrimVar];
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
+
+    for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+      if (!geometry->node[iPoint]->GetDomain()) continue;
+
+      const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+      const auto nDonorVertex = GetnSlidingStates(iMarker,iVertex);
+
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
+
+      /*--- Initialize Residual, this will serve to accumulate the average ---*/
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        Residual[iVar] = 0.0;
+        for (auto jVar = 0u; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
+      }
+
+      su2double* PrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+
+      for (auto jVertex = 0u; jVertex < nDonorVertex; jVertex++) {
+
+        for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+          PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+        /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+        const su2double weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+        /*--- Set primitive variables ---*/
+
+        conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+
+        /*--- Set the turbulent variable states ---*/
+
+        for (auto iVar = 0u; iVar < nVar; ++iVar)
+          Solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+        conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_j);
+
+        /*--- Set the normal vector ---*/
+
+        conv_numerics->SetNormal(Normal);
+
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+        auto residual = conv_numerics->ComputeResidual(config);
+
+        /*--- Accumulate the residuals to compute the average ---*/
+
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          Residual[iVar] += weight*residual.residual[iVar];
+          for (auto jVar = 0u; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
+        }
+      }
+
+      /*--- Add Residuals and Jacobians ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+
+      /*--- Set the normal vector and the coordinates ---*/
+
+      visc_numerics->SetNormal(Normal);
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+      /*--- Primitive variables ---*/
+
+      visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+
+      /*--- Turbulent variables and their gradients ---*/
+
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+
+      /*--- Menter's first blending function ---*/
+
+      if(sst) visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
+
+      /*--- Compute and update residual ---*/
+
+      auto residual = visc_numerics->ComputeResidual(config);
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+  }
+
+  delete [] PrimVar_j;
+
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
