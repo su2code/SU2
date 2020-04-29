@@ -360,17 +360,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-    /*--- Turb vars are already clipped so just set primitive ---*/
-
-    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
-    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
-    
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const su2double cons = nodes->GetSolution(iPoint,iVar);
+      nodes->SetPrimitive(iPoint,iVar,cons/rho);
+    }
   }
 
 }
