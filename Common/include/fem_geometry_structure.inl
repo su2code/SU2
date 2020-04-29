@@ -2,14 +2,14 @@
  * \file fem_geometry_structure.inl
  * \brief In-Line subroutines of the <i>fem_geometry_structure.hpp</i> file.
  * \author E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -143,10 +143,6 @@ inline const vector<vector<unsigned long> >& CMeshFEM::GetRotPerHalos(void) cons
 inline CMeshFEM_DG::CMeshFEM_DG(void) : CMeshFEM() { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
-
-inline void CMeshFEM_DG::SetGlobal_nPointDomain(unsigned long val_global_npoint) { Global_nPointDomain =  val_global_npoint; }
-
-inline unsigned long CMeshFEM_DG::GetGlobal_nPointDomain(void) const { return Global_nPointDomain; }
 
 inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
   Global_to_Local_Point.clear();

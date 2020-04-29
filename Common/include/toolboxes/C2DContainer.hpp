@@ -2,14 +2,14 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,7 @@
 #include "../datatype_structure.hpp"
 
 #include <utility>
+#include <type_traits>
 
 /*!
  * \enum StorageType
@@ -112,15 +113,14 @@ public:
                                                                         \
   AccessorImpl& operator= (AccessorImpl&& other) noexcept               \
   {                                                                     \
-    if(m_data!=nullptr) free(m_data);                                   \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
     MOVE; m_data=other.m_data; other.m_data=nullptr;                    \
     return *this;                                                       \
   }                                                                     \
                                                                         \
   ~AccessorImpl()                                                       \
   {                                                                     \
-    if(m_data!=nullptr)                                                 \
-      MemoryAllocation::aligned_free<Scalar_t>(m_data);                 \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
   /*!
    * Shorthand for when specialization has only one more member than m_data.
@@ -360,12 +360,17 @@ template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, 
 class C2DContainer :
   public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
+  static_assert(std::is_integral<Index_t>::value,"");
+
 private:
   using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
   using Base::m_allocate;
 public:
   using Base::size;
+  using Index = Index_t;
+  using Scalar = Scalar_t;
+  static constexpr StorageType Storage = Store;
 
 private:
   /*!
@@ -375,7 +380,7 @@ private:
   {
     /*--- fully static, no allocation needed ---*/
     if(StaticRows!=DynamicSize && StaticCols!=DynamicSize)
-        return StaticRows*StaticCols;
+      return StaticRows*StaticCols;
 
     /*--- dynamic row vector, swap size specification ---*/
     if(StaticRows==1 && StaticCols==DynamicSize) {cols = rows; rows = 1;}
@@ -394,19 +399,14 @@ private:
     /*--- compare with current dimensions to determine if deallocation
      is needed, also makes the container safe against self assignment
      no need to check for 0 size as the allocators handle that ---*/
-    if(m_data!=nullptr)
-    {
-      if(rows==this->rows() && cols==this->cols())
-        return reqSize;
-      free(m_data);
-    }
+    if(rows==this->rows() && cols==this->cols())
+      return reqSize;
 
-    /*--- round up size to a multiple of the alignment specification if necessary ---*/
-    size_t bytes = reqSize*sizeof(Scalar_t);
-    size_t allocSize = (AlignSize==0)? bytes : ((bytes+AlignSize-1)/AlignSize)*AlignSize;
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);
 
     /*--- request actual allocation to base class as it needs specialization ---*/
-    m_allocate(allocSize,rows,cols);
+    size_t bytes = reqSize*sizeof(Scalar_t);
+    m_allocate(bytes,rows,cols);
 
     return reqSize;
   }
@@ -485,6 +485,70 @@ public:
   }
 };
 
+
+/*!
+ * \class C2DDummyLastView
+ * \brief Helper class, adds dummy trailing dimension to a reference of a
+ *        vector object making it a dummy matrix.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated vector.
+ */
+template<class T>
+struct C2DDummyLastView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C2DDummyLastView() = delete;
+
+  C2DDummyLastView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index) noexcept
+  {
+    return data(i);
+  }
+
+  const Scalar& operator() (Index i, Index) const noexcept
+  {
+    return data(i);
+  }
+};
+
+/*!
+ * \class C3DDummyMiddleView
+ * \brief Helper class, adds dummy middle dimension to a reference of a
+ *        matrix object making it a dummy 3D array.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated matrix.
+ */
+template<class T>
+struct C3DDummyMiddleView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C3DDummyMiddleView() = delete;
+
+  C3DDummyMiddleView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index, Index k) noexcept
+  {
+    return data(i,k);
+  }
+
+  const Scalar& operator() (Index i, Index, Index k) const noexcept
+  {
+    return data(i,k);
+  }
+};
 
 /*!
  * \brief Useful typedefs with default template parameters

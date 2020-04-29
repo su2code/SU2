@@ -2,14 +2,14 @@
  * \file CCSVFileWriter.hpp
  * \brief Headers fo the CSV file writer class.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,11 +33,11 @@ class CCSVFileWriter final: public CFileWriter{
 public:
 
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
+   * \brief Construct a file writer using field name and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CCSVFileWriter(vector<string> fields, unsigned short nDim, string fileName, CParallelDataSorter* data_sorter);
+  CCSVFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor

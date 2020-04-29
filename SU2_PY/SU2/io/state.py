@@ -3,14 +3,14 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -90,6 +90,10 @@ def State_Factory(state=None,config=None):
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
+        WND_CAUCHY_DATA:
+            TIME_ITER
+            UNST_ADJOINT_ITER
+            ITER_AVERAGE_OBJ
 
     """   
     
@@ -103,12 +107,16 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA']:
         NewClass[key] = ordered_bunch()
             
     if config:
         NewClass.find_files(config)
-            
+        # WND_Convergence Data
+        NewClass['WND_CAUCHY_DATA'] = {'TIME_ITER': config['TIME_ITER'],
+                                       'UNST_ADJOINT_ITER': config['UNST_ADJOINT_ITER'],
+                                       'ITER_AVERAGE_OBJ': config['ITER_AVERAGE_OBJ']}
+
     return NewClass
 
 

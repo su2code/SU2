@@ -2,14 +2,14 @@
  * \file CDiscAdjMeshSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint mesh problem.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -239,39 +239,6 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
 
 }
 
-void CDiscAdjMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
-
-  // ToDo: Can this be made generic to use the CSolver impl
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  /*--- Set Residuals to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++){
-    SetRes_BGS(iVar,0.0);
-    SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    /*--- Only for the boundary vertices ---*/
-    if (nodes->Get_isVertex(iPoint)){
-      for (iVar = 0; iVar < nVar; iVar++){
-        /*--- Compute only for the sensitivities of the boundary displacements ---*/
-        residual = nodes->GetBoundDisp_Sens(iPoint,iVar) - nodes->Get_BGSSolution_k(iPoint,iVar);
-        AddRes_BGS(iVar,residual*residual);
-        AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-      }
-    }
-  }
-
-  SetResidual_BGS(geometry, config);
-
-}
-
 void CDiscAdjMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
 }
-

@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -84,7 +84,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.678810, 0.181780, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.230573, 0.696562, 0.181780, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -95,7 +95,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.223209, -0.496681, 0.154390, -0.000022] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-2.221040, -0.491759, 0.557480, 0.000027] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -151,7 +151,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845625, -2.413047, -8.419973, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845624, -2.413044, -8.419978, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012_sst.timeout   = 1600
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
@@ -166,13 +166,45 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.746900, -1.544893, -8.3447e-03, 1.3808e-05] #last 4 columns
+    discadj_cylinder.test_vals = [3.746909, -1.544883, -0.008321, 0.000014] #last 4 columns
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
+    
+    ##############################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average ###
+    ##############################################################
 
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average_AD')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
+    discadj_cylinder.test_iter = 9
+    discadj_cylinder.test_vals = [3.004406] #last column
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.00001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+    
+    ##############################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average ###
+    ##############################################################
+
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg" 
+    discadj_cylinder.test_iter = 6
+    discadj_cylinder.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.0001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)  
+    
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
     ##########################################################################
@@ -182,7 +214,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [3.698165, -1.607052, -2.2503e-03, 2.7212e-05] #last 4 columns
+    discadj_DT_1ST_cylinder.test_vals = [3.698168, -1.607050, -0.002159, 0.000028] #last 4 columns
     discadj_DT_1ST_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_DT_1ST_cylinder.timeout   = 1600
     discadj_DT_1ST_cylinder.tol       = 0.00001
@@ -214,7 +246,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -1.927296, -1.401205] #last 4 columns
+    discadj_trans_stator.test_vals = [79.000000, -1.942123, -1.998834] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
@@ -228,8 +260,8 @@ def main():
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
-    discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.492475, -6.401201, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_iter = 4
+    discadj_fea.test_vals = [-2.849526, -3.238467, -3.6413e-04, -8.7087] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -258,8 +290,8 @@ def main():
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
-    discadj_fsi.test_iter = 3000
-    discadj_fsi.test_vals = [0.958848,-0.157601,2.726147,1.798362] #last 4 columns
+    discadj_fsi.test_iter = 6
+    discadj_fsi.test_vals = [6, -1.563852, -3.075167, 4.3991e-04, -1.0631] #last 5 columns
     discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
@@ -270,7 +302,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-5.070991, -2.5239e-13] #last 2 columns
+    discadj_fsi2.test_vals = [-5.071028, -2.5253e-13] #last 2 columns
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
@@ -286,7 +318,7 @@ def main():
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
     discadj_cht.test_vals = [-2.381654, -3.099873, -3.099844, -3.099841] #last 4 columns
-    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)		
@@ -313,7 +345,41 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
+    ####################################################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average with restart solution ###
+    ####################################################################################
 
+    # NACA0012 Airfoil
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 14
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
+    unsteady_naca0012.unsteady  = True
+    pass_list.append(unsteady_naca0012.run_filediff())
+    test_list.append(unsteady_naca0012)
+    
+    ####################################################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint ###
+    ####################################################################################
+
+    # NACA0012 Airfoil (Test depends on results of "unsteady_NACA0012_restart_adjoint")
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_adjoint_only')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 14
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -m adj -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
+    unsteady_naca0012.unsteady  = True
+    pass_list.append(unsteady_naca0012.run_filediff())
+    test_list.append(unsteady_naca0012)
+
+	
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')

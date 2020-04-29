@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,10 +29,20 @@
 #include "../../include/adt_structure.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
-#include "../../include/CSU2ASCIIMeshReaderFVM.hpp"
-#include "../../include/CCGNSMeshReaderFVM.hpp"
-#include "../../include/CRectangularMeshReaderFVM.hpp"
-#include "../../include/CBoxMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
+
+#include "../../include/geometry/primal_grid/CPrimalGrid.hpp"
+#include "../../include/geometry/primal_grid/CLine.hpp"
+#include "../../include/geometry/primal_grid/CTriangle.hpp"
+#include "../../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../../include/geometry/primal_grid/CTetrahedron.hpp"
+#include "../../include/geometry/primal_grid/CHexahedron.hpp"
+#include "../../include/geometry/primal_grid/CPyramid.hpp"
+#include "../../include/geometry/primal_grid/CPrism.hpp"
+#include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -114,6 +124,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #endif
 #endif
 
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
+
   /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -154,13 +166,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Determine whether or not a FEM discretization is used ---*/
 
-  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
-                           (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                           (config->GetKind_Solver() == FEM_RANS)           ||
-                           (config->GetKind_Solver() == FEM_LES)            ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+  const bool fem_solver = config->GetFEMSolver();
 
   /*--- Initialize counters for local/global points & elements ---*/
 
@@ -300,6 +306,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   xadj      = NULL;
 #endif
 #endif
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -454,15 +462,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
                  nLocal_Pris +
                  nLocal_Pyra);
   nLocal_Bound_Elem = nLocal_Line + nLocal_BoundTria + nLocal_BoundQuad;
-#ifndef HAVE_MPI
-  nGlobal_Elem       = nLocal_Elem;
-  nGlobal_Bound_Elem = nLocal_Bound_Elem;
-#else
+
   SU2_MPI::Allreduce(&nLocal_Elem, &nGlobal_Elem, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocal_Bound_Elem, &nGlobal_Bound_Elem, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- With the distribution of all points, elements, and markers based
    on the ParMETIS coloring complete, as a final step, load this data into
@@ -3060,61 +3064,32 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
   /*--- Initialize pointers for turbomachinery computations  ---*/
 
-  nSpanWiseSections       = new unsigned short[2];
-	nSpanSectionsByMarker   = new unsigned short[nMarker];
-  SpanWiseValue           = new su2double*[2];
-  for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
-    nSpanWiseSections[iMarker]      = 0;
-    SpanWiseValue[iMarker]          = NULL;
-  }
+  nSpanWiseSections       = new unsigned short[2] ();
+  SpanWiseValue           = new su2double*[2] ();
 
-  nVertexSpan                       = new long* [nMarker];
-  nTotVertexSpan                    = new unsigned long* [nMarker];
-  turbovertex                       = new CTurboVertex***[nMarker];
-  AverageTurboNormal                = new su2double**[nMarker];
-  AverageNormal                     = new su2double**[nMarker];
-  AverageGridVel                    = new su2double**[nMarker];
-  AverageTangGridVel                = new su2double*[nMarker];
-  SpanArea                          = new su2double*[nMarker];
-  TurboRadius                       = new su2double*[nMarker];
-  MaxAngularCoord                   = new su2double*[nMarker];
-  MinAngularCoord                   = new su2double*[nMarker];
-  MinRelAngularCoord                = new su2double*[nMarker];
-
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++){
-		nSpanSectionsByMarker[iMarker]  = 0;
-    nVertexSpan[iMarker]            = NULL;
-    nTotVertexSpan[iMarker]         = NULL;
-    turbovertex[iMarker]            = NULL;
-    AverageTurboNormal[iMarker]     = NULL;
-    AverageNormal[iMarker]          = NULL;
-    AverageGridVel[iMarker]         = NULL;
-    AverageTangGridVel[iMarker]     = NULL;
-    SpanArea[iMarker]               = NULL;
-    TurboRadius[iMarker]            = NULL;
-    MaxAngularCoord[iMarker]        = NULL;
-    MinAngularCoord[iMarker]        = NULL;
-    MinRelAngularCoord[iMarker]     = NULL;
-  }
+  nSpanSectionsByMarker             = new unsigned short[nMarker] ();
+  nVertexSpan                       = new long* [nMarker] ();
+  nTotVertexSpan                    = new unsigned long* [nMarker] ();
+  turbovertex                       = new CTurboVertex***[nMarker] ();
+  AverageTurboNormal                = new su2double**[nMarker] ();
+  AverageNormal                     = new su2double**[nMarker] ();
+  AverageGridVel                    = new su2double**[nMarker] ();
+  AverageTangGridVel                = new su2double*[nMarker] ();
+  SpanArea                          = new su2double*[nMarker] ();
+  TurboRadius                       = new su2double*[nMarker] ();
+  MaxAngularCoord                   = new su2double*[nMarker] ();
+  MinAngularCoord                   = new su2double*[nMarker] ();
+  MinRelAngularCoord                = new su2double*[nMarker] ();
 
   /*--- Initialize pointers for turbomachinery performance computation  ---*/
 
   nTurboPerf     = config->GetnMarker_TurboPerformance();
-  TangGridVelIn  = new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaIn     = new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusIn  = new su2double*[config->GetnMarker_TurboPerformance()];
-  TangGridVelOut = new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaOut    = new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusOut = new su2double*[config->GetnMarker_TurboPerformance()];
-
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
-    TangGridVelIn[iMarker]	= NULL;
-    SpanAreaIn[iMarker]			= NULL;
-    TurboRadiusIn[iMarker]  = NULL;
-    TangGridVelOut[iMarker] = NULL;
-    SpanAreaOut[iMarker]    = NULL;
-    TurboRadiusOut[iMarker] = NULL;
-  }
+  TangGridVelIn  = new su2double*[nTurboPerf] ();
+  SpanAreaIn     = new su2double*[nTurboPerf] ();
+  TurboRadiusIn  = new su2double*[nTurboPerf] ();
+  TangGridVelOut = new su2double*[nTurboPerf] ();
+  SpanAreaOut    = new su2double*[nTurboPerf] ();
+  TurboRadiusOut = new su2double*[nTurboPerf] ();
 
 }
 
@@ -5064,134 +5039,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
     if (line_flip > 0) cout << "There has been a re-orientation of the LINE surface elements." << endl;
     if (triangle_flip > 0) cout << "There has been a re-orientation of the TRIANGLE surface elements." << endl;
     if (quad_flip > 0) cout << "There has been a re-orientation of the QUADRILATERAL surface elements." << endl;
-  }
-
-}
-
-void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
-  /*---         subelements of the local boundaries that must be taken     ---*/
-  /*---         into account in the wall distance computation.             ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Initialize an array for the mesh points, which eventually contains the
-     mapping from the local nodes to the number used in the connectivity of the
-     local boundary faces. However, in a first pass it is an indicator whether
-     or not a mesh point is on a local wall boundary. */
-  vector<unsigned long> meshToSurface(nPoint, 0);
-
-  /* Define the vectors for the connectivity of the local linear subelements,
-     the element ID's, the element type and marker ID's. */
-  vector<unsigned long> surfaceConn;
-  vector<unsigned long> elemIDs;
-  vector<unsigned short> VTK_TypeElem;
-  vector<unsigned short> markerIDs;
-
-  /* Loop over the boundary markers. */
-
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-
-
-    /* Check for a viscous wall. */
-    if( config->GetViscous_Wall(iMarker)) {
-
-      /* Loop over the surface elements of this marker. */
-      for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
-
-        /* Set the flag of the mesh points on this surface to true. */
-        for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-          unsigned long iPoint = bound[iMarker][iElem]->GetNode(iNode);
-          meshToSurface[iPoint] = 1;
-        }
-        /* Determine the necessary data from the corresponding standard face,
-          such as the number of linear subfaces, the number of DOFs per
-          linear subface and the corresponding local connectivity. */
-        const unsigned short VTK_Type      = bound[iMarker][iElem]->GetVTK_Type();
-        const unsigned short nDOFsPerElem  = bound[iMarker][iElem]->GetnNodes();
-
-          /* Loop over the nodes of element and store the required data. */
-
-        markerIDs.push_back(iMarker);
-        VTK_TypeElem.push_back(VTK_Type);
-        elemIDs.push_back(iElem);
-
-        for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
-          surfaceConn.push_back(bound[iMarker][iElem]->GetNode(iNode));
-      }
-    }
-  }
-
-
-  /*--- Create the coordinates of the local points on the viscous surfaces and
-        create the final version of the mapping from all volume points to the
-        points on the viscous surfaces. ---*/
-  vector<su2double> surfaceCoor;
-  unsigned long nVertex_SolidWall = 0;
-
-  for(unsigned long i=0; i<nPoint; ++i) {
-    if( meshToSurface[i] ) {
-      meshToSurface[i] = nVertex_SolidWall++;
-
-      for(unsigned short k=0; k<nDim; ++k)
-        surfaceCoor.push_back(node[i]->GetCoord(k));
-    }
-  }
-
-  /*--- Change the surface connectivity, such that it corresponds to
-        the entries in surfaceCoor rather than in meshPoints. ---*/
-  for(unsigned long i=0; i<surfaceConn.size(); ++i)
-    surfaceConn[i] = meshToSurface[surfaceConn[i]];
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2: Build the ADT, which is an ADT of bounding boxes of the    ---*/
-  /*---         surface elements. A nearest point search does not give     ---*/
-  /*---         accurate results, especially not for the integration       ---*/
-  /*---         points of the elements close to a wall boundary.           ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Build the ADT. */
-  CADTElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
-                           markerIDs, elemIDs, true);
-
-  /* Release the memory of the vectors used to build the ADT. To make sure
-     that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(markerIDs);
-  vector<unsigned short>().swap(VTK_TypeElem);
-  vector<unsigned long>().swap(elemIDs);
-  vector<unsigned long>().swap(surfaceConn);
-  vector<su2double>().swap(surfaceCoor);
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
-  /*---         distance to a solid wall element                           ---*/
-  /*--------------------------------------------------------------------------*/
-
-
-  if ( WallADT.IsEmpty() ) {
-
-    /*--- No solid wall boundary nodes in the entire mesh.
-     Set the wall distance to zero for all nodes. ---*/
-
-    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
-      node[iPoint]->SetWall_Distance(0.0);
-  }
-  else {
-
-    /*--- Solid wall boundary nodes are present. Compute the wall
-     distance for all nodes. ---*/
-
-    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
-      unsigned short markerID;
-      unsigned long  elemID;
-      int            rankID;
-      su2double      dist;
-
-      WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
-                                   elemID, rankID);
-      node[iPoint]->SetWall_Distance(dist);
-    }
   }
 
 }
@@ -7976,6 +7823,12 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
 
+  bool pointOnAxis = false;
+
+  bool chkSamePoint = false;
+
+  su2double distToAxis = 0.0;
+
   /*--- Tolerance for distance-based match to report warning. ---*/
 
   su2double epsilon = 1e-6;
@@ -8183,6 +8036,17 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
 
+            /*--- Check if the point lies on the axis of rotation. If it does,
+             the rotated coordinate and the original coordinate are the same. ---*/
+
+            pointOnAxis = false;
+            distToAxis = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+               distToAxis = (rotCoord[iDim] - Coord_i[iDim])*(rotCoord[iDim] - Coord_i[iDim]);
+            distToAxis = sqrt(distToAxis);
+
+            if (distToAxis < epsilon) pointOnAxis = true;
+
             /*--- Our search is based on the minimum distance, so we
              initialize the distance to a large value. ---*/
 
@@ -8211,7 +8075,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                sure that we avoid the original point by checking that the
                global index values are not the same. ---*/
 
-              if ((jPointGlobal != iPointGlobal)) {
+              if ((jPointGlobal != iPointGlobal) || (pointOnAxis)) {
 
                 /*--- Compute the distance between the candidate periodic
                  point and the transformed coordinates of the owned point. ---*/
@@ -8225,10 +8089,15 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
                 /*--- Compare the distance against the existing minimum
                  and also perform checks just to be sure that this is an
-                 independent periodic point (even if on the same rank). ---*/
+                 independent periodic point (even if on the same rank),
+                  unless it lies on the axis of rotation. ---*/
 
-                if (((dist < mindist) && (iProcessor != rank)) ||
-                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+                chkSamePoint = false;
+                chkSamePoint = (((dist < mindist) && (iProcessor != rank)) ||
+                                ((dist < mindist) && (iProcessor == rank) &&
+                                (jPoint != iPoint)));
+
+                if (chkSamePoint || ((dist < mindist) && (pointOnAxis))) {
 
                   /*--- We have found an intermediate match. Store the
                    data for this point before continuing the search. ---*/
@@ -9638,12 +9507,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
 
   su2double AoASens;
-  unsigned short nTimeIter, iDim;
-  unsigned long iPoint, index;
+  unsigned short nTimeIter;
+  unsigned long index;
   string::size_type position;
   int counter = 0;
 
-  Sensitivity = new su2double[nPoint*nDim];
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   if (config->GetTime_Domain()) {
     nTimeIter = config->GetnTime_Iter();
@@ -9656,13 +9525,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
 
   iPoint_Global = 0;
 
@@ -9839,12 +9701,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
-      field_buf.append("\"");
       for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
-      field_buf.append("\"");
       config->fields.push_back(field_buf.c_str());
       field_buf.clear();
     }
@@ -9939,9 +9799,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
 #endif
 
-    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_x\"");
-    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_y\"");
-    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_z\"");
+    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_x");
+    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_y");
+    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_z");
 
     if (itx == config->fields.end()){
       SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);
@@ -9977,13 +9837,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
          offset in the buffer of data from the restart file and load it. ---*/
 
         index = counter*nFields + sens_x_idx - 1;
-        Sensitivity[iPoint_Local*nDim+0] = Restart_Data[index];
+        Sensitivity(iPoint_Local,0) = Restart_Data[index];
         index = counter*nFields + sens_y_idx - 1;
-        Sensitivity[iPoint_Local*nDim+1] = Restart_Data[index];
+        Sensitivity(iPoint_Local,1) = Restart_Data[index];
 
         if (nDim == 3){
           index = counter*nFields + sens_z_idx - 1;
-          Sensitivity[iPoint_Local*nDim+2] = Restart_Data[index];
+          Sensitivity(iPoint_Local,2) = Restart_Data[index];
         }
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -10128,11 +9988,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-      Sensitivity[iPoint_Local*nDim+0] = PrintingToolbox::stod(point_line[sens_x_idx]);
-      Sensitivity[iPoint_Local*nDim+1] = PrintingToolbox::stod(point_line[sens_y_idx]);
+      Sensitivity(iPoint_Local,0) = PrintingToolbox::stod(point_line[sens_x_idx]);
+      Sensitivity(iPoint_Local,1) = PrintingToolbox::stod(point_line[sens_y_idx]);
       if (nDim == 3)
-        Sensitivity[iPoint_Local*nDim+2] = PrintingToolbox::stod(point_line[sens_z_idx]);
-
+        Sensitivity(iPoint_Local,2) = PrintingToolbox::stod(point_line[sens_z_idx]);
     }
 
   }
@@ -10187,12 +10046,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
 
   /*--- Allocate space for the sensitivity and initialize. ---*/
 
-  Sensitivity = new su2double[nPoint*nDim];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Get the filename for the unordered ASCII sensitivity file input. ---*/
 
@@ -10265,7 +10119,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
           /*--- Store the sensitivities at the matched local node. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            Sensitivity[pointID*nDim+iDim] = Sens_External[iDim];
+            Sensitivity(pointID,iDim) = Sens_External[iDim];
 
           /*--- Keep track of how many points we match. ---*/
 
@@ -11783,3 +11637,117 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
 }
 
+std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CConfig *config) const{
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
+  /*---         subelements of the local boundaries that must be taken     ---*/
+  /*---         into account in the wall distance computation.             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Initialize an array for the mesh points, which eventually contains the
+     mapping from the local nodes to the number used in the connectivity of the
+     local boundary faces. However, in a first pass it is an indicator whether
+     or not a mesh point is on a local wall boundary. */
+  vector<unsigned long> meshToSurface(nPoint, 0);
+
+  /* Define the vectors for the connectivity of the local linear subelements,
+     the element ID's, the element type and marker ID's. */
+  vector<unsigned long> surfaceConn;
+  vector<unsigned long> elemIDs;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned short> markerIDs;
+
+  /* Loop over the boundary markers. */
+
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+
+
+    /* Check for a viscous wall. */
+    if( config->GetViscous_Wall(iMarker)) {
+
+      /* Loop over the surface elements of this marker. */
+      for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
+
+        /* Set the flag of the mesh points on this surface to true. */
+        for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          unsigned long iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          meshToSurface[iPoint] = 1;
+        }
+        /* Determine the necessary data from the corresponding standard face,
+          such as the number of linear subfaces, the number of DOFs per
+          linear subface and the corresponding local connectivity. */
+        const unsigned short VTK_Type      = bound[iMarker][iElem]->GetVTK_Type();
+        const unsigned short nDOFsPerElem  = bound[iMarker][iElem]->GetnNodes();
+
+          /* Loop over the nodes of element and store the required data. */
+
+        markerIDs.push_back(iMarker);
+        VTK_TypeElem.push_back(VTK_Type);
+        elemIDs.push_back(iElem);
+
+        for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
+          surfaceConn.push_back(bound[iMarker][iElem]->GetNode(iNode));
+      }
+    }
+  }
+
+  /*--- Create the coordinates of the local points on the viscous surfaces and
+        create the final version of the mapping from all volume points to the
+        points on the viscous surfaces. ---*/
+  vector<su2double> surfaceCoor;
+  unsigned long nVertex_SolidWall = 0;
+
+  for(unsigned long i=0; i<nPoint; ++i) {
+    if( meshToSurface[i] ) {
+      meshToSurface[i] = nVertex_SolidWall++;
+
+      for(unsigned short k=0; k<nDim; ++k)
+        surfaceCoor.push_back(node[i]->GetCoord(k));
+    }
+  }
+
+  /*--- Change the surface connectivity, such that it corresponds to
+        the entries in surfaceCoor rather than in meshPoints. ---*/
+  for(unsigned long i=0; i<surfaceConn.size(); ++i)
+    surfaceConn[i] = meshToSurface[surfaceConn[i]];
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Build the ADT, which is an ADT of bounding boxes of the    ---*/
+  /*---         surface elements. A nearest point search does not give     ---*/
+  /*---         accurate results, especially not for the integration       ---*/
+  /*---         points of the elements close to a wall boundary.           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  std::unique_ptr<CADTElemClass> WallADT(new CADTElemClass(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
+                                                           markerIDs, elemIDs, true));
+
+  return WallADT;
+
+}
+
+void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
+
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
+  /*---        distance to a solid wall element                           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if (!WallADT->IsEmpty()){
+    /*--- Solid wall boundary nodes are present. Compute the wall
+     distance for all nodes. ---*/
+
+    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
+      unsigned short markerID;
+      unsigned long  elemID;
+      int            rankID;
+      su2double      dist;
+
+      WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
+                                       elemID, rankID);
+      if (dist < node[iPoint]->GetWall_Distance())
+        node[iPoint]->SetWall_Distance(dist);
+    }
+  }
+}
