@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
@@ -108,6 +108,13 @@ public:
    * \brief Print information about the interpolation.
    */
   virtual void PrintStatistics(void) const { }
+  
+  /*!
+   * \brief Find the index of the interface marker shared by that zone
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker_interface - Interface tag.
+   */
+  static int FindInterfaceMarker(const CConfig *config, unsigned short val_marker_interface);
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
