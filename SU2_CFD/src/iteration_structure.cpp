@@ -2190,8 +2190,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
   /*--- Compute coupling between flow and turbulent equations ---*/
 
   if (sst) {
-    solver[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-    solver[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solver[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solver[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
     solver[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
     solver[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
     static_cast<CTurbSSTSolver*>(solver[iZone][iInst][MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[iZone][iInst][MESH_0]);
