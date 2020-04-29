@@ -33,24 +33,24 @@
 
 CNumerics::CNumerics(void) {
 
-  Normal      = NULL;
-  UnitNormal  = NULL;
-  UnitNormald = NULL;
+  Normal      = nullptr;
+  UnitNormal  = nullptr;
+  UnitNormald = nullptr;
 
-  Proj_Flux_Tensor  = NULL;
-  Flux_Tensor       = NULL;
+  Proj_Flux_Tensor  = nullptr;
+  Flux_Tensor       = nullptr;
 
-  tau    = NULL;
-  delta  = NULL;
-  delta3 = NULL;
+  tau    = nullptr;
+  delta  = nullptr;
+  delta3 = nullptr;
 
-  Diffusion_Coeff_i = NULL;
-  Diffusion_Coeff_j = NULL;
+  Diffusion_Coeff_i = nullptr;
+  Diffusion_Coeff_j = nullptr;
 
-  Vector = NULL;
+  Vector = nullptr;
 
-  l = NULL;
-  m = NULL;
+  l = nullptr;
+  m = nullptr;
 
   using_uq = false;
 
@@ -59,24 +59,12 @@ CNumerics::CNumerics(void) {
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
                      const CConfig* config) {
 
-  unsigned short iVar, iDim, jDim;
+  unsigned short iVar, iDim;
 
-  Normal      = NULL;
-  UnitNormal  = NULL;
-  UnitNormald = NULL;
+  Normal = nullptr;
 
-  Proj_Flux_Tensor  = NULL;
-  Flux_Tensor       = NULL;
-
-  tau    = NULL;
-  delta  = NULL;
-  delta3 = NULL;
-
-  Diffusion_Coeff_i = NULL;
-  Diffusion_Coeff_j = NULL;
-
-  l = NULL;
-  m = NULL;
+  Diffusion_Coeff_i = nullptr;
+  Diffusion_Coeff_j = nullptr;
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -86,51 +74,38 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 
-  UnitNormal = new su2double [nDim];
-  UnitNormald = new su2double [nDim];
+  UnitNormal = new su2double [nDim] ();
+  UnitNormald = new su2double [nDim] ();
 
   Flux_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < (nVar); iVar++)
-    Flux_Tensor[iVar] = new su2double [nDim];
+    Flux_Tensor[iVar] = new su2double [nDim] ();
 
   tau = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    tau[iDim] = new su2double [nDim];
-  }
+  for (iDim = 0; iDim < nDim; iDim++)
+    tau[iDim] = new su2double [nDim] ();
 
   delta = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    delta[iDim] = new su2double [nDim];
-  }
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
-      if (iDim == jDim) delta[iDim][jDim] = 1.0;
-      else delta[iDim][jDim]=0.0;
-    }
+    delta[iDim] = new su2double [nDim] ();
+    delta[iDim][iDim] = 1.0;
   }
 
   delta3 = new su2double* [3];
   for (iDim = 0; iDim < 3; iDim++) {
-    delta3[iDim] = new su2double [3];
+    delta3[iDim] = new su2double [3] ();
+    delta3[iDim][iDim] = 1.0;
   }
 
-  for (iDim = 0; iDim < 3; iDim++) {
-    for (jDim = 0; jDim < 3; jDim++) {
-      if (iDim == jDim) delta3[iDim][jDim] = 1.0;
-      else delta3[iDim][jDim]=0.0;
-    }
-  }
-
-  Proj_Flux_Tensor = new su2double [nVar];
+  Proj_Flux_Tensor = new su2double [nVar] ();
 
   turb_ke_i = 0.0;
   turb_ke_j = 0.0;
 
-  Vector = new su2double[nDim];
+  Vector = new su2double[nDim] ();
 
-  l = new su2double [nDim];
-  m = new su2double [nDim];
+  l = new su2double [nDim] ();
+  m = new su2double [nDim] ();
 
   Dissipation_ij = 1.0;
 
@@ -175,46 +150,38 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNumerics::~CNumerics(void) {
 
-  if (UnitNormal!= NULL) delete [] UnitNormal;
-  if (UnitNormald!= NULL) delete [] UnitNormald;
+  delete [] UnitNormal;
+  delete [] UnitNormald;
 
   // visc
-  if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
+  delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor!= NULL) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      delete [] Flux_Tensor[iVar];
-    }
-    delete [] Flux_Tensor;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Flux_Tensor[iVar];
   }
+  delete [] Flux_Tensor;
 
-  if (tau != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      delete [] tau[iDim];
-    }
-    delete [] tau;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    delete [] tau[iDim];
   }
+  delete [] tau;
 
-  if (delta != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      delete [] delta[iDim];
-    }
-    delete [] delta;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    delete [] delta[iDim];
   }
+  delete [] delta;
 
-  if (delta3 != NULL) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++) {
-      delete [] delta3[iDim];
-    }
-    delete [] delta3;
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    delete [] delta3[iDim];
   }
+  delete [] delta3;
 
-  if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
-  if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
-  if (Vector != NULL) delete [] Vector;
+  delete [] Diffusion_Coeff_i;
+  delete [] Diffusion_Coeff_j;
+  delete [] Vector;
 
-  if (l != NULL) delete [] l;
-  if (m != NULL) delete [] m;
+  delete [] l;
+  delete [] m;
 
   if (using_uq) {
     for (unsigned short iDim = 0; iDim < 3; iDim++){

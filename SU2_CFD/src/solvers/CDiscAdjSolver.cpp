@@ -480,7 +480,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
   const bool multizone = config->GetMultizone_Problem();
 
-  const su2double relax = (config->GetInnerIter()==0)? 1.0 : config->GetRelaxation_Factor_AdjFlow();
+  const su2double relax = (config->GetInnerIter()==0)? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
   /*--- Set Residuals to zero ---*/
 
