@@ -3751,7 +3751,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
     su2double Ducros_i = 0.0;
-    auto nNeigh = geometry->node[iPoint]->GetnNeighbor();
+    auto nNeigh = geometry->node[iPoint]->GetnPoint();
 
     for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 
