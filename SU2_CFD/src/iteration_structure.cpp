@@ -28,6 +28,7 @@
 
 #include "../include/iteration_structure.hpp"
 #include "../include/solvers/CFEASolver.hpp"
+#include "../include/solvers/CTurbSSTSolver.hpp"
 
 CIteration::CIteration(CConfig *config) {
   rank = SU2_MPI::GetRank();
@@ -2191,6 +2192,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
   if (sst) {
     solver[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
     solver[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    static_cast<CTurbSSTSolver*>(solver[iZone][iInst][MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[iZone][iInst][MESH_0]);
   }
   solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0], config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   solver[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
