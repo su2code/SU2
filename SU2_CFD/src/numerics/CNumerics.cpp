@@ -156,25 +156,29 @@ CNumerics::~CNumerics(void) {
   // visc
   delete [] Proj_Flux_Tensor;
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    delete [] Flux_Tensor[iVar];
+  if (Flux_Tensor) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      delete [] Flux_Tensor[iVar];
+    delete [] Flux_Tensor;
   }
-  delete [] Flux_Tensor;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    delete [] tau[iDim];
+  if (tau) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] tau[iDim];
+    delete [] tau;
   }
-  delete [] tau;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    delete [] delta[iDim];
+  if (delta) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] delta[iDim];
+    delete [] delta;
   }
-  delete [] delta;
 
-  for (unsigned short iDim = 0; iDim < 3; iDim++) {
-    delete [] delta3[iDim];
+  if (delta3) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      delete [] delta3[iDim];
+    delete [] delta3;
   }
-  delete [] delta3;
 
   delete [] Diffusion_Coeff_i;
   delete [] Diffusion_Coeff_j;
