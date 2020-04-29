@@ -677,13 +677,16 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
   
+  unsigned short iVar, iDim;
+  
   if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
     AD::SetPreaccIn(TurbVar_Grad_i, 2, nDim);
     AD::SetPreaccIn(TurbVar_Grad_j, 2, nDim);
     AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim]+TurbVar_Grad_j[0][iDim]);
   }
-
-  unsigned short iVar, iDim;
 
   /*--- Normalized normal vector ---*/
 
