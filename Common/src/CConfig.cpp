@@ -1670,8 +1670,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Custom number of threads used for additive domain decomposition for ILU and LU_SGS (0 is "auto"). */
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
-  /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
+  /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
+  addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
   addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
   /* DESCRIPTION: Roe coefficient */
@@ -2832,20 +2832,9 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
-          if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
-                                                                 "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
-          if (!option_name.compare("UNST_TIMESTEP")) newString.append("UNST_TIMESTEP is now TIME_STEP.\n");
-          if (!option_name.compare("UNST_TIME")) newString.append("UNST_TIME is now MAX_TIME.\n");
-          if (!option_name.compare("UNST_INT_ITER")) newString.append("UNST_INT_ITER is now INNER_ITER.\n");
-          if (!option_name.compare("RESIDUAL_MINVAL")) newString.append("RESIDUAL_MINVAL is now CONV_RESIDUAL_MINVAL.\n");
-          if (!option_name.compare("STARTCONV_ITER")) newString.append("STARTCONV_ITER is now CONV_STARTITER.\n");
-          if (!option_name.compare("CAUCHY_ELEMS")) newString.append("CAUCHY_ELEMS is now CONV_CAUCHY_ELEMS.\n");
-          if (!option_name.compare("CAUCHY_EPS")) newString.append("CAUCHY_EPS is now CONV_CAUCHY_EPS.\n");
-          if (!option_name.compare("OUTPUT_FORMAT")) newString.append("OUTPUT_FORMAT is now TABULAR_FORMAT.\n");
-          if (!option_name.compare("PHYSICAL_PROBLEM")) newString.append("PHYSICAL_PROBLEM is now SOLVER.\n");
-          if (!option_name.compare("REGIME_TYPE")) newString.append("REGIME_TYPE has been removed.\n "
-                                                                    "If you want use the incompressible solver, \n"
-                                                                    "use INC_EULER, INC_NAVIER_STOKES or INC_RANS as value of the SOLVER option.");
+          if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
+            newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
+                             "and it also applies to discrete adjoint problems\n.");
           errorString.append(newString);
           err_count++;
         continue;
