@@ -45,7 +45,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
   }
 
-  Solution_Direct.resize(nPoint,nVar);
+  Solution_Direct.resize(nPoint,nVar) = su2double(0.0);;
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
