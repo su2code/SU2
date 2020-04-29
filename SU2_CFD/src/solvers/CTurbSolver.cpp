@@ -27,7 +27,6 @@
 
 
 #include "../../include/solvers/CTurbSolver.hpp"
-#include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
 
@@ -961,12 +960,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
   SU2_OMP_BARRIER
-  
-  nodes->Set_OldSolution();
-  
+    
 //  solver[MESH_0][TURB_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TURB_SYS, false);
-  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-  if (sst) static_cast<CTurbSSTSolver*>(solver[MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[MESH_0]);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   
@@ -995,9 +990,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     }
     SU2_OMP_BARRIER
     
-    solver[iMesh][TURB_SOL]->GetNodes()->Set_OldSolution();
-
-    solver[iMesh][TURB_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TURB_SYS, false);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
