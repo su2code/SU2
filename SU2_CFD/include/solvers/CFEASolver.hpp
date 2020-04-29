@@ -55,8 +55,8 @@ protected:
   su2double Conv_Check[3];          /*!< \brief Current values for convergence check: UTOL, RTOL, ETOL. */
   su2double FSI_Conv[2];            /*!< \brief Values to check the convergence of the FSI problem. */
 
-  unsigned long idxIncrement;       /*!< \brief Index of the current load increment */
-  su2double loadIncrement;          /*!< \brief Coefficient that determines the amount of load which is applied. */
+  unsigned long idxIncrement = 0;   /*!< \brief Index of the current load increment */
+  su2double loadIncrement = 1.0;    /*!< \brief Coefficient that determines the amount of load which is applied. */
 
   su2double WAitken_Dyn;            /*!< \brief Aitken's dynamic coefficient. */
   su2double WAitken_Dyn_tn1;        /*!< \brief Aitken's dynamic coefficient in the previous iteration. */

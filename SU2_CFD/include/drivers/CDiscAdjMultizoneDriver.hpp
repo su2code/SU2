@@ -181,6 +181,12 @@ protected:
   void Add_External_To_Solution(unsigned short iZone);
 
   /*!
+   * \brief Puts Solution into SolutionOld.
+   * \param[in] iZone - Zone index.
+   */
+  void Set_SolutionOld_To_Solution(unsigned short iZone);
+
+  /*!
    * \brief Extract contribution of iZone to jZone with BGS relaxation.
    * \param[in] iZone - Source zone (the one that was initialized).
    * \param[in] jZone - Target zone (the one that transfers to iZone in the primal problem).
