@@ -190,7 +190,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
   startTime = SU2_MPI::Wtime();
   
-  unsigned long bytesWritten;  
+  unsigned long bytesWritten;
   bytesWritten = fwrite(str.c_str(), sizeof(char), str.size(), fhw);
   
   fileSize += bytesWritten;

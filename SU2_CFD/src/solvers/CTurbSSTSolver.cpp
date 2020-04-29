@@ -555,6 +555,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
   unsigned long iPoint, iVertex, Point_Normal;
   su2double *Normal, *V_infty, *V_domain;
+  su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
   unsigned short iVar, iDim;
 
   Normal = new su2double[nDim];
@@ -597,7 +598,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       
       su2double Vn_Infty = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vn_Infty += V_infty[iDim+1]*Normal[iDim];
+        Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
       }
       
       /*--- Inflow ---*/
