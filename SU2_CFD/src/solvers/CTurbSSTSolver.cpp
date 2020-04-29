@@ -285,6 +285,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
+  const bool disc_adjoint = config->GetDiscrete_Adjoint();
   
   SetPrimitive_Variables(solver_container);
 
@@ -292,7 +293,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy) {
     LinSysRes.SetValZero();
-    Jacobian.SetValZero();
+    if (!disc_adjoint) Jacobian.SetValZero();
   }
   
   /*--- Compute mean flow and turbulence gradients ---*/
