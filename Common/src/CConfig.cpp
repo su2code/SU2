@@ -1670,8 +1670,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Custom number of threads used for additive domain decomposition for ILU and LU_SGS (0 is "auto"). */
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
-  /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
+  /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
+  addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
   addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
   /* DESCRIPTION: Roe coefficient */
@@ -2902,20 +2902,9 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
-          if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
-                                                                 "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
-          if (!option_name.compare("UNST_TIMESTEP")) newString.append("UNST_TIMESTEP is now TIME_STEP.\n");
-          if (!option_name.compare("UNST_TIME")) newString.append("UNST_TIME is now MAX_TIME.\n");
-          if (!option_name.compare("UNST_INT_ITER")) newString.append("UNST_INT_ITER is now INNER_ITER.\n");
-          if (!option_name.compare("RESIDUAL_MINVAL")) newString.append("RESIDUAL_MINVAL is now CONV_RESIDUAL_MINVAL.\n");
-          if (!option_name.compare("STARTCONV_ITER")) newString.append("STARTCONV_ITER is now CONV_STARTITER.\n");
-          if (!option_name.compare("CAUCHY_ELEMS")) newString.append("CAUCHY_ELEMS is now CONV_CAUCHY_ELEMS.\n");
-          if (!option_name.compare("CAUCHY_EPS")) newString.append("CAUCHY_EPS is now CONV_CAUCHY_EPS.\n");
-          if (!option_name.compare("OUTPUT_FORMAT")) newString.append("OUTPUT_FORMAT is now TABULAR_FORMAT.\n");
-          if (!option_name.compare("PHYSICAL_PROBLEM")) newString.append("PHYSICAL_PROBLEM is now SOLVER.\n");
-          if (!option_name.compare("REGIME_TYPE")) newString.append("REGIME_TYPE has been removed.\n "
-                                                                    "If you want use the incompressible solver, \n"
-                                                                    "use INC_EULER, INC_NAVIER_STOKES or INC_RANS as value of the SOLVER option.");
+          if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
+            newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
+                             "and it also applies to discrete adjoint problems\n.");
           errorString.append(newString);
           err_count++;
         continue;
@@ -5370,18 +5359,16 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Analyze[iMarker_CfgFile] = YES;
   }
 
-  /*--- Identification of Fluid-Structure interface markers ---*/
+  /*--- Identification of multi-physics interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    unsigned short indexMarker = 0;
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
     for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface])
-            indexMarker = (int)(iMarker_ZoneInterface/2+1);
-    Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = YES;
   }
 
-/*--- Identification of Turbomachinery markers and flag them---*/
+  /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     unsigned short indexMarker=0;
@@ -7135,7 +7122,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   return true;
 }
 
-unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) const {
 
   unsigned short iMarker_CfgFile;
 
@@ -7147,157 +7134,145 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
   return 0;
 }
 
-string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
+string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) const {
   return Marker_CfgFile_TagBound[val_marker];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_KindBC[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Monitoring(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Monitoring(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Monitoring[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_GeoEval(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_GeoEval(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_GeoEval[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Designing(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Designing(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Designing[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Plotting[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Analyze(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Analyze(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Analyze[iMarker_CfgFile];
 }
 
-
-unsigned short CConfig::GetMarker_CfgFile_ZoneInterface(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_ZoneInterface(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Turbomachinery[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_DV(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_DV(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_DV[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Deform_Mesh[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_Fluid_Load[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker){
+unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_PyCustom[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_PerBound[iMarker_CfgFile];
 }
 
-int CConfig::GetMarker_ZoneInterface(string val_marker) {
-    unsigned short iMarker_CfgFile;
-    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
-
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
-        return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
-    return 0;
+unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker) const{
-
-  if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-      Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-      Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
-      Marker_All_KindBC[iMarker] == EULER_WALL){
-    return true;
-  }
-
-  return false;
+  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
+          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
+          Marker_All_KindBC[iMarker] == EULER_WALL);
 }
 
-bool CConfig::GetViscous_Wall(unsigned short iMarker) const{
+bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
-  if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-      Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-      Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE){
-    return true;
-  }
-
-  return false;
+  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
+          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
 }
 
-void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement){
+void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {
 
   unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
   string* new_marker_moving = new string[nMarker_Moving+1];
@@ -9146,12 +9121,25 @@ su2double CConfig::GetWall_Emissivity(string val_marker) const {
   return Wall_Emissivity[iMarker_Emissivity];
 }
 
-
 su2double CConfig::GetFlowLoad_Value(string val_marker) const {
   unsigned short iMarker_FlowLoad;
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
     if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
   return FlowLoad_Value[iMarker_FlowLoad];
+}
+
+short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
+
+  /*--- The names of the two markers that form the interface. ---*/
+  const auto& sideA = Marker_ZoneInterface[2*iInterface];
+  const auto& sideB = Marker_ZoneInterface[2*iInterface+1];
+
+  for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
+    /*--- If the marker is sideA or sideB of the interface (order does not matter). ---*/
+    const auto& tag = Marker_All_TagBound[iMarker];
+    if ((tag == sideA) || (tag == sideB)) return iMarker;
+  }
+  return -1;
 }
 
 void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {

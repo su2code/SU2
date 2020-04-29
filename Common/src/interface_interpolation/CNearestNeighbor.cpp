@@ -71,13 +71,13 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
   AvgDistance = MaxDistance = 0.0;
   unsigned long totalTargetPoints = 0;
 
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;

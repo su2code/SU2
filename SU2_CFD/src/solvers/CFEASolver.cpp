@@ -48,8 +48,6 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   Total_CFEA = 0.0;
   WAitken_Dyn = 0.0;
   WAitken_Dyn_tn1 = 0.0;
-  idxIncrement = 0;
-  loadIncrement = 1.0;
 
   element_container = new CElement** [MAX_TERMS]();
   for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
@@ -124,8 +122,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   Total_CFEA        = 0.0;
   WAitken_Dyn       = 0.0;
   WAitken_Dyn_tn1   = 0.0;
-  idxIncrement      = 0;
-  loadIncrement     = 0.0;
 
   SetFSI_ConvValue(0,0.0);
   SetFSI_ConvValue(1,0.0);
@@ -2248,21 +2244,17 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
   /*--- The conservative approach transfers forces directly, no integration needed. ---*/
   if (config->GetConservativeInterpolation()) return;
 
-  const auto nMarker = config->GetnMarker_All();
-  const auto nMarkerInt = config->GetMarker_n_ZoneInterface()/2u;
-
   unordered_map<unsigned long, su2double> vertexArea;
+  unordered_set<short> processedMarkers({-1});
 
   /*--- Compute current area associated with each vertex. ---*/
 
-  for (auto iMarkerInt = 1u; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
     /*--- Find the marker index associated with the pair. ---*/
-    unsigned short iMarker;
-    for (iMarker = 0; iMarker < nMarker; ++iMarker)
-      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
-        break;
-    /*--- The current mpi rank may not have this marker. ---*/
-    if (iMarker == nMarker) continue;
+    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
+    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
+    if (processedMarkers.count(iMarker) > 0) continue;
+    processedMarkers.insert(iMarker);
 
     for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
       /*--- Define the boundary element. ---*/
