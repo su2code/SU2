@@ -503,15 +503,6 @@ public:
     su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
   }
-
-  /*!
-   * \brief Add a value to the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Number of the variable.
-   * \param[in] solution - Value that we want to add to the solution.
-   */
-  virtual void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
-                               su2double val_density, su2double lowerlimit, su2double upperlimit) { }
   
   virtual void InitializeWallSolution(unsigned long nWallElem) { }
   

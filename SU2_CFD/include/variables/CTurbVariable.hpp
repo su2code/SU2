@@ -115,22 +115,22 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+  inline virtual su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
    */
-  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) {}
+  inline virtual void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) {}
+  inline virtual void SetPrimitive(unsigned long iPoint, const su2double *val_prim) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline su2double *GetPrimitive(unsigned long iPoint) { return nullptr; }
+  inline virtual su2double *GetPrimitive(unsigned long iPoint) { return nullptr; }
 
 };
 
