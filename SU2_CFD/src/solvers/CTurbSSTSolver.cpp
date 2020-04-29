@@ -372,10 +372,6 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
     
   }
-    
-  //  InitiateComms(geometry, config, PRIMITIVE);
-  //  CompleteComms(geometry, config, PRIMITIVE);
-
 
 }
 
