@@ -122,7 +122,7 @@ class CAvgGradCorrected_P1 final : public CNumericsRadiation {
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_P1(void);
+  ~CAvgGradCorrected_P1(void) override;
 
   /*!
    * \brief Compute the viscous residual of the P1 equation.

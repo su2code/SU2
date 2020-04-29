@@ -53,7 +53,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjNSVariable() = default;
+  ~CAdjNSVariable() override = default;
 
   /*!
    * \brief Set the value of the force projection vector on the old solution vector.

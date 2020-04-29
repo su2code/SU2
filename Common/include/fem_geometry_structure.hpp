@@ -651,7 +651,7 @@ public:
   /*!
   * \brief Destructor of the class.
   */
-  virtual ~CMeshFEM(void);
+  ~CMeshFEM(void) override;
 
   /*!
   * \brief Function, which makes available the boundaries of the local FEM mesh.
@@ -779,7 +779,7 @@ public:
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetPositive_ZArea(CConfig *config);
+  void SetPositive_ZArea(CConfig *config) override;
 
 protected:
   /*!
@@ -905,7 +905,7 @@ public:
  /*!
   * \brief Destructor of the class.
   */
-  ~CMeshFEM_DG(void);
+  ~CMeshFEM_DG(void) override;
 
  /*!
   * \brief Function to compute the coordinates of the integration points.
@@ -1030,12 +1030,12 @@ public:
   * \brief Set the send receive boundaries of the grid.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetSendReceive(CConfig *config);
+  void SetSendReceive(CConfig *config) override;
 
   /*!
    * \brief Set the local index that correspond with the global numbering index.
    */
-  void SetGlobal_to_Local_Point();
+  void SetGlobal_to_Local_Point() override;
 
   /*!
    * \brief Get the local index that correspond with the global numbering index.
@@ -1398,7 +1398,7 @@ public:
   /*! 
 	 * \brief Destructor of the class.
 	 */
-  ~CDummyMeshFEM_DG();
+  ~CDummyMeshFEM_DG() override;
   
 };
 

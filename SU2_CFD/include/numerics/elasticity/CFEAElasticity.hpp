@@ -96,7 +96,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEAElasticity(void);
+  ~CFEAElasticity(void) override;
 
   /*!
    * \brief Set elasticity modulus and Poisson ratio.

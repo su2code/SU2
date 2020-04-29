@@ -63,7 +63,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjEulerVariable() = default;
+  ~CAdjEulerVariable() override = default;
 
   /*!
    * \brief Set all the primitive variables for compressible flows.

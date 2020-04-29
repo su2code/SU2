@@ -92,7 +92,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMultizoneDriver(void);
+  ~CDiscAdjMultizoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.

@@ -85,7 +85,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMMSNSTwoHalfCirclesSolution(void);
+  ~CMMSNSTwoHalfCirclesSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

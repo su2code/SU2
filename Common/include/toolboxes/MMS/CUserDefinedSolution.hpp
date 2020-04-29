@@ -60,7 +60,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUserDefinedSolution(void);
+  ~CUserDefinedSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTransLMVariable() = default;
+  ~CTransLMVariable() override = default;
 
   /*!
    * \brief ________________.
