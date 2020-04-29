@@ -473,11 +473,12 @@ void CFluidIteration::Iterate(COutput *output,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression
-   with under-relaxation approach. ---*/
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
   if (config[val_iZone]->GetCFL_Adapt() == YES) {
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone]);
+    SU2_OMP_PARALLEL
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/

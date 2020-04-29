@@ -667,8 +667,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     }
   }
 
-  if(multizone) nodes->Set_OldSolution();
-
   SetResidual_RMS(geometry, config);
 
 }
