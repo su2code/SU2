@@ -96,7 +96,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjEulerSolver(void);
+  ~CAdjEulerSolver(void) override;
 
   /*!
    * \brief A virtual member.

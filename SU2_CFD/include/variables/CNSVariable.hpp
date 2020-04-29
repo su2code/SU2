@@ -63,7 +63,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSVariable() = default;
+  ~CNSVariable() override = default;
 
   /*!
    * \brief Set the laminar viscosity.

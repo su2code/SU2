@@ -78,7 +78,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEAVariable() = default;
+  ~CDiscAdjFEAVariable() override = default;
 
   /*!
    * \brief Set the sensitivity at the node

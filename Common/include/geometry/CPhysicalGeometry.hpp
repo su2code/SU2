@@ -167,7 +167,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CPhysicalGeometry(void);
+  ~CPhysicalGeometry(void) override;
 
   /*!
    * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.

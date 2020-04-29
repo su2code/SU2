@@ -120,7 +120,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWallModel1DEQ(void);
+  ~CWallModel1DEQ(void) override;
 
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -152,7 +152,7 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall);
+                                  su2double       &kOverCvWall) override;
 
 private:
 
@@ -184,7 +184,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWallModelLogLaw(void);
+  ~CWallModelLogLaw(void) override;
   
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -216,7 +216,7 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall);
+                                  su2double       &kOverCvWall) override;
   
 private:
 

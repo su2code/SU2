@@ -159,7 +159,7 @@ public:
    * \brief Make available the global offset of the solution DOFs of this element.
    * \return The global offset of the solution DOFs.
    */
-  inline unsigned long GetGlobalOffsetDOFsSol(void) { return offsetDOFsSolGlobal; }
+  inline unsigned long GetGlobalOffsetDOFsSol(void) override { return offsetDOFsSolGlobal; }
 
   /*!
    * \brief Get the number of element that are neighbor to this element.

@@ -89,7 +89,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSolver(void);
+  ~CDiscAdjSolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

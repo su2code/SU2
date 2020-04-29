@@ -288,7 +288,7 @@ public:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~CADTPointsOnlyClass();
+  ~CADTPointsOnlyClass() override;
 
   /*!
    * \brief Function, which determines the nearest node in the ADT for the
@@ -376,7 +376,7 @@ public:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~CADTElemClass();
+  ~CADTElemClass() override;
 
   /*!
    * \brief Function, which determines the element that contains the given
