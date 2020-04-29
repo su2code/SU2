@@ -1999,7 +1999,7 @@
 					"$(OTHER_CFLAGS)",
 					"-Wno-inconsistent-missing-override",
 				);
-				OTHER_LDFLAGS = "-DHAVE_MPI";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
 				USER_HEADER_SEARCH_PATHS = /usr/local/include;
 				WARNING_CFLAGS = (
@@ -2061,7 +2061,7 @@
 					"$(OTHER_CFLAGS)",
 					"-Wno-inconsistent-missing-override",
 				);
-				OTHER_LDFLAGS = "-DHAVE_MPI";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
 				USER_HEADER_SEARCH_PATHS = /usr/local/include;
 				WARNING_CFLAGS = (

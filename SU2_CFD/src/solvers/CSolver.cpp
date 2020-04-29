@@ -4135,7 +4135,6 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
   Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
-  for (iVar = 0; iVar < nFields*geometry->GetnPointDomain(); iVar++) Restart_Data[iVar] = passivedouble(0.0);
 
   /*--- Read in the data for the restart at all local points. ---*/
 
@@ -4266,7 +4265,6 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
   Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
-  for (iVar = 0; iVar < nFields*geometry->GetnPointDomain(); iVar++) Restart_Data[iVar] = passivedouble(0.0);
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
