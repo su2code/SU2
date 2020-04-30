@@ -1,0 +1,6 @@
+Residual[0]=-674.373
+Residual[1]=674.373
+Residual[2]=0
+Residual[3]=0
+Residual[4]=0
+Residual[5]=-1.09875e+10
