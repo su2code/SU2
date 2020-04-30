@@ -111,6 +111,8 @@ protected:
   *MomentMomentum,    /*!< \brief Inviscid moment for each boundary. */
   InverseDesign;      /*!< \brief Inverse design functional for each boundary. */
   su2double
+  **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
+  **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
   **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
   **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
   ***Inlet_FlowDir;  /*!< \brief Value of the Flow Direction. */
@@ -662,6 +664,120 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
+
+//---------------------------------------- Actdisk --------------------------------------------------------//  
+  /*!
+   * \brief Parallelization of actuator disk.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the AoA and freestream velocity at the farfield.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh, bool Output);
+  
+
+  /*!
+   * \brief Impose the engine inflow boundary condition.
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
+  void BC_ActDisk_Inlet(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose the engine exhaust boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_ActDisk_Outlet(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *conv_numerics,
+                         CNumerics *visc_numerics,
+                         CConfig *config,
+                         unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose an actuator disk inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] val_inlet_surface - Boolean for whether val_marker is an inlet
+   */
+  void BC_ActDisk(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker,
+                  bool val_inlet_surface) final;
+  
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double GetActDisk_DeltaP(unsigned short val_marker,
+                                     unsigned long val_vertex) const final {
+    return ActDisk_DeltaP[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetActDisk_DeltaP(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                su2double val_deltap) final { ActDisk_DeltaP[val_marker][val_vertex] = val_deltap; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double GetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex) final {
+    return ActDisk_DeltaT[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetActDisk_DeltaT(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                su2double val_deltat) final {
+    ActDisk_DeltaT[val_marker][val_vertex] = val_deltat;
+  }
+//---------------------------------------- Actdisk --------------------------------------------------------//
 
   /*!
    * \brief Provide the non dimensional lift coefficient.
