@@ -6133,7 +6133,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
   su2double Vel_normal_inlet[3], Vel_tangent_inlet[3], Vel_inlet[3];
   su2double Vel_normal_outlet[3], Vel_tangent_outlet[3], Vel_outlet[3];
   su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
-  su2double Vel_normal_outlet_, Vel_outlet_, Pstag_out, Pstag_in;
+  su2double Vel_normal_outlet_, Vel_outlet_, Pstag_out, Pstag_in, Vn_Face;
 
   su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
   Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
@@ -6198,7 +6198,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
         PressureAdj = 1.0; 
         if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
 
-          Pstag_out = Pressure_Out + 0.5*Density_out*Velocity2_out;
+          Pstag_out = Pressure_out + 0.5*Density_out*Velocity2_out;
           Pstag_in = Pressure_in + 0.5*Density_in*Velocity2_in;
           PressureAdj    = Pstag_out/Pstag_in;
         }
@@ -6207,7 +6207,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
           P_static = V_outlet[0] / (Target_Press_Jump/PressureAdj);
         }
         else { 
-          P_static = V_outlet[0] - Target_Press_Jump;
+          P_static = V_outlet[0] + Target_Press_Jump;
         }
       }
       else {
@@ -6229,7 +6229,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
         PressureAdj = 1.0; 
         if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
 
-          Pstag_out = Pressure_Out + 0.5*Density_out*Velocity2_out;
+          Pstag_out = Pressure_out + 0.5*Density_out*Velocity2_out;
           Pstag_in = Pressure_in + 0.5*Density_in*Velocity2_in;
           PressureAdj    = Pstag_out/Pstag_in;
         }
@@ -6238,7 +6238,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
           P_static = V_inlet[0] * (Target_Press_Jump/PressureAdj);
         }
         else  { 
-          P_static = V_inlet[0] + Target_Press_Jump;
+          P_static = V_inlet[0] - Target_Press_Jump;
         }
       }
 
@@ -6263,11 +6263,11 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
 
         Pressure   = P_static;
         Density    = V_domain[nDim+1];
-        Vn_Inlet    = sqrt((Pstag - Pressure)/(0.5*Density));
+        Vn_Face    = sqrt((Pstag_in - Pressure)/(0.5*Density));
 
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Inlet-Vn)*UnitNormal[iDim];
+          Velocity[iDim] = Velocity[iDim] + (Vn_Face-Vn)*UnitNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
 
@@ -6284,128 +6284,27 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
 
       else {
 
-        GetFluidModel()->SetTDState_PT(P_static, T_static);
-        SoS_outlet = GetFluidModel()->GetSoundSpeed();
-        Rho_outlet = GetFluidModel()->GetDensity();
-
-        /*--- We use the velocity and the density from the flow inlet
-         to evaluate flow direction and mass flow ---*/
-
-        Rho_inlet = V_inlet[nDim+2];
-        for (iDim = 0; iDim < nDim; iDim++)
-          Vel_inlet[iDim] = V_inlet[iDim+1];
-
-        Vel_normal_inlet_ = 0.0; Vel_inlet_ = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vel_normal_inlet[iDim] = -Vel_inlet[iDim]*UnitNormal[iDim];
-          Vel_normal_inlet_ += Vel_normal_inlet[iDim]*Vel_normal_inlet[iDim];
-          Vel_inlet_+= Vel_inlet[iDim]*Vel_inlet[iDim];
-        }
-        Vel_inlet_ = sqrt(Vel_inlet_);
-        Vel_normal_inlet_ = sqrt(Vel_normal_inlet_);
-
-        Vel_tangent_inlet_ = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vel_tangent_inlet[iDim] = Vel_inlet[iDim] - Vel_normal_inlet[iDim];
-          Vel_tangent_inlet_ += Vel_tangent_inlet[iDim]*Vel_tangent_inlet[iDim];
-        }
-        Vel_tangent_inlet_ = sqrt(Vel_tangent_inlet_);
-
-        /*--- Mass flow conservation (normal direction) and
-         no jump in the tangential velocity ---*/
-
-        Vel_normal_outlet_ = (1.0-SecondaryFlow/100.0)*(Rho_inlet*Vel_normal_inlet_)/Rho_outlet;
-
-        Vel_outlet_ = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vel_normal_outlet[iDim] = -Vel_normal_outlet_*UnitNormal[iDim];
-          Vel_tangent_outlet[iDim] = Vel_tangent_inlet[iDim];
-          Vel_outlet[iDim] = Vel_normal_outlet[iDim] + Vel_tangent_outlet[iDim];
-          Vel_outlet_ += Vel_outlet[iDim]*Vel_outlet[iDim];
-        }
-        Vel_outlet_ = sqrt(Vel_outlet_);
-
-        Mach_Outlet = min(Vel_outlet_/SoS_outlet, 1.0);
-
-        /*--- Reevaluate the Total Pressure and Total Temperature using the
-         Fan Face Mach number and the static values from the jum condition ---*/
-
-        Factor = 1.0 + 0.5*Mach_Outlet*Mach_Outlet*Gamma_Minus_One;
-        P_Total = P_static * pow(Factor, Gamma/Gamma_Minus_One);
-        T_Total = T_static * Factor;
-
-        /*--- Flow direction using the velocity direction at the outlet  ---*/
-
-        if (Vel_outlet_ != 0.0) {
-          for (iDim = 0; iDim < nDim; iDim++) Flow_Dir[iDim] = Vel_outlet[iDim]/Vel_outlet_;
-        }
-        else {
-          for (iDim = 0; iDim < nDim; iDim++) Flow_Dir[iDim] = 0.0;
-        }
-
-        /*--- Store primitives and set some variables for clarity. ---*/
-
         Density = V_domain[nDim+1];
-        Velocity2 = 0.0;
+        Velocity2 = 0.0; Vn = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity[iDim] = V_domain[iDim+1];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
+          Vn += Velocity[iDim]*UnitNormal[iDim];
         }
+        Pressure   = V_domain[0];
+        Pstag_out = Pressure + 0.5*Density*Vn*Vn;
 
-        Pressure    = V_domain[0];
+        /*--- Compute the new fictious state at the outlet ---*/
 
-        /*--- Compute the acoustic Riemann invariant that is extrapolated
-         from the domain interior. ---*/
+        Pressure   = P_static;
+        Density    = V_domain[nDim+1];
+        Vn_Face    = sqrt((Pstag_out - Pressure)/(0.5*Density));
 
-        Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-        /*--- Total speed of sound ---*/
-
-        SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
-
-        /*--- Dot product of normal and flow direction. This should
-         be negative due to outward facing boundary normal convention. ---*/
-
-        alpha = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          alpha += UnitNormal[iDim]*Flow_Dir[iDim];
-
-        /*--- Coefficients in the quadratic equation for the velocity ---*/
-
-        aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-        bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-        cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Total2/Gamma_Minus_One;
-
-        /*--- Solve quadratic equation for velocity magnitude. Value must
-         be positive, so the choice of root is clear. ---*/
-
-        dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(max(0.0, dd));
-        Vel_Mag   = (-bb + dd)/(2.0*aa);
-        Vel_Mag   = max(0.0, Vel_Mag);
-        Velocity2 = Vel_Mag*Vel_Mag;
-
-        /*--- Compute speed of sound from total speed of sound eqn. ---*/
-
-        SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-        /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-
-        Mach2 = min(1.0, Velocity2/SoundSpeed2);
-        Velocity2   = Mach2*SoundSpeed2;
-        Vel_Mag     = sqrt(Velocity2);
-        SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-        /*--- Compute new velocity vector at the exit ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-
-       /*--- Static pressure using isentropic relation at a point ---*/
-
-        Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
+        Velocity2  = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = Velocity[iDim] + (Vn_Face-Vn)*UnitNormal[iDim];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
 
         /*--- Primitive variables, using the derived quantities ---*/
         for (iDim = 0; iDim < nDim; iDim++)
