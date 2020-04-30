@@ -314,7 +314,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2dou
 
 CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   unsigned short iDim, iVar;
 
   /*--- Space to start preaccumulation ---*/
@@ -838,7 +838,7 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
 
 CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);

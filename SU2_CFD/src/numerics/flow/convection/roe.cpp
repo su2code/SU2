@@ -92,7 +92,7 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 
 CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iVar, jVar, iDim;
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
@@ -510,7 +510,7 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
 
 CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
@@ -741,7 +741,7 @@ CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
 
 CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);

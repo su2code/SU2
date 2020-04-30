@@ -63,7 +63,7 @@ CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
 
 CNumerics::ResidualType<> CUpwCUSP_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iDim, iVar;
   su2double Diff_U[5] = {0.0};

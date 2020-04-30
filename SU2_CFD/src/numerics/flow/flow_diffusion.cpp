@@ -572,7 +572,7 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim,
 
 CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
@@ -761,7 +761,7 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
 
 CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
@@ -1062,7 +1062,7 @@ void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar
 
 CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
