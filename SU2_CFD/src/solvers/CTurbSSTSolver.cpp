@@ -505,9 +505,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
           Jacobian_i[1][1] += (1. - F1_i)*constants[3]
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
-          Jacobian_j[1][0] -= (1. - F1_i)*constants[3]*r_i
+          Jacobian_j[1][0] += (1. - F1_i)*constants[3]*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
-          Jacobian_j[1][1] -= (1. - F1_i)*constants[3]*r_i
+          Jacobian_j[1][1] += (1. - F1_i)*constants[3]*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
         }
         if (iPoint < jPoint) {
