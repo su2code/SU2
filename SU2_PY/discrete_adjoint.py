@@ -144,7 +144,7 @@ def discrete_adjoint( filename           ,
 #: continuous_adjoint()
 
 # -------------------------------------------------------------------
-#  Alternate Forumulation
+#  Alternate Formulation
 # -------------------------------------------------------------------
 
 def discrete_design( filename           ,

@@ -402,8 +402,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    //if (nDim == 3) //HOT FIX DO NOT COMMIT.
-    {
+    if (nDim == 3){
       AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
       AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
       AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");

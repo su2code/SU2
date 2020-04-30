@@ -244,6 +244,14 @@ def adjoint( func_name, config, state=None ):
     name = su2io.expand_zones(name,konfig)
     name = su2io.expand_time(name,konfig)
     link.extend(name)
+    # files restart
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES':
+       name = files['RESTART_FILE_1']
+       name = su2io.expand_part(name, config)
+       link.extend(name)
+       name = files['RESTART_FILE_2']
+       name = su2io.expand_part(name, config)
+       link.extend(name)
     
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
@@ -256,7 +264,7 @@ def adjoint( func_name, config, state=None ):
         link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO' #Can this be deleted?
-        konfig['RESTART_SOL'] = 'NO'
+        #konfig['RESTART_SOL'] = 'NO' #Restart solution gets handled just before solver starts
 
     # files: target equivarea adjoint weights
     if 'EQUIV_AREA' in special_cases:
@@ -291,8 +299,23 @@ def adjoint( func_name, config, state=None ):
                 konfig['OBJECTIVE_FUNCTION'] = func_name
 
             # # RUN ADJOINT SOLUTION # #
+
+            # We do not want a restart in adjoint run, we want that the adjoint run computes only up to the restart iteration of the primal run.
+            restart_sol_activated = False
+            if konfig.get('TIME_DOMAIN', 'NO') == 'YES' and konfig.get('RESTART_SOL', 'NO') == 'YES':
+                restart_sol_activated = True
+                konfig['TIME_ITER'] = konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
+                konfig.RESTART_SOL = 'NO'
+
             info = su2run.adjoint(konfig)
+            # Workaround, since expandTime relies on UNST_ADJOINT_ITER to determine number of solution files.
+            if restart_sol_activated:
+                unst_adj_iter = konfig['UNST_ADJOINT_ITER']
+                konfig['UNST_ADJOINT_ITER'] =  konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
             su2io.restart2solution(konfig,info)
+            if restart_sol_activated:
+                konfig['UNST_ADJOINT_ITER'] = unst_adj_iter
+
             state.update(info)
 
             # Gradient Projection

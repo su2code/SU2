@@ -217,7 +217,16 @@ def aerodynamics( config, state=None ):
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
-    
+
+    # files: restarts
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') =='YES':
+        name = files['RESTART_FILE_1']
+        name = su2io.expand_part(name, config)
+        link.extend(name)
+        name = files['RESTART_FILE_2']
+        name = su2io.expand_part(name, config)
+        link.extend(name)
+
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
 
@@ -228,8 +237,8 @@ def aerodynamics( config, state=None ):
         name = su2io.expand_time(name,config)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
-    else:
-        config['RESTART_SOL'] = 'NO'
+    #else:
+        #config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
         
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 

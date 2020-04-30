@@ -129,8 +129,14 @@ def shape_optimization( filename                           ,
     # State
     state = SU2.io.State()
     state.find_files(config)
-    
+
+    # add restart files to state.FILES
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES':
+        restart_name = config['RESTART_FILENAME'].split('.')[0]
+        state['FILES']['RESTART_FILE_1'] = restart_name + '_' + str(int(config['RESTART_ITER'])-1).zfill(5) + '.dat'
+        state['FILES']['RESTART_FILE_2'] = restart_name + '_' + str(int(config['RESTART_ITER'])-2).zfill(5) + '.dat'
     # Project
+
     if os.path.exists(projectname):
         project = SU2.io.load_data(projectname)
         project.config = config
