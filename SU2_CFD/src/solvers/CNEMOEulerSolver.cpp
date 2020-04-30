@@ -1945,6 +1945,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
+
     /*--- Set conserved & primitive variables  ---*/
     numerics->SetConservative(nodes->GetSolution(iPoint),   nodes->GetSolution(iPoint));
     numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
@@ -1986,29 +1987,33 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     }
 
     /*--- Compute the non-equilibrium chemistry ---*/
-    //numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
-
+    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
     /*--- Check for errors before applying source to the linear system ---*/
-    //err = false;
-    //for (iVar = 0; iVar < nVar; iVar++)
-    //  if (Residual[iVar] != Residual[iVar]) err = true;
-    //if (implicit)
-    //  for (iVar = 0; iVar < nVar; iVar++)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-//
-    ///*--- Apply the chemical sources to the linear system ---*/
-    //if (!err) {
-    //  LinSysRes.SubtractBlock(iPoint, Residual);
-    //  if (implicit)
-    //    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    //} else
-    //  eChm_local++;
+    err = false;
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Residual[iVar] != Residual[iVar]) err = true;
+    if (implicit)
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+    /*--- Apply the chemical sources to the linear system ---*/
+    if (!err) {
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    } else
+      eChm_local++;
 
     /*--- Compute vibrational energy relaxation ---*/
-    // NOTE: Jacobians don't account for relaxation time derivatives
+    /// NOTE: Jacobians don't account for relaxation time derivatives
 
     numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
+
+   //std::ofstream outfile;
+   //outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
+   //for(iVar = 0; iVar < nVar; iVar++){
+   // outfile << "Residual[" << iVar << "]=" << Residual[iVar] << endl; 
+   //}
     
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -2791,6 +2796,10 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     SetRes_Max(iVar, 0.0, 0);
   }
 
+  //std::ofstream outfile;
+
+  //outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
+
   /*--- Update the solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2803,8 +2812,18 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
+
+      
+
+  
+
+    
+
+  
+
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
+       // outfile << "local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl; 
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         nodes->AddSolution(iPoint, iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);

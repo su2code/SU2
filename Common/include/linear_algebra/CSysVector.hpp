@@ -31,6 +31,10 @@
 #include <cmath>
 #include <cstdlib>
 
+#include <iostream>
+#include <fstream>
+using namespace std;
+
 
 /*!
  * \class CSysVector
