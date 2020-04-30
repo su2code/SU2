@@ -3,7 +3,7 @@
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
 #  \author David Thomas
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.3 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -115,7 +115,7 @@ class FSIConfig:
                 if case("MESH_INTERP_METHOD")         : pass
 		if case("DISP_PRED")		      : pass
 		if case("AITKEN_RELAX")               : pass
-	        if case("UNSTEADY_SIMULATION")	      : pass
+	        if case("TIME_MARCHING")	      : pass
 		if case("INTERNAL_FLOW")	      : 
 	        #if case("MESH_DEF_METHOD")	      : pass
 		    self._ConfigContent[this_param] = this_value

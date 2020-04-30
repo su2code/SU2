@@ -2,24 +2,14 @@
  * \file CMMSNSUnitQuadSolution.cpp
  * \brief Implementations of the member functions of CMMSNSUnitQuadSolution.
  * \author T. Economon, E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +34,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
                                                unsigned short val_iMesh,
                                                CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -98,7 +88,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
   v_y     =      4.0;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 
@@ -130,7 +120,7 @@ CMMSNSUnitQuadSolution::~CMMSNSUnitQuadSolution(void) { }
 
 void CMMSNSUnitQuadSolution::GetBCState(const su2double *val_coords,
                                         const su2double val_t,
-                                        su2double       *val_solution) {
+                                        su2double       *val_solution) const {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
@@ -138,7 +128,7 @@ void CMMSNSUnitQuadSolution::GetBCState(const su2double *val_coords,
 
 void CMMSNSUnitQuadSolution::GetSolution(const su2double *val_coords,
                                          const su2double val_t,
-                                         su2double       *val_solution) {
+                                         su2double       *val_solution) const {
 
   /* Easier storage of the x- and y-coordinates. */
   const su2double x = val_coords[0];
@@ -177,7 +167,7 @@ void CMMSNSUnitQuadSolution::GetSolution(const su2double *val_coords,
 
 void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
                                               const su2double val_t,
-                                              su2double       *val_source) {
+                                              su2double       *val_source) const {
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSUnitQuadSolution.mw in the directory
@@ -388,6 +378,6 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
   val_source[nDim+1] = t564 + t565 + t566 + t567;
 }
 
-bool CMMSNSUnitQuadSolution::IsManufacturedSolution(void) {
+bool CMMSNSUnitQuadSolution::IsManufacturedSolution(void) const {
   return true;
 }

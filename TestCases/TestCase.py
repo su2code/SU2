@@ -3,30 +3,20 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.3 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -34,7 +24,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
-
 from __future__ import print_function, division, absolute_import
 import time, os, subprocess, datetime, sys
 import difflib
@@ -64,6 +53,12 @@ class TestCase:
         # Indicate whether to disable restart
         self.no_restart = False
 
+        # Indicate whether the new output is used
+        self.new_output = True   
+
+        # multizone problem
+        self.multizone = False
+
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.ntest_vals = 4
@@ -84,18 +79,27 @@ class TestCase:
         passed       = True
         exceed_tol   = False
         timed_out    = False
-        iter_missing = True
+        iter_missing = False
         start_solver = True
 
-        # Adjust the number of iterations in the config file   
-        self.adjust_iter()
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+
+        # Adjust the number of iterations in the config file
+        if len(self.test_vals) != 0:
+            self.adjust_iter() 
 
         # Check for disabling the restart
         if self.no_restart:
             self.disable_restart()
 
         # Assemble the shell command to run SU2
-        logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
+        if len(self.test_vals) != 0:
+            logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
+        else:
+            logfilename = '%s_check.log' % os.path.splitext(self.cfg_file)[0]
 
         # Check for polar calls
         if self.polar:
@@ -131,17 +135,21 @@ class TestCase:
         output = f.readlines()
         delta_vals = []
         sim_vals = []
-        if not timed_out:
+        if not timed_out and len(self.test_vals) != 0:
             start_solver = False
             for line in output:
                 if not start_solver: # Don't bother parsing anything before --Start solver ---
                     if line.find('Begin Solver') > -1:
                         start_solver=True
                 else:   # Found the --Begin solver --- line; parse the input
-                    raw_data = line.split()
+                    if self.new_output or self.multizone:
+                        raw_data = line.strip() # Strip removes whitespaces head-tail
+                        raw_data = raw_data[1:-1].split('|') # Remove heat-tail bars before splitting
+                    else:
+                        raw_data = line.split()
                     try:
                         iter_number = int(raw_data[0])
-                        if self.unsteady:
+                        if self.unsteady and not self.multizone and not self.new_output:
                             iter_number = int(raw_data[1])
                         data = raw_data[len(raw_data) - len(self.test_vals):]
                     except ValueError:
@@ -175,6 +183,10 @@ class TestCase:
         #for j in output:
         #  print(j)
 
+
+        process.communicate()
+        if process.returncode != 0:
+            passed = False
         if passed:
             print("%s: PASSED"%self.tag)
         else:
@@ -196,13 +208,14 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d' % self.test_iter)
+        if len(self.test_vals) != 0:
+            print('test_iter=%d' % self.test_iter)
 
-        print_vals(self.test_vals, name="test_vals (stored)")
+            print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+            print_vals(sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+            print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -219,9 +232,14 @@ class TestCase:
         # Adjust the number of iterations in the config file
         self.adjust_iter()
 
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s -f %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -428,6 +446,11 @@ class TestCase:
         found_twist  = False
         found_chord  = False
 
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+                
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
@@ -547,6 +570,11 @@ class TestCase:
         iter_missing = True
         start_solver = True
     
+        # if root, add flag to mpirun
+        if os.geteuid()==0:
+            if self.su2_exec.startswith('mpirun'):
+                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
@@ -669,11 +697,17 @@ class TestCase:
         file_out = open(self.cfg_file,'w')
         file_out.write('%% This file automatically generated by the regression script\n')
         file_out.write('%% Number of iterations changed to %d\n'%(self.test_iter+1))
+        if (self.multizone or self.new_output) and self.unsteady:
+            adjust_string = "TIME_ITER"
+        elif self.multizone:
+            adjust_string = "OUTER_ITER"
+        else:
+            adjust_string = "ITER"
         for line in lines:
-            if not line.startswith("EXT_ITER"):
+            if not line.strip().split("=")[0].strip() == adjust_string:
                 file_out.write(line)
             else:
-                file_out.write("EXT_ITER=%d\n"%(self.test_iter+1))
+                file_out.write(adjust_string+"=%d\n"%(self.test_iter+1))
         file_out.close()
         os.chdir(workdir)
 

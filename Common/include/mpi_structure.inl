@@ -2,24 +2,14 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,19 +41,23 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
   MPI_Ibarrier(currentComm, &barrierRequest);
 
   /* Try to complete the non-blocking barrier call for a second. */
-  double startTime = MPI_Wtime();
+  double startTime = SU2_MPI::Wtime();
   while( true ) {
 
     MPI_Test(&barrierRequest, &flag, MPI_STATUS_IGNORE);
     if( flag ) break;
 
-    double currentTime = MPI_Wtime();
+    double currentTime = SU2_MPI::Wtime();
     if(currentTime > startTime + 1.0) break;
   }
 #else
   /* MPI_Ibarrier function is not supported. Simply wait for one
      second to give other ranks the opportunity to reach this point. */
+#ifdef _MSC_VER
+  _sleep(1);
+#else
   sleep(1);
+#endif
 #endif
 
   if( flag ) {
@@ -96,7 +90,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "-------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;    
+    std::cout << std::endl << std::endl;
   }
   Abort(currentComm, EXIT_FAILURE);
 }
@@ -112,7 +106,7 @@ inline int CBaseMPIWrapper::GetSize(){
 
 inline void CBaseMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
-  MPI_Comm_rank(currentComm, &Rank);  
+  MPI_Comm_rank(currentComm, &Rank);
   MPI_Comm_size(currentComm, &Size);
 
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
@@ -128,8 +122,19 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
-  MPI_Comm_rank(currentComm, &Rank);    
-  MPI_Comm_size(currentComm, &Size);  
+  MPI_Comm_rank(currentComm, &Rank);
+  MPI_Comm_size(currentComm, &Size);
+
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
+}
+
+inline void CBaseMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
+  MPI_Init_thread(argc,argv,required,provided);
+  MPI_Comm_rank(currentComm, &Rank);
+  MPI_Comm_size(currentComm, &Size);
 
   MinRankError = Size;
   MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
@@ -272,15 +277,30 @@ inline void CBaseMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {
   MPI_Waitany(nrequests, request, index, status);
 }
-  
+
+inline passivedouble CBaseMPIWrapper::Wtime(void) {
+  return MPI_Wtime();
+}
 
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
   MediTool::init();
-  AMPI_Comm_rank(convertComm(currentComm), &Rank);    
-  AMPI_Comm_size(convertComm(currentComm), &Size);  
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);
+  AMPI_Comm_size(convertComm(currentComm), &Size);
+
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
+}
+
+inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
+  AMPI_Init_thread(argc,argv,required,provided);
+  MediTool::init();
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);
+  AMPI_Comm_size(convertComm(currentComm), &Size);
 
   MinRankError = Size;
   MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
@@ -295,7 +315,7 @@ inline void CMediMPIWrapper::Init_AMPI(void) {
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
-  AMPI_Comm_rank(convertComm(currentComm), &Rank);  
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
@@ -491,7 +511,8 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
   AMPI_Waitany(nrequests, request, index, status);
 }
 #endif
-#else
+#else // HAVE_MPI
+#include <ctime>
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
@@ -500,7 +521,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "-------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;    
+    std::cout << std::endl << std::endl;
   }
   Abort(currentComm, 0);
 }
@@ -522,6 +543,8 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 }
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {}
+
+inline void CBaseMPIWrapper::Init_thread(int *argc, char***argv, int required, int* provided) {*provided = required;}
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size) {}
 
@@ -662,5 +685,9 @@ inline void CBaseMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Da
     default:
       break;
   }
+}
+
+inline passivedouble CBaseMPIWrapper::Wtime(void) {
+  return passivedouble(clock()) / CLOCKS_PER_SEC;
 }
 #endif

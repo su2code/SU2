@@ -3,24 +3,14 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author Ruben Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,10 +31,10 @@
 #include "../CInterface.hpp"
 
 class CFlowTractionInterface : public CInterface {
+private:
+  bool integrate_tractions;
 
 protected:
-  bool consistent_interpolation;
-  
   /*!
    * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag
    * \param[in] flow_config - Definition of the fluid (donor) problem.
@@ -52,23 +42,16 @@ protected:
   void Preprocess(CConfig *flow_config);
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CFlowTractionInterface(void);
-
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
+   * \param[in] val_nConst - Number of constants.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] integrate_tractions_ - Whether to integrate the fluid tractions
+   *            (to transfer forces when using conservative interpolation).
    */
-  CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CFlowTractionInterface(void);
+  CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
+                         CConfig *config, bool integrate_tractions_);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.
@@ -81,7 +64,7 @@ public:
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                              CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config);
+                             CConfig *donor_config, CConfig *target_config) override;
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -92,7 +75,7 @@ public:
    * \param[in] Vertex_Donor - Index of the donor vertex.
    */
   void GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-                         unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Flow);
+                         unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Flow) override;
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -105,6 +88,6 @@ public:
    */
   void SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
                           CConfig *fea_config, unsigned long Marker_Struct,
-                          unsigned long Vertex_Struct, unsigned long Point_Struct);
+                          unsigned long Vertex_Struct, unsigned long Point_Struct) override;
 
 };

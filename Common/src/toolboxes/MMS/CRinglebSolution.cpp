@@ -2,24 +2,14 @@
  * \file CRinglebSolution.cpp
  * \brief Implementations of the member functions of CRinglebSolution.
  * \author T. Economon, E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,7 +51,7 @@ CRinglebSolution::CRinglebSolution(unsigned short val_nDim,
   tGamOvGm1 = Gamma*tovGm1;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the Ringleb case",
                    CURRENT_FUNCTION);
 
@@ -86,7 +76,7 @@ CRinglebSolution::~CRinglebSolution(void) { }
 
 void CRinglebSolution::GetBCState(const su2double *val_coords,
                                   const su2double val_t,
-                                  su2double       *val_solution) {
+                                  su2double       *val_solution) const {
 
   /*--- The exact solution is prescribed on the boundaries for the
         Ringleb flow. Note that a (much) more difficult test case is to
@@ -97,7 +87,7 @@ void CRinglebSolution::GetBCState(const su2double *val_coords,
 
 void CRinglebSolution::GetSolution(const su2double *val_coords,
                                    const su2double val_t,
-                                   su2double       *val_solution) {
+                                   su2double       *val_solution) const {
 
   /* Easier storage of the coordinates and abbreviate y*y. */
   const su2double x  = val_coords[0], y = val_coords[1];
@@ -160,7 +150,7 @@ void CRinglebSolution::GetSolution(const su2double *val_coords,
   /* Check if the Newton algorithm actually converged. */
   if(iter == iterMax)
     SU2_MPI::Error("Newton algorithm did not converge", CURRENT_FUNCTION);
-  
+
   /* Compute the speed of sound, density and pressure. */
   const su2double a   = sqrt(1.0 - 0.5*Gm1*q*q);
   const su2double rho = pow(a,tovGm1);

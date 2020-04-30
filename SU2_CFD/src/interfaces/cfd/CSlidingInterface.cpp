@@ -3,24 +3,14 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 6.2.0 "Falcon"
+ * \version 7.0.3 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,52 +29,25 @@
 #include "../../../include/interfaces/cfd/CSlidingInterface.hpp"
 
 
-CSlidingInterface::CSlidingInterface(void) : CInterface() {
-
-}
+CSlidingInterface::CSlidingInterface(void) : CInterface() { }
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
                                      CConfig *config) : CInterface() {
 
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
-  Physical_Constants = NULL;
-  Donor_Variable     = NULL;
-  Target_Variable    = NULL;
-
-  unsigned short iVar;
-
-  Physical_Constants = new su2double[val_nConst];
-  Donor_Variable     = new su2double[val_nVar];
-
-  Target_Variable    = new su2double[val_nVar+1];
+  Physical_Constants = new su2double[val_nConst] ();
+  Donor_Variable     = new su2double[val_nVar] ();
+  Target_Variable    = new su2double[val_nVar+1] ();
 
   valAggregated      = false;
 
   nVar = val_nVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Donor_Variable[iVar]  = 0.0;
-    Target_Variable[iVar] = 0.0;
-  }
-
-  for (iVar = 0; iVar < val_nConst; iVar++) {
-    Physical_Constants[iVar] = 0.0;
-  }
-
 }
 
-CSlidingInterface::~CSlidingInterface(void) {
-
-}
-
+CSlidingInterface::~CSlidingInterface(void) { }
 
 void CSlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                                               CGeometry *donor_geometry, CGeometry *target_geometry,
-                                              CConfig *donor_config, CConfig *target_config) {
-
-}
+                                              CConfig *donor_config, CConfig *target_config) { }
 
 void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                           CConfig *donor_config, unsigned long Marker_Donor,
@@ -99,14 +62,14 @@ void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *do
   if (turbulent){
 
     /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
-    Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
-    Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
+    Donor_Variable[0] = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
+    Donor_Variable[1] = donor_solution->GetNodes()->GetSolution(Point_Donor,1);
 
   } else{
 
     /*---  Retrieve primitive variables and set them as the donor variables ---*/
     for (iVar = 0; iVar < nDonorVar; iVar++)
-      Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+      Donor_Variable[iVar] = donor_solution->GetNodes()->GetPrimitive(Point_Donor,iVar);
 
   }
 }

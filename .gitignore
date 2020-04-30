@@ -76,8 +76,13 @@ bin/
 TestData
 *.stl
 
+# Ignore output files if tests are run locally
+*.vtk
+*.vtu
+*.ref
+
 Mercurial
 .hg*
 
 # Ignore build folder
-build
+./build/
