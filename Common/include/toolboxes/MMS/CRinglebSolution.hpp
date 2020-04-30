@@ -69,7 +69,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRinglebSolution(void);
+  ~CRinglebSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

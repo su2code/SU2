@@ -152,7 +152,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CPhysicalGeometry(void);
+  ~CPhysicalGeometry(void) override;
 
   /*!
    * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.
@@ -380,12 +380,6 @@ public:
    */
   bool FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                 unsigned short &face_second_elem) override;
-
-  /*!
-   * \brief Computes the distance to the nearest no-slip wall for each grid node.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeWall_Distance(CConfig *config) override;
 
   /*!
    * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
@@ -786,5 +780,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Check_Periodicity(CConfig *config) override;
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+
+  /*!
+   * \brief Set wall distances a specific value
+   */
+  void SetWallDistance(su2double val) override {
+    for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
+      node[iPoint]->SetWall_Distance(val);
+    }
+  }
 
 };

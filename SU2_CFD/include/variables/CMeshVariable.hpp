@@ -48,7 +48,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshVariable() = default;
+  ~CMeshVariable() override = default;
 
   /*!
    * \brief Get the value of the undeformed coordinates.

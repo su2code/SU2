@@ -55,11 +55,7 @@ void CTecplotFileWriter::Write_Data(){
 
   /*--- Set a timer for the file writing. ---*/
 
-#ifndef HAVE_MPI
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  startTime = MPI_Wtime();
-#endif
+  startTime = SU2_MPI::Wtime();
 
   /*--- Reduce the total number of each element. ---*/
 
@@ -216,11 +212,8 @@ void CTecplotFileWriter::Write_Data(){
 
   /*--- Compute and store the write time. ---*/
 
-#ifndef HAVE_MPI
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  stopTime = MPI_Wtime();
-#endif
+  stopTime = SU2_MPI::Wtime();
+
   usedTime = stopTime-startTime;
 
   fileSize = Determine_Filesize(fileName);

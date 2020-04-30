@@ -130,7 +130,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry*,
+  inline su2double Get_ValCoord(const CGeometry*,
                                 unsigned long indexNode,
                                 unsigned short iDim) const override {
     return nodes->GetMesh_Coord(indexNode,iDim);
@@ -172,5 +172,37 @@ public:
    * \return
    */
   inline su2double GetMaximum_Volume() const override {return MaxVolume_Curr;}
+
+  /*!
+   * \brief Pitching definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Rotating definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Plunging definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Translating definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter);
 
 };

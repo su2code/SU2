@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -73,7 +73,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEAVariable() = default;
+  ~CFEAVariable() override = default;
 
   /*!
    * \brief Get the value of the stress.
@@ -337,7 +337,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline su2double *GetPrestretch(unsigned long iPoint) final { return Prestretch[iPoint]; }
+  inline const su2double *GetPrestretch(unsigned long iPoint) const final { return Prestretch[iPoint]; }
 
   /*!
    * \brief A virtual member.

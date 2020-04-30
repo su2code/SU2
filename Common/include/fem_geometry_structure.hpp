@@ -651,7 +651,7 @@ public:
   /*!
   * \brief Destructor of the class.
   */
-  virtual ~CMeshFEM(void);
+  ~CMeshFEM(void) override;
 
   /*!
   * \brief Function, which makes available the boundaries of the local FEM mesh.
@@ -779,7 +779,7 @@ public:
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetPositive_ZArea(CConfig *config);
+  void SetPositive_ZArea(CConfig *config) override;
 
 protected:
   /*!
@@ -905,7 +905,7 @@ public:
  /*!
   * \brief Destructor of the class.
   */
-  ~CMeshFEM_DG(void);
+  ~CMeshFEM_DG(void) override;
 
  /*!
   * \brief Function to compute the coordinates of the integration points.
@@ -916,12 +916,6 @@ public:
   * \brief Function to compute the coordinates of solution DOFs.
   */
   void CoordinatesSolDOFs(void);
-
- /*!
-  * \brief Function to compute the distance to the nearest viscous wall.
-  * \param[in] config - Definition of the particular problem.
-  */
-  void ComputeWall_Distance(CConfig *config);
 
  /*!
   * \brief Function to create the faces used in the DG formulation.
@@ -1036,12 +1030,12 @@ public:
   * \brief Set the send receive boundaries of the grid.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetSendReceive(CConfig *config);
+  void SetSendReceive(CConfig *config) override;
 
   /*!
    * \brief Set the local index that correspond with the global numbering index.
    */
-  void SetGlobal_to_Local_Point();
+  void SetGlobal_to_Local_Point() override;
 
   /*!
    * \brief Get the local index that correspond with the global numbering index.
@@ -1364,6 +1358,25 @@ protected:
   void VolumeMetricTermsFromCoorGradients(const unsigned short nEntities,
                                           const su2double      *gradCoor,
                                           vector<su2double>    &metricTerms);
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
+
+  /*!
+   * \brief Set wall distances a specific value
+   */
+  void SetWallDistance(su2double val) override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
 };
 
 /*! 
@@ -1385,7 +1398,7 @@ public:
   /*! 
 	 * \brief Destructor of the class.
 	 */
-  ~CDummyMeshFEM_DG();
+  ~CDummyMeshFEM_DG() override;
   
 };
 

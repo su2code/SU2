@@ -48,7 +48,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDummyGeometry();
+  ~CDummyGeometry() override;
 
 };
 

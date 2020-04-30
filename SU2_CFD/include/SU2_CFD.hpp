@@ -31,8 +31,6 @@
 #include "../../Common/include/omp_structure.hpp"
 #include "CLI11.hpp"
 
-#include <ctime>
-
 #include "drivers/CDriver.hpp"
 #include "drivers/CSinglezoneDriver.hpp"
 #include "drivers/CMultizoneDriver.hpp"
@@ -44,7 +42,6 @@
 #include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/CConfig.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
 #include "../include/interfaces/CInterface.hpp"

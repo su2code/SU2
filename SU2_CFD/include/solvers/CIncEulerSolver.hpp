@@ -236,7 +236,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncEulerSolver(void);
+  ~CIncEulerSolver(void) override;
 
   /*!
    * \brief Set the solver nondimensionalization.
