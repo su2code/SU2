@@ -680,6 +680,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetAerodynamicCoefficients(config, flow_solver);
 
+  /*--- Set rotating frame coefficients --- */
+
+  SetRotatingFrameCoefficients(config, flow_solver);
+
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(flow_solver, geometry, config);
