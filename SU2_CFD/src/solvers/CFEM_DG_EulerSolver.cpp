@@ -3444,7 +3444,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
     nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
 
   /* Copy the solution into the working variables. */
-  Set_OldSolution(geometry);
+  Set_OldSolution();
 
   /* Allocate the memory for local part of the Jacobian. Note that passivedouble
      must be used for the Jacobian matrix. */
@@ -3574,12 +3574,12 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
   }
 }
 
-void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
+void CFEM_DG_EulerSolver::Set_OldSolution() {
 
   memcpy(VecWorkSolDOFs[0].data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
-void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
+void CFEM_DG_EulerSolver::Set_NewSolution() {
 
   memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }

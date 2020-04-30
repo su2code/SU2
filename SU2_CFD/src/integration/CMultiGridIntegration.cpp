@@ -176,10 +176,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         /*--- Set the old solution ---*/
 
-        solver_fine->Set_OldSolution(geometry_fine);
+        solver_fine->Set_OldSolution();
 
         if (classical_rk4)
-          solver_fine->Set_NewSolution(geometry_fine);
+          solver_fine->Set_NewSolution();
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
 
@@ -269,9 +269,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
         if (iRKStep == 0) {
-          solver_fine->Set_OldSolution(geometry_fine);
+          solver_fine->Set_OldSolution();
 
-          if (classical_rk4) solver_fine->Set_NewSolution(geometry_fine);
+          if (classical_rk4) solver_fine->Set_NewSolution();
 
           solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  config->GetTimeIter());
         }

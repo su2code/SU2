@@ -55,7 +55,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   /*--- Set the old solution ---*/
 
-  solvers_fine[Solver_Position]->Set_OldSolution(geometry_fine);
+  solvers_fine[Solver_Position]->Set_OldSolution();
 
   /*--- Time step evaluation ---*/
 

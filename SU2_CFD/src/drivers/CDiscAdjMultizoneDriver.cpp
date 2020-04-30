@@ -909,7 +909,7 @@ void CDiscAdjMultizoneDriver::Set_SolutionOld_To_Solution(unsigned short iZone) 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
-      solver->GetNodes()->Set_OldSolution();
+      solver->Set_OldSolution();
   }
 }
 
