@@ -67,6 +67,8 @@ CCentBase_Flow::~CCentBase_Flow(void) {
 
 CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
   bool preacc = SetPreaccInVars();
@@ -392,6 +394,8 @@ CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
 
 CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
 
@@ -611,6 +615,8 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 }
 
 CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;

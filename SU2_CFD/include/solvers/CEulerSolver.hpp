@@ -830,7 +830,6 @@ public:
                   CConfig *config,
                   unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the boundary condition using characteristic recostruction.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -876,7 +875,6 @@ public:
                 CNumerics *visc_numerics,
                 CConfig *config,
                 unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose a subsonic inlet boundary condition.
@@ -942,7 +940,6 @@ public:
                  CConfig *config,
                  unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -958,7 +955,6 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose the nacelle inflow boundary condition.

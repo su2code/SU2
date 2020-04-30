@@ -101,6 +101,8 @@ CUpwMSW_Flow::~CUpwMSW_Flow(void) {
 
 CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
   unsigned short iDim, iVar, jVar, kVar;
   su2double P_i, P_j;
   su2double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
