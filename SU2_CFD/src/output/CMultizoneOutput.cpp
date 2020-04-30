@@ -2,14 +2,14 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, uns
 
   multiZoneHeaderString = "Multizone Summary";
 
-  historyFilename = "multizone_history";
+  historyFilename = driver_config->GetCaseName();
 
   /*--- Add the correct file extension depending on the file format ---*/
 

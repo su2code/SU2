@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,9 +49,14 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 
-#include "../primal_grid_structure.hpp"
-#include "../dual_grid_structure.hpp"
-#include "../config_structure.hpp"
+#include "primal_grid/CPrimalGrid.hpp"
+#include "dual_grid/CDualGrid.hpp"
+#include "dual_grid/CPoint.hpp"
+#include "dual_grid/CEdge.hpp"
+#include "dual_grid/CVertex.hpp"
+#include "dual_grid/CTurboVertex.hpp"
+
+#include "../CConfig.hpp"
 #include "../geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 
@@ -1549,11 +1554,10 @@ public:
    * \param[in] filter_radius - Parameter defining the size of the neighbourhood.
    * \param[in] kernels - Kernel types and respective parameter, size of vector defines number of filter recursions.
    * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
-   * \param[in] input_values - "Raw" values.
-   * \param[out] output_values - Filtered values.
+   * \param[in,out] values - On entry, the "raw" values, on exit, the filtered values.
    */
   void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
-                               const unsigned short search_limit, const su2double *input_values, su2double *output_values) const;
+                               const unsigned short search_limit, su2double *values) const;
 
   /*!
    * \brief Build the global (entire mesh!) adjacency matrix for the elements in compressed format.
@@ -1634,11 +1638,23 @@ public:
   const CCompressedSparsePatternUL& GetEdgeColoring(void);
 
   /*!
+   * \brief Get the group size used in edge coloring.
+   * \return Group size.
+   */
+  inline unsigned long GetEdgeColorGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
    * \brief Get the element coloring.
    * \note This method computes the coloring if that has not been done yet.
    * \return Reference to the coloring.
    */
   const CCompressedSparsePatternUL& GetElementColoring(void);
+
+  /*!
+   * \brief Get the group size used in element coloring.
+   * \return Group size.
+   */
+  inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
 
 };
 

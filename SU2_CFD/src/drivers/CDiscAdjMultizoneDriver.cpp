@@ -2,14 +2,14 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,9 @@
  */
 
 #include "../../include/drivers/CDiscAdjMultizoneDriver.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
+#include "../../include/output/COutputFactory.hpp"
+#include "../../include/output/COutputLegacy.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -81,16 +84,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
     switch (config_container[iZone]->GetKind_Solver()) {
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        direct_output[iZone] = new CFlowCompOutput(config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::createOutput(EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        direct_output[iZone] = new CFlowIncOutput(config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::createOutput(INC_EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_HEAT:
-        direct_output[iZone] = new CHeatOutput(config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::createOutput(HEAT_EQUATION, config_container[iZone], nDim);
         break;
       case DISC_ADJ_FEM:
-        direct_output[iZone] = new CElasticityOutput(config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::createOutput(FEM_ELASTICITY, config_container[iZone], nDim);
         break;
       default:
         direct_output[iZone] = nullptr;
@@ -547,6 +550,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
         cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
+        if (config_container[iZone]->AddRadiation()) {
+
+          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
+               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
+        }
         break;
 
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
@@ -557,6 +565,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
           cout << " Zone " << iZone << " (turbulence) - log10[Turb(0)] : "
                << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
+        }
+        if (config_container[iZone]->AddRadiation()) {
+
+          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
+               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
         }
         break;
 
@@ -635,7 +648,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           // per-surface output to be added soon
           break;
-        case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
+        case HEAT_EQUATION: case DISC_ADJ_HEAT:
           // per-surface output to be added soon
           break;
         default:

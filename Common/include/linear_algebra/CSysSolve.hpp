@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,6 +57,10 @@ using namespace std;
  * creating CSysSolve objects we can more easily assign different
  * matrix-vector products and preconditioners to different problems
  * that may arise in a hierarchical solver (i.e. multigrid).
+ *
+ * The methods of this class are designed to be called by multiple OpenMP threads.
+ * Beware of writes to class member variables, for example "Residual" should only
+ * be modified by one thread.
  */
 template<class ScalarType>
 class CSysSolve {

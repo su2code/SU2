@@ -2,14 +2,14 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 
 #include "../../include/output/CFlowOutput.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
 
@@ -1350,7 +1350,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                      |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.0.2 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -1361,7 +1361,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
     Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file << "-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2019, SU2 Contributors                                 |" << "\n";
+    Breakdown_file << "| Copyright 2012-2020, SU2 Contributors                                 |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
