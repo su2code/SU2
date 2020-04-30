@@ -75,7 +75,8 @@ def amg ( config , kind='' ):
     #--- Solver iterations/ residual reduction param for each size level
     adap_flow_iter = su2amg.get_flow_iter(config)
     adap_adj_iter  = su2amg.get_adj_iter(config)
-    adap_cfl       = su2amg.get_cfl(config)
+    adap_flow_cfl  = su2amg.get_flow_cfl(config)
+    adap_adj_cfl   = su2amg.get_flow_cfl(config)
     # adap_res       = su2amg.get_residual_reduction(config)
 
     adap_sensor = config.PYADAP_SENSOR
@@ -219,6 +220,7 @@ def amg ( config , kind='' ):
             config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
             config_cfd.COMPUTE_METRIC   = 'NO'
             config_cfd.MATH_PROBLEM     = 'DIRECT'
+            config_cfd.CFL_NUMBER       = float(adap_flow_cfl[0])
             
             SU2_CFD(config_cfd)
                         
@@ -235,6 +237,7 @@ def amg ( config , kind='' ):
                 config_cfd.ADAP_HMAX            = config.PYADAP_HMAX
                 config_cfd.ADAP_HMIN            = config.PYADAP_HMIN
                 config_cfd.ADAP_COMPLEXITY      = int(mesh_sizes[0])
+                config_cfd.CFL_NUMBER           = float(adap_adj_cfl[0])
                 SU2_CFD(config_cfd)
 
                 func_name      = config.OBJECTIVE_FUNCTION
@@ -283,6 +286,7 @@ def amg ( config , kind='' ):
         config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
         config_cfd.COMPUTE_METRIC   = 'NO'
         config_cfd.MATH_PROBLEM     = 'DIRECT'
+        config_cfd.CFL_NUMBER       = float(adap_flow_cfl[0])
         SU2_CFD(config_cfd)
 
         if adap_sensor == 'GOAL':
@@ -299,6 +303,7 @@ def amg ( config , kind='' ):
             config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
             config_cfd.ADAP_HMIN             = config.PYADAP_HMIN
             config_cfd.ADAP_COMPLEXITY       = int(mesh_sizes[0])
+            config_cfd.CFL_NUMBER            = float(adap_adj_cfl[0])
 
             #--- Run an adjoint if the adjoint solution file doesn't exist
             cur_solfil_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME    
@@ -481,7 +486,7 @@ def amg ( config , kind='' ):
  
                 # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
-                config_cfd.CFL_NUMBER         = float(adap_cfl[iSiz])
+                config_cfd.CFL_NUMBER         = float(adap_flow_cfl[iSiz])
                 
                 SU2_CFD(config_cfd)
                 
@@ -500,6 +505,7 @@ def amg ( config , kind='' ):
                     config_cfd.HISTORY_OUTPUT         = ['ITER', 'RMS_RES', 'SENSITIVITY']
                     config_cfd.COMPUTE_METRIC         = 'YES'
                     config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
+                    config_cfd.CFL_NUMBER             = float(adap_adj_cfl[iSiz])
                     SU2_CFD(config_cfd)
 
                     cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)

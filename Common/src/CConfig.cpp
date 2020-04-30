@@ -2825,7 +2825,10 @@ void CConfig::SetConfig_Options() {
   addPythonOption("PYADAP_ADJ_ITER");
   
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_CFL");
+  addPythonOption("PYADAP_FLOW_CFL");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ADJ_CFL");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_BACK");
