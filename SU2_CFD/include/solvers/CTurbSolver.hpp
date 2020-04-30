@@ -116,7 +116,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbSolver(void);
+  ~CTurbSolver(void) override;
 
   /*!
    * \brief Constructor of the class.

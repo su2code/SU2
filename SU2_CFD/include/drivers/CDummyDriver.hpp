@@ -49,11 +49,11 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDummyDriver(){}
+  ~CDummyDriver() override{}
 
   /*!
    * \brief Does nothing except printing the information that no solver is running.
    */
-  void StartSolver();
+  void StartSolver() override;
 
 };

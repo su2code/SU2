@@ -69,7 +69,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver(void);
+  ~CTurbSASolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

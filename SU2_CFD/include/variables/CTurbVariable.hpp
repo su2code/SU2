@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbVariable() = default;
+  ~CTurbVariable() override = default;
 
   /*!
    * \brief Get the value of the eddy viscosity.

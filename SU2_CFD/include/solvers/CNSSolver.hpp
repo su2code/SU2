@@ -97,7 +97,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void);
+  ~CNSSolver(void) override;
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

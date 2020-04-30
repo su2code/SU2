@@ -104,7 +104,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_DG_NSSolver(void);
+  ~CFEM_DG_NSSolver(void) override;
 
   /*!
    * \brief Function to compute the time step for solving the Navier-Stokes equations.

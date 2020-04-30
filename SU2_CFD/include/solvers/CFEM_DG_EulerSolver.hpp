@@ -295,7 +295,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_DG_EulerSolver(void);
+  ~CFEM_DG_EulerSolver(void) override;
 
   /*!
    * \brief Set the fluid solver nondimensionalization.

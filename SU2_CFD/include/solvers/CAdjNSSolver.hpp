@@ -54,7 +54,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjNSSolver(void);
+  ~CAdjNSSolver(void) override;
 
   /*!
    * \brief A virtual member.

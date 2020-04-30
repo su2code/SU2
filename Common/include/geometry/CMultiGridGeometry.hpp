@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiGridGeometry(void);
+  ~CMultiGridGeometry(void) override;
 
   /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.

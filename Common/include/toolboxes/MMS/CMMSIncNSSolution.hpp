@@ -80,7 +80,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMMSIncNSSolution(void);
+  ~CMMSIncNSSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

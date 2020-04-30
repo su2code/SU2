@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTransLMSolver(void);
+  ~CTransLMSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
