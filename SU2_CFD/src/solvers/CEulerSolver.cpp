@@ -2531,8 +2531,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
                               (config->GetKind_Upwind_Flow() == ROE ||
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2);
-  bool sst                  = (config->GetKind_Turb_Model() == SST) ||
-                              (config->GetKind_Turb_Model() == SST_SUST);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
