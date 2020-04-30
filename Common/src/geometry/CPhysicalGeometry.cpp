@@ -5438,9 +5438,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[InvResult[iPoint]]->SetPhysicalBoundary(true);
 
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+        if (config->GetSolid_Wall(iMarker))
           node[InvResult[iPoint]]->SetSolidBoundary(true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)

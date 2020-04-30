@@ -70,7 +70,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwHLLC_Flow(void);
+  ~CUpwHLLC_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -123,7 +123,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwGeneralHLLC_Flow(void);
+  ~CUpwGeneralHLLC_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.

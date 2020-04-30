@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CHeatVariable() = default;
+  ~CHeatVariable() override = default;
 
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.

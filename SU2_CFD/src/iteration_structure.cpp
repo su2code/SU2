@@ -1118,11 +1118,6 @@ void CHeatIteration::Solve(COutput *output,
 
   StartTime = SU2_MPI::Wtime();
 
-  /*--- Preprocess the solver ---*/
-
-  Preprocess(output, integration, geometry, solver, numerics, config,
-            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
   /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
   /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 

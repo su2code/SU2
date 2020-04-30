@@ -67,7 +67,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CHeatSolver(void);
+  ~CHeatSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

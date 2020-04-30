@@ -85,14 +85,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Scalar(void);
+  ~CAvgGrad_Scalar(void) override;
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -205,7 +205,7 @@ public:
   /*!
    * \brief Sets value of first blending function.
    */
-  void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j) override {
     F1_i = val_F1_i; F1_j = val_F1_j;
   }
 

@@ -93,7 +93,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
+  ~CUpwAUSMPLUS_SLAU_Base_Flow(void) override;
 
   /*!
    * \brief Compute the AUSM+ and SLAU family of schemes.
@@ -250,7 +250,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwAUSM_Flow(void);
+  ~CUpwAUSM_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.

@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwCUSP_Flow(void);
+  ~CUpwCUSP_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a JST method.

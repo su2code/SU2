@@ -69,7 +69,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CBaselineSolver(void);
+  ~CBaselineSolver(void) override;
 
   /*!
    * \brief Load a solution from a restart file.

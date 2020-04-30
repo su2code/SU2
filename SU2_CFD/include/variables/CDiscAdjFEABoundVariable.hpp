@@ -64,7 +64,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEABoundVariable() = default;
+  ~CDiscAdjFEABoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
