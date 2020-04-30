@@ -486,6 +486,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                                               unsigned long iPoint) {
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    
+    AD_BEGIN_PASSIVE
+    
     if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -540,6 +543,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         }
       }
     }
+    
+    AD_END_PASSIVE
+    
   }
 }
 
