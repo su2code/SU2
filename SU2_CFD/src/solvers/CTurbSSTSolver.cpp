@@ -496,6 +496,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
         const su2double r_j      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+        const su2double V_i      = geometry->node[iPoint]->GetVolume();
+        const su2double V_j      = geometry->node[jPoint]->GetVolume();
         Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
         Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
@@ -505,10 +507,10 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
           Jacobian_i[1][1] += (1. - F1_i)*constants[3]
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
-          Jacobian_j[1][0] -= (1. - F1_i)*constants[3]*r_i
-                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
-          Jacobian_j[1][1] -= (1. - F1_i)*constants[3]*r_i
-                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
+          Jacobian_j[1][0] -= (1. - F1_i)*constants[3]*r_i*V_i
+                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i*V_j);
+          Jacobian_j[1][1] -= (1. - F1_i)*constants[3]*r_i*V_i
+                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i*V_j);
         }
         if (iPoint < jPoint) {
           Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
