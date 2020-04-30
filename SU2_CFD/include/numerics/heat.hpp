@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentSca_Heat(void);
+  ~CCentSca_Heat(void) override;
 
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -73,7 +73,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+                       CConfig *config) override;
 };
 
 /*!
@@ -102,7 +102,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_Heat(void);
+  ~CUpwSca_Heat(void) override;
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -111,7 +111,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -143,7 +143,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Heat(void);
+  ~CAvgGrad_Heat(void) override;
 
   /*!
    * \brief Compute the viscous heat residual using an average of gradients with correction.
@@ -152,7 +152,7 @@ public:
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -183,7 +183,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_Heat(void);
+  ~CAvgGradCorrected_Heat(void) override;
 
   /*!
    * \brief Compute the viscous heat residual using an average of gradients with correction.
@@ -192,5 +192,5 @@ public:
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };

@@ -213,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Base();
+  ~CAvgGrad_Base() override;
 
   /*!
    * \brief Set the value of the wall shear stress at point i and j (wall functions).

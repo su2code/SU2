@@ -871,57 +871,57 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFluidDriver(void);
+  ~CFluidDriver(void) override;
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long InnerIter);
+  void Output(unsigned long InnerIter) override;
 
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  bool Monitor(unsigned long ExtIter) override;
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  void Preprocess(unsigned long Iter);
+  void Preprocess(unsigned long Iter) override;
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
-  void DynamicMeshUpdate(unsigned long TimeIter);
+  void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
    * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
    */
-  void StaticMeshUpdate();
+  void StaticMeshUpdate() override;
 
   /*!
    * \brief Perform a mesh deformation as initial condition (multiple zone).
    */
-  void SetInitialMesh();
+  void SetInitialMesh() override;
 
   /*!
    * \brief Process the boundary conditions and update the multigrid structure.
    */
-  void BoundaryConditionsUpdate();
+  void BoundaryConditionsUpdate() override;
 
   /*!
    * \brief Transfer data among different zones (multiple zone).
@@ -991,13 +991,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbomachineryDriver(void);
+  ~CTurbomachineryDriver(void) override;
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
 
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.
@@ -1012,7 +1012,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long TimeIter);
+  bool Monitor(unsigned long TimeIter) override;
 
 
 
@@ -1046,12 +1046,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CHBDriver(void);
+  ~CHBDriver(void) override;
 
   /*!
    * \brief Run a single iteration of a Harmonic Balance problem.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Computation and storage of the Harmonic Balance method source terms.
@@ -1075,10 +1075,10 @@ public:
   /*!
    * \brief Update the solution for the Harmonic Balance.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
    */
-  void ResetConvergence();
+  void ResetConvergence() override;
 };

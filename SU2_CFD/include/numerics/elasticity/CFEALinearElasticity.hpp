@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEALinearElasticity(void) = default;
+  ~CFEALinearElasticity(void) override = default;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
@@ -114,7 +114,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEAMeshElasticity(void) = default;
+  ~CFEAMeshElasticity(void) override = default;
 
   /*!
    * \brief Set the element-based local Young's modulus in mesh problems

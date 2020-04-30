@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTVariable() = default;
+  ~CTurbSSTVariable() override = default;
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

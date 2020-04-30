@@ -66,7 +66,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEABoundVariable() = default;
+  ~CFEABoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").

@@ -55,22 +55,22 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSinglezoneDriver(void);
+  ~CSinglezoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for single-zone problems.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
    * \brief Preprocess the single-zone iteration
    */
-  virtual void Preprocess(unsigned long TimeIter);
+  void Preprocess(unsigned long TimeIter) override;
 
   /*!
    * \brief Run the iteration for ZONE_0.
    */
-  virtual void Run();
+  void Run() override;
 
   /*!
    * \brief Postprocess the iteration for ZONE_0.
@@ -80,23 +80,23 @@ public:
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long TimeIter);
+  void Output(unsigned long TimeIter) override;
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
    */
-  void DynamicMeshUpdate(unsigned long TimeIter);
+  void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
    * \brief Monitor
    * \param ExtIter
    */
-  virtual bool Monitor(unsigned long TimeIter);
+  bool Monitor(unsigned long TimeIter) override;
 
   /*!
      * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged

@@ -79,7 +79,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMMSIncEulerSolution(void);
+  ~CMMSIncEulerSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

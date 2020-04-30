@@ -240,7 +240,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSmagorinskyModel(void);
+  ~CSmagorinskyModel(void) override;
 
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -260,7 +260,7 @@ public:
                                     const su2double dvdx,
                                     const su2double dvdy,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
 /*!
    * \brief Function to determine the eddy viscosity for
@@ -290,7 +290,7 @@ public:
                                     const su2double dwdy,
                                     const su2double dwdz,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
@@ -329,7 +329,7 @@ public:
                                    const su2double lenScale,
                                    const su2double distToWall,
                                          su2double &dMuTdx,
-                                         su2double &dMuTdy);
+                                         su2double &dMuTdy) override;
 
   /*!
    * \brief function to determine the gradients of the eddy viscosity
@@ -406,7 +406,7 @@ public:
                                    const su2double distToWall,
                                          su2double &dMuTdx,
                                          su2double &dMuTdy,
-                                         su2double &dMuTdz);
+                                         su2double &dMuTdz) override;
 };
 
 /*!
@@ -428,7 +428,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWALEModel(void);
+  ~CWALEModel(void) override;
 
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -448,7 +448,7 @@ public:
                                     const su2double dvdx,
                                     const su2double dvdy,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
 /*!
    * \brief Function to determine the eddy viscosity for
@@ -478,7 +478,7 @@ public:
                                     const su2double dwdy,
                                     const su2double dwdz,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
@@ -517,7 +517,7 @@ public:
                                    const su2double lenScale,
                                    const su2double distToWall,
                                          su2double &dMuTdx,
-                                         su2double &dMuTdy);
+                                         su2double &dMuTdy) override;
 
   /*!
    * \brief function to determine the gradients of the eddy viscosity
@@ -594,7 +594,7 @@ public:
                                    const su2double distToWall,
                                          su2double &dMuTdx,
                                          su2double &dMuTdy,
-                                         su2double &dMuTdz);
+                                         su2double &dMuTdz) override;
 };
 
 /*!
@@ -616,7 +616,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CVremanModel(void);
+  ~CVremanModel(void) override;
   
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -636,7 +636,7 @@ public:
                                     const su2double dvdx,
                                     const su2double dvdy,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
   
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -666,7 +666,7 @@ public:
                                     const su2double dwdy,
                                     const su2double dwdz,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
   
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
@@ -705,7 +705,7 @@ public:
                                    const su2double lenScale,
                                    const su2double distToWall,
                                    su2double &dMuTdx,
-                                   su2double &dMuTdy);
+                                   su2double &dMuTdy) override;
   
   /*!
    * \brief function to determine the gradients of the eddy viscosity
@@ -782,6 +782,6 @@ public:
                                    const su2double distToWall,
                                    su2double &dMuTdx,
                                    su2double &dMuTdy,
-                                   su2double &dMuTdz);
+                                   su2double &dMuTdz) override;
 };
 #include "sgs_model.inl"

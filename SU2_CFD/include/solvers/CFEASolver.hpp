@@ -213,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEASolver(void);
+  ~CFEASolver(void) override;
 
   /*!
    * \brief Set residuals to zero.

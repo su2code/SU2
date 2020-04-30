@@ -69,7 +69,7 @@ public:
   /*!
    * \brief Default destructor of the class.
    */
-  virtual ~CAdjTurbSolver(void);
+  ~CAdjTurbSolver(void) override;
 
   /*!
    * \brief Impose the Navier-Stokes turbulent adjoint boundary condition.
