@@ -191,8 +191,6 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
   su2double af, bf, ab, bb, coeff;
   su2double dThf, dThb;
 
-  //std::cout << "Cat: chemistry here. hi chemistry" << std::endl << std::endl;
-
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;
@@ -287,7 +285,6 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
         bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
       }
     }
-
     fwdRxn = 1000.0 * kf * fwdRxn;
     bkwRxn = 1000.0 * kb * bkwRxn;
 
@@ -309,8 +306,6 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
             * eve_i[iSpecies] * Volume;
       }
     }
-
-   //std::cout << "val_residual[" << nSpecies+nDim+1 << "]" << val_residual[nSpecies+nDim+1] << std::endl << std::endl;
 
     /*---Set source term ---*/
     for (iVar = 0; iVar < nVar; iVar++)
