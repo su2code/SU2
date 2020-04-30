@@ -181,6 +181,15 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
 
+  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
+  /// DESCRIPTION: Merit
+  AddHistoryOutput("MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CT
+  AddHistoryOutput("CT",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CQ
+  AddHistoryOutput("CQ",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+
   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
   AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
@@ -331,6 +340,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
+
+  /*--- Set rotating frame coefficients --- */
+
+  SetRotatingFrameCoefficients(config, flow_solver);
 
 }
 
