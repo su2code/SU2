@@ -69,7 +69,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSUnitQuadSolution(void);
+  ~CNSUnitQuadSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

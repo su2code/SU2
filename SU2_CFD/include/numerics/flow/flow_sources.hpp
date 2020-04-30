@@ -53,7 +53,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceBase_Flow();
+  ~CSourceBase_Flow() override;
 
 };
 

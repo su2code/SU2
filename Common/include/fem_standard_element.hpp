@@ -850,7 +850,7 @@ public:
   /*!
   * \brief Destructor. Only the allocated pointers must be deleted explicitly.
   */
-  ~CFEMStandardElement();
+  ~CFEMStandardElement() override;
 
   /*!
   * \brief Alternative constructor.
@@ -1311,7 +1311,7 @@ public:
   /*!
   * \brief Destructor.
   */
-  ~CFEMStandardInternalFace();
+  ~CFEMStandardInternalFace() override;
 
   /*!
   * \brief Alternative constructor.
@@ -1621,7 +1621,7 @@ public:
   /*!
   * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
   */
-  ~CFEMStandardBoundaryFace();
+  ~CFEMStandardBoundaryFace() override;
 
   /*!
   * \brief Alternative constructor.

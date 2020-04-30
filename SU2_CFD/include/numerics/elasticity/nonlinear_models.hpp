@@ -51,7 +51,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_NeoHookean_Comp(void) = default;
+  ~CFEM_NeoHookean_Comp(void) override = default;
 
 private:
   /*!
@@ -102,7 +102,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_Knowles_NearInc(void) = default;
+  ~CFEM_Knowles_NearInc(void) override = default;
 
 private:
   /*!
@@ -150,7 +150,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_DielectricElastomer(void) = default;
+  ~CFEM_DielectricElastomer(void) override = default;
 
 private:
   /*!
@@ -200,7 +200,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_IdealDE(void) = default;
+  ~CFEM_IdealDE(void) override = default;
 
 private:
   /*!

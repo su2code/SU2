@@ -47,6 +47,6 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBaselineVariable() = default;
+  ~CBaselineVariable() override = default;
 
 };

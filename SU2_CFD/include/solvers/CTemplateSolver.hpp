@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTemplateSolver(void);
+  ~CTemplateSolver(void) override;
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure.

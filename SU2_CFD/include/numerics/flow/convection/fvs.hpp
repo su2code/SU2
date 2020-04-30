@@ -64,7 +64,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwMSW_Flow(void);
+  ~CUpwMSW_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.

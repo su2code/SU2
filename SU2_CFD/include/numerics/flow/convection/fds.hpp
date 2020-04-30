@@ -71,7 +71,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwFDSInc_Flow(void);
+  ~CUpwFDSInc_Flow(void) override;
 
   /*!
    * \brief Compute the upwind flux between two nodes i and j.

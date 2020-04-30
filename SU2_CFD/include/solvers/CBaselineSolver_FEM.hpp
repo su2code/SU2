@@ -65,7 +65,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CBaselineSolver_FEM(void);
+  ~CBaselineSolver_FEM(void) override;
 
   /*!
    * \brief Set the number of variables and string names from the restart file.
