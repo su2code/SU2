@@ -131,6 +131,11 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double *GetPrimitive(unsigned long iPoint) { return nullptr; }
+  
+  inline virtual void SetTurbDensity(unsigned long iPoint, su2double val_dens) { }
+  
+  inline virtual su2double GetTurbDensity(unsigned long iPoint) { return 0.0; }
+  
 
 };
 
