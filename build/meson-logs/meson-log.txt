@@ -1,6 +1,6 @@
-Build started at 2020-04-24T15:22:58.745350
+Build started at 2020-04-28T20:40:43.090276
 Main binary: /usr/bin/python3
-Build Options: -Dwith-mpi=enabled -Dbackend=ninja -Dbuildtype=debug -Dprefix=/home/catarina/Codes/SU2/SU2-TNE2/SU2-develop -Denable-tecio=false
+Build Options: -Dprefix=/home/catarina/Codes/SU2/SU2-TNE2/SU2-develop -Dbuildtype=debug -Dbackend=ninja -Dwith-mpi=enabled -Denable-tecio=false
 Python system: Linux
 The Meson build system
 Version: 0.52.999
@@ -61,8 +61,8 @@ Build targets in project: 10
 Option buildtype is: debug [default: release]
 Found ninja-1.9.0.git at /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/ninja
 Running compile:
-Working directory:  /tmp/tmp_i1p3ccl
-Command line:  c++ /tmp/tmp_i1p3ccl/testfile.cpp -o /tmp/tmp_i1p3ccl/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
+Working directory:  /tmp/tmp1zzof8t7
+Command line:  c++ /tmp/tmp1zzof8t7/testfile.cpp -o /tmp/tmp1zzof8t7/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
 
 Code:
  int i = static_cast<int>(0);
@@ -72,8 +72,8 @@ Compiler stderr:
  
 Compiler accepts -std=c++11: YES
 Running compile:
-Working directory:  /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpcs299n8o
-Command line:  c++ /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpcs299n8o/testfile.cpp -o /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpcs299n8o/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+Working directory:  /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpnuh86oia
+Command line:  c++ /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpnuh86oia/testfile.cpp -o /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop/build/meson-private/tmpnuh86oia/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
 
 Code:
  

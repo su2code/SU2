@@ -527,6 +527,12 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
                                  eve_i[iSpecies]) / taus[iSpecies] * Volume;
   }
 
+ // std::ofstream outfile;
+//
+ // outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
+//
+ // outfile << "val_residual[nEv]=" << val_residual[nEv] << endl; 
+
 
   /*---Set source term ---*/
   for (iVar = 0; iVar < nVar; iVar++)
