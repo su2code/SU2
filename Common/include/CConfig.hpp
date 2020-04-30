@@ -5225,7 +5225,7 @@ public:
    * \brief Provides the number of chemical reactions in the chemistry model
    * \return: The number of chemical reactions, read from input file
    */
-  su2double GetArrheniusCoeff(unsigned short iReaction) const { return ArrheniusCoefficient[iReaction]; }
+  su2double GetArrheniusCoeff(unsigned short iReaction) const { ArrheniusCoefficient[iReaction]; }
 
   /*!
    * \brief Provides the number of chemical reactions in the chemistry model

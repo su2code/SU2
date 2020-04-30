@@ -1988,7 +1988,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute the non-equilibrium chemistry ---*/
     numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
-
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -2010,6 +2009,12 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
 
+   //std::ofstream outfile;
+   //outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
+   //for(iVar = 0; iVar < nVar; iVar++){
+   // outfile << "Residual[" << iVar << "]=" << Residual[iVar] << endl; 
+   //}
+    
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
