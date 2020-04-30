@@ -651,8 +651,7 @@ bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
 }
 
 bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){
-  return false;
 
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
 
 }
