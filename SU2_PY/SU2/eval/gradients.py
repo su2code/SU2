@@ -304,6 +304,7 @@ def adjoint( func_name, config, state=None ):
             restart_sol_activated = False
             if konfig.get('TIME_DOMAIN', 'NO') == 'YES' and konfig.get('RESTART_SOL', 'NO') == 'YES':
                 restart_sol_activated = True
+                original_time_iter = konfig['TIME_ITER']
                 konfig['TIME_ITER'] = konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
                 konfig.RESTART_SOL = 'NO'
 
@@ -311,10 +312,8 @@ def adjoint( func_name, config, state=None ):
             # Workaround, since expandTime relies on UNST_ADJOINT_ITER to determine number of solution files.
             if restart_sol_activated:
                 unst_adj_iter = konfig['UNST_ADJOINT_ITER']
-                konfig['UNST_ADJOINT_ITER'] =  konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
+                konfig['UNST_ADJOINT_ITER'] = original_time_iter - int(konfig['RESTART_ITER'])
             su2io.restart2solution(konfig,info)
-            if restart_sol_activated:
-                konfig['UNST_ADJOINT_ITER'] = unst_adj_iter
 
             state.update(info)
 
