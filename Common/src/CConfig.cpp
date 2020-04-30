@@ -5310,7 +5310,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = FLOWLOAD_BOUNDARY;
     iMarker_CfgFile++;
   }
-
+  
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Monitoring[iMarker_CfgFile] = NO;
     for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
@@ -5438,7 +5438,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PyCustom[iMarker_PyCustom])
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
-
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -8784,7 +8783,11 @@ su2double CConfig::GetWall_RoughnessHeight(string val_marker) const {
         }
     }
   }
-  return Roughness_Height[flag];
+
+  if (flag == -1) 
+    return 0.0; //For cht_wall_interface
+  else
+    return Roughness_Height[flag];
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
