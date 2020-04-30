@@ -521,7 +521,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
       }
       
       /*--- Boundary contribution to cross diffusion gradient Jacobian at i*/
-      if (geometry->node[iPoint]->GetSolidBoundary()) {
+      if (geometry->node[iPoint]->GetPhysicalBoundary()) {
         Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
         for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
