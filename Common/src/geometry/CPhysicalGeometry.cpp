@@ -722,7 +722,6 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Error check to ensure that the number of points found for this
    rank matches the number in the mesh file (in serial). ---*/
-
   if ((size == SINGLE_NODE) && (Point_Map.size() < geometry->GetnPoint())) {
     SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
                    +string(" listed in mesh file.\n")
@@ -7671,7 +7670,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
           Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
       }
 
-      /*--- Copy coordinates and point to the auxiliar vector --*/
+      /*--- Copy coordinates and point to the auxiliary vector --*/
 
       nLocalVertex_ActDisk = 0;
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -7764,7 +7763,6 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                 vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iPointGlobal, pVertex, pMarker, pProcessor);
                 maxdist_local = min(maxdist_local, 0.0);
               }
-
             }
           }
 

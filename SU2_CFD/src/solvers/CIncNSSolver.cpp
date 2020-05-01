@@ -278,6 +278,26 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       }
     }
   }
+  
+  /*--- Store the value of the donor primitive variables at the act disk boundaries ---*/
+
+  DonorPrimVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+      for (iVar = 0; iVar < nPrimVar+2; iVar++) {
+        DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
+
+  DonorGlobalIndex = new unsigned long* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]]();
+  }
 
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
@@ -345,6 +365,26 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
 
+  /*--- Store the value of the Total Temperature at the inlet BC ---*/
+
+  ActDisk_DeltaP = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ActDisk_DeltaP[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      ActDisk_DeltaP[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Total Temperature at the inlet BC ---*/
+
+  ActDisk_DeltaT = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ActDisk_DeltaT[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      ActDisk_DeltaT[iMarker][iVertex] = 0;
+    }
+  }
+  
   /*--- Store the value of the Total Pressure at the inlet BC ---*/
 
   Inlet_Ttotal = new su2double* [nMarker];
@@ -717,6 +757,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool outlet               = ((config->GetnMarker_Outlet() != 0));
+  bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
 
   /*--- Set the primitive variables ---*/
 
@@ -756,6 +797,12 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
+  }
+
+  if (actuator_disk) {
+      Set_MPI_ActDisk(solver_container, geometry, config);
+      //GetPower_Properties(geometry, config, iMesh, Output);
+      SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
 
   /*--- Update the beta value based on the maximum velocity / viscosity. ---*/

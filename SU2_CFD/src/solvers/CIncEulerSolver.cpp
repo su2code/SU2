@@ -338,6 +338,26 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       }
     }
   }
+  
+  /*--- Store the value of the donor primitive variables at the act disk boundaries ---*/
+
+  DonorPrimVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+      for (iVar = 0; iVar < nPrimVar+2; iVar++) {
+        DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
+
+  DonorGlobalIndex = new unsigned long* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]]();
+  }
 
   /*--- Force definition and coefficient arrays for all of the markers ---*/
 
@@ -733,6 +753,15 @@ CIncEulerSolver::~CIncEulerSolver(void) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
+  }
+  
+  if (DonorPrimVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex<nVertex[iMarker]; iVertex++)
+        delete [] DonorPrimVar[iMarker][iVertex];
+      delete [] DonorPrimVar[iMarker];
+    }
+    delete [] DonorPrimVar;
   }
 
   if (SlidingState != NULL) {
@@ -1549,6 +1578,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool outlet           = ((config->GetnMarker_Outlet() != 0));
+  bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
 
   /*--- Set the primitive variables ---*/
 
@@ -1583,6 +1613,12 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
       SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
+  }
+  
+  if (actuator_disk) {
+      Set_MPI_ActDisk(solver_container, geometry, config);
+      //GetPower_Properties(geometry, config, iMesh, Output);
+      SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
 
   /*--- Update the beta value based on the maximum velocity. ---*/
@@ -6084,13 +6120,400 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
 
 
 void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
+
+  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
+  Buffer_Send_nPointTotal = 0;
+  long iGlobalIndex, iGlobal;
+  unsigned short iVar, iMarker, jMarker;
+  long nDomain = 0, iDomain, jDomain;
+  //bool ActDisk_Perimeter;
+  bool rans = (config->GetKind_Turb_Model() != NONE) && (solver_container[TURB_SOL] != nullptr);
+
+  unsigned short nPrimVar_ = nPrimVar;
+  if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
+
+#ifdef HAVE_MPI
+
+  /*--- MPI status and request arrays for non-blocking communications ---*/
+
+  SU2_MPI::Status status;
+
+#endif
+
+  /*--- Define buffer vector interior domain ---*/
+
+  su2double *Buffer_Send_PrimVar = NULL;
+  long      *Buffer_Send_Data    = NULL;
+
+  unsigned long *nPointTotal_s = new unsigned long[size];
+  unsigned long *nPointTotal_r = new unsigned long[size];
+  su2double *iPrimVar = new su2double [nPrimVar_];
+
+  unsigned long Buffer_Size_PrimVar = 0;
+  unsigned long Buffer_Size_Data    = 0;
+
+  unsigned long PointTotal_Counter = 0;
+
+  /*--- Allocate the memory that we only need if we have MPI support ---*/
+
+  su2double *Buffer_Receive_PrimVar = NULL;
+  long      *Buffer_Receive_Data    = NULL;
+
+  /*--- Basic dimensionalization ---*/
+
+  nDomain = size;
+
+  /*--- This loop gets the array sizes of points for each
+   rank to send to each other rank. ---*/
+
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
+    /*--- Loop over the markers to perform the dimensionalizaton
+     of the domain variables ---*/
+
+    Buffer_Send_nPointTotal = 0;
+
+    /*--- Loop over all of the markers and count the number of each
+     type of point and element that needs to be sent. ---*/
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            Buffer_Send_nPointTotal++;
+          }
+        }
+      }
+    }
+
+    /*--- Store the counts on a partition by partition basis. ---*/
+
+    nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
+
+    /*--- Total counts for allocating send buffers below ---*/
+
+    Buffer_Size_PrimVar += nPointTotal_s[iDomain]*(nPrimVar_);
+    Buffer_Size_Data += nPointTotal_s[iDomain]*(3);
+
+  }
+
+  /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
+
+  Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
+  Buffer_Send_Data    = new long[Buffer_Size_Data];
+
+  /*--- Now that we know the sizes of the point, we can
+   allocate and send the information in large chunks to all processors. ---*/
+
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
+    /*--- A rank does not communicate with itself through MPI ---*/
+
+    if (rank != iDomain) {
+
+#ifdef HAVE_MPI
+
+      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
+
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+
+#endif
+
+    } else {
+
+      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
+
+      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
+
+    }
+
+    /*--- Receive the counts. All processors are sending their counters to
+     iDomain up above, so only iDomain needs to perform the recv here from
+     all other ranks. ---*/
+
+    if (rank == iDomain) {
+
+      for (jDomain = 0; jDomain < size; jDomain++) {
+
+        /*--- A rank does not communicate with itself through MPI ---*/
+
+        if (rank != jDomain) {
+
+#ifdef HAVE_MPI
+
+          /*--- Recv the data by probing for the current sender, jDomain,
+           first and then receiving the values from it. ---*/
+
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+
+#endif
+
+        }
+      }
+
+    }
+  }
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+
+#ifdef HAVE_MPI
+
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /*--- Initialize the counters for the larger send buffers (by domain) ---*/
+
+  PointTotal_Counter  = 0;
+
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
+    /*--- Set the value of the interior geometry. Initialize counters. ---*/
+
+    iPointTotal = 0;
+
+    /*--- Load up the actual values into the buffers for sending. ---*/
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
+
+//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+iVar] = nodes->GetPrimitive(iPoint,iVar);
+            }
+            if (rans) {
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
+            }
+
+            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
+            jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
+
+            Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(0)]  = iGlobalIndex;
+            Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(1)] = jVertex;
+            Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(2)]  = jMarker;
+
+            iPointTotal++;
+
+          }
+
+        }
+
+      }
+
+    }
+
+    /*--- Send the buffers with the geometrical information ---*/
+
+    if (iDomain != rank) {
+
+#ifdef HAVE_MPI
+
+      /*--- Communicate the coordinates, global index, colors, and element
+       date to iDomain with non-blocking sends. ---*/
+
+      SU2_MPI::Bsend(&Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar_)],
+                     nPointTotal_s[iDomain]*(nPrimVar_), MPI_DOUBLE, iDomain,
+                     iDomain,  MPI_COMM_WORLD);
+
+      SU2_MPI::Bsend(&Buffer_Send_Data[PointTotal_Counter*(3)],
+                     nPointTotal_s[iDomain]*(3), MPI_LONG, iDomain,
+                     iDomain+nDomain,  MPI_COMM_WORLD);
+
+#endif
+
+    }
+
+    else {
+
+      /*--- Allocate local memory for the local recv of the elements ---*/
+
+      Buffer_Receive_PrimVar            = new su2double[nPointTotal_s[iDomain]*(nPrimVar_)];
+      Buffer_Receive_Data               = new long[nPointTotal_s[iDomain]*(3)];
+
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(nPrimVar_); iter++)
+        Buffer_Receive_PrimVar[iter] = Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar_)+iter];
+
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(3); iter++)
+        Buffer_Receive_Data[iter] = Buffer_Send_Data[PointTotal_Counter*(3)+iter];
+
+
+      /*--- Recv the point data from ourselves (same procedure as above) ---*/
+
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+
+        for (iVar = 0; iVar < nPrimVar_; iVar++)
+          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar_)+iVar];
+
+        iGlobal       =  Buffer_Receive_Data[iPoint*(3)+(0)];
+        iVertex      =  Buffer_Receive_Data[iPoint*(3)+(1)];
+        iMarker      = Buffer_Receive_Data[iPoint*(3)+(2)];
+
+        for (iVar = 0; iVar < nPrimVar_; iVar++)
+          SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
+
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+
+      }
+
+      /*--- Delete memory for recv the point stuff ---*/
+
+      delete [] Buffer_Receive_PrimVar;
+      delete [] Buffer_Receive_Data;
+
+    }
+
+    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
+
+    PointTotal_Counter += iPointTotal;
+
+  }
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+
+#ifdef HAVE_MPI
+
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
+   the points on this rank. First, we recv all of the point data ---*/
+
+  for (iDomain = 0; iDomain < size; iDomain++) {
+
+    if (rank != iDomain) {
+
+#ifdef HAVE_MPI
+
+      /*--- Allocate the receive buffer vector. Send the colors so that we
+       know whether what we recv is an owned or halo node. ---*/
+
+      Buffer_Receive_PrimVar            = new su2double [nPointTotal_r[iDomain]*(nPrimVar_)];
+      Buffer_Receive_Data               = new long [nPointTotal_r[iDomain]*(3)];
+
+      /*--- Receive the buffers with the coords, global index, and colors ---*/
+
+      SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar_) , MPI_DOUBLE,
+                    iDomain, rank, MPI_COMM_WORLD, &status);
+
+      SU2_MPI::Recv(Buffer_Receive_Data, nPointTotal_r[iDomain]*(3) , MPI_LONG,
+                    iDomain, rank+nDomain, MPI_COMM_WORLD, &status);
+
+      /*--- Loop over all of the points that we have recv'd and store the
+       coords, global index vertex and markers ---*/
+
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+
+        iGlobal      = Buffer_Receive_Data[iPoint*(3)+(0)];
+        iVertex      = Buffer_Receive_Data[iPoint*(3)+(1)];
+        iMarker      = Buffer_Receive_Data[iPoint*(3)+(2)];
+
+        for (iVar = 0; iVar < nPrimVar_; iVar++)
+          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar_)+iVar];
+
+        for (iVar = 0; iVar < nPrimVar_; iVar++) {
+          SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
+        }
+
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+
+      }
+
+      /*--- Delete memory for recv the point stuff ---*/
+
+      delete [] Buffer_Receive_PrimVar;
+      delete [] Buffer_Receive_Data;
+
+#endif
+
+    }
+
+  }
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+
+#ifdef HAVE_MPI
+
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /*--- Free all of the memory used for communicating points and elements ---*/
+
+  delete[] Buffer_Send_PrimVar;
+  delete[] Buffer_Send_Data;
+
+  /*--- Release all of the temporary memory ---*/
+
+  delete [] nPointTotal_s;
+  delete [] nPointTotal_r;
+  delete [] iPrimVar;
+
 	
 }
 
 
 void CIncEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh, bool Output) {
-                           
+
+  unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
+  bool ratio                            = (config->GetActDisk_Jump() == RATIO);
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  string Marker_Tag;
+  su2double DeltaP, DeltaT;
+  
+  /* For now only variable jump is present, need to find the 
+   * inputs and then compute deltaP and deltaT accordingly. ---*/
+  
+  /*--- Delta P and delta T are inputs ---*/
+
+  if (Kind_ActDisk == VARIABLES_JUMP) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+        if (ratio) {
+            DeltaP       = config->GetActDisk_PressJump(Marker_Tag, 0);
+            DeltaT       = config->GetActDisk_TempJump(Marker_Tag, 0);
+          
+        }  
+        else {
+            DeltaP       = max(0.0, config->GetActDisk_PressJump(Marker_Tag, 0) / config->GetPressure_Ref());
+            DeltaT       = max(0.0, config->GetActDisk_TempJump(Marker_Tag, 0) / config->GetTemperature_Ref());
+        }
+
+        /*--- Set the Delta P, Delta T values at each discrete point (uniform distribution)  ---*/
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          SetActDisk_DeltaP(iMarker, iVertex, DeltaP);
+          SetActDisk_DeltaT(iMarker, iVertex, DeltaT);
+        }
+
+      }
+    }
+  }
 }
 
 
@@ -6100,7 +6523,8 @@ void CIncEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry,
                         CNumerics *visc_numerics,
                         CConfig *config,
                         unsigned short val_marker) {
-							
+
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true);							
 }
 
 
@@ -6110,8 +6534,8 @@ void CIncEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry,
                         CNumerics *visc_numerics,
                         CConfig *config,
                         unsigned short val_marker) {
-                        
-                        
+
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);                      
 }
 
 void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
@@ -6155,6 +6579,9 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
+    /*cout<<GlobalIndex<<"\t and donor\t"<<GlobalIndex_donor<<"\tfor\t"<<config->GetMarker_All_TagBound(val_marker)<<endl;
+    cout<<GlobalIndex<<"\t"<<geometry->node[GlobalIndex]->GetCoord(0)<<"\t"<<geometry->node[GlobalIndex]->GetCoord(1)<<"\t"<<geometry->node[GlobalIndex]->GetCoord(1)<<endl;
+    cout<<GlobalIndex_donor<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(0)<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(1)<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(1)<<endl;*/
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
@@ -6388,10 +6815,4 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
 
   delete [] Normal;
   delete [] Flow_Dir;
-
-
-
-
-
-
 }

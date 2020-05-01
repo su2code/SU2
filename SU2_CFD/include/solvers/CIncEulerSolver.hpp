@@ -115,7 +115,10 @@ protected:
   **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
   **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
   **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir;  /*!< \brief Value of the Flow Direction. */
+  ***Inlet_FlowDir,  /*!< \brief Value of the Flow Direction. */
+  ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
+  unsigned long
+  **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
 
   su2double
   AllBound_CD_Inv,      /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
@@ -776,6 +779,64 @@ public:
                                 unsigned long val_vertex,
                                 su2double val_deltat) final {
     ActDisk_DeltaT[val_marker][val_vertex] = val_deltat;
+  }
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const final{
+    return DonorPrimVar[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetDonorPrimVar(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              unsigned short val_var,
+                              su2double val_value) final {
+    DonorPrimVar[val_marker][val_vertex][val_var] = val_value;
+  }
+
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double GetDonorPrimVar(unsigned short val_marker,
+                                   unsigned long val_vertex,
+                                   unsigned short val_var) const final {
+    return DonorPrimVar[val_marker][val_vertex][val_var];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline unsigned long GetDonorGlobalIndex(unsigned short val_marker,
+                                           unsigned long val_vertex) const final {
+    return DonorGlobalIndex[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetDonorGlobalIndex(unsigned short val_marker,
+                                  unsigned long val_vertex,
+                                  unsigned long val_index) final {
+    DonorGlobalIndex[val_marker][val_vertex] = val_index;
   }
 //---------------------------------------- Actdisk --------------------------------------------------------//
 
