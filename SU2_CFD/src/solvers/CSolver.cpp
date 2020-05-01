@@ -3929,16 +3929,21 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
   int *blocklen = new int[geometry->GetnPointDomain()];
-  int *displace = new int[geometry->GetnPointDomain()];
+  MPI_Aint *displace = new MPI_Aint[geometry->GetnPointDomain()];
   int counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
       blocklen[counter] = nFields;
-      displace[counter] = iPoint_Global*nFields;
+      //if (iPoint_Global*nFields > INT_MAX){
+      //  SU2_MPI::Error(string("File ") + string(fname) + string(" is causing an over-run of int.\n") +
+      //            string("The displacement required for parallel reading is too large.\n") +
+      //             string("CSolver::Read_SU2_Restart_Binary needs to read the restart file differently\n"), CURRENT_FUNCTION);
+      //}
+      displace[counter] = iPoint_Global*nFields*sizeof(double);
       counter++;
     }
   }
-  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
