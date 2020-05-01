@@ -83,6 +83,7 @@
 		4040B283235FBFF200843C83 /* CSurfaceFEMDataSorter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4040B275235FBFF200843C83 /* CSurfaceFEMDataSorter.cpp */; };
 		4040B284235FBFF200843C83 /* CTecplotFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4040B276235FBFF200843C83 /* CTecplotFileWriter.cpp */; };
 		4040B285235FBFF200843C83 /* CSU2MeshFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4040B277235FBFF200843C83 /* CSU2MeshFileWriter.cpp */; };
+		4091EDD523ECE63200A38882 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4091EDD423ECE63200A38882 /* Accelerate.framework */; };
 		B1537DFB23E4951B00EACD9C /* CDiscAdjSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B1537DE623E4951A00EACD9C /* CDiscAdjSolver.cpp */; };
 		B1537DFC23E4951B00EACD9C /* CFEASolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B1537DE723E4951A00EACD9C /* CFEASolver.cpp */; };
 		B1537DFD23E4951B00EACD9C /* CNSSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B1537DE823E4951A00EACD9C /* CNSSolver.cpp */; };
@@ -364,6 +365,7 @@
 		4040B292235FC03700843C83 /* CFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CFileWriter.hpp; sourceTree = "<group>"; };
 		4040B293235FC03700843C83 /* CCSVFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CCSVFileWriter.hpp; sourceTree = "<group>"; };
 		4040B294235FC03700843C83 /* CSurfaceFVMDataSorter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSurfaceFVMDataSorter.hpp; sourceTree = "<group>"; };
+		4091EDD423ECE63200A38882 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		B1537DE623E4951A00EACD9C /* CDiscAdjSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CDiscAdjSolver.cpp; path = ../../SU2_CFD/src/solvers/CDiscAdjSolver.cpp; sourceTree = "<group>"; };
 		B1537DE723E4951A00EACD9C /* CFEASolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CFEASolver.cpp; path = ../../SU2_CFD/src/solvers/CFEASolver.cpp; sourceTree = "<group>"; };
 		B1537DE823E4951A00EACD9C /* CNSSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CNSSolver.cpp; path = ../../SU2_CFD/src/solvers/CNSSolver.cpp; sourceTree = "<group>"; };
@@ -657,6 +659,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4091EDD523ECE63200A38882 /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -888,6 +891,7 @@
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				4091EDD323ECE63200A38882 /* Frameworks */,
 			);
 			name = SU2_CFD;
 			sourceTree = "<group>";
@@ -1055,6 +1059,14 @@
 			);
 			name = filewriter;
 			path = ../../SU2_CFD/include/output/filewriter;
+			sourceTree = "<group>";
+		};
+		4091EDD323ECE63200A38882 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4091EDD423ECE63200A38882 /* Accelerate.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		B1537DE423E4944600EACD9C /* Drivers */ = {
@@ -1779,7 +1791,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = "";
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -1799,13 +1811,20 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/Cellar/openblas/0.3.7/lib,
+					../../externals/CLI11,
+				);
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/include;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-Wno-inconsistent-missing-override",
+					"-DHAVE_LAPACK",
 				);
 				PRODUCT_NAME = SU2_CFD;
+				SDKROOT = macosx;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wextra",
@@ -1855,13 +1874,21 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/lib;
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					/usr/local/Cellar/openblas/0.3.7/lib,
+					../../externals/CLI11,
+				);
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/include;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-Wno-inconsistent-missing-override",
+					"-DHAVE_LAPACK",
 				);
 				PRODUCT_NAME = SU2_CFD;
+				SDKROOT = macosx;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wextra",
@@ -1903,7 +1930,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/lib;
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					/usr/local/Cellar/openblas/0.3.7/lib,
+					../../externals/CLI11,
+				);
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/include;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -1938,7 +1970,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/lib;
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					/usr/local/Cellar/openblas/0.3.7/lib,
+					../../externals/CLI11,
+				);
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/openblas/0.3.7/include;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
