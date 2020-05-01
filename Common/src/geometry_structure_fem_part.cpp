@@ -624,6 +624,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           if (nDim==3) point_line >> Coord[2];
           nodes->SetCoord(ii, Coord);
           nodes->SetGlobalIndex(ii, i);
+          ++ii;
         }
       }
 
