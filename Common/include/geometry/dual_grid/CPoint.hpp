@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../toolboxes/C2DContainer.hpp"
+#include "../../toolboxes/graph_toolbox.hpp"
 #include <vector>
 
 using namespace std;
@@ -44,14 +45,12 @@ class CPoint {
 private:
   unsigned long nDim;
 
-  su2vector<unsigned short> nElem;        /*!< \brief Number of elements that set up the control volume. */
-  su2vector<unsigned short> nPoint;       /*!< \brief Number of points that set up the control volume  */
   su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */
-  su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors. */
+  su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
 
-  vector<vector<long> > Elem;             /*!< \brief Elements that set up a control volume around a node. */
-  vector<vector<unsigned long> > Point;   /*!< \brief Points surrounding the central node of the control volume. */
-  vector<vector<long> > Edge;             /*!< \brief Edges that set up a control volume. */
+  CCompressedSparsePatternUL Point;       /*!< \brief Points surrounding the central node of the control volume. */
+  CCompressedSparsePatternL Edge;         /*!< \brief Edges that set up a control volume (same sparse structure as Point). */
+  CCompressedSparsePatternL Elem;         /*!< \brief Elements that set up a control volume around a node. */
   vector<vector<long> > Vertex;           /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
 
   su2activevector Volume;                 /*!< \brief Volume or Area of the control volume in 3D and 2D. */
@@ -122,62 +121,6 @@ public:
   inline bool GetDomain(unsigned long iPoint) const { return Domain(iPoint); }
 
   /*!
-   * \brief Set the value of the distance to the nearest wall.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] distance - Value of the distance.
-   */
-  inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
-
-  /*!
-   * \brief Set the value of the distance to a sharp edge.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] distance - Value of the distance.
-   */
-  inline void SetSharpEdge_Distance(unsigned long iPoint, su2double distance) { SharpEdge_Distance(iPoint) = distance; }
-
-  /*!
-   * \brief Get the value of the distance to the nearest wall.
-   * \param[in] iPoint - Index of the point.
-   * \return Value of the distance to the nearest wall.
-   */
-  inline su2double GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
-
-  /*!
-   * \brief Set the value of the curvature at a surface node.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] curvature - Value of the curvature.
-   */
-  inline void SetCurvature(unsigned long iPoint, su2double curvature) { Curvature(iPoint) = curvature; }
-
-  /*!
-   * \brief Get the value of the curvature at a surface node.
-   * \param[in] iPoint - Index of the point.
-   * \return Value of the curvature.
-   */
-  inline su2double GetCurvature(unsigned long iPoint) const { return Curvature(iPoint); }
-
-  /*!
-   * \brief Get the value of the distance to a sharp edge
-   * \param[in] iPoint - Index of the point.
-   * \return Value of the distance to the nearest wall.
-   */
-  inline su2double GetSharpEdge_Distance(unsigned long iPoint) const { return SharpEdge_Distance(iPoint); }
-
-  /*!
-   * \brief Set the number of elements that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] nelem - Number of elements that make the control volume around a node.
-   */
-  inline void SetnElem(unsigned long iPoint, unsigned short nelem) { nElem(iPoint) = nelem; }
-
-  /*!
-   * \brief Set the number of points that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] npoint - Number of points that compose the control volume (points surrounding points).
-   */
-  inline void SetnPoint(unsigned long iPoint, unsigned short npoint) { nPoint(iPoint) = npoint; }
-
-  /*!
    * \brief Get the coordinates dor the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] iDim - Number of dimensions of the problem.
@@ -201,45 +144,6 @@ public:
   inline void SetCoord(unsigned long iPoint, unsigned long iDim, su2double coord) { Coord(iPoint,iDim) = coord; }
 
   /*!
-   * \brief Set the adjoint vector indices of Coord vector.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] input - Save them to the input or output indices vector.
-   */
-  void SetIndex(unsigned long iPoint, bool input);
-
-  /*!
-   * \brief Set the adjoint values of the (geometric) coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - Adjoint values of the Coord variables.
-   */
-  inline void SetAdjointSolution(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      AD::SetDerivative(AD_OutputIndex(iPoint,iDim), SU2_TYPE::GetValue(adj_sol[iDim]));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the (geometric) coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] iDim - Dimension.
-   */
-  inline su2double GetAdjointSolution(unsigned long iPoint, unsigned long iDim) const {
-    return AD::GetDerivative(AD_InputIndex(iPoint,iDim));
-  }
-
-  /*!
-   * \brief Get if the point is marked to flip orientation.
-   * \param[in] iPoint - Index of the point.
-   * \return pointer to the coordinate of the point.
-   */
-  inline bool GetFlip_Orientation(unsigned long iPoint) const { return Flip_Orientation(iPoint); }
-
-  /*!
-   * \brief Mark the point to flip orientation.
-   * \param[in] iPoint - Index of the point.
-   */
-  inline void SetFlip_Orientation(unsigned long iPoint) { Flip_Orientation(iPoint) = true; }
-
-  /*!
    * \brief Set the coordinates for the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] iDim - Position to store the coordinate.
@@ -258,46 +162,69 @@ public:
   }
 
   /*!
+   * \brief Get if the point is marked to flip orientation.
+   * \param[in] iPoint - Index of the point.
+   * \return pointer to the coordinate of the point.
+   */
+  inline bool GetFlip_Orientation(unsigned long iPoint) const { return Flip_Orientation(iPoint); }
+
+  /*!
+   * \brief Mark the point to flip orientation.
+   * \param[in] iPoint - Index of the point.
+   */
+  inline void SetFlip_Orientation(unsigned long iPoint) { Flip_Orientation(iPoint) = true; }
+
+  /*!
    * \brief Get the number of elements that compose the control volume.
    * \param[in] iPoint - Index of the point.
    * \return Number of elements that compose the control volume.
    */
-  inline unsigned short GetnElem(unsigned long iPoint) const { return nElem(iPoint); }
+  inline unsigned short GetnElem(unsigned long iPoint) const { return Elem.getNumNonZeros(iPoint); }
+
+  /*!
+   * \brief Set the elements that are connected to each point.
+   * \param[in] elemsMatrix - List of lists with the neighbor points connected to each point.
+   */
+  void SetElems(const vector<vector<long> >& elemsMatrix);
+
+  /*!
+   * \brief Reset the elements of a control volume.
+   */
+  inline void ResetElems() { Elem = CCompressedSparsePatternL(); }
+
+  /*!
+   * \brief Get all the elements that compose the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] nelem - Position where the element is stored.
+   * \return Index of the element.
+   */
+  inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const { return Elem.getInnerIdx(iPoint,nelem); }
 
   /*!
    * \brief Get the number of points that compose the control volume.
    * \param[in] iPoint - Index of the point.
    * \return Number of points that compose the control volume.
    */
-  inline unsigned short GetnPoint(unsigned long iPoint) const { return nPoint(iPoint); }
-
-  /*!
-   * \brief Set the elements that set the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] elem - Element to be added.
-   */
-  inline void SetElem(unsigned long iPoint, unsigned long elem) {
-    Elem[iPoint].push_back(elem); nElem(iPoint) = Elem[iPoint].size();
-  }
-
-  /*!
-   * \brief Reset the elements of a control volume.
-   * \param[in] iPoint - Index of the point.
-   */
-  inline void ResetElem(unsigned long iPoint) { Elem[iPoint].clear(); nElem(iPoint) = 0; }
-
-  /*!
-   * \brief Reset the points that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   */
-  inline void ResetPoint(unsigned long iPoint) { Point[iPoint].clear(); Edge[iPoint].clear(); nPoint(iPoint) = 0; }
+  inline unsigned short GetnPoint(unsigned long iPoint) const { return Point.getNumNonZeros(iPoint); }
 
   /*!
    * \brief Set the points that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] point - Point to be added.
+   * \param[in] pointsMatrix - List of lists with the neighbor points connected to each point.
    */
-  void SetPoint(unsigned long iPoint, unsigned long point);
+  void SetPoints(const vector<vector<unsigned long> >& pointsMatrix);
+
+  /*!
+   * \brief Reset the points that compose the control volume.
+   */
+  inline void ResetPoints() { Point = CCompressedSparsePatternUL(); Edge = CCompressedSparsePatternL(); }
+
+  /*!
+   * \brief Get all the points that compose the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] point - Position where the point is stored.
+   * \return Index of the point.
+   */
+  inline unsigned long GetPoint(unsigned long iPoint, unsigned long npoint) const { return Point.getInnerIdx(iPoint,npoint); }
 
   /*!
    * \brief Set the edges that compose the control volume.
@@ -305,7 +232,15 @@ public:
    * \param[in] iedge - Edge to be added.
    * \param[in] nedge - Position in which is going to be stored the edge for each control volume.
    */
-  inline void SetEdge(unsigned long iPoint, long iedge, unsigned long nedge) { Edge[iPoint][nedge] = iedge; }
+  inline void SetEdge(unsigned long iPoint, long iedge, unsigned long nedge) { Edge.getInnerIdx(iPoint,nedge) = iedge; }
+
+  /*!
+   * \brief Get all the edges that compose the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] nedge - Position where the edge is stored.
+   * \return Index of the edge.
+   */
+  inline long GetEdge(unsigned long iPoint, unsigned long nedge) const { return Edge.getInnerIdx(iPoint,nedge); }
 
   /*!
    * \brief Set the boundary vertex that compose the control volume.
@@ -318,30 +253,6 @@ public:
   }
 
   /*!
-   * \brief Get all the elements that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] nelem - Position where the element is stored.
-   * \return Index of the element.
-   */
-  inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const { return Elem[iPoint][nelem]; }
-
-  /*!
-   * \brief Get all the points that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] point - Position where the point is stored.
-   * \return Index of the point.
-   */
-  inline unsigned long GetPoint(unsigned long iPoint, unsigned long npoint) const { return Point[iPoint][npoint]; }
-
-  /*!
-   * \brief Get all the edges that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] nedge - Position where the edge is stored.
-   * \return Index of the edge.
-   */
-  inline long GetEdge(unsigned long iPoint, unsigned long nedge) const { return Edge[iPoint][nedge]; }
-
-  /*!
    * \brief Get the vertex that compose the control volume for a marker.
    * \param[in] iPoint - Index of the point.
    * \param[in] iMarker - Position where the vertex is stored.
@@ -351,48 +262,6 @@ public:
     if (Boundary(iPoint)) return Vertex[iPoint][iMarker];
     else return -1;
   }
-
-  /*!
-   * \brief Adds some area or volume of the CV.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] volume - Local volume to be added to the total one.
-   */
-  inline void AddVolume(unsigned long iPoint, su2double volume) { Volume(iPoint) += volume; }
-
-  /*!
-   * \brief Get area or volume of the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \return Area or volume of the control volume.
-   */
-  inline su2double GetVolume(unsigned long iPoint) const { return Volume(iPoint); }
-
-  /*!
-   * \brief Get the missing component of area or volume for a control volume on a periodic marker.
-   * \param[in] iPoint - Index of the point.
-   * \return Periodic component of area or volume for a control volume on a periodic marker.
-   */
-  inline su2double GetPeriodicVolume(unsigned long iPoint) const { return Periodic_Volume(iPoint); }
-
-  /*!
-   * \brief Set the missing component of area or volume for a control volume on a periodic marker.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] volume - Value of the volume from the missing components of the CV on the periodic marker.
-   */
-  inline void SetPeriodicVolume(unsigned long iPoint, su2double volume) { Periodic_Volume(iPoint) = volume; }
-
-  /*!
-   * \brief Get the maximum cell-center to cell-center length.
-   * \param[in] iPoint - Index of the point.
-   * \return The maximum cell-center to cell-center length.
-   */
-  inline su2double GetMaxLength(unsigned long iPoint) const { return MaxLength(iPoint); }
-
-  /*!
-   * \brief Get information about the movement of the node.
-   * \param[in] iPoint - Index of the point.
-   * \return <code>TRUE</code> if the point is going to be moved; otherwise <code>FALSE</code>.
-   */
-  inline bool GetMove(unsigned long iPoint) const { return Move(iPoint); }
 
   /*!
    * \brief Set if a point belong to the boundary.
@@ -476,20 +345,6 @@ public:
   inline void SetColor(unsigned long iPoint, unsigned long color) { Color(iPoint) = color; }
 
   /*!
-   * \brief Set the number of neighbor (artificial dissipation).
-   * \param[in] iPoint - Index of the point.
-   * \param[in] nneighbor - Number of neighbors.
-   */
-  inline void SetnNeighbor(unsigned long iPoint, unsigned short nneighbor) { nNeighbor(iPoint) = nneighbor; }
-
-  /*!
-   * \brief Get the number of neighbor of a point.
-   * \param[in] iPoint - Index of the point.
-   * \return Number of neighbors.
-   */
-  inline unsigned short GetnNeighbor(unsigned long iPoint) const { return nNeighbor(iPoint); }
-
-  /*!
    * \brief Get the color of a point, the color indicates to which subdomain the point belong to.
    * \param[in] iPoint - Index of the point.
    * \return Color of the point.
@@ -509,6 +364,111 @@ public:
    * \return Global index in a parallel computation.
    */
   inline void SetGlobalIndex(unsigned long iPoint, unsigned long globalindex) { GlobalIndex(iPoint) = globalindex; }
+
+  /*!
+   * \brief Set the number of neighbor (artificial dissipation).
+   * \param[in] iPoint - Index of the point.
+   * \param[in] nneighbor - Number of neighbors.
+   */
+  inline void SetnNeighbor(unsigned long iPoint, unsigned short nneighbor) { nNeighbor(iPoint) = nneighbor; }
+
+  /*!
+   * \brief Get the number of neighbor of a point.
+   * \param[in] iPoint - Index of the point.
+   * \return Number of neighbors.
+   */
+  inline unsigned short GetnNeighbor(unsigned long iPoint) const { return nNeighbor(iPoint); }
+
+  /*!
+   * \brief Set the value of the distance to the nearest wall.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] distance - Value of the distance.
+   */
+  inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
+
+  /*!
+   * \brief Get the value of the distance to the nearest wall.
+   * \param[in] iPoint - Index of the point.
+   * \return Value of the distance to the nearest wall.
+   */
+  inline su2double GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
+
+  /*!
+   * \brief Set the value of the distance to a sharp edge.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] distance - Value of the distance.
+   */
+  inline void SetSharpEdge_Distance(unsigned long iPoint, su2double distance) { SharpEdge_Distance(iPoint) = distance; }
+
+  /*!
+   * \brief Get the value of the distance to a sharp edge
+   * \param[in] iPoint - Index of the point.
+   * \return Value of the distance to the nearest wall.
+   */
+  inline su2double GetSharpEdge_Distance(unsigned long iPoint) const { return SharpEdge_Distance(iPoint); }
+
+  /*!
+   * \brief Set the value of the curvature at a surface node.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] curvature - Value of the curvature.
+   */
+  inline void SetCurvature(unsigned long iPoint, su2double curvature) { Curvature(iPoint) = curvature; }
+
+  /*!
+   * \brief Get the value of the curvature at a surface node.
+   * \param[in] iPoint - Index of the point.
+   * \return Value of the curvature.
+   */
+  inline su2double GetCurvature(unsigned long iPoint) const { return Curvature(iPoint); }
+
+  /*!
+   * \brief Set the max cell-center to cell-center length.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] max_length - Value of the max length
+   */
+  inline void SetMaxLength(unsigned long iPoint, su2double max_length) { MaxLength(iPoint) = max_length; }
+
+  /*!
+   * \brief Get the maximum cell-center to cell-center length.
+   * \param[in] iPoint - Index of the point.
+   * \return The maximum cell-center to cell-center length.
+   */
+  inline su2double GetMaxLength(unsigned long iPoint) const { return MaxLength(iPoint); }
+
+  /*!
+   * \brief Get area or volume of the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \return Area or volume of the control volume.
+   */
+  inline su2double GetVolume(unsigned long iPoint) const { return Volume(iPoint); }
+
+  /*!
+   * \brief Set the volume of the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] volume - Value of the volume.
+   */
+  inline void SetVolume(unsigned long iPoint, su2double volume) { Volume(iPoint) = volume; }
+
+  /*!
+   * \brief Adds some area or volume of the CV.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] volume - Local volume to be added to the total one.
+   */
+  inline void AddVolume(unsigned long iPoint, su2double volume) { Volume(iPoint) += volume; }
+
+  /*!
+   * \brief Get the missing component of area or volume for a control volume on a periodic marker.
+   * \param[in] iPoint - Index of the point.
+   * \return Periodic component of area or volume for a control volume on a periodic marker.
+   */
+  inline su2double GetPeriodicVolume(unsigned long iPoint) const { return Periodic_Volume(iPoint); }
+
+  /*!
+   * \brief Set the missing component of area or volume for a control volume on a periodic marker.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] volume - Value of the volume from the missing components of the CV on the periodic marker.
+   */
+  inline void SetPeriodicVolume(unsigned long iPoint, su2double volume) { Periodic_Volume(iPoint) = volume; }
 
   /*!
    * \brief Get the volume of the control volume at time n.
@@ -535,85 +495,18 @@ public:
   void SetVolume_nM1();
 
   /*!
-   * \brief Get the coordinates of the control volume at time n.
-   * \param[in] iPoint - Index of the point.
-   * \return Coordinates of the control volume at time n.
-   */
-  inline su2double *GetCoord_n(unsigned long iPoint) { return Coord_n[iPoint]; }
-
-  /*!
-   * \brief Get the coordinates of the control volume at time n-1.
-   * \param[in] iPoint - Index of the point.
-   * \return Volume of the control volume at time n-1
-   */
-  inline su2double *GetCoord_n1(unsigned long iPoint) { return Coord_n1[iPoint]; }
-
-  /*!
-   * \brief Get the coordinates of the control volume at time n+1.
-   * \param[in] iPoint - Index of the point.
-   * \return Volume of the control volume at time n+1
-   */
-  inline su2double *GetCoord_p1(unsigned long iPoint) { return Coord_p1[iPoint]; }
-
-  /*!
-   * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
-   */
-  void SetCoord_n();
-
-  /*!
-   * \brief Set the coordinates of the control volume at time n-1 to the ones in <i>Coord_n</i>.
-   */
-  void SetCoord_n1();
-
-  /*!
-   * \brief Set the coordinates of the control volume at time n, for restart cases.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] coord - Value of the grid coordinates at time n.
-   */
-  inline void SetCoord_n(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_n(iPoint,iDim) = coord[iDim];
-  }
-
-  /*!
-   * \brief Set the coordinates of the control volume at time n-1, for restart cases.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] coord - Value of the grid coordinates at time n-1.
-   */
-  inline void SetCoord_n1(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_n1(iPoint,iDim) = coord[iDim];
-  }
-  /*!
-   * \brief Set the coordinates of the control volume at time n+1.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] coord - Value of the grid coordinates at time n+1.
-   */
-  inline void SetCoord_p1(unsigned long iPoint, const su2double *coord) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_p1(iPoint,iDim) = coord[iDim];
-  }
-
-  /*!
-   * \brief Set the volume of the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] volume - Value of the volume.
-   */
-  inline void SetVolume(unsigned long iPoint, su2double volume) { Volume(iPoint) = volume; }
-
-  /*!
-   * \brief Set the max cell-center to cell-center length.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] max_length - Value of the max length
-   */
-  inline void SetMaxLength(unsigned long iPoint, su2double max_length) { MaxLength(iPoint) = max_length; }
-
-  /*!
    * \brief Set if a element is going to be moved on the deformation process.
    * \param[in] iPoint - Index of the point.
    * \param[in] move - true or false depending if the point will be moved.
    */
   inline void SetMove(unsigned long iPoint, bool move) { Move(iPoint) = move; }
+
+  /*!
+   * \brief Get information about the movement of the node.
+   * \param[in] iPoint - Index of the point.
+   * \return <code>TRUE</code> if the point is going to be moved; otherwise <code>FALSE</code>.
+   */
+  inline bool GetMove(unsigned long iPoint) const { return Move(iPoint); }
 
   /*!
    * \brief Set the parent control volume of an agglomerated control volume.
@@ -688,11 +581,65 @@ public:
   inline void SetnChildren_CV(unsigned long iPoint, unsigned short nchildren_CV) { nChildren_CV(iPoint) = nchildren_CV; }
 
   /*!
-   * \brief Get the value of the summed coordinates for implicit smoothing.
+   * \brief Get the coordinates of the control volume at time n.
    * \param[in] iPoint - Index of the point.
-   * \return Sum of coordinates at a point.
+   * \return Coordinates of the control volume at time n.
    */
-  inline su2double *GetCoord_Sum(unsigned long iPoint) { return Coord_Sum[iPoint]; }
+  inline su2double *GetCoord_n(unsigned long iPoint) { return Coord_n[iPoint]; }
+
+  /*!
+   * \brief Get the coordinates of the control volume at time n-1.
+   * \param[in] iPoint - Index of the point.
+   * \return Volume of the control volume at time n-1
+   */
+  inline su2double *GetCoord_n1(unsigned long iPoint) { return Coord_n1[iPoint]; }
+
+  /*!
+   * \brief Get the coordinates of the control volume at time n+1.
+   * \param[in] iPoint - Index of the point.
+   * \return Volume of the control volume at time n+1
+   */
+  inline su2double *GetCoord_p1(unsigned long iPoint) { return Coord_p1[iPoint]; }
+
+  /*!
+   * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
+   */
+  void SetCoord_n();
+
+  /*!
+   * \brief Set the coordinates of the control volume at time n-1 to the ones in <i>Coord_n</i>.
+   */
+  void SetCoord_n1();
+
+  /*!
+   * \brief Set the coordinates of the control volume at time n, for restart cases.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] coord - Value of the grid coordinates at time n.
+   */
+  inline void SetCoord_n(unsigned long iPoint, const su2double *coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Coord_n(iPoint,iDim) = coord[iDim];
+  }
+
+  /*!
+   * \brief Set the coordinates of the control volume at time n-1, for restart cases.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] coord - Value of the grid coordinates at time n-1.
+   */
+  inline void SetCoord_n1(unsigned long iPoint, const su2double *coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Coord_n1(iPoint,iDim) = coord[iDim];
+  }
+
+  /*!
+   * \brief Set the coordinates of the control volume at time n+1.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] coord - Value of the grid coordinates at time n+1.
+   */
+  inline void SetCoord_p1(unsigned long iPoint, const su2double *coord) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Coord_p1(iPoint,iDim) = coord[iDim];
+  }
 
   /*!
    * \brief Get the value of the old coordinates for implicit smoothing.
@@ -702,18 +649,26 @@ public:
   inline su2double *GetCoord_Old(unsigned long iPoint) { return Coord_Old[iPoint]; }
 
   /*!
-   * \brief Get the value of the grid velocity at the point.
+   * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
    * \param[in] iPoint - Index of the point.
-   * \return Grid velocity at the point.
+   * \param[in] coord_old - Value of the coordinates.
    */
-  inline su2double *GetGridVel(unsigned long iPoint) { return GridVel[iPoint]; }
+  inline void SetCoord_Old(unsigned long iPoint, const su2double *coord_old) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Coord_Old(iPoint,iDim) = coord_old[iDim];
+  }
 
   /*!
-   * \brief Get the value of the grid velocity gradient at the point.
-   * \param[in] iPoint - Index of the point.
-   * \return Grid velocity gradient at the point.
+   * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
    */
-  inline su2double **GetGridVel_Grad(unsigned long iPoint) { return GridVel_Grad[iPoint]; }
+  void SetCoord_Old();
+
+  /*!
+   * \brief Get the value of the summed coordinates for implicit smoothing.
+   * \param[in] iPoint - Index of the point.
+   * \return Sum of coordinates at a point.
+   */
+  inline su2double *GetCoord_Sum(unsigned long iPoint) { return Coord_Sum[iPoint]; }
 
   /*!
    * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
@@ -731,19 +686,11 @@ public:
   void SetCoord_SumZero();
 
   /*!
-   * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
+   * \brief Get the value of the grid velocity at the point.
    * \param[in] iPoint - Index of the point.
-   * \param[in] coord_old - Value of the coordinates.
+   * \return Grid velocity at the point.
    */
-  inline void SetCoord_Old(unsigned long iPoint, const su2double *coord_old) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_Old(iPoint,iDim) = coord_old[iDim];
-  }
-
-  /*!
-   * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
-   */
-  void SetCoord_Old();
+  inline su2double *GetGridVel(unsigned long iPoint) { return GridVel[iPoint]; }
 
   /*!
    * \brief Set the value of the grid velocity at the point.
@@ -772,6 +719,32 @@ public:
    */
   inline void SetGridVel_Grad(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {
     GridVel_Grad(iPoint,iVar,iDim) = value;
+  }
+
+  /*!
+   * \brief Get the value of the grid velocity gradient at the point.
+   * \param[in] iPoint - Index of the point.
+   * \return Grid velocity gradient at the point.
+   */
+  inline su2double **GetGridVel_Grad(unsigned long iPoint) { return GridVel_Grad[iPoint]; }
+
+  /*!
+   * \brief Set the adjoint values of the (geometric) coordinates.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  inline void SetAdjointSolution(unsigned long iPoint, const su2double *adj_sol) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      AD::SetDerivative(AD_OutputIndex(iPoint,iDim), SU2_TYPE::GetValue(adj_sol[iDim]));
+  }
+
+  /*!
+   * \brief Get the adjoint values of the (geometric) coordinates.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iDim - Dimension.
+   */
+  inline su2double GetAdjointSolution(unsigned long iPoint, unsigned long iDim) const {
+    return AD::GetDerivative(AD_InputIndex(iPoint,iDim));
   }
 
   /*!
@@ -813,5 +786,12 @@ public:
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       adj_coor[iDim] = AD::GetDerivative(AD_InputIndex(iPoint,iDim));
   }
+
+  /*!
+   * \brief Set the adjoint vector indices of Coord vector.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] input - Save them to the input or output indices vector.
+   */
+  void SetIndex(unsigned long iPoint, bool input);
 
 };

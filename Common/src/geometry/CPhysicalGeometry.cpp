@@ -5201,21 +5201,23 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
   unsigned long jElem, Point_Neighbor, iPoint, iElem;
 
   /*--- Loop over all the elements ---*/
+  {
+    vector<vector<long> > elems(nPoint);
 
-  for (iElem = 0; iElem < nElem; iElem++) {
+    for (iElem = 0; iElem < nElem; iElem++) {
 
-    /*--- Loop over all the nodes of an element ---*/
-
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
-
-      /*--- Store the element into the point ---*/
-
-      nodes->SetElem(iPoint, iElem);
+      /*--- Loop over all the nodes of an element ---*/
+      for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+        iPoint = elem[iElem]->GetNode(iNode);
+        elems[iPoint].push_back(iElem);
+      }
     }
+    nodes->SetElems(elems);
   }
 
   /*--- Loop over all the points ---*/
+
+  vector<vector<unsigned long> > points(nPoint);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -5237,13 +5239,15 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
           Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode, iNeighbor);
           Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
 
-          /*--- Store the point into the point ---*/
-
-          nodes->SetPoint(iPoint, Point_Neighbor);
+          /*--- Store the point into the point, if it is new ---*/
+          auto End = points[iPoint].end();
+          if (find(points[iPoint].begin(), End, Point_Neighbor) == End)
+            points[iPoint].push_back(Point_Neighbor);
         }
       }
     }
   }
+  nodes->SetPoints(points);
 
   /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel ---*/
 
@@ -5345,9 +5349,10 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
   /*--- Reset old data structures ---*/
 
+  nodes->ResetElems();
+  nodes->ResetPoints();
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    nodes->ResetElem(iPoint);
-    nodes->ResetPoint(iPoint);
     nodes->ResetBoundary(iPoint);
     nodes->SetPhysicalBoundary(iPoint, false);
     nodes->SetSolidBoundary(iPoint, false);

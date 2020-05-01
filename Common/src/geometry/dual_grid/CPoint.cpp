@@ -34,13 +34,6 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
 
   nDim = ndim;
 
-  /*--- Element, point and edge structures initialization. ---*/
-
-  Elem.resize(npoint);  nElem.resize(npoint) = 0;
-  Point.resize(npoint); nPoint.resize(npoint) = 0;
-  Edge.resize(npoint);  nNeighbor.resize(npoint) = 0;
-  Vertex.resize(npoint);
-
   /*--- Coordinates and volumes. ---*/
 
   Coord.resize(npoint,nDim) = su2double(0.0);
@@ -80,6 +73,8 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
   PhysicalBoundary.resize(npoint) = false;
   PeriodicBoundary.resize(npoint) = false;
 
+  Vertex.resize(npoint);
+
   /*--- Set the global index in the parallel simulation. ---*/
   GlobalIndex.resize(npoint) = 0;
 
@@ -112,6 +107,8 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
     }
   }
 
+  nNeighbor.resize(npoint) = 0;
+
   MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
   Wall_Distance.resize(npoint) = su2double(0.0);
@@ -119,22 +116,15 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
 
 }
 
-void CPoint::SetPoint(unsigned long iPoint, unsigned long point) {
+void CPoint::SetElems(const vector<vector<long> >& elemsMatrix) {
 
-  bool new_point = true;
+  Elem = CCompressedSparsePatternL(elemsMatrix);
+}
 
-  for (auto iPt = 0ul; iPt < nPoint(iPoint); iPt++) {
-    if (Point[iPoint][iPt] == point) {
-      new_point = false;
-      break;
-    }
-  }
+void CPoint::SetPoints(const vector<vector<unsigned long> >& pointsMatrix) {
 
-  if (new_point) {
-    Point[iPoint].push_back(point);
-    Edge[iPoint].push_back(-1);
-    nPoint(iPoint) = Point[iPoint].size();
-  }
+  Point = CCompressedSparsePatternUL(pointsMatrix);
+  Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr()+Point.getOuterSize(), long(-1));
 }
 
 void CPoint::SetIndex(unsigned long iPoint, bool input) {

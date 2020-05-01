@@ -396,16 +396,25 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   unsigned short iChildren;
 
   /*--- Find the point surrounding a point ---*/
+  {
+    /*--- Temporary, CPoint (nodes) then compresses the information ---*/
+    vector<vector<unsigned long> > points(fine_grid->GetnPoint());
 
-  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
-    for (iChildren = 0; iChildren <  nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
-      iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-      for (iNode = 0; iNode < fine_grid->nodes->GetnPoint(iFinePoint); iNode ++) {
-        iFinePoint_Neighbor = fine_grid->nodes->GetPoint(iFinePoint, iNode);
-        iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
-        if (iParent != iCoarsePoint) nodes->SetPoint(iCoarsePoint, iParent);
+    for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+      for (iChildren = 0; iChildren <  nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
+        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+        for (iNode = 0; iNode < fine_grid->nodes->GetnPoint(iFinePoint); iNode ++) {
+          iFinePoint_Neighbor = fine_grid->nodes->GetPoint(iFinePoint, iNode);
+          iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
+          if (iParent != iCoarsePoint) {
+            auto End = points[iCoarsePoint].end();
+            if (find(points[iCoarsePoint].begin(), End, iParent) == End)
+              points[iCoarsePoint].push_back(iParent);
+          }
+        }
       }
     }
+    nodes->SetPoints(points);
   }
 
   /*--- Detect isolated points and merge them with its correct neighbor ---*/
@@ -474,9 +483,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
   /*--- Reset the point surrounding a point ---*/
 
-  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
-    nodes->ResetPoint(iCoarsePoint);
-  }
+  nodes->ResetPoints();
 
   /*--- Dealing with MPI parallelization, the objective is that the received nodes must be agglomerated
    in the same way as the donor nodes. Send the node agglomeration information of the donor
@@ -925,16 +932,23 @@ void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
 
   /*--- Set the point surrounding a point ---*/
 
+  vector<vector<unsigned long> > points(nPoint);
+
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
     for (iChildren = 0; iChildren <  nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
       iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
       for (iNode = 0; iNode < fine_grid->nodes->GetnPoint(iFinePoint); iNode ++) {
         iFinePoint_Neighbor = fine_grid->nodes->GetPoint(iFinePoint, iNode);
         iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
-        if (iParent != iCoarsePoint) nodes->SetPoint(iCoarsePoint, iParent);
+        if (iParent != iCoarsePoint) {
+          auto End = points[iCoarsePoint].end();
+          if (find(points[iCoarsePoint].begin(), End, iParent) == End)
+            points[iCoarsePoint].push_back(iParent);
+        }
       }
     }
   }
+  nodes->SetPoints(points);
 
   /*--- Set the number of neighbors variable, this is
    important for JST and multigrid in parallel ---*/

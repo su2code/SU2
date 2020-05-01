@@ -840,7 +840,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           Density_n = flowNodes->GetSolution_time_n(iPoint,0);
       }
 
-      for (iNeigh = 0; iNeigh < geometry->nodes->GetnNeighbor(iPoint); iNeigh++) {
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
 
         iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
         Normal = geometry->edges->GetNormal(iEdge);

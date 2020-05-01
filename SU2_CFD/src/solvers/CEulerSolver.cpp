@@ -3748,11 +3748,11 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
     su2double Ducros_i = 0.0;
-    auto nNeigh = geometry->nodes->GetnNeighbor(iPoint);
+    const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
 
     for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 
-      auto jPoint = iPoint;
+      auto jPoint = iPoint; // when iNeigh == nNeigh
       if (iNeigh < nNeigh) jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
       /*---- Dilatation for jPoint ---*/
@@ -11274,7 +11274,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
       U_time_n = nodes->GetSolution_time_n(iPoint);
 
-      for (iNeigh = 0; iNeigh < geometry->nodes->GetnNeighbor(iPoint); iNeigh++) {
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
 
         iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
         Normal = geometry->edges->GetNormal(iEdge);
