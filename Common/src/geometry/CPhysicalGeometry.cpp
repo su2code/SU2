@@ -7209,12 +7209,13 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
 
-  /// TODO: What is a reasonable MAXNNODE?
-  array<const su2double*,64> Coord;
+  /*--- Buffer of pointers to node coordinates ---*/
+  array<const su2double*, N_POINTS_MAXIMUM> Coord;
 
   /*--- Compute the center of gravity for elements ---*/
 
   for (iElem = 0; iElem<nElem; iElem++) {
+    assert(elem[iElem]->GetnNodes() <= N_POINTS_MAXIMUM && "Insufficient N_POINTS_MAXIMUM");
 
     /*--- Store the coordinates for all the element nodes ---*/
     for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
