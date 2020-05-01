@@ -429,11 +429,11 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Points in edge, coordinates and normal vector---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive variables w/o reconstruction and adjoint variables w/o reconstruction---*/
 
@@ -536,9 +536,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Points in edge, and normal vector ---*/
 
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      second_numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Conservative variables w/o reconstruction ---*/
 

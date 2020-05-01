@@ -222,10 +222,10 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       for (jEdge = 0; jEdge < nEdges; jEdge++){
         EdgeIndex = geom->node[iPoint]->GetEdge(jEdge);
 
-        if( iPoint == geom->edge[EdgeIndex]->GetNode(0) )
-          dPoint = geom->edge[EdgeIndex]->GetNode(1);
+        if( iPoint == geom->edges->GetNode(EdgeIndex,0) )
+          dPoint = geom->edges->GetNode(EdgeIndex,1);
         else
-          dPoint = geom->edge[EdgeIndex]->GetNode(0);
+          dPoint = geom->edges->GetNode(EdgeIndex,0);
 
         if ( geom->node[dPoint]->GetVertex(val_marker) != -1 )
           nNodes++;
@@ -242,10 +242,10 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       for (jEdge = 0; jEdge < nEdges; jEdge++){
         EdgeIndex = geom->node[iPoint]->GetEdge(jEdge);
 
-        if( iPoint == geom->edge[EdgeIndex]->GetNode(0) )
-          dPoint = geom->edge[EdgeIndex]->GetNode(1);
+        if( iPoint == geom->edges->GetNode(EdgeIndex,0) )
+          dPoint = geom->edges->GetNode(EdgeIndex,1);
         else
-          dPoint = geom->edge[EdgeIndex]->GetNode(0);
+          dPoint = geom->edges->GetNode(EdgeIndex,0);
 
         if ( geom->node[dPoint]->GetVertex(val_marker) != -1 ){
           Aux_Send_Map[nLocalVertex][nNodes] = geom->node[dPoint]->GetGlobalIndex();

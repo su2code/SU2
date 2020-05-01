@@ -996,7 +996,7 @@ public:
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline void Set_NewSolution(CGeometry *geometry) final { nodes->SetSolution_New(); }
+  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
