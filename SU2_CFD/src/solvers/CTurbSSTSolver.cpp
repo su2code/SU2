@@ -327,7 +327,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    su2double dist = geometry->node[iPoint]->GetWall_Distance();
+    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     const su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
     su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
@@ -379,11 +379,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Set volume ---*/
 
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
     /*--- Set distance to the surface ---*/
 
-    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
 
     /*--- Menter's first blending function ---*/
 
@@ -431,14 +431,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- distance to closest neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       distance = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         distance += pow(geometry->node[iPoint]->GetCoord(iDim)-
-                        geometry->node[jPoint]->GetCoord(iDim), 2);
+                        geometry->nodes->GetCoord(jPoint, iDim), 2);
       }
       distance = sqrt(distance);
 
@@ -479,7 +479,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- distance to closest neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -531,7 +531,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Allocate the value at the infinity ---*/
 
@@ -600,7 +600,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -638,7 +638,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -702,7 +702,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Allocate the value at the outlet ---*/
 
@@ -737,7 +737,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
       if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                geometry->node[iPoint]->GetGridVel());
+                                geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -847,7 +847,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-            geometry->node[iPoint]->GetGridVel());
+            geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto conv_residual = conv_numerics->ComputeResidual(config);
@@ -972,7 +972,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto conv_residual = conv_numerics->ComputeResidual(config);

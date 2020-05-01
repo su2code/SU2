@@ -799,7 +799,7 @@ public:
    */
   void SetWallDistance(su2double val) override {
     for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
-      node[iPoint]->SetWall_Distance(val);
+      nodes->SetWall_Distance(iPoint, val);
     }
   }
 

@@ -125,14 +125,14 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
-    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
 
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -167,13 +167,13 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
-    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     EddyVisc = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       EddyVisc_Fine = sol_fine->GetNodes()->GetmuT(Point_Fine);
       EddyVisc += EddyVisc_Fine*Area_Children/Area_Parent;
     }

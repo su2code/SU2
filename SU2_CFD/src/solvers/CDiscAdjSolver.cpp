@@ -212,7 +212,7 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
-      geometry[MESH_0]->node[iPoint]->SetCoord(iDim,nodes->GetGeometry_Direct(iPoint,iDim));
+      geometry[MESH_0]->nodes->SetCoord(iPoint, iDim,nodes->GetGeometry_Direct(iPoint,iDim));
     }
   }
 
@@ -636,9 +636,9 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
     /*--- Extract the adjoint solution ---*/
 
     if (config->GetMultizone_Problem())
-      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
+      geometry->nodes->GetAdjointCoord_LocalIndex(iPoint, Solution_Geometry);
     else
-      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+      geometry->nodes->GetAdjointCoord(iPoint, Solution_Geometry);
 
     /*--- Store the adjoint solution ---*/
 
@@ -731,7 +731,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
     for (iDim = 0; iDim < nDim; iDim++){
       nodes->SetSensitivity(iPoint,iDim, Solution_Geometry[iDim]);
     }
-    geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
+    geometry->nodes->SetAdjointCoord(iPoint, Solution_Geometry);
   }
 
 }
@@ -745,12 +745,12 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
   bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    Coord = geometry->node[iPoint]->GetCoord();
+    Coord = geometry->nodes->GetCoord(iPoint);
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
       if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+        Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
       }
       else {
         Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
@@ -979,11 +979,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;

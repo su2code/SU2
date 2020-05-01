@@ -235,14 +235,14 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
 
-    geometry->node[iPoint]->SetVolume_nM1();
-    geometry->node[iPoint]->SetVolume_n();
+    geometry->nodes->SetVolume_nM1(iPoint);
+    geometry->nodes->SetVolume_n(iPoint);
 
     /*--- Store old coordinates in case there is grid movement ---*/
 
     if (config->GetGrid_Movement()) {
-      geometry->node[iPoint]->SetCoord_n1();
-      geometry->node[iPoint]->SetCoord_n();
+      geometry->nodes->SetCoord_n1(iPoint);
+      geometry->nodes->SetCoord_n(iPoint);
     }
   }
 

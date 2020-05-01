@@ -203,7 +203,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       Solution[0] = 0.0;
 
@@ -227,7 +227,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       Solution[0] = 0.0;
 
@@ -358,8 +358,8 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and set normal vectors and length ---*/
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    Coord_j = geometry->node[jPoint]->GetCoord();
+    Coord_i = geometry->nodes->GetCoord(iPoint);
+    Coord_j = geometry->nodes->GetCoord(jPoint);
     numerics->SetCoord(Coord_i, Coord_j);
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
@@ -434,8 +434,8 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetAdjointVarGradient(PsiVar_Grad_i, NULL);
 
     /*--- Set volume and distances to the surface ---*/
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+    numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
 
     /*--- Add and Subtract Residual ---*/
     numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
@@ -499,7 +499,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
     /*--- Read the volume ---*/
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 

@@ -1611,7 +1611,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->node[iPoint]->GetDomain()){
+          if(geometry->nodes->GetDomain(iPoint)){
 
             buildFieldIndexCache = fieldIndexCache.empty();
 

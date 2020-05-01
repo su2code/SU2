@@ -46,7 +46,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   elem                = NULL;
   face                = NULL;
   bound               = NULL;
-  node                = NULL;
+  nodes               = NULL;
   edges               = NULL;
   vertex              = NULL;
   nVertex             = NULL;

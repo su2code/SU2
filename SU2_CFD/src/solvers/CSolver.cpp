@@ -481,15 +481,15 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              periodic faces. ---*/
 
             bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume() +
-            geometry->node[iPoint]->GetPeriodicVolume();
+            geometry->nodes->GetPeriodicVolume(iPoint);
 
             break;
 
           case PERIODIC_NEIGHBORS:
 
             nNeighbor = 0;
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              Neighbor_Point = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              Neighbor_Point = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Check if this neighbor lies on the periodic face so
                that we avoid double counting neighbors on both sides. If
@@ -634,8 +634,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar< nVar; iVar++)
             Und_Lapl[iVar] = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -657,14 +657,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                   (base_nodes->GetSolution(jPoint,nVar-1) + Pressure_j));
                 }
 
-                boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-                boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
                 /*--- Both points inside the domain, or both in the boundary ---*/
 
                 if ((!boundary_i && !boundary_j) ||
                     ( boundary_i &&  boundary_j)) {
-                  if (geometry->node[iPoint]->GetDomain()) {
+                  if (geometry->nodes->GetDomain(iPoint)) {
                     for (iVar = 0; iVar< nVar; iVar++)
                     Und_Lapl[iVar] -= Diff[iVar];
                   }
@@ -673,7 +673,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
                 if (!boundary_i && boundary_j)
-                if (geometry->node[iPoint]->GetDomain()){
+                if (geometry->nodes->GetDomain(iPoint)){
                   for (iVar = 0; iVar< nVar; iVar++)
                   Und_Lapl[iVar] -= Diff[iVar];
                 }
@@ -725,8 +725,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              on both sides of the periodic face. ---*/
 
             Sensor_i = 0.0; Sensor_j = 0.0;
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
@@ -743,14 +743,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   Pressure_j = base_nodes->GetPressure(jPoint);
                 }
 
-                boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-                boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
                 /*--- Both points inside domain, or both on boundary ---*/
 
                 if ((!boundary_i && !boundary_j) ||
                     (boundary_i && boundary_j)) {
-                  if (geometry->node[iPoint]->GetDomain()) {
+                  if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += Pressure_j - Pressure_i;
                     Sensor_j += Pressure_i + Pressure_j;
                   }
@@ -759,7 +759,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
                 if (!boundary_i && boundary_j) {
-                  if (geometry->node[iPoint]->GetDomain()) {
+                  if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += (Pressure_j - Pressure_i);
                     Sensor_j += (Pressure_i + Pressure_j);
 
@@ -884,7 +884,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get coordinates for the current point. ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
 
             /*--- Get the position vector from rotation center to point. ---*/
 
@@ -941,8 +941,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -951,7 +951,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
-                Coord_j = geometry->node[jPoint]->GetCoord();
+                Coord_j = geometry->nodes->GetCoord(jPoint);
 
                 /*--- Get the position vector from rotation center. ---*/
 
@@ -1093,7 +1093,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get coordinates ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
 
             /*--- Get the position vector from rot center to point. ---*/
 
@@ -1150,8 +1150,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -1160,7 +1160,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
-                Coord_j = geometry->node[jPoint]->GetCoord();
+                Coord_j = geometry->nodes->GetCoord(jPoint);
 
                 /*--- Get the position vector from rotation center. ---*/
 
@@ -1298,8 +1298,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetPrimitive(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
@@ -1396,8 +1396,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
               for (iVar = 0; iVar < nVar; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetSolution(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));
@@ -1608,8 +1608,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                total volume spread across the periodic faces. ---*/
 
               Volume = (bufDRecv[buf_offset] +
-                        geometry->node[iPoint]->GetPeriodicVolume());
-              geometry->node[iPoint]->SetPeriodicVolume(Volume);
+                        geometry->nodes->GetPeriodicVolume(iPoint));
+              geometry->nodes->SetPeriodicVolume(iPoint, Volume);
 
               break;
 
@@ -1619,7 +1619,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               nNeighbor = (geometry->node[iPoint]->GetnNeighbor() +
                            bufSRecv[buf_offset]);
-              geometry->node[iPoint]->SetnNeighbor(nNeighbor);
+              geometry->nodes->SetnNeighbor(iPoint, nNeighbor);
 
               break;
 
@@ -2749,8 +2749,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
     /*--- Grid Velocity at each edge point ---*/
 
-    su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-    su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+    su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+    su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
     for (iDim = 0; iDim < nDim; iDim++)
       Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
 
@@ -2786,7 +2786,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
         /*--- Grid Velocity at each edge point ---*/
 
-        su2double *GridVel = geometry->node[Point]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(Point);
 
         /*--- Summed normal components ---*/
 
@@ -2908,8 +2908,8 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   /*--- Loop over points of the grid ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    Solution_i = geometry->node[iPoint]->GetGridVel();
+    Coord_i = geometry->nodes->GetCoord(iPoint);
+    Solution_i = geometry->nodes->GetGridVel(iPoint);
 
     /*--- Inizialization of variables ---*/
     for (iVar = 0; iVar < nDim; iVar++)
@@ -2917,10 +2917,10 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
         Cvector[iVar][iDim] = 0.0;
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
 
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      Coord_j = geometry->node[jPoint]->GetCoord();
-      Solution_j = geometry->node[jPoint]->GetGridVel();
+    for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+      jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      Coord_j = geometry->nodes->GetCoord(jPoint);
+      Solution_j = geometry->nodes->GetGridVel(jPoint);
 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -2984,7 +2984,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
           product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
-        geometry->node[iPoint]->SetGridVel_Grad(iVar, iDim, product);
+        geometry->nodes->SetGridVel_Grad(iPoint, iVar, iDim, product);
       }
     }
   }
@@ -3022,8 +3022,8 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) {
-            Coord_i = geometry->node[iPoint]->GetCoord();
+          if (geometry->nodes->GetDomain(iPoint)) {
+            Coord_i = geometry->nodes->GetCoord(iPoint);
             AuxVar_i = base_nodes->GetAuxVar(iPoint);
 
             /*--- Inizialization of variables ---*/
@@ -3031,9 +3031,9 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
               Cvector[iDim] = 0.0;
             su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
 
-            for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-              Coord_j = geometry->node[jPoint]->GetCoord();
+            for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+              Coord_j = geometry->nodes->GetCoord(jPoint);
               AuxVar_j = base_nodes->GetAuxVar(jPoint);
 
               su2double weight = 0;
@@ -3503,7 +3503,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       if (nDim == 3){
         Coord[2] = PrintingToolbox::stod(point_line[3]);
       }
-      geometry->node[iPoint_Local]->SetCoord_n(Coord);
+      geometry->nodes->SetCoord_n(iPoint_Local, Coord);
 
       iPoint_Global_Local++;
     }
@@ -3570,7 +3570,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
           Coord[2] = PrintingToolbox::stod(point_line[3]);
         }
 
-        geometry->node[iPoint_Local]->SetCoord_n1(Coord);
+        geometry->nodes->SetCoord_n1(iPoint_Local, Coord);
 
         iPoint_Global_Local++;
       }
@@ -4341,7 +4341,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
         iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-        Coord = geometry[MESH_0]->node[iPoint]->GetCoord();
+        Coord = geometry[MESH_0]->nodes->GetCoord(iPoint);
 
         if(Interpolate == false) {
 
@@ -4380,7 +4380,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           } else {
 
-            unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
+            unsigned long GlobalIndex = geometry[MESH_0]->nodes->GetGlobalIndex(iPoint);
             cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
             cout << "and point " << GlobalIndex;
             cout << std::scientific;
@@ -4509,8 +4509,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            children from the interior volume will not be included in
            the averaging. ---*/
 
-          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+          for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+            Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
             for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
             Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
                                                                            Marker_Tag, geometry[iMesh-1], config);
@@ -4594,7 +4594,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
         iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
         /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           // Retrieve the values of pressure
           Pn = base_nodes->GetPressure(iPoint);
@@ -4664,7 +4664,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Register the vertex traction as output ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -4696,7 +4696,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Set the adjoint of the vertex traction from the value received ---*/
           for (iDim = 0; iDim < nDim; iDim++) {

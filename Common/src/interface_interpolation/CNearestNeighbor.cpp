@@ -119,7 +119,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       if (!target_geometry->node[Point_Target]->GetDomain()) continue;
 
       /*--- Coordinates of the target point. ---*/
-      const su2double* Coord_i = target_geometry->node[Point_Target]->GetCoord();
+      const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);
 
       /*--- Compute all distances. ---*/
       for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {

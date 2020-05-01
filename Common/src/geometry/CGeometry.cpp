@@ -65,7 +65,7 @@ CGeometry::CGeometry(void) {
   elem                = NULL;
   face                = NULL;
   bound               = NULL;
-  node                = NULL;
+  nodes               = NULL;
   edges               = NULL;
   vertex              = NULL;
   nVertex             = NULL;
@@ -168,11 +168,7 @@ CGeometry::~CGeometry(void) {
     delete[] face;
   }
 
-  if (node != NULL) {
-    for (iPoint = 0; iPoint < nPointNode; iPoint ++)
-      if (node[iPoint] != NULL) delete node[iPoint];
-    delete[] node;
-  }
+  delete nodes;
 
   delete edges;
 
@@ -817,32 +813,32 @@ void CGeometry::InitiateComms(CGeometry *geometry,
 
         switch (commType) {
           case COORDINATES:
-            vector = node[iPoint]->GetCoord();
+            vector = nodes->GetCoord(iPoint);
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = vector[iDim];
             break;
           case GRID_VELOCITY:
-            vector = node[iPoint]->GetGridVel();
+            vector = nodes->GetGridVel(iPoint);
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = vector[iDim];
             break;
           case COORDINATES_OLD:
-            vector = node[iPoint]->GetCoord_n();
+            vector = nodes->GetCoord_n(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+iDim] = vector[iDim];
             }
             if (config->GetTime_Marching() == DT_STEPPING_2ND) {
-              vector = node[iPoint]->GetCoord_n1();
+              vector = nodes->GetCoord_n1(iPoint);
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+nDim+iDim] = vector[iDim];
               }
             }
             break;
           case MAX_LENGTH:
-            bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
+            bufDSend[buf_offset] = nodes->GetMaxLength(iPoint);
             break;
           case NEIGHBORS:
-            bufSSend[buf_offset] = geometry->node[iPoint]->GetnNeighbor();
+            bufSSend[buf_offset] = geometry->nodes->GetnNeighbor(iPoint);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -922,22 +918,22 @@ void CGeometry::CompleteComms(CGeometry *geometry,
         switch (commType) {
           case COORDINATES:
             for (iDim = 0; iDim < nDim; iDim++)
-              node[iPoint]->SetCoord(iDim, bufDRecv[buf_offset+iDim]);
+              nodes->SetCoord(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           case GRID_VELOCITY:
             for (iDim = 0; iDim < nDim; iDim++)
-              node[iPoint]->SetGridVel(iDim, bufDRecv[buf_offset+iDim]);
+              nodes->SetGridVel(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           case COORDINATES_OLD:
-            node[iPoint]->SetCoord_n(&bufDRecv[buf_offset]);
+            nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
             if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              node[iPoint]->SetCoord_n1(&bufDRecv[buf_offset+nDim]);
+              nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset+nDim]);
             break;
           case MAX_LENGTH:
-            node[iPoint]->SetMaxLength(bufDRecv[buf_offset]);
+            nodes->SetMaxLength(iPoint, bufDRecv[buf_offset]);
             break;
           case NEIGHBORS:
-            node[iPoint]->SetnNeighbor(bufSRecv[buf_offset]);
+            nodes->SetnNeighbor(iPoint, bufSRecv[buf_offset]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -1006,7 +1002,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Get the rank that holds the matching periodic point
            on the other marker in the periodic pair. ---*/
@@ -1155,7 +1151,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
             /*--- Get the rank that holds the matching periodic point
              on the other marker in the periodic pair. ---*/
@@ -1520,12 +1516,12 @@ su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, s
 long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) {
   unsigned long iPoint = 0;
   unsigned short iNode;
-  for (iNode = 0; iNode < node[first_point]->GetnPoint(); iNode++) {
-    iPoint = node[first_point]->GetPoint(iNode);
+  for (iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+    iPoint = nodes->GetPoint(first_point, iNode);
     if (iPoint == second_point) break;
   }
 
-  if (iPoint == second_point) return node[first_point]->GetEdge(iNode);
+  if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
   else {
     char buf[100];
     SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
@@ -1537,8 +1533,8 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
 bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) {
   unsigned long iPoint = 0;
   unsigned short iNode;
-  for (iNode = 0; iNode < node[first_point]->GetnPoint(); iNode++) {
-    iPoint = node[first_point]->GetPoint(iNode);
+  for (iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+    iPoint = nodes->GetPoint(first_point, iNode);
     if (iPoint == second_point) break;
   }
 
@@ -1551,14 +1547,14 @@ void CGeometry::SetEdges(void) {
 
   nEdge = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); iNode++) {
-      auto jPoint = node[iPoint]->GetPoint(iNode);
-      for (auto jNode = 0u; jNode < node[jPoint]->GetnPoint(); jNode++) {
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+      auto jPoint = nodes->GetPoint(iPoint, iNode);
+      for (auto jNode = 0u; jNode < nodes->GetnPoint(jPoint); jNode++) {
         if (node[jPoint]->GetPoint(jNode) == iPoint) {
-          auto TestEdge = node[jPoint]->GetEdge(jNode);
+          auto TestEdge = nodes->GetEdge(jPoint, jNode);
           if (TestEdge == -1) {
-            node[iPoint]->SetEdge(nEdge, iNode);
-            node[jPoint]->SetEdge(nEdge, jNode);
+            nodes->SetEdge(iPoint, nEdge, iNode);
+            nodes->SetEdge(jPoint, nEdge, jNode);
             nEdge++;
           }
           break;
@@ -1570,8 +1566,8 @@ void CGeometry::SetEdges(void) {
   edges = new CEdge(nEdge,nDim);
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); iNode++) {
-      auto jPoint = node[iPoint]->GetPoint(iNode);
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+      auto jPoint = nodes->GetPoint(iPoint, iNode);
       if (iPoint < jPoint) {
         auto iEdge = FindEdge(iPoint, jPoint);
         edges->SetNodes(iEdge, iPoint, jPoint);
@@ -1587,16 +1583,16 @@ void CGeometry::SetFaces(void) {
   //
   //	nFace = 0;
   //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-  //			jPoint = node[iPoint]->GetPoint(iNode);
-  //			for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
+  //		for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
+  //			jPoint = nodes->GetPoint(iPoint, iNode);
+  //			for (jNode = 0; jNode < nodes->GetnPoint(jPoint); jNode++)
   //				if (node[jPoint]->GetPoint(jNode) == iPoint) {
-  //					TestFace = node[jPoint]->GetFace(jNode);
+  //					TestFace = nodes->GetFace(jPoint, jNode);
   //					break;
   //				}
   //			if (TestFace == -1) {
-  //				node[iPoint]->SetFace(nFace, iNode);
-  //				node[jPoint]->SetFace(nFace, jNode);
+  //				nodes->SetFace(iPoint, nFace, iNode);
+  //				nodes->SetFace(jPoint, nFace, jNode);
   //				nFace++;
   //			}
   //		}
@@ -1604,8 +1600,8 @@ void CGeometry::SetFaces(void) {
   //	face = new CFace*[nFace];
   //
   //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-  //			jPoint = node[iPoint]->GetPoint(iNode);
+  //		for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
+  //			jPoint = nodes->GetPoint(iPoint, iNode);
   //			iFace = FindFace(iPoint, jPoint);
   //			if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
   //		}
@@ -2000,9 +1996,9 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
         for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
-          AveXCoord += node[iPoint]->GetCoord(0);
-          AveYCoord += node[iPoint]->GetCoord(1);
-          if (nDim == 3) AveZCoord += node[iPoint]->GetCoord(2);
+          AveXCoord += nodes->GetCoord(iPoint, 0);
+          AveYCoord += nodes->GetCoord(iPoint, 1);
+          if (nDim == 3) AveZCoord += nodes->GetCoord(iPoint, 2);
         }
 
         AveXCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
@@ -2075,8 +2071,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
             for (iDim = 0; iDim < nDim; iDim++) {
               if (original_surface == true) {
-                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+                Segment_P0[iDim] = nodes->GetCoord(iPoint, iDim);
+                Segment_P1[iDim] = nodes->GetCoord(jPoint, iDim);
               }
               else {
                 Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
@@ -2111,16 +2107,16 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                   Ycoord_Index0.push_back(Intersection[1]);
                   Zcoord_Index0.push_back(Intersection[2]);
                   Variable_Index0.push_back(Variable_Interp);
-                  IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
-                  JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
+                  IGlobalID_Index0.push_back(nodes->GetGlobalIndex(iPoint));
+                  JGlobalID_Index0.push_back(nodes->GetGlobalIndex(jPoint));
                 }
                 if (PointIndex == 1) {
                   Xcoord_Index1.push_back(Intersection[0]);
                   Ycoord_Index1.push_back(Intersection[1]);
                   Zcoord_Index1.push_back(Intersection[2]);
                   Variable_Index1.push_back(Variable_Interp);
-                  IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
-                  JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+                  IGlobalID_Index1.push_back(nodes->GetGlobalIndex(iPoint));
+                  JGlobalID_Index1.push_back(nodes->GetGlobalIndex(jPoint));
                 }
                 PointIndex++;
               }
@@ -2648,11 +2644,11 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(node[iPoint]->GetCoord()[iDim], push_index);
+      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
     }
     if(!push_index) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        node[iPoint]->SetIndex(input);
+        nodes->SetIndex(iPoint, input);
       }
     }
   }
@@ -2665,12 +2661,12 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     if(config->GetMultizone_Problem()) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
       }
     }
     else {
       for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
       }
     }
   }
@@ -2938,13 +2934,13 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           iPoint  = vertex[iMarker][iVertex]->GetNode();
 
-          if (node[iPoint]->GetDomain()) {
+          if (nodes->GetDomain(iPoint)) {
             /*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
              side of this vertex that lie on the same surface. ---*/
             Point_Edge.clear();
 
-            for (iNeigh_Point = 0; iNeigh_Point < node[iPoint]->GetnPoint(); iNeigh_Point++) {
-              Neighbor_Point = node[iPoint]->GetPoint(iNeigh_Point);
+            for (iNeigh_Point = 0; iNeigh_Point < nodes->GetnPoint(iPoint); iNeigh_Point++) {
+              Neighbor_Point = nodes->GetPoint(iPoint, iNeigh_Point);
 
               /*--- Check if this neighbor lies on the surface. If so,
                add to the list of neighbors. ---*/
@@ -2957,12 +2953,12 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
             if (Point_Edge.size() == 2) {
 
               /*--- Compute the curvature using three points ---*/
-              X1 = node[iPoint]->GetCoord(0);
-              X2 = node[Point_Edge[0]]->GetCoord(0);
-              X3 = node[Point_Edge[1]]->GetCoord(0);
-              Y1 = node[iPoint]->GetCoord(1);
-              Y2 = node[Point_Edge[0]]->GetCoord(1);
-              Y3 = node[Point_Edge[1]]->GetCoord(1);
+              X1 = nodes->GetCoord(iPoint, 0);
+              X2 = nodes->GetCoord(Point_Edge[0], 0);
+              X3 = nodes->GetCoord(Point_Edge[1], 0);
+              Y1 = nodes->GetCoord(iPoint, 1);
+              Y2 = nodes->GetCoord(Point_Edge[0], 1);
+              Y3 = nodes->GetCoord(Point_Edge[1], 1);
 
               radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
                             ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
@@ -2970,7 +2966,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2)+EPS);
 
               K[iPoint] = 1.0/radius;
-              node[iPoint]->SetCurvature(K[iPoint]);
+              nodes->SetCurvature(iPoint, K[iPoint]);
             }
 
           }
@@ -3104,7 +3100,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           iPoint  = vertex[iMarker][iVertex]->GetNode();
 
-          if (node[iPoint]->GetDomain()) {
+          if (nodes->GetDomain(iPoint)) {
 
             if (Area_Vertex[iPoint] != 0.0) GaussK = 3.0*Angle_Defect[iPoint]/Area_Vertex[iPoint];
             else GaussK = 0.0;
@@ -3120,7 +3116,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
             /*--- Store the curvature value ---*/
             K[iPoint] = MaxPrinK;
-            node[iPoint]->SetCurvature(K[iPoint]);
+            nodes->SetCurvature(iPoint, K[iPoint]);
           }
 
         }
@@ -3147,7 +3143,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           MaxK = max(MaxK, fabs(K[iPoint]));
           MinK = min(MinK, fabs(K[iPoint]));
           MeanK += fabs(K[iPoint]);
@@ -3175,7 +3171,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           SigmaK += (fabs(K[iPoint]) - MeanK) * (fabs(K[iPoint]) - MeanK);
         }
       }
@@ -3198,7 +3194,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           if (fabs(K[iPoint]) > MeanK + config->GetRefSharpEdges()*SigmaK) {
             Point_Critical.push_back(iPoint);
           }
@@ -3257,7 +3253,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
     iPoint = Point_Critical[iVertex];
     for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+      Buffer_Send_Coord[iVertex*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
   }
 
 #ifdef HAVE_MPI
@@ -3275,7 +3271,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
    Store the minimum distance to the wall for each interior mesh node. ---*/
 
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    Coord = node[iPoint]->GetCoord();
+    Coord = nodes->GetCoord(iPoint);
 
     MinDist = 1E20;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -3290,7 +3286,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
         if (Dist < MinDist) MinDist = Dist;
       }
     }
-    node[iPoint]->SetSharpEdge_Distance(MinDist);
+    nodes->SetSharpEdge_Distance(iPoint, MinDist);
   }
 
   /*--- Deallocate Max curvature ---*/
@@ -3712,7 +3708,7 @@ void CGeometry::SetElemVolume(CConfig *config)
     for (unsigned short iNode=0; iNode<elem[iElem]->GetnNodes(); ++iNode) {
       unsigned long node_idx = elem[iElem]->GetNode(iNode);
       for (unsigned short iDim=0; iDim<nDim; ++iDim) {
-        su2double coord = node[node_idx]->GetCoord(iDim);
+        su2double coord = nodes->GetCoord(node_idx, iDim);
         element->SetRef_Coord(iNode, iDim, coord);
       }
     }
@@ -3762,9 +3758,9 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
-        Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
-        Ycoord[iVertex_Wall] = node[iPoint]->GetCoord(1);
-        if (nDim==3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
+        Xcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 0);
+        Ycoord[iVertex_Wall] = nodes->GetCoord(iPoint, 1);
+        if (nDim==3) Zcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 2);
         Face_Normal = vertex[iMarker][iVertex]->GetNormal();
         FaceArea[iVertex_Wall] = fabs(Face_Normal[nDim-1]);
         iVertex_Wall ++;
@@ -3794,17 +3790,17 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   /*--- Distribute the values among the different PhiAngles ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (node[iPoint]->GetDomain()) {
+    if (nodes->GetDomain(iPoint)) {
       loop_on = true;
       for (ixCoord = 0; ixCoord < XCoordList.size()-1 && loop_on; ixCoord++) {
-        dist_ratio = (node[iPoint]->GetCoord(0) - XCoordList[ixCoord])/(XCoordList[ixCoord+1]- XCoordList[ixCoord]);
+        dist_ratio = (nodes->GetCoord(iPoint, 0) - XCoordList[ixCoord])/(XCoordList[ixCoord+1]- XCoordList[ixCoord]);
         if (dist_ratio >= 0 && dist_ratio <= 1.0) {
           if (dist_ratio <= 0.5) iCoord = ixCoord;
           else iCoord = ixCoord+1;
-          Xcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(0) );
-          Ycoord_plane[iCoord].push_back(node[iPoint]->GetCoord(1) );
-          if (nDim==3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
-          FaceArea_plane[iCoord].push_back(node[iPoint]->GetVolume());   ///// CHECK AREA CALCULATION
+          Xcoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 0) );
+          Ycoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 1) );
+          if (nDim==3) Zcoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 2) );
+          FaceArea_plane[iCoord].push_back(nodes->GetVolume(iPoint));   ///// CHECK AREA CALCULATION
           Plane_points[iCoord].push_back(iPoint );
           loop_on = false;
         }
@@ -3863,7 +3859,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
     /*--- Get the coordinates of the current node ---*/
 
-    const su2double* Coord = node[iPoint]->GetCoord();
+    const su2double* Coord = nodes->GetCoord(iPoint);
 
     /*--- Calculate the non-dim. distance from the rotation center ---*/
 
@@ -3878,7 +3874,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
     /*--- Store the grid velocity at this node ---*/
 
-    node[iPoint]->SetGridVel(RotVel);
+    nodes->SetGridVel(iPoint, RotVel);
 
   }
 
@@ -3896,7 +3892,7 @@ void CGeometry::SetShroudVelocity(CConfig *config) {
       if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
         for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          node[iPoint]->SetGridVel(RotVel);
+          nodes->SetGridVel(iPoint, RotVel);
         }
       }
     }
@@ -3922,7 +3918,7 @@ void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
   /*--- Loop over all nodes and set the translational velocity ---*/
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetGridVel(xDot);
+    nodes->SetGridVel(iPoint, xDot);
 
 }
 
@@ -3941,9 +3937,9 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
 
-    const su2double *Coord_nM1 = node[iPoint]->GetCoord_n1();
-    const su2double *Coord_n   = node[iPoint]->GetCoord_n();
-    const su2double *Coord_nP1 = node[iPoint]->GetCoord();
+    const su2double *Coord_nM1 = nodes->GetCoord_n1(iPoint);
+    const su2double *Coord_n   = nodes->GetCoord_n(iPoint);
+    const su2double *Coord_nP1 = nodes->GetCoord(iPoint);
 
     /*--- Compute and store mesh velocity with 1st or 2nd-order approximation ---*/
 
@@ -3957,7 +3953,7 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
       if (SecondOrder)
         GridVel = (1.5*Coord_nP1[iDim] - 2.0*Coord_n[iDim] + 0.5*Coord_nM1[iDim]) / TimeStep;
 
-      node[iPoint]->SetGridVel(iDim, GridVel);
+      nodes->SetGridVel(iPoint, iDim, GridVel);
     }
   }
 

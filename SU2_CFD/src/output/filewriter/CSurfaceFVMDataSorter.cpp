@@ -1191,7 +1191,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
             /*--- Get the index of the current point. ---*/
 
             iPoint = geometry->bound[iMarker][ii]->GetNode(jj);
-            Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+            Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
             /*--- Search for the lowest global index in this element. We
              send the element to the processor owning the range that includes
@@ -1199,7 +1199,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
             for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
               jPoint = geometry->bound[iMarker][ii]->GetNode(kk);
-              unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+              unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
               if (newID < Global_Index) Global_Index = newID;
             }
 
@@ -1286,7 +1286,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
             /*--- Get the index of the current point. ---*/
 
             iPoint = geometry->bound[iMarker][ii]->GetNode(jj);
-            Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+            Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
             /*--- Search for the lowest global index in this element. We
              send the element to the processor owning the range that includes
@@ -1294,7 +1294,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
             for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
               jPoint = geometry->bound[iMarker][ii]->GetNode(kk);
-              unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+              unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
               if (newID < Global_Index) Global_Index = newID;
             }
 
@@ -1314,7 +1314,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
               for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
                 iPoint = geometry->bound[iMarker][ii]->GetNode(kk);
-                connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+                connSend[nn] = geometry->nodes->GetGlobalIndex(iPoint); nn++;
 
                 /*--- Check if this is a halo node. If so, flag this element
                  as a halo cell. We will use this later to sort and remove

@@ -176,11 +176,11 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
       const auto iPoint = target_vertex->GetNode();
 
-      if (!target_geometry->node[iPoint]->GetDomain()) continue;
+      if (!target_geometry->nodes->GetDomain(iPoint)) continue;
       totalCount += 1;
 
       /*--- Coordinates of the target point. ---*/
-      const su2double* coord_i = target_geometry->node[iPoint]->GetCoord();
+      const su2double* coord_i = target_geometry->nodes->GetCoord(iPoint);
 
       /*--- Find the closest donor vertex. ---*/
       su2double minDist = 1e9;

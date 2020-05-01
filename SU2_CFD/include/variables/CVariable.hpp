@@ -52,30 +52,6 @@ protected:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
-  /*--- This contrived container is used to store matrices in a contiguous manner but still present the
-   "su2double**" interface to the outside world, it will be replaced by something more efficient. ---*/
-  struct VectorOfMatrix {
-    su2activevector storage;
-    su2matrix<su2double*> interface;
-    unsigned long M, N;
-
-    void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value) {
-      M = rows;
-      N = cols;
-      storage.resize(length*rows*cols) = value;
-      interface.resize(length,rows);
-
-      for(unsigned long i=0; i<length; ++i)
-        for(unsigned long j=0; j<rows; ++j)
-          interface(i,j) = &(*this)(i,j,0);
-    }
-
-    su2double& operator() (unsigned long i, unsigned long j, unsigned long k) { return storage(i*M*N + j*N + k); }
-    const su2double& operator() (unsigned long i, unsigned long j, unsigned long k) const { return storage(i*M*N + j*N + k); }
-
-    su2double** operator[] (unsigned long i) { return interface[i]; }
-  };
-
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
@@ -93,8 +69,8 @@ protected:
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
 
-  VectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
-  VectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
+  CVectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
@@ -745,7 +721,7 @@ public:
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
-  inline VectorOfMatrix& GetGradient(void) { return Gradient; }
+  inline CVectorOfMatrix& GetGradient(void) { return Gradient; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -792,7 +768,7 @@ public:
    * \brief Get the value Rmatrix for the entire domain.
    * \return Reference to the Rmatrix.
    */
-  inline VectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
+  inline CVectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -1973,7 +1949,7 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline virtual VectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
+  inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

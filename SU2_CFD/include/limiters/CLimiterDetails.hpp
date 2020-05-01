@@ -272,7 +272,7 @@ struct CLimiterDetails<SHARP_EDGES>
    */
   inline su2double geometricFactor(size_t iPoint, CGeometry& geometry) const
   {
-    AD::SetPreaccIn(geometry.node[iPoint]->GetSharpEdge_Distance());
+    AD::SetPreaccIn(geometry.nodes->GetSharpEdge_Distance(iPoint));
     su2double dist = geometry.node[iPoint]->GetSharpEdge_Distance()/(sharpCoeff*eps1)-1.0;
     return LimiterHelpers::raisedSine(dist);
   }
@@ -313,7 +313,7 @@ struct CLimiterDetails<WALL_DISTANCE>
    */
   inline su2double geometricFactor(size_t iPoint, CGeometry& geometry) const
   {
-    AD::SetPreaccIn(geometry.node[iPoint]->GetWall_Distance());
+    AD::SetPreaccIn(geometry.nodes->GetWall_Distance(iPoint));
     su2double dist = geometry.node[iPoint]->GetWall_Distance()/(sharpCoeff*eps1)-1.0;
     return LimiterHelpers::raisedSine(dist);
   }

@@ -2856,7 +2856,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
           unsigned long ind = MI->second;
 
           for(unsigned l=0; l<nDim; ++l)
-            facesDonor[k].cornerCoor[j][l] = node[ind]->GetCoord(l);
+            facesDonor[k].cornerCoor[j][l] = nodes->GetCoord(ind, l);
         }
 
         /*--- Create the tolerance for this face and sort the coordinates. ---*/
@@ -3038,7 +3038,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
           map<unsigned long,unsigned long>::const_iterator MI;
           MI = globalPointIDToLocalInd.find(faceConn[0][j]);
           unsigned long ind = MI->second;
-          const su2double *coor = node[ind]->GetCoord();
+          const su2double *coor = nodes->GetCoord(ind);
 
           const su2double dx =             coor[0] - center[0];
           const su2double dy =             coor[1] - center[1];
@@ -3135,7 +3135,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
       unsigned long ind = MI->second;
       for(unsigned short k=0; k<nDim; ++k, ++jj)
-        vecRHS[jj] = node[ind]->GetCoord(k);
+        vecRHS[jj] = nodes->GetCoord(ind, k);
     }
 
     /*--- Get the pointer to the matrix storage of the basis functions and its
@@ -3497,7 +3497,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   unsigned long jj = 0;
   for(unsigned long l=0; l<nPoint; ++l) {
     for(unsigned short k=0; k<nDim; ++k, ++jj)
-      volCoor[jj] = node[l]->GetCoord(k);
+      volCoor[jj] = nodes->GetCoord(l, k);
   }
 
   /* Build the local ADT. */
@@ -3658,7 +3658,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
               MI = globalPointIDToLocalInd.find(nodeID);
               nodeID = MI->second;
               for(unsigned short k=0; k<nDim; ++k, ++ii)
-              coorBoundFace[ii] = node[nodeID]->GetCoord(k);
+              coorBoundFace[ii] = nodes->GetCoord(nodeID, k);
             }
 
             /* Set the multiplication factor for the normal, such that

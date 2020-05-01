@@ -321,8 +321,8 @@ void CGridAdaptation::SetWake_Refinement(CGeometry *geometry, unsigned short str
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 		for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
 			iPoint = geometry->elem[iElem]->GetNode(iNode);
-			Coordx = geometry->node[iPoint]->GetCoord(0);
-			Coordy = geometry->node[iPoint]->GetCoord(1);
+			Coordx = geometry->nodes->GetCoord(iPoint, 0);
+			Coordy = geometry->nodes->GetCoord(iPoint, 1);
 			dist = sqrt(Coordx*Coordx+Coordy*Coordy);
 			if (dist < wake) {
 				geometry->elem[iElem]->SetDivide (true);
@@ -343,8 +343,8 @@ void CGridAdaptation::SetSupShock_Refinement(CGeometry *geometry, CConfig *confi
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 		for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
 			iPoint = geometry->elem[iElem]->GetNode(iNode);
-			Coordx = geometry->node[iPoint]->GetCoord(0);
-			Coordy = geometry->node[iPoint]->GetCoord(1);
+			Coordx = geometry->nodes->GetCoord(iPoint, 0);
+			Coordy = geometry->nodes->GetCoord(iPoint, 1);
 			if (Coordy < 0.0)
 			if ((Coordx > fabs(Coordy/tan(mu_2))-0.25) && (Coordx < fabs(Coordy/tan(mu_1))+1.25)) {
 				geometry->elem[iElem]->SetDivide (true);
@@ -1670,9 +1670,9 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 
 				if (DivEdge[edge]) {
 
-					unsigned long iv_1 = geometry->node[ip_1]->GetVertex(iMarker);
+					unsigned long iv_1 = geometry->nodes->GetVertex(ip_1, iMarker);
 					unsigned long ip_1_Nearfield = geometry->vertex[iMarker][iv_1]->GetDonorPoint();
-					unsigned long iv_0 = geometry->node[ip_0]->GetVertex(iMarker);
+					unsigned long iv_0 = geometry->nodes->GetVertex(ip_0, iMarker);
 					unsigned long ip_0_Nearfield = geometry->vertex[iMarker][iv_0]->GetDonorPoint();
 
 					long edge_Nearfield = geometry->FindEdge(ip_0_Nearfield, ip_1_Nearfield);
@@ -1846,7 +1846,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 							NewNodeCoord[nPoint_new][iDim] = 0.25*(geometry->node[no_0]->GetCoord(iDim) +
 																										geometry->node[no_1]->GetCoord(iDim) +
 																										geometry->node[no_2]->GetCoord(iDim) +
-																										geometry->node[no_3]->GetCoord(iDim));
+																										geometry->nodes->GetCoord(no_3, iDim));
 
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.25 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]+ConsVar_Adapt[no_2][iVar]+ConsVar_Adapt[no_3][iVar]);
@@ -2168,8 +2168,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		long nNewBCcv = 0;
 		for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
 
-			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->node[ip_0]->SetBoundary(geometry->GetnMarker());
-			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1); geo_adapt->node[ip_1]->SetBoundary(geometry->GetnMarker());
+			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->nodes->SetBoundary(ip_0, geometry->GetnMarker());
+			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1); geo_adapt->nodes->SetBoundary(ip_1, geometry->GetnMarker());
 			long ip_01 = NodeAtEdges[geometry->FindEdge(ip_0, ip_1)];
 
 			if (ip_01 != -1) {
@@ -2189,7 +2189,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 //                                    chord (so 100 t gives the last two digits in
 //                                    the NACA 4-digit denomination) ---*/
 //
-//          su2double *Coord = geo_adapt->node[ip_01]->GetCoord();
+//          su2double *Coord = geo_adapt->nodes->GetCoord(ip_01);
 //          su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //
 //          su2double Ycurv = 0.0;
@@ -2205,7 +2205,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 //
 //        }
 
-				geo_adapt->node[ip_01]->SetBoundary(geometry->GetnMarker());
+				geo_adapt->nodes->SetBoundary(ip_01, geometry->GetnMarker());
 				geo_adapt->bound[iMarker][nNewBCcv] = new CLine(ip_0, ip_01, 2);
 				nNewBCcv++;
 				geo_adapt->bound[iMarker][nNewBCcv] = new CLine(ip_01, ip_1, 2);
@@ -2354,8 +2354,8 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			for (iFace = 0; iFace < geometry->elem[iElem]->GetnFaces(); iFace++)
 				for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodesFace(iFace); iNode++) {
 					iPoint = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode));
-					for (ElemIndex = 0; ElemIndex < geometry->node[iPoint]->GetnElem(); ElemIndex++) {
-						jElem = geometry->node[iPoint]->GetElem(ElemIndex);
+					for (ElemIndex = 0; ElemIndex < geometry->nodes->GetnElem(iPoint); ElemIndex++) {
+						jElem = geometry->nodes->GetElem(iPoint, ElemIndex);
 						if (jElem != -1) geometry->elem[jElem]->SetDivide(false);
 					}
 				}
@@ -2368,8 +2368,8 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
 				for (iNode = 0; iNode < geometry->bound[iMarker][iVertex]->GetnNodes(); iNode++) {
 					iPoint = geometry->bound[iMarker][iVertex]->GetNode(iNode);
-					for (ElemIndex = 0; ElemIndex < geometry->node[iPoint]->GetnElem(); ElemIndex++) {
-						jElem = geometry->node[iPoint]->GetElem(ElemIndex);
+					for (ElemIndex = 0; ElemIndex < geometry->nodes->GetnElem(iPoint); ElemIndex++) {
+						jElem = geometry->nodes->GetElem(iPoint, ElemIndex);
 						if (jElem != -1) geometry->elem[jElem]->SetDivide(false);
 					}
 				}
@@ -2668,7 +2668,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 																											geometry->node[no_4]->GetCoord(iDim) +
 																											geometry->node[no_5]->GetCoord(iDim) +
 																											geometry->node[no_6]->GetCoord(iDim) +
-																											geometry->node[no_7]->GetCoord(iDim));
+																											geometry->nodes->GetCoord(no_7, iDim));
 
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.125 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]+ConsVar_Adapt[no_2][iVar]+ConsVar_Adapt[no_3][iVar]+
@@ -3134,11 +3134,11 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			long TriangleAdaptCode, nodes[6];
 			long nNodesBound = geometry->bound[iMarker][iVertex]->GetnNodes();
 
-			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->node[ip_0]->SetBoundary(geometry->GetnMarker());
-			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1); geo_adapt->node[ip_1]->SetBoundary(geometry->GetnMarker());
-			ip_2 = geometry->bound[iMarker][iVertex]->GetNode(2); geo_adapt->node[ip_2]->SetBoundary(geometry->GetnMarker());
+			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->nodes->SetBoundary(ip_0, geometry->GetnMarker());
+			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1); geo_adapt->nodes->SetBoundary(ip_1, geometry->GetnMarker());
+			ip_2 = geometry->bound[iMarker][iVertex]->GetNode(2); geo_adapt->nodes->SetBoundary(ip_2, geometry->GetnMarker());
 			if (nNodesBound == 4) {
-				ip_3 = geometry->bound[iMarker][iVertex]->GetNode(3); geo_adapt->node[ip_3]->SetBoundary(geometry->GetnMarker());
+				ip_3 = geometry->bound[iMarker][iVertex]->GetNode(3); geo_adapt->nodes->SetBoundary(ip_3, geometry->GetnMarker());
 				geo_adapt->bound[iMarker][nNewBCcv] = new CQuadrilateral(ip_0, ip_1, ip_2, ip_3, 3);
 				nNewBCcv++;
 			}
@@ -3150,9 +3150,9 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				if (nNodesBound == 4) nodes[3] = geometry->bound[iMarker][iVertex]->GetNode(3);
 
 				// Next the points that correspond to the broken edges.
-				nodes[3] = NodeAtEdges[geometry->FindEdge(ip_0, ip_1)]; if (nodes[3] != -1) geo_adapt->node[nodes[3]]->SetBoundary(geometry->GetnMarker());
-				nodes[4] = NodeAtEdges[geometry->FindEdge(ip_1, ip_2)]; if (nodes[4] != -1) geo_adapt->node[nodes[4]]->SetBoundary(geometry->GetnMarker());
-				nodes[5] = NodeAtEdges[geometry->FindEdge(ip_0, ip_2)]; if (nodes[5] != -1) geo_adapt->node[nodes[5]]->SetBoundary(geometry->GetnMarker());
+				nodes[3] = NodeAtEdges[geometry->FindEdge(ip_0, ip_1)]; if (nodes[3] != -1) geo_adapt->nodes->SetBoundary(nodes[3], geometry->GetnMarker());
+				nodes[4] = NodeAtEdges[geometry->FindEdge(ip_1, ip_2)]; if (nodes[4] != -1) geo_adapt->nodes->SetBoundary(nodes[4], geometry->GetnMarker());
+				nodes[5] = NodeAtEdges[geometry->FindEdge(ip_0, ip_2)]; if (nodes[5] != -1) geo_adapt->nodes->SetBoundary(nodes[5], geometry->GetnMarker());
 
 				long edges[3] = {-1, -1, -1};
 				if (DivEdge[geometry->FindEdge(ip_0, ip_1)]) { edges[0] = geometry->FindEdge(ip_0, ip_1); TriangleEdgeCode[0] = true;}
@@ -3224,14 +3224,14 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
 
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
-      DualArea = geometry->node[iPoint]->GetVolume();
+      DualArea = geometry->nodes->GetVolume(iPoint);
       Grad_Val = Gradient[iPoint][iDim]/DualArea;
       Gradient[iPoint][iDim] = Grad_Val;
     }
 
   /*--- Compute the the adaptation index at each point ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    Dual_Area = geometry->node[iPoint]->GetVolume();
+    Dual_Area = geometry->nodes->GetVolume(iPoint);
     norm = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       norm += Gradient[iPoint][iDim]*Gradient[iPoint][iDim];
@@ -3292,7 +3292,7 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
 
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
-      DualArea = geometry->node[iPoint]->GetVolume();
+      DualArea = geometry->nodes->GetVolume(iPoint);
       Grad_Val = Gradient[iPoint][iDim]/DualArea;
       Gradient[iPoint][iDim] = Grad_Val;
     }
@@ -3300,7 +3300,7 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
 
   // Compute the the adaptation index at each point.
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    Dual_Area = geometry->node[iPoint]->GetVolume();
+    Dual_Area = geometry->nodes->GetVolume(iPoint);
     norm = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       norm += Gradient[iPoint][iDim]*Gradient[iPoint][iDim];
@@ -3363,14 +3363,14 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
 
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
-      DualArea = geometry->node[iPoint]->GetVolume();
+      DualArea = geometry->nodes->GetVolume(iPoint);
       Gradient_Flow[iPoint][iDim] = Gradient_Flow[iPoint][iDim]/DualArea;
       Gradient_Adj[iPoint][iDim] = Gradient_Adj[iPoint][iDim]/DualArea;
     }
 
   // Compute the the adaptation index at each point.
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    Dual_Area=geometry->node[iPoint]->GetVolume();
+    Dual_Area=geometry->nodes->GetVolume(iPoint);
     norm = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       norm += Gradient_Flow[iPoint][iDim]*Gradient_Flow[iPoint][iDim];
@@ -3383,7 +3383,7 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
 
   // Compute the the adaptation index at each point.
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    Dual_Area=geometry->node[iPoint]->GetVolume();
+    Dual_Area=geometry->nodes->GetVolume(iPoint);
     norm = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       norm += Gradient_Adj[iPoint][iDim]*Gradient_Adj[iPoint][iDim];
@@ -3408,7 +3408,7 @@ void CGridAdaptation::SetIndicator_Robust(CGeometry *geometry, CConfig *config) 
 
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area = geometry->node[iPoint]->GetVolume();
+		Dual_Area = geometry->nodes->GetVolume(iPoint);
 		Index[iPoint] = 0.0;
 		for (iVar = 0; iVar < nVar; iVar++)
 			Index[iPoint] += ConsVar_Res[iPoint][iVar]*ConsVar_Res[iPoint][iVar];
@@ -3420,7 +3420,7 @@ void CGridAdaptation::SetIndicator_Robust(CGeometry *geometry, CConfig *config) 
 	SetSensorElem(geometry, config, max_elem_new_flow);
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area = geometry->node[iPoint]->GetVolume();
+		Dual_Area = geometry->nodes->GetVolume(iPoint);
 		Index[iPoint] = 0.0;
 		for (iVar = 0; iVar < nVar; iVar++)
 			Index[iPoint] += AdjVar_Res[iPoint][iVar]*AdjVar_Res[iPoint][iVar];
@@ -3445,7 +3445,7 @@ void CGridAdaptation::SetIndicator_Computable(CGeometry *geometry, CConfig *conf
 	}
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area = geometry->node[iPoint]->GetVolume();
+		Dual_Area = geometry->nodes->GetVolume(iPoint);
 		Index[iPoint] = 0.0;
 		for (iVar = 0; iVar < nVar; iVar++)
 			Index[iPoint] += ConsVar_Res[iPoint][iVar]*AdjVar_Sol[iPoint][iVar]*ConsVar_Res[iPoint][iVar]*AdjVar_Sol[iPoint][iVar];
@@ -3470,7 +3470,7 @@ void CGridAdaptation::SetIndicator_Computable_Robust(CGeometry *geometry, CConfi
 	}
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area = geometry->node[iPoint]->GetVolume();
+		Dual_Area = geometry->nodes->GetVolume(iPoint);
 		Index[iPoint] = 0.0;
 		for (iVar = 0; iVar < nVar; iVar++)
 			Index[iPoint] += LinVar_Res[iPoint][iVar]*AdjVar_Sol[iPoint][iVar]*LinVar_Res[iPoint][iVar]*AdjVar_Sol[iPoint][iVar];

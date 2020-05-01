@@ -771,7 +771,7 @@ void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, C
       /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
       if (Kind_Grid_Movement == GUST) {
         for (iDim = 0; iDim < nDim; iDim++)
-          geometry[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
+          geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, 0.0);
       }
 
       /*--- initialize the gust and derivatives to zero everywhere ---*/
@@ -864,13 +864,13 @@ void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, C
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGust(iPoint, Gust);
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGustDer(iPoint, GustDer);
 
-      GridVel = geometry[iMGlevel]->node[iPoint]->GetGridVel();
+      GridVel = geometry[iMGlevel]->nodes->GetGridVel(iPoint);
 
       /*--- Store new grid velocity ---*/
 
       for (iDim = 0; iDim < nDim; iDim++) {
         NewGridVel[iDim] = GridVel[iDim] - Gust[iDim];
-        geometry[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
+        geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, NewGridVel[iDim]);
       }
 
     }
@@ -1783,8 +1783,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           }
           if (grid_IsMoving) {
             for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n();
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n1();
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint);
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1(iPoint);
             }
           }
         }
@@ -1806,7 +1806,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           }
           if (grid_IsMoving) {
             for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n();
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint);
             }
           }
         }
@@ -1853,7 +1853,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
         }
         if (grid_IsMoving) {
           for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-            geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_Old();
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_Old(iPoint);
           }
         }
       }

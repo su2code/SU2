@@ -918,12 +918,12 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
         /*--- Update cell volume ---*/
 
-        geometry[iMGlevel]->node[iPoint]->SetVolume_n();
-        geometry[iMGlevel]->node[iPoint]->SetVolume_nM1();
+        geometry[iMGlevel]->nodes->SetVolume_n(iPoint);
+        geometry[iMGlevel]->nodes->SetVolume_nM1(iPoint);
 
         /*--- Update point coordinates ---*/
-        geometry[iMGlevel]->node[iPoint]->SetCoord_n();
-        geometry[iMGlevel]->node[iPoint]->SetCoord_n1();
+        geometry[iMGlevel]->nodes->SetCoord_n(iPoint);
+        geometry[iMGlevel]->nodes->SetCoord_n1(iPoint);
 
       }
     }

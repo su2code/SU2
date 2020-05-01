@@ -251,7 +251,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
            iMarker = jMarker;
            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-             if (geometry->node[iPoint]->GetDomain()) {
+             if (geometry->nodes->GetDomain(iPoint)) {
                Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
                Area = 0.0;
                for (iDim = 0; iDim < nDim; iDim++)
@@ -352,7 +352,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Get the distance form a sharp edge ---*/
 
-    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
+    SharpEdge_Distance = geometry->nodes->GetSharpEdge_Distance(iPoint);
 
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
@@ -494,7 +494,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Set volume ---*/
 
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
 
@@ -514,7 +514,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set distance to the surface ---*/
 
-      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+      numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
 
     }
 
@@ -593,7 +593,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
                                      nodes->GetSolution(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
-      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the adjoint rotating frame source residual ---*/
       second_numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -704,7 +704,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           PsiVar_Grad = nodes->GetGradient(iPoint);
           PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
@@ -804,7 +804,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
 
-            GridVel_Grad = geometry->node[iPoint]->GetGridVel_Grad();
+            GridVel_Grad = geometry->nodes->GetGridVel_Grad(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               normal_grad_gridvel[iDim] = 0.0;
               for (jDim = 0; jDim < nDim; jDim++)
@@ -934,7 +934,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Psi = nodes->GetSolution(iPoint);
           U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1088,7 +1088,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           p = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
@@ -1242,7 +1242,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -1272,7 +1272,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Correct the adjoint velocity BC for dynamic meshes ---*/
 
       if (grid_movement) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           phi[iDim] -= Psi[nDim+1]*GridVel[iDim];
       }
@@ -1306,7 +1306,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Get the grid velocity at this node and impose v = u_wall ---*/
 
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = GridVel[iDim];
 
         /*--- Get some additional quantities from the flow solution ---*/
@@ -1389,8 +1389,8 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
             /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
-            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
+            Coord_j = geometry->nodes->GetCoord(Point_Normal);
             dist_ij_2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -1462,8 +1462,8 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
             /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
-            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
+            Coord_j = geometry->nodes->GetCoord(Point_Normal);
             dist_ij_2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -1625,7 +1625,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -1643,7 +1643,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      Volume = geometry->node[iPoint]->GetVolume();
+      Volume = geometry->nodes->GetVolume(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Get the force projection vector (based on the objective function) ---*/
@@ -1651,7 +1651,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
       if ( grid_movement) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) {
           phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
         }
@@ -1780,7 +1780,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       if (grid_movement) {
 
         /*--- Get the appropriate grid velocity at this node ---*/
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
 
         /*--- Get the enthalpy from the direct solution ---*/
         Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);

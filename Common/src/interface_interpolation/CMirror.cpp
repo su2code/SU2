@@ -104,10 +104,10 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
       const auto iPoint = donor_vertex->GetNode();
 
-      if (!donor_geometry->node[iPoint]->GetDomain()) continue;
+      if (!donor_geometry->nodes->GetDomain(iPoint)) continue;
 
       const auto nDonor = donor_vertex->GetnDonorPoints();
-      const auto donorGlobalIndex = donor_geometry->node[iPoint]->GetGlobalIndex();
+      const auto donorGlobalIndex = donor_geometry->nodes->GetGlobalIndex(iPoint);
 
       for (auto i = 0u; i < nDonor; ++i) {
         sendGlobalIndex[iDonor] = donorGlobalIndex;
@@ -191,10 +191,10 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       auto target_vertex = target_geometry->vertex[markTarget][iVertex];
       const auto iPoint = target_vertex->GetNode();
 
-      if (!target_geometry->node[iPoint]->GetDomain()) continue;
+      if (!target_geometry->nodes->GetDomain(iPoint)) continue;
 
       /*--- Any point of the donor geometry, that has this target point as a donor, becomes a donor. ---*/
-      const long targetGlobalIndex = target_geometry->node[iPoint]->GetGlobalIndex();
+      const long targetGlobalIndex = target_geometry->nodes->GetGlobalIndex(iPoint);
 
       /*--- Count donors and safe the binary search results (this is why we sorted the matrix). ---*/
       auto nDonor = 0ul;

@@ -286,7 +286,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
       if (target_geometry->node[pointTarget]->GetDomain()) {
         targetVertices.push_back(targetVertex);
-        targetCoord.push_back(target_geometry->node[pointTarget]->GetCoord());
+        targetCoord.push_back(target_geometry->nodes->GetCoord(pointTarget));
       }
     }
     nVertexTarget = targetVertices.size();

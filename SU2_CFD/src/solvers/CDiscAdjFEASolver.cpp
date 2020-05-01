@@ -120,7 +120,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
@@ -831,14 +831,14 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    su2double *Coord = geometry->node[iPoint]->GetCoord();
+    su2double *Coord = geometry->nodes->GetCoord(iPoint);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double Sensitivity;
 
       if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+        Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
       }
       else {
         Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);

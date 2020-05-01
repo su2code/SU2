@@ -314,7 +314,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
           iMarker = jMarker;
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            if (geometry->node[iPoint]->GetDomain()) {
+            if (geometry->nodes->GetDomain(iPoint)) {
               Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
               Area = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
@@ -464,7 +464,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
             Buffer_Send_nPointTotal++;
           }
         }
@@ -565,9 +565,9 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
 
-            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            iGlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
             jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
             jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
 
@@ -780,7 +780,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
             Buffer_Send_nPointTotal++;
           }
         }
@@ -880,9 +880,9 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
 
-            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            iGlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
             jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
             jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
 
@@ -1102,9 +1102,9 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        x = geometry->node[iPoint]->GetCoord(0);
-        y = geometry->node[iPoint]->GetCoord(1);
-        if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
+        x = geometry->nodes->GetCoord(iPoint, 0);
+        y = geometry->nodes->GetCoord(iPoint, 1);
+        if (nDim == 3) z = geometry->nodes->GetCoord(iPoint, 2);
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         ForceProj_Vector2 = nodes->GetForceProj_Vector(iPoint);
@@ -1356,9 +1356,9 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
         for (iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = Normal[iDim]/Area;
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
-          coord = geometry->node[iPoint]->GetCoord();
+          coord = geometry->nodes->GetCoord(iPoint);
           DerivativeOF = 0.0;
 
           /*--- Just in case the functional depend also on the surface pressure ---*/
@@ -1584,11 +1584,11 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
     Solution = new su2double[nVar];
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+        Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-        for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-          Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-          Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+          Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+          Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
           Solution_Fine = solver_container[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
           for (iVar = 0; iVar < nVar; iVar++) {
             Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -1640,7 +1640,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Get the distance form a sharp edge ---*/
 
-    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
+    SharpEdge_Distance = geometry->nodes->GetSharpEdge_Distance(iPoint);
 
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
@@ -1941,7 +1941,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
                               nodes->GetSolution(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the adjoint rotating frame source residual ---*/
       numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -1963,7 +1963,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get control volume ---*/
-      Volume = geometry->node[iPoint]->GetVolume();
+      Volume = geometry->nodes->GetVolume(iPoint);
 
       /*--- Get stored harmonic balance source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -1996,7 +1996,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       numerics->SetAdjointVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
       /*--- Set control volume ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Set coordinate ---*/
       numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
@@ -2042,27 +2042,27 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 
 #ifdef STRUCTURED_GRID
 
-    if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint, Diff);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint, Diff);
 
 #else
 
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+    bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
     /*--- Both points inside the domain, or both in the boundary ---*/
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint, Diff);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint, Diff);
     }
 
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
     if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint, Diff);
 
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
     if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint, Diff);
 
 #endif
 
@@ -2088,14 +2088,14 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
           /*--- Interpolate & compute difference in the conserved variables ---*/
 
           for (iVar = 0; iVar < nVar; iVar++) {
-            Psi_mirror[iVar] = 2.0*node[iPoint]->GetSolution(iVar) - nodes->GetSolution(Point_Normal, iVar);
+            Psi_mirror[iVar] = 2.0*nodes->GetSolution(iPoint, iVar) - nodes->GetSolution(Point_Normal, iVar);
             Diff[iVar]   = nodes->GetSolution(iPoint,iVar) - Psi_mirror[iVar];
           }
 
@@ -2134,7 +2134,7 @@ void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps);
+    SharpEdge_Distance = (geometry->nodes->GetSharpEdge_Distance(iPoint) - config->GetAdjSharp_LimiterCoeff()*eps);
 
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
@@ -2169,7 +2169,7 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
     Delta = solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) / Vol;
 
     Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -2206,7 +2206,7 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
     Delta = solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) / Vol;
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -2254,7 +2254,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
     /*--- Read the volume ---*/
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
@@ -2390,7 +2390,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Psi = nodes->GetSolution(iPoint);
           U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
@@ -2401,8 +2401,8 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
           /*--- Also load the auxiliary variable for first neighbors ---*/
 
-          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-            Neigh = geometry->node[iPoint]->GetPoint(iNeigh);
+          for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+            Neigh = geometry->nodes->GetPoint(iPoint, iNeigh);
             Psi = nodes->GetSolution(Neigh);
             U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(Neigh);
             Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(Neigh);
@@ -2425,7 +2425,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           d = nodes->GetForceProj_Vector(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -2456,7 +2456,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             /*--- Additional sensitivity term for grid movement ---*/
 
             if (grid_movement) {
-              GridVel = geometry->node[iPoint]->GetGridVel();
+              GridVel = geometry->nodes->GetGridVel(iPoint);
               v_gradconspsi -= GridVel[iDim] * ConsPsi_Grad[iDim];
             }
 
@@ -2495,7 +2495,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Psi = nodes->GetSolution(iPoint);
           U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -2542,7 +2542,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Psi = nodes->GetSolution(iPoint);
           U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -2693,7 +2693,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           p = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
@@ -2821,9 +2821,9 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       ArchLength[0] = 0.0;
       for (iVertex = 1; iVertex < nVertex; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex-1]->GetNode();
-        Coord_begin = geometry->node[iPoint]->GetCoord();
+        Coord_begin = geometry->nodes->GetCoord(iPoint);
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord_end = geometry->node[iPoint]->GetCoord();
+        Coord_end = geometry->nodes->GetCoord(iPoint);
         dist = sqrt (pow( Coord_end[0]-Coord_begin[0], 2.0) + pow( Coord_end[1]-Coord_begin[1], 2.0));
         ArchLength[iVertex] = ArchLength[iVertex-1] + dist;
       }
@@ -3049,7 +3049,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
       /*--- Create a copy of the adjoint solution ---*/
@@ -3085,7 +3085,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
       /*--- Extra boundary term for grid movement ---*/
       if (grid_movement) {
         su2double ProjGridVel = 0.0;
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         phin -= Psi[nVar-1]*ProjGridVel;
@@ -3111,7 +3111,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
       /*--- Flux adjustment for grid movement ---*/
       if (grid_movement) {
         su2double ProjGridVel = 0.0;
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel -= GridVel[iDim]*Normal[iDim];
         Residual[0] -= ProjGridVel*Psi[0];
@@ -3146,7 +3146,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
         /*--- Jacobian contribution due to grid movement ---*/
         if (grid_movement) {
           su2double ProjGridVel = 0.0;
-          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel -= GridVel[iDim]*Normal[iDim];
           Jacobian_ii[0][0] -= ProjGridVel;
@@ -3193,7 +3193,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
@@ -3229,7 +3229,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
       if (grid_movement) {
         su2double ProjGridVel = 0.0;
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) {
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         }
@@ -3260,7 +3260,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
       if (grid_movement) {
         su2double ProjGridVel = 0.0;
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel -= GridVel[iDim]*Normal[iDim];
         Residual_i[0] -= ProjGridVel*Psi_domain[0];
@@ -3305,7 +3305,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
         if (grid_movement) {
           su2double ProjGridVel = 0.0;
-          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel -= GridVel[iDim]*Normal[iDim];
           Jacobian_ii[0][0] -= ProjGridVel;
@@ -3347,10 +3347,10 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_iPoint = geometry->nodes->GetGlobalIndex(iPoint);
     GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
 
-    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+    if ((geometry->nodes->GetDomain(iPoint)) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
 
       /*--- Store the solution for both points ---*/
 
@@ -3412,10 +3412,10 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_iPoint = geometry->nodes->GetGlobalIndex(iPoint);
     GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
 
-    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+    if ((geometry->nodes->GetDomain(iPoint)) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
 
       /*--- Store the solution for both points ---*/
 
@@ -3513,7 +3513,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- If the node belongs to the domain ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
 
@@ -3619,7 +3619,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 
     /*--- Check that the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -3654,7 +3654,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -3734,7 +3734,7 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
 
     /*--- Check that the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -3769,7 +3769,7 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
 
       if (grid_movement)
       conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                geometry->node[iPoint]->GetGridVel());
+                                geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -3852,7 +3852,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- Check that the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -3923,7 +3923,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
         /*--- Extra boundary term for grid movement ---*/
         if (grid_movement) {
           ProjGridVel = 0.0;
-          GridVel = geometry->node[iPoint]->GetGridVel();
+          GridVel = geometry->nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
           bcn -= (1.0/Gamma_Minus_One)*ProjGridVel;
@@ -3945,7 +3945,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -4043,7 +4043,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- If the node belong to the domain ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -4097,7 +4097,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
       /*--- Extra boundary term for grid movement ---*/
       if (grid_movement) {
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
       }
@@ -4166,7 +4166,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         if (grid_movement) {
           ProjGridVel = 0.0;
-          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         }
@@ -4229,7 +4229,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-            geometry->node[iPoint]->GetGridVel());
+            geometry->nodes->GetGridVel(iPoint));
 
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
           Jacobian_ji, Jacobian_jj, config);
@@ -4312,7 +4312,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
 
     /*--- If the node belong to the domain ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -4435,7 +4435,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
 
     /*--- Check that the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -4516,11 +4516,11 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
     GlobalIndex_inlet = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
 
     /*--- If the node belong to the domain ---*/
 
-    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex != GlobalIndex_inlet)) {
+    if ((geometry->nodes->GetDomain(iPoint)) && (GlobalIndex != GlobalIndex_inlet)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -4649,11 +4649,11 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
     GlobalIndex_inlet = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
 
     /*--- Check that the node belongs to the domain (i.e., not a halo node) and to discard the perimeter ---*/
 
-    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex != GlobalIndex_inlet)) {
+    if ((geometry->nodes->GetDomain(iPoint)) && (GlobalIndex != GlobalIndex_inlet)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -4743,14 +4743,14 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
     /*--- Volume at time n-1 and n ---*/
     if (Grid_Movement) {
-      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
-      Volume_n = geometry->node[iPoint]->GetVolume_n();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
+      Volume_n = geometry->nodes->GetVolume_n(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
     }
     else {
-      Volume_nM1 = geometry->node[iPoint]->GetVolume();
-      Volume_n = geometry->node[iPoint]->GetVolume();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nM1 = geometry->nodes->GetVolume(iPoint);
+      Volume_n = geometry->nodes->GetVolume(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
     }
 
     /*--- Time Step ---*/
@@ -4870,11 +4870,11 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;

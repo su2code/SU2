@@ -1146,8 +1146,8 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
           //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+//          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint)) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
             Buffer_Send_nPointTotal++;
           }
         }
@@ -1252,8 +1252,8 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
           //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
 
-//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+//          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint)) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+iVar] = nodes->GetPrimitive(iPoint,iVar);
@@ -1263,7 +1263,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
             }
 
-            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            iGlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
             jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
             jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
 
@@ -1485,7 +1485,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
             Buffer_Send_nPointTotal++;
           }
         }
@@ -1585,8 +1585,8 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
-            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+          if ((iDomain == jDomain) && (geometry->nodes->GetDomain(iPoint))) {
+            iGlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
             jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
             jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
             for (iVar = 0; iVar < nPrimVar; iVar++) {
@@ -2326,7 +2326,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
         su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
         /* Set the solution in this DOF to the initial condition provided by
@@ -2411,7 +2411,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
           Energy_CylND = Pressure_CylND/(Density_CylND*Gamma_Minus_One)+0.5*ModVel_CylND*ModVel_CylND;
 
-          Coord = geometry[iMesh]->node[iPoint]->GetCoord();
+          Coord = geometry[iMesh]->nodes->GetCoord(iPoint);
 
           SubsonicEngine_Cyl = config->GetSubsonicEngine_Cyl();
 
@@ -2779,7 +2779,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (!geometry->node[iPoint]->GetDomain()) continue;
+        if (!geometry->nodes->GetDomain(iPoint)) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
@@ -2792,7 +2792,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         /*--- Adjustment for grid movement ---*/
 
         if (dynamic_grid) {
-          const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          const su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++)
             Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
@@ -2829,7 +2829,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      Vol = geometry->node[iPoint]->GetVolume();
+      Vol = geometry->nodes->GetVolume(iPoint);
 
       if (Vol != 0.0) {
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
@@ -3067,8 +3067,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
-    auto Coord_i = geometry->node[iPoint]->GetCoord();
-    auto Coord_j = geometry->node[jPoint]->GetCoord();
+    auto Coord_i = geometry->nodes->GetCoord(iPoint);
+    auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
     /*--- Roe Turkel preconditioning ---*/
 
@@ -3083,7 +3083,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     if (dynamic_grid) {
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                           geometry->node[jPoint]->GetGridVel());
+                           geometry->nodes->GetGridVel(jPoint));
     }
 
     /*--- Get primitive and secondary variables ---*/
@@ -3273,9 +3273,9 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
 
-      auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
@@ -3372,7 +3372,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
                                 nodes->GetSolution(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the rotating frame source residual ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -3401,7 +3401,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
                                 nodes->GetSolution(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the rotating frame source residual ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -3425,7 +3425,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
       /*--- Set control volume ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
@@ -3452,7 +3452,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
       /*--- Set control volume ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -3471,7 +3471,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get control volume ---*/
-      su2double Volume = geometry->node[iPoint]->GetVolume();
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
 
       /*--- Get stored time spectral source term and add to residual ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -3496,7 +3496,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the rotating frame source residual ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -3524,10 +3524,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/
-        su2double Volume = geometry->node[iPoint]->GetVolume();
+        su2double Volume = geometry->nodes->GetVolume(iPoint);
 
         /*--- Get the current point coordinates. ---*/
-        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        const su2double *coor = geometry->nodes->GetCoord(iPoint);
 
         /*--- Get the MMS source term. ---*/
         vector<su2double> sourceMan(nVar,0.0);
@@ -3568,11 +3568,11 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     nodes->SetLambda(iPoint,0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
-      auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
       auto Normal = geometry->edges->GetNormal(iEdge);
       su2double Area = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
@@ -3586,8 +3586,8 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-        const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+        const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+        const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
@@ -3627,7 +3627,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        auto GridVel = geometry->node[iPoint]->GetGridVel();
+        auto GridVel = geometry->nodes->GetGridVel(iPoint);
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
       }
@@ -3635,7 +3635,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       /*--- Inviscid contribution ---*/
 
       su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         nodes->AddLambda(iPoint,Lambda);
       }
     }
@@ -3671,7 +3671,7 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
     const su2double Pressure_i = nodes->GetPressure(iPoint);
 
     /*--- Initialize. ---*/
@@ -3682,10 +3682,10 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
     jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
       if (boundary_i && !boundary_j) continue;
@@ -3751,12 +3751,12 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
     su2double Ducros_i = 0.0;
-    auto nNeigh = geometry->node[iPoint]->GetnNeighbor();
+    auto nNeigh = geometry->nodes->GetnNeighbor(iPoint);
 
     for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 
       auto jPoint = iPoint;
-      if (iNeigh < nNeigh) jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      if (iNeigh < nNeigh) jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
       /*---- Dilatation for jPoint ---*/
 
@@ -3901,10 +3901,10 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Note that the pressure coefficient is computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
+        if ( (geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES) ) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Coord = geometry->node[iPoint]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
 
           /*--- Quadratic objective function for the near-field.
            This uses the infinity pressure regardless of Mach number. ---*/
@@ -3918,7 +3918,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           /*--- Force computation, note the minus sign due to the
@@ -4226,10 +4226,10 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Note that the pressure coefficient is computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
+        if ( (geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES) ) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Coord = geometry->node[iPoint]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
           Density   = nodes->GetDensity(iPoint);
 
           /*--- Quadratic objective function for the near-field.
@@ -4247,7 +4247,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           /*--- Force computation, note the minus sign due to the
@@ -4542,7 +4542,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
         if (fabs(Res) > resMax[iVar]) {
           resMax[iVar] = fabs(Res);
           idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
         }
       }
     }
@@ -4552,7 +4552,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
     SU2_OMP_CRITICAL
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       AddRes_RMS(iVar, resRMS[iVar]);
-      AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
     }
   }
   SU2_OMP_BARRIER
@@ -4668,14 +4668,14 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       if (Res > resMax[iVar]) {
         resMax[iVar] = Res;
         idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
       }
     }
   }
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
-    AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
 
   /*--- Initialize residual and solution at the ghost points ---*/
@@ -4962,7 +4962,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
             V_inlet = nodes->GetPrimitive(iPoint);
 
@@ -5032,7 +5032,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
             V_outlet = nodes->GetPrimitive(iPoint);
 
@@ -6104,7 +6104,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-            if (geometry->node[iPoint]->GetDomain()) {
+            if (geometry->nodes->GetDomain(iPoint)) {
 
               geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
@@ -6840,7 +6840,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*-------------------------------------------------------------------------------*/
       /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
@@ -6855,7 +6855,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       /*--- Grid movement ---*/
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -6909,7 +6909,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
         /*--- Set the normal vector and the coordinates. ---*/
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[iPoint]->GetCoord());
+                                geometry->nodes->GetCoord(iPoint));
         visc_numerics->SetNormal(Normal);
 
         /*--- Set the primitive and Secondary variables. ---*/
@@ -7049,7 +7049,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
 
@@ -7116,7 +7116,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       Qn_Infty = Vn_Infty;
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           Qn_Infty -= GridVel[iDim]*UnitNormal[iDim];
       }
@@ -7206,7 +7206,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
       }
 
       /*--- Compute the convective residual using an upwind scheme ---*/
@@ -7235,7 +7235,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
+                                geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -7325,7 +7325,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -7514,7 +7514,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       /*--- eigenvalues contribution due to grid motion ---*/
       if (dynamic_grid) {
-        gridVel = geometry->node[iPoint]->GetGridVel();
+        gridVel = geometry->nodes->GetGridVel(iPoint);
 
         su2double ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -7587,7 +7587,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Residual contribution due to grid motion ---*/
       if (dynamic_grid) {
-        gridVel = geometry->node[iPoint]->GetGridVel();
+        gridVel = geometry->nodes->GetGridVel(iPoint);
         su2double projVelocity = 0.0;
 
         for (iDim = 0; iDim < nDim; iDim++)
@@ -7635,7 +7635,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Jacobian contribution due to grid motion ---*/
         if (dynamic_grid)
         {
-          gridVel = geometry->node[iPoint]->GetGridVel();
+          gridVel = geometry->nodes->GetGridVel(iPoint);
           su2double projVelocity = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             projVelocity +=  gridVel[iDim]*Normal[iDim];
@@ -7846,7 +7846,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()){
+      if (geometry->nodes->GetDomain(iPoint)){
 
         /*--- Normalize Normal vector for this vertex (already for outward convention) ---*/
         geometry->turbovertex[val_marker][iSpan][iVertex]->GetNormal(UnitNormal);
@@ -8018,7 +8018,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         /*--- eigenvalues contribution due to grid motion ---*/
         if (dynamic_grid){
-          gridVel = geometry->node[iPoint]->GetGridVel();
+          gridVel = geometry->nodes->GetGridVel(iPoint);
 
           su2double ProjGridVel = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
@@ -8091,7 +8091,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Residual contribution due to grid motion ---*/
         if (dynamic_grid) {
-          gridVel = geometry->node[iPoint]->GetGridVel();
+          gridVel = geometry->nodes->GetGridVel(iPoint);
           su2double projVelocity = 0.0;
 
           for (iDim = 0; iDim < nDim; iDim++)
@@ -8139,7 +8139,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           /*--- Jacobian contribution due to grid motion ---*/
           if (dynamic_grid)
           {
-            gridVel = geometry->node[iPoint]->GetGridVel();
+            gridVel = geometry->nodes->GetGridVel(iPoint);
             su2double projVelocity = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               projVelocity +=  gridVel[iDim]*Normal[iDim];
@@ -9211,7 +9211,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -9504,7 +9504,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -9715,7 +9715,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Current solution at this boundary node ---*/
 
@@ -9733,7 +9733,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -9819,7 +9819,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Current solution at this boundary node ---*/
 
@@ -9854,7 +9854,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -10005,7 +10005,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -10193,7 +10193,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -10417,7 +10417,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
@@ -10578,10 +10578,10 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_iPoint = geometry->nodes->GetGlobalIndex(iPoint);
     GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
 
-    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+    if ((geometry->nodes->GetDomain(iPoint)) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
 
       /*--- Store the solution for both points ---*/
 
@@ -10640,10 +10640,10 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_iPoint = geometry->nodes->GetGlobalIndex(iPoint);
     GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
 
-    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+    if ((geometry->nodes->GetDomain(iPoint)) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
 
       /*--- Store the solution for both points ---*/
 
@@ -10731,12 +10731,12 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
     GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if ((geometry->node[iPoint]->GetDomain()) &&
+    if ((geometry->nodes->GetDomain(iPoint)) &&
         (GlobalIndex != GlobalIndex_donor)) {
 
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
@@ -11158,11 +11158,11 @@ void CEulerSolver::BC_Custom(CGeometry      *geometry,
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
 
         /*--- Get the coordinates for the current node. ---*/
 
-        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        const su2double *coor = geometry->nodes->GetCoord(iPoint);
 
         /*--- Get the conservative state from the verification solution. ---*/
 
@@ -11239,7 +11239,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
 
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
@@ -11274,16 +11274,16 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-      GridVel_i = geometry->node[iPoint]->GetGridVel();
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
       U_time_n = nodes->GetSolution_time_n(iPoint);
 
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnNeighbor(iPoint); iNeigh++) {
 
-        iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+        iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
         Normal = geometry->edges->GetNormal(iEdge);
 
-        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-        GridVel_j = geometry->node[jPoint]->GetGridVel();
+        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
         su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
@@ -11313,7 +11313,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
 
           /*--- Grid velocities stored at boundary node i ---*/
 
-          GridVel_i = geometry->node[iPoint]->GetGridVel();
+          GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
           /*--- Compute the GCL term by dotting the grid velocity with the face
            normal. The normal is negated to match the boundary convention. ---*/
@@ -11349,8 +11349,8 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
        grids, the volumes will change. On rigidly transforming grids, the
        volumes will remain constant. ---*/
 
-      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source residual. Due to the
        introduction of the GCL term above, the remainder of the source residual
@@ -11410,7 +11410,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        const su2double *coor = geometry->nodes->GetCoord(iPoint);
         su2double *solDOF     = nodes->GetSolution(iPoint);
 
         /* Get local error from the verification solution class. */
@@ -11422,7 +11422,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
           VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
           VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
                                              geometry->node[iPoint]->GetGlobalIndex(),
-                                             geometry->node[iPoint]->GetCoord());
+                                             geometry->nodes->GetCoord(iPoint));
         }
       }
 
@@ -11555,8 +11555,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
-          geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+          geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
         }
       }
 
@@ -11569,7 +11569,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         Coord = &Restart_Data[index];
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
         }
       }
 
@@ -11645,11 +11645,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       su2double Solution_Coarse[MAXNVAR] = {0.0};
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -11791,7 +11791,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
             /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
             for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
               iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
-              if (geometry->node[iPoint]->GetDomain()){
+              if (geometry->nodes->GetDomain(iPoint)){
                 /*--- Compute the integral fluxes for the boundaries ---*/
 
                 Pressure = nodes->GetPressure(iPoint);

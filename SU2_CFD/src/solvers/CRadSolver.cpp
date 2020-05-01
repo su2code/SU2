@@ -58,7 +58,7 @@ void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
   // Loop over all points and determine whether they are inside
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     check = 0;
-    OP = geometry->node[iPoint]->GetCoord();
+    OP = geometry->nodes->GetCoord(iPoint);
     // Reference point with respect to center of the ellipse
     for (iDim = 0; iDim < nDim; iDim++) CP[iDim] = OP[iDim]-OC[iDim];
     // Rotate point with respect to Z axis

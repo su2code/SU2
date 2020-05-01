@@ -267,7 +267,7 @@ public:
   inline virtual su2double Get_ValCoord(const CGeometry *geometry,
                                         unsigned long indexNode,
                                         unsigned short iDim) const {
-    return geometry->node[indexNode]->GetCoord(iDim);
+    return geometry->nodes->GetCoord(indexNode, iDim);
   }
 
   /*!

@@ -889,7 +889,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver->GetNodes()->SetSolution(iPoint, iDim,      geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
+        solver->GetNodes()->SetSolution(iPoint, iDim,      geometry[iZone][INST_0]->nodes->GetCoord(iPoint, iDim));
         solver->GetNodes()->SetSolution(iPoint, iDim+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iDim));
       }
     }

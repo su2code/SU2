@@ -444,8 +444,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[iInst]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
-          geometry[iInst]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+          geometry[iInst]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+          geometry[iInst]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
         }
       }
 

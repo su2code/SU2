@@ -45,9 +45,9 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
     /*--- Store the global IDs ---*/
 
-    globalID.push_back(geometry->node[iPoint]->GetGlobalIndex());
+    globalID.push_back(geometry->nodes->GetGlobalIndex(iPoint));
 
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
   }
 
 
@@ -200,7 +200,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
         /*--- Get the index of the current point. ---*/
 
         iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Search for the lowest global index in this element. We
          send the element to the processor owning the range that includes
@@ -208,7 +208,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
         for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
           jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
           if (newID < Global_Index) Global_Index = newID;
         }
 
@@ -290,7 +290,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
         /*--- Get the index of the current point. ---*/
 
         iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Search for the lowest global index in this element. We
          send the element to the processor owning the range that includes
@@ -298,7 +298,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
         for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
           jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
           if (newID < Global_Index) Global_Index = newID;
         }
 
@@ -325,7 +325,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
           for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
             iPoint = geometry->elem[ii]->GetNode(kk);
-            connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+            connSend[nn] = geometry->nodes->GetGlobalIndex(iPoint); nn++;
 
             /*--- Check if this is a halo node. If so, flag this element
              as a halo cell. We will use this later to sort and remove

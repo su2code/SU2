@@ -175,7 +175,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
 
-        Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
+        Point_Donor_Global = donor_geometry->nodes->GetGlobalIndex(Point_Donor);
         Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
       }
 

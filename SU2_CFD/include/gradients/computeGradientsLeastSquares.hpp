@@ -99,7 +99,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     {
       size_t jPoint = node->GetPoint(iNeigh);
 
-      const su2double* coord_j = geometry.node[jPoint]->GetCoord();
+      const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
       /*--- Distance vector from iPoint to jPoint ---*/

@@ -105,7 +105,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
     nodes->SetSolution(iPoint,Solution);
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
