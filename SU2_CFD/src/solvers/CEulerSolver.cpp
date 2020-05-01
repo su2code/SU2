@@ -3329,25 +3329,24 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool rom = (config->GetReduced_Model());
-  //rom = false;
-  //if (rom) {
-  //  nEdge = Edge_masked.size();
-  //  //std::cout << "Number of masked edges: " << nEdge <<  std::endl;
-  //}
-  //else
-  //  nEdge = geometry->GetnEdge();
+  rom = false;
+  if (rom) {
+    nEdge = Edge_masked.size();
+    //std::cout << "Number of masked edges: " << nEdge <<  std::endl;
+  }
+  else nEdge = geometry->GetnEdge();
   
   //std::cout << "Number of unmasked edges: " << geometry->GetnEdge() << std::endl;
   
-  for (iEdge = 0; iEdge< geometry->GetnEdge(); iEdge++) {
-  //for (i = 0; i < nEdge; i++) {
-  //
-  //  if (rom) {
-  //    iEdge = Edge_masked[i];
-  //    //std::cout << "iEdge: " << iEdge << " and loop number: " << i << std::endl;
-  //  }
-  //  else
-  //    iEdge = i;
+  //for (iEdge = 0; iEdge< geometry->GetnEdge(); iEdge++) {
+  for (i = 0; i < nEdge; i++) {
+  
+    if (rom) {
+      iEdge = Edge_masked[i];
+      //std::cout << "iEdge: " << iEdge << " and loop number: " << i << std::endl;
+    }
+    else
+      iEdge = i;
     
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
@@ -5195,8 +5194,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   vector<double> r_red(n,0.0);
   double ReducedRes = 0.0;
-  unsigned long testcount = 0;
-  double testmax = 0.0;
+  
   /*--- Compute Test Basis: W = J * Phi and reduced residual ---*/
   
   vector<double> TestBasis2(m*n, 0.0);
@@ -5288,26 +5286,24 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   if (InnerIter == 0) {
     RomConverged = false;
     SetResOld_ROM(sqrt(ReducedRes));
-    SetRes_ROM(sqrt(ReducedRes));
   }
   else {
     if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e8) {
       RomConverged = true;
-      SetRes_ROM(sqrt(ReducedRes));
       std::cout << "ROM Converged." << std::endl;
       return;
     }
-    else if (sqrt(ReducedRes) > ReducedResNorm_Old) {
+    else if (sqrt(ReducedRes) > ReducedResNorm_Cur) {
       RomConverged = true;
+      std::cout << "ROM Residual Increased." << std::endl;
       SetRes_ROM(sqrt(ReducedRes));
-      std::cout << "ROM Diverged." << std::endl;
       return;
     }
     else {
-      SetRes_ROM(sqrt(ReducedRes));
       RomConverged = false;
     }
   }
+  SetRes_ROM(sqrt(ReducedRes));
   
   // Set up variables for QR decomposition, A = QR
   char TRANS = 'N';
@@ -5366,7 +5362,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // TODO: backtracking line search to find step size:
-  double a =  0.1;
+  double a =  0.01;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
@@ -5382,9 +5378,11 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   delete [] prod;
   
   /*--- Update solution ---*/
+  vector<double> allMaskedNodes(Mask);
+  allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
   
-  for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-    iPoint = Mask[iPoint_mask];
+  for (iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
+    iPoint = allMaskedNodes[iPoint_mask];
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
     
