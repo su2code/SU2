@@ -3,14 +3,14 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -165,6 +165,11 @@ def aerodynamics( config, state=None ):
     
     # initialize
     state = su2io.State(state)
+
+    # Make sure to output aerodynamic coeff.
+    if not 'AERO_COEFF' in config['HISTORY_OUTPUT']:
+        config['HISTORY_OUTPUT'].append('AERO_COEFF')
+
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)

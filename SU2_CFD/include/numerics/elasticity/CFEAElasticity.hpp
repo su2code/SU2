@@ -2,14 +2,14 @@
  * \file CFEAElasticity.hpp
  * \brief Declaration and inlines of the base class for elasticity problems.
  * \author Ruben Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "../../numerics_structure.hpp"
-
+#include "../CNumerics.hpp"
+#include "../../../../Common/include/geometry/elements/CElement.hpp"
 
 /*!
  * \class CFEAElasticity
@@ -38,7 +38,7 @@
  *        document the public interface of this class hierarchy.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CFEAElasticity : public CNumerics {
 
@@ -91,12 +91,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEAElasticity(void);
+  ~CFEAElasticity(void) override;
 
   /*!
    * \brief Set elasticity modulus and Poisson ratio.
@@ -153,28 +153,28 @@ public:
    * \param[in,out] element_container - Element whose mass matrix is being built.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Mass_Matrix(CElement *element_container, CConfig *config) final;
+  void Compute_Mass_Matrix(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Compute the nodal gravity loads for an element.
    * \param[in,out] element_container - The element for which the dead loads are computed.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Dead_Load(CElement *element_container, CConfig *config) final;
+  void Compute_Dead_Load(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
    * \param[in,out] element_container - Element whose tangent matrix is being built.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Tangent_Matrix(CElement *element_container, CConfig *config) override { };
+  inline void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config) override { };
 
   /*!
    * \brief Compute averaged nodal stresses (for post processing).
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) override { };
+  inline void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) override { };
 
 protected:
   /*!
@@ -182,20 +182,20 @@ protected:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) = 0;
+  virtual void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) = 0;
 
   /*!
    * \brief Set element material properties.
    * \param[in] element_container - Element defining the properties.
    * \param[in] config - Definition of the problem.
    */
-  virtual void SetElement_Properties(const CElement *element_container, CConfig *config);
+  virtual void SetElement_Properties(const CElement *element_container, const CConfig *config);
 
   /*!
    * \brief Read design variables from file.
    * \param[in] config - Definition of the problem.
    */
-  void ReadDV(CConfig *config);
+  void ReadDV(const CConfig *config);
 
   /*!
    * \brief Update the Lame parameters (required in AD to account for all dependencies).

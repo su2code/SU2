@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -95,6 +95,7 @@ private:
   const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
   const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
+  const unsigned long *col_ptr;     /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
   ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -348,10 +349,12 @@ public:
    * \param[in] neqn - Number of equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] needTranspPtr - If "col_ptr" should be created.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
-                  bool EdgeConnect, CGeometry *geometry, CConfig *config);
+                  bool EdgeConnect, CGeometry *geometry,
+                  CConfig *config, bool needTranspPtr = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -440,7 +443,7 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    */
   template<class OtherType>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
     unsigned long iVar, jVar, index;
 
@@ -503,7 +506,7 @@ public:
    * \param[in] val_block - Block to add to A(i, j).
    */
   template<class OtherType>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
     unsigned long iVar, jVar, index;
 
@@ -524,7 +527,7 @@ public:
    * \param[in] val_block - Block to subtract to A(i, j).
    */
   template<class OtherType>
-  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
     unsigned long iVar, jVar, index;
 
@@ -550,7 +553,7 @@ public:
    */
   template<class OtherType, int Sign = 1>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
-                           OtherType **block_i, OtherType **block_j) {
+                           const OtherType* const* block_i, const OtherType* const* block_j) {
 
     ScalarType *bii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
     ScalarType *bjj = &matrix[dia_ptr[jPoint]*nVar*nEqn];
@@ -568,6 +571,94 @@ public:
         ++offset;
       }
     }
+  }
+
+  /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
+                              const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,-1>(iEdge, iPoint, jPoint, block_i, block_j);
+  }
+
+  /*!
+   * \brief Update 2 blocks ij and ji (add to i* sub from j*).
+   * \note The template parameter Sign, can be used create a "subtractive"
+   *       update i.e. subtract from row i and add to row j instead.
+   *       The parameter Overwrite allows completely writing over the
+   *       current values held by the matrix.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] block_i - Subs from ji.
+   * \param[in] block_j - Adds to ij.
+   */
+  template<class OtherType, int Sign = 1, bool Overwrite = false>
+  inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+
+    ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
+    ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        ++offset;
+      }
+    }
+  }
+
+  /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,-1>(iEdge, block_i, block_j);
+  }
+
+  /*!
+   * \brief Short-hand for the "additive overwrite" version of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void SetBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,1,true>(iEdge, block_i, block_j);
+  }
+
+  /*!
+   * \brief Adds the specified block to the (i, i) subblock of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_block - Block to add to the diagonal of the matrix.
+   */
+  template<class OtherType>
+  inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
+
+    ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nEqn; jVar++)
+        bii[offset++] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+
+  }
+
+  /*!
+   * \brief Subtracts the specified block from the (i, i) subblock of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_block - Block to subtract from the diagonal of the matrix.
+   */
+  template<class OtherType>
+  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
+
+    ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nEqn; jVar++)
+        bii[offset++] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+
   }
 
   /*!
@@ -614,7 +705,18 @@ public:
    * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
    */
   template<class OtherType>
-  void EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+  void EnforceSolutionAtNode(unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+
+  /*!
+   * \brief Version of EnforceSolutionAtNode for a single degree of freedom.
+   */
+  template<class OtherType>
+  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType> & b);
+
+  /*!
+   * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
+   */
+  void SetDiagonalAsColumnSum();
 
   /*!
    * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).
@@ -622,8 +724,7 @@ public:
    * \param[in] alpha - The scaling constant.
    * \param[in] B - Matrix being.
    */
-  template<class OtherType>
-  void MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B);
+  void MatrixMatrixAddition(ScalarType alpha, const CSysMatrix& B);
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.

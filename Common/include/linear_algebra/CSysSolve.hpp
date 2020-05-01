@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,10 @@ template<class T> class CPreconditioner;
 
 using namespace std;
 
+/*--- Relative tolerance, target residual is tol*||b-Ax||,
+ *    Absolute tolerance, target residual is tol*||b||. ---*/
+enum class LinearToleranceType {RELATIVE, ABSOLUTE};
+
 /*!
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
@@ -57,6 +61,10 @@ using namespace std;
  * creating CSysSolve objects we can more easily assign different
  * matrix-vector products and preconditioners to different problems
  * that may arise in a hierarchical solver (i.e. multigrid).
+ *
+ * The methods of this class are designed to be called by multiple OpenMP threads.
+ * Beware of writes to class member variables, for example "Residual" should only
+ * be modified by one thread.
  */
 template<class ScalarType>
 class CSysSolve {
@@ -93,6 +101,8 @@ private:
   VectorType  LinSysRes_tmp;        /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType* LinSysSol_ptr;        /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
+
+  LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
 
   /*!
    * \brief sign transfer function
@@ -308,5 +318,10 @@ public:
    * \return The residual at the end of Solve
    */
   inline ScalarType GetResidual(void) const { return Residual; }
+
+  /*!
+   * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).
+   */
+  inline void SetToleranceType(LinearToleranceType type) {tol_type = type;}
 
 };

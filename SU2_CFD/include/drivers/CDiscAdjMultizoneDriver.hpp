@@ -2,14 +2,14 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -92,7 +92,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMultizoneDriver(void);
+  ~CDiscAdjMultizoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
@@ -181,6 +181,12 @@ protected:
   void Add_External_To_Solution(unsigned short iZone);
 
   /*!
+   * \brief Puts Solution into SolutionOld.
+   * \param[in] iZone - Zone index.
+   */
+  void Set_SolutionOld_To_Solution(unsigned short iZone);
+
+  /*!
    * \brief Extract contribution of iZone to jZone with BGS relaxation.
    * \param[in] iZone - Source zone (the one that was initialized).
    * \param[in] jZone - Target zone (the one that transfers to iZone in the primal problem).
@@ -188,14 +194,15 @@ protected:
   void Update_Cross_Term(unsigned short iZone, unsigned short jZone);
 
   /*!
-   * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
-   * \param[in] iZone - Zone index.
-   */
-  void Set_BGSSolution(unsigned short iZone);
-
-  /*!
    * \brief Compute BGS residuals.
    * \param[in] iZone - Zone where solver residuals are computed.
    */
   void SetResidual_BGS(unsigned short iZone);
+
+  /*!
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
+   * \return false
+   */
+  inline bool GetTimeConvergence() const override {return false;};
+
 };

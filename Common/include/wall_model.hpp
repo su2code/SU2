@@ -2,14 +2,14 @@
  * \file wall_model.hpp
  * \brief Headers for the wall model functions for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ class CFluidModel;
  * \class CWallModel
  * \brief Base class for defining the LES wall model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CWallModel {
 
@@ -120,7 +120,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWallModel1DEQ(void);
+  ~CWallModel1DEQ(void) override;
 
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -152,7 +152,7 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall);
+                                  su2double       &kOverCvWall) override;
 
 private:
 
@@ -184,7 +184,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWallModelLogLaw(void);
+  ~CWallModelLogLaw(void) override;
   
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -216,7 +216,7 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall);
+                                  su2double       &kOverCvWall) override;
   
 private:
 

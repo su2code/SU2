@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,44 +29,19 @@
 #pragma once
 
 #include "../../../Common/include/mpi_structure.hpp"
+
 #include "../iteration_structure.hpp"
-
-#include "../integration_structure.hpp"
-
-#include "../numerics_structure.hpp"
-/*--- Transfer includes ---*/
+#include "../integration/CIntegration.hpp"
+#include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
-#include "../interfaces/cfd/CConservativeVarsInterface.hpp"
-#include "../interfaces/cfd/CMixingPlaneInterface.hpp"
-#include "../interfaces/cfd/CSlidingInterface.hpp"
-#include "../interfaces/cht/CConjugateHeatInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterface.hpp"
-#include "../interfaces/fsi/CFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
-#include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../solvers/CDiscAdjMeshSolver.hpp"
-#include "../solvers/CMeshSolver.hpp"
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/interpolation_structure.hpp"
-
-#include "../output/COutputLegacy.hpp"
-
-#include "../output/COutput.hpp"
-#include "../output/CMultizoneOutput.hpp"
-#include "../output/CElasticityOutput.hpp"
-#include "../output/CAdjElasticityOutput.hpp"
-#include "../output/CFlowCompOutput.hpp"
-#include "../output/CAdjFlowOutput.hpp"
-#include "../output/CFlowCompFEMOutput.hpp"
-#include "../output/CFlowIncOutput.hpp"
-#include "../output/CAdjFlowIncOutput.hpp"
-#include "../output/CHeatOutput.hpp"
-#include "../output/CAdjHeatOutput.hpp"
 
 using namespace std;
+
+class COutputLegacy;
+class CInterpolator;
 
 /*!
  * \class CDriver
@@ -125,7 +100,7 @@ protected:
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
-  bool dummy_geometry;
+  bool dry_run;                                 /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
 
 public:
 
@@ -211,11 +186,11 @@ protected:
 
   /*!
    * \brief Definition and allocation of all integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -229,8 +204,8 @@ protected:
    * \brief Definition and allocation of all interface classes.
    */
   void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry,
-                               unsigned short **interface_types, CInterface ***&interface,
-                               CInterpolator ***&interpolation);
+                               unsigned short **interface_types, CInterface ***interface,
+                               CInterpolator ***interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -851,6 +826,23 @@ public:
    */
   vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned long iVertex);
 
+  /*!
+   * \brief Set the position of the heat source.
+   * \param[in] alpha - Angle of rotation respect to Z axis.
+   * \param[in] pos_x - Position X.
+   * \param[in] pos_y - Position Y.
+   * \param[in] pos_z - Position Z.
+   */
+  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+
+  /*!
+   * \brief Set the direction of the inlet.
+   * \param[in] iMarker - Marker index.
+   * \param[in] alpha - Angle (Zpos).
+   */
+  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+
+
 };
 
 /*!
@@ -879,57 +871,57 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFluidDriver(void);
+  ~CFluidDriver(void) override;
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long InnerIter);
+  void Output(unsigned long InnerIter) override;
 
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  bool Monitor(unsigned long ExtIter) override;
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  void Preprocess(unsigned long Iter);
+  void Preprocess(unsigned long Iter) override;
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
-  void DynamicMeshUpdate(unsigned long TimeIter);
+  void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
    * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
    */
-  void StaticMeshUpdate();
+  void StaticMeshUpdate() override;
 
   /*!
    * \brief Perform a mesh deformation as initial condition (multiple zone).
    */
-  void SetInitialMesh();
+  void SetInitialMesh() override;
 
   /*!
    * \brief Process the boundary conditions and update the multigrid structure.
    */
-  void BoundaryConditionsUpdate();
+  void BoundaryConditionsUpdate() override;
 
   /*!
    * \brief Transfer data among different zones (multiple zone).
@@ -999,13 +991,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbomachineryDriver(void);
+  ~CTurbomachineryDriver(void) override;
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
 
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.
@@ -1020,7 +1012,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long TimeIter);
+  bool Monitor(unsigned long TimeIter) override;
 
 
 
@@ -1054,12 +1046,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CHBDriver(void);
+  ~CHBDriver(void) override;
 
   /*!
    * \brief Run a single iteration of a Harmonic Balance problem.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Computation and storage of the Harmonic Balance method source terms.
@@ -1083,276 +1075,10 @@ public:
   /*!
    * \brief Update the solution for the Harmonic Balance.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
    */
-  void ResetConvergence();
-};
-
-/*!
- * \class CDiscAdjFSIDriver
- * \brief Overload: Class for driving a discrete adjoint FSI iteration.
- * \author R. Sanchez.
- * \version 7.0.1 "Blackbird"
- */
-class CDiscAdjFSIDriver : public CDriver {
-
-  COutputLegacy* output_legacy;
-
-  CIteration** direct_iteration;
-  unsigned short RecordingState;
-  unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
-  unsigned short Kind_Objective_Function;   /*!< \brief Stores the kind of objective function of the recording. */
-
-  su2double *init_res_flow,     /*!< \brief Stores the initial residual for the flow. */
-            *init_res_struct,   /*!< \brief Stores the initial residual for the structure. */
-            *residual_flow,     /*!< \brief Stores the current residual for the flow. */
-            *residual_struct,   /*!< \brief Stores the current residual for the structure. */
-            *residual_flow_rel,
-            *residual_struct_rel;
-
-  su2double flow_criteria,
-            flow_criteria_rel,
-            structure_criteria,
-            structure_criteria_rel;
-
-
-  enum OF_KIND{
-    NO_OBJECTIVE_FUNCTION = 0,               /*!< \brief Indicates that there is no objective function. */
-    FLOW_OBJECTIVE_FUNCTION = 1,            /*!< \brief Indicates that the objective function is only flow-dependent. */
-    FEM_OBJECTIVE_FUNCTION = 2              /*!< \brief Indicates that the objective function is only structural-dependent. */
-  };
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Total number of dimensions.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CDiscAdjFSIDriver(char* confFile,
-                    unsigned short val_nZone,
-                    SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjFSIDriver(void);
-
-  /*!
-   * \brief Launch the computation for FSI adjoint (legacy) driver
-   */
-  inline void StartSolver(){
-
-      /*--- Run the solver. ---*/
-      if (rank == MASTER_NODE)
-        cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
-      Run();
-  }
-
-  /*!
-   * \brief Run a Discrete Adjoint iteration for the FSI problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-
-  void Run();
-
-  /*!
-   * \brief Iterate the direct solver for recording.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-
-  void Iterate_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording);
-
-  /*!
-   * \brief Run a direct flow iteration.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Run a direct structural iteration.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Structural_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Run a direct mesh deformation.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   */
-  void Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Set the recording for a Discrete Adjoint iteration for the FSI problem.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-
-  void SetRecording(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Load the restarts for fluid, structure and mesh.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Preprocess(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Iterate a certain block for adjoint FSI - may be the whole set of variables or independent and subiterate
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Iterate_Block(unsigned short ZONE_FLOW,
-                       unsigned short ZONE_STRUCT,
-                       unsigned short kind_recording);
-
-  /*!
-   * \brief Initialize the adjoint - set the objective funcition and the output of the adjoint iteration
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void InitializeAdjoint(unsigned short ZONE_FLOW,
-                            unsigned short ZONE_STRUCT,
-                            unsigned short kind_recording);
-
-  /*!
-   * \brief Extract the adjoint solution variables
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void ExtractAdjoint(unsigned short ZONE_FLOW,
-                         unsigned short ZONE_STRUCT,
-                         unsigned short kind_recording);
-
-
-  /*!
-   * \brief Check the convergence of the problem
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  bool CheckConvergence(unsigned long IntIter,
-                          unsigned short ZONE_FLOW,
-                          unsigned short ZONE_STRUCT,
-                          unsigned short kind_recording);
-
-  /*!
-   * \brief Check the convergence of BGS subiteration process
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  bool BGSConvergence(unsigned long IntIter,
-                         unsigned short ZONE_FLOW,
-                         unsigned short ZONE_STRUCT);
-
-
-  /*!
-   * \brief Output the convergence history
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void ConvergenceHistory(unsigned long IntIter,
-                             unsigned long nIntIter,
-                             unsigned short ZONE_FLOW,
-                             unsigned short ZONE_STRUCT,
-                             unsigned short kind_recording);
-
-  /*!
-   * \brief Load the restarts for fluid, structure and mesh.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void PrintDirect_Residuals(unsigned short ZONE_FLOW,
-                                unsigned short ZONE_STRUCT,
-                                unsigned short kind_recording);
-
-  /*!
-   * \brief Restart the variables to the converged solution.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void PrepareRecording(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Register the input variables for adjoint FSI problems: flow conservative, fluid mesh position and structural displacements.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void RegisterInput(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Register the input variables for adjoint FSI problems: flow conservative, fluid mesh position and structural displacements.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void SetDependencies(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Restart the output variables for adjoint FSI problems: flow conservative, fluid mesh position and structural displacements.
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void RegisterOutput(unsigned short ZONE_FLOW,
-                    unsigned short ZONE_STRUCT,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
-   */
-  void DynamicMeshUpdate(unsigned long TimeIter);
-
-  /*!
-   * \brief Transfer the displacements computed on the structural solver into the fluid solver.
-   * \param[in] donorZone - zone in which the displacements will be transferred.
-   * \param[in] targetZone - zone which receives the tractions transferred.
-   */
-  void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone);
-
-  /*!
-   * \brief Transfer the tractions computed on the fluid solver into the structural solver.
-   * \param[in] donorZone - zone from which the tractions will be transferred.
-   * \param[in] targetZone - zone which receives the tractions transferred.
-   */
-  void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone);
-
+  void ResetConvergence() override;
 };

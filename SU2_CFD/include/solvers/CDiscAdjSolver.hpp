@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@ private:
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double ObjFunc_Value;       /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
+  su2double TemperatureRad, Total_Sens_Temp_Rad;
 
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
 
@@ -72,7 +73,6 @@ public:
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config);
 
@@ -82,13 +82,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSolver(void);
+  ~CDiscAdjSolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -138,30 +139,6 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Sets the adjoint values of the flow variables due to cross term contributions
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,  CConfig *config) override;
 
   /*!
    * \brief Register the objective function as output.
@@ -319,12 +296,5 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
-
-  /*!
-   * \brief Compute the multizone residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
 };
