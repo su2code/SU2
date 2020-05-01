@@ -124,7 +124,7 @@ void CPoint::SetElems(const vector<vector<long> >& elemsMatrix) {
 void CPoint::SetPoints(const vector<vector<unsigned long> >& pointsMatrix) {
 
   Point = CCompressedSparsePatternUL(pointsMatrix);
-  Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr()+Point.getOuterSize(), long(-1));
+  Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr()+Point.getOuterSize()+1, long(-1));
 }
 
 void CPoint::SetIndex(unsigned long iPoint, bool input) {

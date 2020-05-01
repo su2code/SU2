@@ -46,7 +46,6 @@ private:
   unsigned long nDim;
 
   su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */
-  su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
 
   CCompressedSparsePatternUL Point;       /*!< \brief Points surrounding the central node of the control volume. */
   CCompressedSparsePatternL Edge;         /*!< \brief Edges that set up a control volume (same sparse structure as Point). */
@@ -82,6 +81,7 @@ private:
   su2vector<bool> Move;                        /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
   su2vector<unsigned long> Color;              /*!< \brief Color of the point in the partitioning strategy. */
 
+  su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
   su2activevector Wall_Distance;          /*!< \brief Distance to the nearest wall. */
   su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
   su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
@@ -105,20 +105,6 @@ public:
    * \brief Default construction is not allowed.
    */
   CPoint() = delete;
-
-  /*!
-   * \brief For parallel computation, its indicates if a point must be computed or not.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] domain - <code>TRUE</code> if the point belong to the domain; otherwise <code>FALSE</code>.
-   */
-  inline void SetDomain(unsigned long iPoint, bool domain) { Domain(iPoint) = domain; }
-
-  /*!
-   * \brief For parallel computation, its indicates if a point must be computed or not.
-   * \param[in] iPoint - Index of the point.
-   * \return <code>TRUE</code> if the node belong to the physical domain; otherwise <code>FALSE</code>.
-   */
-  inline bool GetDomain(unsigned long iPoint) const { return Domain(iPoint); }
 
   /*!
    * \brief Get the coordinates dor the control volume.
@@ -162,26 +148,6 @@ public:
   }
 
   /*!
-   * \brief Get if the point is marked to flip orientation.
-   * \param[in] iPoint - Index of the point.
-   * \return pointer to the coordinate of the point.
-   */
-  inline bool GetFlip_Orientation(unsigned long iPoint) const { return Flip_Orientation(iPoint); }
-
-  /*!
-   * \brief Mark the point to flip orientation.
-   * \param[in] iPoint - Index of the point.
-   */
-  inline void SetFlip_Orientation(unsigned long iPoint) { Flip_Orientation(iPoint) = true; }
-
-  /*!
-   * \brief Get the number of elements that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \return Number of elements that compose the control volume.
-   */
-  inline unsigned short GetnElem(unsigned long iPoint) const { return Elem.getNumNonZeros(iPoint); }
-
-  /*!
    * \brief Set the elements that are connected to each point.
    * \param[in] elemsMatrix - List of lists with the neighbor points connected to each point.
    */
@@ -193,19 +159,19 @@ public:
   inline void ResetElems() { Elem = CCompressedSparsePatternL(); }
 
   /*!
+   * \brief Get the number of elements that compose the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \return Number of elements that compose the control volume.
+   */
+  inline unsigned short GetnElem(unsigned long iPoint) const { return Elem.getNumNonZeros(iPoint); }
+
+  /*!
    * \brief Get all the elements that compose the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] nelem - Position where the element is stored.
    * \return Index of the element.
    */
   inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const { return Elem.getInnerIdx(iPoint,nelem); }
-
-  /*!
-   * \brief Get the number of points that compose the control volume.
-   * \param[in] iPoint - Index of the point.
-   * \return Number of points that compose the control volume.
-   */
-  inline unsigned short GetnPoint(unsigned long iPoint) const { return Point.getNumNonZeros(iPoint); }
 
   /*!
    * \brief Set the points that compose the control volume.
@@ -217,6 +183,13 @@ public:
    * \brief Reset the points that compose the control volume.
    */
   inline void ResetPoints() { Point = CCompressedSparsePatternUL(); Edge = CCompressedSparsePatternL(); }
+
+  /*!
+   * \brief Get the number of points that compose the control volume.
+   * \param[in] iPoint - Index of the point.
+   * \return Number of points that compose the control volume.
+   */
+  inline unsigned short GetnPoint(unsigned long iPoint) const { return Point.getNumNonZeros(iPoint); }
 
   /*!
    * \brief Get all the points that compose the control volume.
@@ -302,25 +275,18 @@ public:
   inline void SetPhysicalBoundary(unsigned long iPoint, bool boundary) { PhysicalBoundary(iPoint) = boundary; }
 
   /*!
-   * \brief Set if a point belong to the boundary.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
-   */
-  inline void SetSolidBoundary(unsigned long iPoint, bool boundary) { SolidBoundary(iPoint) = boundary; }
-
-  /*!
-   * \brief Set if a point belongs to a periodic boundary.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] boundary - <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
-   */
-  inline void SetPeriodicBoundary(unsigned long iPoint, bool boundary) { PeriodicBoundary(iPoint) = boundary; }
-
-  /*!
    * \brief Provides information about if a point belong to the physical boundaries (without MPI).
    * \param[in] iPoint - Index of the point.
    * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
    */
   inline bool GetPhysicalBoundary(unsigned long iPoint) const { return PhysicalBoundary(iPoint); }
+
+  /*!
+   * \brief Set if a point belong to the boundary.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
+   */
+  inline void SetSolidBoundary(unsigned long iPoint, bool boundary) { SolidBoundary(iPoint) = boundary; }
 
   /*!
    * \brief Provides information about if a point belong to the physical boundaries (without MPI).
@@ -330,11 +296,45 @@ public:
   inline bool GetSolidBoundary(unsigned long iPoint) const { return SolidBoundary(iPoint); }
 
   /*!
+   * \brief Set if a point belongs to a periodic boundary.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] boundary - <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
+   */
+  inline void SetPeriodicBoundary(unsigned long iPoint, bool boundary) { PeriodicBoundary(iPoint) = boundary; }
+
+  /*!
    * \brief Provides information about if a point belongs to a periodic boundary (without MPI).
    * \param[in] iPoint - Index of the point.
    * \return <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
    */
   inline bool GetPeriodicBoundary(unsigned long iPoint) const { return PeriodicBoundary(iPoint); }
+
+  /*!
+   * \brief For parallel computation, its indicates if a point must be computed or not.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] domain - <code>TRUE</code> if the point belong to the domain; otherwise <code>FALSE</code>.
+   */
+  inline void SetDomain(unsigned long iPoint, bool domain) { Domain(iPoint) = domain; }
+
+  /*!
+   * \brief For parallel computation, its indicates if a point must be computed or not.
+   * \param[in] iPoint - Index of the point.
+   * \return <code>TRUE</code> if the node belong to the physical domain; otherwise <code>FALSE</code>.
+   */
+  inline bool GetDomain(unsigned long iPoint) const { return Domain(iPoint); }
+
+  /*!
+   * \brief Mark the point to flip orientation.
+   * \param[in] iPoint - Index of the point.
+   */
+  inline void SetFlip_Orientation(unsigned long iPoint) { Flip_Orientation(iPoint) = true; }
+
+  /*!
+   * \brief Get if the point is marked to flip orientation.
+   * \param[in] iPoint - Index of the point.
+   * \return pointer to the coordinate of the point.
+   */
+  inline bool GetFlip_Orientation(unsigned long iPoint) const { return Flip_Orientation(iPoint); }
 
   /*!
    * \brief Set a color to the point that comes from the grid partitioning.
@@ -352,18 +352,18 @@ public:
   inline unsigned long GetColor(unsigned long iPoint) const { return Color(iPoint); }
 
   /*!
-   * \brief Get the global index in a parallel computation.
-   * \param[in] iPoint - Index of the point.
-   * \return Global index in a parallel computation.
-   */
-  inline unsigned long GetGlobalIndex(unsigned long iPoint) const { return GlobalIndex(iPoint); }
-
-  /*!
    * \brief Set the global index in a parallel computation.
    * \param[in] iPoint - Index of the point.
    * \return Global index in a parallel computation.
    */
   inline void SetGlobalIndex(unsigned long iPoint, unsigned long globalindex) { GlobalIndex(iPoint) = globalindex; }
+
+  /*!
+   * \brief Get the global index in a parallel computation.
+   * \param[in] iPoint - Index of the point.
+   * \return Global index in a parallel computation.
+   */
+  inline unsigned long GetGlobalIndex(unsigned long iPoint) const { return GlobalIndex(iPoint); }
 
   /*!
    * \brief Set the number of neighbor (artificial dissipation).
