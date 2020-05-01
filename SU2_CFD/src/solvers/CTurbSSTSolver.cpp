@@ -365,10 +365,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    /*--- Store density using Solution, for disc adj ---*/
-    nodes->SetFlowPrimitive(iPoint,0,solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint, 0));
-    for (unsigned short iVar = 1; iVar < nDim+9; iVar++) {
-      nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, iVar));
+    for (unsigned short iVar = 0; iVar < nDim+9; iVar++) {
+      /*--- Store density using Solution, for disc adj ---*/
+      if (iVar == (nDim+2))
+        nodes->SetFlowPrimitive(iPoint,nDim+2,solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint, 0));
+      else
+        nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, iVar));
     }
     const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
