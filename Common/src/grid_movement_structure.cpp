@@ -7119,7 +7119,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
 
         /*--- Store the global index for this local node. ---*/
 
-        Buffer_Send_Point[jPoint] = geometry->node[FFDBox[iFFDBox]->Get_PointIndex(iPoint)]->GetGlobalIndex();
+        Buffer_Send_Point[jPoint] = geometry->nodes->GetGlobalIndex(FFDBox[iFFDBox]->Get_PointIndex(iPoint));
 
         /*--- Marker of the boundary in the local domain. ---*/
 

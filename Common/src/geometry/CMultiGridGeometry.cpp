@@ -91,17 +91,18 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
 
   nPointNode = fine_grid->GetnPoint();
-  node = new CPoint*[fine_grid->GetnPoint()];
-  for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
-
-    /*--- Create node structure ---*/
-
-    node[iPoint] = new CPoint(nDim, iPoint, config);
-
-    /*--- Set the indirect agglomeration to false ---*/
-
-    nodes->SetAgglomerate_Indirect(iPoint, false);
-  }
+/// **TODO**
+//  node = new CPoint*[fine_grid->GetnPoint()];
+//  for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
+//
+//    /*--- Create node structure ---*/
+//
+//    node[iPoint] = new CPoint(nDim, iPoint, config);
+//
+//    /*--- Set the indirect agglomeration to false ---*/
+//
+//    nodes->SetAgglomerate_Indirect(iPoint, false);
+//  }
 
   Index_CoarseCV = 0;
 
@@ -949,7 +950,7 @@ void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
    important for JST and multigrid in parallel ---*/
 
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
-    node[iCoarsePoint]->SetnNeighbor(node[iCoarsePoint]->GetnPoint());
+    nodes->SetnNeighbor(iCoarsePoint, nodes->GetnPoint(iCoarsePoint));
 
 }
 
@@ -987,7 +988,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
       for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
         iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         for (iMarker = 0; iMarker < nMarker; iMarker ++) {
-          if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
+          if ((fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) && (nodes->GetVertex(iCoarsePoint, iMarker) == -1)) {
             iVertex = nVertex[iMarker];
             nodes->SetVertex(iCoarsePoint, iVertex, iMarker);
             nVertex[iMarker]++;
@@ -1014,7 +1015,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
       for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
         iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker ++) {
-          if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
+          if ((fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) && (nodes->GetVertex(iCoarsePoint, iMarker) == -1)) {
             iVertex = nVertex[iMarker];
             vertex[iMarker][iVertex] = new CVertex(iCoarsePoint, nDim);
             nodes->SetVertex(iCoarsePoint, iVertex, iMarker);
@@ -1244,7 +1245,7 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned 
       /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
       for(iChildren=0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++){
         Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        isVertex = (nodes->GetDomain(Point_Fine) && geometry->nodes->GetVertex(Point_Fine, val_marker) != -1);
         if (isVertex){
           numberVertexChildren += 1;
           Area_Parent += geometry->nodes->GetVolume(Point_Fine);
@@ -1290,7 +1291,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsign
       /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
       for(iChildren=0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++){
         Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        isVertex = (nodes->GetDomain(Point_Fine) && geometry->nodes->GetVertex(Point_Fine, val_marker) != -1);
         if (isVertex){
           numberVertexChildren += 1;
           Area_Parent += geometry->nodes->GetVolume(Point_Fine);
@@ -1371,7 +1372,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
             jPoint = nodes->GetPoint(iPoint, iNeigh);
             scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+              diff_coord = nodes->GetCoord(jPoint, iDim)-nodes->GetCoord(iPoint, iDim);
               scalar_prod += diff_coord*Normal[iDim];
               norm_vect += diff_coord*diff_coord;
               norm_Normal += Normal[iDim]*Normal[iDim];

@@ -1779,7 +1779,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						if (iIndex == 1) {no_0 = ip_1; no_1 = ip_2;}
 						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_0;}
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
+							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->nodes->GetCoord(no_0,iDim)+geometry->nodes->GetCoord(no_1,iDim));
 
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
@@ -1816,7 +1816,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_3;}
 						if (iIndex == 3) {no_0 = ip_3; no_1 = ip_0;}
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
+							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->nodes->GetCoord(no_0,iDim)+geometry->nodes->GetCoord(no_1,iDim));
 
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
@@ -1983,13 +1983,14 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 
 	/*--- New points ---*/
 
-	geo_adapt->node = new CPoint*[nPoint_new];
+	geo_adapt->nodes = new CPoint(nPoint_new, nDim, config);
 
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-		geo_adapt->node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0), geometry->node[iPoint]->GetCoord(1), iPoint, config);
-
-	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
-		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], iPoint, config);
+/// **TODO**
+//	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
+//		geo_adapt->node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0), geometry->node[iPoint]->GetCoord(1), iPoint, config);
+//
+//	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
+//		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], iPoint, config);
 
 	/*--- New elements ---*/
 
@@ -2552,7 +2553,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						if (iIndex == 5) {no_0 = ip_2; no_1 = ip_3;}
 
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
+							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->nodes->GetCoord(no_0,iDim)+geometry->nodes->GetCoord(no_1,iDim));
 
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
@@ -2602,7 +2603,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						if (iIndex == 11) {no_0 = ip_3; no_1 = ip_7;}
 
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
+							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->nodes->GetCoord(no_0,iDim)+geometry->nodes->GetCoord(no_1,iDim));
 
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
@@ -2907,13 +2908,14 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	}
 
 	// New points
-	geo_adapt->node = new CPoint*[nPoint_new];
+	geo_adapt->nodes = new CPoint(nPoint_new, nDim, config);
 
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-		geo_adapt->node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0), geometry->node[iPoint]->GetCoord(1), geometry->node[iPoint]->GetCoord(2), iPoint, config);
-
-	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
-		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], NewNodeCoord[iPoint][2], iPoint, config);
+	/// **TODO**
+//	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
+//		geo_adapt->node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0), geometry->node[iPoint]->GetCoord(1), geometry->node[iPoint]->GetCoord(2), iPoint, config);
+//
+//	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
+//		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], NewNodeCoord[iPoint][2], iPoint, config);
 
 	// New elements
 	geo_adapt->elem = new CPrimalGrid*[nElem_new];

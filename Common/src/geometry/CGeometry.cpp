@@ -143,7 +143,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iFace, iPoint, iVertex;
+  unsigned long iElem, iElem_Bound, iFace, iVertex;
   unsigned short iMarker;
 
   if (elem != NULL) {
@@ -1637,7 +1637,7 @@ void CGeometry::TestGeometry(void) {
       para_file << "      Point index: " << vertex[iMarker][iVertex]->GetNode() << endl;
       para_file << "      Point coordinates : ";
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        para_file << node[vertex[iMarker][iVertex]->GetNode()]->GetCoord(iDim) << "\t";}
+        para_file << nodes->GetCoord(vertex[iMarker][iVertex]->GetNode(), iDim) << "\t";}
       para_file << endl;
       vertex[iMarker][iVertex]->GetNormal(Normal);
       para_file << "         Face normal : ";
@@ -2092,8 +2092,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
               Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
               Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
-              IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
-              JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+              IGlobalID_Index0.push_back(nodes->GetGlobalIndex(iPoint)); IGlobalID_Index1.push_back(nodes->GetGlobalIndex(jPoint));
+              JGlobalID_Index0.push_back(nodes->GetGlobalIndex(iPoint)); JGlobalID_Index1.push_back(nodes->GetGlobalIndex(jPoint));
               PointIndex++;
             }
 
@@ -3032,8 +3032,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               iEdge = FindEdge(Point_Triangle[0], Point_Triangle[1]);
 
               for (iDim = 0; iDim < nDim; iDim++) {
-                U[iDim] = node[Point_Triangle[0]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
-                V[iDim] = node[Point_Triangle[1]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
+                U[iDim] = nodes->GetCoord(Point_Triangle[0], iDim) - nodes->GetCoord(iPoint, iDim);
+                V[iDim] = nodes->GetCoord(Point_Triangle[1], iDim) - nodes->GetCoord(iPoint, iDim);
               }
 
               W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
@@ -3080,8 +3080,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
                   /*--- iPoint, and jPoint ---*/
                   for (iDim = 0; iDim < nDim; iDim++) {
-                    if (Area_Vertex[iPoint] != 0.0) NormalMeanK[iPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[iPoint]->GetCoord(iDim) - node[jPoint]->GetCoord(iDim)) / Area_Vertex[iPoint];
-                    if (Area_Vertex[jPoint] != 0.0) NormalMeanK[jPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[jPoint]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim)) / Area_Vertex[jPoint];
+                    if (Area_Vertex[iPoint] != 0.0) NormalMeanK[iPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (nodes->GetCoord(iPoint, iDim) - nodes->GetCoord(jPoint, iDim)) / Area_Vertex[iPoint];
+                    if (Area_Vertex[jPoint] != 0.0) NormalMeanK[jPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim)) / Area_Vertex[jPoint];
                   }
                 }
 

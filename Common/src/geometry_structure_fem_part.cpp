@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -584,7 +584,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim, config);
 
   /*--- Open the grid file again and go to the position where
         the correct zone is stored.                           ---*/
@@ -619,23 +619,24 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         if( binary_search(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end(), i) ) {
           istringstream point_line(text_line);
 
-          switch(nDim) {
-            case 2: {
-              su2double Coord_2D[2];
-              point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
-              node[ii] = new CPoint(Coord_2D[0], Coord_2D[1], i, config);
-              ii++;
-              break;
-            }
-
-            case 3: {
-              su2double Coord_3D[3];
-              point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
-              node[ii] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], i, config);
-              ii++;
-              break;
-            }
-          }
+          /// **TODO**
+//          switch(nDim) {
+//            case 2: {
+//              su2double Coord_2D[2];
+//              point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
+//              node[ii] = new CPoint(Coord_2D[0], Coord_2D[1], i, config);
+//              ii++;
+//              break;
+//            }
+//
+//            case 3: {
+//              su2double Coord_3D[3];
+//              point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
+//              node[ii] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], i, config);
+//              ii++;
+//              break;
+//            }
+//          }
         }
       }
 

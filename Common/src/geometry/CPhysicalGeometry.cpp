@@ -2352,7 +2352,7 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
   nPointDomain = nLocal_PointDomain;
   nPointNode   = nPoint;
 
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim, config);
 
   Local_to_Global_Point = new long[nPoint];
 
@@ -2391,15 +2391,16 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
     /*--- Allocating the Point object ---*/
 
-    if ( nDim == 2 )
-      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
-                                Local_Coords[iPoint*nDim+1],
-                                Local_to_Global_Point[jPoint], config);
-    if ( nDim == 3 )
-      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
-                                Local_Coords[iPoint*nDim+1],
-                                Local_Coords[iPoint*nDim+2],
-                                Local_to_Global_Point[jPoint], config);
+/// **TODO**
+//    if ( nDim == 2 )
+//      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
+//                                Local_Coords[iPoint*nDim+1],
+//                                Local_to_Global_Point[jPoint], config);
+//    if ( nDim == 3 )
+//      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
+//                                Local_Coords[iPoint*nDim+1],
+//                                Local_Coords[iPoint*nDim+2],
+//                                Local_to_Global_Point[jPoint], config);
 
     /*--- Set the color ---*/
 
@@ -3871,7 +3872,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
-          node[bound[iMarker][iElem_Bound]->GetNode(0)]->SetDomain(false);
+          nodes->SetDomain(bound[iMarker][iElem_Bound]->GetNode(0), false);
       }
 
     }
@@ -4011,7 +4012,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
   /*--- Initialize point counts and the grid node data structure. ---*/
 
   nPointNode = nPoint;
-  node       = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim, config);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
    structure. Note that since we have performed a linear partitioning
@@ -4021,23 +4022,24 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
   CLinearPartitioner pointPartitioner(Global_nPointDomain,0);
   unsigned long GlobalIndex = pointPartitioner.GetFirstIndexOnRank(rank);
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    switch(nDim) {
-      case 2:
-        node[iPoint] = new CPoint(gridCoords[0][iPoint],
-                                  gridCoords[1][iPoint],
-                                  GlobalIndex,
-                                  config);
-        GlobalIndex++;
-        break;
-      case 3:
-        node[iPoint] = new CPoint(gridCoords[0][iPoint],
-                                  gridCoords[1][iPoint],
-                                  gridCoords[2][iPoint],
-                                  GlobalIndex,
-                                  config);
-        GlobalIndex++;
-        break;
-    }
+/// **TODO**
+//    switch(nDim) {
+//      case 2:
+//        node[iPoint] = new CPoint(gridCoords[0][iPoint],
+//                                  gridCoords[1][iPoint],
+//                                  GlobalIndex,
+//                                  config);
+//        GlobalIndex++;
+//        break;
+//      case 3:
+//        node[iPoint] = new CPoint(gridCoords[0][iPoint],
+//                                  gridCoords[1][iPoint],
+//                                  gridCoords[2][iPoint],
+//                                  GlobalIndex,
+//                                  config);
+//        GlobalIndex++;
+//        break;
+//    }
   }
 
 }
@@ -5267,7 +5269,7 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
    important for JST and multigrid in parallel ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
+    nodes->SetnNeighbor(iPoint, nodes->GetnPoint(iPoint));
 
 }
 
@@ -5316,7 +5318,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
       for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
         for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
-          if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
+          if (nodes->GetnPoint(AuxQueue[jNode]) > nodes->GetnPoint(AuxQueue[jNode+1])) {
             AuxPoint = AuxQueue[jNode];
             AuxQueue[jNode] = AuxQueue[jNode+1];
             AuxQueue[jNode+1] = AuxPoint;
@@ -5423,7 +5425,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       if (Marker_Tag == "SEND_RECEIVE") {
         for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           if (config->GetMarker_All_SendRecv(iMarker) < 0)
-            node[bound[iMarker][iElem_Bound]->GetNode(0)]->SetDomain(false);
+            nodes->SetDomain(bound[iMarker][iElem_Bound]->GetNode(0), false);
         }
       }
 
@@ -9306,7 +9308,7 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
           jPoint = nodes->GetPoint(iPoint, iNeigh);
           scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+            diff_coord = nodes->GetCoord(jPoint, iDim)-nodes->GetCoord(iPoint, iDim);
             scalar_prod += diff_coord*Normal[iDim];
             norm_vect += diff_coord*diff_coord;
             norm_Normal += Normal[iDim]*Normal[iDim];
@@ -9347,7 +9349,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
         /*--- The sensitivity file uses the global numbering ---*/
-        iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+        iPoint = nodes->GetGlobalIndex(vertex[iMarker][iVertex]->GetNode());
 
         if (vertex[iMarker][iVertex]->GetNode() < GetnPointDomain()) {
           Point2Vertex[iPoint][0] = iMarker;

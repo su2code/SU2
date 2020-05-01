@@ -335,14 +335,12 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
        *    neighbors, not duplicating any existing neighbor. ---*/
       for(auto jPoint : addedNeighbors)
       {
-        auto point = geometry.node[jPoint];
-
         if(type == ConnectivityType::FiniteVolume)
         {
           /*--- For FVM we know the neighbors of point j directly. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < point->GetnPoint(); ++iNeigh)
+          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnPoint(jPoint); ++iNeigh)
           {
-            Index_t kPoint = point->GetPoint(iNeigh);
+            Index_t kPoint = geometry.nodes->GetPoint(jPoint, iNeigh);
 
             if(neighbors.count(kPoint) == 0) // no duplication
               newNeighbors.insert(kPoint);
@@ -351,9 +349,9 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
         else // FiniteElement
         {
           /*--- For FEM we need the nodes of all elements that contain point j. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < point->GetnElem(); ++iNeigh)
+          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnElem(jPoint); ++iNeigh)
           {
-            auto elem = geometry.elem[point->GetElem(iNeigh)];
+            auto elem = geometry.elem[geometry.nodes->GetElem(jPoint, iNeigh)];
 
             for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
             {
