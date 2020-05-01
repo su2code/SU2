@@ -386,12 +386,12 @@ public:
                                 CConfig *config,
                                 unsigned long val_Point);
 
-  /*!
-     * \brief Compute slope limiter.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
+// /*!
+//    * \brief Compute slope limiter.
+//    * \param[in] geometry - Geometrical definition of the problem.
+//    * \param[in] config - Definition of the particular problem.
+//    */
+// void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
 
   /*!
      * \brief Set the maximum value of the eigenvalue.

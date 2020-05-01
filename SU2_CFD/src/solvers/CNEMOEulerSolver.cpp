@@ -812,12 +812,10 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool center_jst       = center && (config->GetKind_Centered_NEMO() == JST);
   bool van_albada       = config->GetKind_SlopeLimit_NEMO() == VAN_ALBADA_EDGE;
   bool nonPhys;
-
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
-    //std::cout << "iPoint=" << iPoint << std::endl << std::endl;
     nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
     if (nonPhys) ErrorCounter++;
 
@@ -826,21 +824,15 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 
   }
 
-  /*--- Allowing for Primitive Variables to be passed ---*/
-  //InitiateComms(geometry, config, PRIMITIVE);
-  //CompleteComms(geometry, config, PRIMITIVE);
-
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
     /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config);
-      SetSolution_Gradient_GG(geometry, config);
+      SetSolution_Gradient_GG(geometry, config, true);
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config);
-      SetSolution_Gradient_LS(geometry, config);
+      SetSolution_Gradient_LS(geometry, config, true);
     }
 
     /*--- Limiter computation ---*/
@@ -1179,501 +1171,6 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   }
 }
 
-
-// original wally
-//void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-//                                       CConfig *config, unsigned short iMesh) {
-//
-//  unsigned long iEdge, iPoint, jPoint, counter_local=0, counter_global=0;
-//  unsigned long InnerIter = config->GetInnerIter();
-//  unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
-//  unsigned short iDim, iVar, jVar;
-//
-//  su2double *U_i, *U_j, *V_i, *V_j;
-//  su2double **GradU_i, **GradU_j;
-//  su2double ProjGradU_i, ProjGradU_j;
-//  su2double *Limiter_i, *Limiter_j;
-//  su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
-//  su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
-//  su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
-//  su2double lim_i, lim_j;
-//
-//
-//  /*--- Set booleans based on config settings ---*/
-//  bool implicit   = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-//  bool muscl      = (config->GetMUSCL_NEMO() && (iMesh == MESH_0));
-//  bool disc_adjoint = config->GetDiscrete_Adjoint();
-//  bool limiter      = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) &&
-//                       !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-//  bool chk_err_i, chk_err_j, err;
-//
-//  /*--- Allocate arrays ---*/
-//  Primitive_i = new su2double[nPrimVar];
-//  Primitive_j = new su2double[nPrimVar];
-//  Conserved_i = new su2double[nVar];
-//  Conserved_j = new su2double[nVar];
-//  dPdU_i      = new su2double[nVar];
-//  dPdU_j      = new su2double[nVar];
-//  dTdU_i      = new su2double[nVar];
-//  dTdU_j      = new su2double[nVar];
-//  dTvedU_i    = new su2double[nVar];
-//  dTvedU_j    = new su2double[nVar];
-//  Eve_i       = new su2double[nSpecies];
-//  Eve_j       = new su2double[nSpecies];
-//  Cvve_i      = new su2double[nSpecies];
-//  Cvve_j      = new su2double[nSpecies];
-//
-//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-//  numerics->SetPIndex      ( nodes->GetPIndex()       );
-//  numerics->SetTIndex      ( nodes->GetTIndex()       );
-//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-//  numerics->SetHIndex      ( nodes->GetHIndex()       );
-//  numerics->SetAIndex      ( nodes->GetAIndex()       );
-//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-//
-//  RHO_INDEX  = nodes->GetRhoIndex();
-//  RHOS_INDEX = nodes->GetRhosIndex();
-//  P_INDEX    = nodes->GetPIndex();
-//  TVE_INDEX  = nodes->GetTveIndex();
-//
-//  /*--- Loop over edges and calculate convective fluxes ---*/
-//  for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-//
-//    /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
-//    iPoint = geometry->edge[iEdge]->GetNode(0);
-//    jPoint = geometry->edge[iEdge]->GetNode(1);
-//    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-//
-//    /*--- Get conserved & primitive variables from CVariable ---*/
-//    U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
-//    V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
-//    //S_i = nodes->GetSecondary(); S_j = nodes->GetSecondary();
-//
-//    /*--- High order reconstruction using MUSCL strategy ---*/
-//    if (muscl) {
-//
-//      /*--- Assign i-j and j-i to projection vectors ---*/
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) -
-//                              geometry->node[iPoint]->GetCoord(iDim)   );
-//        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) -
-//                              geometry->node[jPoint]->GetCoord(iDim)   );
-//      }
-//
-//      /*---+++ Conserved variable reconstruction & limiting +++---*/
-//
-//      /*--- Retrieve gradient information & limiter ---*/
-//      GradU_i = nodes->GetGradient(iPoint);
-//      GradU_j = nodes->GetGradient(iPoint);
-//
-//      // These are not currently used
-//      //GradV_i = node[iPoint]->GetGradient_Primitive();
-//      //GradV_j = node[jPoint]->GetGradient_Primitive();
-//
-//      if (limiter) {
-//        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-//        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-//      }
-//
-//      /*--- Reconstruct conserved variables at the edge interface ---*/
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        ProjGradU_i = 0.0; ProjGradU_j = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          ProjGradU_i += Vector_i[iDim]*GradU_i[iVar][iDim];
-//          ProjGradU_j += Vector_j[iDim]*GradU_j[iVar][iDim];
-//        }
-//        if (limiter) {
-//          Conserved_i[iVar] = U_i[iVar] + lim_i*ProjGradU_i;
-//          Conserved_j[iVar] = U_j[iVar] + lim_j*ProjGradU_j;
-//        }
-//        else {
-//          Conserved_i[iVar] = U_i[iVar] + ProjGradU_i;
-//          Conserved_j[iVar] = U_j[iVar] + ProjGradU_j;
-//        }
-//      }
-//
-//      /*--- Calculate corresponding primitive reconstructed variables ---*/
-//      //      for (iVar = 0; iVar < nPrimVar; iVar++) {
-//      //        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
-//      //        for (iDim = 0; iDim < nDim; iDim++) {
-//      //          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
-//      //          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
-//      //        }
-//      //        Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i;
-//      //        Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j;
-//      //
-//      //        // Vib.-el. energy
-//      //        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      //          Eve_i[iSpecies] = node[iPoint]->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
-//      //          Eve_j[iSpecies] = node[jPoint]->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
-//      //          Cvve_i[iSpecies] = node[iPoint]->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
-//      //          Cvve_j[iSpecies] = node[jPoint]->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
-//      //        }
-//      //
-//      //        // Recalculate derivatives of pressure
-//      //        // NOTE: We need to pass the vib-el. energy, but it is only used when
-//      //        //       ionized species are present, so, for now, we just load it with
-//      //        //       the value at i or j, and come back later when ionized is ready.
-//      //        node[iPoint]->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
-//      //        node[jPoint]->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
-//      //
-//      //        // Recalculate temperature derivatives
-//      //        node[iPoint]->CalcdTdU(Primitive_i, config, dTdU_i);
-//      //        node[jPoint]->CalcdTdU(Primitive_j, config, dTdU_j);
-//      //
-//      //        // Recalculate Tve derivatives
-//      //        // Note: Species vib.-el. energies are required for species density
-//      //        //       terms.  For now, just pass the values at i and j and hope it works
-//      //        node[iPoint]->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
-//      //        node[jPoint]->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
-//      //      }
-//
-//
-//      chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
-//                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
-//      chk_err_j = nodes->Cons2PrimVar(config, Conserved_j, Primitive_j,
-//                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
-//
-//
-//      /*--- Check for physical solutions in the reconstructed values ---*/
-//      // Note: If non-physical, revert to first order
-//      if ( chk_err_i || chk_err_j) {
-//        numerics->SetPrimitive   (V_i, V_j);
-//        numerics->SetConservative(U_i, U_j);
-//        numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-//        numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-//        numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-//        numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-//        numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-//      } else {
-//        numerics->SetConservative(Conserved_i, Conserved_j);
-//        numerics->SetPrimitive   (Primitive_i, Primitive_j);
-//        numerics->SetdPdU  (dPdU_i,   dPdU_j  );
-//        numerics->SetdTdU  (dTdU_i,   dTdU_j  );
-//        numerics->SetdTvedU(dTvedU_i, dTvedU_j);
-//        numerics->SetEve   (Eve_i,    Eve_j   );
-//        numerics->SetCvve  (Cvve_i,   Cvve_j  );
-//      }
-//
-//    } else {
-//
-//      /*--- Set variables without reconstruction ---*/
-//      numerics->SetPrimitive   (V_i, V_j);
-//      numerics->SetConservative(U_i, U_j);
-//      numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-//      numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-//      numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-//      numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-//      numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-//    }
-//
-//    /*--- Compute the upwind residual ---*/
-//    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-//
-//    /*--- Check for NaNs before applying the residual to the linear system ---*/
-//    err = false;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      if (Res_Conv[iVar] != Res_Conv[iVar]) err = true;
-//    if (implicit)
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        for (jVar = 0; jVar < nVar; jVar++)
-//          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-//              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-//            err = true;
-//
-//    /*--- Update the residual and Jacobian ---*/
-//    if (!err) {
-//      LinSysRes.AddBlock(iPoint, Res_Conv);
-//      LinSysRes.SubtractBlock(jPoint, Res_Conv);
-//      if (implicit) {
-//        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//        Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-//        Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-//        Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-//      }
-//    }
-//  }
-//
-//  /*--- Warning message about non-physical reconstructions ---*/
-//  if (config->GetComm_Level() == COMM_FULL) {
-//#ifdef HAVE_MPI
-//    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-//#else
-//    counter_global = counter_local;
-//#endif
-//    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
-//  }
-//
-//
-//  delete [] Conserved_i;
-//  delete [] Conserved_j;
-//  delete [] Primitive_i;
-//  delete [] Primitive_j;
-//  delete [] dPdU_i;
-//  delete [] dPdU_j;
-//  delete [] dTdU_i;
-//  delete [] dTdU_j;
-//  delete [] dTvedU_i;
-//  delete [] dTvedU_j;
-//  //delete [] Eve_i;
-//  //delete [] Eve_j;
-//  delete [] Cvve_i;
-//  delete [] Cvve_j;
-//}
-
-//trial for primitive reconstruction
-//void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-//                                       CConfig *config, unsigned short iMesh) {
-//
-//  unsigned long iEdge, iPoint, jPoint, counter_local=0, counter_global=0;
-//  unsigned long InnerIter = config->GetInnerIter();
-//  unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
-//  unsigned short iDim, iVar, jVar;
-//
-//  su2double *U_i, *U_j, *V_i, *V_j;
-//  su2double **GradV_i, **GradV_j;
-//  su2double ProjGradV_i, ProjGradV_j;
-//  su2double *Limiter_i, *Limiter_j;
-//  su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
-//  su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
-//  su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
-//  su2double lim_i, lim_j;
-//
-//
-//  /*--- Set booleans based on config settings ---*/
-//  bool implicit   = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-//  bool muscl      = (config->GetMUSCL_NEMO() && (iMesh == MESH_0));
-//  bool disc_adjoint = config->GetDiscrete_Adjoint();
-//  bool limiter      = ((config->GetKind_SlopeLimit_NEMO() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) &&
-//                       !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-//  bool chk_err_i, chk_err_j, err;
-//
-//  /*--- Allocate arrays ---*/
-//  Primitive_i = new su2double[nPrimVar];
-//  Primitive_j = new su2double[nPrimVar];
-//  Conserved_i = new su2double[nVar];
-//  Conserved_j = new su2double[nVar];
-//  dPdU_i      = new su2double[nVar];
-//  dPdU_j      = new su2double[nVar];
-//  dTdU_i      = new su2double[nVar];
-//  dTdU_j      = new su2double[nVar];
-//  dTvedU_i    = new su2double[nVar];
-//  dTvedU_j    = new su2double[nVar];
-//  Eve_i       = new su2double[nSpecies];
-//  Eve_j       = new su2double[nSpecies];
-//  Cvve_i      = new su2double[nSpecies];
-//  Cvve_j      = new su2double[nSpecies];
-//
-//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-//  numerics->SetPIndex      ( nodes->GetPIndex()       );
-//  numerics->SetTIndex      ( nodes->GetTIndex()       );
-//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-//  numerics->SetHIndex      ( nodes->GetHIndex()       );
-//  numerics->SetAIndex      ( nodes->GetAIndex()       );
-//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-//
-//  RHO_INDEX  = nodes->GetRhoIndex();
-//  RHOS_INDEX = nodes->GetRhosIndex();
-//  P_INDEX    = nodes->GetPIndex();
-//  TVE_INDEX  = nodes->GetTveIndex();
-//
-//  /*--- Loop over edges and calculate convective fluxes ---*/
-//  for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-//
-//    /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
-//    iPoint = geometry->edge[iEdge]->GetNode(0);
-//    jPoint = geometry->edge[iEdge]->GetNode(1);
-//    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-//
-//    /*--- Get conserved & primitive variables from CVariable ---*/
-//    U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
-//    V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
-//
-//    //S_i = nodes->GetSecondary(); S_j = nodes->GetSecondary();
-//
-//    /*--- High order reconstruction using MUSCL strategy ---*/
-//    if (muscl) {
-//
-//      /*--- Assign i-j and j-i to projection vectors ---*/
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-//        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-//      }
-//
-//      /*---+++ Conserved variable reconstruction & limiting +++---*/
-//
-//      /*--- Retrieve gradient information & limiter ---*/
-//      GradV_i = nodes->GetGradient_Primitive(iPoint);
-//      GradV_j = nodes->GetGradient_Primitive(jPoint);
-//
-//      // These are not currently used
-//      //GradV_i = node[iPoint]->GetGradient_Primitive();
-//      //GradV_j = node[jPoint]->GetGradient_Primitive();
-//
-//      limiter = false;
-//
-//      if (limiter) {
-//        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-//        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-//      }
-//
-//      /*--- Reconstruct conserved variables at the edge interface ---*/
-//      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-//        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
-//          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
-//        }
-//        if (limiter) {
-//          std::cout << "Limiter_i=" << Limiter_i << std::endl << " Limiter_j=" << Limiter_j << std::endl; 
-//          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
-//          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
-//        }
-//        else {
-//          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
-//          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
-//        }
-//      }
-//
-//      /*--- Calculate corresponding primitive reconstructed variables ---*/
-//      //      for (iVar = 0; iVar < nPrimVar; iVar++) {
-//      //        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
-//      //        for (iDim = 0; iDim < nDim; iDim++) {
-//      //          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
-//      //          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
-//      //        }
-//      //        Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i;
-//      //        Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j;
-//      //
-//      //        // Vib.-el. energy
-//      //        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      //          Eve_i[iSpecies] = node[iPoint]->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
-//      //          Eve_j[iSpecies] = node[jPoint]->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
-//      //          Cvve_i[iSpecies] = node[iPoint]->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
-//      //          Cvve_j[iSpecies] = node[jPoint]->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
-//      //        }
-//      //
-//      //        // Recalculate derivatives of pressure
-//      //        // NOTE: We need to pass the vib-el. energy, but it is only used when
-//      //        //       ionized species are present, so, for now, we just load it with
-//      //        //       the value at i or j, and come back later when ionized is ready.
-//      //        node[iPoint]->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
-//      //        node[jPoint]->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
-//      //
-//      //        // Recalculate temperature derivatives
-//      //        node[iPoint]->CalcdTdU(Primitive_i, config, dTdU_i);
-//      //        node[jPoint]->CalcdTdU(Primitive_j, config, dTdU_j);
-//      //
-//      //        // Recalculate Tve derivatives
-//      //        // Note: Species vib.-el. energies are required for species density
-//      //        //       terms.  For now, just pass the values at i and j and hope it works
-//      //        node[iPoint]->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
-//      //        node[jPoint]->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
-//      //      }
-//
-//
-//    //  chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
-//                                             //dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
-//    //  chk_err_j = nodes->Cons2PrimVar(config, Conserved_j, Primitive_j,
-//                                             //dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
-//
-//
-//      /*--- Check for physical solutions in the reconstructed values ---*/
-//      // Note: If non-physical, revert to first order
-//      //if ( chk_err_i || chk_err_j) 
-//        //{
-//      //  numerics->SetPrimitive   (V_i, V_j);
-//      //  numerics->SetConservative(U_i, U_j);
-//      //    numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-//      //    numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-//      //  numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-//      //  numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-//      //  numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-//      //} else {
-//        numerics->SetConservative(Conserved_i, Conserved_j);
-//        numerics->SetPrimitive   (Primitive_i, Primitive_j);
-//        numerics->SetdPdU  (dPdU_i,   dPdU_j  );
-//        numerics->SetdTdU  (dTdU_i,   dTdU_j  );
-//        numerics->SetdTvedU(dTvedU_i, dTvedU_j);
-//        numerics->SetEve   (Eve_i,    Eve_j   );
-//        numerics->SetCvve  (Cvve_i,   Cvve_j  );
-//     // }
-//
-//    } else {
-//
-//      /*--- Set variables without reconstruction ---*/
-//      numerics->SetPrimitive   (V_i, V_j);
-//      numerics->SetConservative(U_i, U_j);
-//      numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));   //Cat this does't work but it's also not used by AUSM
-//      numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));   //Cat this does't work but it's also not used by AUSM
-//      numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint)); //Cat this does't work but it's also not used by AUSM
-//      numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-//      numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-//    }
-//
-//    /*--- Compute the upwind residual ---*/
-//    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-//
-//    /*--- Check for NaNs before applying the residual to the linear system ---*/
-//    err = false;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      if (Res_Conv[iVar] != Res_Conv[iVar]) err = true;
-//    if (implicit)
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        for (jVar = 0; jVar < nVar; jVar++)
-//          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-//              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-//            err = true;
-//
-//    /*--- Update the residual and Jacobian ---*/
-//    if (!err) {
-//      LinSysRes.AddBlock(iPoint, Res_Conv);
-//      LinSysRes.SubtractBlock(jPoint, Res_Conv);
-//      if (implicit) {
-//        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//        Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-//        Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-//        Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-//      }
-//    }
-//  }
-//
-//  /*--- Warning message about non-physical reconstructions ---*/
-//  if (config->GetComm_Level() == COMM_FULL) {
-//#ifdef HAVE_MPI
-//    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-//#else
-//    counter_global = counter_local;
-//#endif
-//    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
-//  }
-//
-//
-//  delete [] Conserved_i;
-//  delete [] Conserved_j;
-//  delete [] Primitive_i;
-//  delete [] Primitive_j;
-//  delete [] dPdU_i;
-//  delete [] dPdU_j;
-//  delete [] dTdU_i;
-//  delete [] dTdU_j;
-//  delete [] dTvedU_i;
-//  delete [] dTvedU_j;
-//  //delete [] Eve_i;
-//  //delete [] Eve_j;
-//  delete [] Cvve_i;
-//  delete [] Cvve_j;
-//}
-
-//sean copeland
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
   unsigned long iEdge, iPoint, jPoint;
@@ -3336,165 +2833,165 @@ void CNEMOEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
 
 }
 
-void CNEMOEulerSolver::SetSolution_Limiter(CGeometry *geometry,
-                                           CConfig *config) {
-  
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iVar, iDim;
-  double dave, LimK, eps2, dm, dp, du, limiter;
-  double *Solution_i, *Solution_j;
-  double *Coord_i, *Coord_j;
-  double **Gradient_i, **Gradient_j;
-  
-  
-  /*--- Initialize solution max and solution min in the entire domain --*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      nodes->SetSolution_Max(iPoint, iVar, -EPS);
-      nodes->SetSolution_Min(iPoint, iVar, EPS);
-      nodes->SetLimiter(iPoint, iVar, 2.0);
-    }
-  }
-  
-  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    
-    /*--- Point identification, Normal vector and area ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    /*--- Get the conserved variables ---*/
-    Solution_i = nodes->GetSolution(iPoint);
-    Solution_j = nodes->GetSolution(jPoint);
-    
-    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      du = (Solution_j[iVar] - Solution_i[iVar]);
-      nodes->SetSolution_Min(iPoint,iVar, min(nodes->GetSolution_Min(iPoint,iVar), du));
-      nodes->SetSolution_Max(iPoint,iVar, max(nodes->GetSolution_Max(iPoint,iVar), du));
-      nodes->SetSolution_Min(jPoint,iVar, min(nodes->GetSolution_Min(jPoint,iVar), -du));
-      nodes->SetSolution_Max(jPoint,iVar, max(nodes->GetSolution_Max(jPoint,iVar), -du));
-    }
-  }
-  
-
-  switch (config->GetKind_SlopeLimit()) {
-      
-      /*--- Minmod (Roe 1984) limiter ---*/
-    //case MINMOD:
-    //  
-    //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    //    
-    //    iPoint     = geometry->edge[iEdge]->GetNode(0);
-    //    jPoint     = geometry->edge[iEdge]->GetNode(1);
-    //    Coord_i    = geometry->node[iPoint]->GetCoord();
-    //    Coord_j    = geometry->node[jPoint]->GetCoord();
-    //    Solution_i = node[iPoint]->GetSolution();
-    //    Solution_j = node[jPoint]->GetSolution();
-    //    Gradient_i = node[iPoint]->GetGradient();
-    //    Gradient_j = node[jPoint]->GetGradient();
+//void CNEMOEulerSolver::SetSolution_Limiter(CGeometry *geometry,
+//                                           CConfig *config) {
+//  
+//  unsigned long iEdge, iPoint, jPoint;
+//  unsigned short iVar, iDim;
+//  double dave, LimK, eps2, dm, dp, du, limiter;
+//  double *Solution_i, *Solution_j;
+//  double *Coord_i, *Coord_j;
+//  double **Gradient_i, **Gradient_j;
+//  
+//  
+//  /*--- Initialize solution max and solution min in the entire domain --*/
+//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      nodes->SetSolution_Max(iPoint, iVar, -EPS);
+//      nodes->SetSolution_Min(iPoint, iVar, EPS);
+//      nodes->SetLimiter(iPoint, iVar, 2.0);
+//    }
+//  }
+//  
+//  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
+//  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+//    
+//    /*--- Point identification, Normal vector and area ---*/
+//    iPoint = geometry->edge[iEdge]->GetNode(0);
+//    jPoint = geometry->edge[iEdge]->GetNode(1);
+//    
+//    /*--- Get the conserved variables ---*/
+//    Solution_i = nodes->GetSolution(iPoint);
+//    Solution_j = nodes->GetSolution(jPoint);
+//    
+//    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      du = (Solution_j[iVar] - Solution_i[iVar]);
+//      nodes->SetSolution_Min(iPoint,iVar, min(nodes->GetSolution_Min(iPoint,iVar), du));
+//      nodes->SetSolution_Max(iPoint,iVar, max(nodes->GetSolution_Max(iPoint,iVar), du));
+//      nodes->SetSolution_Min(jPoint,iVar, min(nodes->GetSolution_Min(jPoint,iVar), -du));
+//      nodes->SetSolution_Max(jPoint,iVar, max(nodes->GetSolution_Max(jPoint,iVar), -du));
+//    }
+//  }
+//  
 //
-    //    
-    //    for (iVar = 0; iVar < nVar; iVar++) {
-    //      
-    //      /*--- Calculate the interface left gradient, delta- (dm) ---*/
-    //      dm = 0.0;
-    //      for (iDim = 0; iDim < nDim; iDim++)
-    //        dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-    //      
-    //      /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-    //      if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
-    //      else            dp = node[iPoint]->GetSolution_Min(iVar);
-    //      
-    //      limiter = max(0.0, min(1.0,dp/dm));
-    //      
-    //      if (limiter < node[iPoint]->GetLimiter(iVar))
-    //        if (geometry->node[iPoint]->GetDomain())
-    //          node[iPoint]->SetLimiter(iVar, limiter);
-    //      
-    //      /*-- Repeat for point j on the edge ---*/
-    //      dm = 0.0;
-    //      for (iDim = 0; iDim < nDim; iDim++)
-    //        dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-    //      
-    //      if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
-    //      else dp = node[jPoint]->GetSolution_Min(iVar);
-    //      
-    //      limiter = max(0.0, min(1.0,dp/dm));
-    //      
-    //      if (limiter < node[jPoint]->GetLimiter(iVar))
-    //        if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter(iVar, limiter);
-    //    }
-    //  }
-    //  break;
-      
-      /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
-    case VENKATAKRISHNAN:
-      
-      /*-- Get limiter parameters from the configuration file ---*/
-      dave = config->GetRefElemLength();
-      LimK = config->GetVenkat_LimiterCoeff();
-      eps2 = pow((LimK*dave), 3.0);
-      
-      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-        
-        iPoint     = geometry->edge[iEdge]->GetNode(0);
-        jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Coord_i    = geometry->node[iPoint]->GetCoord();
-        Coord_j    = geometry->node[jPoint]->GetCoord();
-        Solution_i = nodes->GetSolution(iPoint);
-        Solution_j = nodes->GetSolution(jPoint);
-        Gradient_i = nodes->GetGradient(iPoint);
-        Gradient_j = nodes->GetGradient(jPoint);
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          
-          /*--- Calculate the interface left gradient, delta- (dm) ---*/
-          dm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-          
-          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-          if ( dm > 0.0 ) dp = nodes->GetSolution_Max(iPoint,iVar);
-          else dp = nodes->GetSolution_Min(iPoint,iVar);
-          
-          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-          
-          if (limiter < nodes->GetLimiter(iPoint,iVar)){
-            //if (geometry->node[iPoint]->GetDomain()) {
-              nodes->SetLimiter(iPoint, iVar, limiter);}
-              
-              //              if (iEdge == 0) {
-              //                cout << "iEdge: " << iEdge << endl;
-              //                cout << "iPoint: " << iPoint << endl;
-              //                cout << "Limiter: " << limiter << endl;
-              //                cin.get();
-              //              }
-            //}
-          
-          /*-- Repeat for point j on the edge ---*/
-          dm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-          
-          if ( dm > 0.0 ) dp = nodes->GetSolution_Max(jPoint,iVar);
-          else dp = nodes->GetSolution_Min(jPoint,iVar);
-          
-          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-          
-          if (limiter < nodes->GetLimiter(jPoint,iVar)){
-            //if (geometry->node[jPoint]->GetDomain()) {
-              nodes->SetLimiter(jPoint, iVar, limiter);
-            }
-        }
-      }
-      break;
-      
-  }
-  
-  /*--- Limiter MPI ---*/
-  //Set_MPI_Solution_Limiter(geometry, config);
-}
+//  switch (config->GetKind_SlopeLimit()) {
+//      
+//      /*--- Minmod (Roe 1984) limiter ---*/
+//    //case MINMOD:
+//    //  
+//    //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+//    //    
+//    //    iPoint     = geometry->edge[iEdge]->GetNode(0);
+//    //    jPoint     = geometry->edge[iEdge]->GetNode(1);
+//    //    Coord_i    = geometry->node[iPoint]->GetCoord();
+//    //    Coord_j    = geometry->node[jPoint]->GetCoord();
+//    //    Solution_i = node[iPoint]->GetSolution();
+//    //    Solution_j = node[jPoint]->GetSolution();
+//    //    Gradient_i = node[iPoint]->GetGradient();
+//    //    Gradient_j = node[jPoint]->GetGradient();
+////
+//    //    
+//    //    for (iVar = 0; iVar < nVar; iVar++) {
+//    //      
+//    //      /*--- Calculate the interface left gradient, delta- (dm) ---*/
+//    //      dm = 0.0;
+//    //      for (iDim = 0; iDim < nDim; iDim++)
+//    //        dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+//    //      
+//    //      /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+//    //      if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+//    //      else            dp = node[iPoint]->GetSolution_Min(iVar);
+//    //      
+//    //      limiter = max(0.0, min(1.0,dp/dm));
+//    //      
+//    //      if (limiter < node[iPoint]->GetLimiter(iVar))
+//    //        if (geometry->node[iPoint]->GetDomain())
+//    //          node[iPoint]->SetLimiter(iVar, limiter);
+//    //      
+//    //      /*-- Repeat for point j on the edge ---*/
+//    //      dm = 0.0;
+//    //      for (iDim = 0; iDim < nDim; iDim++)
+//    //        dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+//    //      
+//    //      if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+//    //      else dp = node[jPoint]->GetSolution_Min(iVar);
+//    //      
+//    //      limiter = max(0.0, min(1.0,dp/dm));
+//    //      
+//    //      if (limiter < node[jPoint]->GetLimiter(iVar))
+//    //        if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter(iVar, limiter);
+//    //    }
+//    //  }
+//    //  break;
+//      
+//      /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
+//    case VENKATAKRISHNAN:
+//      
+//      /*-- Get limiter parameters from the configuration file ---*/
+//      dave = config->GetRefElemLength();
+//      LimK = config->GetVenkat_LimiterCoeff();
+//      eps2 = pow((LimK*dave), 3.0);
+//      
+//      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+//        
+//        iPoint     = geometry->edge[iEdge]->GetNode(0);
+//        jPoint     = geometry->edge[iEdge]->GetNode(1);
+//        Coord_i    = geometry->node[iPoint]->GetCoord();
+//        Coord_j    = geometry->node[jPoint]->GetCoord();
+//        Solution_i = nodes->GetSolution(iPoint);
+//        Solution_j = nodes->GetSolution(jPoint);
+//        Gradient_i = nodes->GetGradient(iPoint);
+//        Gradient_j = nodes->GetGradient(jPoint);
+//        
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          
+//          /*--- Calculate the interface left gradient, delta- (dm) ---*/
+//          dm = 0.0;
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+//          
+//          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+//          if ( dm > 0.0 ) dp = nodes->GetSolution_Max(iPoint,iVar);
+//          else dp = nodes->GetSolution_Min(iPoint,iVar);
+//          
+//          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+//          
+//          if (limiter < nodes->GetLimiter(iPoint,iVar)){
+//            //if (geometry->node[iPoint]->GetDomain()) {
+//              nodes->SetLimiter(iPoint, iVar, limiter);}
+//              
+//              //              if (iEdge == 0) {
+//              //                cout << "iEdge: " << iEdge << endl;
+//              //                cout << "iPoint: " << iPoint << endl;
+//              //                cout << "Limiter: " << limiter << endl;
+//              //                cin.get();
+//              //              }
+//            //}
+//          
+//          /*-- Repeat for point j on the edge ---*/
+//          dm = 0.0;
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+//          
+//          if ( dm > 0.0 ) dp = nodes->GetSolution_Max(jPoint,iVar);
+//          else dp = nodes->GetSolution_Min(jPoint,iVar);
+//          
+//          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+//          
+//          if (limiter < nodes->GetLimiter(jPoint,iVar)){
+//            //if (geometry->node[jPoint]->GetDomain()) {
+//              nodes->SetLimiter(jPoint, iVar, limiter);
+//            }
+//        }
+//      }
+//      break;
+//      
+//  }
+//  
+//  /*--- Limiter MPI ---*/
+//  //Set_MPI_Solution_Limiter(geometry, config);
+//}
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
 
