@@ -176,7 +176,7 @@ public:
   vector<std::vector<double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
   vector<double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
   vector<double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
-  vector<double> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
+  set<double> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
   vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
   unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
   su2double ReducedResNorm_Old;             /*!<\brief previous value of the reduced residual norm (rom) */
@@ -1619,6 +1619,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void FindMaskedEdges(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Convert masked nodes to masked edges.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  //void CheckROMConvergence(CConfig *config, double ReducedRes);
   
   /*!
    * \brief A virtual member.

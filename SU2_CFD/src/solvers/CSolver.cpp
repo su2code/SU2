@@ -4785,7 +4785,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 50; //TODO: create config file option
+  int desired_nodes = 500; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4902,14 +4902,15 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   }
-  //// set mask to all even nodes for now
+  // manually set masked nodes
   //for (unsigned long i = 0; i < nPointDomain; i++) {
   //  //if (i % 2 == 0) {
-  //  if (i < 5000) {
+  //  if (i < 2000) {
   //    Mask.push_back(i);
-  //    MaskNeighbors.push_back(i);
   //  }
   //}
+  
+  sort(Mask.begin(),Mask.end());
   
   ofstream fs;
   std::string fname = "masked_nodes.csv";
@@ -4950,11 +4951,11 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
     
     if (MaskedNode(iPoint)) {
       Edge_masked.push_back(iEdge);
-      if (!MaskedNode(jPoint)) MaskNeighbors.push_back(jPoint);
+      if (!MaskedNode(jPoint)) MaskNeighbors.insert(jPoint);
     }
     else if (MaskedNode(jPoint)) {
       Edge_masked.push_back(iEdge);
-      if (!MaskedNode(iPoint)) MaskNeighbors.push_back(iPoint);
+      if (!MaskedNode(iPoint)) MaskNeighbors.insert(iPoint);
     }
     
     
@@ -4963,10 +4964,37 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   ofstream fs;
   std::string fname = "masked_nodes_neighs.csv";
   fs.open(fname);
-  for(int i=0; i < (int)MaskNeighbors.size(); i++){
-    fs << MaskNeighbors[i] << "," ;
+  set <double> :: iterator itr;
+  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
+    fs << *itr << "," ;
   }
   fs << "\n";
   fs.close();
   
 }
+
+//void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
+//
+//  unsigned long InnerIter = config->GetInnerIter();
+//
+//  if (InnerIter == 0) {
+//    RomConverged = false;
+//    SetResOld_ROM(sqrt(ReducedRes));
+//  }
+//  else {
+//    if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e8) {
+//      RomConverged = true;
+//      std::cout << "ROM Converged." << std::endl;
+//      return;
+//    }
+//    else if (sqrt(ReducedRes) > ReducedResNorm_Cur) {
+//      RomConverged = true;
+//      std::cout << "ROM Residual Increased." << std::endl;
+//      return;
+//    }
+//    else {
+//      RomConverged = false;
+//    }
+//  }
+//  SetRes_ROM(sqrt(ReducedRes));
+//}
