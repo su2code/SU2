@@ -440,7 +440,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-      for (auto jVertex = 0u; jVertex < nDonorVertex; jVertex++) {
+      for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
 
         for (auto iVar = 0u; iVar < nPrimVar; iVar++)
           PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);

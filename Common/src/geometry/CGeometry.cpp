@@ -2639,9 +2639,7 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
       AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
     }
     if(!push_index) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetIndex(iPoint, input);
-      }
+      nodes->SetIndex(iPoint, input);
     }
   }
 }

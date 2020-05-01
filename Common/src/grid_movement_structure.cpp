@@ -3598,8 +3598,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
               if (jPoint > iPoint) {
 
                 for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-                  Coord_0[iDim] = geometry->nodes->GetCoord(iPoint)[iDim];
-                  Coord_1[iDim] = geometry->nodes->GetCoord(jPoint)[iDim];
+                  Coord_0[iDim] = geometry->nodes->GetCoord(iPoint,iDim);
+                  Coord_1[iDim] = geometry->nodes->GetCoord(jPoint,iDim);
                 }
 
                 /*--- Write the coordinates in the right parametric system ---*/
@@ -6747,7 +6747,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
               jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
               if (iPoint == geometry->nodes->GetGlobalIndex(jPoint)) {
                 for (iDim = 0; iDim < nDim; iDim++) {
-                  coord[iDim] = geometry->nodes->GetCoord(jPoint)[iDim];
+                  coord[iDim] = geometry->nodes->GetCoord(jPoint,iDim);
                 }
                 FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
                 FFDBox[iFFDBox]->Set_VertexIndex(iVertex);

@@ -914,18 +914,14 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   if (config->GetTime_Marching() && config->GetGrid_Movement()) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
 
-        /*--- Update cell volume ---*/
+      /*--- Update cell volume ---*/
+      geometry[iMGlevel]->nodes->SetVolume_n();
+      geometry[iMGlevel]->nodes->SetVolume_nM1();
 
-        geometry[iMGlevel]->nodes->SetVolume_n(iPoint);
-        geometry[iMGlevel]->nodes->SetVolume_nM1(iPoint);
-
-        /*--- Update point coordinates ---*/
-        geometry[iMGlevel]->nodes->SetCoord_n(iPoint);
-        geometry[iMGlevel]->nodes->SetCoord_n1(iPoint);
-
-      }
+      /*--- Update point coordinates ---*/
+      geometry[iMGlevel]->nodes->SetCoord_n();
+      geometry[iMGlevel]->nodes->SetCoord_n1();
     }
   }
 

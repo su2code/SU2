@@ -8511,17 +8511,12 @@ void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2doubl
 
   Coord = new su2double [nDim];
 
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    su2double *Coord = nodes->GetCoord(iPoint);
-    nodes->SetCoord_Old(iPoint, Coord);
-  }
+  nodes->SetCoord_Old();
 
   /*--- Jacobi iterations ---*/
   for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      nodes->SetCoord_SumZero(iPoint);
-
+    nodes->SetCoord_SumZero();
 
     /*--- Loop over Interior edges ---*/
     for (iEdge = 0; iEdge < nEdge; iEdge++) {

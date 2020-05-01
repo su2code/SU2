@@ -526,15 +526,13 @@ public:
 
   /*!
    * \brief Set the volume of the control volume at time n.
-   * \param[in] iPoint - Index of the point.
    */
-  inline void SetVolume_n(unsigned long iPoint) { Volume_n(iPoint) = Volume(iPoint); }
+  void SetVolume_n();
 
   /*!
    * \brief Set the volume of the control volume at time n+1.
-   * \param[in] iPoint - Index of the point.
    */
-  inline void SetVolume_nM1(unsigned long iPoint) { Volume_nM1(iPoint) = Volume_n(iPoint); }
+  void SetVolume_nM1();
 
   /*!
    * \brief Get the coordinates of the control volume at time n.
@@ -559,21 +557,13 @@ public:
 
   /*!
    * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
-   * \param[in] iPoint - Index of the point.
    */
-  inline void SetCoord_n(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_n(iPoint,iDim) = Coord(iPoint,iDim);
-  }
+  void SetCoord_n();
 
   /*!
    * \brief Set the coordinates of the control volume at time n-1 to the ones in <i>Coord_n</i>.
-   * \param[in] iPoint - Index of the point.
    */
-  inline void SetCoord_n1(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_n1(iPoint,iDim) = Coord_n(iPoint,iDim);
-  }
+  void SetCoord_n1();
 
   /*!
    * \brief Set the coordinates of the control volume at time n, for restart cases.
@@ -737,12 +727,8 @@ public:
 
   /*!
    * \brief Initialize the vector <i>Coord_Sum</i>.
-   * \param[in] iPoint - Index of the point.
    */
-  inline void SetCoord_SumZero(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_Sum(iPoint,iDim) = 0.0;
-  }
+  void SetCoord_SumZero();
 
   /*!
    * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
@@ -756,12 +742,8 @@ public:
 
   /*!
    * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
-   * \param[in] iPoint - Index of the point.
    */
-  inline void SetCoord_Old(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_Old(iPoint,iDim) = Coord(iPoint,iDim);
-  }
+  void SetCoord_Old();
 
   /*!
    * \brief Set the value of the grid velocity at the point.

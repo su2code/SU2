@@ -891,22 +891,18 @@ void CFluidDriver::StaticMeshUpdate() {
 
 void CFluidDriver::SetInitialMesh() {
 
-  unsigned long iPoint;
-
   StaticMeshUpdate();
 
   /*--- Propagate the initial deformation to the past ---*/
   //if (!restart) {
-    for(iZone = 0; iZone < nZone; iZone++) {
+  for(iZone = 0; iZone < nZone; iZone++) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-        for(iPoint = 0; iPoint < geometry_container[iZone][INST_0][iMesh]->GetnPoint(); iPoint++) {
-        //solver_container[iZone][iMesh][FLOW_SOL]->nodes->Set_Solution_time_n(iPoint);
-        //solver_container[iZone][iMesh][FLOW_SOL]->nodes->Set_Solution_time_n1(iPoint);
-        geometry_container[iZone][INST_0][iMesh]->nodes->SetVolume_n(iPoint);
-        geometry_container[iZone][INST_0][iMesh]->nodes->SetVolume_nM1(iPoint);
-        geometry_container[iZone][INST_0][iMesh]->nodes->SetCoord_n(iPoint);
-        geometry_container[iZone][INST_0][iMesh]->nodes->SetCoord_n1(iPoint);
-      }
+      //solver_container[iZone][iMesh][FLOW_SOL]->nodes->Set_Solution_time_n(iPoint);
+      //solver_container[iZone][iMesh][FLOW_SOL]->nodes->Set_Solution_time_n1(iPoint);
+      geometry_container[iZone][INST_0][iMesh]->nodes->SetVolume_n();
+      geometry_container[iZone][INST_0][iMesh]->nodes->SetVolume_nM1();
+      geometry_container[iZone][INST_0][iMesh]->nodes->SetCoord_n();
+      geometry_container[iZone][INST_0][iMesh]->nodes->SetCoord_n1();
     }
   }
   //}

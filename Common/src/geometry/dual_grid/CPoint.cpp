@@ -27,6 +27,7 @@
 
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
+#include "../../../include/omp_structure.hpp"
 
 
 CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) {
@@ -146,3 +147,30 @@ void CPoint::SetIndex(unsigned long iPoint, bool input) {
     }
   }
 }
+
+void CPoint::SetVolume_n() {
+  assert(Volume_n.size() == Volume.size());
+  parallelCopy(Volume.size(), Volume.data(), Volume_n.data());
+}
+
+void CPoint::SetVolume_nM1() {
+  assert(Volume_nM1.size() == Volume_n.size());
+  parallelCopy(Volume_n.size(), Volume_n.data(), Volume_nM1.data());
+}
+
+void CPoint::SetCoord_n() {
+  assert(Coord_n.size() == Coord.size());
+  parallelCopy(Coord.size(), Coord.data(), Coord_n.data());
+}
+
+void CPoint::SetCoord_n1() {
+  assert(Coord_n1.size() == Coord_n.size());
+  parallelCopy(Coord_n.size(), Coord_n.data(), Coord_n1.data());
+}
+
+void CPoint::SetCoord_Old() {
+  assert(Coord_Old.size() == Coord.size());
+  parallelCopy(Coord.size(), Coord.data(), Coord_Old.data());
+}
+
+void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }

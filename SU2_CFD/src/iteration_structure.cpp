@@ -1782,10 +1782,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n1();
           }
           if (grid_IsMoving) {
-            for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint);
-              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1(iPoint);
-            }
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n();
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1();
           }
         }
       }
@@ -1805,9 +1803,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
           }
           if (grid_IsMoving) {
-            for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint);
-            }
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n();
           }
         }
       }
@@ -1852,9 +1848,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->Set_OldSolution();
         }
         if (grid_IsMoving) {
-          for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_Old(iPoint);
-          }
+          geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_Old();
         }
       }
 
