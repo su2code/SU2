@@ -855,7 +855,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
           /*--- The Pressure file uses the global numbering ---*/
 
-          iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+          iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
 
           if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
             Point2Vertex[iPoint][0] = iMarker;

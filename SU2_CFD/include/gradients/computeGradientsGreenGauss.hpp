@@ -74,11 +74,11 @@ void computeGradientsGreenGauss(CSolver* solver,
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
-    auto node = geometry.node[iPoint];
+    auto nodes = geometry.nodes;
 
     AD::StartPreacc();
-    AD::SetPreaccIn(node->GetVolume());
-    AD::SetPreaccIn(node->GetPeriodicVolume());
+    AD::SetPreaccIn(nodes->GetVolume(iPoint));
+    AD::SetPreaccIn(nodes->GetPeriodicVolume(iPoint));
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       AD::SetPreaccIn(field(iPoint,iVar));
@@ -91,14 +91,14 @@ void computeGradientsGreenGauss(CSolver* solver,
 
     /*--- Handle averaging and division by volume in one constant. ---*/
 
-    su2double halfOnVol = 0.5 / (node->GetVolume()+node->GetPeriodicVolume());
+    su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint)+nodes->GetPeriodicVolume(iPoint));
 
     /*--- Add a contribution due to each neighbor. ---*/
 
-    for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
+    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      size_t iEdge = node->GetEdge(iNeigh);
-      size_t jPoint = node->GetPoint(iNeigh);
+      size_t iEdge = nodes->GetEdge(iPoint,iNeigh);
+      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
 
       /*--- Determine if edge points inwards or outwards of iPoint.
        *    If inwards we need to flip the area vector. ---*/
@@ -142,13 +142,13 @@ void computeGradientsGreenGauss(CSolver* solver,
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
       {
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-        auto node = geometry.node[iPoint];
+        auto nodes = geometry.nodes;
 
         /*--- Halo points do not need to be considered. ---*/
 
-        if (!node->GetDomain()) continue;
+        if (!nodes->GetDomain(iPoint)) continue;
 
-        su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+        su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
 
         const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
 

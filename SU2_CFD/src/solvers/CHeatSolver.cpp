@@ -535,7 +535,7 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
       Temp_j = nodes->GetSolution(jPoint,0);
 
       numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
-      numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+      numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetTemperature(Temp_i, Temp_j);
@@ -959,7 +959,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetPrimitive(V_domain, V_inlet);
 
         if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
         conv_numerics->SetTemperature(nodes->GetSolution(iPoint,0), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
 
@@ -1062,7 +1062,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           conv_numerics->SetPrimitive(V_domain, V_outlet);
 
           if (dynamic_grid)
-            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
           conv_numerics->SetTemperature(nodes->GetSolution(iPoint,0), nodes->GetSolution(Point_Normal,0));
 
@@ -1563,7 +1563,7 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         nodes->AddSolution(iPoint,iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
       }
     }
 
@@ -1640,7 +1640,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
 

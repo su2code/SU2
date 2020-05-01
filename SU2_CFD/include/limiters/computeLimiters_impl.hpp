@@ -136,8 +136,8 @@ void computeLimiters_impl(CSolver* solver,
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
-    auto node = geometry.node[iPoint];
-    const su2double* coord_i = node->GetCoord();
+    auto nodes = geometry.nodes;
+    const su2double* coord_i = nodes->GetCoord(iPoint);
 
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
@@ -170,9 +170,9 @@ void computeLimiters_impl(CSolver* solver,
 
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
-    for(size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
+    for(size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      size_t jPoint = node->GetPoint(iNeigh);
+      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
 
       const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);

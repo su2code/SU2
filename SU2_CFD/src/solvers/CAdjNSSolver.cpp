@@ -432,7 +432,7 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     iPoint = geometry->edges->GetNode(iEdge,0);
     jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive variables w/o reconstruction and adjoint variables w/o reconstruction---*/
@@ -567,7 +567,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set distance to the surface ---*/
 
-      second_numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), geometry->node[jPoint]->GetWall_Distance());
+      second_numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), geometry->nodes->GetWall_Distance(jPoint));
 
       /*--- Update adjoint viscous residual ---*/
 

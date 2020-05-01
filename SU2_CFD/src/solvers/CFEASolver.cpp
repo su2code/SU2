@@ -3157,7 +3157,7 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iElem = 0; iElem < nElement; ++iElem) {
     /*--- count only elements that belong to the partition ---*/
-    if (geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain()) {
+    if (geometry->nodes->GetDomain(geometry->elem[iElem]->GetNode(0))) {
       su2double volume = geometry->elem[iElem]->GetVolume();
       su2double rho = element_properties[iElem]->GetPhysicalDensity();
       tot_vol_loc += volume;

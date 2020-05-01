@@ -9154,7 +9154,7 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
 #ifndef HAVE_MPI
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 #else
-        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+        iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
 #endif
 
         if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
@@ -9306,7 +9306,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 #ifndef HAVE_MPI
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 #else
-        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+        iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
 #endif
 
         if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {

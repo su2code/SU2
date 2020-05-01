@@ -2708,8 +2708,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    auto node_i = geometry->node[iPoint];
-
     /*--- Set maximum eigenvalues to zero. ---*/
 
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
@@ -2719,12 +2717,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      jPoint = node_i->GetPoint(iNeigh);
-      auto node_j = geometry->node[jPoint];
+      jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
 
-      iEdge = node_i->GetEdge(iNeigh);
+      iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
       Normal = geometry->edges->GetNormal(iEdge);
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
@@ -2736,8 +2733,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        const su2double *GridVel_i = node_i->GetGridVel();
-        const su2double *GridVel_j = node_j->GetGridVel();
+        const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+        const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         for (iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
@@ -2962,7 +2959,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     auto jPoint = geometry->edges->GetNode(iEdge,1);
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-    numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+    numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
 
     /*--- Set primitive variables w/o reconstruction ---*/
 
@@ -2984,7 +2981,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Grid movement ---*/
 
     if (dynamic_grid) {
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
     }
 
     /*--- Compute residuals, and Jacobians ---*/
@@ -3428,7 +3425,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Set y coordinate ---*/
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
 
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -4497,7 +4494,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
+    su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
     su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
 
     const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -4632,7 +4629,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Read the volume ---*/
 
-    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
+    su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
@@ -7698,7 +7695,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -8202,7 +8199,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           /*--- Set the normal vector and the coordinates ---*/
 
           visc_numerics->SetNormal(Normal);
-          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+          visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
           /*--- Primitive variables, and gradient ---*/
 
@@ -9071,7 +9068,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -9098,7 +9095,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -9413,7 +9410,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -9440,7 +9437,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
@@ -9591,7 +9588,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -9615,7 +9612,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
@@ -9758,7 +9755,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
@@ -9879,7 +9876,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
@@ -10077,7 +10074,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       /*--- Set grid movement ---*/
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -10102,7 +10099,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
@@ -10332,7 +10329,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       /*--- Set grid movement ---*/
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -10357,7 +10354,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
@@ -10470,7 +10467,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             conv_numerics->SetNormal(Normal);
 
             if (dynamic_grid)
-              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+              conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
             /*--- Compute the convective residual using an upwind scheme ---*/
 
@@ -10515,7 +10512,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
               /*--- Set the normal vector and the coordinates ---*/
 
               visc_numerics->SetNormal(Normal);
-              visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+              visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
               /*--- Primitive variables, and gradient ---*/
 
@@ -11038,7 +11035,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       /*--- Grid Movement ---*/
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -11070,7 +11067,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //        /*--- Set the normal vector and the coordinates ---*/
 //
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->node[iPoint_Normal]->GetCoord());
 //
 //        /*--- Primitive variables, and gradient ---*/
 //

@@ -1719,7 +1719,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     iPoint = geometry->edges->GetNode(iEdge,0);
     jPoint = geometry->edges->GetNode(iEdge,1);
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-    numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+    numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
 
     /*--- Adjoint variables w/o reconstruction ---*/
 
@@ -1747,7 +1747,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Mesh motion ---*/
 
     if (grid_movement) {
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
     }
 
     /*--- Compute residuals ---*/
@@ -1813,7 +1813,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Grid velocities for dynamic meshes ---*/
 
     if (grid_movement) {
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
     }
 
     /*--- High order reconstruction using MUSCL strategy ---*/
@@ -1999,7 +1999,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Set coordinate ---*/
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
 
       /*--- Compute Source term Residual ---*/
       numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -2179,7 +2179,7 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
       Res = Residual[iVar] + Res_TruncError[iVar];
       nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
       AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -2216,7 +2216,7 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       Res = local_Residual[iVar] + local_Res_TruncError[iVar];
       nodes->AddSolution(iPoint,iVar, -Res*Delta);
       AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -2278,7 +2278,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -3546,7 +3546,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Grid Movement ---*/
 
       if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the upwind flux ---*/
 
@@ -3567,7 +3567,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Points in edge, coordinates and normal vector---*/
 
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
         visc_numerics->SetNormal(Normal);
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
@@ -3680,7 +3680,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 
         /*--- Points in edge, coordinates and normal vector---*/
 
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
         visc_numerics->SetNormal(Normal);
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
@@ -3795,7 +3795,7 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
 
         /*--- Points in edge, coordinates and normal vector---*/
 
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
         visc_numerics->SetNormal(Normal);
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
@@ -3970,7 +3970,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 
         /*--- Points in edge, coordinates and normal vector---*/
 
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
         visc_numerics->SetNormal(Normal);
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
@@ -4063,7 +4063,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      conv_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
       /*--- Allocate the value at the outlet ---*/
 
@@ -4253,7 +4253,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Points in edge, coordinates and normal vector---*/
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
 

@@ -465,7 +465,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         conv_numerics->SetNormal(Normal);
 
         if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
         auto residual = conv_numerics->ComputeResidual(config);
 
@@ -487,7 +487,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
       /*--- Set the normal vector and the coordinates ---*/
 
       visc_numerics->SetNormal(Normal);
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
       /*--- Primitive variables ---*/
 
@@ -547,7 +547,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Read the volume ---*/
 
-    su2double Vol = (geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume());
+    su2double Vol = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
