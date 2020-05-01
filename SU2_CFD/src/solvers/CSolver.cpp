@@ -480,7 +480,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              we can accumulate the total control volume size on all
              periodic faces. ---*/
 
-            bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume() +
+            bufDSend[buf_offset] = geometry->nodes->GetVolume(iPoint) +
             geometry->nodes->GetPeriodicVolume(iPoint);
 
             break;
@@ -495,7 +495,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (!geometry->node[Neighbor_Point]->GetPeriodicBoundary())
+              if (!geometry->nodes->GetPeriodicBoundary(Neighbor_Point))
               nNeighbor++;
 
             }
@@ -640,7 +640,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Solution differences ---*/
 
@@ -731,7 +731,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Use density instead of pressure for incomp. flows. ---*/
 
@@ -947,7 +947,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
@@ -1156,7 +1156,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
@@ -1617,7 +1617,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               /*--- Store the extra neighbors on the periodic face. ---*/
 
-              nNeighbor = (geometry->node[iPoint]->GetnNeighbor() +
+              nNeighbor = (geometry->nodes->GetnNeighbor(iPoint) +
                            bufSRecv[buf_offset]);
               geometry->nodes->SetnNeighbor(iPoint, nNeighbor);
 

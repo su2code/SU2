@@ -115,7 +115,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
       /*--- If the element has not being previously agglomerated and it belongs
        to the physical domain, then the agglomeration is studied ---*/
 
-      if ((fine_grid->node[iPoint]->GetAgglomerate() == false) &&
+      if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) &&
           (fine_grid->nodes->GetDomain(iPoint)) &&
           (GeometricalCheck(iPoint, fine_grid, config))) {
 
@@ -134,7 +134,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
          that are in that point ---*/
 
         for (jMarker = 0; jMarker < fine_grid->GetnMarker(); jMarker ++)
-          if (fine_grid->node[iPoint]->GetVertex(jMarker) != -1) {
+          if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
             copy_marker[counter] = jMarker;
             counter++;
           }
@@ -186,7 +186,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
           Suitable_Indirect_Neighbors.clear();
 
-          if (fine_grid->node[iPoint]->GetAgglomerate_Indirect())
+          if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint))
             SetSuitableNeighbors(&Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
 
           /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
@@ -205,7 +205,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
               /*--- We set the indirect agglomeration information ---*/
 
-              if (fine_grid->node[CVPoint]->GetAgglomerate_Indirect())
+              if (fine_grid->nodes->GetAgglomerate_Indirect(CVPoint))
                 nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
 
               /*--- We set the value of the child ---*/
@@ -233,7 +233,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++)
     for (iVertex = 0; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
-      if ((fine_grid->node[iPoint]->GetAgglomerate() == false) &&
+      if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) &&
           (fine_grid->nodes->GetDomain(iPoint))) {
         fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
@@ -248,7 +248,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
     /*--- The CV has been agglomerated, remove form the list ---*/
 
-    if (fine_grid->node[iPoint]->GetAgglomerate() == true) {
+    if (fine_grid->nodes->GetAgglomerate(iPoint) == true) {
 
       MGQueue_InnerCV.RemoveCV(iPoint);
 
@@ -261,7 +261,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
       priority = 0;
       for (iNode = 0; iNode < fine_grid->nodes->GetnPoint(iPoint); iNode ++) {
         jPoint = fine_grid->nodes->GetPoint(iPoint, iNode);
-        if (fine_grid->node[jPoint]->GetAgglomerate() == true) priority++;
+        if (fine_grid->nodes->GetAgglomerate(jPoint) == true) priority++;
       }
       MGQueue_InnerCV.MoveCV(iPoint, priority);
     }
@@ -278,7 +278,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
     /*--- If the element has not being previously agglomerated, belongs to the physical domain,
      and satisfies several geometrical criteria then the seed CV is acepted for agglomeration ---*/
 
-    if ((fine_grid->node[iPoint]->GetAgglomerate() == false) &&
+    if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) &&
         (fine_grid->nodes->GetDomain(iPoint)) &&
         (GeometricalCheck(iPoint, fine_grid, config))) {
 
@@ -305,8 +305,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
         /*--- Determine if the CVPoint can be agglomerated ---*/
 
-        if ((fine_grid->node[CVPoint]->GetAgglomerate() == false) &&
-            (fine_grid->node[CVPoint]->GetDomain()) &&
+        if ((fine_grid->nodes->GetAgglomerate(CVPoint) == false) &&
+            (fine_grid->nodes->GetDomain(CVPoint)) &&
             (GeometricalCheck(CVPoint, fine_grid, config))) {
 
           /*--- We set the value of the parent ---*/
@@ -330,7 +330,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
       /*--- Subrotuine to identify the indirect neighbors ---*/
 
       Suitable_Indirect_Neighbors.clear();
-      if (fine_grid->node[iPoint]->GetAgglomerate_Indirect())
+      if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint))
         SetSuitableNeighbors(&Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
 
       /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
@@ -341,8 +341,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
         /*--- The new point can be agglomerated ---*/
 
-        if ((fine_grid->node[CVPoint]->GetAgglomerate() == false) &&
-            (fine_grid->node[CVPoint]->GetDomain())) {
+        if ((fine_grid->nodes->GetAgglomerate(CVPoint) == false) &&
+            (fine_grid->nodes->GetDomain(CVPoint))) {
 
           /*--- We set the value of the parent ---*/
 
@@ -350,7 +350,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
           /*--- We set the indirect agglomeration information ---*/
 
-          if (fine_grid->node[CVPoint]->GetAgglomerate_Indirect())
+          if (fine_grid->nodes->GetAgglomerate_Indirect(CVPoint))
             nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
 
           /*--- We set the value of the child ---*/
@@ -384,11 +384,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   /*--- Add all the elements that have not being agglomerated, in the previous stage ---*/
 
   for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
-    if ((fine_grid->node[iPoint]->GetAgglomerate() == false) && (fine_grid->nodes->GetDomain(iPoint))) {
+    if ((fine_grid->nodes->GetAgglomerate(iPoint) == false) && (fine_grid->nodes->GetDomain(iPoint))) {
 
       nChildren = 1;
       fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
-      if (fine_grid->node[iPoint]->GetAgglomerate_Indirect())
+      if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint))
         nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
       nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
       nodes->SetnChildren_CV(Index_CoarseCV, nChildren);
@@ -421,7 +421,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
   for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
 
-    if (node[iCoarsePoint]->GetnPoint() == 1) {
+    if (nodes->GetnPoint(iCoarsePoint) == 1) {
 
       /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
 
@@ -454,9 +454,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   //
   //  do {
   //
-  //    if (node[iCoarsePoint]->GetnChildren_CV() == 0) {
+  //    if (nodes->GetnChildren_CV(iCoarsePoint) == 0) {
   //
-  //      while (node[iPointFree]->GetnChildren_CV() == 0) {
+  //      while (nodes->GetnChildren_CV(iPointFree) == 0) {
   //        Index_CoarseCV--;
   //        iPointFree--;
   //      }
@@ -688,19 +688,19 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
   /*--- Basic condition, the element has not being previously agglomerated, it belongs to the domain,
    and has passed some basic geometrical check ---*/
 
-  if ((fine_grid->node[CVPoint]->GetAgglomerate() == false) &&
-      (fine_grid->node[CVPoint]->GetDomain()) &&
+  if ((fine_grid->nodes->GetAgglomerate(CVPoint) == false) &&
+      (fine_grid->nodes->GetDomain(CVPoint)) &&
       (GeometricalCheck(CVPoint, fine_grid, config))) {
 
     /*--- If the element belong to the boundary, we must be careful ---*/
 
-    if (fine_grid->node[CVPoint]->GetBoundary()) {
+    if (fine_grid->nodes->GetBoundary(CVPoint)) {
 
       /*--- Identify the markers of the vertex that we want to agglomerate ---*/
 
       counter = 0;
       for (jMarker = 0; jMarker < fine_grid->GetnMarker(); jMarker ++)
-        if (fine_grid->node[CVPoint]->GetVertex(jMarker) != -1) {
+        if (fine_grid->nodes->GetVertex(CVPoint, jMarker) != -1) {
           copy_marker[counter] = jMarker;
           counter++;
         }
@@ -763,7 +763,7 @@ bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, CGeometry *fine_
   /*--- Evaluate the total size of the element ---*/
 
   bool Volume = true;
-  su2double ratio = pow(fine_grid->node[iPoint]->GetVolume(), 1.0/su2double(nDim))*max_dimension;
+  su2double ratio = pow(fine_grid->nodes->GetVolume(iPoint), 1.0/su2double(nDim))*max_dimension;
   su2double limit = pow(config->GetDomainVolume(), 1.0/su2double(nDim));
   if ( ratio > limit ) Volume = false;
 
@@ -965,7 +965,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
     for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
       iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-      if (fine_grid->node[iFinePoint]->GetBoundary()) {
+      if (fine_grid->nodes->GetBoundary(iFinePoint)) {
         nodes->SetBoundary(iCoarsePoint, nMarker);
         break;
       }
@@ -983,7 +983,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
 
 
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
-    if (node[iCoarsePoint]->GetBoundary()) {
+    if (nodes->GetBoundary(iCoarsePoint)) {
       for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
         iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         for (iMarker = 0; iMarker < nMarker; iMarker ++) {
@@ -1003,14 +1003,14 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   }
 
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
-    if (node[iCoarsePoint]->GetBoundary())
+    if (nodes->GetBoundary(iCoarsePoint))
       for (iMarker = 0; iMarker < nMarker; iMarker ++)
         nodes->SetVertex(iCoarsePoint, -1, iMarker);
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) nVertex[iMarker] = 0;
 
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
-    if (node[iCoarsePoint]->GetBoundary()) {
+    if (nodes->GetBoundary(iCoarsePoint)) {
       for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
         iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker ++) {
@@ -1181,7 +1181,7 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
       iCoarsePoint = vertex[iMarker][iVertex]->GetNode();
       for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
         iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-        if (fine_grid->node[iFinePoint]->GetVertex(iMarker)!=-1) {
+        if (fine_grid->nodes->GetVertex(iFinePoint, iMarker)!=-1) {
           FineVertex = fine_grid->nodes->GetVertex(iFinePoint, iMarker);
           fine_grid->vertex[iMarker][FineVertex]->GetNormal(Normal);
           vertex[iMarker][iVertex]->AddNormal(Normal);
@@ -1237,7 +1237,7 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned 
 
   for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
     Point_Coarse = vertex[val_marker][iVertex]->GetNode();
-    if (node[Point_Coarse]->GetDomain()){
+    if (nodes->GetDomain(Point_Coarse)){
       Area_Parent = 0.0;
       WallHeatFlux_Coarse = 0.0;
       numberVertexChildren = 0;
@@ -1283,7 +1283,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsign
 
   for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
     Point_Coarse = vertex[val_marker][iVertex]->GetNode();
-    if (node[Point_Coarse]->GetDomain()){
+    if (nodes->GetDomain(Point_Coarse)){
       Area_Parent = 0.0;
       WallTemperature_Coarse = 0.0;
       numberVertexChildren = 0;

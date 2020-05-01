@@ -1048,7 +1048,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
         max_weight = 0.0;
         for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
           jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
+          if ((check_Point[jPoint]) && geometry->nodes->GetDomain(jPoint)) {
             iEdge = geometry->FindEdge(iPoint, jPoint);
             normal = geometry->edges->GetNormal(iEdge);
             if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
@@ -1074,7 +1074,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
           volume_iPoint = geometry->nodes->GetVolume(iPoint);
           volume_jPoint = geometry->nodes->GetVolume(jPoint);
           weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
+          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->nodes->GetDomain(jPoint))) &&
               ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
             add_point = true;
             next_Point = jPoint;

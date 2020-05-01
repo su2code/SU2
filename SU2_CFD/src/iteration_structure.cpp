@@ -783,8 +783,8 @@ void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, C
 
       if (Physical_t >= tbegin) {
 
-        x = geometry[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
-        y = geometry[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
+        x = geometry[iMGlevel]->nodes->GetCoord(iPoint)[0]; // x-location of the node.
+        y = geometry[iMGlevel]->nodes->GetCoord(iPoint)[1]; // y-location of the node.
 
         // Gust coordinate
         x_gust = (x - xbegin - Uinf*(Physical_t-tbegin))/L;

@@ -318,7 +318,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   auto iPoint = geometry->edges->GetNode(iEdge,0);
   auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-  numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                      geometry->nodes->GetCoord(jPoint));
 
   numerics->SetNormal(geometry->edges->GetNormal(iEdge));

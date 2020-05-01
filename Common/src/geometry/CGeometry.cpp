@@ -1550,7 +1550,7 @@ void CGeometry::SetEdges(void) {
     for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
       auto jPoint = nodes->GetPoint(iPoint, iNode);
       for (auto jNode = 0u; jNode < nodes->GetnPoint(jPoint); jNode++) {
-        if (node[jPoint]->GetPoint(jNode) == iPoint) {
+        if (nodes->GetPoint(jPoint, jNode) == iPoint) {
           auto TestEdge = nodes->GetEdge(jPoint, jNode);
           if (TestEdge == -1) {
             nodes->SetEdge(iPoint, nEdge, iNode);
@@ -1586,7 +1586,7 @@ void CGeometry::SetFaces(void) {
   //		for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
   //			jPoint = nodes->GetPoint(iPoint, iNode);
   //			for (jNode = 0; jNode < nodes->GetnPoint(jPoint); jNode++)
-  //				if (node[jPoint]->GetPoint(jNode) == iPoint) {
+  //				if (nodes->GetPoint(jPoint, jNode) == iPoint) {
   //					TestFace = nodes->GetFace(jPoint, jNode);
   //					break;
   //				}
@@ -2075,8 +2075,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                 Segment_P1[iDim] = nodes->GetCoord(jPoint, iDim);
               }
               else {
-                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+                Segment_P0[iDim] = nodes->GetCoord(iPoint, iDim) + Coord_Variation[iPoint][iDim];
+                Segment_P1[iDim] = nodes->GetCoord(jPoint, iDim) + Coord_Variation[jPoint][iDim];
               }
             }
 
@@ -2944,7 +2944,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
               /*--- Check if this neighbor lies on the surface. If so,
                add to the list of neighbors. ---*/
-              if (node[Neighbor_Point]->GetPhysicalBoundary()) {
+              if (nodes->GetPhysicalBoundary(Neighbor_Point)) {
                 Point_Edge.push_back(Neighbor_Point);
               }
 

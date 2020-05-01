@@ -116,7 +116,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
       const auto Point_Target = target_vertex->GetNode();
 
-      if (!target_geometry->node[Point_Target]->GetDomain()) continue;
+      if (!target_geometry->nodes->GetDomain(Point_Target)) continue;
 
       /*--- Coordinates of the target point. ---*/
       const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);

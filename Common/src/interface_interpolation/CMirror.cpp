@@ -80,7 +80,7 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
       auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
 
-      if (donor_geometry->node[donor_vertex->GetNode()]->GetDomain()) {
+      if (donor_geometry->nodes->GetDomain(donor_vertex->GetNode())) {
         nNodeDonorLocal += donor_vertex->GetnDonorPoints();
         nVertexDonorLocal++;
       }

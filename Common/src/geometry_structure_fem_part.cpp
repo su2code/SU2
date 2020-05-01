@@ -2769,7 +2769,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned i=0; i<nPoint; ++i) {
-    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
   }
 
   /*--- Loop over the number of markers present in the grid and check for a periodic one. ---*/
@@ -3083,7 +3083,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
         of the points.    ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned long i=0; i<nPoint; ++i) {
-    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
   }
 
   /*--- Define the vectors to store the standard elements for the volume elements
@@ -3414,7 +3414,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
      of the points. */
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned long i=0; i<nPoint; ++i) {
-    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
   }
 
   /* Define the vector to store the standard element for the volume elements. */

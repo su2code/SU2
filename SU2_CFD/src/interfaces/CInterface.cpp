@@ -108,7 +108,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
       for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
         Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-        if (donor_geometry->node[Point_Donor]->GetDomain())
+        if (donor_geometry->nodes->GetDomain(Point_Donor))
           nLocalVertexDonorOwned++;
       }
     }
@@ -168,7 +168,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
       /*--- If this processor owns the node ---*/
 
-      if (donor_geometry->node[Point_Donor]->GetDomain()) {
+      if (donor_geometry->nodes->GetDomain(Point_Donor)) {
 
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
 
@@ -235,7 +235,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
         Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
 
         /*--- If this processor owns the node ---*/
-        if (target_geometry->node[Point_Target]->GetDomain()) {
+        if (target_geometry->nodes->GetDomain(Point_Target)) {
           TotalVertexDonor++;
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
 

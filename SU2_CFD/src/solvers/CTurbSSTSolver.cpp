@@ -437,7 +437,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       distance = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        distance += pow(geometry->node[iPoint]->GetCoord(iDim)-
+        distance += pow(geometry->nodes->GetCoord(iPoint, iDim)-
                         geometry->nodes->GetCoord(jPoint, iDim), 2);
       }
       distance = sqrt(distance);
@@ -637,7 +637,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       conv_numerics->SetNormal(Normal);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -736,7 +736,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       conv_numerics->SetNormal(Normal);
 
       if (dynamic_grid)
-      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -846,7 +846,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       conv_numerics->SetNormal(Normal);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
             geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -971,7 +971,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetNormal(Normal);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/

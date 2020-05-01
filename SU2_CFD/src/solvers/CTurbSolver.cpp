@@ -145,7 +145,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     /*--- Grid Movement ---*/
 
     if (dynamic_grid)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                            geometry->nodes->GetGridVel(jPoint));
 
     if (muscl || musclFlow) {
@@ -255,7 +255,7 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Points coordinates, and normal vector ---*/
 
-  numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                      geometry->nodes->GetCoord(jPoint));
   numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 

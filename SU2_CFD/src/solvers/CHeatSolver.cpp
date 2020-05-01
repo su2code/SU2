@@ -678,7 +678,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Points coordinates, and normal vector ---*/
 
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                        geometry->nodes->GetCoord(jPoint));
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 

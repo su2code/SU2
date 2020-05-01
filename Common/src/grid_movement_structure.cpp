@@ -81,7 +81,7 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
       total_index = iPoint*nDim + iDim;
-      new_coord = geometry->node[iPoint]->GetCoord(iDim)+LinSysSol[total_index];
+      new_coord = geometry->nodes->GetCoord(iPoint, iDim)+LinSysSol[total_index];
       if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
       geometry->nodes->SetCoord(iPoint, iDim, new_coord);
     }
@@ -485,7 +485,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
     for(iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint) {
 
-      WallADT.DetermineNearestNode(geometry->node[iPoint]->GetCoord(), dist,
+      WallADT.DetermineNearestNode(geometry->nodes->GetCoord(iPoint), dist,
                                    pointID, rankID);
       geometry->nodes->SetWall_Distance(iPoint, dist);
 
@@ -1869,7 +1869,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 
   if (config->GetDeform_Limit() < 1E6) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      if (geometry->node[iPoint]->GetWall_Distance() >= config->GetDeform_Limit()) {
+      if (geometry->nodes->GetWall_Distance(iPoint) >= config->GetDeform_Limit()) {
         for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = 0.0;
@@ -3598,8 +3598,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
               if (jPoint > iPoint) {
 
                 for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-                  Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
-                  Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
+                  Coord_0[iDim] = geometry->nodes->GetCoord(iPoint)[iDim];
+                  Coord_1[iDim] = geometry->nodes->GetCoord(jPoint)[iDim];
                 }
 
                 /*--- Write the coordinates in the right parametric system ---*/
@@ -6745,9 +6745,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
               jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
-              if (iPoint == geometry->node[jPoint]->GetGlobalIndex()) {
+              if (iPoint == geometry->nodes->GetGlobalIndex(jPoint)) {
                 for (iDim = 0; iDim < nDim; iDim++) {
-                  coord[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
+                  coord[iDim] = geometry->nodes->GetCoord(jPoint)[iDim];
                 }
                 FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
                 FFDBox[iFFDBox]->Set_VertexIndex(iVertex);

@@ -191,7 +191,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-        if (target_geometry->node[target_iPoint]->GetDomain()){
+        if (target_geometry->nodes->GetDomain(target_iPoint)){
 
           Coord_i = target_geometry->nodes->GetCoord(target_iPoint);
 
@@ -239,9 +239,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
             target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] +
-                                            target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
             target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] +
-                                            target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
@@ -442,7 +442,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-        if (!target_geometry->node[target_iPoint]->GetDomain()) continue;
+        if (!target_geometry->nodes->GetDomain(target_iPoint)) continue;
 
         Coord_i = target_geometry->nodes->GetCoord(target_iPoint);
 

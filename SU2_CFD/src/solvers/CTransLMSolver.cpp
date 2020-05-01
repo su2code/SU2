@@ -311,7 +311,7 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and normal vector ---*/
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                      geometry->nodes->GetCoord(jPoint));
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));

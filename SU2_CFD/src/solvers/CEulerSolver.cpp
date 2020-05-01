@@ -3082,7 +3082,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Grid movement ---*/
 
     if (dynamic_grid) {
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                            geometry->nodes->GetGridVel(jPoint));
     }
 
@@ -5016,9 +5016,9 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             if (nDim == 3) Inlet_ForceZ = -(Pressure - Pressure_Inf)*Vector[2] + MassFlow*Velocity[2];
             Inlet_Force[iMarker] +=  Inlet_ForceX*cos(Alpha)*cos(Beta) + Inlet_ForceY*sin(Beta) +Inlet_ForceZ*sin(Alpha)*cos(Beta);
 
-            Inlet_XCG[iMarker] += geometry->node[iPoint]->GetCoord(0)*Area;
-            Inlet_YCG[iMarker] += geometry->node[iPoint]->GetCoord(1)*Area;
-            if (nDim == 3) Inlet_ZCG[iMarker] += geometry->node[iPoint]->GetCoord(2)*Area;
+            Inlet_XCG[iMarker] += geometry->nodes->GetCoord(iPoint, 0)*Area;
+            Inlet_YCG[iMarker] += geometry->nodes->GetCoord(iPoint, 1)*Area;
+            if (nDim == 3) Inlet_ZCG[iMarker] += geometry->nodes->GetCoord(iPoint, 2)*Area;
 
           }
         }
@@ -6854,7 +6854,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
       /*--- Grid movement ---*/
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
@@ -6908,7 +6908,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*-------------------------------------------------------------------------------*/
 
         /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                                 geometry->nodes->GetCoord(iPoint));
         visc_numerics->SetNormal(Normal);
 
@@ -7205,7 +7205,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
       if (dynamic_grid) {
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
       }
 
@@ -7234,7 +7234,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                                 geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
@@ -7380,7 +7380,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       case TOTAL_CONDITIONS_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
-        if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_Total  = config->GetRiemann_Var1(Marker_Tag);
         T_Total  = config->GetRiemann_Var2(Marker_Tag);
         Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
@@ -7416,7 +7416,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       case STATIC_SUPERSONIC_INFLOW_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
-        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_static  = config->GetRiemann_Var1(Marker_Tag);
         T_static  = config->GetRiemann_Var2(Marker_Tag);
         Mach = config->GetRiemann_FlowDir(Marker_Tag);
@@ -7444,7 +7444,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
 
-        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_static  = config->GetRiemann_Var1(Marker_Tag);
         Rho_static  = config->GetRiemann_Var2(Marker_Tag);
         Mach = config->GetRiemann_FlowDir(Marker_Tag);
@@ -7892,7 +7892,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           case TOTAL_CONDITIONS_PT:
 
             /*--- Retrieve the specified total conditions for this boundary. ---*/
-            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
+            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
             else P_Total  = config->GetRiemann_Var1(Marker_Tag);
             T_Total  = config->GetRiemann_Var2(Marker_Tag);
             Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9524,7 +9524,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
+      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
       else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
 
       /*--- Non-dim. the inputs if necessary. ---*/
@@ -9732,7 +9732,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -9853,7 +9853,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -11421,7 +11421,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
           VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
-                                             geometry->node[iPoint]->GetGlobalIndex(),
+                                             geometry->nodes->GetGlobalIndex(iPoint),
                                              geometry->nodes->GetCoord(iPoint));
         }
       }

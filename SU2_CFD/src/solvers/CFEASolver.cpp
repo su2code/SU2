@@ -503,7 +503,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   /*--- Now fill array with the transform values only for local points ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
 
   /*--- Read all lines in the restart file ---*/
 
@@ -654,7 +654,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Now fill array with the transform values only for local points ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
 
   /*--- Read all lines in the restart file ---*/
 
@@ -735,7 +735,7 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
   /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
   unordered_map<unsigned long, unsigned long> Global2Local;
   for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
 
   /*--- Populate elimination list. ---*/
@@ -2266,7 +2266,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
       for (auto iNode = 0u; iNode < nNode; ++iNode) {
         nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
         for (auto iDim = 0u; iDim < nDim; ++iDim)
-          coords[iNode][iDim] = geometry->node[nodeList[iNode]]->GetCoord(iDim)+
+          coords[iNode][iDim] = geometry->nodes->GetCoord(nodeList[iNode], iDim)+
                                 nodes->GetSolution(nodeList[iNode],iDim);
       }
 
@@ -3285,7 +3285,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
     // Avoid double-counting elements:
     // Only add the value if the first node is in the domain
-    if (geometry->node[indexNode[0]]->GetDomain()) {
+    if (geometry->nodes->GetDomain(indexNode[0])) {
 
       // Compute the area/volume of the element
       su2double elementVolume;

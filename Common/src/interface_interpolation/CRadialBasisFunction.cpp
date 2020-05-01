@@ -284,7 +284,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       auto targetVertex = target_geometry->vertex[markTarget][iVertexTarget];
       auto pointTarget = targetVertex->GetNode();
 
-      if (target_geometry->node[pointTarget]->GetDomain()) {
+      if (target_geometry->nodes->GetDomain(pointTarget)) {
         targetVertices.push_back(targetVertex);
         targetCoord.push_back(target_geometry->nodes->GetCoord(pointTarget));
       }

@@ -18162,7 +18162,7 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
           if (axisymmetric) {
-            if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
             else
               AxiFactor = 1.0;

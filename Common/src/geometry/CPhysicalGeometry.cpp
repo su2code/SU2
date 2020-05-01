@@ -212,7 +212,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     if (config->GetSystemMeasurements() == US) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
+          NewCoord[iDim] = nodes->GetCoord(iPoint, iDim)/12.0;
         }
         nodes->SetCoord(iPoint, NewCoord);
       }
@@ -681,7 +681,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
 void CPhysicalGeometry::SetGlobal_to_Local_Point(void) {
   Global_to_Local_Point.clear();
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Global_to_Local_Point[node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global_to_Local_Point[nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
 }
 
@@ -734,7 +734,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   map<unsigned long, unsigned long> Global2Local;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
 
   /*--- Find extra points that carry an index higher than nPoint. ---*/
@@ -5549,7 +5549,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
         /*--- Set the vertex in the node information ---*/
 
-        if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
+        if ((nodes->GetVertex(iPoint, iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
           nodes->SetVertex(iPoint, nVertex[iMarker], iMarker);
           nVertex[iMarker]++;
         }
@@ -5578,7 +5578,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
         /*--- Set the vertex in the node information ---*/
 
-        if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
+        if ((nodes->GetVertex(iPoint, iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
           iVertex = nVertex[iMarker];
           vertex[iMarker][iVertex] = new CVertex(iPoint, nDim);
 
@@ -6248,7 +6248,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   deltaAngPitch[iSpan][iSpanVertex]= angPitch[iSpan][iSpanVertex] - angPitch[iSpan][iSpanVertex - 1];
                 }
                 /*---create turbovertex structure only for the internal nodes---*/
-                if(node[ordered[iSpan][iSpanVertex]]->GetDomain()){
+                if(nodes->GetDomain(ordered[iSpan][iSpanVertex])){
                   if (allocate){
                     turbovertex[iMarker][iSpan][iInternalVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
                   }
@@ -8463,11 +8463,11 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   output_file.precision(15);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
+      output_file << scientific << "\t" << nodes->GetCoord(iPoint, iDim) ;
 #ifndef HAVE_MPI
     output_file << "\t" << iPoint << endl;
 #else
-    output_file << "\t" << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
+    output_file << "\t" << iPoint << "\t" << nodes->GetGlobalIndex(iPoint) << endl;
 #endif
 
   }
@@ -8711,7 +8711,7 @@ void CPhysicalGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      Tecplot_File << scientific << node[iPoint]->GetCoord(iDim) << "\t";
+      Tecplot_File << scientific << nodes->GetCoord(iPoint, iDim) << "\t";
     Tecplot_File << "\n";
   }
 
@@ -8772,7 +8772,7 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
 
   PointSurface = new unsigned long[nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    if (node[iPoint]->GetBoundary()) {
+    if (nodes->GetBoundary(iPoint)) {
       PointSurface[iPoint] = nPointSurface;
       nPointSurface++;
     }
@@ -8811,17 +8811,17 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
 
     if (nDim == 3) {
       for (iPoint = 0; iPoint < nPoint; iPoint++)
-        if (node[iPoint]->GetBoundary()) {
+        if (nodes->GetBoundary(iPoint)) {
           for (Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
-          Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
+            Tecplot_File << nodes->GetCoord(iPoint, Coord_i) << " ";
+          Tecplot_File << nodes->GetCoord(iPoint, nDim-1) << "\n";
         }
     }
     else {
       for (iPoint = 0; iPoint < nPoint; iPoint++)
-        if (node[iPoint]->GetBoundary()) {
+        if (nodes->GetBoundary(iPoint)) {
           for (Coord_i = 0; Coord_i < nDim; Coord_i++)
-            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+            Tecplot_File << nodes->GetCoord(iPoint, Coord_i) << " ";
           Tecplot_File << "\n";
         }
     }
@@ -9033,7 +9033,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
       Area_Max[iPoint] = max(Area_Max[iPoint], area);
     }
 
-    if (node[jPoint]->GetDomain()) {
+    if (nodes->GetDomain(jPoint)) {
       Area_Min[jPoint] = min(Area_Min[jPoint], area);
       Area_Max[jPoint] = max(Area_Max[jPoint], area);
     }
@@ -9064,20 +9064,20 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
       Orthogonality[iPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
       SurfaceArea[iPoint]   += area;
     }
-    if (node[jPoint]->GetDomain()) {
+    if (nodes->GetDomain(jPoint)) {
       Orthogonality[jPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
       SurfaceArea[jPoint]   += area;
     }
 
     /*--- Error check for zero volume of the dual CVs. ---*/
 
-    if (node[iPoint]->GetVolume() <= 0.0) {
+    if (nodes->GetVolume(iPoint) <= 0.0) {
       char buf[200];
       SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_i);
       SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
     }
 
-    if (node[jPoint]->GetVolume() <= 0.0) {
+    if (nodes->GetVolume(jPoint) <= 0.0) {
       char buf[200];
       SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_j);
       SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -9204,14 +9204,14 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
 
         /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
 
-        if (node[face_iPoint]->GetDomain()) {
+        if (nodes->GetDomain(face_iPoint)) {
           SubVolume_Min[face_iPoint] = min(SubVolume_Min[face_iPoint], Volume_i);
           SubVolume_Max[face_iPoint] = max(SubVolume_Max[face_iPoint], Volume_i);
         }
 
         /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
 
-        if (node[face_jPoint]->GetDomain()) {
+        if (nodes->GetDomain(face_jPoint)) {
           SubVolume_Min[face_jPoint] = min(SubVolume_Min[face_jPoint], Volume_j);
           SubVolume_Max[face_jPoint] = max(SubVolume_Max[face_jPoint], Volume_j);
         }
@@ -11712,9 +11712,9 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       int            rankID;
       su2double      dist;
 
-      WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
+      WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID,
                                        elemID, rankID);
-      if (dist < node[iPoint]->GetWall_Distance())
+      if (dist < nodes->GetWall_Distance(iPoint))
         nodes->SetWall_Distance(iPoint, dist);
     }
   }
