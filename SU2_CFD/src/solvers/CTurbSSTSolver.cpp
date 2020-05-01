@@ -365,7 +365,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 //    const su2double rho = nodes->GetTurbDensity(iPoint);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
+    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double cons = nodes->GetSolution(iPoint,iVar);
       nodes->SetPrimitive(iPoint,iVar,cons/rho);
@@ -586,7 +586,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
 //      density_s = nodes->GetTurbDensity(iPoint);
 //      density_v = nodes->GetTurbDensity(jPoint);
-      density_s = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
+      density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
       density_v = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
       laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
