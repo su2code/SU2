@@ -1985,12 +1985,15 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 
 	geo_adapt->nodes = new CPoint(nPoint_new, nDim, config);
 
-/// **TODO**
-//	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-//		geo_adapt->node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0), geometry->node[iPoint]->GetCoord(1), iPoint, config);
-//
-//	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
-//		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], iPoint, config);
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+		geo_adapt->nodes->SetCoord(iPoint, geometry->nodes->GetCoord(iPoint));
+		geo_adapt->nodes->SetGlobalIndex(iPoint, iPoint);
+	}
+
+	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++) {
+    geo_adapt->nodes->SetCoord(iPoint, NewNodeCoord[iPoint]);
+		geo_adapt->nodes->SetGlobalIndex(iPoint, iPoint);
+  }
 
 	/*--- New elements ---*/
 
@@ -2910,12 +2913,15 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	// New points
 	geo_adapt->nodes = new CPoint(nPoint_new, nDim, config);
 
-	/// **TODO**
-//	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-//		geo_adapt->node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0), geometry->node[iPoint]->GetCoord(1), geometry->node[iPoint]->GetCoord(2), iPoint, config);
-//
-//	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
-//		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], NewNodeCoord[iPoint][2], iPoint, config);
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+		geo_adapt->nodes->SetCoord(iPoint, geometry->nodes->GetCoord(iPoint));
+		geo_adapt->nodes->SetGlobalIndex(iPoint, iPoint);
+	}
+
+	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++) {
+    geo_adapt->nodes->SetCoord(iPoint, NewNodeCoord[iPoint]);
+		geo_adapt->nodes->SetGlobalIndex(iPoint, iPoint);
+  }
 
 	// New elements
 	geo_adapt->elem = new CPrimalGrid*[nElem_new];

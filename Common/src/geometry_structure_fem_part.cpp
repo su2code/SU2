@@ -618,25 +618,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         if( binary_search(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end(), i) ) {
           istringstream point_line(text_line);
-
-          /// **TODO**
-//          switch(nDim) {
-//            case 2: {
-//              su2double Coord_2D[2];
-//              point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
-//              node[ii] = new CPoint(Coord_2D[0], Coord_2D[1], i, config);
-//              ii++;
-//              break;
-//            }
-//
-//            case 3: {
-//              su2double Coord_3D[3];
-//              point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
-//              node[ii] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], i, config);
-//              ii++;
-//              break;
-//            }
-//          }
+          su2double Coord[3] = {0.0};
+          point_line >> Coord[0];
+          point_line >> Coord[1];
+          if (nDim==3) point_line >> Coord[2];
+          nodes->SetCoord(ii, Coord);
+          nodes->SetGlobalIndex(ii, i);
         }
       }
 

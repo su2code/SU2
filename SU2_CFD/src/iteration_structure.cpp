@@ -1865,7 +1865,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint));
 
           if (grid_IsMoving) {
-            geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_n());
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord(iPoint,geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_n(iPoint));
           }
           if (turbulent) {
             solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n(iPoint));
@@ -1882,7 +1882,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
 
             if (grid_IsMoving) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_Old());
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint, geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_Old(iPoint));
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_Old(iPoint));
@@ -1900,7 +1900,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
 
             if (grid_IsMoving) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_n1());
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint, geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_n1(iPoint));
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
@@ -1916,7 +1916,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
 
             if (grid_IsMoving) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n1(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_Old());
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1(iPoint, geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_Old(iPoint));
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_Old(iPoint));

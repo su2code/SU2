@@ -91,18 +91,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
 
   nPointNode = fine_grid->GetnPoint();
-/// **TODO**
-//  node = new CPoint*[fine_grid->GetnPoint()];
-//  for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
-//
-//    /*--- Create node structure ---*/
-//
-//    node[iPoint] = new CPoint(nDim, iPoint, config);
-//
-//    /*--- Set the indirect agglomeration to false ---*/
-//
-//    nodes->SetAgglomerate_Indirect(iPoint, false);
-//  }
+
+  nodes = new CPoint(fine_grid->GetnPoint(), nDim, config);
 
   Index_CoarseCV = 0;
 

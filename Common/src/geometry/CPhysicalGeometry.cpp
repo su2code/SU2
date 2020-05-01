@@ -2391,16 +2391,8 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
     /*--- Allocating the Point object ---*/
 
-/// **TODO**
-//    if ( nDim == 2 )
-//      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
-//                                Local_Coords[iPoint*nDim+1],
-//                                Local_to_Global_Point[jPoint], config);
-//    if ( nDim == 3 )
-//      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
-//                                Local_Coords[iPoint*nDim+1],
-//                                Local_Coords[iPoint*nDim+2],
-//                                Local_to_Global_Point[jPoint], config);
+    nodes->SetCoord(jPoint, &Local_Coords[iPoint*nDim]);
+    nodes->SetGlobalIndex(jPoint, Local_to_Global_Point[jPoint]);
 
     /*--- Set the color ---*/
 
@@ -4022,24 +4014,9 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
   CLinearPartitioner pointPartitioner(Global_nPointDomain,0);
   unsigned long GlobalIndex = pointPartitioner.GetFirstIndexOnRank(rank);
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-/// **TODO**
-//    switch(nDim) {
-//      case 2:
-//        node[iPoint] = new CPoint(gridCoords[0][iPoint],
-//                                  gridCoords[1][iPoint],
-//                                  GlobalIndex,
-//                                  config);
-//        GlobalIndex++;
-//        break;
-//      case 3:
-//        node[iPoint] = new CPoint(gridCoords[0][iPoint],
-//                                  gridCoords[1][iPoint],
-//                                  gridCoords[2][iPoint],
-//                                  GlobalIndex,
-//                                  config);
-//        GlobalIndex++;
-//        break;
-//    }
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+      nodes->SetCoord(iPoint, iDim, gridCoords[iDim][iPoint]);
+    nodes->SetGlobalIndex(iPoint, GlobalIndex);
   }
 
 }
