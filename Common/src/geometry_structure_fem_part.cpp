@@ -1147,7 +1147,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim, config);
 
   /*--- Store the global ID's of the nodes in such a way that they can
         be sent to the rank that actually stores the coordinates.. ---*/
@@ -1262,28 +1262,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
           This data is created by taking the offset of the source rank into
           account. In this way the nodes are numbered with increading
           global node ID. ---*/
-    switch ( nDim ) {
-      case 2: {
-        for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
-          const unsigned long jj = nDim*j;
-          const unsigned long kk = startingIndRanksInNode[source] + j;
+    for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
+      const unsigned long jj = nDim*j;
+      const unsigned long kk = startingIndRanksInNode[source] + j;
 
-          node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
-                                nodeBuf[source][j], config);
-        }
-        break;
-      }
-
-      case 3: {
-        for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
-          const unsigned long jj = nDim*j;
-          const unsigned long kk = startingIndRanksInNode[source] + j;
-
-          node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
-                                coorRecvBuf[jj+2], nodeBuf[source][j], config);
-        }
-        break;
-      }
+      nodes->SetCoord(kk, &coorRecvBuf[jj]);
+      nodes->SetGlobalIndex(kk, nodeBuf[source][j]);
     }
   }
 
@@ -1300,21 +1284,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         number of points equals the local number of points. ---*/
   nPoint     = Global_nPoint;
   nPointNode = nPoint;
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim, config);
 
-  switch(nDim) {
-    case 2: {
-      for(unsigned long i=0; i<nPoint; ++i)
-        node[i] = new CPoint(coorBuf[0][i], coorBuf[1][i], i, config);
-      break;
-    }
-
-    case 3: {
-      for(unsigned long i=0; i<nPoint; ++i)
-        node[i] = new CPoint(coorBuf[0][i], coorBuf[1][i], coorBuf[2][i],
-                             i, config);
-      break;
-    }
+  for(unsigned long i=0; i<nPoint; ++i) {
+    for (unsigned short iDim=0; iDim < nDim; ++iDim)
+      nodes->SetCoord(i, iDim, coorBuf[iDim][i]);
+    nodes->SetGlobalIndex(i, i);
   }
 
 #endif
