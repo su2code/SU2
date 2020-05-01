@@ -332,10 +332,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute blending functions and cross diffusion ---*/
 
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-//    const su2double rho = nodes->GetTurbDensity(iPoint);
+//    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
 //    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
-    const su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+//    const su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    const su2double mu  = nodes->GetFlowPrimitive(iPoint,nDim+5);
 
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
@@ -365,7 +366,10 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 //    const su2double rho = nodes->GetTurbDensity(iPoint);
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    for (unsigned short iVar = 0; iVar < nDim+9; iVar++) {
+      nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, iVar));
+    }
+    const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double cons = nodes->GetSolution(iPoint,iVar);
       nodes->SetPrimitive(iPoint,iVar,cons/rho);
@@ -498,8 +502,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
 //      const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-//      const su2double r_i      = nodes->GetTurbDensity(iPoint);
-      const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
+      const su2double r_i      = nodes->GetFlowPrimitive(iPoint,nDim+2);
+//      const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
       /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
       for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -507,8 +511,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
 //        const su2double r_j      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-//        const su2double r_j      = nodes->GetTurbDensity(jPoint);
-        const su2double r_j     = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
+        const su2double r_j      = nodes->GetFlowPrimitive(jPoint,nDim+2);
+//        const su2double r_j     = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
         Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
         Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
@@ -584,11 +588,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
 //      density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 //      density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-//      density_s = nodes->GetTurbDensity(iPoint);
-//      density_v = nodes->GetTurbDensity(jPoint);
-      density_s = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
-      density_v = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
-      laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+//      density_s = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
+//      density_v = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
+//      laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+      density_s = nodes->GetFlowPrimitive(iPoint,nDim+2);
+      density_v = nodes->GetFlowPrimitive(jPoint,nDim+2);
+      laminar_viscosity_v = nodes->GetFlowPrimitive(jPoint,nDim+5);
 
       Solution[0] = 0.0;
       Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);

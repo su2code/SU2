@@ -62,5 +62,8 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
+    
+  /*--- Flow primitive variables ---*/
+  FlowPrimitive.resize(nPoint,nDim+9) = su2double(0.0);
   
 }

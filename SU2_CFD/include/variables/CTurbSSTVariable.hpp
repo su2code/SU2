@@ -45,7 +45,6 @@ protected:
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
 
   MatrixType Primitive;       /*!< \brief Primitive form of the solution. */
-  MatrixType FlowPrimitive;   /*!<\brief Primitives from the flow solver. */
   
   MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
   MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
@@ -131,10 +130,6 @@ public:
    * \return Pointer to the primitive variable vector.
    */
   inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
-  
-  inline void SetFlowPrimitive(unsigned long iPoint, su2double* val_prim) { }
-  
-  inline su2double* GetFlowPrimitive(unsigned long iPoint) { return FlowPrimitive[iPoint]; }
   
   inline void InitializeWallSolution(unsigned long nWallElem) override {
     WallDensity.resize(nWallElem,4) = su2double(0.0);
