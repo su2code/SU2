@@ -1514,33 +1514,25 @@ su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, s
 }
 
 long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) {
-  unsigned long iPoint = 0;
-  unsigned short iNode;
-  for (iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
-    iPoint = nodes->GetPoint(first_point, iNode);
-    if (iPoint == second_point) break;
+
+  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+    auto iPoint = nodes->GetPoint(first_point, iNode);
+    if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
   }
 
-  if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
-  else {
-    char buf[100];
-    SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
-    SU2_MPI::Error(buf, CURRENT_FUNCTION);
-    return 0;
-  }
+  char buf[100];
+  SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+  SU2_MPI::Error(buf, CURRENT_FUNCTION);
+  return 0;
 }
 
 bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) {
-  unsigned long iPoint = 0;
-  unsigned short iNode;
-  for (iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
-    iPoint = nodes->GetPoint(first_point, iNode);
-    if (iPoint == second_point) break;
+
+  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+    auto iPoint = nodes->GetPoint(first_point, iNode);
+    if (iPoint == second_point) return true;
   }
-
-  if (iPoint == second_point) return true;
-  else return false;
-
+  return false;
 }
 
 void CGeometry::SetEdges(void) {

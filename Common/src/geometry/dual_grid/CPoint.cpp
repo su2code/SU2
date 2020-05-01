@@ -37,7 +37,7 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
 
   Elem.resize(npoint);  nElem.resize(npoint) = 0;
   Point.resize(npoint); nPoint.resize(npoint) = 0;
-  Edge.resize(npoint);
+  Edge.resize(npoint);  nNeighbor.resize(npoint) = 0;
   Vertex.resize(npoint);
 
   /*--- Coordinates and volumes. ---*/
@@ -59,6 +59,8 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
 
   /*--- Indicator if the control volume has been agglomerated. ---*/
   Parent_CV.resize(npoint) = 0;
+  nChildren_CV.resize(npoint) = 0;
+  Children_CV.resize(npoint);
   Agglomerate.resize(npoint) = false;
   Agglomerate_Indirect.resize(npoint) = false;
 
@@ -101,16 +103,18 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
     /*--- Structures for storing old node coordinates for computing grid
      *    velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of CMeshSolver, these coordinates are stored as solutions to the mesh problem. ---*/
-    if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
+    if (config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
       Coord_n.resize(npoint,nDim) = su2double(0.0);
       Coord_p1.resize(npoint,nDim) = su2double(0.0);
       Coord_n1.resize(npoint,nDim) = su2double(0.0);
-      Coord_Old.resize(npoint,nDim) = su2double(0.0);
+      if (Coord_Old.empty()) Coord_Old.resize(npoint,nDim) = su2double(0.0);
     }
   }
 
+  MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
   Wall_Distance.resize(npoint) = su2double(0.0);
+  SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
 }
 
@@ -142,236 +146,3 @@ void CPoint::SetIndex(unsigned long iPoint, bool input) {
     }
   }
 }
-
-//CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
-//
-//  unsigned short iDim, jDim;
-//
-//  /*--- Element, point and edge structures initialization ---*/
-//  Elem.clear();  nElem  = 0;
-//  Point.clear(); nPoint = 0;
-//  Edge.clear();
-//
-//  Volume            = NULL;           Vertex              = NULL;
-//  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
-//  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
-//  GridVel           = NULL;           GridVel_Grad        = NULL;
-//  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
-//
-//  /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-//
-//  if (config->GetTime_Marching() == NO) {
-//    Volume = new su2double[1];
-//    Volume[0] = 0.0;
-//  }
-//  else{
-//    Volume = new su2double[3];
-//    Volume[0] = 0.0;
-//    Volume[1] = 0.0;
-//    Volume[2] = 0.0;
-//  }
-//
-//  Coord    = new su2double[nDim];
-//  Coord[0] = val_coord_0;
-//  Coord[1] = val_coord_1;
-//
-//  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
-//    AD_InputIndex   = new int[nDim];
-//    AD_OutputIndex  = new int[nDim];
-//  }
-//
-//  /*--- Indicator if the control volume has been agglomerated ---*/
-//  Parent_CV   = 0;
-//  Agglomerate = false;
-//
-//  /*--- Flip the normal orientation ---*/
-//  Flip_Orientation = false;
-//
-//  /*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
-//  Move = true;
-//
-//  /*--- Identify boundaries, physical boundaries (not send-receive
-//  condition), detect if an element belong to the domain or it must
-//  be computed with other processor  ---*/
-//  Domain           = true;
-//  Boundary         = false;
-//  SolidBoundary    = false;
-//  PhysicalBoundary = false;
-//  PeriodicBoundary = false;
-//
-//  /*--- Set the color for mesh partitioning ---*/
-//  color = 0;
-//
-//  /*--- Set the global index in the parallel simulation ---*/
-//  GlobalIndex = val_globalindex;
-//
-//  /*--- For smoothing the numerical grid coordinates ---*/
-//  if ( config->GetSmoothNumGrid() ) {
-//    Coord_Old = new su2double[nDim];
-//    Coord_Sum = new su2double[nDim];
-//  }
-//
-//  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-//  bool dynamic_grid = config->GetDynamic_Grid();
-//
-//  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
-//  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
-//                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
-//                             config->GetKind_Solver() == ADJ_RANS);
-//
-//  /*--- Storage of grid velocities for dynamic meshes ---*/
-//  if ( dynamic_grid ) {
-//    GridVel  = new su2double[nDim];
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      GridVel[iDim] = 0.0;
-//
-//    if (continuous_adjoint){
-//    /*--- Gradient of the grid velocity ---*/
-//      GridVel_Grad = new su2double*[nDim];
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        GridVel_Grad[iDim] = new su2double[nDim];
-//        for (jDim = 0; jDim < nDim; jDim++)
-//          GridVel_Grad[iDim][jDim] = 0.0;
-//      }
-//    }
-//
-//    /*--- Structures for storing old node coordinates for computing grid
-//    velocities via finite differencing with dynamically deforming meshes. ---*/
-//    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
-//    if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
-//      Coord_p1 = new su2double[nDim];
-//      Coord_n  = new su2double[nDim];
-//      Coord_n1 = new su2double[nDim];
-//      Coord_Old = new su2double[nDim];
-//      for (iDim = 0; iDim < nDim; iDim ++) {
-//        Coord_p1[iDim] = Coord[iDim];
-//        Coord_n[iDim]  = Coord[iDim];
-//        Coord_n1[iDim] = Coord[iDim];
-//      }
-//    }
-//  }
-//
-//  /*--- Intialize the value of the curvature ---*/
-//  Curvature = 0.0;
-//
-//  /*--- Intialize the value of the periodic volume. ---*/
-//  Periodic_Volume = 0.0;
-//
-//}
-//
-//CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
-//
-//  unsigned short iDim, jDim;
-//
-//  /*--- Element, point and edge structures initialization ---*/
-//  Elem.clear();  nElem  = 0;
-//  Point.clear(); nPoint = 0;
-//  Edge.clear();
-//
-//  Volume            = NULL;           Vertex              = NULL;
-//  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
-//  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
-//  GridVel           = NULL;           GridVel_Grad        = NULL;
-//  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
-//
-//  /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-//  if ( config->GetTime_Marching() == NO ) {
-//    Volume = new su2double[1];
-//    Volume[0] = 0.0;
-//  }
-//  else{
-//    Volume = new su2double[3];
-//    Volume[0] = 0.0;
-//    Volume[1] = 0.0;
-//    Volume[2] = 0.0;
-//  }
-//
-//  Coord    = new su2double[nDim];
-//  Coord[0] = val_coord_0;
-//  Coord[1] = val_coord_1;
-//  Coord[2] = val_coord_2;
-//
-//  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
-//    AD_InputIndex   = new int[nDim];
-//    AD_OutputIndex  = new int[nDim];
-//  }
-//
-//  /*--- Indicator if the control volume has been agglomerated ---*/
-//  Parent_CV = 0;
-//  Agglomerate = false;
-//
-//  /*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
-//  Move = true;
-//
-//  /*--- Flip the normal orientation ---*/
-//  Flip_Orientation = false;
-//
-//  /*--- Identify boundaries, physical boundaries (not send-receive
-//  condition), detect if an element belong to the domain or it must
-//  be computed with other processor  ---*/
-//  Domain           = true;
-//  Boundary         = false;
-//  SolidBoundary    = false;
-//  PhysicalBoundary = false;
-//  PeriodicBoundary = false;
-//
-//  /*--- Set the color for mesh partitioning ---*/
-//  color = 0;
-//
-//  /*--- Set the global index in the parallel simulation ---*/
-//  GlobalIndex = val_globalindex;
-//
-//  /*--- For smoothing the numerical grid coordinates ---*/
-//  if (config->GetSmoothNumGrid()) {
-//    Coord_Old = new su2double[nDim];
-//    Coord_Sum = new su2double[nDim];
-//  }
-//
-//  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-//  bool dynamic_grid = config->GetDynamic_Grid();
-//
-//  /*--- Grid velocity gradients are only needed for the continuous adjoint ---*/
-//  bool continuous_adjoint = (config->GetKind_Solver() == ADJ_EULER ||
-//                             config->GetKind_Solver() == ADJ_NAVIER_STOKES ||
-//                             config->GetKind_Solver() == ADJ_RANS);
-//
-//  /*--- Storage of grid velocities for dynamic meshes ---*/
-//
-//  if (dynamic_grid) {
-//    GridVel = new su2double[nDim];
-//    for (iDim = 0; iDim < nDim; iDim ++)
-//      GridVel[iDim] = 0.0;
-//
-//    if (continuous_adjoint){
-//    /*--- Gradient of the grid velocity ---*/
-//      GridVel_Grad = new su2double*[nDim];
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        GridVel_Grad[iDim] = new su2double[nDim];
-//        for (jDim = 0; jDim < nDim; jDim++)
-//          GridVel_Grad[iDim][jDim] = 0.0;
-//      }
-//    }
-//
-//    /*--- Structures for storing old node coordinates for computing grid
-//    velocities via finite differencing with dynamically deforming meshes. ---*/
-//    /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
-//    if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
-//      Coord_p1 = new su2double[nDim];
-//      Coord_n  = new su2double[nDim];
-//      Coord_n1 = new su2double[nDim];
-//      Coord_Old = new su2double[nDim];
-//      for (iDim = 0; iDim < nDim; iDim ++) {
-//        Coord_p1[iDim] = Coord[iDim];
-//        Coord_n[iDim]  = Coord[iDim];
-//        Coord_n1[iDim] = Coord[iDim];
-//      }
-//    }
-//  }
-//
-//  /*--- Intialize the value of the curvature ---*/
-//  Curvature = 0.0;
-//
-//  /*--- Intialize the value of the periodic volume. ---*/
-//  Periodic_Volume = 0.0;
-//
-//}
