@@ -3998,8 +3998,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
 
   /*--- Get the linearly partitioned coordinates from the mesh object. ---*/
 
-  const vector<vector<passivedouble> > &gridCoords =
-  mesh->GetLocalPointCoordinates();
+  const auto& gridCoords = mesh->GetLocalPointCoordinates();
 
   /*--- Initialize point counts and the grid node data structure. ---*/
 
@@ -4017,6 +4016,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
     for (unsigned short iDim = 0; iDim < nDim; ++iDim)
       nodes->SetCoord(iPoint, iDim, gridCoords[iDim][iPoint]);
     nodes->SetGlobalIndex(iPoint, GlobalIndex);
+    ++GlobalIndex;
   }
 
 }
@@ -5202,9 +5202,9 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
 
   /*--- Loop over all the elements ---*/
 
-  for (iElem = 0; iElem < nElem; iElem++)
+  for (iElem = 0; iElem < nElem; iElem++) {
 
-  /*--- Loop over all the nodes of an element ---*/
+    /*--- Loop over all the nodes of an element ---*/
 
     for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
       iPoint = elem[iElem]->GetNode(iNode);
@@ -5213,12 +5213,13 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
 
       nodes->SetElem(iPoint, iElem);
     }
+  }
 
   /*--- Loop over all the points ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-  /*--- Loop over all elements shared by the point ---*/
+    /*--- Loop over all elements shared by the point ---*/
 
     for (iElem = 0; iElem < nodes->GetnElem(iPoint); iElem++) {
 
@@ -5226,24 +5227,25 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
 
       /*--- If we find the point iPoint in the surronding element ---*/
 
-      for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
+      for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++) {
 
-        if (elem[jElem]->GetNode(iNode) == iPoint)
+        if (elem[jElem]->GetNode(iNode) != iPoint) continue;
 
         /*--- Localize the local index of the neighbor of iPoint in the element ---*/
 
-          for (iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
-            Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode, iNeighbor);
-            Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
+        for (iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+          Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode, iNeighbor);
+          Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
 
-            /*--- Store the point into the point ---*/
+          /*--- Store the point into the point ---*/
 
-            nodes->SetPoint(iPoint, Point_Neighbor);
-          }
+          nodes->SetPoint(iPoint, Point_Neighbor);
+        }
+      }
     }
+  }
 
-  /*--- Set the number of neighbors variable, this is
-   important for JST and multigrid in parallel ---*/
+  /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetnNeighbor(iPoint, nodes->GetnPoint(iPoint));

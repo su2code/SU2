@@ -276,7 +276,9 @@ public:
    * \param[in] iPoint - Index of the point.
    * \param[in] elem - Element to be added.
    */
-  inline void SetElem(unsigned long iPoint, unsigned long elem) { Elem[iPoint].push_back(elem); nElem(iPoint) = Elem.size(); }
+  inline void SetElem(unsigned long iPoint, unsigned long elem) {
+    Elem[iPoint].push_back(elem); nElem(iPoint) = Elem[iPoint].size();
+  }
 
   /*!
    * \brief Reset the elements of a control volume.
