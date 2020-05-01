@@ -43,9 +43,9 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
-  VectorType Rho;   /*!<\brief Density. */
 
-  MatrixType Primitive; /*!< \brief Primitive form of the solution. */
+  MatrixType Primitive;       /*!< \brief Primitive form of the solution. */
+  MatrixType FlowPrimitive;   /*!<\brief Primitives from the flow solver. */
   
   MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
   MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
@@ -132,9 +132,9 @@ public:
    */
   inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
   
-  inline void SetTurbDensity(unsigned long iPoint, su2double val_dens) { Rho(iPoint) = val_dens; }
+  inline void SetFlowPrimitive(unsigned long iPoint, su2double* val_prim) { }
   
-  inline su2double GetTurbDensity(unsigned long iPoint) { return Rho(iPoint); }
+  inline su2double* GetFlowPrimitive(unsigned long iPoint) { return FlowPrimitive[iPoint]; }
   
   inline void InitializeWallSolution(unsigned long nWallElem) override {
     WallDensity.resize(nWallElem,4) = su2double(0.0);

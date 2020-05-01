@@ -132,9 +132,9 @@ public:
    */
   inline virtual su2double *GetPrimitive(unsigned long iPoint) { return nullptr; }
   
-  inline virtual void SetTurbDensity(unsigned long iPoint, su2double val_dens) { }
+  inline virtual void SetFlowPrimitive(unsigned long iPoint, su2double* val_prim) { }
   
-  inline virtual su2double GetTurbDensity(unsigned long iPoint) { return 0.0; }
+  inline virtual su2double* GetFlowPrimitive(unsigned long iPoint) { return nullptr; }
   
 
 };
