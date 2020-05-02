@@ -197,7 +197,11 @@ class Project(object):
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print(os.path.join(self.folder,design.folder))
             timestamp = design.state.tic()
-            
+
+            # set right option in design config.
+            if konfig.get('RESTART_SOL', 'NO') == 'YES':
+                design.config['RESTART_SOL'] = 'YES'
+
             # run design+
             vals = design._eval(func,*args)
 
@@ -293,7 +297,6 @@ class Project(object):
         else:
             design = self.init_design(konfig,closest)
         #: if new design    
-        
         return design
     
     def get_design(self,config):
