@@ -32,8 +32,8 @@
 /*--- Cross product ---*/
 
 #define CROSS(dest,v1,v2) \
-(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];	\
-(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];	\
+(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];  \
+(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];  \
 (dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
 
 /*--- Cross product ---*/
@@ -43,8 +43,8 @@
 /*--- a = b - c ---*/
 
 #define SUB(dest,v1,v2) \
-(dest)[0] = (v1)[0] - (v2)[0];	\
-(dest)[1] = (v1)[1] - (v2)[1];	\
+(dest)[0] = (v1)[0] - (v2)[0];  \
+(dest)[1] = (v1)[1] - (v2)[1];  \
 (dest)[2] = (v1)[2] - (v2)[2];
 
 CGeometry::CGeometry(void) {
@@ -1569,34 +1569,34 @@ void CGeometry::SetEdges(void) {
 }
 
 void CGeometry::SetFaces(void) {
-  //	unsigned long iPoint, jPoint, iFace;
-  //	unsigned short jNode, iNode;
-  //	long TestFace = 0;
+  //  unsigned long iPoint, jPoint, iFace;
+  //  unsigned short jNode, iNode;
+  //  long TestFace = 0;
   //
-  //	nFace = 0;
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
-  //			jPoint = nodes->GetPoint(iPoint, iNode);
-  //			for (jNode = 0; jNode < nodes->GetnPoint(jPoint); jNode++)
-  //				if (nodes->GetPoint(jPoint, jNode) == iPoint) {
-  //					TestFace = nodes->GetFace(jPoint, jNode);
-  //					break;
-  //				}
-  //			if (TestFace == -1) {
-  //				nodes->SetFace(iPoint, nFace, iNode);
-  //				nodes->SetFace(jPoint, nFace, jNode);
-  //				nFace++;
-  //			}
-  //		}
+  //  nFace = 0;
+  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //    for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
+  //      jPoint = nodes->GetPoint(iPoint, iNode);
+  //      for (jNode = 0; jNode < nodes->GetnPoint(jPoint); jNode++)
+  //        if (nodes->GetPoint(jPoint, jNode) == iPoint) {
+  //          TestFace = nodes->GetFace(jPoint, jNode);
+  //          break;
+  //        }
+  //      if (TestFace == -1) {
+  //        nodes->SetFace(iPoint, nFace, iNode);
+  //        nodes->SetFace(jPoint, nFace, jNode);
+  //        nFace++;
+  //      }
+  //    }
   //
-  //	face = new CFace*[nFace];
+  //  face = new CFace*[nFace];
   //
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
-  //			jPoint = nodes->GetPoint(iPoint, iNode);
-  //			iFace = FindFace(iPoint, jPoint);
-  //			if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
-  //		}
+  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //    for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
+  //      jPoint = nodes->GetPoint(iPoint, iNode);
+  //      iFace = FindFace(iPoint, jPoint);
+  //      if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
+  //    }
 }
 
 void CGeometry::TestGeometry(void) {
@@ -1649,17 +1649,17 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
 
   u = new su2double [n];
 
-  if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;			  // -ural"
-  else {									// or else to have a specified first derivative.
+  if (yp1 > 0.99e30)      // The lower boundary condition is set either to be "nat
+    y2[0]=u[0]=0.0;       // -ural"
+  else {                  // or else to have a specified first derivative.
     y2[0] = -0.5;
     u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
   }
 
-  for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;										//	factors.
+  for (i=2; i<=n-1; i++) {                  //  This is the decomposition loop of the tridiagonal al-
+    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);      //  gorithm. y2 and u are used for tem-
+    p=sig*y2[i-2]+2.0;                      //  porary storage of the decomposed
+    y2[i-1]=(sig-1.0)/p;                    //  factors.
 
     su2double a1 = (y[i]-y[i-1])/(x[i]-x[i-1]); if (x[i] == x[i-1]) a1 = 1.0;
     su2double a2 = (y[i-1]-y[i-2])/(x[i-1]-x[i-2]); if (x[i-1] == x[i-2]) a2 = 1.0;
@@ -1668,15 +1668,15 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
 
   }
 
-  if (ypn > 0.99e30)						// The upper boundary condition is set either to be
-    qn=un=0.0;									// "natural"
-  else {												// or else to have a specified first derivative.
+  if (ypn > 0.99e30)            // The upper boundary condition is set either to be
+    qn=un=0.0;                  // "natural"
+  else {                        // or else to have a specified first derivative.
     qn=0.5;
     un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
   }
   y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
+  for (k=n-1; k>=1; k--)  // This is the backsubstitution loop of the tridiagonal algorithm.
+    y2[k-1]=y2[k-1]*y2[k]+u[k-1];
 
   delete[] u;
 
@@ -1689,17 +1689,17 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
   if (x < xa[0]) x = xa[0];       // Clip max and min values
   if (x > xa[n-1]) x = xa[n-1];
 
-  klo = 1;										// We will find the right place in the table by means of
-  khi = n;										// bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
-    k = (khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi = k;		// to store previous values of klo and khi and test if
-    else klo=k;							// they remain appropriate on the next call.
-  }								// klo and khi now bracket the input value of x
+  klo = 1;                     // We will find the right place in the table by means of
+  khi = n;                     // bisection. This is optimal if sequential calls to this
+  while (khi-klo > 1) {        // routine are at random values of x. If sequential calls
+    k = (khi+klo) >> 1;        // are in order, and closely spaced, one would do better
+    if (xa[k-1] > x) khi = k;  // to store previous values of klo and khi and test if
+    else klo=k;                // they remain appropriate on the next call.
+  }                            // klo and khi now bracket the input value of x
   h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl;	// The xa?s must be distinct.
+  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl; // The xa?s must be distinct.
   a = (xa[khi-1]-x)/h;
-  b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
+  b = (x-xa[klo-1])/h;         // Cubic spline polynomial is now evaluated.
   y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
