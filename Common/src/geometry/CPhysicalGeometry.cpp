@@ -29,6 +29,7 @@
 #include "../../include/adt_structure.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
@@ -5084,7 +5085,6 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -5098,21 +5098,6 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
   SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-  TotalPositiveXArea = PositiveXArea;
-  TotalPositiveYArea = PositiveYArea;
-  TotalPositiveZArea = PositiveZArea;
-
-  TotalMinCoordX = MinCoordX;
-  TotalMinCoordY = MinCoordY;
-  TotalMinCoordZ = MinCoordZ;
-
-  TotalMaxCoordX = MaxCoordX;
-  TotalMaxCoordY = MaxCoordY;
-  TotalMaxCoordZ = MaxCoordZ;
-
-  TotalWettedArea    = WettedArea;
-#endif
 
   /*--- Set a reference area if no value is provided ---*/
 
@@ -5197,10 +5182,15 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
 void CPhysicalGeometry::SetPoint_Connectivity(void) {
 
+  vector<vector<unsigned long> > points(nPoint);
+
+  SU2_OMP_PARALLEL
+  {
   unsigned short Node_Neighbor, iNode, iNeighbor;
   unsigned long jElem, Point_Neighbor, iPoint, iElem;
 
   /*--- Loop over all the elements ---*/
+  SU2_OMP_MASTER
   {
     vector<vector<long> > elems(nPoint);
 
@@ -5214,11 +5204,11 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
     }
     nodes->SetElems(elems);
   }
+  SU2_OMP_BARRIER
 
   /*--- Loop over all the points ---*/
 
-  vector<vector<unsigned long> > points(nPoint);
-
+  SU2_OMP_FOR_DYN(roundUpDiv(nPoint,2*omp_get_max_threads()))
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Loop over all elements shared by the point ---*/
@@ -5247,14 +5237,15 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
       }
     }
     sort(points[iPoint].begin(), points[iPoint].end());
+
+    /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
+    nodes->SetnNeighbor(iPoint, points[iPoint].size());
   }
+
+  SU2_OMP_MASTER
   nodes->SetPoints(points);
 
-  /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    nodes->SetnNeighbor(iPoint, nodes->GetnPoint(iPoint));
-
+  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
@@ -7193,6 +7184,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 
 void CPhysicalGeometry::SetCoord_CG(void) {
+
+  SU2_OMP_PARALLEL
+  {
   unsigned short iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
 
@@ -7201,6 +7195,7 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
   /*--- Compute the center of gravity for elements ---*/
 
+  SU2_OMP_FOR_STAT(roundUpDiv(nElem,2*omp_get_max_threads()))
   for (iElem = 0; iElem<nElem; iElem++) {
     assert(elem[iElem]->GetnNodes() <= N_POINTS_MAXIMUM && "Insufficient N_POINTS_MAXIMUM");
 
@@ -7216,6 +7211,7 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
   /*--- Center of gravity for face elements ---*/
 
+  SU2_OMP_FOR_DYN(1)
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
 
@@ -7232,6 +7228,7 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
   /*--- Center of gravity for edges ---*/
 
+  SU2_OMP_FOR_STAT(roundUpDiv(nEdge,2*omp_get_max_threads()))
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
 
     /*--- Store the coordinates for all the element nodes ---*/
@@ -7244,6 +7241,7 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     edges->SetCoord_CG(iEdge, Coord.data());
   }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
@@ -8153,27 +8151,19 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 }
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
+
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
-  long iEdge;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
-  Volume, DomainVolume, my_DomainVolume;
-  bool change_face_orientation;
+  su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
 
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
     edges->SetZeroValues();
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      nodes->SetVolume (iPoint, 0.0);
+      nodes->SetVolume(iPoint, 0.0);
   }
 
-  Coord_Edge_CG = new su2double [nDim];
-  Coord_FaceElem_CG = new su2double [nDim];
-  Coord_Elem_CG = new su2double [nDim];
-  Coord_FaceiPoint = new su2double [nDim];
-  Coord_FacejPoint = new su2double [nDim];
-
-  my_DomainVolume = 0.0;
+  su2double my_DomainVolume = 0.0;
   for (iElem = 0; iElem < nElem; iElem++) {
     for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
 
@@ -8201,67 +8191,66 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         }
 
         /*--- We define a direction (from the smalest index to the greatest) --*/
-        change_face_orientation = false;
-        if (face_iPoint > face_jPoint) change_face_orientation = true;
-        iEdge = FindEdge(face_iPoint, face_jPoint);
+        const bool change_face_orientation = (face_iPoint > face_jPoint);
+        const auto iEdge = FindEdge(face_iPoint, face_jPoint);
 
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim] = nodes->GetCoord(face_iPoint, iDim);
-          Coord_FacejPoint[iDim] = nodes->GetCoord(face_jPoint, iDim);
         }
 
-        switch (nDim) {
-          case 2:
-            /*--- Two dimensional problem ---*/
-            if (change_face_orientation) edges->SetNodes_Coord(iEdge, Coord_Elem_CG, Coord_Edge_CG);
-            else edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
-            Area = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
-            nodes->AddVolume(face_iPoint, Area); my_DomainVolume +=Area;
-            Area = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
-            nodes->AddVolume(face_jPoint, Area); my_DomainVolume +=Area;
-            break;
-          case 3:
-            /*--- Three dimensional problem ---*/
-            if (change_face_orientation) edges->SetNodes_Coord(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
-            else edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            Volume = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            nodes->AddVolume(face_iPoint, Volume); my_DomainVolume +=Volume;
-            Volume = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            nodes->AddVolume(face_jPoint, Volume); my_DomainVolume +=Volume;
-            break;
+        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
+        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
+
+        su2double Volume_i, Volume_j;
+
+        if (nDim == 2) {
+          /*--- Two dimensional problem ---*/
+          if (change_face_orientation)
+            edges->SetNodes_Coord(iEdge, Coord_Elem_CG, Coord_Edge_CG);
+          else
+            edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
+
+          Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
         }
+        else {
+          /*--- Three dimensional problem ---*/
+          if (change_face_orientation)
+            edges->SetNodes_Coord(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
+          else
+            edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+
+          Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+        }
+
+        nodes->AddVolume(face_iPoint, Volume_i);
+        nodes->AddVolume(face_jPoint, Volume_j);
+
+        my_DomainVolume += Volume_i+Volume_j;
       }
     }
   }
 
   /*--- Check if there is a normal with null area ---*/
-  for (iEdge = 0; iEdge < (long)nEdge; iEdge++) {
-    const auto NormalFace = edges->GetNormal(iEdge);
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-    Area = sqrt(Area);
-    if (Area == 0.0) {
+  for (auto iEdge = 0ul; iEdge < nEdge; iEdge++) {
+    const auto Area2 = GeometryToolbox::SquaredNorm(nDim, edges->GetNormal(iEdge));
+    if (Area2 == 0.0) {
       su2double DefaultArea[3] = {EPS*EPS};
       edges->SetNormal(iEdge, DefaultArea);
     }
   }
 
+  su2double DomainVolume;
   SU2_MPI::Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  config->SetDomainVolume(DomainVolume);
 
   if ((rank == MASTER_NODE) && (action == ALLOCATE)) {
     if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<< endl;
     if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
-
-  config->SetDomainVolume(DomainVolume);
-
-  delete[] Coord_Edge_CG;
-  delete[] Coord_FaceElem_CG;
-  delete[] Coord_Elem_CG;
-  delete[] Coord_FaceiPoint;
-  delete[] Coord_FacejPoint;
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {

@@ -739,16 +739,12 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   unsigned short iZone = config->GetiZone(), iMGlevel;
   unsigned short requestedMGlevels = config->GetnMGLevels();
-  bool fea = false;
+  const bool fea = config->GetStructuralProblem();
 
-  /*--- Definition of the geometry class to store the primal grid in the
-     partitioning process. ---*/
+  /*--- Definition of the geometry class to store the primal grid in the partitioning process.
+   *    All ranks process the grid and call ParMETIS for partitioning ---*/
 
-  CGeometry *geometry_aux = NULL;
-
-  /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-
-  geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
+  CGeometry *geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
 
   /*--- Set the dimension --- */
 
@@ -761,7 +757,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-  geometry = NULL;
   geometry = new CGeometry *[config->GetnMGLevels()+1];
 
   /*--- Build the grid data structures using the ParMETIS coloring. ---*/
@@ -777,9 +772,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetBoundaries(config);
-
-  fea = ((config->GetKind_Solver() == FEM_ELASTICITY) ||
-         (config->GetKind_Solver() == DISC_ADJ_FEM));
 
   /*--- Compute elements surrounding points, points surrounding points ---*/
 
