@@ -574,7 +574,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   su2double localUnderRelaxation    =  1.00;
   const su2double allowableDecrease = -0.99;
   const su2double allowableIncrease =  0.99;
-  const su2double allowableRatio    = 0.5;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -597,17 +596,17 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
       }
     }
     
-    else {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
-        if (ratio > allowableIncrease) {
-          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-        } else if (ratio < allowableDecrease) {
-          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
-        }
-      }
-    }
+//    else {
+//      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+//        const unsigned long index = iPoint*nVar + iVar;
+//        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
+//        if (ratio > allowableIncrease) {
+//          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+//        } else if (ratio < allowableDecrease) {
+//          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+//        }
+//      }
+//    }
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
