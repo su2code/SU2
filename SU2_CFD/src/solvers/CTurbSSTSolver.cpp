@@ -368,7 +368,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
     for (unsigned short iVar = 0; iVar < nDim+9; iVar++) {
       /*--- Store density using Solution, for disc adj ---*/
       if (iVar == (nDim+2))
-        nodes->SetFlowPrimitive(iPoint,nDim+2,solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint, 0));
+        nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint, 0));
       else
         nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, iVar));
     }
