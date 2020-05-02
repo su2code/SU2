@@ -5236,7 +5236,7 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
         }
       }
     }
-    sort(points[iPoint].begin(), points[iPoint].end());
+    //sort(points[iPoint].begin(), points[iPoint].end());
 
     /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
     nodes->SetnNeighbor(iPoint, points[iPoint].size());
