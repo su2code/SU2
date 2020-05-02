@@ -28,13 +28,12 @@
 #include "../include/CMultiGridQueue.hpp"
 #include <numeric>
 
-
 CMultiGridQueue::CMultiGridQueue(unsigned long npoint) :
   Priority(npoint,0),
   RightCV(npoint,true),
   nPoint(npoint) {
 
-  /*--- Queue initialization with all the points in the finer grid ---*/
+  /*--- Queue initialization with all the points in the fine grid. ---*/
   QueueCV.emplace_back(nPoint);
   iota(QueueCV[0].begin(), QueueCV[0].end(), 0ul);
 
@@ -57,7 +56,7 @@ void CMultiGridQueue::AddCV(unsigned long newPoint, short numberNeighbors) {
 
   /*--- Resize the list ---*/
   if (numberNeighbors > maxNeighbors) {
-    const auto newSize = numberNeighbors+1;
+    const size_t newSize = numberNeighbors+1;
     if (QueueCV.capacity() < newSize)
       QueueCV.reserve(2*newSize);
     QueueCV.resize(newSize);
@@ -78,42 +77,35 @@ void CMultiGridQueue::RemoveCV(unsigned long removePoint) {
 
   /*--- Basic check ---*/
   if (removePoint >= nPoint) {
-    SU2_MPI::Error("The index of the CV is greater than the size of the priority list." , CURRENT_FUNCTION);
+    SU2_MPI::Error("The index of the CV is greater than the size of the priority list.", CURRENT_FUNCTION);
   }
 
-  /*--- Find priority of the Control Volume ---*/
+  /*--- Find priority of the Control Volume. ---*/
   const auto numberNeighbors = Priority[removePoint];
   if (numberNeighbors == -1) ThrowPointNotInListError(removePoint);
+  Priority[removePoint] = -1;
 
-  /*--- Find the point in the queue ---*/
+  /*--- Find the point in the queue, if the queue is not changed we can exit. ---*/
   auto end = QueueCV[numberNeighbors].end();
   auto it = find(QueueCV[numberNeighbors].begin(), end, removePoint);
   if (it != end) QueueCV[numberNeighbors].erase(it);
+  else return;
 
-  Priority[removePoint] = -1;
+  /*--- Check that the size of the queue is the right one. ---*/
+  /*--- Resize the queue, leaving at least one element in it. ---*/
+  auto sizeQueueCV = QueueCV.size();
 
-  /*--- Check that the size of the queue is the right one ---*/
-  unsigned short sizeQueueCV = 0, iQ = 0;
-
-  for (const auto& Q : QueueCV) {
-    if (!Q.empty()) { sizeQueueCV = iQ; }
-    iQ++;
+  while (sizeQueueCV > 0) {
+    if (!QueueCV[--sizeQueueCV].empty()) break;
   }
-
-  /*--- Resize the queue, we need at least one element in it. ---*/
   QueueCV.resize(sizeQueueCV+1);
 
 }
 
 void CMultiGridQueue::MoveCV(unsigned long movePoint, short numberNeighbors) {
 
-  if (numberNeighbors < 0) {
-    numberNeighbors = 0;
-    RightCV[movePoint] = false;
-  }
-  else {
-    RightCV[movePoint] = true;
-  }
+  RightCV[movePoint] = (numberNeighbors >= 0);
+  numberNeighbors = max<short>(numberNeighbors,0);
 
   /*--- Remove the control volume ---*/
   RemoveCV(movePoint);
@@ -127,7 +119,6 @@ void CMultiGridQueue::IncrPriorityCV(unsigned long incrPoint) {
 
   /*--- Find the priority list ---*/
   const short numberNeighbors = Priority[incrPoint];
-  if (numberNeighbors == -1) ThrowPointNotInListError(incrPoint);
 
   /*--- Remove the control volume ---*/
   RemoveCV(incrPoint);
@@ -141,15 +132,13 @@ void CMultiGridQueue::RedPriorityCV(unsigned long redPoint) {
 
   /*--- Find the priority list ---*/
   const short numberNeighbors = Priority[redPoint];
-  if (numberNeighbors == -1) ThrowPointNotInListError(redPoint);
+  if (numberNeighbors == 0) return;
 
-  if (numberNeighbors != 0) {
-    /*--- Remove the control volume ---*/
-    RemoveCV(redPoint);
+  /*--- Remove the control volume ---*/
+  RemoveCV(redPoint);
 
-    /*--- Decrease the priority ---*/
-    AddCV(redPoint, numberNeighbors-1);
-  }
+  /*--- Decrease the priority ---*/
+  AddCV(redPoint, numberNeighbors-1);
 
 }
 
@@ -170,11 +159,6 @@ void CMultiGridQueue::VisualizePriority(void) const {
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
     cout << "Control Volume: " << iPoint << " Priority: " << Priority[iPoint] << endl;
   }
-}
-
-long CMultiGridQueue::NextCV(void) const {
-  if (!QueueCV.empty()) return QueueCV.back()[0];
-  else return -1;
 }
 
 bool CMultiGridQueue::EmptyQueue(void) const {
