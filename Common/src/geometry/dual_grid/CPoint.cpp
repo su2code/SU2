@@ -30,9 +30,7 @@
 #include "../../../include/omp_structure.hpp"
 
 
-CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) {
-
-  nDim = ndim;
+CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) : nDim(ndim) {
 
   /*--- Coordinates and volumes. ---*/
 

@@ -5246,6 +5246,7 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
         }
       }
     }
+    sort(points[iPoint].begin(), points[iPoint].end());
   }
   nodes->SetPoints(points);
 

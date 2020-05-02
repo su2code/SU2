@@ -739,7 +739,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   unsigned short iZone = config->GetiZone(), iMGlevel;
   unsigned short requestedMGlevels = config->GetnMGLevels();
-  unsigned long iPoint;
   bool fea = false;
 
   /*--- Definition of the geometry class to store the primal grid in the

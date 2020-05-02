@@ -43,7 +43,7 @@ class CConfig;
  */
 class CPoint {
 private:
-  unsigned long nDim;
+  const unsigned long nDim = 0;
 
   su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */
 
@@ -178,6 +178,11 @@ public:
    * \param[in] pointsMatrix - List of lists with the neighbor points connected to each point.
    */
   void SetPoints(const vector<vector<unsigned long> >& pointsMatrix);
+
+  /*!
+   * \brief Get the entire point adjacency information in compressed format (CSR).
+   */
+  const CCompressedSparsePatternUL& GetPoints() const { return Point; }
 
   /*!
    * \brief Reset the points that compose the control volume.
@@ -693,6 +698,11 @@ public:
   inline su2double *GetGridVel(unsigned long iPoint) { return GridVel[iPoint]; }
 
   /*!
+   * \brief Get the grid velocity matrix for the entire domain.
+   */
+  inline const su2activematrix& GetGridVel() const { return GridVel; }
+
+  /*!
    * \brief Set the value of the grid velocity at the point.
    * \param[in] iPoint - Index of the point.
    * \param[in] iDim - Index of the coordinate.
@@ -711,22 +721,16 @@ public:
   }
 
   /*!
-   * \brief Set the gradient of the grid velocity.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
+   * \brief Get the grid velocity gradients for the entire domain.
    */
-  inline void SetGridVel_Grad(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {
-    GridVel_Grad(iPoint,iVar,iDim) = value;
-  }
+  inline CVectorOfMatrix& GetGridVel_Grad() { return GridVel_Grad; }
 
   /*!
    * \brief Get the value of the grid velocity gradient at the point.
    * \param[in] iPoint - Index of the point.
    * \return Grid velocity gradient at the point.
    */
-  inline su2double **GetGridVel_Grad(unsigned long iPoint) { return GridVel_Grad[iPoint]; }
+  inline const su2double* const* GetGridVel_Grad(unsigned long iPoint) const { return GridVel_Grad[iPoint]; }
 
   /*!
    * \brief Set the adjoint values of the (geometric) coordinates.

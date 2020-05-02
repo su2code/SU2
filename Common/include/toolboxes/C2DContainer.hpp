@@ -508,7 +508,13 @@ struct CVectorOfMatrix {
   su2matrix<su2double*> interface;
   unsigned long M, N;
 
-  void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value) {
+  CVectorOfMatrix() = default;
+
+  CVectorOfMatrix(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
+    resize(length, rows, cols, value);
+  }
+
+  void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
     M = rows;
     N = cols;
     storage.resize(length*rows*cols) = value;
@@ -523,6 +529,7 @@ struct CVectorOfMatrix {
   const su2double& operator() (unsigned long i, unsigned long j, unsigned long k) const { return storage(i*M*N + j*N + k); }
 
   su2double** operator[] (unsigned long i) { return interface[i]; }
+  const su2double* const* operator[] (unsigned long i) const { return interface[i]; }
 };
 
 /*!

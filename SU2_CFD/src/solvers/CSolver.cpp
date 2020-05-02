@@ -2893,112 +2893,20 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 }
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
-  unsigned short iDim, jDim, iVar, iNeigh;
-  unsigned long iPoint, jPoint;
-  su2double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
-  r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
-  z22, z23, z33, product;
-  su2double **Cvector;
 
-  /*--- Note that all nVar entries in this routine have been changed to nDim ---*/
-  Cvector = new su2double* [nDim];
-  for (iVar = 0; iVar < nDim; iVar++)
-    Cvector[iVar] = new su2double [nDim];
+  /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
-  /*--- Loop over points of the grid ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  const auto& gridVel = geometry->nodes->GetGridVel();
+  auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
+  auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
 
-    Coord_i = geometry->nodes->GetCoord(iPoint);
-    Solution_i = geometry->nodes->GetGridVel(iPoint);
-
-    /*--- Inizialization of variables ---*/
-    for (iVar = 0; iVar < nDim; iVar++)
-      for (iDim = 0; iDim < nDim; iDim++)
-        Cvector[iVar][iDim] = 0.0;
-    r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-
-    for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-      jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-      Coord_j = geometry->nodes->GetCoord(jPoint);
-      Solution_j = geometry->nodes->GetGridVel(jPoint);
-
-      weight = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-      /*--- Sumations for entries of upper triangular matrix R ---*/
-      r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
-      r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
-      r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/(weight);
-      if (nDim == 3) {
-        r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
-      }
-
-      /*--- Entries of c:= transpose(A)*b ---*/
-      for (iVar = 0; iVar < nDim; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
-    }
-
-    /*--- Entries of upper triangular matrix R ---*/
-    r11 = sqrt(r11);
-    r12 = r12/(r11);
-    r22 = sqrt(r22-r12*r12);
-    if (nDim == 3) {
-      r13 = r13/(r11);
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
-    }
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    if (nDim == 2) {
-      detR2 = (r11*r22)*(r11*r22);
-      Smatrix[0][0] = (r12*r12+r22*r22)/(detR2);
-      Smatrix[0][1] = -r11*r12/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = r11*r11/(detR2);
-    }
-    else {
-      detR2 = (r11*r22*r33)*(r11*r22*r33);
-      z11 = r22*r33;
-      z12 = -r12*r33;
-      z13 = r12*r23-r13*r22;
-      z22 = r11*r33;
-      z23 = -r11*r23;
-      z33 = r11*r22;
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/(detR2);
-      Smatrix[0][1] = (z12*z22+z13*z23)/(detR2);
-      Smatrix[0][2] = (z13*z33)/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = (z22*z22+z23*z23)/(detR2);
-      Smatrix[1][2] = (z23*z33)/(detR2);
-      Smatrix[2][0] = Smatrix[0][2];
-      Smatrix[2][1] = Smatrix[1][2];
-      Smatrix[2][2] = (z33*z33)/(detR2);
-    }
-    /*--- Computation of the gradient: S*c ---*/
-    for (iVar = 0; iVar < nDim; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        product = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
-        geometry->nodes->SetGridVel_Grad(iPoint, iVar, iDim, product);
-      }
-    }
-  }
-
-  /*--- Deallocate memory ---*/
-  for (iVar = 0; iVar < nDim; iVar++)
-    delete [] Cvector[iVar];
-  delete [] Cvector;
-
+  computeGradientsLeastSquares(nullptr, GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
+                               true, gridVel, 0, nDim, gridVelGrad, rmatrix);
 }
 
 void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iDim, jDim, iNeigh, iMarker, Boundary;
+  unsigned short iDim, jDim, iNeigh, iMarker;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint, iVertex;
   su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j;
@@ -3012,99 +2920,92 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop over boundary markers to select those for Euler or NS walls ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    switch (Boundary) {
-      case EULER_WALL:
-      case HEAT_FLUX:
-      case ISOTHERMAL:
-      case CHT_WALL_INTERFACE:
 
-        /*--- Loop over points on the surface (Least-Squares approximation) ---*/
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->nodes->GetDomain(iPoint)) {
-            Coord_i = geometry->nodes->GetCoord(iPoint);
-            AuxVar_i = base_nodes->GetAuxVar(iPoint);
+    if (config->GetSolid_Wall(iMarker)) {
 
-            /*--- Inizialization of variables ---*/
+      /*--- Loop over points on the surface (Least-Squares approximation) ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->nodes->GetDomain(iPoint)) {
+          Coord_i = geometry->nodes->GetCoord(iPoint);
+          AuxVar_i = base_nodes->GetAuxVar(iPoint);
+
+          /*--- Inizialization of variables ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            Cvector[iDim] = 0.0;
+          su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+
+          for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+            jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+            Coord_j = geometry->nodes->GetCoord(jPoint);
+            AuxVar_j = base_nodes->GetAuxVar(jPoint);
+
+            su2double weight = 0;
             for (iDim = 0; iDim < nDim; iDim++)
-              Cvector[iDim] = 0.0;
-            su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+              weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 
-            for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-              Coord_j = geometry->nodes->GetCoord(jPoint);
-              AuxVar_j = base_nodes->GetAuxVar(jPoint);
-
-              su2double weight = 0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-              /*--- Sumations for entries of upper triangular matrix R ---*/
-              r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-              r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-              r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
-              if (nDim == 3) {
-                r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-                r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
-              }
-
-              /*--- Entries of c:= transpose(A)*b ---*/
-              for (iDim = 0; iDim < nDim; iDim++)
-                Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
-            }
-
-            /*--- Entries of upper triangular matrix R ---*/
-            r11 = sqrt(r11);
-            r12 = r12/r11;
-            r22 = sqrt(r22-r12*r12);
+            /*--- Sumations for entries of upper triangular matrix R ---*/
+            r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+            r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+            r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
             if (nDim == 3) {
-              r13 = r13/r11;
-              r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-              r33 = sqrt(r33-r23*r23-r13*r13);
+              r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+              r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+              r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+              r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
             }
-            /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-            if (nDim == 2) {
-              su2double detR2 = (r11*r22)*(r11*r22);
-              Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-              Smatrix[0][1] = -r11*r12/detR2;
-              Smatrix[1][0] = Smatrix[0][1];
-              Smatrix[1][1] = r11*r11/detR2;
-            }
-            else {
-              su2double detR2 = (r11*r22*r33)*(r11*r22*r33);
-              su2double z11, z12, z13, z22, z23, z33; // aux vars
-              z11 = r22*r33;
-              z12 = -r12*r33;
-              z13 = r12*r23-r13*r22;
-              z22 = r11*r33;
-              z23 = -r11*r23;
-              z33 = r11*r22;
-              Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-              Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-              Smatrix[0][2] = (z13*z33)/detR2;
-              Smatrix[1][0] = Smatrix[0][1];
-              Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-              Smatrix[1][2] = (z23*z33)/detR2;
-              Smatrix[2][0] = Smatrix[0][2];
-              Smatrix[2][1] = Smatrix[1][2];
-              Smatrix[2][2] = (z33*z33)/detR2;
-            }
-            /*--- Computation of the gradient: S*c ---*/
-            su2double product;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              product = 0.0;
-              for (jDim = 0; jDim < nDim; jDim++)
-                product += Smatrix[iDim][jDim]*Cvector[jDim];
-              base_nodes->SetAuxVarGradient(iPoint, iDim, product);
-            }
+
+            /*--- Entries of c:= transpose(A)*b ---*/
+            for (iDim = 0; iDim < nDim; iDim++)
+              Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
           }
-        } /*--- End of loop over surface points ---*/
-        break;
-      default:
-        break;
+
+          /*--- Entries of upper triangular matrix R ---*/
+          r11 = sqrt(r11);
+          r12 = r12/r11;
+          r22 = sqrt(r22-r12*r12);
+          if (nDim == 3) {
+            r13 = r13/r11;
+            r23 = r23_a/r22 - r23_b*r12/(r11*r22);
+            r33 = sqrt(r33-r23*r23-r13*r13);
+          }
+          /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+          if (nDim == 2) {
+            su2double detR2 = (r11*r22)*(r11*r22);
+            Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+            Smatrix[0][1] = -r11*r12/detR2;
+            Smatrix[1][0] = Smatrix[0][1];
+            Smatrix[1][1] = r11*r11/detR2;
+          }
+          else {
+            su2double detR2 = (r11*r22*r33)*(r11*r22*r33);
+            su2double z11, z12, z13, z22, z23, z33; // aux vars
+            z11 = r22*r33;
+            z12 = -r12*r33;
+            z13 = r12*r23-r13*r22;
+            z22 = r11*r33;
+            z23 = -r11*r23;
+            z33 = r11*r22;
+            Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+            Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+            Smatrix[0][2] = (z13*z33)/detR2;
+            Smatrix[1][0] = Smatrix[0][1];
+            Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+            Smatrix[1][2] = (z23*z33)/detR2;
+            Smatrix[2][0] = Smatrix[0][2];
+            Smatrix[2][1] = Smatrix[1][2];
+            Smatrix[2][2] = (z33*z33)/detR2;
+          }
+          /*--- Computation of the gradient: S*c ---*/
+          su2double product;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            product = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++)
+              product += Smatrix[iDim][jDim]*Cvector[jDim];
+            base_nodes->SetAuxVarGradient(iPoint, iDim, product);
+          }
+        }
+      } /*--- End of loop over surface points ---*/
     }
   }
 

@@ -4003,7 +4003,6 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
     }
 
     /*--- Create a temporary sparse pattern from the edges. ---*/
-    /// TODO: Try to avoid temporary once grid information is made contiguous.
     su2vector<unsigned long> outerPtr(nEdge+1);
     su2vector<unsigned long> innerIdx(nEdge*2);
 
@@ -4056,7 +4055,6 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* effic
     }
 
     /*--- Create a temporary sparse pattern from the elements. ---*/
-    /// TODO: Try to avoid temporary once grid information is made contiguous.
     vector<unsigned long> outerPtr(nElem+1);
     vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
 
