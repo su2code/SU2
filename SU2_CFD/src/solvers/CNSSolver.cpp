@@ -181,26 +181,28 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  /*--- Compute gradient for MUSCL reconstruction. ---*/
+  if (!Output) {
+    /*--- Compute gradient for MUSCL reconstruction. ---*/
 
-  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
-    switch (config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS:
-        SetPrimitive_Gradient_GG(geometry, config, true); break;
-      case LEAST_SQUARES:
-      case WEIGHTED_LEAST_SQUARES:
-        SetPrimitive_Gradient_LS(geometry, config, true); break;
-      default: break;
+    if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+      switch (config->GetKind_Gradient_Method_Recon()) {
+        case GREEN_GAUSS:
+          SetPrimitive_Gradient_GG(geometry, config, true); break;
+        case LEAST_SQUARES:
+        case WEIGHTED_LEAST_SQUARES:
+          SetPrimitive_Gradient_LS(geometry, config, true); break;
+        default: break;
+      }
     }
-  }
 
-  /*--- Compute gradient of the primitive variables ---*/
+    /*--- Compute gradient of the primitive variables ---*/
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetPrimitive_Gradient_GG(geometry, config, false);
-  }
-  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetPrimitive_Gradient_LS(geometry, config, false);
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetPrimitive_Gradient_GG(geometry, config, false);
+    }
+    else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetPrimitive_Gradient_LS(geometry, config, false);
+    }
   }
 
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
