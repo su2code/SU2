@@ -696,8 +696,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   unsigned short iNode, jNode;
   unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
 
-  map<unsigned long, unsigned long> Point_Map;
-  map<unsigned long, unsigned long>::iterator MI;
+  unordered_map<unsigned long, unsigned long> Point_Map;
+  unordered_map<unsigned long, unsigned long>::iterator MI;
 
   vector<unsigned long>::iterator it;
 
@@ -732,7 +732,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Create a global to local mapping that includes the unowned points. ---*/
 
-  map<unsigned long, unsigned long> Global2Local;
+  unordered_map<unsigned long, unsigned long> Global2Local;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
@@ -948,11 +948,11 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (colorSendReq != NULL) delete [] colorSendReq;
-  if (idSendReq    != NULL) delete [] idSendReq;
+  delete [] colorSendReq;
+  delete [] idSendReq;
 
-  if (colorRecvReq != NULL) delete [] colorRecvReq;
-  if (idRecvReq    != NULL) delete [] idRecvReq;
+  delete [] colorRecvReq;
+  delete [] idRecvReq;
 
   delete [] colorSend;
   delete [] colorRecv;
@@ -1008,8 +1008,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Prepare a mapping for local to global element index. ---*/
 
-  map<unsigned long, unsigned long> Local2GlobalElem;
-  map<unsigned long, unsigned long>::iterator MI;
+  unordered_map<unsigned long, unsigned long> Local2GlobalElem;
+  unordered_map<unsigned long, unsigned long>::iterator MI;
 
   for (MI = geometry->Global_to_Local_Elem.begin();
        MI != geometry->Global_to_Local_Elem.end(); MI++) {
@@ -2458,13 +2458,13 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   unsigned long nTria, nQuad, nTetr, nHexa, nPris, nPyra;
 
-  map<unsigned long, unsigned long> Tria_List;
-  map<unsigned long, unsigned long> Quad_List;
-  map<unsigned long, unsigned long> Tetr_List;
-  map<unsigned long, unsigned long> Hexa_List;
-  map<unsigned long, unsigned long> Pris_List;
-  map<unsigned long, unsigned long> Pyra_List;
-  map<unsigned long, unsigned long>::iterator it;
+  unordered_map<unsigned long, unsigned long> Tria_List;
+  unordered_map<unsigned long, unsigned long> Quad_List;
+  unordered_map<unsigned long, unsigned long> Tetr_List;
+  unordered_map<unsigned long, unsigned long> Hexa_List;
+  unordered_map<unsigned long, unsigned long> Pris_List;
+  unordered_map<unsigned long, unsigned long> Pyra_List;
+  unordered_map<unsigned long, unsigned long>::iterator it;
 
   /*--- It is possible that we have repeated elements during the previous
    communications, as we mostly focus on the grid points and their colors.
@@ -2846,8 +2846,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
   /*--- Create a mapping from global to local marker ID (and vice-versa). ---*/
 
-  map<unsigned long, unsigned long> Marker_Global_to_Local;
-  map<unsigned long, unsigned long> Marker_Local_to_Global;
+  unordered_map<unsigned long, unsigned long> Marker_Global_to_Local;
+  unordered_map<unsigned long, unsigned long> Marker_Local_to_Global;
 
   for (iMarker = 0; iMarker < Marker_Local.size(); iMarker++) {
     Marker_Global_to_Local[Marker_Local[iMarker]] = iMarker;
@@ -3439,7 +3439,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   vector<vector<unsigned long> > SendDomainLocal;       /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
   vector<vector<unsigned long> > ReceivedDomainLocal;   /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
 
-  map<unsigned long, unsigned long>::const_iterator MI;
+  unordered_map<unsigned long, unsigned long>::const_iterator MI;
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
