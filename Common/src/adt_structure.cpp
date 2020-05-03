@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -849,14 +849,18 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
           coorBBMin = BBoxCoor.data() + nDimADT*kk;
           coorBBMax = coorBBMin + nDim;
 
-          su2double posDist2 = 0.0;
+          su2double posDist2 = 0.0, ds;
+          ds = min(0.0, coor[0]-coorBBMin[0]) + max(0.0, coor[0]-coorBBMax[0]); posDist2 += ds*ds;
+          ds = min(0.0, coor[1]-coorBBMin[1]) + max(0.0, coor[1]-coorBBMax[1]); posDist2 += ds*ds;
+          if(nDim==3) {
+          ds = min(0.0, coor[2]-coorBBMin[2]) + max(0.0, coor[2]-coorBBMax[2]); posDist2 += ds*ds;}
+          /*--- The above is equivalent to this:
           for(unsigned short k=0; k<nDim; ++k) {
             su2double ds = 0.0;
             if(     coor[k] < coorBBMin[k]) ds = coor[k] - coorBBMin[k];
             else if(coor[k] > coorBBMax[k]) ds = coor[k] - coorBBMax[k];
-
             posDist2 += ds*ds;
-          }
+          }, but a bit faster. ---*/
 
           /* Check if the possible minimum distance is less than or equal to
              the currently stored distance. If so, this bounding box is a
@@ -865,14 +869,18 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
           if(posDist2 <= dist) {
 
             /*--- Compute the guaranteed minimum distance for this bounding box. ---*/
-            su2double guarDist2 = 0.0;
+            su2double guarDist2 = 0.0, ds;
+            ds = max(fabs(coor[0]-coorBBMin[0]), fabs(coor[0]-coorBBMax[0])); guarDist2 += ds*ds;
+            ds = max(fabs(coor[1]-coorBBMin[1]), fabs(coor[1]-coorBBMax[1])); guarDist2 += ds*ds;
+            if(nDim==3) {
+            ds = max(fabs(coor[2]-coorBBMin[2]), fabs(coor[2]-coorBBMax[2])); guarDist2 += ds*ds;}
+            /*--- Again the above is equivalent to this:
             for(unsigned short k=0; k<nDim; ++k) {
               const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
               const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
               const su2double ds    = max(dsMin, dsMax);
-
               guarDist2 += ds*ds;
-            }
+            } ---*/
 
             /* Store this bounding box in BBoxTargets and update the currently
                stored value of the distance squared. */
@@ -883,18 +891,15 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
         else {
 
           /*--- Child contains a leaf. Determine the possible minimum distance
-                squared to that leaf. ---*/
+                squared to that leaf. Same manual unroling as before. ---*/
           coorBBMin = leaves[kk].xMin;
           coorBBMax = leaves[kk].xMax + nDim;
 
-          su2double posDist2 = 0.0;
-          for(unsigned short k=0; k<nDim; ++k) {
-            su2double ds = 0.0;
-            if(     coor[k] < coorBBMin[k]) ds = coor[k] - coorBBMin[k];
-            else if(coor[k] > coorBBMax[k]) ds = coor[k] - coorBBMax[k];
-
-            posDist2 += ds*ds;
-          }
+          su2double posDist2 = 0.0, ds;
+          ds = min(0.0, coor[0]-coorBBMin[0]) + max(0.0, coor[0]-coorBBMax[0]); posDist2 += ds*ds;
+          ds = min(0.0, coor[1]-coorBBMin[1]) + max(0.0, coor[1]-coorBBMax[1]); posDist2 += ds*ds;
+          if(nDim==3) {
+          ds = min(0.0, coor[2]-coorBBMin[2]) + max(0.0, coor[2]-coorBBMax[2]); posDist2 += ds*ds;}
 
           /* Check if the possible minimum distance is less than or equal to the currently
              stored distance. If so this leaf must be stored for the next round. */
@@ -903,19 +908,16 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
 
             /*--- Determine the guaranteed minimum distance squared to the central
                   bounding box of this leaf and update the currently stored
-                  minimum wall distance. ---*/
+                  minimum wall distance. Same manual unroling as before. ---*/
             kk = leaves[kk].centralNodeID;
             coorBBMin = BBoxCoor.data() + nDimADT*kk;
             coorBBMax = coorBBMin + nDim;
 
-            su2double guarDist2 = 0.0;
-            for(unsigned short k=0; k<nDim; ++k) {
-              const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
-              const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
-              const su2double ds    = max(dsMin, dsMax);
-
-              guarDist2 += ds*ds;
-            }
+            su2double guarDist2 = 0.0, ds;
+            ds = max(fabs(coor[0]-coorBBMin[0]), fabs(coor[0]-coorBBMax[0])); guarDist2 += ds*ds;
+            ds = max(fabs(coor[1]-coorBBMin[1]), fabs(coor[1]-coorBBMax[1])); guarDist2 += ds*ds;
+            if(nDim==3) {
+            ds = max(fabs(coor[2]-coorBBMin[2]), fabs(coor[2]-coorBBMax[2])); guarDist2 += ds*ds;}
 
             dist = min(dist, guarDist2);
           }
@@ -2361,6 +2363,8 @@ bool CADTElemClass::Dist2ToTriangle(const unsigned long i0,
                                     su2double           &r,
                                     su2double           &s) {
 
+  constexpr unsigned short nDim = 3; // boundary triangles only exist in 3D
+
   /*--- The triangle is parametrized by X = X0 + (r+1)*(X1-X0)/2 + (s+1)*(X2-X0)/2,
         r, s >= -1, r+s <= 0. As a consequence the minimum distance is found where
         the expression |V0 - r*V1 - s*V2| has a minimum, where the vectors V0, V1
@@ -2417,6 +2421,8 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                          su2double           &r,
                                          su2double           &s,
                                          su2double           &dist2Quad) {
+
+  constexpr unsigned short nDim = 3; // boundary quadrilaterals only exist in 3D
 
   /* Definition of the maximum number of iterations in the iterative solver
      and the tolerance level. */
