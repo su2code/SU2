@@ -61,19 +61,13 @@ private:
    * \note This is the performance hotspot (due to the re-mapping).
    */
   void cleanup() {
-    auto writeIt = items.begin();
-    auto readIt = writeIt;
     size_t idx = 0;
-
-    while (readIt != items.end()) {
-      auto value = *readIt;
+    for (auto value : items) {
       if (value != ErasedValue) {
-        *writeIt = value;
+        items[idx] = value;
         indexes[value] = idx;
-        ++writeIt;
         ++idx;
       }
-      ++readIt;
     }
     items.resize(idx);
     erasedCounter = 0;
