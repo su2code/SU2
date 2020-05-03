@@ -28,9 +28,8 @@
 
 #pragma once
 
-#include <deque>
 #include <vector>
-
+#include "toolboxes/CFastFindAndEraseQueue.hpp"
 #include "geometry/CGeometry.hpp"
 
 using namespace std;
@@ -38,16 +37,14 @@ using namespace std;
 /*!
  * \class CMultiGridQueue
  * \brief Class for a multigrid queue system for the finite volume solver.
- * \note A vector of deque's is used for the queue to reduce the cost of erasing entries (in RemoveCV).
- *       There is still room to improve either the algorithm or the data structure...
  * \author F. Palacios
  */
 class CMultiGridQueue {
 private:
-  vector<deque<unsigned long> > QueueCV;  /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
-  vector<short> Priority;                 /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
-  vector<char> RightCV;                   /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them. */
-  const unsigned long nPoint = 0;         /*!< \brief Total number of points. */
+  vector<CFastFindAndEraseQueue<> > QueueCV; /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
+  vector<short> Priority;                    /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
+  vector<char> RightCV;                      /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them. */
+  const unsigned long nPoint = 0;            /*!< \brief Total number of points. */
 
   /*!
    * \brief Throw error with error message that the point is not in the priority list.
@@ -113,7 +110,7 @@ public:
    * \return Index of the new control volume.
    */
   inline long NextCV(void) const {
-    if (!QueueCV.empty()) return QueueCV.back()[0];
+    if (!QueueCV.empty()) return QueueCV.back().front();
     else return -1;
   }
 

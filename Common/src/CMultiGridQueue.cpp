@@ -35,7 +35,6 @@ CMultiGridQueue::CMultiGridQueue(unsigned long npoint) :
 
   /*--- Queue initialization with all the points in the fine grid. ---*/
   QueueCV.emplace_back(nPoint);
-  iota(QueueCV[0].begin(), QueueCV[0].end(), 0ul);
 
 }
 
@@ -86,10 +85,7 @@ void CMultiGridQueue::RemoveCV(unsigned long removePoint) {
   Priority[removePoint] = -1;
 
   /*--- Find the point in the queue, if the queue is not changed we can exit. ---*/
-  auto end = QueueCV[numberNeighbors].end();
-  auto it = find(QueueCV[numberNeighbors].begin(), end, removePoint);
-  if (it != end) QueueCV[numberNeighbors].erase(it);
-  else return;
+  if (!QueueCV[numberNeighbors].findAndErase(removePoint)) return;
 
   /*--- Check that the size of the queue is the right one. ---*/
   /*--- Resize the queue, leaving at least one element in it. ---*/
