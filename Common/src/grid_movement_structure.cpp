@@ -8393,11 +8393,10 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
     {0, 5, 7, 4, 0, 5, 7},
     {2, 7, 5, 6, 2, 7, 5}};
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_DV(iMarker) == YES)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        geometry->nodes->SetMove(iPoint, false);
 
         Coord = geometry->nodes->GetCoord(iPoint);
 
@@ -8422,12 +8421,9 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
           }
           if (Inside) break;
         }
-
-        if (Inside) {
-          geometry->nodes->SetMove(iPoint, true);
-        }
-
       }
+    }
+  }
 }
 
 su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) {

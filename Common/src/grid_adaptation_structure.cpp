@@ -1983,7 +1983,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 
   /*--- New points ---*/
 
-  geo_adapt->nodes = new CPoint(nPoint_new, nDim, config);
+  geo_adapt->nodes = new CPoint(nPoint_new, nDim, MESH_0, config);
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     geo_adapt->nodes->SetCoord(iPoint, geometry->nodes->GetCoord(iPoint));
@@ -2911,7 +2911,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
   }
 
   // New points
-  geo_adapt->nodes = new CPoint(nPoint_new, nDim, config);
+  geo_adapt->nodes = new CPoint(nPoint_new, nDim, MESH_0, config);
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     geo_adapt->nodes->SetCoord(iPoint, geometry->nodes->GetCoord(iPoint));

@@ -157,7 +157,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
   unsigned long iPoint, iElem_Bound;
-  su2double *NewCoord;
   nZone = val_nZone;
   ofstream boundary_file;
   string Grid_Marker;
@@ -206,20 +205,15 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   if (config->GetKind_SU2() == SU2_CFD) {
 
-    NewCoord = new su2double [nDim];
-
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
 
     if (config->GetSystemMeasurements() == US) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          NewCoord[iDim] = nodes->GetCoord(iPoint, iDim)/12.0;
+          nodes->SetCoord(iPoint, iDim, nodes->GetCoord(iPoint, iDim)/12.0);
         }
-        nodes->SetCoord(iPoint, NewCoord);
       }
     }
-
-    delete [] NewCoord;
 
   }
 
@@ -2353,7 +2347,7 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
   nPointDomain = nLocal_PointDomain;
   nPointNode   = nPoint;
 
-  nodes = new CPoint(nPoint, nDim, config);
+  nodes = new CPoint(nPoint, nDim, MESH_0, config);
 
   Local_to_Global_Point = new long[nPoint];
 
@@ -4004,7 +3998,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
   /*--- Initialize point counts and the grid node data structure. ---*/
 
   nPointNode = nPoint;
-  nodes = new CPoint(nPoint, nDim, config);
+  nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
    structure. Note that since we have performed a linear partitioning
@@ -4906,8 +4900,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
           if (test < 0.0) {
             bound[iMarker][iElem_Surface]->Change_Orientation();
-            nodes->SetFlip_Orientation(Point_1_Surface);
-            nodes->SetFlip_Orientation(Point_2_Surface);
             line_flip++;
           }
 
@@ -4934,9 +4926,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
           test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
           if (test < 0.0) {
             bound[iMarker][iElem_Surface]->Change_Orientation();
-            nodes->SetFlip_Orientation(Point_1_Surface);
-            nodes->SetFlip_Orientation(Point_2_Surface);
-            nodes->SetFlip_Orientation(Point_3_Surface);
             triangle_flip++;
           }
 
@@ -4994,10 +4983,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
           if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
             bound[iMarker][iElem_Surface]->Change_Orientation();
-            nodes->SetFlip_Orientation(Point_1_Surface);
-            nodes->SetFlip_Orientation(Point_2_Surface);
-            nodes->SetFlip_Orientation(Point_3_Surface);
-            nodes->SetFlip_Orientation(Point_4_Surface);
             quad_flip++;
           }
 

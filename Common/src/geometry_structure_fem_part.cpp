@@ -584,7 +584,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
-  nodes = new CPoint(nPoint, nDim, config);
+  nodes = new CPoint(nPoint, nDim);
 
   /*--- Open the grid file again and go to the position where
         the correct zone is stored.                           ---*/
@@ -1148,7 +1148,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
-  nodes = new CPoint(nPoint, nDim, config);
+  nodes = new CPoint(nPoint, nDim);
 
   /*--- Store the global ID's of the nodes in such a way that they can
         be sent to the rank that actually stores the coordinates.. ---*/
@@ -1285,7 +1285,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         number of points equals the local number of points. ---*/
   nPoint     = Global_nPoint;
   nPointNode = nPoint;
-  nodes = new CPoint(nPoint, nDim, config);
+  nodes = new CPoint(nPoint, nDim);
 
   for(unsigned long i=0; i<nPoint; ++i) {
     for (unsigned short iDim=0; iDim < nDim; ++iDim)

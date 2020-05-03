@@ -944,14 +944,10 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
 void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geometry) {
 
-  /*--- Definition of the geometry class to store the primal grid in the
-     partitioning process. ---*/
-
-  CGeometry *geometry_aux = NULL;
-
+  /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
   /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-  geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
+  CGeometry *geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
 
   /*--- Set the dimension --- */
 
@@ -960,8 +956,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- For the FEM solver with time-accurate local time-stepping, use
        a dummy solver class to retrieve the initial flow state. ---*/
 
-  CSolver *solver_aux = NULL;
-  solver_aux = new CFEM_DG_EulerSolver(config, nDim, MESH_0);
+  CSolver *solver_aux = new CFEM_DG_EulerSolver(config, nDim, MESH_0);
 
   /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
@@ -970,7 +965,6 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-  geometry = NULL;
   geometry = new CGeometry *[config->GetnMGLevels()+1];
 
   geometry[MESH_0] = new CMeshFEM_DG(geometry_aux, config);
@@ -978,7 +972,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
   delete geometry_aux;
-  if (solver_aux != NULL) delete solver_aux;
+  delete solver_aux;
 
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetSendReceive(config);

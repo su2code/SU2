@@ -2898,15 +2898,15 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
+
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
-  int iProcessor, nProcessor;
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   vector<unsigned long>::iterator it;
   su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
 
-  bool fea = ((config->GetKind_Solver()==FEM_ELASTICITY) || (config->GetKind_Solver()==DISC_ADJ_FEM));
+  const bool fea = config->GetStructuralProblem();
 
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -3143,14 +3143,12 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     }
   }
 
-#ifdef HAVE_MPI
   su2double MyMeanK = MeanK; MeanK = 0.0;
   su2double MyMaxK = MaxK; MaxK = 0.0;
   unsigned long MynPointDomain = TotalnPointDomain; TotalnPointDomain = 0;
   SU2_MPI::Allreduce(&MyMeanK, &MeanK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyMaxK, &MaxK, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MynPointDomain, &TotalnPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- Compute the mean ---*/
   MeanK /= su2double(TotalnPointDomain);
@@ -3168,10 +3166,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     }
   }
 
-#ifdef HAVE_MPI
   su2double MySigmaK = SigmaK; SigmaK = 0.0;
   SU2_MPI::Allreduce(&MySigmaK, &SigmaK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
@@ -3195,14 +3191,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   /*--- Variables and buffers needed for MPI ---*/
 
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = 1;
-#endif
-
   Buffer_Send_nVertex    = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  Buffer_Receive_nVertex = new unsigned long [size];
 
   /*--- Count the total number of critical edge nodes. ---*/
 
@@ -3211,31 +3201,16 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   /*--- Communicate to all processors the total number of critical edge nodes. ---*/
 
-#ifdef HAVE_MPI
   MaxLocalVertex = 0;
   SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MaxLocalVertex = nLocalVertex;
-  Buffer_Receive_nVertex[0] = nLocalVertex;
-#endif
-
 
   /*--- Create and initialize to zero some buffers to hold the coordinates
    of the boundary nodes that are communicated from each partition (all-to-all). ---*/
 
-  Buffer_Send_Coord     = new su2double [MaxLocalVertex*nDim];
-  Buffer_Receive_Coord  = new su2double [nProcessor*MaxLocalVertex*nDim];
-
-#ifdef HAVE_MPI
-  unsigned long nBuffer               = MaxLocalVertex*nDim;
-#endif
-
-  for (iVertex = 0; iVertex < MaxLocalVertex; iVertex++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-    }
-  }
+  const unsigned long nBuffer = MaxLocalVertex*nDim;
+  Buffer_Send_Coord     = new su2double [nBuffer] ();
+  Buffer_Receive_Coord  = new su2double [size*nBuffer];
 
   /*--- Retrieve and store the coordinates of the sharp edges boundary nodes on
    the local partition and broadcast them to all partitions. ---*/
@@ -3246,15 +3221,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
       Buffer_Send_Coord[iVertex*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-#else
-  for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
-    }
-  }
-#endif
 
   /*--- Loop over all interior mesh nodes on the local partition and compute
    the distances to each of the no-slip boundary nodes in the entire mesh.
@@ -3264,7 +3231,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     Coord = nodes->GetCoord(iPoint);
 
     MinDist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (int iProcessor = 0; iProcessor < size; iProcessor++) {
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
         Dist = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {

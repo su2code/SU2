@@ -29,12 +29,36 @@
 #include "../../../include/CConfig.hpp"
 #include "../../../include/omp_structure.hpp"
 
+CPoint::CPoint(unsigned long npoint, unsigned long ndim) : nDim(ndim) {
 
-CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) : nDim(ndim) {
+  MinimalAllocation(npoint);
+}
 
-  /*--- Coordinates and volumes. ---*/
+void CPoint::MinimalAllocation(unsigned long npoint) {
 
+  /*--- Global index a parallel simulation. ---*/
+  GlobalIndex.resize(npoint) = 0;
+
+  /*--- Set the color for mesh partitioning. ---*/
+  Color.resize(npoint) = 0;
+
+  /*--- Coordinates. ---*/
   Coord.resize(npoint,nDim) = su2double(0.0);
+
+}
+
+CPoint::CPoint(unsigned long npoint, unsigned long ndim, unsigned short imesh, const CConfig *config) : nDim(ndim) {
+
+  MinimalAllocation(npoint);
+
+  FullAllocation(imesh, config);
+}
+
+void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
+
+  const auto npoint = GlobalIndex.size();
+
+  /*--- Volumes ---*/
 
   Volume.resize(npoint) = su2double(0.0);
   Periodic_Volume.resize(npoint) = su2double(0.0);
@@ -49,35 +73,27 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
     AD_OutputIndex.resize(npoint,nDim) = 0;
   }
 
-  /*--- Indicator if the control volume has been agglomerated. ---*/
-  Parent_CV.resize(npoint) = 0;
-  nChildren_CV.resize(npoint) = 0;
-  Children_CV.resize(npoint);
-  Agglomerate.resize(npoint) = false;
-  Agglomerate_Indirect.resize(npoint) = false;
+  /*--- Multigrid structures. ---*/
+  if (config->GetnMGLevels() > 0) {
+    Parent_CV.resize(npoint) = 0;
+    Agglomerate.resize(npoint) = false;
+    Agglomerate_Indirect.resize(npoint) = false;
+    /*--- The finest grid does not have children CV's. ---*/
+    if (imesh != MESH_0) {
+      nChildren_CV.resize(npoint) = 0;
+      Children_CV.resize(npoint);
+    }
+  }
 
-  /*--- Flip the normal orientation ---*/
-  Flip_Orientation.resize(npoint) = false;
-
-  /*--- Indicator if the point is going to be moved in a volumetric deformation. ---*/
-  Move.resize(npoint) = true;
-
-  /*--- Identify boundaries, physical boundaries (not send-receive
-   *    condition), detect if an element belong to the domain or it
-   *    must be computed with other processor. ---*/
-  Domain.resize(npoint)           = true;
-  Boundary.resize(npoint)         = false;
-  SolidBoundary.resize(npoint)    = false;
+  /*--- Identify boundaries, physical boundaries (not send-receive condition), detect if
+   *    an element belong to the domain or it must be computed with other processor. ---*/
+  Domain.resize(npoint) = true;
+  Boundary.resize(npoint) = false;
+  SolidBoundary.resize(npoint) = false;
   PhysicalBoundary.resize(npoint) = false;
   PeriodicBoundary.resize(npoint) = false;
 
   Vertex.resize(npoint);
-
-  /*--- Set the global index in the parallel simulation. ---*/
-  GlobalIndex.resize(npoint) = 0;
-
-  /*--- Set the color for mesh partitioning. ---*/
-  Color.resize(npoint) = 0;
 
   /*--- For smoothing the numerical grid coordinates ---*/
   if (config->GetSmoothNumGrid()) {
@@ -105,8 +121,8 @@ CPoint::CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config) 
     }
   }
 
+  /*--- Other geometric properties of the CV's required by numerical methods. ---*/
   nNeighbor.resize(npoint) = 0;
-
   MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
   Wall_Distance.resize(npoint) = su2double(0.0);

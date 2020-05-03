@@ -92,7 +92,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
   nPointNode = fine_grid->GetnPoint();
 
-  nodes = new CPoint(fine_grid->GetnPoint(), nDim, config);
+  nodes = new CPoint(fine_grid->GetnPoint(), nDim, iMesh, config);
 
   Index_CoarseCV = 0;
 

@@ -46,6 +46,7 @@ private:
   const unsigned long nDim = 0;
 
   su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */
+  su2vector<unsigned long> Color;         /*!< \brief Color of the point in the partitioning strategy. */
 
   CCompressedSparsePatternUL Point;       /*!< \brief Points surrounding the central node of the control volume. */
   CCompressedSparsePatternL Edge;         /*!< \brief Edges that set up a control volume (same sparse structure as Point). */
@@ -53,8 +54,8 @@ private:
   vector<vector<long> > Vertex;           /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
 
   su2activevector Volume;                 /*!< \brief Volume or Area of the control volume in 3D and 2D. */
-  su2activevector Volume_n;
-  su2activevector Volume_nM1;
+  su2activevector Volume_n;               /*!< \brief Volume at time n. */
+  su2activevector Volume_nM1;             /*!< \brief Volume at time n-1. */
   su2activevector Periodic_Volume;        /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
 
   su2vector<bool> Domain;                 /*!< \brief Indicates if a point must be computed or belong to another boundary */
@@ -78,8 +79,6 @@ private:
   vector<vector<unsigned long> > Children_CV;  /*!< \brief Index of the children control volumes in the agglomeration process. */
   su2vector<bool> Agglomerate_Indirect;        /*!< \brief This flag indicates if the indirect points can be agglomerated. */
   su2vector<bool> Agglomerate;                 /*!< \brief This flag indicates if the element has been agglomerated. */
-  su2vector<bool> Move;                        /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
-  su2vector<unsigned long> Color;              /*!< \brief Color of the point in the partitioning strategy. */
 
   su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
   su2activevector Wall_Distance;          /*!< \brief Distance to the nearest wall. */
@@ -87,24 +86,40 @@ private:
   su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
 
-  su2vector<bool> Flip_Orientation;       /*!< \brief Flip the orientation of the normal. */
-
   su2matrix<int> AD_InputIndex;           /*!< \brief Indices of Coord variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;          /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
+  /*!
+   * \brief Allocate fields required by the minimal constructor.
+   */
+  void MinimalAllocation(unsigned long npoint);
+
 public:
   /*!
-   * \brief Constructor of the class.
+   * \brief "Full" constructor of the class.
    * \param[in] npoint - Number of points (dual volumes) in the problem.
    * \param[in] ndim - Number of spatial dimensions of the problem.
+   * \param[in] imesh - Index of the grid allocating the points.
    * \param[in] config - Definition of the particular problem.
    */
-  CPoint(unsigned long npoint, unsigned long ndim, const CConfig *config);
+  CPoint(unsigned long npoint, unsigned long ndim, unsigned short imesh, const CConfig* config);
+
+  /*!
+   * \brief Minimal constructor, only allocates the structures required to read and partition a mesh file.
+   * \param[in] npoint - Number of points (dual volumes) in the problem.
+   * \param[in] ndim - Number of spatial dimensions of the problem.
+   */
+  CPoint(unsigned long npoint, unsigned long ndim);
 
   /*!
    * \brief Default construction is not allowed.
    */
   CPoint() = delete;
+
+  /*!
+   * \brief Allocate the variables not covered by the minimal constructor.
+   */
+  void FullAllocation(unsigned short imesh, const CConfig* config);
 
   /*!
    * \brief Get the coordinates dor the control volume.
@@ -329,19 +344,6 @@ public:
   inline bool GetDomain(unsigned long iPoint) const { return Domain(iPoint); }
 
   /*!
-   * \brief Mark the point to flip orientation.
-   * \param[in] iPoint - Index of the point.
-   */
-  inline void SetFlip_Orientation(unsigned long iPoint) { Flip_Orientation(iPoint) = true; }
-
-  /*!
-   * \brief Get if the point is marked to flip orientation.
-   * \param[in] iPoint - Index of the point.
-   * \return pointer to the coordinate of the point.
-   */
-  inline bool GetFlip_Orientation(unsigned long iPoint) const { return Flip_Orientation(iPoint); }
-
-  /*!
    * \brief Set a color to the point that comes from the grid partitioning.
    * \param[in] iPoint - Index of the point.
    * \note Each domain has a different color.
@@ -498,20 +500,6 @@ public:
    * \brief Set the volume of the control volume at time n+1.
    */
   void SetVolume_nM1();
-
-  /*!
-   * \brief Set if a element is going to be moved on the deformation process.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] move - true or false depending if the point will be moved.
-   */
-  inline void SetMove(unsigned long iPoint, bool move) { Move(iPoint) = move; }
-
-  /*!
-   * \brief Get information about the movement of the node.
-   * \param[in] iPoint - Index of the point.
-   * \return <code>TRUE</code> if the point is going to be moved; otherwise <code>FALSE</code>.
-   */
-  inline bool GetMove(unsigned long iPoint) const { return Move(iPoint); }
 
   /*!
    * \brief Set the parent control volume of an agglomerated control volume.
