@@ -155,7 +155,7 @@ def amg ( config , kind='' ):
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
         amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
-        config_amg['adap_back'] = os.path.join(cwd, "adap/amg_back.meshb")
+        config_amg['adap_back'] = os.path.join(cwd, "adap/ini/amg_back.meshb")
 
     #--- Remesh options: background surface mesh
     config_amg['options'] = "-back " + config_amg['adap_back']
