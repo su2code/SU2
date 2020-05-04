@@ -220,6 +220,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   if (config->GetBool_Compute_Metric()) {
     /*--- Reset solution and primitives ---*/
+    AD::Reset();
     iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, NONE);
     iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, NONE);
     
