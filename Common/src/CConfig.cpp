@@ -7976,7 +7976,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
         case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
-        case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
+        case Pressure_Drop:               AdjExt = "_pl";       break;
         case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
         case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
         case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;

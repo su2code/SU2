@@ -441,7 +441,7 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_PRESSURE_DROP"       : "dp"        ,
                  "CUSTOM_OBJFUNC"              : "custom"    ,
                  "KINETIC_ENERGY_LOSS"         : "ke"        ,
-                 "TOTAL_PRESSURE_LOSS"         : "pl"        ,
+                 "Pressure_Drop"               : "pl"        ,
                  "ENTROPY_GENERATION"          : "entg"      ,
                  "EULERIAN_WORK"               : "ew"        ,
                  "FLOW_ANGLE_OUT"              : "fao"       ,
