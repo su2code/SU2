@@ -31,21 +31,21 @@
 CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 
   /*--- Array initialization ---*/
-  Phi_Inf = NULL;
-  Sens_Mach = NULL;
-  Sens_AoA = NULL;
-  Sens_Geo = NULL;
-  Sens_Press = NULL;
-  Sens_Temp = NULL;
-  Sens_BPress = NULL;
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
-  Jacobian_Axisymmetric = NULL;
-  CSensitivity = NULL;
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-  DonorAdjVar = NULL;
-  DonorGlobalIndex = NULL;
+  Phi_Inf = nullptr;
+  Sens_Mach = nullptr;
+  Sens_AoA = nullptr;
+  Sens_Geo = nullptr;
+  Sens_Press = nullptr;
+  Sens_Temp = nullptr;
+  Sens_BPress = nullptr;
+  iPoint_UndLapl = nullptr;
+  jPoint_UndLapl = nullptr;
+  Jacobian_Axisymmetric = nullptr;
+  CSensitivity = nullptr;
+  FlowPrimVar_i = nullptr;
+  FlowPrimVar_j = nullptr;
+  DonorAdjVar = nullptr;
+  DonorGlobalIndex = nullptr;
 
 }
 
@@ -75,21 +75,21 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Array initialization ---*/
 
-  Phi_Inf = NULL;
-  Sens_Mach = NULL;
-  Sens_AoA = NULL;
-  Sens_Geo = NULL;
-  Sens_Press = NULL;
-  Sens_Temp = NULL;
-  Sens_BPress = NULL;
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
-  Jacobian_Axisymmetric = NULL;
-  CSensitivity = NULL;
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-  DonorAdjVar = NULL;
-  DonorGlobalIndex = NULL;
+  Phi_Inf = nullptr;
+  Sens_Mach = nullptr;
+  Sens_AoA = nullptr;
+  Sens_Geo = nullptr;
+  Sens_Press = nullptr;
+  Sens_Temp = nullptr;
+  Sens_BPress = nullptr;
+  iPoint_UndLapl = nullptr;
+  jPoint_UndLapl = nullptr;
+  Jacobian_Axisymmetric = nullptr;
+  CSensitivity = nullptr;
+  FlowPrimVar_i = nullptr;
+  FlowPrimVar_j = nullptr;
+  DonorAdjVar = nullptr;
+  DonorGlobalIndex = nullptr;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -376,23 +376,23 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
   unsigned short iVar, iMarker;
 
-  if (Phi_Inf != NULL) delete [] Phi_Inf;
-  if (Sens_Mach != NULL) delete [] Sens_Mach;
-  if (Sens_AoA != NULL) delete [] Sens_AoA;
-  if (Sens_Geo != NULL) delete [] Sens_Geo;
-  if (Sens_Press != NULL) delete [] Sens_Press;
-  if (Sens_Temp != NULL) delete [] Sens_Temp;
-  if (Sens_BPress != NULL) delete [] Sens_BPress;
-  if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
-  if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
+  if (Phi_Inf != nullptr) delete [] Phi_Inf;
+  if (Sens_Mach != nullptr) delete [] Sens_Mach;
+  if (Sens_AoA != nullptr) delete [] Sens_AoA;
+  if (Sens_Geo != nullptr) delete [] Sens_Geo;
+  if (Sens_Press != nullptr) delete [] Sens_Press;
+  if (Sens_Temp != nullptr) delete [] Sens_Temp;
+  if (Sens_BPress != nullptr) delete [] Sens_BPress;
+  if (FlowPrimVar_i != nullptr) delete [] FlowPrimVar_i;
+  if (FlowPrimVar_j != nullptr) delete [] FlowPrimVar_j;
 
-  if (Jacobian_Axisymmetric != NULL) {
+  if (Jacobian_Axisymmetric != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete Jacobian_Axisymmetric[iVar];
     delete [] Jacobian_Axisymmetric;
   }
 
-  if (CSensitivity != NULL) {
+  if (CSensitivity != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CSensitivity[iMarker];
     delete [] CSensitivity;
@@ -428,7 +428,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Define buffer vector interior domain ---*/
 
-  su2double        *Buffer_Send_AdjVar          = NULL;
+  su2double        *Buffer_Send_AdjVar          = nullptr;
   su2double        *iAdjVar          = new su2double [nVar];
 
   unsigned long *nPointTotal_s = new unsigned long[size];
@@ -439,7 +439,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Allocate the memory that we only need if we have MPI support ---*/
 
-  su2double        *Buffer_Receive_AdjVar          = NULL;
+  su2double        *Buffer_Receive_AdjVar          = nullptr;
 
   /*--- Basic dimensionalization ---*/
 
@@ -737,7 +737,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Define buffer vector interior domain ---*/
 
-  su2double        *Buffer_Send_AdjVar          = NULL;
+  su2double        *Buffer_Send_AdjVar          = nullptr;
 
   unsigned long *nPointTotal_s = new unsigned long[size];
   unsigned long *nPointTotal_r = new unsigned long[size];
@@ -750,7 +750,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- Allocate the memory that we only need if we have MPI support ---*/
 
 
-  su2double        *Buffer_Receive_AdjVar          = NULL;
+  su2double        *Buffer_Receive_AdjVar          = nullptr;
 
   /*--- Basic dimensionalization ---*/
 
@@ -1780,8 +1780,8 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL,
-  *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j;
+  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = nullptr,
+  *Limiter_j = nullptr, *Psi_i = nullptr, *Psi_j = nullptr, *V_i, *V_j;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
 
@@ -2320,9 +2320,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   unsigned long iVertex, iPoint, Neigh;
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
-  su2double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi = 0.0, Mach_Inf,
-  Area, **PrimVar_Grad = NULL, *ConsPsi_Grad = NULL,
-  ConsPsi, d_press, grad_v, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
+  su2double *d = nullptr, *Normal = nullptr, *Psi = nullptr, *U = nullptr, Enthalpy, conspsi = 0.0, Mach_Inf,
+  Area, **PrimVar_Grad = nullptr, *ConsPsi_Grad = nullptr,
+  ConsPsi, d_press, grad_v, v_gradconspsi, UnitNormal[3], *GridVel = nullptr,
   eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
   su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
@@ -3035,7 +3035,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
                                     unsigned short val_marker) {
 
   unsigned long iVertex, iPoint;
-  su2double *d = NULL, *Normal, *U, *Psi_Aux, ProjVel = 0.0, bcn, vn = 0.0, Area, *UnitNormal;
+  su2double *d = nullptr, *Normal, *U, *Psi_Aux, ProjVel = 0.0, bcn, vn = 0.0, Area, *UnitNormal;
   su2double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2;
   unsigned short iDim, iVar, jDim;
 
@@ -4891,8 +4891,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  if (Restart_Vars != nullptr) delete [] Restart_Vars;
+  if (Restart_Data != nullptr) delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

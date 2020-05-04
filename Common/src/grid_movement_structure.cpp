@@ -178,8 +178,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (Derivative) { SetBoundaryDerivatives(geometry, config); }
     
-    CMatrixVectorProduct<su2double>* mat_vec = NULL;
-    CPreconditioner<su2double>* precond = NULL;
+    CMatrixVectorProduct<su2double>* mat_vec = nullptr;
+    CPreconditioner<su2double>* precond = nullptr;
 
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
@@ -516,7 +516,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   
   unsigned short iVar, iDim, nNodes = 0, iNodes, StiffMatrix_nElem = 0;
   unsigned long iElem, PointCorners[8];
-  su2double **StiffMatrix_Elem = NULL, CoordCorners[8][3];
+  su2double **StiffMatrix_Elem = nullptr, CoordCorners[8][3];
   su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
   
   bool Screen_Output  = config->GetDeform_Output();
@@ -1674,7 +1674,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
       
-      su2double *Coord_0 = NULL;
+      su2double *Coord_0 = nullptr;
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
       
       /*--- Store the coord of the first point to help identify the axis. ---*/
@@ -5851,7 +5851,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   unsigned short iDim, nDim; 
   unsigned long iPoint = 0, flowIter = 0;
   unsigned long jPoint, GlobalIndex;
-  su2double VarCoord[3], *Coord_Old = NULL, *Coord_New = NULL, Center[3] = {0.0,0.0,0.0};
+  su2double VarCoord[3], *Coord_Old = nullptr, *Coord_New = nullptr, Center[3] = {0.0,0.0,0.0};
   su2double Lref   = config->GetLength_Ref();
   su2double NewCoord[3] = {0.0,0.0,0.0}, rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0};

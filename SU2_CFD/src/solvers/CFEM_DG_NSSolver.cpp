@@ -34,18 +34,18 @@
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
 
   /*--- Basic array initialization ---*/
-  CD_Visc  = NULL; CL_Visc  = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
-  CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
+  CD_Visc  = nullptr; CL_Visc  = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr; CMy_Visc = nullptr; CMz_Visc = nullptr;
+  CFx_Visc = nullptr; CFy_Visc = nullptr; CFz_Visc = nullptr;
 
   /*--- Surface-based array initialization ---*/
-  Surface_CL_Visc  = NULL; Surface_CD_Visc  = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
-  MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
+  Surface_CL_Visc  = nullptr; Surface_CD_Visc  = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr; Surface_CFy_Visc = nullptr; Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr; Surface_CMy_Visc = nullptr; Surface_CMz_Visc = nullptr;
+  MaxHeatFlux_Visc = nullptr; Heat_Visc = nullptr;
 
   /*--- Set the SGS model to NULL and indicate that no SGS model is used. ---*/
-  SGSModel     = NULL;
+  SGSModel     = nullptr;
   SGSModelUsed = false;
 }
 
@@ -53,14 +53,14 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
  : CFEM_DG_EulerSolver(geometry, config, iMesh) {
 
   /*--- Array initialization ---*/
-  CD_Visc = NULL;  CL_Visc = NULL;  CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
-  CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
+  CD_Visc = nullptr;  CL_Visc = nullptr;  CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr; CMy_Visc = nullptr; CMz_Visc = nullptr;
+  CFx_Visc = nullptr; CFy_Visc = nullptr; CFz_Visc = nullptr;
 
-  Surface_CL_Visc  = NULL; Surface_CD_Visc = NULL;  Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
-  MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
+  Surface_CL_Visc  = nullptr; Surface_CD_Visc = nullptr;  Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr; Surface_CFy_Visc = nullptr; Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr; Surface_CMy_Visc = nullptr; Surface_CMz_Visc = nullptr;
+  MaxHeatFlux_Visc = nullptr; Heat_Visc = nullptr;
 
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
@@ -118,7 +118,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
     switch( config->GetKind_SGS_Model() ) {
 
       case IMPLICIT_LES:
-        SGSModel     = NULL;
+        SGSModel     = nullptr;
         SGSModelUsed = false;
         break;
 
@@ -145,37 +145,37 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
     /* No LES, so no SGS model needed.
        Set the pointer to NULL and the boolean to false. */
-    SGSModel     = NULL;
+    SGSModel     = nullptr;
     SGSModelUsed = false;
   }
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
-  if (CD_Visc != NULL)       delete [] CD_Visc;
-  if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)      delete [] CSF_Visc;
-  if (CMx_Visc != NULL)      delete [] CMx_Visc;
-  if (CMy_Visc != NULL)      delete [] CMy_Visc;
-  if (CMz_Visc != NULL)      delete [] CMz_Visc;
-  if (CFx_Visc != NULL)      delete [] CFx_Visc;
-  if (CFy_Visc != NULL)      delete [] CFy_Visc;
-  if (CFz_Visc != NULL)      delete [] CFz_Visc;
-  if (CEff_Visc != NULL)     delete [] CEff_Visc;
+  if (CD_Visc != nullptr)       delete [] CD_Visc;
+  if (CL_Visc != nullptr)       delete [] CL_Visc;
+  if (CSF_Visc != nullptr)      delete [] CSF_Visc;
+  if (CMx_Visc != nullptr)      delete [] CMx_Visc;
+  if (CMy_Visc != nullptr)      delete [] CMy_Visc;
+  if (CMz_Visc != nullptr)      delete [] CMz_Visc;
+  if (CFx_Visc != nullptr)      delete [] CFx_Visc;
+  if (CFy_Visc != nullptr)      delete [] CFy_Visc;
+  if (CFz_Visc != nullptr)      delete [] CFz_Visc;
+  if (CEff_Visc != nullptr)     delete [] CEff_Visc;
 
-  if (Surface_CL_Visc != NULL)   delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != NULL)   delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != NULL)  delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != NULL) delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != NULL)  delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != NULL)  delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != NULL)  delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != NULL)  delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)  delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)  delete [] Surface_CMz_Visc;
+  if (Surface_CL_Visc != nullptr)   delete [] Surface_CL_Visc;
+  if (Surface_CD_Visc != nullptr)   delete [] Surface_CD_Visc;
+  if (Surface_CSF_Visc != nullptr)  delete [] Surface_CSF_Visc;
+  if (Surface_CEff_Visc != nullptr) delete [] Surface_CEff_Visc;
+  if (Surface_CFx_Visc != nullptr)  delete [] Surface_CFx_Visc;
+  if (Surface_CFy_Visc != nullptr)  delete [] Surface_CFy_Visc;
+  if (Surface_CFz_Visc != nullptr)  delete [] Surface_CFz_Visc;
+  if (Surface_CMx_Visc != nullptr)  delete [] Surface_CMx_Visc;
+  if (Surface_CMy_Visc != nullptr)  delete [] Surface_CMy_Visc;
+  if (Surface_CMz_Visc != nullptr)  delete [] Surface_CMz_Visc;
 
-  if (Heat_Visc        != NULL)  delete [] Heat_Visc;
-  if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
+  if (Heat_Visc        != nullptr)  delete [] Heat_Visc;
+  if (MaxHeatFlux_Visc != nullptr)  delete [] MaxHeatFlux_Visc;
 
   if( SGSModel ) delete SGSModel;
 }
@@ -3174,7 +3174,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
-  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : nullptr;
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
@@ -5058,7 +5058,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5130,7 +5130,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5603,7 +5603,7 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5669,7 +5669,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5735,7 +5735,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -6050,7 +6050,7 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work,
-                                    resFaces, indResFaces, NULL);
+                                    resFaces, indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -6141,7 +6141,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work,
-                                    resFaces, indResFaces, NULL);
+                                    resFaces, indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */

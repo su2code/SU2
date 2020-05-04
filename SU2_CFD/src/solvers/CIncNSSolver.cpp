@@ -34,26 +34,26 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
 
   /*--- Basic array initialization ---*/
 
-  CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
-  CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
-  CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+  CD_Visc = nullptr; CL_Visc = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr;   CMy_Visc = nullptr;   CMz_Visc = nullptr;
+  CFx_Visc = nullptr;   CFy_Visc = nullptr;   CFz_Visc = nullptr;
+  CoPx_Visc = nullptr;   CoPy_Visc = nullptr;   CoPz_Visc = nullptr;
 
-  ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
+  ForceViscous = nullptr; MomentViscous = nullptr; CSkinFriction = nullptr;
 
   /*--- Surface based array initialization ---*/
 
-  Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
-  Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;
+  Surface_CL_Visc = nullptr; Surface_CD_Visc = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr;   Surface_CFy_Visc = nullptr;   Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr;   Surface_CMy_Visc = nullptr;   Surface_CMz_Visc = nullptr;
+  Surface_HF_Visc = nullptr; Surface_MaxHF_Visc = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
 
-  CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  CMerit_Visc = nullptr; CT_Visc = nullptr; CQ_Visc = nullptr;
 
-  SlidingState      = NULL;
-  SlidingStateNodes = NULL;
+  SlidingState      = nullptr;
+  SlidingStateNodes = nullptr;
 
 }
 
@@ -115,19 +115,19 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Array initialization ---*/
 
-  CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
-  CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
-  CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+  CD_Visc = nullptr; CL_Visc = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr;   CMy_Visc = nullptr;   CMz_Visc = nullptr;
+  CFx_Visc = nullptr;   CFy_Visc = nullptr;   CFz_Visc = nullptr;
+  CoPx_Visc = nullptr;   CoPy_Visc = nullptr;   CoPz_Visc = nullptr;
 
-  Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
-  Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;
+  Surface_CL_Visc = nullptr; Surface_CD_Visc = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr;   Surface_CFy_Visc = nullptr;   Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr;   Surface_CMy_Visc = nullptr;   Surface_CMz_Visc = nullptr;
+  Surface_HF_Visc = nullptr; Surface_MaxHF_Visc = nullptr;
 
-  CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
-  MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction = NULL; HF_Visc = NULL;
+  CMerit_Visc = nullptr;      CT_Visc = nullptr;      CQ_Visc = nullptr;
+  MaxHF_Visc = nullptr; ForceViscous = nullptr; MomentViscous = nullptr;
+  CSkinFriction = nullptr; HF_Visc = nullptr;
 
   /*--- Set the gamma value ---*/
 
@@ -157,7 +157,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Fluid model intialization. ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
@@ -546,8 +546,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
+    SlidingState[iMarker]      = nullptr;
+    SlidingStateNodes[iMarker] = nullptr;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
@@ -559,7 +559,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
         SlidingStateNodes[iMarker][iPoint] = 0;
         for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
+          SlidingState[iMarker][iPoint][iVar] = nullptr;
       }
 
     }
@@ -645,41 +645,41 @@ CIncNSSolver::~CIncNSSolver(void) {
 
   unsigned long iVertex;
 
-  if (CD_Visc != NULL)       delete [] CD_Visc;
-  if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)  delete [] CSF_Visc;
-  if (CMx_Visc != NULL)         delete [] CMx_Visc;
-  if (CMy_Visc != NULL)         delete [] CMy_Visc;
-  if (CMz_Visc != NULL)         delete [] CMz_Visc;
-  if (CoPx_Visc != NULL)        delete [] CoPx_Visc;
-  if (CoPy_Visc != NULL)        delete [] CoPy_Visc;
-  if (CoPz_Visc != NULL)        delete [] CoPz_Visc;
-  if (CFx_Visc != NULL)         delete [] CFx_Visc;
-  if (CFy_Visc != NULL)         delete [] CFy_Visc;
-  if (CFz_Visc != NULL)         delete [] CFz_Visc;
-  if (CEff_Visc != NULL)        delete [] CEff_Visc;
-  if (CMerit_Visc != NULL)      delete [] CMerit_Visc;
-  if (CT_Visc != NULL)          delete [] CT_Visc;
-  if (CQ_Visc != NULL)          delete [] CQ_Visc;
-  if (HF_Visc != NULL)        delete [] HF_Visc;
-  if (MaxHF_Visc != NULL) delete [] MaxHF_Visc;
-  if (ForceViscous != NULL)     delete [] ForceViscous;
-  if (MomentViscous != NULL)    delete [] MomentViscous;
+  if (CD_Visc != nullptr)       delete [] CD_Visc;
+  if (CL_Visc != nullptr)       delete [] CL_Visc;
+  if (CSF_Visc != nullptr)  delete [] CSF_Visc;
+  if (CMx_Visc != nullptr)         delete [] CMx_Visc;
+  if (CMy_Visc != nullptr)         delete [] CMy_Visc;
+  if (CMz_Visc != nullptr)         delete [] CMz_Visc;
+  if (CoPx_Visc != nullptr)        delete [] CoPx_Visc;
+  if (CoPy_Visc != nullptr)        delete [] CoPy_Visc;
+  if (CoPz_Visc != nullptr)        delete [] CoPz_Visc;
+  if (CFx_Visc != nullptr)         delete [] CFx_Visc;
+  if (CFy_Visc != nullptr)         delete [] CFy_Visc;
+  if (CFz_Visc != nullptr)         delete [] CFz_Visc;
+  if (CEff_Visc != nullptr)        delete [] CEff_Visc;
+  if (CMerit_Visc != nullptr)      delete [] CMerit_Visc;
+  if (CT_Visc != nullptr)          delete [] CT_Visc;
+  if (CQ_Visc != nullptr)          delete [] CQ_Visc;
+  if (HF_Visc != nullptr)        delete [] HF_Visc;
+  if (MaxHF_Visc != nullptr) delete [] MaxHF_Visc;
+  if (ForceViscous != nullptr)     delete [] ForceViscous;
+  if (MomentViscous != nullptr)    delete [] MomentViscous;
 
-  if (Surface_CL_Visc != NULL)      delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != NULL)      delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != NULL) delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != NULL)       delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != NULL)        delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != NULL)        delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != NULL)        delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
-  if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
-  if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
+  if (Surface_CL_Visc != nullptr)      delete [] Surface_CL_Visc;
+  if (Surface_CD_Visc != nullptr)      delete [] Surface_CD_Visc;
+  if (Surface_CSF_Visc != nullptr) delete [] Surface_CSF_Visc;
+  if (Surface_CEff_Visc != nullptr)       delete [] Surface_CEff_Visc;
+  if (Surface_CFx_Visc != nullptr)        delete [] Surface_CFx_Visc;
+  if (Surface_CFy_Visc != nullptr)        delete [] Surface_CFy_Visc;
+  if (Surface_CFz_Visc != nullptr)        delete [] Surface_CFz_Visc;
+  if (Surface_CMx_Visc != nullptr)        delete [] Surface_CMx_Visc;
+  if (Surface_CMy_Visc != nullptr)        delete [] Surface_CMy_Visc;
+  if (Surface_CMz_Visc != nullptr)        delete [] Surface_CMz_Visc;
+  if (Surface_HF_Visc != nullptr)      delete [] Surface_HF_Visc;
+  if (Surface_MaxHF_Visc != nullptr)   delete [] Surface_MaxHF_Visc;
 
-  if (CSkinFriction != NULL) {
+  if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete [] CSkinFriction[iMarker][iDim];
@@ -689,7 +689,7 @@ CIncNSSolver::~CIncNSSolver(void) {
     delete [] CSkinFriction;
   }
 
-  if (HeatConjugateVar != NULL) {
+  if (HeatConjugateVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         delete [] HeatConjugateVar[iMarker][iVertex];
@@ -1161,7 +1161,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea     = config->GetRefArea();
   su2double RefLength   = config->GetRefLength();
   su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  su2double *Origin = NULL;
+  su2double *Origin = nullptr;
 
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
 

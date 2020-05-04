@@ -105,8 +105,8 @@ void CSTLFileWriter::Write_Data(){
   }
 
   /*--- Free temporary memory. ---*/
-  if(buffRecvCoords != NULL) delete [] buffRecvCoords;
-  if(buffRecvTriaCount != NULL) delete [] buffRecvTriaCount;
+  if(buffRecvCoords != nullptr) delete [] buffRecvCoords;
+  if(buffRecvTriaCount != nullptr) delete [] buffRecvTriaCount;
 }
 
 
@@ -265,7 +265,7 @@ void CSTLFileWriter::GatherCoordData(){
                   MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Free temporary memory. ---*/
-  if(buffSendCoords != NULL) delete [] buffSendCoords;
+  if(buffSendCoords != nullptr) delete [] buffSendCoords;
 }
 
 

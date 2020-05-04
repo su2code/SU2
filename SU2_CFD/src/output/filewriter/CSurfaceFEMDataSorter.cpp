@@ -68,7 +68,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
 CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
 
-  if (linearPartitioner != NULL) delete linearPartitioner;
+  if (linearPartitioner != nullptr) delete linearPartitioner;
   delete [] passiveDoubleBuffer;
 
 }
@@ -220,7 +220,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nPoints = globalSurfaceDOFIDs.size();
 
-  if (passiveDoubleBuffer != NULL){
+  if (passiveDoubleBuffer != nullptr){
     delete [] passiveDoubleBuffer;
   }
 
@@ -423,7 +423,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
     /* Allocate the memory to store the connectivity if the size is
        larger than zero. */
-    int *Conn_SubElem = NULL;
+    int *Conn_SubElem = nullptr;
     if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
 
     /*--- Repeat the loop over the surface elements of the boundary markers
@@ -465,15 +465,15 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
           and set the class data pointer to the connectivity array. ---*/
     switch (Elem_Type) {
       case LINE:
-        if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
+        if (Conn_Line_Par != nullptr) delete [] Conn_Line_Par;
         Conn_Line_Par = Conn_SubElem;
         break;
       case TRIANGLE:
-        if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+        if (Conn_Tria_Par != nullptr) delete [] Conn_Tria_Par;
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
-        if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+        if (Conn_Quad_Par != nullptr) delete [] Conn_Quad_Par;
         Conn_Quad_Par = Conn_SubElem;
         break;
       default:

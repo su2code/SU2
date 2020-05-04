@@ -30,10 +30,10 @@
 CVerificationSolution::CVerificationSolution(void) {
 
   /*--- Initialize the pointers to NULL. ---*/
-  Error_RMS             = NULL;
-  Error_Max             = NULL;
-  Error_Point_Max       = NULL;
-  Error_Point_Max_Coord = NULL;
+  Error_RMS             = nullptr;
+  Error_Max             = nullptr;
+  Error_Point_Max       = nullptr;
+  Error_Point_Max_Coord = nullptr;
 }
 
 CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
@@ -73,12 +73,12 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
 CVerificationSolution::~CVerificationSolution(void) {
 
   /*--- Release the memory of the pointers, if allocated. ---*/
-  if (Error_RMS != NULL) delete [] Error_RMS;
-  if (Error_Max != NULL) delete [] Error_Max;
+  if (Error_RMS != nullptr) delete [] Error_RMS;
+  if (Error_Max != nullptr) delete [] Error_Max;
 
-  if (Error_Point_Max != NULL) delete [] Error_Point_Max;
+  if (Error_Point_Max != nullptr) delete [] Error_Point_Max;
 
-  if (Error_Point_Max_Coord != NULL) {
+  if (Error_Point_Max_Coord != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Error_Point_Max_Coord[iVar];
     }

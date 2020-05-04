@@ -81,8 +81,8 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
     if (isHalo[iElem]) nElemHalo++;
   }
   
-  unsigned long *row_ptr = NULL, nnz;
-  unsigned short *nNeigh = NULL;
+  unsigned long *row_ptr = nullptr, nnz;
+  unsigned short *nNeigh = nullptr;
   vector<unsigned long>::iterator it;
   vector<unsigned long> vneighs;
   

@@ -363,11 +363,11 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint), NULL);
+    numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), NULL);
+    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), nullptr);
 
     /*--- Laminar and eddy viscosity ---*/
 
@@ -376,7 +376,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetTransVar(nodes->GetSolution(iPoint), NULL);
+    numerics->SetTransVar(nodes->GetSolution(iPoint), nullptr);
     // numerics->SetTransVarGradient(nodes->GetGradient(iPoint), NULL);  // Is this needed??
 
     /*--- Set volume ---*/
@@ -389,7 +389,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Compute the source term ---*/
 
-    numerics->ComputeResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);
+    numerics->ComputeResidual_TransLM(Residual, Jacobian_i, nullptr, config, gamma_sep);
 
     /*-- Store gamma_sep in variable class --*/
 

@@ -47,14 +47,14 @@ CFluidModel::CFluidModel(void) {
   Mu       = 0.0;
   Mu_Turb  = 0.0;
 
-  LaminarViscosity = NULL;
-  ThermalConductivity = NULL;
+  LaminarViscosity = nullptr;
+  ThermalConductivity = nullptr;
 
 }
 
 CFluidModel::~CFluidModel(void) {
-  if (LaminarViscosity!= NULL) delete LaminarViscosity;
-  if (ThermalConductivity!= NULL) delete ThermalConductivity;
+  if (LaminarViscosity!= nullptr) delete LaminarViscosity;
+  if (ThermalConductivity!= nullptr) delete ThermalConductivity;
 }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {

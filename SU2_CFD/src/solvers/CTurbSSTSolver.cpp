@@ -246,11 +246,11 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
   unsigned long iMarker, iVertex;
   unsigned short iVar;
 
-  if ( SlidingState != NULL ) {
+  if ( SlidingState != nullptr ) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
+      if ( SlidingState[iMarker] != nullptr ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != nullptr ){
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -261,9 +261,9 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
     delete [] SlidingState;
   }
 
-  if ( SlidingStateNodes != NULL ){
+  if ( SlidingStateNodes != nullptr ){
     for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != NULL)
+        if (SlidingStateNodes[iMarker] != nullptr)
             delete [] SlidingStateNodes[iMarker];
     }
     delete [] SlidingStateNodes;

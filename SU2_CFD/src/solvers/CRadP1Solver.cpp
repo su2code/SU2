@@ -258,11 +258,11 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
     /*--- Radiation variables w/o reconstruction ---*/
 
-    numerics->SetRadVar(nodes->GetSolution(iPoint), NULL);
+    numerics->SetRadVar(nodes->GetSolution(iPoint), nullptr);
 
     /*--- Set volume ---*/
 

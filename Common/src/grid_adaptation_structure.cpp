@@ -878,7 +878,7 @@ void CGridAdaptation::TriangleDivision(long code , long *nodes, long *edges, lon
 
 	}
 
-	if (edges == NULL) {
+	if (edges == nullptr) {
 
 		if (code == 5) {
 			// number of nodes at each new element
@@ -2041,7 +2041,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				nodes[4] = TriangleEdgeNode[iElem][1];
 				nodes[5] = TriangleEdgeNode[iElem][2];
 
-				TriangleDivision(TriangleAdaptCode[iElem], nodes, NULL, Division, &nPart);
+				TriangleDivision(TriangleAdaptCode[iElem], nodes, nullptr, Division, &nPart);
 				for (long iPart = 0; iPart < nPart; iPart++) {
 
 					/*--- Triangle case ---*/

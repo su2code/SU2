@@ -36,11 +36,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume            = NULL;           Vertex              = NULL;
-  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
-  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
-  GridVel           = NULL;           GridVel_Grad        = NULL;
-  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
+  Volume            = nullptr;           Vertex              = nullptr;
+  Coord             = nullptr;           Coord_Old           = nullptr;            Coord_Sum  = nullptr;
+  Coord_n           = nullptr;           Coord_n1            = nullptr;            Coord_p1   = nullptr;
+  GridVel           = nullptr;           GridVel_Grad        = nullptr;
+  AD_InputIndex     = nullptr;           AD_OutputIndex      = nullptr;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -151,11 +151,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume            = NULL;           Vertex              = NULL;
-  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
-  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
-  GridVel           = NULL;           GridVel_Grad        = NULL;
-  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
+  Volume            = nullptr;           Vertex              = nullptr;
+  Coord             = nullptr;           Coord_Old           = nullptr;            Coord_Sum  = nullptr;
+  Coord_n           = nullptr;           Coord_n1            = nullptr;            Coord_p1   = nullptr;
+  GridVel           = nullptr;           GridVel_Grad        = nullptr;
+  AD_InputIndex     = nullptr;           AD_OutputIndex      = nullptr;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -267,11 +267,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume            = NULL;           Vertex              = NULL;
-  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
-  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
-  GridVel           = NULL;           GridVel_Grad        = NULL;
-  AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
+  Volume            = nullptr;           Vertex              = nullptr;
+  Coord             = nullptr;           Coord_Old           = nullptr;            Coord_Sum  = nullptr;
+  Coord_n           = nullptr;           Coord_n1            = nullptr;            Coord_p1   = nullptr;
+  GridVel           = nullptr;           GridVel_Grad        = nullptr;
+  AD_InputIndex     = nullptr;           AD_OutputIndex      = nullptr;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
   if ( config->GetTime_Marching() == NO ) {
@@ -377,22 +377,22 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
 CPoint::~CPoint() {
 
-  if (Vertex       != NULL && Boundary) delete[] Vertex;
-  if (Volume       != NULL) delete[] Volume;
-  if (Coord        != NULL) delete[] Coord;
-  if (Coord_Old    != NULL) delete[] Coord_Old;
-  if (Coord_Sum    != NULL) delete[] Coord_Sum;
-  if (Coord_n      != NULL) delete[] Coord_n;
-  if (Coord_n1     != NULL) delete[] Coord_n1;
-  if (Coord_p1     != NULL) delete[] Coord_p1;
-  if (GridVel      != NULL) delete[] GridVel;
-  if (GridVel_Grad != NULL) {
+  if (Vertex       != nullptr && Boundary) delete[] Vertex;
+  if (Volume       != nullptr) delete[] Volume;
+  if (Coord        != nullptr) delete[] Coord;
+  if (Coord_Old    != nullptr) delete[] Coord_Old;
+  if (Coord_Sum    != nullptr) delete[] Coord_Sum;
+  if (Coord_n      != nullptr) delete[] Coord_n;
+  if (Coord_n1     != nullptr) delete[] Coord_n1;
+  if (Coord_p1     != nullptr) delete[] Coord_p1;
+  if (GridVel      != nullptr) delete[] GridVel;
+  if (GridVel_Grad != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  if (AD_InputIndex  != NULL) delete[] AD_InputIndex;
-  if (AD_OutputIndex != NULL) delete[] AD_OutputIndex;
+  if (AD_InputIndex  != nullptr) delete[] AD_InputIndex;
+  if (AD_OutputIndex != nullptr) delete[] AD_OutputIndex;
  }
 
 void CPoint::SetPoint(unsigned long val_point) {

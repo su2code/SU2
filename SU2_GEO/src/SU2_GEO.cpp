@@ -70,10 +70,10 @@ int main(int argc, char *argv[]) {
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-  CConfig **config_container          = NULL;
-  CGeometry **geometry_container      = NULL;
-  CSurfaceMovement *surface_movement  = NULL;
-  CFreeFormDefBox** FFDBox            = NULL;
+  CConfig **config_container          = nullptr;
+  CGeometry **geometry_container      = nullptr;
+  CSurfaceMovement *surface_movement  = nullptr;
+  CFreeFormDefBox** FFDBox            = nullptr;
   
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation)  ---*/
 
-  CConfig *config = NULL;
+  CConfig *config = nullptr;
   config = new CConfig(config_file_name, SU2_GEO);
 
   nZone    = config->GetnZone();
@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]       = NULL;
-    geometry_container[iZone]     = NULL;
+    config_container[iZone]       = nullptr;
+    geometry_container[iZone]     = nullptr;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
-    CGeometry *geometry_aux = NULL;
+    CGeometry *geometry_aux = nullptr;
     
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
     
@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
   
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     
-    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL,
+    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
                                                        Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                                                        Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
   }
@@ -594,7 +594,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Definition of the FFD deformation class ---*/
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
-    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = nullptr;
     
     if (rank == MASTER_NODE)
       cout << endl << endl << "------------- Gradient evaluation using finite differences --------------" << endl;
@@ -839,7 +839,7 @@ int main(int argc, char *argv[]) {
         /*--- Create airfoil structure ---*/
         
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
-          geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL,
+          geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
                                                              Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                                                              Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
         }
@@ -1239,14 +1239,14 @@ int main(int argc, char *argv[]) {
   delete [] Plane_Normal;
   
   delete config;
-  config = NULL;
+  config = nullptr;
 
   if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
   
   
-  if (geometry_container != NULL) {
+  if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != NULL) {
+      if (geometry_container[iZone] != nullptr) {
         delete geometry_container[iZone];
       }
     }
@@ -1254,12 +1254,12 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
-  if (surface_movement != NULL) delete surface_movement;
+  if (surface_movement != nullptr) delete surface_movement;
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
-  if (FFDBox != NULL) {
+  if (FFDBox != nullptr) {
     for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
-      if (FFDBox[iFFDBox] != NULL) {
+      if (FFDBox[iFFDBox] != nullptr) {
         delete FFDBox[iFFDBox];
       }
     }
@@ -1267,9 +1267,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
   
-  if (config_container != NULL) {
+  if (config_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
+      if (config_container[iZone] != nullptr) {
         delete config_container[iZone];
       }
     }

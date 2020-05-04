@@ -940,10 +940,10 @@ void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned long iVerte
 
   su2double val_turb_var = val_turb_var_passive;
 
-  if (solver_container[ZONE_0][INST_0] == NULL ||
-      solver_container[ZONE_0][INST_0][MESH_0] ==  NULL) {
+  if (solver_container[ZONE_0][INST_0] == nullptr ||
+      solver_container[ZONE_0][INST_0][MESH_0] ==  nullptr) {
     SU2_MPI::Error("Could not find an appropriate solver.", CURRENT_FUNCTION);
-  } else if (solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL] == NULL) {
+  } else if (solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL] == nullptr) {
     SU2_MPI::Error("Tried to set turbulence variables without a turbulence solver.", CURRENT_FUNCTION);
   }
   solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->SetInlet_TurbVar(iMarker, iVertex, iDim, val_turb_var);
@@ -1207,7 +1207,7 @@ vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker,
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-  if (solver != NULL) {
+  if (solver != nullptr) {
     MeshCoord[0] = solver->GetNodes()->GetMesh_Coord(iPoint,0);
     MeshCoord[1] = solver->GetNodes()->GetMesh_Coord(iPoint,1);
     if (geometry->GetnDim() == 3)

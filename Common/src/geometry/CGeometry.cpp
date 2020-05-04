@@ -60,31 +60,31 @@ CGeometry::CGeometry(void) {
   Global_nPoint = 0;
   nPointDomain = 0;
 
-  nElem_Bound         = NULL;
-  Tag_to_Marker       = NULL;
-  elem                = NULL;
-  face                = NULL;
-  bound               = NULL;
-  node                = NULL;
-  edges               = NULL;
-  vertex              = NULL;
-  nVertex             = NULL;
-  newBound            = NULL;
-  nNewElem_Bound      = NULL;
-  Marker_All_SendRecv = NULL;
+  nElem_Bound         = nullptr;
+  Tag_to_Marker       = nullptr;
+  elem                = nullptr;
+  face                = nullptr;
+  bound               = nullptr;
+  node                = nullptr;
+  edges               = nullptr;
+  vertex              = nullptr;
+  nVertex             = nullptr;
+  newBound            = nullptr;
+  nNewElem_Bound      = nullptr;
+  Marker_All_SendRecv = nullptr;
 
   /*--- Arrays for defining the linear partitioning ---*/
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear     = NULL;
-  nPointCumulative = NULL;
+  nPointLinear     = nullptr;
+  nPointCumulative = nullptr;
 
   /*--- Containers for customized boundary conditions ---*/
 
-  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
-  CustomBoundaryTemperature = NULL;   //Customized temperature wall
+  CustomBoundaryHeatFlux = nullptr;      //Customized heat flux wall
+  CustomBoundaryTemperature = nullptr;   //Customized temperature wall
 
   /*--- MPI point-to-point data structures ---*/
 
@@ -93,23 +93,23 @@ CGeometry::CGeometry(void) {
 
   countPerPoint = 0;
 
-  bufD_P2PSend = NULL;
-  bufD_P2PRecv = NULL;
+  bufD_P2PSend = nullptr;
+  bufD_P2PRecv = nullptr;
 
-  bufS_P2PSend = NULL;
-  bufS_P2PRecv = NULL;
+  bufS_P2PSend = nullptr;
+  bufS_P2PRecv = nullptr;
 
-  req_P2PSend = NULL;
-  req_P2PRecv = NULL;
+  req_P2PSend = nullptr;
+  req_P2PRecv = nullptr;
 
-  nPoint_P2PSend = NULL;
-  nPoint_P2PRecv = NULL;
+  nPoint_P2PSend = nullptr;
+  nPoint_P2PRecv = nullptr;
 
-  Neighbors_P2PSend = NULL;
-  Neighbors_P2PRecv = NULL;
+  Neighbors_P2PSend = nullptr;
+  Neighbors_P2PRecv = nullptr;
 
-  Local_Point_P2PSend = NULL;
-  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PSend = nullptr;
+  Local_Point_P2PRecv = nullptr;
 
   /*--- MPI periodic data structures ---*/
 
@@ -118,26 +118,26 @@ CGeometry::CGeometry(void) {
 
   countPerPeriodicPoint = 0;
 
-  bufD_PeriodicSend = NULL;
-  bufD_PeriodicRecv = NULL;
+  bufD_PeriodicSend = nullptr;
+  bufD_PeriodicRecv = nullptr;
 
-  bufS_PeriodicSend = NULL;
-  bufS_PeriodicRecv = NULL;
+  bufS_PeriodicSend = nullptr;
+  bufS_PeriodicRecv = nullptr;
 
-  req_PeriodicSend = NULL;
-  req_PeriodicRecv = NULL;
+  req_PeriodicSend = nullptr;
+  req_PeriodicRecv = nullptr;
 
-  nPoint_PeriodicSend = NULL;
-  nPoint_PeriodicRecv = NULL;
+  nPoint_PeriodicSend = nullptr;
+  nPoint_PeriodicRecv = nullptr;
 
-  Neighbors_PeriodicSend = NULL;
-  Neighbors_PeriodicRecv = NULL;
+  Neighbors_PeriodicSend = nullptr;
+  Neighbors_PeriodicRecv = nullptr;
 
-  Local_Point_PeriodicSend = NULL;
-  Local_Point_PeriodicRecv = NULL;
+  Local_Point_PeriodicSend = nullptr;
+  Local_Point_PeriodicRecv = nullptr;
 
-  Local_Marker_PeriodicSend = NULL;
-  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicSend = nullptr;
+  Local_Marker_PeriodicRecv = nullptr;
 
 }
 
@@ -146,123 +146,123 @@ CGeometry::~CGeometry(void) {
   unsigned long iElem, iElem_Bound, iFace, iPoint, iVertex;
   unsigned short iMarker;
 
-  if (elem != NULL) {
+  if (elem != nullptr) {
     for (iElem = 0; iElem < nElem; iElem++)
-      if (elem[iElem] != NULL) delete elem[iElem];
+      if (elem[iElem] != nullptr) delete elem[iElem];
     delete[] elem;
   }
 
-  if (bound != NULL) {
+  if (bound != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
+        if (bound[iMarker][iElem_Bound] != nullptr) delete bound[iMarker][iElem_Bound];
       }
-      if (bound[iMarker] != NULL) delete [] bound[iMarker];
+      if (bound[iMarker] != nullptr) delete [] bound[iMarker];
     }
     delete [] bound;
   }
 
-  if (face != NULL) {
+  if (face != nullptr) {
     for (iFace = 0; iFace < nFace; iFace ++)
-      if (face[iFace] != NULL) delete face[iFace];
+      if (face[iFace] != nullptr) delete face[iFace];
     delete[] face;
   }
 
-  if (node != NULL) {
+  if (node != nullptr) {
     for (iPoint = 0; iPoint < nPointNode; iPoint ++)
-      if (node[iPoint] != NULL) delete node[iPoint];
+      if (node[iPoint] != nullptr) delete node[iPoint];
     delete[] node;
   }
 
   delete edges;
 
-  if (vertex != NULL) {
+  if (vertex != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
+        if (vertex[iMarker][iVertex] != nullptr) delete vertex[iMarker][iVertex];
       }
-      if (vertex[iMarker] != NULL) delete [] vertex[iMarker];
+      if (vertex[iMarker] != nullptr) delete [] vertex[iMarker];
     }
     delete [] vertex;
   }
 
-  if (newBound != NULL) {
+  if (newBound != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        if (newBound[iMarker][iElem_Bound] != NULL) delete [] newBound[iMarker][iElem_Bound];
+        if (newBound[iMarker][iElem_Bound] != nullptr) delete [] newBound[iMarker][iElem_Bound];
       }
       delete[] newBound[iMarker];
     }
     delete[] newBound;
   }
 
-  if (nElem_Bound         != NULL) delete [] nElem_Bound;
-  if (nVertex             != NULL) delete [] nVertex;
-  if (nNewElem_Bound      != NULL) delete [] nNewElem_Bound;
-  if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
-  if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
+  if (nElem_Bound         != nullptr) delete [] nElem_Bound;
+  if (nVertex             != nullptr) delete [] nVertex;
+  if (nNewElem_Bound      != nullptr) delete [] nNewElem_Bound;
+  if (Marker_All_SendRecv != nullptr) delete [] Marker_All_SendRecv;
+  if (Tag_to_Marker       != nullptr) delete [] Tag_to_Marker;
 
-  if (beg_node != NULL) delete [] beg_node;
-  if (end_node != NULL) delete [] end_node;
-  if (nPointLinear      != NULL) delete [] nPointLinear;
-  if (nPointCumulative  != NULL) delete [] nPointCumulative;
+  if (beg_node != nullptr) delete [] beg_node;
+  if (end_node != nullptr) delete [] end_node;
+  if (nPointLinear      != nullptr) delete [] nPointLinear;
+  if (nPointCumulative  != nullptr) delete [] nPointCumulative;
 
-  if(CustomBoundaryHeatFlux != NULL){
+  if(CustomBoundaryHeatFlux != nullptr){
     for(iMarker=0; iMarker < nMarker; iMarker++){
-      if (CustomBoundaryHeatFlux[iMarker] != NULL) delete [] CustomBoundaryHeatFlux[iMarker];
+      if (CustomBoundaryHeatFlux[iMarker] != nullptr) delete [] CustomBoundaryHeatFlux[iMarker];
     }
     delete [] CustomBoundaryHeatFlux;
   }
 
-  if(CustomBoundaryTemperature != NULL){
+  if(CustomBoundaryTemperature != nullptr){
     for(iMarker=0; iMarker < nMarker; iMarker++){
-      if(CustomBoundaryTemperature[iMarker] != NULL) delete [] CustomBoundaryTemperature[iMarker];
+      if(CustomBoundaryTemperature[iMarker] != nullptr) delete [] CustomBoundaryTemperature[iMarker];
     }
     delete [] CustomBoundaryTemperature;
   }
 
   /*--- Delete structures for MPI point-to-point communication. ---*/
 
-  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
-  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  if (bufD_P2PRecv != nullptr) delete [] bufD_P2PRecv;
+  if (bufD_P2PSend != nullptr) delete [] bufD_P2PSend;
 
-  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
-  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
+  if (bufS_P2PRecv != nullptr) delete [] bufS_P2PRecv;
+  if (bufS_P2PSend != nullptr) delete [] bufS_P2PSend;
 
-  if (req_P2PSend != NULL) delete [] req_P2PSend;
-  if (req_P2PRecv != NULL) delete [] req_P2PRecv;
+  if (req_P2PSend != nullptr) delete [] req_P2PSend;
+  if (req_P2PRecv != nullptr) delete [] req_P2PRecv;
 
-  if (nPoint_P2PRecv != NULL) delete [] nPoint_P2PRecv;
-  if (nPoint_P2PSend != NULL) delete [] nPoint_P2PSend;
+  if (nPoint_P2PRecv != nullptr) delete [] nPoint_P2PRecv;
+  if (nPoint_P2PSend != nullptr) delete [] nPoint_P2PSend;
 
-  if (Neighbors_P2PSend != NULL) delete [] Neighbors_P2PSend;
-  if (Neighbors_P2PRecv != NULL) delete [] Neighbors_P2PRecv;
+  if (Neighbors_P2PSend != nullptr) delete [] Neighbors_P2PSend;
+  if (Neighbors_P2PRecv != nullptr) delete [] Neighbors_P2PRecv;
 
-  if (Local_Point_P2PSend != NULL) delete [] Local_Point_P2PSend;
-  if (Local_Point_P2PRecv != NULL) delete [] Local_Point_P2PRecv;
+  if (Local_Point_P2PSend != nullptr) delete [] Local_Point_P2PSend;
+  if (Local_Point_P2PRecv != nullptr) delete [] Local_Point_P2PRecv;
 
   /*--- Delete structures for MPI periodic communication. ---*/
 
-  if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
-  if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
+  if (bufD_PeriodicRecv != nullptr) delete [] bufD_PeriodicRecv;
+  if (bufD_PeriodicSend != nullptr) delete [] bufD_PeriodicSend;
 
-  if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
-  if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
+  if (bufS_PeriodicRecv != nullptr) delete [] bufS_PeriodicRecv;
+  if (bufS_PeriodicSend != nullptr) delete [] bufS_PeriodicSend;
 
-  if (req_PeriodicSend != NULL) delete [] req_PeriodicSend;
-  if (req_PeriodicRecv != NULL) delete [] req_PeriodicRecv;
+  if (req_PeriodicSend != nullptr) delete [] req_PeriodicSend;
+  if (req_PeriodicRecv != nullptr) delete [] req_PeriodicRecv;
 
-  if (nPoint_PeriodicRecv != NULL) delete [] nPoint_PeriodicRecv;
-  if (nPoint_PeriodicSend != NULL) delete [] nPoint_PeriodicSend;
+  if (nPoint_PeriodicRecv != nullptr) delete [] nPoint_PeriodicRecv;
+  if (nPoint_PeriodicSend != nullptr) delete [] nPoint_PeriodicSend;
 
-  if (Neighbors_PeriodicSend != NULL) delete [] Neighbors_PeriodicSend;
-  if (Neighbors_PeriodicRecv != NULL) delete [] Neighbors_PeriodicRecv;
+  if (Neighbors_PeriodicSend != nullptr) delete [] Neighbors_PeriodicSend;
+  if (Neighbors_PeriodicRecv != nullptr) delete [] Neighbors_PeriodicRecv;
 
-  if (Local_Point_PeriodicSend != NULL) delete [] Local_Point_PeriodicSend;
-  if (Local_Point_PeriodicRecv != NULL) delete [] Local_Point_PeriodicRecv;
+  if (Local_Point_PeriodicSend != nullptr) delete [] Local_Point_PeriodicSend;
+  if (Local_Point_PeriodicRecv != nullptr) delete [] Local_Point_PeriodicRecv;
 
-  if (Local_Marker_PeriodicSend != NULL) delete [] Local_Marker_PeriodicSend;
-  if (Local_Marker_PeriodicRecv != NULL) delete [] Local_Marker_PeriodicRecv;
+  if (Local_Marker_PeriodicSend != nullptr) delete [] Local_Marker_PeriodicSend;
+  if (Local_Marker_PeriodicRecv != nullptr) delete [] Local_Marker_PeriodicRecv;
 
 }
 
@@ -389,12 +389,12 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  Local_Point_P2PSend = NULL;
+  Local_Point_P2PSend = nullptr;
   Local_Point_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
   for (iSend = 0; iSend < nPoint_P2PSend[nP2PSend]; iSend++)
     Local_Point_P2PSend[iSend] = 0;
 
-  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PRecv = nullptr;
   Local_Point_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < nPoint_P2PRecv[nP2PRecv]; iRecv++)
     Local_Point_P2PRecv[iRecv] = 0;
@@ -404,11 +404,11 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    memory is deallocated and reallocated automatically in the case that
    the previously allocated memory is not sufficient. ---*/
 
-  bufD_P2PSend = NULL;
-  bufD_P2PRecv = NULL;
+  bufD_P2PSend = nullptr;
+  bufD_P2PRecv = nullptr;
 
-  bufS_P2PSend = NULL;
-  bufS_P2PRecv = NULL;
+  bufS_P2PSend = nullptr;
+  bufS_P2PRecv = nullptr;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
@@ -488,25 +488,25 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
 
   /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
 
-  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  if (bufD_P2PSend != nullptr) delete [] bufD_P2PSend;
 
   bufD_P2PSend = new su2double[countPerPoint*nPoint_P2PSend[nP2PSend]];
   for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
     bufD_P2PSend[iSend] = 0.0;
 
-  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
+  if (bufD_P2PRecv != nullptr) delete [] bufD_P2PRecv;
 
   bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
     bufD_P2PRecv[iRecv] = 0.0;
 
-  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
+  if (bufS_P2PSend != nullptr) delete [] bufS_P2PSend;
 
   bufS_P2PSend = new unsigned short[countPerPoint*nPoint_P2PSend[nP2PSend]];
   for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
     bufS_P2PSend[iSend] = 0;
 
-  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
+  if (bufS_P2PRecv != nullptr) delete [] bufS_P2PRecv;
 
   bufS_P2PRecv = new unsigned short[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
@@ -784,7 +784,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   su2double *bufDSend      = geometry->bufD_P2PSend;
   unsigned short *bufSSend = geometry->bufS_P2PSend;
 
-  su2double *vector = NULL;
+  su2double *vector = nullptr;
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -1091,22 +1091,22 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   /*--- Allocate the memory to store the local index values for both
    the send and receive periodic points and periodic index. ---*/
 
-  Local_Point_PeriodicSend = NULL;
+  Local_Point_PeriodicSend = nullptr;
   Local_Point_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
     Local_Point_PeriodicSend[iSend] = 0;
 
-  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicSend = nullptr;
   Local_Marker_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
     Local_Marker_PeriodicSend[iSend] = 0;
 
-  Local_Point_PeriodicRecv = NULL;
+  Local_Point_PeriodicRecv = nullptr;
   Local_Point_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
     Local_Point_PeriodicRecv[iRecv] = 0;
 
-  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicRecv = nullptr;
   Local_Marker_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
     Local_Marker_PeriodicRecv[iRecv] = 0;
@@ -1116,11 +1116,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
    memory is deallocated and reallocated automatically in the case that
    the previously allocated memory is not sufficient. ---*/
 
-  bufD_PeriodicSend = NULL;
-  bufD_PeriodicRecv = NULL;
+  bufD_PeriodicSend = nullptr;
+  bufD_PeriodicRecv = nullptr;
 
-  bufS_PeriodicSend = NULL;
-  bufS_PeriodicRecv = NULL;
+  bufS_PeriodicSend = nullptr;
+  bufS_PeriodicRecv = nullptr;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
@@ -1317,25 +1317,25 @@ void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) 
 
   /*-- Deallocate and reallocate our cummunication memory. ---*/
 
-  if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
+  if (bufD_PeriodicSend != nullptr) delete [] bufD_PeriodicSend;
 
   bufD_PeriodicSend = new su2double[nSend];
   for (iSend = 0; iSend < nSend; iSend++)
     bufD_PeriodicSend[iSend] = 0.0;
 
-  if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
+  if (bufD_PeriodicRecv != nullptr) delete [] bufD_PeriodicRecv;
 
   bufD_PeriodicRecv = new su2double[nRecv];
   for (iRecv = 0; iRecv < nRecv; iRecv++)
     bufD_PeriodicRecv[iRecv] = 0.0;
 
-  if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
+  if (bufS_PeriodicSend != nullptr) delete [] bufS_PeriodicSend;
 
   bufS_PeriodicSend = new unsigned short[nSend];
   for (iSend = 0; iSend < nSend; iSend++)
     bufS_PeriodicSend[iSend] = 0;
 
-  if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
+  if (bufS_PeriodicRecv != nullptr) delete [] bufS_PeriodicRecv;
 
   bufS_PeriodicRecv = new unsigned short[nRecv];
   for (iRecv = 0; iRecv < nRecv; iRecv++)
@@ -1924,7 +1924,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   long Next_Edge = 0;
   unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, iEdge, PointIndex, jEdge;
   su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
-  *VarCoord = NULL, Variable_Interp, v1[3] = {0.0, 0.0, 0.0}, v3[3] = {0.0, 0.0, 0.0}, CrossProduct = 1.0;
+  *VarCoord = nullptr, Variable_Interp, v1[3] = {0.0, 0.0, 0.0}, v3[3] = {0.0, 0.0, 0.0}, CrossProduct = 1.0;
   bool Found_Edge;
   passivedouble Dist_Value;
   vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
@@ -1932,7 +1932,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
-  su2double **Coord_Variation = NULL;
+  su2double **Coord_Variation = nullptr;
   vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
   vector<unsigned long> IGlobalIDExtra, JGlobalIDExtra;
   vector<bool> AddExtra;
@@ -2084,7 +2084,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               }
             }
 
-            if (FlowVariable != NULL) {
+            if (FlowVariable != nullptr) {
               Variable_P0 = FlowVariable[iPoint];
               Variable_P1 = FlowVariable[jPoint];
             }
@@ -2716,8 +2716,8 @@ void CGeometry::SetCustomBoundary(CConfig *config) {
 
   for(iMarker=0; iMarker < nMarker; iMarker++){
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    CustomBoundaryHeatFlux[iMarker] = NULL;
-    CustomBoundaryTemperature[iMarker] = NULL;
+    CustomBoundaryHeatFlux[iMarker] = nullptr;
+    CustomBoundaryTemperature[iMarker] = nullptr;
     if(config->GetMarker_All_PyCustom(iMarker)){
       switch(config->GetMarker_All_KindBC(iMarker)){
         case HEAT_FLUX:
@@ -3527,7 +3527,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start,
                                                 long *&neighbour_idx) const
 {
-  if ( neighbour_idx != NULL )
+  if ( neighbour_idx != nullptr )
     SU2_MPI::Error("neighbour_idx is expected to be NULL, stopping to avoid a potential memory leak",CURRENT_FUNCTION);
 
   /*--- Determine how much space we need for the adjacency matrix by counting the
@@ -3735,7 +3735,7 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   bool loop_on;
   unsigned short iMarker = 0;
-  su2double *Face_Normal = NULL, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  su2double *Face_Normal = nullptr, *Xcoord = nullptr, *Ycoord = nullptr, *Zcoord = nullptr, *FaceArea = nullptr;
   unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
 
   /*--- Compute the total number of points on the near-field ---*/
@@ -3827,7 +3827,7 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   /*--- Delete structures ---*/
   delete[] Xcoord; delete[] Ycoord;
-  if (Zcoord != NULL) delete[] Zcoord;
+  if (Zcoord != nullptr) delete[] Zcoord;
   delete[] FaceArea;
 }
 

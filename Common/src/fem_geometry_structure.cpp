@@ -2284,7 +2284,7 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
      that this gemm call is ignored in the profiling. Replace by config if
      if should be included. */
   blasFunctions->gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
-                      vecRHS.data(), derivCoor, NULL);
+                      vecRHS.data(), derivCoor, nullptr);
 }
 
 void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
@@ -5612,7 +5612,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
          that this gemm call is ignored in the profiling. Replace by config if
          it should be included. */
       blasFunctions->gemm(nDim*nInt, nMetricPerPoint-1, nDOFsGrid, matDerBasisInt,
-                          metricGridDOFs.data(), vecDerMetrics, NULL);
+                          metricGridDOFs.data(), vecDerMetrics, nullptr);
 
       /* Allocate the memory for the additional metric terms needed to
          compute the second derivatives. */
@@ -6232,7 +6232,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                                   standardElementsGrid[ind].GetVTK_Type2()};
     unsigned short nSubElems[] = {0, 0};
     unsigned short nDOFsPerSubElem[] = {0, 0};
-    const unsigned short *connSubElems[] = {NULL, NULL};
+    const unsigned short *connSubElems[] = {nullptr, nullptr};
 
     if(VTK_Type[0] != NONE) {
       nSubElems[0]       = standardElementsGrid[ind].GetNSubElemsType1();
@@ -6945,18 +6945,18 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   nVolElemOwned = 0;
   nVolElemTot = 0;
 
-  nElem_Bound         = NULL;
-  Tag_to_Marker       = NULL;
-  elem                = NULL;
-  face                = NULL;
-  bound               = NULL;
-  node                = NULL;
-  edges               = NULL;
-  vertex              = NULL;
-  nVertex             = NULL;
-  newBound            = NULL;
-  nNewElem_Bound      = NULL;
-  Marker_All_SendRecv = NULL;
+  nElem_Bound         = nullptr;
+  Tag_to_Marker       = nullptr;
+  elem                = nullptr;
+  face                = nullptr;
+  bound               = nullptr;
+  node                = nullptr;
+  edges               = nullptr;
+  vertex              = nullptr;
+  nVertex             = nullptr;
+  newBound            = nullptr;
+  nNewElem_Bound      = nullptr;
+  Marker_All_SendRecv = nullptr;
 
   XCoordList.clear();
   Xcoord_plane.clear();
@@ -6967,16 +6967,16 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
 
   /*--- Arrays for defining the linear partitioning ---*/
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear     = NULL;
-  nPointCumulative = NULL;
+  nPointLinear     = nullptr;
+  nPointCumulative = nullptr;
 
   /*--- Containers for customized boundary conditions ---*/
 
-  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
-  CustomBoundaryTemperature = NULL;   //Customized temperature wall
+  CustomBoundaryHeatFlux = nullptr;      //Customized heat flux wall
+  CustomBoundaryTemperature = nullptr;   //Customized temperature wall
 
   /*--- MPI point-to-point data structures ---*/
 
@@ -6985,23 +6985,23 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
 
   countPerPoint = 0;
 
-  bufD_P2PSend = NULL;
-  bufD_P2PRecv = NULL;
+  bufD_P2PSend = nullptr;
+  bufD_P2PRecv = nullptr;
 
-  bufS_P2PSend = NULL;
-  bufS_P2PRecv = NULL;
+  bufS_P2PSend = nullptr;
+  bufS_P2PRecv = nullptr;
 
-  req_P2PSend = NULL;
-  req_P2PRecv = NULL;
+  req_P2PSend = nullptr;
+  req_P2PRecv = nullptr;
 
   nPoint_P2PSend = new int[size];
   nPoint_P2PRecv = new int[size];
 
-  Neighbors_P2PSend = NULL;
-  Neighbors_P2PRecv = NULL;
+  Neighbors_P2PSend = nullptr;
+  Neighbors_P2PRecv = nullptr;
 
-  Local_Point_P2PSend = NULL;
-  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PSend = nullptr;
+  Local_Point_P2PRecv = nullptr;
 
   /*--- MPI periodic data structures ---*/
 
@@ -7010,26 +7010,26 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
 
   countPerPeriodicPoint = 0;
 
-  bufD_PeriodicSend = NULL;
-  bufD_PeriodicRecv = NULL;
+  bufD_PeriodicSend = nullptr;
+  bufD_PeriodicRecv = nullptr;
 
-  bufS_PeriodicSend = NULL;
-  bufS_PeriodicRecv = NULL;
+  bufS_PeriodicSend = nullptr;
+  bufS_PeriodicRecv = nullptr;
 
-  req_PeriodicSend = NULL;
-  req_PeriodicRecv = NULL;
+  req_PeriodicSend = nullptr;
+  req_PeriodicRecv = nullptr;
 
-  nPoint_PeriodicSend = NULL;
-  nPoint_PeriodicRecv = NULL;
+  nPoint_PeriodicSend = nullptr;
+  nPoint_PeriodicRecv = nullptr;
 
-  Neighbors_PeriodicSend = NULL;
-  Neighbors_PeriodicRecv = NULL;
+  Neighbors_PeriodicSend = nullptr;
+  Neighbors_PeriodicRecv = nullptr;
 
-  Local_Point_PeriodicSend = NULL;
-  Local_Point_PeriodicRecv = NULL;
+  Local_Point_PeriodicSend = nullptr;
+  Local_Point_PeriodicRecv = nullptr;
 
-  Local_Marker_PeriodicSend = NULL;
-  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicSend = nullptr;
+  Local_Marker_PeriodicRecv = nullptr;
 
   nVertex = new unsigned long[config->GetnMarker_All()];
 

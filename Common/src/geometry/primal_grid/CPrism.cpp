@@ -84,8 +84,8 @@ CPrism::~CPrism() {
   unsigned short iFaces;
 
   for (iFaces = 0; iFaces < nFaces; iFaces++)
-    if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
-  if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
+    if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
+  if (Coord_FaceElems_CG != nullptr) delete[] Coord_FaceElems_CG;
 
 }
 

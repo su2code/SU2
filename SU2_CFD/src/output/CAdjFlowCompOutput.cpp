@@ -358,7 +358,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjTurb = NULL;
+  CVariable* Node_AdjTurb = nullptr;
   CPoint*    Node_Geo     = geometry->node[iPoint];
 
   if (config->GetKind_Turb_Model() != NONE &&

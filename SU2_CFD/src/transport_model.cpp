@@ -97,7 +97,7 @@ void CSutherland::SetDerViscosity(su2double T, su2double rho) {
 
 CPolynomialViscosity::CPolynomialViscosity(void) : CViscosityModel() {
   nPolyCoeffs = 0;
-  b           = NULL;
+  b           = nullptr;
 }
 
 CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b) : CViscosityModel() {
@@ -113,7 +113,7 @@ CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, su2double
 }
 
 CPolynomialViscosity::~CPolynomialViscosity(void) {
-  if (b != NULL) delete [] b;
+  if (b != nullptr) delete [] b;
 }
 
 void CPolynomialViscosity::SetViscosity(su2double T, su2double rho) {
@@ -224,7 +224,7 @@ CConstantPrandtlRANS::~CConstantPrandtlRANS(void) { }
 
 CPolynomialConductivity::CPolynomialConductivity(void) : CConductivityModel() {
   nPolyCoeffs = 0;
-  b           = NULL;
+  b           = nullptr;
 }
 
 CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b) : CConductivityModel() {
@@ -240,7 +240,7 @@ CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, su2
 }
 
 CPolynomialConductivity::~CPolynomialConductivity(void) {
-  if (b != NULL) delete [] b;
+  if (b != nullptr) delete [] b;
 }
 
 void CPolynomialConductivity::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
@@ -268,7 +268,7 @@ CPolynomialConductivityRANS::CPolynomialConductivityRANS(unsigned short val_nCoe
 }
 
 CPolynomialConductivityRANS::~CPolynomialConductivityRANS(void) {
-  if (b != NULL) delete [] b;
+  if (b != nullptr) delete [] b;
 }
 
 void CPolynomialConductivityRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {

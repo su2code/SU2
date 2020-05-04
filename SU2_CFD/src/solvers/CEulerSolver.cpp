@@ -590,19 +590,19 @@ CEulerSolver::~CEulerSolver(void) {
   delete [] Exhaust_Pressure;
   delete [] Exhaust_Temperature;
 
-  if (CPressure != NULL) {
+  if (CPressure != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressure[iMarker];
     delete [] CPressure;
   }
 
-  if (CPressureTarget != NULL) {
+  if (CPressureTarget != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
 
-  if (CharacPrimVar != NULL) {
+  if (CharacPrimVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] CharacPrimVar[iMarker][iVertex];
@@ -611,11 +611,11 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CharacPrimVar;
   }
 
-  if (SlidingState != NULL) {
+  if (SlidingState != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
+      if ( SlidingState[iMarker] != nullptr ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != nullptr ){
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -626,15 +626,15 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] SlidingState;
   }
 
-  if ( SlidingStateNodes != NULL ){
+  if ( SlidingStateNodes != nullptr ){
     for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != NULL)
+        if (SlidingStateNodes[iMarker] != nullptr)
             delete [] SlidingStateNodes[iMarker];
     }
     delete [] SlidingStateNodes;
   }
 
-  if (DonorPrimVar != NULL) {
+  if (DonorPrimVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] DonorPrimVar[iMarker][iVertex];
@@ -643,41 +643,41 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] DonorPrimVar;
   }
 
-  if (DonorGlobalIndex != NULL) {
+  if (DonorGlobalIndex != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] DonorGlobalIndex[iMarker];
     delete [] DonorGlobalIndex;
   }
 
-  if (ActDisk_DeltaP != NULL) {
+  if (ActDisk_DeltaP != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ActDisk_DeltaP[iMarker];
     delete [] ActDisk_DeltaP;
   }
 
-  if (ActDisk_DeltaT != NULL) {
+  if (ActDisk_DeltaT != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ActDisk_DeltaT[iMarker];
     delete [] ActDisk_DeltaT;
   }
 
-  if (Inlet_Ttotal != NULL) {
+  if (Inlet_Ttotal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != NULL)
+      if (Inlet_Ttotal[iMarker] != nullptr)
         delete [] Inlet_Ttotal[iMarker];
     delete [] Inlet_Ttotal;
   }
 
-  if (Inlet_Ptotal != NULL) {
+  if (Inlet_Ptotal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != NULL)
+      if (Inlet_Ptotal[iMarker] != nullptr)
         delete [] Inlet_Ptotal[iMarker];
     delete [] Inlet_Ptotal;
   }
 
-  if (Inlet_FlowDir != NULL) {
+  if (Inlet_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != NULL) {
+      if (Inlet_FlowDir[iMarker] != nullptr) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
           delete [] Inlet_FlowDir[iMarker][iVertex];
         delete [] Inlet_FlowDir[iMarker];
@@ -686,21 +686,21 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
-  if (HeatFlux != NULL) {
+  if (HeatFlux != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
 
-  if (HeatFluxTarget != NULL) {
+  if (HeatFluxTarget != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFluxTarget[iMarker];
     }
     delete [] HeatFluxTarget;
   }
 
-  if (YPlus != NULL) {
+  if (YPlus != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] YPlus[iMarker];
     }
@@ -709,7 +709,7 @@ CEulerSolver::~CEulerSolver(void) {
 
   for(auto& model : FluidModel) delete model;
 
-  if(AverageVelocity !=NULL){
+  if(AverageVelocity !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] AverageVelocity[iMarker][iSpan];
@@ -718,7 +718,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] AverageVelocity;
   }
 
-  if(AverageTurboVelocity !=NULL){
+  if(AverageTurboVelocity !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] AverageTurboVelocity[iMarker][iSpan];
@@ -727,7 +727,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] AverageTurboVelocity;
   }
 
-  if(OldAverageTurboVelocity != NULL){
+  if(OldAverageTurboVelocity != nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] OldAverageTurboVelocity[iMarker][iSpan];
@@ -736,7 +736,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] OldAverageTurboVelocity;
   }
 
-  if(ExtAverageTurboVelocity !=NULL){
+  if(ExtAverageTurboVelocity !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] ExtAverageTurboVelocity[iMarker][iSpan];
@@ -745,7 +745,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] ExtAverageTurboVelocity;
   }
 
-  if(AverageFlux !=NULL){
+  if(AverageFlux !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] AverageFlux[iMarker][iSpan];
@@ -754,7 +754,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] AverageFlux;
   }
 
-  if(SpanTotalFlux !=NULL){
+  if(SpanTotalFlux !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] SpanTotalFlux[iMarker][iSpan];
@@ -763,85 +763,85 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] SpanTotalFlux;
   }
 
-  if(AveragePressure !=NULL){
+  if(AveragePressure !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] AveragePressure[iMarker];
     delete [] AveragePressure;
   }
 
-  if(OldAveragePressure !=NULL){
+  if(OldAveragePressure !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] OldAveragePressure[iMarker];
     delete [] OldAveragePressure;
   }
 
-  if(RadialEquilibriumPressure !=NULL){
+  if(RadialEquilibriumPressure !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] RadialEquilibriumPressure[iMarker];
     delete [] RadialEquilibriumPressure;
   }
 
-  if(ExtAveragePressure !=NULL){
+  if(ExtAveragePressure !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ExtAveragePressure[iMarker];
     delete [] ExtAveragePressure;
   }
 
-  if(AverageDensity !=NULL){
+  if(AverageDensity !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] AverageDensity[iMarker];
     delete [] AverageDensity;
   }
 
-  if(OldAverageDensity !=NULL){
+  if(OldAverageDensity !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] OldAverageDensity[iMarker];
     delete [] OldAverageDensity;
   }
 
-  if(ExtAverageDensity !=NULL){
+  if(ExtAverageDensity !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ExtAverageDensity[iMarker];
     delete [] ExtAverageDensity;
   }
 
-  if(AverageKine !=NULL){
+  if(AverageKine !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] AverageKine[iMarker];
     delete [] AverageKine;
   }
 
-  if(AverageOmega !=NULL){
+  if(AverageOmega !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] AverageOmega[iMarker];
     delete [] AverageOmega;
   }
 
-  if(AverageNu !=NULL){
+  if(AverageNu !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] AverageNu[iMarker];
     delete [] AverageNu;
   }
 
-  if(ExtAverageKine !=NULL){
+  if(ExtAverageKine !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ExtAverageKine[iMarker];
     delete [] ExtAverageKine;
   }
 
-  if(ExtAverageOmega !=NULL){
+  if(ExtAverageOmega !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ExtAverageOmega[iMarker];
     delete [] ExtAverageOmega;
   }
 
-  if(ExtAverageNu !=NULL){
+  if(ExtAverageNu !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ExtAverageNu[iMarker];
     delete [] ExtAverageNu;
   }
 
-  if(TurboVelocityIn !=NULL){
+  if(TurboVelocityIn !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
       for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
         delete [] TurboVelocityIn[iMarker][iSpan];
@@ -851,7 +851,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] TurboVelocityIn;
   }
 
-  if(TurboVelocityOut !=NULL){
+  if(TurboVelocityOut !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
       for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
         delete [] TurboVelocityOut[iMarker][iSpan];
@@ -861,67 +861,67 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] TurboVelocityOut;
   }
 
-  if(DensityIn !=NULL){
+  if(DensityIn !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] DensityIn[iMarker];
     delete [] DensityIn;
   }
 
-  if(PressureIn !=NULL){
+  if(PressureIn !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] PressureIn[iMarker];
     delete [] PressureIn;
   }
 
-  if(DensityOut !=NULL){
+  if(DensityOut !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] DensityOut[iMarker];
     delete [] DensityOut;
   }
 
-  if(PressureOut !=NULL){
+  if(PressureOut !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] PressureOut[iMarker];
     delete [] PressureOut;
   }
 
-  if(KineIn !=NULL){
+  if(KineIn !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] KineIn[iMarker];
     delete [] KineIn;
   }
 
-  if(OmegaIn !=NULL){
+  if(OmegaIn !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] OmegaIn[iMarker];
     delete [] OmegaIn;
   }
 
-  if(NuIn !=NULL){
+  if(NuIn !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] NuIn[iMarker];
     delete [] NuIn;
   }
 
-  if(KineOut !=NULL){
+  if(KineOut !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] KineOut[iMarker];
     delete [] KineOut;
   }
 
-  if(OmegaOut !=NULL){
+  if(OmegaOut !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] OmegaOut[iMarker];
     delete [] OmegaOut;
   }
 
-  if(NuOut !=NULL){
+  if(NuOut !=nullptr){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] NuOut[iMarker];
     delete [] NuOut;
   }
 
-  if(CkInflow !=NULL){
+  if(CkInflow !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
         delete [] CkInflow[iMarker][iSpan];
@@ -930,7 +930,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CkInflow;
   }
 
-  if(CkOutflow1 !=NULL){
+  if(CkOutflow1 !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
         delete [] CkOutflow1[iMarker][iSpan];
@@ -939,7 +939,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CkOutflow1;
   }
 
-  if(CkOutflow2 !=NULL){
+  if(CkOutflow2 !=nullptr){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
         delete [] CkOutflow2[iMarker][iSpan];
@@ -1105,8 +1105,8 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
 
   /*--- Define buffer vector interior domain ---*/
 
-  su2double *Buffer_Send_PrimVar = NULL;
-  long      *Buffer_Send_Data    = NULL;
+  su2double *Buffer_Send_PrimVar = nullptr;
+  long      *Buffer_Send_Data    = nullptr;
 
   unsigned long *nPointTotal_s = new unsigned long[size];
   unsigned long *nPointTotal_r = new unsigned long[size];
@@ -1119,8 +1119,8 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
 
   /*--- Allocate the memory that we only need if we have MPI support ---*/
 
-  su2double *Buffer_Receive_PrimVar = NULL;
-  long      *Buffer_Receive_Data    = NULL;
+  su2double *Buffer_Receive_PrimVar = nullptr;
+  long      *Buffer_Receive_Data    = nullptr;
 
   /*--- Basic dimensionalization ---*/
 
@@ -1450,7 +1450,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Define buffer vector interior domain ---*/
 
-  su2double        *Buffer_Send_PrimVar          = NULL;
+  su2double        *Buffer_Send_PrimVar          = nullptr;
 
   unsigned long *nPointTotal_s = new unsigned long[size];
   unsigned long *nPointTotal_r = new unsigned long[size];
@@ -1461,7 +1461,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Allocate the memory that we only need if we have MPI support ---*/
 
-  su2double* Buffer_Receive_PrimVar = NULL;
+  su2double* Buffer_Receive_PrimVar = nullptr;
 
   /*--- Basic dimensionalization ---*/
 
@@ -4838,7 +4838,7 @@ void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint
 
   unsigned short iDim, jDim, iVar, jVar;
   su2double local_Mach, rho, enthalpy, soundspeed, sq_vel;
-  su2double *U_i = NULL;
+  su2double *U_i = nullptr;
   su2double Beta_max = config->GetmaxTurkelBeta();
   su2double Mach_infty2, Mach_lim2, aux, parameter;
 
@@ -4894,7 +4894,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
   unsigned short iDim, iMarker, jMarker;
   unsigned long iVertex, iPoint;
-  su2double  *V_inlet = NULL, *V_outlet = NULL, Pressure, Temperature, Velocity[3], Vn,
+  su2double  *V_inlet = nullptr, *V_outlet = nullptr, Pressure, Temperature, Velocity[3], Vn,
   Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
   TotalTemperature, VelocityJet,
   Vel_Infty, MaxPressure, MinPressure, MFR, InfVel2;
@@ -5787,7 +5787,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Target_DragMinusThrust = 0.0, Target_NetThrust = 0.0, BCThrust = 0.0, BCThrust_inc = 0.0;
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  su2double  *V_inlet = NULL, Pressure,
+  su2double  *V_inlet = nullptr, Pressure,
   Density, T0_Ti, ATerm, BTerm, LHS, RHS, RHS_PDelta, RHS_MDelta, F, DF_DLa, CTerm_, DTerm_,
   ETerm, La, La_old, TotalArea, To_Ti, DeltaT, Po_Pi, DeltaP, Area, Velocity_Normal,
   SoundSpeed2, Force_Normal,
@@ -8459,7 +8459,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   su2double relfacFouCfg       = config->GetGiles_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
   su2double TwoPiThetaFreq_Pitch, pitch,theta;
-  const su2double *SpanWiseValues = NULL;
+  const su2double *SpanWiseValues = nullptr;
   su2double spanPercent, extrarelfacAvg = 0.0, deltaSpan = 0.0, relfacAvg, relfacFou, coeffrelfacAvg = 0.0;
   unsigned short Turbo_Flag;
 
@@ -11757,7 +11757,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, iMarkerTP, iSpan;
-  su2double Pressure = 0.0, Density = 0.0, *Velocity = NULL, *TurboVelocity,
+  su2double Pressure = 0.0, Density = 0.0, *Velocity = nullptr, *TurboVelocity,
       Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal;
   string Marker_Tag, Monitoring_Tag;
   unsigned short  iZone     = config->GetiZone();
@@ -11924,7 +11924,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan, jSpan;
   unsigned short average_process = config->GetKind_AverageProcess();
   unsigned short performance_average_process = config->GetKind_PerformanceAverageProcess();
-  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *TurboVelocity,
+  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = nullptr, *TurboVelocity,
       Area, TotalArea, Radius1, Radius2, Vt2, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal,
       TotalMassPressure, TotalMassDensity, *TotalMassVelocity;
   string Marker_Tag, Monitoring_Tag;

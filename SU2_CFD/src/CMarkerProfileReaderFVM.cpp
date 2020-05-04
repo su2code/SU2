@@ -173,7 +173,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   int iProcessor, nProcessor = size;
   
   unsigned long iVertex, iMarker;
-  unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
+  unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   
   unsigned long index, iChar;
@@ -215,16 +215,16 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   /*--- Send and Recv buffers. ---*/
   
   su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_X = NULL;
+  su2double *Buffer_Recv_X = nullptr;
   
   su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Y = NULL;
+  su2double *Buffer_Recv_Y = nullptr;
   
-  su2double *Buffer_Send_Z = NULL, *Buffer_Recv_Z = NULL;
+  su2double *Buffer_Send_Z = nullptr, *Buffer_Recv_Z = nullptr;
   if (dimension == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
   
   char *Buffer_Send_Str = new char[MaxLocalPoint*MAX_STRING_SIZE];
-  char *Buffer_Recv_Str = NULL;
+  char *Buffer_Recv_Str = nullptr;
   
   /*--- Prepare the receive buffers in the master node only. ---*/
   
@@ -394,12 +394,12 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   
   delete [] Buffer_Send_X;
   delete [] Buffer_Send_Y;
-  if (Buffer_Send_Z != NULL) delete [] Buffer_Send_Z;
+  if (Buffer_Send_Z != nullptr) delete [] Buffer_Send_Z;
   delete [] Buffer_Send_Str;
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_X;
     delete [] Buffer_Recv_Y;
-    if (Buffer_Recv_Z != NULL)  delete [] Buffer_Recv_Z;
+    if (Buffer_Recv_Z != nullptr)  delete [] Buffer_Recv_Z;
     delete [] Buffer_Recv_nPoin;
     delete [] Buffer_Recv_Str;
   }

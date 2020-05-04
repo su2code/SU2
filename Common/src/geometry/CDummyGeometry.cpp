@@ -41,18 +41,18 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   nMarker    = 0;
   nZone = config->GetnZone();
 
-  nElem_Bound         = NULL;
-  Tag_to_Marker       = NULL;
-  elem                = NULL;
-  face                = NULL;
-  bound               = NULL;
-  node                = NULL;
-  edges               = NULL;
-  vertex              = NULL;
-  nVertex             = NULL;
-  newBound            = NULL;
-  nNewElem_Bound      = NULL;
-  Marker_All_SendRecv = NULL;
+  nElem_Bound         = nullptr;
+  Tag_to_Marker       = nullptr;
+  elem                = nullptr;
+  face                = nullptr;
+  bound               = nullptr;
+  node                = nullptr;
+  edges               = nullptr;
+  vertex              = nullptr;
+  nVertex             = nullptr;
+  newBound            = nullptr;
+  nNewElem_Bound      = nullptr;
+  Marker_All_SendRecv = nullptr;
 
   XCoordList.clear();
   Xcoord_plane.clear();
@@ -63,16 +63,16 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
 
   /*--- Arrays for defining the linear partitioning ---*/
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear = NULL;
-  nPointCumulative = NULL;
+  nPointLinear = nullptr;
+  nPointCumulative = nullptr;
 
   /*--- Containers for customized boundary conditions ---*/
 
-  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
-  CustomBoundaryTemperature = NULL;   //Customized temperature wall
+  CustomBoundaryHeatFlux = nullptr;      //Customized heat flux wall
+  CustomBoundaryTemperature = nullptr;   //Customized temperature wall
 
   /*--- MPI point-to-point data structures ---*/
 
@@ -81,23 +81,23 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
 
   countPerPoint = 0;
 
-  bufD_P2PSend = NULL;
-  bufD_P2PRecv = NULL;
+  bufD_P2PSend = nullptr;
+  bufD_P2PRecv = nullptr;
 
-  bufS_P2PSend = NULL;
-  bufS_P2PRecv = NULL;
+  bufS_P2PSend = nullptr;
+  bufS_P2PRecv = nullptr;
 
-  req_P2PSend = NULL;
-  req_P2PRecv = NULL;
+  req_P2PSend = nullptr;
+  req_P2PRecv = nullptr;
 
   nPoint_P2PSend = new int[size];
   nPoint_P2PRecv = new int[size];
 
-  Neighbors_P2PSend = NULL;
-  Neighbors_P2PRecv = NULL;
+  Neighbors_P2PSend = nullptr;
+  Neighbors_P2PRecv = nullptr;
 
-  Local_Point_P2PSend = NULL;
-  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PSend = nullptr;
+  Local_Point_P2PRecv = nullptr;
 
   /*--- MPI periodic data structures ---*/
 
@@ -106,26 +106,26 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
 
   countPerPeriodicPoint = 0;
 
-  bufD_PeriodicSend = NULL;
-  bufD_PeriodicRecv = NULL;
+  bufD_PeriodicSend = nullptr;
+  bufD_PeriodicRecv = nullptr;
 
-  bufS_PeriodicSend = NULL;
-  bufS_PeriodicRecv = NULL;
+  bufS_PeriodicSend = nullptr;
+  bufS_PeriodicRecv = nullptr;
 
-  req_PeriodicSend = NULL;
-  req_PeriodicRecv = NULL;
+  req_PeriodicSend = nullptr;
+  req_PeriodicRecv = nullptr;
 
-  nPoint_PeriodicSend = NULL;
-  nPoint_PeriodicRecv = NULL;
+  nPoint_PeriodicSend = nullptr;
+  nPoint_PeriodicRecv = nullptr;
 
-  Neighbors_PeriodicSend = NULL;
-  Neighbors_PeriodicRecv = NULL;
+  Neighbors_PeriodicSend = nullptr;
+  Neighbors_PeriodicRecv = nullptr;
 
-  Local_Point_PeriodicSend = NULL;
-  Local_Point_PeriodicRecv = NULL;
+  Local_Point_PeriodicSend = nullptr;
+  Local_Point_PeriodicRecv = nullptr;
 
-  Local_Marker_PeriodicSend = NULL;
-  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicSend = nullptr;
+  Local_Marker_PeriodicRecv = nullptr;
 
   nVertex = new unsigned long[config->GetnMarker_All()];
 

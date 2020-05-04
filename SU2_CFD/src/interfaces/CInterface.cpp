@@ -139,11 +139,11 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
     /*--- Buffers to send and receive the variables in the donor mesh ---*/
     su2double *Buffer_Send_DonorVariables = new su2double[nBuffer_DonorVariables];
-    su2double *Buffer_Recv_DonorVariables = NULL;
+    su2double *Buffer_Recv_DonorVariables = nullptr;
 
     /*--- Buffers to send and receive the indices in the donor mesh ---*/
     long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
-    long *Buffer_Recv_DonorIndices = NULL;
+    long *Buffer_Recv_DonorIndices = nullptr;
 
     /*--- Buffers to broadcast the variables and the indices ---*/
     su2double *Buffer_Bcast_Variables = new su2double[nBuffer_BcastVariables];
@@ -427,12 +427,12 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
   unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
   unsigned short iSpan, nSpanDonor, nSpanTarget;
   int Marker_Donor = -1, Marker_Target = -1;
-  su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,
-      *avgTangVelDonor = NULL, *avg3DVelDonor = NULL, *avgNuDonor = NULL,
-      *avgOmegaDonor = NULL, *avgKineDonor = NULL;
-  su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL,
-      *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL,
-      *avgOmegaTarget = NULL, *avgKineTarget = NULL;
+  su2double *avgPressureDonor = nullptr, *avgDensityDonor = nullptr, *avgNormalVelDonor = nullptr,
+      *avgTangVelDonor = nullptr, *avg3DVelDonor = nullptr, *avgNuDonor = nullptr,
+      *avgOmegaDonor = nullptr, *avgKineDonor = nullptr;
+  su2double *avgPressureTarget = nullptr, *avgDensityTarget = nullptr, *avgNormalVelTarget = nullptr,
+      *avg3DVelTarget = nullptr, *avgTangVelTarget = nullptr, *avgNuTarget = nullptr,
+      *avgOmegaTarget = nullptr, *avgKineTarget = nullptr;
 
 #ifdef HAVE_MPI
   int iSize;
