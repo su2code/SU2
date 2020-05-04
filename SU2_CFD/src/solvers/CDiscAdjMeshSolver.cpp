@@ -117,7 +117,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 }
 
 CDiscAdjMeshSolver::~CDiscAdjMeshSolver(void){
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 

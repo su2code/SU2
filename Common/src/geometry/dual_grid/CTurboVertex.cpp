@@ -41,6 +41,6 @@ CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : C
 
 CTurboVertex::~CTurboVertex() {
 
-  if (TurboNormal != nullptr) delete [] TurboNormal;
+  delete [] TurboNormal;
 
 }

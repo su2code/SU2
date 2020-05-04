@@ -82,7 +82,7 @@ CTetrahedron::~CTetrahedron() {
 
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
-  if (Coord_FaceElems_CG != nullptr) delete[] Coord_FaceElems_CG;
+  delete[] Coord_FaceElems_CG;
 
 }
 

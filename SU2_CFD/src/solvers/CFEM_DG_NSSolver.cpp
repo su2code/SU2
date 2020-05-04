@@ -152,32 +152,32 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
-  if (CD_Visc != nullptr)       delete [] CD_Visc;
-  if (CL_Visc != nullptr)       delete [] CL_Visc;
-  if (CSF_Visc != nullptr)      delete [] CSF_Visc;
-  if (CMx_Visc != nullptr)      delete [] CMx_Visc;
-  if (CMy_Visc != nullptr)      delete [] CMy_Visc;
-  if (CMz_Visc != nullptr)      delete [] CMz_Visc;
-  if (CFx_Visc != nullptr)      delete [] CFx_Visc;
-  if (CFy_Visc != nullptr)      delete [] CFy_Visc;
-  if (CFz_Visc != nullptr)      delete [] CFz_Visc;
-  if (CEff_Visc != nullptr)     delete [] CEff_Visc;
+        delete [] CD_Visc;
+        delete [] CL_Visc;
+       delete [] CSF_Visc;
+       delete [] CMx_Visc;
+       delete [] CMy_Visc;
+       delete [] CMz_Visc;
+       delete [] CFx_Visc;
+       delete [] CFy_Visc;
+       delete [] CFz_Visc;
+      delete [] CEff_Visc;
 
-  if (Surface_CL_Visc != nullptr)   delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != nullptr)   delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != nullptr)  delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != nullptr) delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != nullptr)  delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != nullptr)  delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != nullptr)  delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != nullptr)  delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != nullptr)  delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != nullptr)  delete [] Surface_CMz_Visc;
+    delete [] Surface_CL_Visc;
+    delete [] Surface_CD_Visc;
+   delete [] Surface_CSF_Visc;
+  delete [] Surface_CEff_Visc;
+   delete [] Surface_CFx_Visc;
+   delete [] Surface_CFy_Visc;
+   delete [] Surface_CFz_Visc;
+   delete [] Surface_CMx_Visc;
+   delete [] Surface_CMy_Visc;
+   delete [] Surface_CMz_Visc;
 
-  if (Heat_Visc        != nullptr)  delete [] Heat_Visc;
-  if (MaxHeatFlux_Visc != nullptr)  delete [] MaxHeatFlux_Visc;
+   delete [] Heat_Visc;
+   delete [] MaxHeatFlux_Visc;
 
-  if( SGSModel ) delete SGSModel;
+  delete SGSModel;
 }
 
 void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {

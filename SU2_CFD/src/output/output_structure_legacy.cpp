@@ -312,7 +312,7 @@ COutputLegacy::~COutputLegacy(void) {
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
 
-  if (RhoRes_Old != nullptr) delete [] RhoRes_Old;
+  delete [] RhoRes_Old;
 
   /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
   unsigned short iMarker, iSpan;
@@ -18048,17 +18048,17 @@ void COutputLegacy::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *
   /*--- Deallocate memory for connectivity data on each processor. ---*/
 
   if (surf_sol) {
-    if (Conn_BoundLine_Par != nullptr) delete [] Conn_BoundLine_Par;
-    if (Conn_BoundTria_Par != nullptr) delete [] Conn_BoundTria_Par;
-    if (Conn_BoundQuad_Par != nullptr) delete [] Conn_BoundQuad_Par;
+    delete [] Conn_BoundLine_Par;
+    delete [] Conn_BoundTria_Par;
+    delete [] Conn_BoundQuad_Par;
   }
   else {
-    if (Conn_Tria_Par != nullptr) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != nullptr) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != nullptr) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != nullptr) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != nullptr) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != nullptr) delete [] Conn_Pyra_Par;
+    delete [] Conn_Tria_Par;
+    delete [] Conn_Quad_Par;
+    delete [] Conn_Tetr_Par;
+    delete [] Conn_Hexa_Par;
+    delete [] Conn_Pris_Par;
+    delete [] Conn_Pyra_Par;
   }
 
 }
@@ -18070,17 +18070,17 @@ void COutputLegacy::DeallocateData_Parallel(CConfig *config, CGeometry *geometry
   for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
     if (Parallel_Data[iVar] != nullptr) delete [] Parallel_Data[iVar];
   }
-  if (Parallel_Data != nullptr) delete [] Parallel_Data;
+  delete [] Parallel_Data;
 
   /*--- Deallocate the structures holding the linear partitioning ---*/
 
-  if (Local_Halo_Sort != nullptr) delete [] Local_Halo_Sort;
+  delete [] Local_Halo_Sort;
 
-  if (beg_node != nullptr) delete [] beg_node;
-  if (end_node != nullptr) delete [] end_node;
+  delete [] beg_node;
+  delete [] end_node;
 
-  if (nPointLinear     != nullptr) delete [] nPointLinear;
-  if (nPointCumulative != nullptr) delete [] nPointCumulative;
+  delete [] nPointLinear;
+  delete [] nPointCumulative;
 
 }
 
@@ -18091,7 +18091,7 @@ void COutputLegacy::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *g
   for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
     if (Parallel_Surf_Data[iVar] != nullptr) delete [] Parallel_Surf_Data[iVar];
   }
-  if (Parallel_Surf_Data != nullptr) delete [] Parallel_Surf_Data;
+  delete [] Parallel_Surf_Data;
 
 }
 

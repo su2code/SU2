@@ -1254,7 +1254,7 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
-  if (surface_movement != nullptr) delete surface_movement;
+  delete surface_movement;
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
   if (FFDBox != nullptr) {

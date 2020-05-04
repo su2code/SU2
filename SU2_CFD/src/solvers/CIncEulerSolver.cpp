@@ -610,83 +610,83 @@ CIncEulerSolver::~CIncEulerSolver(void) {
 
   /*--- Array deallocation ---*/
 
-  if (CD_Inv  != nullptr)  delete [] CD_Inv;
-  if (CL_Inv  != nullptr)  delete [] CL_Inv;
-  if (CSF_Inv != nullptr)  delete [] CSF_Inv;
-  if (CMx_Inv != nullptr)  delete [] CMx_Inv;
-  if (CMy_Inv != nullptr)  delete [] CMy_Inv;
-  if (CMz_Inv != nullptr)  delete [] CMz_Inv;
-  if (CFx_Inv != nullptr)  delete [] CFx_Inv;
-  if (CFy_Inv != nullptr)  delete [] CFy_Inv;
-  if (CFz_Inv != nullptr)  delete [] CFz_Inv;
-  if (CoPx_Inv != nullptr) delete [] CoPx_Inv;
-  if (CoPy_Inv != nullptr) delete [] CoPy_Inv;
-  if (CoPz_Inv != nullptr) delete [] CoPz_Inv;
+   delete [] CD_Inv;
+   delete [] CL_Inv;
+   delete [] CSF_Inv;
+   delete [] CMx_Inv;
+   delete [] CMy_Inv;
+   delete [] CMz_Inv;
+   delete [] CFx_Inv;
+   delete [] CFy_Inv;
+   delete [] CFz_Inv;
+  delete [] CoPx_Inv;
+  delete [] CoPy_Inv;
+  delete [] CoPz_Inv;
 
-  if (Surface_CL_Inv   != nullptr) delete [] Surface_CL_Inv;
-  if (Surface_CD_Inv   != nullptr) delete [] Surface_CD_Inv;
-  if (Surface_CSF_Inv  != nullptr) delete [] Surface_CSF_Inv;
-  if (Surface_CEff_Inv != nullptr) delete [] Surface_CEff_Inv;
-  if (Surface_CFx_Inv  != nullptr) delete [] Surface_CFx_Inv;
-  if (Surface_CFy_Inv  != nullptr) delete [] Surface_CFy_Inv;
-  if (Surface_CFz_Inv  != nullptr) delete [] Surface_CFz_Inv;
-  if (Surface_CMx_Inv  != nullptr) delete [] Surface_CMx_Inv;
-  if (Surface_CMy_Inv  != nullptr) delete [] Surface_CMy_Inv;
-  if (Surface_CMz_Inv  != nullptr) delete [] Surface_CMz_Inv;
+  delete [] Surface_CL_Inv;
+  delete [] Surface_CD_Inv;
+  delete [] Surface_CSF_Inv;
+  delete [] Surface_CEff_Inv;
+  delete [] Surface_CFx_Inv;
+  delete [] Surface_CFy_Inv;
+  delete [] Surface_CFz_Inv;
+  delete [] Surface_CMx_Inv;
+  delete [] Surface_CMy_Inv;
+  delete [] Surface_CMz_Inv;
 
-  if (CD_Mnt  != nullptr)  delete [] CD_Mnt;
-  if (CL_Mnt  != nullptr)  delete [] CL_Mnt;
-  if (CSF_Mnt != nullptr)  delete [] CSF_Mnt;
-  if (CMx_Mnt != nullptr)  delete [] CMx_Mnt;
-  if (CMy_Mnt != nullptr)  delete [] CMy_Mnt;
-  if (CMz_Mnt != nullptr)  delete [] CMz_Mnt;
-  if (CFx_Mnt != nullptr)  delete [] CFx_Mnt;
-  if (CFy_Mnt != nullptr)  delete [] CFy_Mnt;
-  if (CFz_Mnt != nullptr)  delete [] CFz_Mnt;
-  if (CoPx_Mnt != nullptr) delete [] CoPx_Mnt;
-  if (CoPy_Mnt != nullptr) delete [] CoPy_Mnt;
-  if (CoPz_Mnt != nullptr) delete [] CoPz_Mnt;
+   delete [] CD_Mnt;
+   delete [] CL_Mnt;
+   delete [] CSF_Mnt;
+   delete [] CMx_Mnt;
+   delete [] CMy_Mnt;
+   delete [] CMz_Mnt;
+   delete [] CFx_Mnt;
+   delete [] CFy_Mnt;
+   delete [] CFz_Mnt;
+  delete [] CoPx_Mnt;
+  delete [] CoPy_Mnt;
+  delete [] CoPz_Mnt;
 
-  if (Surface_CL_Mnt   != nullptr) delete [] Surface_CL_Mnt;
-  if (Surface_CD_Mnt   != nullptr) delete [] Surface_CD_Mnt;
-  if (Surface_CSF_Mnt  != nullptr) delete [] Surface_CSF_Mnt;
-  if (Surface_CEff_Mnt != nullptr) delete [] Surface_CEff_Mnt;
-  if (Surface_CFx_Mnt  != nullptr) delete [] Surface_CFx_Mnt;
-  if (Surface_CFy_Mnt  != nullptr) delete [] Surface_CFy_Mnt;
-  if (Surface_CFz_Mnt  != nullptr) delete [] Surface_CFz_Mnt;
-  if (Surface_CMx_Mnt  != nullptr) delete [] Surface_CMx_Mnt;
-  if (Surface_CMy_Mnt  != nullptr) delete [] Surface_CMy_Mnt;
-  if (Surface_CMz_Mnt  != nullptr) delete [] Surface_CMz_Mnt;
+  delete [] Surface_CL_Mnt;
+  delete [] Surface_CD_Mnt;
+  delete [] Surface_CSF_Mnt;
+  delete [] Surface_CEff_Mnt;
+  delete [] Surface_CFx_Mnt;
+  delete [] Surface_CFy_Mnt;
+  delete [] Surface_CFz_Mnt;
+  delete [] Surface_CMx_Mnt;
+  delete [] Surface_CMy_Mnt;
+  delete [] Surface_CMz_Mnt;
 
-  if (Surface_CL   != nullptr) delete [] Surface_CL;
-  if (Surface_CD   != nullptr) delete [] Surface_CD;
-  if (Surface_CSF  != nullptr) delete [] Surface_CSF;
-  if (Surface_CEff != nullptr) delete [] Surface_CEff;
-  if (Surface_CFx  != nullptr) delete [] Surface_CFx;
-  if (Surface_CFy  != nullptr) delete [] Surface_CFy;
-  if (Surface_CFz  != nullptr) delete [] Surface_CFz;
-  if (Surface_CMx  != nullptr) delete [] Surface_CMx;
-  if (Surface_CMy  != nullptr) delete [] Surface_CMy;
-  if (Surface_CMz  != nullptr) delete [] Surface_CMz;
+  delete [] Surface_CL;
+  delete [] Surface_CD;
+  delete [] Surface_CSF;
+  delete [] Surface_CEff;
+  delete [] Surface_CFx;
+  delete [] Surface_CFy;
+  delete [] Surface_CFz;
+  delete [] Surface_CMx;
+  delete [] Surface_CMy;
+  delete [] Surface_CMz;
 
-  if (CEff_Inv   != nullptr) delete [] CEff_Inv;
-  if (CMerit_Inv != nullptr) delete [] CMerit_Inv;
-  if (CT_Inv     != nullptr) delete [] CT_Inv;
-  if (CQ_Inv     != nullptr) delete [] CQ_Inv;
+  delete [] CEff_Inv;
+  delete [] CMerit_Inv;
+  delete [] CT_Inv;
+  delete [] CQ_Inv;
 
-  if (CEff_Mnt   != nullptr) delete [] CEff_Mnt;
-  if (CMerit_Mnt != nullptr) delete [] CMerit_Mnt;
-  if (CT_Mnt     != nullptr) delete [] CT_Mnt;
-  if (CQ_Mnt     != nullptr) delete [] CQ_Mnt;
+  delete [] CEff_Mnt;
+  delete [] CMerit_Mnt;
+  delete [] CT_Mnt;
+  delete [] CQ_Mnt;
 
-  if (ForceInviscid  != nullptr) delete [] ForceInviscid;
-  if (MomentInviscid != nullptr) delete [] MomentInviscid;
-  if (ForceMomentum  != nullptr) delete [] ForceMomentum;
-  if (MomentMomentum != nullptr) delete [] MomentMomentum;
+  delete [] ForceInviscid;
+  delete [] MomentInviscid;
+  delete [] ForceMomentum;
+  delete [] MomentMomentum;
 
-  if (Primitive   != nullptr) delete [] Primitive;
-  if (Primitive_i != nullptr) delete [] Primitive_i;
-  if (Primitive_j != nullptr) delete [] Primitive_j;
+  delete [] Primitive;
+  delete [] Primitive_i;
+  delete [] Primitive_j;
 
   if (Preconditioner != nullptr) {
     for (iVar = 0; iVar < nVar; iVar ++)
@@ -784,9 +784,9 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] YPlus;
   }
 
-  if (FluidModel != nullptr) delete FluidModel;
+  delete FluidModel;
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {

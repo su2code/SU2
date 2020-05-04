@@ -645,39 +645,39 @@ CIncNSSolver::~CIncNSSolver(void) {
 
   unsigned long iVertex;
 
-  if (CD_Visc != nullptr)       delete [] CD_Visc;
-  if (CL_Visc != nullptr)       delete [] CL_Visc;
-  if (CSF_Visc != nullptr)  delete [] CSF_Visc;
-  if (CMx_Visc != nullptr)         delete [] CMx_Visc;
-  if (CMy_Visc != nullptr)         delete [] CMy_Visc;
-  if (CMz_Visc != nullptr)         delete [] CMz_Visc;
-  if (CoPx_Visc != nullptr)        delete [] CoPx_Visc;
-  if (CoPy_Visc != nullptr)        delete [] CoPy_Visc;
-  if (CoPz_Visc != nullptr)        delete [] CoPz_Visc;
-  if (CFx_Visc != nullptr)         delete [] CFx_Visc;
-  if (CFy_Visc != nullptr)         delete [] CFy_Visc;
-  if (CFz_Visc != nullptr)         delete [] CFz_Visc;
-  if (CEff_Visc != nullptr)        delete [] CEff_Visc;
-  if (CMerit_Visc != nullptr)      delete [] CMerit_Visc;
-  if (CT_Visc != nullptr)          delete [] CT_Visc;
-  if (CQ_Visc != nullptr)          delete [] CQ_Visc;
-  if (HF_Visc != nullptr)        delete [] HF_Visc;
-  if (MaxHF_Visc != nullptr) delete [] MaxHF_Visc;
-  if (ForceViscous != nullptr)     delete [] ForceViscous;
-  if (MomentViscous != nullptr)    delete [] MomentViscous;
+        delete [] CD_Visc;
+        delete [] CL_Visc;
+   delete [] CSF_Visc;
+          delete [] CMx_Visc;
+          delete [] CMy_Visc;
+          delete [] CMz_Visc;
+         delete [] CoPx_Visc;
+         delete [] CoPy_Visc;
+         delete [] CoPz_Visc;
+          delete [] CFx_Visc;
+          delete [] CFy_Visc;
+          delete [] CFz_Visc;
+         delete [] CEff_Visc;
+       delete [] CMerit_Visc;
+           delete [] CT_Visc;
+           delete [] CQ_Visc;
+         delete [] HF_Visc;
+  delete [] MaxHF_Visc;
+      delete [] ForceViscous;
+     delete [] MomentViscous;
 
-  if (Surface_CL_Visc != nullptr)      delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != nullptr)      delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != nullptr) delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != nullptr)       delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != nullptr)        delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != nullptr)        delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != nullptr)        delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != nullptr)        delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != nullptr)        delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != nullptr)        delete [] Surface_CMz_Visc;
-  if (Surface_HF_Visc != nullptr)      delete [] Surface_HF_Visc;
-  if (Surface_MaxHF_Visc != nullptr)   delete [] Surface_MaxHF_Visc;
+       delete [] Surface_CL_Visc;
+       delete [] Surface_CD_Visc;
+  delete [] Surface_CSF_Visc;
+        delete [] Surface_CEff_Visc;
+         delete [] Surface_CFx_Visc;
+         delete [] Surface_CFy_Visc;
+         delete [] Surface_CFz_Visc;
+         delete [] Surface_CMx_Visc;
+         delete [] Surface_CMy_Visc;
+         delete [] Surface_CMz_Visc;
+       delete [] Surface_HF_Visc;
+    delete [] Surface_MaxHF_Visc;
 
   if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {

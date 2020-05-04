@@ -160,8 +160,8 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != nullptr) delete [] Restart_Vars;
-  if (Restart_Data != nullptr) delete [] Restart_Data;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
   Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

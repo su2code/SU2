@@ -7258,137 +7258,137 @@ CConfig::~CConfig(void) {
     delete itr->second;
   }
 
-  if (TimeDOFsADER_DG           != nullptr) delete [] TimeDOFsADER_DG;
-  if (TimeIntegrationADER_DG    != nullptr) delete [] TimeIntegrationADER_DG;
-  if (WeightsIntegrationADER_DG != nullptr) delete [] WeightsIntegrationADER_DG;
-  if (RK_Alpha_Step             != nullptr) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth              != nullptr) delete [] MG_PreSmooth;
-  if (MG_PostSmooth             != nullptr) delete [] MG_PostSmooth;
+  delete [] TimeDOFsADER_DG;
+  delete [] TimeIntegrationADER_DG;
+  delete [] WeightsIntegrationADER_DG;
+  delete [] RK_Alpha_Step;
+  delete [] MG_PreSmooth;
+  delete [] MG_PostSmooth;
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
-  if (Aeroelastic_pitch  != nullptr) delete[] Aeroelastic_pitch;
-  if (Aeroelastic_plunge != nullptr) delete[] Aeroelastic_plunge;
+  delete[] Aeroelastic_pitch;
+  delete[] Aeroelastic_plunge;
 
  /*--- Free memory for airfoil sections ---*/
 
- if (LocationStations   != nullptr) delete [] LocationStations;
+ delete [] LocationStations;
 
   /*--- motion origin: ---*/
 
-  if (MarkerMotion_Origin   != nullptr) delete [] MarkerMotion_Origin;
+  delete [] MarkerMotion_Origin;
 
-  if (MoveMotion_Origin != nullptr) delete [] MoveMotion_Origin;
+  delete [] MoveMotion_Origin;
 
   /*--- translation: ---*/
 
-  if (MarkerTranslation_Rate != nullptr) delete [] MarkerTranslation_Rate;
+  delete [] MarkerTranslation_Rate;
 
   /*--- rotation: ---*/
 
-  if (MarkerRotation_Rate != nullptr) delete [] MarkerRotation_Rate;
+  delete [] MarkerRotation_Rate;
 
   /*--- pitching: ---*/
 
-  if (MarkerPitching_Omega != nullptr) delete [] MarkerPitching_Omega;
+  delete [] MarkerPitching_Omega;
 
   /*--- pitching amplitude: ---*/
 
-  if (MarkerPitching_Ampl != nullptr) delete [] MarkerPitching_Ampl;
+  delete [] MarkerPitching_Ampl;
 
   /*--- pitching phase: ---*/
 
-  if (MarkerPitching_Phase != nullptr) delete [] MarkerPitching_Phase;
+  delete [] MarkerPitching_Phase;
 
   /*--- plunging: ---*/
 
-  if (MarkerPlunging_Omega != nullptr) delete [] MarkerPlunging_Omega;
+  delete [] MarkerPlunging_Omega;
 
   /*--- plunging amplitude: ---*/
-  if (MarkerPlunging_Ampl != nullptr) delete [] MarkerPlunging_Ampl;
+  delete [] MarkerPlunging_Ampl;
 
   /*--- reference origin for moments ---*/
 
-  if (RefOriginMoment   != nullptr) delete [] RefOriginMoment;
-  if (RefOriginMoment_X != nullptr) delete [] RefOriginMoment_X;
-  if (RefOriginMoment_Y != nullptr) delete [] RefOriginMoment_Y;
-  if (RefOriginMoment_Z != nullptr) delete [] RefOriginMoment_Z;
+  delete [] RefOriginMoment;
+  delete [] RefOriginMoment_X;
+  delete [] RefOriginMoment_Y;
+  delete [] RefOriginMoment_Z;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
 
-  if (Omega_HB != nullptr) delete [] Omega_HB;
+  delete [] Omega_HB;
 
   /*--- Marker pointers ---*/
 
-  if (Marker_CfgFile_GeoEval != nullptr) delete[] Marker_CfgFile_GeoEval;
-  if (Marker_All_GeoEval     != nullptr) delete[] Marker_All_GeoEval;
+  delete[] Marker_CfgFile_GeoEval;
+  delete[] Marker_All_GeoEval;
 
-  if (Marker_CfgFile_TagBound != nullptr) delete[] Marker_CfgFile_TagBound;
-  if (Marker_All_TagBound     != nullptr) delete[] Marker_All_TagBound;
+  delete[] Marker_CfgFile_TagBound;
+  delete[] Marker_All_TagBound;
 
-  if (Marker_CfgFile_KindBC != nullptr) delete[] Marker_CfgFile_KindBC;
-  if (Marker_All_KindBC     != nullptr) delete[] Marker_All_KindBC;
+  delete[] Marker_CfgFile_KindBC;
+  delete[] Marker_All_KindBC;
 
-  if (Marker_CfgFile_Monitoring != nullptr) delete[] Marker_CfgFile_Monitoring;
-  if (Marker_All_Monitoring     != nullptr) delete[] Marker_All_Monitoring;
+  delete[] Marker_CfgFile_Monitoring;
+  delete[] Marker_All_Monitoring;
 
-  if (Marker_CfgFile_Designing != nullptr) delete[] Marker_CfgFile_Designing;
-  if (Marker_All_Designing     != nullptr) delete[] Marker_All_Designing;
+  delete[] Marker_CfgFile_Designing;
+  delete[] Marker_All_Designing;
 
-  if (Marker_CfgFile_Plotting != nullptr) delete[] Marker_CfgFile_Plotting;
-  if (Marker_All_Plotting     != nullptr) delete[] Marker_All_Plotting;
+  delete[] Marker_CfgFile_Plotting;
+  delete[] Marker_All_Plotting;
 
-  if (Marker_CfgFile_Analyze != nullptr) delete[] Marker_CfgFile_Analyze;
-  if (Marker_All_Analyze  != nullptr) delete[] Marker_All_Analyze;
+  delete[] Marker_CfgFile_Analyze;
+  delete[] Marker_All_Analyze;
 
-  if (Marker_CfgFile_ZoneInterface != nullptr) delete[] Marker_CfgFile_ZoneInterface;
-  if (Marker_All_ZoneInterface     != nullptr) delete[] Marker_All_ZoneInterface;
+  delete[] Marker_CfgFile_ZoneInterface;
+  delete[] Marker_All_ZoneInterface;
 
-  if (Marker_CfgFile_DV != nullptr) delete[] Marker_CfgFile_DV;
-  if (Marker_All_DV     != nullptr) delete[] Marker_All_DV;
+  delete[] Marker_CfgFile_DV;
+  delete[] Marker_All_DV;
 
-  if (Marker_CfgFile_Moving != nullptr) delete[] Marker_CfgFile_Moving;
-  if (Marker_All_Moving     != nullptr) delete[] Marker_All_Moving;
+  delete[] Marker_CfgFile_Moving;
+  delete[] Marker_All_Moving;
 
-  if (Marker_CfgFile_Deform_Mesh != nullptr) delete[] Marker_CfgFile_Deform_Mesh;
-  if (Marker_All_Deform_Mesh     != nullptr) delete[] Marker_All_Deform_Mesh;
+  delete[] Marker_CfgFile_Deform_Mesh;
+  delete[] Marker_All_Deform_Mesh;
 
-  if (Marker_CfgFile_Fluid_Load != nullptr) delete[] Marker_CfgFile_Fluid_Load;
-  if (Marker_All_Fluid_Load     != nullptr) delete[] Marker_All_Fluid_Load;
+  delete[] Marker_CfgFile_Fluid_Load;
+  delete[] Marker_All_Fluid_Load;
 
-  if (Marker_CfgFile_PyCustom    != nullptr) delete[] Marker_CfgFile_PyCustom;
-  if (Marker_All_PyCustom != nullptr) delete[] Marker_All_PyCustom;
+  delete[] Marker_CfgFile_PyCustom;
+  delete[] Marker_All_PyCustom;
 
-  if (Marker_CfgFile_PerBound != nullptr) delete[] Marker_CfgFile_PerBound;
-  if (Marker_All_PerBound     != nullptr) delete[] Marker_All_PerBound;
+  delete[] Marker_CfgFile_PerBound;
+  delete[] Marker_All_PerBound;
 
-  if (Marker_CfgFile_Turbomachinery != nullptr) delete [] Marker_CfgFile_Turbomachinery;
-  if (Marker_All_Turbomachinery     != nullptr) delete [] Marker_All_Turbomachinery;
+  delete [] Marker_CfgFile_Turbomachinery;
+  delete [] Marker_All_Turbomachinery;
 
-  if (Marker_CfgFile_TurbomachineryFlag != nullptr) delete [] Marker_CfgFile_TurbomachineryFlag;
-  if (Marker_All_TurbomachineryFlag     != nullptr) delete [] Marker_All_TurbomachineryFlag;
+  delete [] Marker_CfgFile_TurbomachineryFlag;
+  delete [] Marker_All_TurbomachineryFlag;
 
-  if (Marker_CfgFile_MixingPlaneInterface != nullptr) delete [] Marker_CfgFile_MixingPlaneInterface;
-  if (Marker_All_MixingPlaneInterface     != nullptr) delete [] Marker_All_MixingPlaneInterface;
+  delete [] Marker_CfgFile_MixingPlaneInterface;
+  delete [] Marker_All_MixingPlaneInterface;
 
-  if (Marker_DV!= nullptr)               delete[] Marker_DV;
-  if (Marker_Moving != nullptr)           delete[] Marker_Moving;
-  if (Marker_Monitoring != nullptr)      delete[] Marker_Monitoring;
-  if (Marker_Designing != nullptr)       delete[] Marker_Designing;
-  if (Marker_GeoEval != nullptr)         delete[] Marker_GeoEval;
-  if (Marker_Plotting != nullptr)        delete[] Marker_Plotting;
-  if (Marker_Analyze != nullptr)        delete[] Marker_Analyze;
-  if (Marker_WallFunctions != nullptr)  delete[] Marker_WallFunctions;
-  if (Marker_ZoneInterface != nullptr)        delete[] Marker_ZoneInterface;
-  if (Marker_PyCustom != nullptr)             delete [] Marker_PyCustom;
-  if (Marker_All_SendRecv != nullptr)    delete[] Marker_All_SendRecv;
+                delete[] Marker_DV;
+            delete[] Marker_Moving;
+       delete[] Marker_Monitoring;
+        delete[] Marker_Designing;
+          delete[] Marker_GeoEval;
+         delete[] Marker_Plotting;
+         delete[] Marker_Analyze;
+   delete[] Marker_WallFunctions;
+         delete[] Marker_ZoneInterface;
+              delete [] Marker_PyCustom;
+     delete[] Marker_All_SendRecv;
 
-  if (Kind_Inc_Inlet != nullptr)      delete[] Kind_Inc_Inlet;
-  if (Kind_Inc_Outlet != nullptr)      delete[] Kind_Inc_Outlet;
+       delete[] Kind_Inc_Inlet;
+       delete[] Kind_Inc_Outlet;
 
-  if (Kind_WallFunctions != nullptr) delete[] Kind_WallFunctions;
+  delete[] Kind_WallFunctions;
 
-  if (Config_Filenames != nullptr) delete[] Config_Filenames;
+  delete[] Config_Filenames;
 
   if (IntInfo_WallFunctions != nullptr) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
@@ -7406,8 +7406,8 @@ CConfig::~CConfig(void) {
     delete[] DoubleInfo_WallFunctions;
   }
 
-  if (Kind_ObjFunc != nullptr)      delete[] Kind_ObjFunc;
-  if (Weight_ObjFunc != nullptr)      delete[] Weight_ObjFunc;
+       delete[] Kind_ObjFunc;
+       delete[] Weight_ObjFunc;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
@@ -7429,98 +7429,98 @@ CConfig::~CConfig(void) {
     delete [] DegreeFFDBox;
   }
 
-  if (Design_Variable != nullptr)    delete[] Design_Variable;
+     delete[] Design_Variable;
 
-  if (Exhaust_Temperature_Target != nullptr)    delete[]  Exhaust_Temperature_Target;
-  if (Exhaust_Pressure_Target != nullptr)    delete[]  Exhaust_Pressure_Target;
-  if (Exhaust_Pressure != nullptr)    delete[] Exhaust_Pressure;
-  if (Exhaust_Temperature != nullptr)    delete[] Exhaust_Temperature;
-  if (Exhaust_MassFlow != nullptr)    delete[] Exhaust_MassFlow;
-  if (Exhaust_TotalPressure != nullptr)    delete[] Exhaust_TotalPressure;
-  if (Exhaust_TotalTemperature != nullptr)    delete[] Exhaust_TotalTemperature;
-  if (Exhaust_GrossThrust != nullptr)    delete[] Exhaust_GrossThrust;
-  if (Exhaust_Force != nullptr)    delete[] Exhaust_Force;
-  if (Exhaust_Power != nullptr)    delete[] Exhaust_Power;
+     delete[]  Exhaust_Temperature_Target;
+     delete[]  Exhaust_Pressure_Target;
+     delete[] Exhaust_Pressure;
+     delete[] Exhaust_Temperature;
+     delete[] Exhaust_MassFlow;
+     delete[] Exhaust_TotalPressure;
+     delete[] Exhaust_TotalTemperature;
+     delete[] Exhaust_GrossThrust;
+     delete[] Exhaust_Force;
+     delete[] Exhaust_Power;
 
-  if (Inflow_Mach != nullptr)    delete[]  Inflow_Mach;
-  if (Inflow_Pressure != nullptr)    delete[] Inflow_Pressure;
-  if (Inflow_MassFlow != nullptr)    delete[] Inflow_MassFlow;
-  if (Inflow_ReverseMassFlow != nullptr)    delete[] Inflow_ReverseMassFlow;
-  if (Inflow_TotalPressure != nullptr)    delete[] Inflow_TotalPressure;
-  if (Inflow_Temperature != nullptr)    delete[] Inflow_Temperature;
-  if (Inflow_TotalTemperature != nullptr)    delete[] Inflow_TotalTemperature;
-  if (Inflow_RamDrag != nullptr)    delete[] Inflow_RamDrag;
-  if (Inflow_Force != nullptr)    delete[]  Inflow_Force;
-  if (Inflow_Power != nullptr)    delete[] Inflow_Power;
+     delete[]  Inflow_Mach;
+     delete[] Inflow_Pressure;
+     delete[] Inflow_MassFlow;
+     delete[] Inflow_ReverseMassFlow;
+     delete[] Inflow_TotalPressure;
+     delete[] Inflow_Temperature;
+     delete[] Inflow_TotalTemperature;
+     delete[] Inflow_RamDrag;
+     delete[]  Inflow_Force;
+     delete[] Inflow_Power;
 
-  if (Engine_Power != nullptr)    delete[]  Engine_Power;
-  if (Engine_Mach != nullptr)    delete[]  Engine_Mach;
-  if (Engine_Force != nullptr)    delete[]  Engine_Force;
-  if (Engine_NetThrust != nullptr)    delete[]  Engine_NetThrust;
-  if (Engine_GrossThrust != nullptr)    delete[]  Engine_GrossThrust;
-  if (Engine_Area != nullptr)    delete[]  Engine_Area;
-  if (EngineInflow_Target != nullptr)    delete[] EngineInflow_Target;
+     delete[]  Engine_Power;
+     delete[]  Engine_Mach;
+     delete[]  Engine_Force;
+     delete[]  Engine_NetThrust;
+     delete[]  Engine_GrossThrust;
+     delete[]  Engine_Area;
+     delete[] EngineInflow_Target;
 
-  if (ActDiskInlet_MassFlow != nullptr)    delete[]  ActDiskInlet_MassFlow;
-  if (ActDiskInlet_Temperature != nullptr)    delete[]  ActDiskInlet_Temperature;
-  if (ActDiskInlet_TotalTemperature != nullptr)    delete[]  ActDiskInlet_TotalTemperature;
-  if (ActDiskInlet_Pressure != nullptr)    delete[]  ActDiskInlet_Pressure;
-  if (ActDiskInlet_TotalPressure != nullptr)    delete[]  ActDiskInlet_TotalPressure;
-  if (ActDiskInlet_RamDrag != nullptr)    delete[]  ActDiskInlet_RamDrag;
-  if (ActDiskInlet_Force != nullptr)    delete[]  ActDiskInlet_Force;
-  if (ActDiskInlet_Power != nullptr)    delete[]  ActDiskInlet_Power;
+     delete[]  ActDiskInlet_MassFlow;
+     delete[]  ActDiskInlet_Temperature;
+     delete[]  ActDiskInlet_TotalTemperature;
+     delete[]  ActDiskInlet_Pressure;
+     delete[]  ActDiskInlet_TotalPressure;
+     delete[]  ActDiskInlet_RamDrag;
+     delete[]  ActDiskInlet_Force;
+     delete[]  ActDiskInlet_Power;
 
-  if (ActDiskOutlet_MassFlow != nullptr)    delete[]  ActDiskOutlet_MassFlow;
-  if (ActDiskOutlet_Temperature != nullptr)    delete[]  ActDiskOutlet_Temperature;
-  if (ActDiskOutlet_TotalTemperature != nullptr)    delete[]  ActDiskOutlet_TotalTemperature;
-  if (ActDiskOutlet_Pressure != nullptr)    delete[]  ActDiskOutlet_Pressure;
-  if (ActDiskOutlet_TotalPressure != nullptr)    delete[]  ActDiskOutlet_TotalPressure;
-  if (ActDiskOutlet_GrossThrust != nullptr)    delete[]  ActDiskOutlet_GrossThrust;
-  if (ActDiskOutlet_Force != nullptr)    delete[]  ActDiskOutlet_Force;
-  if (ActDiskOutlet_Power != nullptr)    delete[]  ActDiskOutlet_Power;
+     delete[]  ActDiskOutlet_MassFlow;
+     delete[]  ActDiskOutlet_Temperature;
+     delete[]  ActDiskOutlet_TotalTemperature;
+     delete[]  ActDiskOutlet_Pressure;
+     delete[]  ActDiskOutlet_TotalPressure;
+     delete[]  ActDiskOutlet_GrossThrust;
+     delete[]  ActDiskOutlet_Force;
+     delete[]  ActDiskOutlet_Power;
 
-  if (Outlet_MassFlow != nullptr)    delete[]  Outlet_MassFlow;
-  if (Outlet_Density != nullptr)    delete[]  Outlet_Density;
-  if (Outlet_Area != nullptr)    delete[]  Outlet_Area;
+     delete[]  Outlet_MassFlow;
+     delete[]  Outlet_Density;
+     delete[]  Outlet_Area;
 
-  if (ActDisk_DeltaPress != nullptr)    delete[]  ActDisk_DeltaPress;
-  if (ActDisk_DeltaTemp != nullptr)    delete[]  ActDisk_DeltaTemp;
-  if (ActDisk_TotalPressRatio != nullptr)    delete[]  ActDisk_TotalPressRatio;
-  if (ActDisk_TotalTempRatio != nullptr)    delete[]  ActDisk_TotalTempRatio;
-  if (ActDisk_StaticPressRatio != nullptr)    delete[]  ActDisk_StaticPressRatio;
-  if (ActDisk_StaticTempRatio != nullptr)    delete[]  ActDisk_StaticTempRatio;
-  if (ActDisk_Power != nullptr)    delete[]  ActDisk_Power;
-  if (ActDisk_MassFlow != nullptr)    delete[]  ActDisk_MassFlow;
-  if (ActDisk_Mach != nullptr)    delete[]  ActDisk_Mach;
-  if (ActDisk_Force != nullptr)    delete[]  ActDisk_Force;
-  if (ActDisk_NetThrust != nullptr)    delete[]  ActDisk_NetThrust;
-  if (ActDisk_BCThrust != nullptr)    delete[]  ActDisk_BCThrust;
-  if (ActDisk_BCThrust_Old != nullptr)    delete[]  ActDisk_BCThrust_Old;
-  if (ActDisk_GrossThrust != nullptr)    delete[]  ActDisk_GrossThrust;
-  if (ActDisk_Area != nullptr)    delete[]  ActDisk_Area;
-  if (ActDisk_ReverseMassFlow != nullptr)    delete[]  ActDisk_ReverseMassFlow;
+     delete[]  ActDisk_DeltaPress;
+     delete[]  ActDisk_DeltaTemp;
+     delete[]  ActDisk_TotalPressRatio;
+     delete[]  ActDisk_TotalTempRatio;
+     delete[]  ActDisk_StaticPressRatio;
+     delete[]  ActDisk_StaticTempRatio;
+     delete[]  ActDisk_Power;
+     delete[]  ActDisk_MassFlow;
+     delete[]  ActDisk_Mach;
+     delete[]  ActDisk_Force;
+     delete[]  ActDisk_NetThrust;
+     delete[]  ActDisk_BCThrust;
+     delete[]  ActDisk_BCThrust_Old;
+     delete[]  ActDisk_GrossThrust;
+     delete[]  ActDisk_Area;
+     delete[]  ActDisk_ReverseMassFlow;
 
-  if (Surface_MassFlow != nullptr)    delete[]  Surface_MassFlow;
-  if (Surface_Mach != nullptr)    delete[]  Surface_Mach;
-  if (Surface_Temperature != nullptr)    delete[]  Surface_Temperature;
-  if (Surface_Pressure != nullptr)    delete[]  Surface_Pressure;
-  if (Surface_Density != nullptr)    delete[]  Surface_Density;
-  if (Surface_Enthalpy != nullptr)    delete[]  Surface_Enthalpy;
-  if (Surface_NormalVelocity != nullptr)    delete[]  Surface_NormalVelocity;
-  if (Surface_Uniformity != nullptr)    delete[]  Surface_Uniformity;
-  if (Surface_SecondaryStrength != nullptr)    delete[]  Surface_SecondaryStrength;
-  if (Surface_SecondOverUniform != nullptr)    delete[]  Surface_SecondOverUniform;
-  if (Surface_MomentumDistortion != nullptr)    delete[]  Surface_MomentumDistortion;
-  if (Surface_TotalTemperature != nullptr)    delete[]  Surface_TotalTemperature;
-  if (Surface_TotalPressure!= nullptr)    delete[]  Surface_TotalPressure;
-  if (Surface_PressureDrop!= nullptr)    delete[]  Surface_PressureDrop;
-  if (Surface_DC60 != nullptr)    delete[]  Surface_DC60;
-  if (Surface_IDC != nullptr)    delete[]  Surface_IDC;
-  if (Surface_IDC_Mach != nullptr)    delete[]  Surface_IDC_Mach;
-  if (Surface_IDR != nullptr)    delete[]  Surface_IDR;
+     delete[]  Surface_MassFlow;
+     delete[]  Surface_Mach;
+     delete[]  Surface_Temperature;
+     delete[]  Surface_Pressure;
+     delete[]  Surface_Density;
+     delete[]  Surface_Enthalpy;
+     delete[]  Surface_NormalVelocity;
+     delete[]  Surface_Uniformity;
+     delete[]  Surface_SecondaryStrength;
+     delete[]  Surface_SecondOverUniform;
+     delete[]  Surface_MomentumDistortion;
+     delete[]  Surface_TotalTemperature;
+     delete[]  Surface_TotalPressure;
+     delete[]  Surface_PressureDrop;
+     delete[]  Surface_DC60;
+     delete[]  Surface_IDC;
+     delete[]  Surface_IDC_Mach;
+     delete[]  Surface_IDR;
 
-  if (Inlet_Ttotal != nullptr) delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal != nullptr) delete[]  Inlet_Ptotal;
+  delete[]  Inlet_Ttotal;
+  delete[]  Inlet_Ptotal;
   if (Inlet_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
       delete [] Inlet_FlowDir[iMarker];
@@ -7557,23 +7557,23 @@ CConfig::~CConfig(void) {
     delete [] Load_Dir;
   }
 
-  if (Inlet_Temperature != nullptr)    delete[] Inlet_Temperature;
-  if (Inlet_Pressure != nullptr)    delete[] Inlet_Pressure;
-  if (Outlet_Pressure != nullptr)    delete[] Outlet_Pressure;
-  if (Isothermal_Temperature != nullptr)    delete[] Isothermal_Temperature;
-  if (Heat_Flux != nullptr)    delete[] Heat_Flux;
-  if (Displ_Value != nullptr)    delete[] Displ_Value;
-  if (Load_Value != nullptr)    delete[] Load_Value;
-  if (Damper_Constant != nullptr)    delete[] Damper_Constant;
-  if (Load_Dir_Multiplier != nullptr)    delete[] Load_Dir_Multiplier;
-  if (Load_Dir_Value != nullptr)    delete[] Load_Dir_Value;
-  if (Disp_Dir != nullptr)    delete[] Disp_Dir;
-  if (Disp_Dir_Multiplier != nullptr)    delete[] Disp_Dir_Multiplier;
-  if (Disp_Dir_Value != nullptr)    delete[] Disp_Dir_Value;
-  if (Load_Sine_Amplitude != nullptr)    delete[] Load_Sine_Amplitude;
-  if (Load_Sine_Frequency != nullptr)    delete[] Load_Sine_Frequency;
-  if (FlowLoad_Value != nullptr)    delete[] FlowLoad_Value;
-  if (Wall_Emissivity != nullptr)    delete[] Wall_Emissivity;
+     delete[] Inlet_Temperature;
+     delete[] Inlet_Pressure;
+     delete[] Outlet_Pressure;
+     delete[] Isothermal_Temperature;
+     delete[] Heat_Flux;
+     delete[] Displ_Value;
+     delete[] Load_Value;
+     delete[] Damper_Constant;
+     delete[] Load_Dir_Multiplier;
+     delete[] Load_Dir_Value;
+     delete[] Disp_Dir;
+     delete[] Disp_Dir_Multiplier;
+     delete[] Disp_Dir_Value;
+     delete[] Load_Sine_Amplitude;
+     delete[] Load_Sine_Frequency;
+     delete[] FlowLoad_Value;
+     delete[] Wall_Emissivity;
 
   /*--- related to periodic boundary conditions ---*/
 
@@ -7582,108 +7582,108 @@ CConfig::~CConfig(void) {
     if (Periodic_RotAngles   != nullptr) delete [] Periodic_RotAngles[iMarker];
     if (Periodic_Translation != nullptr) delete [] Periodic_Translation[iMarker];
   }
-  if (Periodic_RotCenter   != nullptr) delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles   != nullptr) delete[] Periodic_RotAngles;
-  if (Periodic_Translation != nullptr) delete[] Periodic_Translation;
+  delete[] Periodic_RotCenter;
+  delete[] Periodic_RotAngles;
+  delete[] Periodic_Translation;
 
   for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
     if (Periodic_Center    != nullptr) delete [] Periodic_Center[iPeriodic];
     if (Periodic_Rotation  != nullptr) delete [] Periodic_Rotation[iPeriodic];
     if (Periodic_Translate != nullptr) delete [] Periodic_Translate[iPeriodic];
   }
-  if (Periodic_Center      != nullptr) delete[] Periodic_Center;
-  if (Periodic_Rotation    != nullptr) delete[] Periodic_Rotation;
-  if (Periodic_Translate   != nullptr) delete[] Periodic_Translate;
+  delete[] Periodic_Center;
+  delete[] Periodic_Rotation;
+  delete[] Periodic_Translate;
 
-  if (MG_CorrecSmooth != nullptr) delete[] MG_CorrecSmooth;
-  if (PlaneTag != nullptr)        delete[] PlaneTag;
-  if (CFL != nullptr)             delete[] CFL;
+  delete[] MG_CorrecSmooth;
+         delete[] PlaneTag;
+              delete[] CFL;
 
   /*--- String markers ---*/
 
-  if (Marker_Euler != nullptr )              delete[] Marker_Euler;
-  if (Marker_FarField != nullptr )           delete[] Marker_FarField;
-  if (Marker_Custom != nullptr )             delete[] Marker_Custom;
-  if (Marker_SymWall != nullptr )            delete[] Marker_SymWall;
-  if (Marker_PerBound != nullptr )           delete[] Marker_PerBound;
-  if (Marker_PerDonor != nullptr )           delete[] Marker_PerDonor;
-  if (Marker_NearFieldBound != nullptr )     delete[] Marker_NearFieldBound;
-  if (Marker_Deform_Mesh != nullptr )        delete[] Marker_Deform_Mesh;
-  if (Marker_Fluid_Load != nullptr )         delete[] Marker_Fluid_Load;
-  if (Marker_Fluid_InterfaceBound != nullptr )     delete[] Marker_Fluid_InterfaceBound;
-  if (Marker_Inlet != nullptr )              delete[] Marker_Inlet;
-  if (Marker_Supersonic_Inlet != nullptr )   delete[] Marker_Supersonic_Inlet;
-  if (Marker_Supersonic_Outlet != nullptr )   delete[] Marker_Supersonic_Outlet;
-  if (Marker_Outlet != nullptr )             delete[] Marker_Outlet;
-  if (Marker_Isothermal != nullptr )         delete[] Marker_Isothermal;
-  if (Marker_EngineInflow != nullptr )      delete[] Marker_EngineInflow;
-  if (Marker_EngineExhaust != nullptr )     delete[] Marker_EngineExhaust;
-  if (Marker_Displacement != nullptr )       delete[] Marker_Displacement;
-  if (Marker_Load != nullptr )               delete[] Marker_Load;
-  if (Marker_Damper != nullptr )               delete[] Marker_Damper;
-  if (Marker_Load_Dir != nullptr )               delete[] Marker_Load_Dir;
-  if (Marker_Disp_Dir != nullptr )               delete[] Marker_Disp_Dir;
-  if (Marker_Load_Sine != nullptr )               delete[] Marker_Load_Sine;
-  if (Marker_FlowLoad != nullptr )           delete[] Marker_FlowLoad;
-  if (Marker_Internal != nullptr )            delete[] Marker_Internal;
-  if (Marker_HeatFlux != nullptr )               delete[] Marker_HeatFlux;
-  if (Marker_Emissivity != nullptr )         delete[] Marker_Emissivity;
+               delete[] Marker_Euler;
+            delete[] Marker_FarField;
+              delete[] Marker_Custom;
+             delete[] Marker_SymWall;
+            delete[] Marker_PerBound;
+            delete[] Marker_PerDonor;
+      delete[] Marker_NearFieldBound;
+         delete[] Marker_Deform_Mesh;
+          delete[] Marker_Fluid_Load;
+      delete[] Marker_Fluid_InterfaceBound;
+               delete[] Marker_Inlet;
+    delete[] Marker_Supersonic_Inlet;
+    delete[] Marker_Supersonic_Outlet;
+              delete[] Marker_Outlet;
+          delete[] Marker_Isothermal;
+       delete[] Marker_EngineInflow;
+      delete[] Marker_EngineExhaust;
+        delete[] Marker_Displacement;
+                delete[] Marker_Load;
+                delete[] Marker_Damper;
+                delete[] Marker_Load_Dir;
+                delete[] Marker_Disp_Dir;
+                delete[] Marker_Load_Sine;
+            delete[] Marker_FlowLoad;
+             delete[] Marker_Internal;
+                delete[] Marker_HeatFlux;
+          delete[] Marker_Emissivity;
 
-  if (Int_Coeffs != nullptr) delete [] Int_Coeffs;
+  delete [] Int_Coeffs;
 
-  if (ElasticityMod        != nullptr) delete [] ElasticityMod;
-  if (PoissonRatio         != nullptr) delete [] PoissonRatio;
-  if (MaterialDensity      != nullptr) delete [] MaterialDensity;
-  if (Electric_Constant    != nullptr) delete [] Electric_Constant;
-  if (Electric_Field_Mod   != nullptr) delete [] Electric_Field_Mod;
-  if (RefNode_Displacement != nullptr) delete [] RefNode_Displacement;
-  if (Electric_Field_Dir   != nullptr) delete [] Electric_Field_Dir;
+  delete [] ElasticityMod;
+  delete [] PoissonRatio;
+  delete [] MaterialDensity;
+  delete [] Electric_Constant;
+  delete [] Electric_Field_Mod;
+  delete [] RefNode_Displacement;
+  delete [] Electric_Field_Dir;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
 
-  if (default_cp_polycoeffs != nullptr) delete [] default_cp_polycoeffs;
-  if (default_mu_polycoeffs != nullptr) delete [] default_mu_polycoeffs;
-  if (default_kt_polycoeffs != nullptr) delete [] default_kt_polycoeffs;
-  if (CpPolyCoefficientsND  != nullptr) delete [] CpPolyCoefficientsND;
-  if (MuPolyCoefficientsND  != nullptr) delete [] MuPolyCoefficientsND;
-  if (KtPolyCoefficientsND  != nullptr) delete [] KtPolyCoefficientsND;
+  delete [] default_cp_polycoeffs;
+  delete [] default_mu_polycoeffs;
+  delete [] default_kt_polycoeffs;
+  delete [] CpPolyCoefficientsND;
+  delete [] MuPolyCoefficientsND;
+  delete [] KtPolyCoefficientsND;
 
-  if (FFDTag != nullptr) delete [] FFDTag;
-  if (nDV_Value != nullptr) delete [] nDV_Value;
-  if (TagFFDBox != nullptr) delete [] TagFFDBox;
+  delete [] FFDTag;
+  delete [] nDV_Value;
+  delete [] TagFFDBox;
 
-  if (Kind_Data_Riemann != nullptr) delete [] Kind_Data_Riemann;
-  if (Riemann_Var1 != nullptr) delete [] Riemann_Var1;
-  if (Riemann_Var2 != nullptr) delete [] Riemann_Var2;
-  if (Kind_Data_Giles != nullptr) delete [] Kind_Data_Giles;
-  if (Giles_Var1 != nullptr) delete [] Giles_Var1;
-  if (Giles_Var2 != nullptr) delete [] Giles_Var2;
-  if (RelaxFactorAverage != nullptr) delete [] RelaxFactorAverage;
-  if (RelaxFactorFourier != nullptr) delete [] RelaxFactorFourier;
-  if (nSpan_iZones != nullptr) delete [] nSpan_iZones;
-  if (Kind_TurboMachinery != nullptr) delete [] Kind_TurboMachinery;
+  delete [] Kind_Data_Riemann;
+  delete [] Riemann_Var1;
+  delete [] Riemann_Var2;
+  delete [] Kind_Data_Giles;
+  delete [] Giles_Var1;
+  delete [] Giles_Var2;
+  delete [] RelaxFactorAverage;
+  delete [] RelaxFactorFourier;
+  delete [] nSpan_iZones;
+  delete [] Kind_TurboMachinery;
 
-  if (Marker_MixingPlaneInterface !=nullptr) delete [] Marker_MixingPlaneInterface;
-  if (Marker_TurboBoundIn != nullptr) delete [] Marker_TurboBoundIn;
-  if (Marker_TurboBoundOut != nullptr) delete [] Marker_TurboBoundOut;
-  if (Marker_Riemann != nullptr) delete [] Marker_Riemann;
-  if (Marker_Giles != nullptr) delete [] Marker_Giles;
-  if (Marker_Shroud != nullptr) delete [] Marker_Shroud;
+  delete [] Marker_MixingPlaneInterface;
+  delete [] Marker_TurboBoundIn;
+  delete [] Marker_TurboBoundOut;
+  delete [] Marker_Riemann;
+  delete [] Marker_Giles;
+  delete [] Marker_Shroud;
 
-  if (nBlades != nullptr) delete [] nBlades;
-  if (FreeStreamTurboNormal != nullptr) delete [] FreeStreamTurboNormal;
+  delete [] nBlades;
+  delete [] FreeStreamTurboNormal;
 
-  if (top_optim_kernels != nullptr) delete [] top_optim_kernels;
-  if (top_optim_kernel_params != nullptr) delete [] top_optim_kernel_params;
-  if (top_optim_filter_radius != nullptr) delete [] top_optim_filter_radius;
+  delete [] top_optim_kernels;
+  delete [] top_optim_kernel_params;
+  delete [] top_optim_filter_radius;
 
-  if (ScreenOutput != nullptr) delete [] ScreenOutput;
-  if (HistoryOutput != nullptr) delete [] HistoryOutput;
-  if (VolumeOutput != nullptr) delete [] VolumeOutput;
-  if (Mesh_Box_Size != nullptr) delete [] Mesh_Box_Size;
-  if (VolumeOutputFiles != nullptr) delete [] VolumeOutputFiles;
+  delete [] ScreenOutput;
+  delete [] HistoryOutput;
+  delete [] VolumeOutput;
+  delete [] Mesh_Box_Size;
+  delete [] VolumeOutputFiles;
 
-  if (ConvField != nullptr) delete [] ConvField;
+  delete [] ConvField;
 
 }
 

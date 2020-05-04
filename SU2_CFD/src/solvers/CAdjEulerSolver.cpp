@@ -376,15 +376,15 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
   unsigned short iVar, iMarker;
 
-  if (Phi_Inf != nullptr) delete [] Phi_Inf;
-  if (Sens_Mach != nullptr) delete [] Sens_Mach;
-  if (Sens_AoA != nullptr) delete [] Sens_AoA;
-  if (Sens_Geo != nullptr) delete [] Sens_Geo;
-  if (Sens_Press != nullptr) delete [] Sens_Press;
-  if (Sens_Temp != nullptr) delete [] Sens_Temp;
-  if (Sens_BPress != nullptr) delete [] Sens_BPress;
-  if (FlowPrimVar_i != nullptr) delete [] FlowPrimVar_i;
-  if (FlowPrimVar_j != nullptr) delete [] FlowPrimVar_j;
+  delete [] Phi_Inf;
+  delete [] Sens_Mach;
+  delete [] Sens_AoA;
+  delete [] Sens_Geo;
+  delete [] Sens_Press;
+  delete [] Sens_Temp;
+  delete [] Sens_BPress;
+  delete [] FlowPrimVar_i;
+  delete [] FlowPrimVar_j;
 
   if (Jacobian_Axisymmetric != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
@@ -398,7 +398,7 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
     delete [] CSensitivity;
   }
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CAdjEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -4891,8 +4891,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != nullptr) delete [] Restart_Vars;
-  if (Restart_Data != nullptr) delete [] Restart_Data;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
   Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

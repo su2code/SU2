@@ -45,12 +45,12 @@ CPrimalGrid::CPrimalGrid(void) {
 
 CPrimalGrid::~CPrimalGrid() {
 
- if (Nodes != nullptr) delete[] Nodes;
- if (Coord_CG != nullptr) delete[] Coord_CG;
- if (Neighbor_Elements != nullptr) delete[] Neighbor_Elements;
- if (ElementOwnsFace != nullptr) delete[] ElementOwnsFace;
- if (PeriodIndexNeighbors != nullptr) delete[] PeriodIndexNeighbors;
- if (JacobianFaceIsConstant != nullptr) delete[] JacobianFaceIsConstant;
+ delete[] Nodes;
+ delete[] Coord_CG;
+ delete[] Neighbor_Elements;
+ delete[] ElementOwnsFace;
+ delete[] PeriodIndexNeighbors;
+ delete[] JacobianFaceIsConstant;
 }
 
 void CPrimalGrid::SetCoord_CG(const su2double* const* val_coord) {

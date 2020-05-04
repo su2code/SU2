@@ -72,7 +72,7 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
 template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
-  if (omp_partitions != nullptr) delete [] omp_partitions;
+  delete [] omp_partitions;
   if (ILU_matrix != nullptr) MemoryAllocation::aligned_free(ILU_matrix);
   if (matrix != nullptr) MemoryAllocation::aligned_free(matrix);
   if (invM != nullptr) MemoryAllocation::aligned_free(invM);

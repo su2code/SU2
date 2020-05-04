@@ -73,10 +73,10 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
 CVerificationSolution::~CVerificationSolution(void) {
 
   /*--- Release the memory of the pointers, if allocated. ---*/
-  if (Error_RMS != nullptr) delete [] Error_RMS;
-  if (Error_Max != nullptr) delete [] Error_Max;
+  delete [] Error_RMS;
+  delete [] Error_Max;
 
-  if (Error_Point_Max != nullptr) delete [] Error_Point_Max;
+  delete [] Error_Point_Max;
 
   if (Error_Point_Max_Coord != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {

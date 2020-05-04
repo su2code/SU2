@@ -155,7 +155,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
 CRadP1Solver::~CRadP1Solver(void) {
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 
 }
 

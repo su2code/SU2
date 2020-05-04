@@ -96,7 +96,7 @@ inline bool CSurfaceElementFEM::operator< (const CSurfaceElementFEM &other) cons
 
 inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC = false;  wallModel = nullptr;}
 
-inline CBoundaryFEM::~CBoundaryFEM(void) { if( wallModel ) delete wallModel; }
+inline CBoundaryFEM::~CBoundaryFEM(void) { delete wallModel; }
 
 inline CMeshFEM::CMeshFEM(void) : CGeometry() { blasFunctions = nullptr; }
 

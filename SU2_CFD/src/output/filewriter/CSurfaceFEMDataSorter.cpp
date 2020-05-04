@@ -68,7 +68,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
 CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
 
-  if (linearPartitioner != nullptr) delete linearPartitioner;
+  delete linearPartitioner;
   delete [] passiveDoubleBuffer;
 
 }
@@ -220,9 +220,9 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nPoints = globalSurfaceDOFIDs.size();
 
-  if (passiveDoubleBuffer != nullptr){
+  
     delete [] passiveDoubleBuffer;
-  }
+  
 
   passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
@@ -465,15 +465,15 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
           and set the class data pointer to the connectivity array. ---*/
     switch (Elem_Type) {
       case LINE:
-        if (Conn_Line_Par != nullptr) delete [] Conn_Line_Par;
+        delete [] Conn_Line_Par;
         Conn_Line_Par = Conn_SubElem;
         break;
       case TRIANGLE:
-        if (Conn_Tria_Par != nullptr) delete [] Conn_Tria_Par;
+        delete [] Conn_Tria_Par;
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
-        if (Conn_Quad_Par != nullptr) delete [] Conn_Quad_Par;
+        delete [] Conn_Quad_Par;
         Conn_Quad_Par = Conn_SubElem;
         break;
       default:

@@ -509,10 +509,10 @@ void CDriver::Postprocessing() {
     }
     delete [] config_container;
   }
-  if (driver_config != nullptr) delete driver_config;
+  delete driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
-  if (nInst != nullptr) delete [] nInst;
+  delete [] nInst;
   if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
 
   /*--- Deallocate output container ---*/
@@ -526,9 +526,9 @@ void CDriver::Postprocessing() {
     delete [] output_container;
   }
 
-  if(driver_output != nullptr){
+  
     delete driver_output;
-  }
+  
 
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
@@ -991,7 +991,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
   delete geometry_aux;
-  if (solver_aux != nullptr) delete solver_aux;
+  delete solver_aux;
 
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetSendReceive(config);

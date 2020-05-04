@@ -72,9 +72,9 @@ CFVMDataSorter::~CFVMDataSorter(){
 
   delete [] Local_Halo;
 
-  if (Index != nullptr)       delete [] Index;
-  if (idSend != nullptr)      delete [] idSend;
-  if (linearPartitioner != nullptr) delete linearPartitioner;
+        delete [] Index;
+       delete [] idSend;
+  delete linearPartitioner;
 
 }
 
@@ -484,27 +484,27 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   switch (Elem_Type) {
     case TRIANGLE:
-      if (Conn_Tria_Par != nullptr) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != nullptr) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_Elem;
       break;
     case TETRAHEDRON:
-      if (Conn_Tetr_Par != nullptr) delete [] Conn_Tetr_Par;
+      delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_Elem;
       break;
     case HEXAHEDRON:
-      if (Conn_Hexa_Par != nullptr) delete [] Conn_Hexa_Par;
+      delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_Elem;
       break;
     case PRISM:
-      if (Conn_Pris_Par != nullptr) delete [] Conn_Pris_Par;
+      delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_Elem;
       break;
     case PYRAMID:
-      if (Conn_Pyra_Par != nullptr) delete [] Conn_Pyra_Par;
+      delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_Elem;
       break;
     default:

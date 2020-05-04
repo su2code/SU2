@@ -49,7 +49,7 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 
 CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
 
-  if (linearPartitioner != nullptr) delete linearPartitioner;
+  delete linearPartitioner;
   delete [] passiveDoubleBuffer;
 
 }
@@ -438,9 +438,9 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we can allocate the new data structure to hold these points alone. Here,
    we also copy the data for those points from our volume data structure. ---*/
 
-  if (passiveDoubleBuffer != nullptr){
+  
     delete [] passiveDoubleBuffer;
-  }
+  
 
   passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
@@ -1480,15 +1480,15 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
   switch (Elem_Type) {
     case LINE:
-      if (Conn_Line_Par != nullptr) delete [] Conn_Line_Par;
+      delete [] Conn_Line_Par;
       Conn_Line_Par = Conn_Elem;
       break;
     case TRIANGLE:
-      if (Conn_Tria_Par != nullptr) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != nullptr) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_Elem;
       break;
     default:

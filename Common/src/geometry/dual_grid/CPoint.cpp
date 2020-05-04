@@ -378,21 +378,21 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 CPoint::~CPoint() {
 
   if (Vertex       != nullptr && Boundary) delete[] Vertex;
-  if (Volume       != nullptr) delete[] Volume;
-  if (Coord        != nullptr) delete[] Coord;
-  if (Coord_Old    != nullptr) delete[] Coord_Old;
-  if (Coord_Sum    != nullptr) delete[] Coord_Sum;
-  if (Coord_n      != nullptr) delete[] Coord_n;
-  if (Coord_n1     != nullptr) delete[] Coord_n1;
-  if (Coord_p1     != nullptr) delete[] Coord_p1;
-  if (GridVel      != nullptr) delete[] GridVel;
+  delete[] Volume;
+  delete[] Coord;
+  delete[] Coord_Old;
+  delete[] Coord_Sum;
+  delete[] Coord_n;
+  delete[] Coord_n1;
+  delete[] Coord_p1;
+  delete[] GridVel;
   if (GridVel_Grad != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  if (AD_InputIndex  != nullptr) delete[] AD_InputIndex;
-  if (AD_OutputIndex != nullptr) delete[] AD_OutputIndex;
+  delete[] AD_InputIndex;
+  delete[] AD_OutputIndex;
  }
 
 void CPoint::SetPoint(unsigned long val_point) {

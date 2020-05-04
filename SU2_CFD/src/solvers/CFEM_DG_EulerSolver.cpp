@@ -730,40 +730,40 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 
-  if(FluidModel    != nullptr) delete FluidModel;
-  if(blasFunctions != nullptr) delete blasFunctions;
+  delete FluidModel;
+  delete blasFunctions;
 
   /*--- Array deallocation ---*/
-  if (CD_Inv != nullptr)           delete [] CD_Inv;
-  if (CL_Inv != nullptr)           delete [] CL_Inv;
-  if (CSF_Inv != nullptr)          delete [] CSF_Inv;
-  if (CMx_Inv != nullptr)          delete [] CMx_Inv;
-  if (CMy_Inv != nullptr)          delete [] CMy_Inv;
-  if (CMz_Inv != nullptr)          delete [] CMz_Inv;
-  if (CFx_Inv != nullptr)          delete [] CFx_Inv;
-  if (CFy_Inv != nullptr)          delete [] CFy_Inv;
-  if (CFz_Inv != nullptr)          delete [] CFz_Inv;
-  if (Surface_CL_Inv != nullptr)   delete [] Surface_CL_Inv;
-  if (Surface_CD_Inv != nullptr)   delete [] Surface_CD_Inv;
-  if (Surface_CSF_Inv != nullptr)  delete [] Surface_CSF_Inv;
-  if (Surface_CEff_Inv != nullptr) delete [] Surface_CEff_Inv;
-  if (Surface_CFx_Inv != nullptr)  delete [] Surface_CFx_Inv;
-  if (Surface_CFy_Inv != nullptr)  delete [] Surface_CFy_Inv;
-  if (Surface_CFz_Inv != nullptr)  delete [] Surface_CFz_Inv;
-  if (Surface_CMx_Inv != nullptr)  delete [] Surface_CMx_Inv;
-  if (Surface_CMy_Inv != nullptr)  delete [] Surface_CMy_Inv;
-  if (Surface_CMz_Inv != nullptr)  delete [] Surface_CMz_Inv;
-  if (Surface_CL != nullptr)       delete [] Surface_CL;
-  if (Surface_CD != nullptr)       delete [] Surface_CD;
-  if (Surface_CSF != nullptr)      delete [] Surface_CSF;
-  if (Surface_CEff != nullptr)     delete [] Surface_CEff;
-  if (Surface_CFx != nullptr)      delete [] Surface_CFx;
-  if (Surface_CFy != nullptr)      delete [] Surface_CFy;
-  if (Surface_CFz != nullptr)      delete [] Surface_CFz;
-  if (Surface_CMx != nullptr)      delete [] Surface_CMx;
-  if (Surface_CMy != nullptr)      delete [] Surface_CMy;
-  if (Surface_CMz != nullptr)      delete [] Surface_CMz;
-  if (CEff_Inv != nullptr)         delete [] CEff_Inv;
+            delete [] CD_Inv;
+            delete [] CL_Inv;
+           delete [] CSF_Inv;
+           delete [] CMx_Inv;
+           delete [] CMy_Inv;
+           delete [] CMz_Inv;
+           delete [] CFx_Inv;
+           delete [] CFy_Inv;
+           delete [] CFz_Inv;
+    delete [] Surface_CL_Inv;
+    delete [] Surface_CD_Inv;
+   delete [] Surface_CSF_Inv;
+  delete [] Surface_CEff_Inv;
+   delete [] Surface_CFx_Inv;
+   delete [] Surface_CFy_Inv;
+   delete [] Surface_CFz_Inv;
+   delete [] Surface_CMx_Inv;
+   delete [] Surface_CMy_Inv;
+   delete [] Surface_CMz_Inv;
+        delete [] Surface_CL;
+        delete [] Surface_CD;
+       delete [] Surface_CSF;
+      delete [] Surface_CEff;
+       delete [] Surface_CFx;
+       delete [] Surface_CFy;
+       delete [] Surface_CFz;
+       delete [] Surface_CMx;
+       delete [] Surface_CMy;
+       delete [] Surface_CMz;
+          delete [] CEff_Inv;
 
 }
 
@@ -9508,8 +9508,8 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != nullptr) delete [] Restart_Vars;
-  if (Restart_Data != nullptr) delete [] Restart_Data;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
   Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

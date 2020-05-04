@@ -120,7 +120,7 @@ CIncIdealGasPolynomial::CIncIdealGasPolynomial(su2double val_gas_constant, su2do
 }
 
 CIncIdealGasPolynomial::~CIncIdealGasPolynomial(void) {
-  if (b != nullptr) delete [] b;
+  delete [] b;
 }
 
 void CIncIdealGasPolynomial::SetCpModel(CConfig *config) {

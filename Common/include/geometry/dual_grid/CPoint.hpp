@@ -363,7 +363,7 @@ public:
   /*!
    * \brief Reset the boundary of a control volume.
    */
-  inline void ResetBoundary(void) { if (Vertex != nullptr) delete [] Vertex; Boundary = false; }
+  inline void ResetBoundary(void) { delete [] Vertex; Boundary = false; }
 
   /*!
    * \overload

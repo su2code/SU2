@@ -351,8 +351,8 @@ public:
   }
 
   ~COptionDoubleArray() override {
-     if(def  != nullptr) delete [] def;
-     if(vals != nullptr) delete [] vals;
+     delete [] def;
+     delete [] vals;
   };
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);

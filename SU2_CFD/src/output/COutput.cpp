@@ -180,12 +180,12 @@ COutput::~COutput(void) {
   delete fileWritingTable;
   delete historyFileTable;
 
-  if (volumeDataSorter != nullptr)
+  
     delete volumeDataSorter;
 
   volumeDataSorter = nullptr;
 
-  if (surfaceDataSorter != nullptr)
+  
     delete surfaceDataSorter;
 
   surfaceDataSorter = nullptr;

@@ -113,7 +113,7 @@ CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, su2double
 }
 
 CPolynomialViscosity::~CPolynomialViscosity(void) {
-  if (b != nullptr) delete [] b;
+  delete [] b;
 }
 
 void CPolynomialViscosity::SetViscosity(su2double T, su2double rho) {
@@ -240,7 +240,7 @@ CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, su2
 }
 
 CPolynomialConductivity::~CPolynomialConductivity(void) {
-  if (b != nullptr) delete [] b;
+  delete [] b;
 }
 
 void CPolynomialConductivity::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
@@ -268,7 +268,7 @@ CPolynomialConductivityRANS::CPolynomialConductivityRANS(unsigned short val_nCoe
 }
 
 CPolynomialConductivityRANS::~CPolynomialConductivityRANS(void) {
-  if (b != nullptr) delete [] b;
+  delete [] b;
 }
 
 void CPolynomialConductivityRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {

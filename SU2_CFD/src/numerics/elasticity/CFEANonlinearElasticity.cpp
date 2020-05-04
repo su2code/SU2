@@ -210,9 +210,9 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
     delete [] b_Mat_Iso;
   }
 
-  if (EField_Ref_Unit  != nullptr)   delete [] EField_Ref_Unit;
-  if (EField_Ref_Mod   != nullptr)   delete [] EField_Ref_Mod;
-  if (EField_Curr_Unit != nullptr)   delete [] EField_Curr_Unit;
+    delete [] EField_Ref_Unit;
+    delete [] EField_Ref_Mod;
+    delete [] EField_Curr_Unit;
 
 }
 

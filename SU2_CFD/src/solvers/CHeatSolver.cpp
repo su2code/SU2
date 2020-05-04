@@ -265,7 +265,7 @@ CHeatSolver::~CHeatSolver(void) {
     delete [] HeatFlux;
   }
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -445,8 +445,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != nullptr) delete [] Restart_Vars;
-  if (Restart_Data != nullptr) delete [] Restart_Data;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
   Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

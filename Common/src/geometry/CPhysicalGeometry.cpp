@@ -481,9 +481,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   Neighbors.clear();
   Color_List.clear();
 
-  if (Local_Points != nullptr) delete [] Local_Points;
-  if (Local_Colors != nullptr) delete [] Local_Colors;
-  if (Local_Coords != nullptr) delete [] Local_Coords;
+  delete [] Local_Points;
+  delete [] Local_Colors;
+  delete [] Local_Coords;
 
   if (nLinear_Line > 0      && Conn_Line_Linear      != nullptr)
     delete [] Conn_Line_Linear;
@@ -502,34 +502,34 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   if (nLocal_Pris > 0      && Conn_Pris      != nullptr) delete [] Conn_Pris;
   if (nLocal_Pyra > 0      && Conn_Pyra      != nullptr) delete [] Conn_Pyra;
 
-  if (ID_Line             != nullptr) delete [] ID_Line;
-  if (ID_BoundTria        != nullptr) delete [] ID_BoundTria;
-  if (ID_BoundQuad        != nullptr) delete [] ID_BoundQuad;
-  if (ID_Line_Linear      != nullptr) delete [] ID_Line_Linear;
-  if (ID_BoundTria_Linear != nullptr) delete [] ID_BoundTria_Linear;
-  if (ID_BoundQuad_Linear != nullptr) delete [] ID_BoundQuad_Linear;
+  delete [] ID_Line;
+  delete [] ID_BoundTria;
+  delete [] ID_BoundQuad;
+  delete [] ID_Line_Linear;
+  delete [] ID_BoundTria_Linear;
+  delete [] ID_BoundQuad_Linear;
 
-  if (ID_Tria != nullptr) delete [] ID_Tria;
-  if (ID_Quad != nullptr) delete [] ID_Quad;
-  if (ID_Tetr != nullptr) delete [] ID_Tetr;
-  if (ID_Hexa != nullptr) delete [] ID_Hexa;
-  if (ID_Pris != nullptr) delete [] ID_Pris;
-  if (ID_Pyra != nullptr) delete [] ID_Pyra;
+  delete [] ID_Tria;
+  delete [] ID_Quad;
+  delete [] ID_Tetr;
+  delete [] ID_Hexa;
+  delete [] ID_Pris;
+  delete [] ID_Pyra;
 
-  if (Elem_ID_Line             != nullptr) delete [] Elem_ID_Line;
-  if (Elem_ID_BoundTria        != nullptr) delete [] Elem_ID_BoundTria;
-  if (Elem_ID_BoundQuad        != nullptr) delete [] Elem_ID_BoundQuad;
-  if (Elem_ID_Line_Linear      != nullptr) delete [] Elem_ID_Line_Linear;
-  if (Elem_ID_BoundTria_Linear != nullptr) delete [] Elem_ID_BoundTria_Linear;
-  if (Elem_ID_BoundQuad_Linear != nullptr) delete [] Elem_ID_BoundQuad_Linear;
+  delete [] Elem_ID_Line;
+  delete [] Elem_ID_BoundTria;
+  delete [] Elem_ID_BoundQuad;
+  delete [] Elem_ID_Line_Linear;
+  delete [] Elem_ID_BoundTria_Linear;
+  delete [] Elem_ID_BoundQuad_Linear;
 
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
 
-  if (Local_to_Global_Point  != nullptr) delete [] Local_to_Global_Point;
-  if (Global_to_Local_Marker != nullptr) delete [] Global_to_Local_Marker;
-  if (Local_to_Global_Marker != nullptr) delete [] Local_to_Global_Marker;
+  delete [] Local_to_Global_Point;
+  delete [] Global_to_Local_Marker;
+  delete [] Local_to_Global_Marker;
 
   /*--- Free up memory from turbomachinery performance computation  ---*/
 
@@ -655,8 +655,8 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     delete [] MinRelAngularCoord;
   }
 
-  if (nSpanWiseSections != nullptr) delete [] nSpanWiseSections;
-  if (nSpanSectionsByMarker != nullptr) delete [] nSpanSectionsByMarker;
+  delete [] nSpanWiseSections;
+  delete [] nSpanSectionsByMarker;
   if (SpanWiseValue != nullptr) {
     for (iMarker = 0; iMarker < 2; iMarker++)
       if (Marker_All_SendRecv[iMarker] == 0 && SpanWiseValue[iMarker] != nullptr)
@@ -948,11 +948,11 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (colorSendReq != nullptr) delete [] colorSendReq;
-  if (idSendReq    != nullptr) delete [] idSendReq;
+  delete [] colorSendReq;
+  delete [] idSendReq;
 
-  if (colorRecvReq != nullptr) delete [] colorRecvReq;
-  if (idRecvReq    != nullptr) delete [] idRecvReq;
+  delete [] colorRecvReq;
+  delete [] idRecvReq;
 
   delete [] colorSend;
   delete [] colorRecv;
@@ -1286,11 +1286,11 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   Local2GlobalElem.clear();
 
-  if (connSendReq != nullptr) delete [] connSendReq;
-  if (idSendReq   != nullptr) delete [] idSendReq;
+  delete [] connSendReq;
+  delete [] idSendReq;
 
-  if (connRecvReq != nullptr) delete [] connRecvReq;
-  if (idRecvReq   != nullptr) delete [] idRecvReq;
+  delete [] connRecvReq;
+  delete [] idRecvReq;
 
   delete [] connSend;
   delete [] connRecv;
@@ -1545,13 +1545,13 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Free temporary memory from communications ---*/
 
-  if (colorSendReq != nullptr) delete [] colorSendReq;
-  if (idSendReq    != nullptr) delete [] idSendReq;
-  if (coordSendReq != nullptr) delete [] coordSendReq;
+  delete [] colorSendReq;
+  delete [] idSendReq;
+  delete [] coordSendReq;
 
-  if (colorRecvReq != nullptr) delete [] colorRecvReq;
-  if (idRecvReq    != nullptr) delete [] idRecvReq;
-  if (coordRecvReq != nullptr) delete [] coordRecvReq;
+  delete [] colorRecvReq;
+  delete [] idRecvReq;
+  delete [] coordRecvReq;
 
   delete [] colorSend;
   delete [] colorRecv;
@@ -1923,17 +1923,17 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq   != nullptr) delete [] connSendReq;
-  if (markerSendReq != nullptr) delete [] markerSendReq;
-  if (idSendReq     != nullptr) delete [] idSendReq;
+  delete [] connSendReq;
+  delete [] markerSendReq;
+  delete [] idSendReq;
 
-  if (connRecvReq   != nullptr) delete [] connRecvReq;
-  if (markerRecvReq != nullptr) delete [] markerRecvReq;
-  if (idRecvReq     != nullptr) delete [] idRecvReq;
+  delete [] connRecvReq;
+  delete [] markerRecvReq;
+  delete [] idRecvReq;
 
-  if (connSend   != nullptr) delete [] connSend;
-  if (markerSend != nullptr) delete [] markerSend;
-  if (idSend     != nullptr) delete [] idSend;
+  delete [] connSend;
+  delete [] markerSend;
+  delete [] idSend;
 
   delete [] connRecv;
   delete [] markerRecv;
@@ -2272,13 +2272,13 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq   != nullptr) delete [] connSendReq;
-  if (markerSendReq != nullptr) delete [] markerSendReq;
-  if (idSendReq     != nullptr) delete [] idSendReq;
+  delete [] connSendReq;
+  delete [] markerSendReq;
+  delete [] idSendReq;
 
-  if (connRecvReq   != nullptr) delete [] connRecvReq;
-  if (markerRecvReq != nullptr) delete [] markerRecvReq;
-  if (idRecvReq     != nullptr) delete [] idRecvReq;
+  delete [] connRecvReq;
+  delete [] markerRecvReq;
+  delete [] idRecvReq;
 
   delete [] connSend;
   delete [] connRecv;
@@ -3800,7 +3800,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
      if (bound[iMarker][iElem_Bound] != nullptr) delete bound[iMarker][iElem_Bound];
     if (bound[iMarker] != nullptr) delete [] bound[iMarker];
   }
-  if (bound != nullptr) delete [] bound;
+  delete [] bound;
 
   /*--- Allocate the new bound variables, and set the number of markers ---*/
 
@@ -3996,7 +3996,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
   /*--- Now that we have loaded all information from the mesh,
    delete the mesh reader object. ---*/
 
-  if (MeshFVM != nullptr) delete MeshFVM;
+  delete MeshFVM;
 
 }
 

@@ -144,22 +144,22 @@ CSolver::~CSolver(void) {
 
   /*--- Public variables, may be accessible outside ---*/
 
-  if ( OutputHeadingNames != nullptr) {
+  
     delete [] OutputHeadingNames;
-  }
+  
 
   /*--- Private ---*/
 
-  if (Residual_RMS != nullptr) delete [] Residual_RMS;
-  if (Residual_Max != nullptr) delete [] Residual_Max;
-  if (Residual != nullptr) delete [] Residual;
-  if (Residual_i != nullptr) delete [] Residual_i;
-  if (Residual_j != nullptr) delete [] Residual_j;
-  if (Point_Max != nullptr) delete [] Point_Max;
+  delete [] Residual_RMS;
+  delete [] Residual_Max;
+  delete [] Residual;
+  delete [] Residual_i;
+  delete [] Residual_j;
+  delete [] Point_Max;
 
-  if (Residual_BGS != nullptr) delete [] Residual_BGS;
-  if (Residual_Max_BGS != nullptr) delete [] Residual_Max_BGS;
-  if (Point_Max_BGS != nullptr) delete [] Point_Max_BGS;
+  delete [] Residual_BGS;
+  delete [] Residual_Max_BGS;
+  delete [] Point_Max_BGS;
 
   if (Point_Max_Coord != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -175,21 +175,21 @@ CSolver::~CSolver(void) {
     delete [] Point_Max_Coord_BGS;
   }
 
-  if (Solution != nullptr) delete [] Solution;
-  if (Solution_i != nullptr) delete [] Solution_i;
-  if (Solution_j != nullptr) delete [] Solution_j;
-  if (Vector != nullptr) delete [] Vector;
-  if (Vector_i != nullptr) delete [] Vector_i;
-  if (Vector_j != nullptr) delete [] Vector_j;
-  if (Res_Conv != nullptr) delete [] Res_Conv;
-  if (Res_Visc != nullptr) delete [] Res_Visc;
-  if (Res_Sour != nullptr) delete [] Res_Sour;
-  if (Res_Conv_i != nullptr) delete [] Res_Conv_i;
-  if (Res_Visc_i != nullptr) delete [] Res_Visc_i;
-  if (Res_Visc_j != nullptr) delete [] Res_Visc_j;
+  delete [] Solution;
+  delete [] Solution_i;
+  delete [] Solution_j;
+  delete [] Vector;
+  delete [] Vector_i;
+  delete [] Vector_j;
+  delete [] Res_Conv;
+  delete [] Res_Visc;
+  delete [] Res_Sour;
+  delete [] Res_Conv_i;
+  delete [] Res_Visc_i;
+  delete [] Res_Visc_j;
 
-  if (iPoint_UndLapl != nullptr) delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != nullptr) delete [] jPoint_UndLapl;
+  delete [] iPoint_UndLapl;
+  delete [] jPoint_UndLapl;
 
   if (Jacobian_i != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
@@ -257,7 +257,7 @@ CSolver::~CSolver(void) {
     delete [] VertexTractionAdjoint;
   }
 
-  if (nVertex != nullptr) delete [] nVertex;
+  delete [] nVertex;
 
   if (Restart_Vars != nullptr) {delete [] Restart_Vars; Restart_Vars = nullptr;}
   if (Restart_Data != nullptr) {delete [] Restart_Data; Restart_Data = nullptr;}

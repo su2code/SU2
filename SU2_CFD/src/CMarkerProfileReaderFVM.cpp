@@ -394,12 +394,12 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   
   delete [] Buffer_Send_X;
   delete [] Buffer_Send_Y;
-  if (Buffer_Send_Z != nullptr) delete [] Buffer_Send_Z;
+  delete [] Buffer_Send_Z;
   delete [] Buffer_Send_Str;
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_X;
     delete [] Buffer_Recv_Y;
-    if (Buffer_Recv_Z != nullptr)  delete [] Buffer_Recv_Z;
+     delete [] Buffer_Recv_Z;
     delete [] Buffer_Recv_nPoin;
     delete [] Buffer_Recv_Str;
   }
