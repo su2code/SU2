@@ -1432,7 +1432,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
   MakePair("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
   MakePair("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
-  MakePair("Pressure_Drop", Pressure_Drop)
+  MakePair("PRESSURE_DROP", Pressure_Drop)
   MakePair("EULERIAN_WORK", EULERIAN_WORK)
   MakePair("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
   MakePair("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
