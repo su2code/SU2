@@ -2808,6 +2808,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Constraint minimum cell size */
   addDoubleOption("ADAP_HMIN", Adap_Hmin, 1.0E-8);
+  
+  /* DESCRIPTION: Constraint maximum cell aspect ratio */
+  addDoubleOption("ADAP_ARMAX", Adap_ARmax, 1.0E6);
 
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
@@ -2844,6 +2847,9 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_HMIN");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ARMAX");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_HGRAD");

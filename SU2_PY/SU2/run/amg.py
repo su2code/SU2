@@ -51,7 +51,7 @@ def amg ( config , kind='' ):
     #--- Check config options related to mesh adaptation
     
     adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
-    'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_HGRAD', \
+    'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_ARMAX', 'PYADAP_HGRAD', \
     'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
     'PYADAP_INV_VOL', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
     required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
@@ -231,6 +231,7 @@ def amg ( config , kind='' ):
                 config_cfd.COMPUTE_METRIC       = 'YES'
                 config_cfd.ADAP_HMAX            = config.PYADAP_HMAX
                 config_cfd.ADAP_HMIN            = config.PYADAP_HMIN
+                config_cfd.ADAP_ARMAX           = config.PYADAP_ARMAX
                 config_cfd.ADAP_COMPLEXITY      = int(mesh_sizes[0])
                 config_cfd.CFL_NUMBER           = float(adap_adj_cfl[0])
                 SU2_CFD(config_cfd)
@@ -297,6 +298,7 @@ def amg ( config , kind='' ):
             config_cfd.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
             config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
             config_cfd.ADAP_HMIN             = config.PYADAP_HMIN
+            config_cfd.ADAP_ARMAX           = config.PYADAP_ARMAX
             config_cfd.ADAP_COMPLEXITY       = int(mesh_sizes[0])
             config_cfd.CFL_NUMBER            = float(adap_adj_cfl[0])
 
