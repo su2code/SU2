@@ -2,7 +2,7 @@
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,7 +73,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
 
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /* High level procedure:
      * - Loop through vertices of the target grid;
@@ -82,10 +82,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
      */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;

@@ -4,7 +4,7 @@
  *        alternating digital tree (ADT).
  *        The subroutines and functions are in the <i>adt_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -86,7 +86,7 @@ private:
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CBBoxTargetClass {
 public:
@@ -287,7 +287,7 @@ public:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~CADTPointsOnlyClass();
+  ~CADTPointsOnlyClass() override;
 
   /*!
    * \brief Function, which determines the nearest node in the ADT for the
@@ -322,7 +322,7 @@ private:
  * \class CADTElemClass
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CADTElemClass : public CADTBaseClass {
 private:
@@ -375,7 +375,7 @@ public:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~CADTElemClass();
+  ~CADTElemClass() override;
 
   /*!
    * \brief Function, which determines the element that contains the given

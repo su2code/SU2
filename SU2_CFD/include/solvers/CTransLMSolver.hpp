@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTransLMSolver(void);
+  ~CTransLMSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

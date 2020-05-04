@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -215,11 +215,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
-#ifdef HAVE_MPI
-  StartTime = MPI_Wtime();
-#else
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -400,11 +396,7 @@ int main(int argc, char *argv[]) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
 
-#ifdef HAVE_MPI
-  StopTime = MPI_Wtime();
-#else
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StopTime = SU2_MPI::Wtime();
 
   /*--- Compute/print the total time for performance benchmarking. ---*/
 

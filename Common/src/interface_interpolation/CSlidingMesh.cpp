@@ -2,7 +2,7 @@
  * \file CSlidingMesh.cpp
  * \brief Implementation of sliding mesh interpolation.
  * \author H. Kline
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -117,16 +117,16 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   /* 2 - Find boundary tag between touching grids */
 
   /*--- Number of markers on the FSI interface ---*/
-  nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_ZoneInterface() ) / 2;
+  nMarkerInt = (int)( config[ donorZone ]->GetMarker_n_ZoneInterface() ) / 2;
 
   /*--- For the number of markers on the interface... ---*/
-  for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
+  for ( iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++ ){
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    markDonor  = FindInterfaceMarker(config[donorZone],  iMarkerInt);
+    markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
+    markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;

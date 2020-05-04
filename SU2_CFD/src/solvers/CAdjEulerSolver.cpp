@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1716,9 +1716,9 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     /*--- Points in edge, normal, and neighbors---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
     /*--- Adjoint variables w/o reconstruction ---*/
@@ -1794,9 +1794,9 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Points in edge and normal vectors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Adjoint variables w/o reconstruction ---*/
 
@@ -2034,8 +2034,8 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   nodes->SetUnd_LaplZero();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     for (iVar = 0; iVar < nVar; iVar++)
       Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
@@ -2301,7 +2301,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     for (iVar = 0; iVar < nVar; iVar++) {
-      nodes->AddSolution(iPoint,iVar, config->GetRelaxation_Factor_AdjFlow()*LinSysSol[iPoint*nVar+iVar]);
+      nodes->AddSolution(iPoint,iVar, config->GetRelaxation_Factor_Adjoint()*LinSysSol[iPoint*nVar+iVar]);
     }
 
   /*--- MPI solution ---*/

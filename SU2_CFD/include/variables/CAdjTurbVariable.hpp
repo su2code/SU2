@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.hpp
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjTurbVariable() = default;
+  ~CAdjTurbVariable() override = default;
 
   /*!
    * \brief Set the Eddy Viscosity Sensitivity of the problem.

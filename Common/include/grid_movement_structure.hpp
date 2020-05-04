@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
-#include <ctime>
 
 #include "geometry/CGeometry.hpp"
 #include "CConfig.hpp"
@@ -159,14 +158,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBSplineBlending();
+  ~CBSplineBlending() override;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t) override;
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -174,14 +173,14 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der) override;
 
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  void SetOrder(short val_order, short n_controlpoints);
+  void SetOrder(short val_order, short n_controlpoints) override;
 
 };
 
@@ -234,14 +233,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBezierBlending();
+  ~CBezierBlending() override;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t) override;
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -249,14 +248,14 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der) override;
 
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  void SetOrder(short val_order, short n_controlpoints);
+  void SetOrder(short val_order, short n_controlpoints) override;
 
 };
 
@@ -324,7 +323,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFreeFormDefBox(void);
+  ~CFreeFormDefBox(void) override;
 
   /*!
    * \brief Define the I planes to to fix in a FFD box.
@@ -973,7 +972,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CVolumetricMovement(void);
+  ~CVolumetricMovement(void) override;
   
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -1317,7 +1316,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSurfaceMovement(void);
+  ~CSurfaceMovement(void) override;
   
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
@@ -1471,7 +1470,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config);
+  void SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy

@@ -1,4 +1,4 @@
-name: Regression Testing
+name: Regression and Unit Testing
 
 on:
   push:
@@ -19,17 +19,17 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true --werror'
+            flags: '-Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ReverseMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true --werror'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ForwardMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled --werror'
+            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --werror'
           - config_set: ReverseNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true --werror'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ForwardNoMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled  -Denable-tests=true --werror'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
@@ -47,7 +47,7 @@ jobs:
         with:
           name: ${{ matrix.config_set }}
           path: install/bin
-  tests:
+  regression_tests:
     runs-on: ubuntu-latest
     name: Regression Tests
     needs: build
@@ -91,3 +91,42 @@ jobs:
         with:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   
+  unit_tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        testdriver: ['test_driver', 'test_driver_AD', 'test_driver_DD']
+        include:
+          - testdriver: 'test_driver'
+            tag: MPI
+          - testdriver: 'test_driver_AD'
+            tag: MPI
+          - testdriver: 'test_driver_DD'
+            tag: MPI
+    steps:
+      - name: Download Base
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Base{0}', matrix.tag)}}
+      - name: Download Reverse
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Reverse{0}', matrix.tag)}}
+      - name: Download Forward
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Forward{0}', matrix.tag)}}
+      - name: Move Binaries
+        run: |
+          mkdir -p install/bin
+          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
+          chmod a+x install/bin/*  
+      - name: Run Unit Tests
+        uses: docker://su2code/test-su2:20191031
+        with:
+          entrypoint: install/bin/${{matrix.testdriver}}

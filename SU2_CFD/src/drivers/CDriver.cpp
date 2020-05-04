@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -102,11 +102,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   /*--- Start timer to track preprocessing for benchmarking. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   /*--- Initialize containers with null --- */
 
@@ -265,11 +261,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
 
   /*--- Compute/print the total time for performance benchmarking. ---*/
 
@@ -291,11 +283,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+
+  StopTime = SU2_MPI::Wtime();
 
   /*--- Compute/print the total time for performance benchmarking. ---*/
 
@@ -303,11 +292,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   UsedTimePreproc = UsedTime;
 
   /*--- Reset timer for compute performance benchmarking. ---*/
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+
+  StartTime = SU2_MPI::Wtime();
 
 }
 
@@ -551,11 +537,8 @@ void CDriver::Postprocessing() {
 
   /*--- Stop the timer and output the final performance summary. ---*/
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime-StartTime;
   UsedTimeCompute += UsedTime;
 
@@ -1313,9 +1296,11 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
   if (restart || restart_flow) {
     if (euler || ns) {
+      SU2_OMP_PARALLEL_(if(solver[MESH_0][FLOW_SOL]->GetHasHybridParallel()))
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (turbulent) {
+      SU2_OMP_PARALLEL_(if(solver[MESH_0][TURB_SOL]->GetHasHybridParallel()))
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (config->AddRadiation()) {
@@ -2541,9 +2526,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           }
           if (rank == MASTER_NODE) cout << "fluid " << (conservative? "forces." : "tractions.") << endl;
         }
-        else if (structural_donor && fluid_target) {
+        else if (structural_donor && (fluid_target || heat_target)) {
           if (solver_container[target][INST_0][MESH_0][MESH_SOL] == nullptr) {
-            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.\n"
+            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid/heat zone.\n"
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
@@ -2573,6 +2558,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0, config[donor]);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
+          }
+          else {
+            if (rank == MASTER_NODE) cout << "NO heat variables." << endl;
           }
         }
         else {
@@ -3085,14 +3073,10 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   IterCount++;
   UsedTime = (StopTime - StartTime) + UsedTimeCompute;
-
 
   /*--- Check if there is any change in the runtime parameters ---*/
 
@@ -3268,11 +3252,8 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   IterCount++;
   UsedTime = (StopTime - StartTime);
 
