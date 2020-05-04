@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -191,7 +191,7 @@ public:
   CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
   CPoint** node;                         /*!< \brief Node vector (dual grid information). */
-  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
+  CEdge* edges;                          /*!< \brief Edge vector (dual grid information). */
   CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */

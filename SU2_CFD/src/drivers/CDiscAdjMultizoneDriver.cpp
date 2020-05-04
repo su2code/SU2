@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -426,8 +426,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   for(iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && solver->GetAdjoint())
-        solver->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      if (solver && solver->GetAdjoint()) {
+        for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+          solver->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
+        }
+      }
     }
   }
 
@@ -909,7 +912,7 @@ void CDiscAdjMultizoneDriver::Set_SolutionOld_To_Solution(unsigned short iZone) 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
-      solver->GetNodes()->Set_OldSolution();
+      solver->Set_OldSolution();
   }
 }
 
