@@ -37,7 +37,8 @@ fileList = ['CFlowOutput.cpp',
 'CAdjHeatOutput.cpp',
 'CAdjFlowIncOutput.cpp',
 'CAdjFlowCompOutput.cpp',
-'CAdjElasticityOutput.cpp']
+'CAdjElasticityOutput.cpp',
+'CTurbomachineryOutput.cpp']
 
 fileList = [os.path.join(su2_home, 'SU2_CFD/src/output/' + i) for i in fileList]
 
@@ -95,7 +96,7 @@ def parse_output(files):
 
 
     outputFields.update(addedOutputFields)
-    f = open(os.path.join(su2_home) + 'SU2_PY/SU2/io/historyMap.py', 'w')
+    f = open(os.path.join(su2_home) + '/SU2_PY/SU2/io/historyMap.py', 'w')
     f.write('history_header_map = ')
     pprint.pprint(outputFields, f)
     f.close()
