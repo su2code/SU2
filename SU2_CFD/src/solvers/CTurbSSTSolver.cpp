@@ -440,7 +440,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
+//    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
+    numerics->SetPrimitive(nodes->GetFlowPrimitive(iPoint), nullptr);
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
@@ -653,7 +654,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+//      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = nodes->GetFlowPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
