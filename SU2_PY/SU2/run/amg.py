@@ -156,11 +156,6 @@ def amg ( config , kind='' ):
         amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
 
-    if dim == 2:
-        sys.stdout.write("\nPreprocessing background mesh.\n")
-        sys.stdout.flush()
-        su2amg.prepro_back_mesh_2d(config, config_amg)
-
     #--- Remesh options: background surface mesh
     config_amg['options'] = "-back " + config_amg['adap_back']
 
