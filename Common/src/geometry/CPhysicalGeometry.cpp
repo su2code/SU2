@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
+#include <unordered_set>
 #ifdef _MSC_VER
 #include <direct.h>
 #endif
@@ -696,10 +697,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   unsigned short iNode, jNode;
   unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
 
-  unordered_map<unsigned long, unsigned long> Point_Map;
-  unordered_map<unsigned long, unsigned long>::iterator MI;
-
-  vector<unsigned long>::iterator it;
+  unordered_set<unsigned long> Point_Map;
 
   SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL;
   SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
@@ -716,7 +714,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = geometry->elem[iElem]->GetNode(iNode);
-      Point_Map[iPoint] = iPoint;
+      Point_Map.insert(iPoint);
     }
   }
 
@@ -740,11 +738,10 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   /*--- Find extra points that carry an index higher than nPoint. ---*/
 
   jPoint = geometry->GetnPoint();
-  for (MI = Point_Map.begin(); MI != Point_Map.end(); MI++) {
-    iPoint = MI->first;
-    if ((Point_Map[iPoint] <  pointPartitioner.GetFirstIndexOnRank(rank)) ||
-        (Point_Map[iPoint] >= pointPartitioner.GetLastIndexOnRank(rank))){
-      Global2Local[Point_Map[iPoint]] = jPoint;
+  for (auto iPoint : Point_Map) {
+    if ((iPoint <  pointPartitioner.GetFirstIndexOnRank(rank)) ||
+        (iPoint >= pointPartitioner.GetLastIndexOnRank(rank))){
+      Global2Local[iPoint] = jPoint;
       jPoint++;
     }
   }
@@ -767,7 +764,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
     sort(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
-    it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
+    auto it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
     Neighbors[iPoint].resize(it - Neighbors[iPoint].begin());
   }
 
@@ -1009,11 +1006,9 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   /*--- Prepare a mapping for local to global element index. ---*/
 
   unordered_map<unsigned long, unsigned long> Local2GlobalElem;
-  unordered_map<unsigned long, unsigned long>::iterator MI;
 
-  for (MI = geometry->Global_to_Local_Elem.begin();
-       MI != geometry->Global_to_Local_Elem.end(); MI++) {
-    Local2GlobalElem[MI->second] = MI->first;
+  for (auto p : geometry->Global_to_Local_Elem) {
+    Local2GlobalElem[p.second] = p.first;
   }
 
   /*--- We start with the connectivity distributed across all procs in a
@@ -1283,8 +1278,6 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   }
 
   /*--- Free temporary memory from communications ---*/
-
-  Local2GlobalElem.clear();
 
   if (connSendReq != NULL) delete [] connSendReq;
   if (idSendReq   != NULL) delete [] idSendReq;
@@ -2458,13 +2451,13 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   unsigned long nTria, nQuad, nTetr, nHexa, nPris, nPyra;
 
-  unordered_map<unsigned long, unsigned long> Tria_List;
-  unordered_map<unsigned long, unsigned long> Quad_List;
-  unordered_map<unsigned long, unsigned long> Tetr_List;
-  unordered_map<unsigned long, unsigned long> Hexa_List;
-  unordered_map<unsigned long, unsigned long> Pris_List;
-  unordered_map<unsigned long, unsigned long> Pyra_List;
-  unordered_map<unsigned long, unsigned long>::iterator it;
+  map<unsigned long, unsigned long> Tria_List;
+  map<unsigned long, unsigned long> Quad_List;
+  map<unsigned long, unsigned long> Tetr_List;
+  map<unsigned long, unsigned long> Hexa_List;
+  map<unsigned long, unsigned long> Pris_List;
+  map<unsigned long, unsigned long> Pyra_List;
+  map<unsigned long, unsigned long>::iterator it;
 
   /*--- It is possible that we have repeated elements during the previous
    communications, as we mostly focus on the grid points and their colors.
@@ -2726,12 +2719,8 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   /*--- Communicate the number of each element type to all processors. These
    values are important for merging and writing output later. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&Local_Elem, &Global_nElem, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nElem = nElem;
-#endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
@@ -2844,14 +2833,14 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     }
   }
 
-  /*--- Create a mapping from global to local marker ID (and vice-versa). ---*/
+  /*--- Create a mapping from global to local marker ID and v.v.
+   *    (the latter being just an alias). ---*/
 
   unordered_map<unsigned long, unsigned long> Marker_Global_to_Local;
-  unordered_map<unsigned long, unsigned long> Marker_Local_to_Global;
+  const vector<unsigned long>& Marker_Local_to_Global = Marker_Local;
 
   for (iMarker = 0; iMarker < Marker_Local.size(); iMarker++) {
     Marker_Global_to_Local[Marker_Local[iMarker]] = iMarker;
-    Marker_Local_to_Global[iMarker] = Marker_Local[iMarker];
   }
 
   /*--- Set up our element counters on each marker so that we can avoid
@@ -3049,8 +3038,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
     /*--- Now each domain has the right information ---*/
 
-    string Grid_Marker = config->GetMarker_All_TagBound(Marker_Local_to_Global[iMarker]);
-    short SendRecv     = config->GetMarker_All_SendRecv(Marker_Local_to_Global[iMarker]);
+    string Grid_Marker = config->GetMarker_All_TagBound(Global_Marker);
+    short SendRecv     = config->GetMarker_All_SendRecv(Global_Marker);
 
     Tag_to_Marker[iMarker] = Marker_Tags[Global_Marker];
     Marker_All_SendRecv[iMarker] = SendRecv;
@@ -3067,19 +3056,19 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   nSpanWiseSections       = new unsigned short[2] ();
   SpanWiseValue           = new su2double*[2] ();
 
-  nSpanSectionsByMarker             = new unsigned short[nMarker] ();
-  nVertexSpan                       = new long* [nMarker] ();
-  nTotVertexSpan                    = new unsigned long* [nMarker] ();
-  turbovertex                       = new CTurboVertex***[nMarker] ();
-  AverageTurboNormal                = new su2double**[nMarker] ();
-  AverageNormal                     = new su2double**[nMarker] ();
-  AverageGridVel                    = new su2double**[nMarker] ();
-  AverageTangGridVel                = new su2double*[nMarker] ();
-  SpanArea                          = new su2double*[nMarker] ();
-  TurboRadius                       = new su2double*[nMarker] ();
-  MaxAngularCoord                   = new su2double*[nMarker] ();
-  MinAngularCoord                   = new su2double*[nMarker] ();
-  MinRelAngularCoord                = new su2double*[nMarker] ();
+  nSpanSectionsByMarker   = new unsigned short[nMarker] ();
+  nVertexSpan             = new long* [nMarker] ();
+  nTotVertexSpan          = new unsigned long* [nMarker] ();
+  turbovertex             = new CTurboVertex***[nMarker] ();
+  AverageTurboNormal      = new su2double**[nMarker] ();
+  AverageNormal           = new su2double**[nMarker] ();
+  AverageGridVel          = new su2double**[nMarker] ();
+  AverageTangGridVel      = new su2double*[nMarker] ();
+  SpanArea                = new su2double*[nMarker] ();
+  TurboRadius             = new su2double*[nMarker] ();
+  MaxAngularCoord         = new su2double*[nMarker] ();
+  MinAngularCoord         = new su2double*[nMarker] ();
+  MinRelAngularCoord      = new su2double*[nMarker] ();
 
   /*--- Initialize pointers for turbomachinery performance computation  ---*/
 
@@ -4178,33 +4167,18 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
   /*--- Reduce the global counts of all element types found in
    the CGNS grid with all ranks. ---*/
 
-#ifdef HAVE_MPI
-  unsigned long Local_nElemTri     = nelem_triangle;
-  unsigned long Local_nElemQuad    = nelem_quad;
-  unsigned long Local_nElemTet     = nelem_tetra;
-  unsigned long Local_nElemHex     = nelem_hexa;
-  unsigned long Local_nElemPrism   = nelem_prism;
-  unsigned long Local_nElemPyramid = nelem_pyramid;
-  SU2_MPI::Allreduce(&Local_nElemTri,     &Global_nelem_triangle,  1,
+  SU2_MPI::Allreduce(&nelem_triangle,&Global_nelem_triangle,  1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemQuad,    &Global_nelem_quad,      1,
+  SU2_MPI::Allreduce(&nelem_quad,    &Global_nelem_quad,      1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemTet,     &Global_nelem_tetra,     1,
+  SU2_MPI::Allreduce(&nelem_tetra,   &Global_nelem_tetra,     1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemHex,     &Global_nelem_hexa,      1,
+  SU2_MPI::Allreduce(&nelem_hexa,    &Global_nelem_hexa,      1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemPrism,   &Global_nelem_prism,     1,
+  SU2_MPI::Allreduce(&nelem_prism,   &Global_nelem_prism,     1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid,   1,
+  SU2_MPI::Allreduce(&nelem_pyramid, &Global_nelem_pyramid,   1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nelem_triangle = nelem_triangle;
-  Global_nelem_quad     = nelem_quad;
-  Global_nelem_tetra    = nelem_tetra;
-  Global_nelem_hexa     = nelem_hexa;
-  Global_nelem_prism    = nelem_prism;
-  Global_nelem_pyramid  = nelem_pyramid;
-#endif
 
 }
 
