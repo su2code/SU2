@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2530,9 +2530,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           }
           if (rank == MASTER_NODE) cout << "fluid " << (conservative? "forces." : "tractions.") << endl;
         }
-        else if (structural_donor && fluid_target) {
+        else if (structural_donor && (fluid_target || heat_target)) {
           if (solver_container[target][INST_0][MESH_0][MESH_SOL] == nullptr) {
-            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.\n"
+            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid/heat zone.\n"
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
@@ -2562,6 +2562,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0, config[donor]);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
+          }
+          else {
+            if (rank == MASTER_NODE) cout << "NO heat variables." << endl;
           }
         }
         else {

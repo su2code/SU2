@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,7 +76,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshSolver(void);
+  ~CDiscAdjMeshSolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the AD-based mesh adjoint solver.

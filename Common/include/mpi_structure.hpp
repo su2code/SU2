@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -332,6 +332,7 @@ public:
 #define MPI_MAX 10
 #define MPI_INT 11
 #define MPI_PROD 12
+#define MPI_STATUS_IGNORE nullptr
 class CBaseMPIWrapper {
 
 public:
@@ -448,7 +449,6 @@ public:
 };
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
-extern CBaseMPIWrapper::Status* MPI_STATUS_IGNORE;
 
 #endif
 

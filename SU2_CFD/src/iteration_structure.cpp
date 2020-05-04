@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -473,11 +473,12 @@ void CFluidIteration::Iterate(COutput *output,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression
-   with under-relaxation approach. ---*/
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
   if (config[val_iZone]->GetCFL_Adapt() == YES) {
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone]);
+    SU2_OMP_PARALLEL
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -1116,11 +1117,6 @@ void CHeatIteration::Solve(COutput *output,
         Compute the wall clock time required. ---*/
 
   StartTime = SU2_MPI::Wtime();
-
-  /*--- Preprocess the solver ---*/
-
-  Preprocess(output, integration, geometry, solver, numerics, config,
-            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
   /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
   /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
@@ -1860,12 +1856,12 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_OldSolution();
+        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->Set_OldSolution();
         if (turbulent) {
-          solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_OldSolution();
+          solver[val_iZone][val_iInst][iMesh][TURB_SOL]->Set_OldSolution();
         }
         if (heat) {
-          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_OldSolution();
+          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->Set_OldSolution();
         }
         if (grid_IsMoving) {
           for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
@@ -2985,7 +2981,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput *output,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++)
-        solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_OldSolution();
+        solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->Set_OldSolution();
 
       /*--- Set Solution at timestep n to solution at n-1 ---*/
 
