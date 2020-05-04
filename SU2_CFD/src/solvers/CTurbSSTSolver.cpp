@@ -330,12 +330,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
-
-//    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-//    const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
+    
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
     const su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-//    const su2double mu  = nodes->GetFlowPrimitive(iPoint,nDim+5);
 
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
@@ -364,14 +361,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-//    for (unsigned short iVar = 0; iVar < nDim+9; iVar++) {
-//      /*--- Store density using Solution, for disc adj ---*/
-//      if (iVar == (nDim+2))
-//        nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint, 0));
-//      else
-//        nodes->SetFlowPrimitive(iPoint,iVar,solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, iVar));
-//    }
-//    const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double cons = nodes->GetSolution(iPoint,iVar);
