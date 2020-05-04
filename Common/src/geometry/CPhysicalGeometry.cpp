@@ -1005,7 +1005,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Prepare a mapping for local to global element index. ---*/
 
-  unordered_map<unsigned long, unsigned long> Local2GlobalElem;
+  vector<unsigned long> Local2GlobalElem(geometry->Global_to_Local_Elem.size());
 
   for (auto p : geometry->Global_to_Local_Elem) {
     Local2GlobalElem[p.second] = p.first;
