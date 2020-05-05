@@ -5092,6 +5092,126 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
 }
 
+void CSolver::CorrectJacobian(CGeometry      *geometry,
+                              CConfig        *config,
+                              unsigned long  iPoint,
+                              unsigned long  jPoint,
+                              const su2double ***Jacobian_ic,
+                              const su2double ***Jacobian_jc) {
+  
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    /*--- Influence of i's neighbors on R(i,j) ---*/
+    for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+      const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
+      const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
+      const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
+      const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.;
+        }
+      }
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign;
+          }
+        }
+      }
+      
+      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      
+      if (jPoint != iPoint) {
+        Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+      }
+    }
+    
+    /*--- Influence of boundary i on R(i,j) ---*/
+    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.;
+        }
+      }
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex != -1) {
+          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+              for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+                Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim];
+              }
+            }
+          }
+          
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          if (jPoint != iPoint) {
+            Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+          }
+        }
+      }
+    }
+    
+    if (jPoint != iPoint) {
+      /*--- Influence of j's neighbors on R(i,j) ---*/
+      for (unsigned short iNode = 0; iNode < geometry->node[jPoint]->GetnPoint(); iNode++) {
+        const unsigned long kPoint = geometry->node[jPoint]->GetPoint(iNode);
+        const unsigned long kEdge = geometry->FindEdge(jPoint,kPoint);
+        const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
+        const su2double sign = (jPoint < kPoint) ? 1.0 : -1.0;
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_i[iVar][jVar] = 0.;
+          }
+        }
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+              Jacobian_i[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign;
+            }
+          }
+        }
+        
+        Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
+        
+        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+      }
+      
+      /*--- Influence of boundary j on R(i,j) ---*/
+      if (geometry->node[jPoint]->GetPhysicalBoundary()) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_i[iVar][jVar] = 0.;
+          }
+        }
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
+          if (jVertex != -1) {
+            const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+                for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+                  Jacobian_i[iVar][jVar] -= Jacobian_jc[iDim][iVar][jVar]*Normal[iDim];
+                }
+              }
+            }
+            
+            Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
+            Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+          }
+        }
+      }
+    }
+    
+  }
+  
+}
+
 void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
   
   unsigned short iDim, iVar;

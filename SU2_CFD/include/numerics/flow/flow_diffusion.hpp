@@ -68,6 +68,8 @@ protected:
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
+  su2double*** Jacobian_ic = nullptr;     /*!< \brief The Jacobian correction w.r.t. point i after computation. */
+  su2double*** Jacobian_jc = nullptr;     /*!< \brief The Jacobian correction w.r.t. point i after computation. */
   
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
   su2double F1_i, F1_j;

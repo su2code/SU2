@@ -233,16 +233,22 @@ public:
    * change after instantiation, nor can it be used to change the data.
    */
   template<class Vector_t = const su2double*,
-           class Matrix_t = const Vector_t*>
+           class Matrix_t = const Vector_t*,
+           class VecMat_t = const su2double***>
   struct ResidualType {
     const Vector_t residual;
     const Matrix_t jacobian_i;
     const Matrix_t jacobian_j;
+    const VecMat_t jacobian_ic;
+    const VecMat_t jacobian_jc;
 
     ResidualType() = delete;
-
+    
     ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j) :
-      residual(res), jacobian_i(jac_i), jacobian_j(jac_j) { }
+    residual(res), jacobian_i(jac_i), jacobian_j(jac_j) { }
+
+    ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j, const VecMat_t& jac_ic, const VecMat_t& jac_jc) :
+      residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobian_ic(jac_ic), jacobian_jc(jac_jc) { }
 
     /*!
      * \brief The object can be directly cast to the vector type, this

@@ -357,57 +357,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
     
   numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
                       geometry->node[jPoint]->GetVolume());
-  
-  /*--- Set the basis function for the gradient Jacobian ---*/
-  su2double *GradBasis_i = new su2double[nDim], *GradBasis_j = new su2double[nDim];
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradBasis_i[iDim] = 0.; GradBasis_j[iDim] = 0.;
-    }
-    for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-      const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
-      const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-      const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-      const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        GradBasis_i[iDim] += 0.5*Normalk[iDim]*sign;
-      }
-    }
-    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            GradBasis_i[iDim] -= Normal[iDim];
-          }
-        }
-      }
-    }
-    
-    for (unsigned short iNode = 0; iNode < geometry->node[jPoint]->GetnPoint(); iNode++) {
-      const unsigned long kPoint = geometry->node[jPoint]->GetPoint(iNode);
-      const unsigned long kEdge = geometry->FindEdge(jPoint,kPoint);
-      const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-      const su2double sign = (jPoint < kPoint) ? 1.0 : -1.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        GradBasis_j[iDim] += 0.5*Normalk[iDim]*sign;
-      }
-    }
-    if (geometry->node[jPoint]->GetPhysicalBoundary()) {
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
-        if (jVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            GradBasis_j[iDim] -= Normal[iDim];
-          }
-        }
-      }
-    }
-    
-    numerics->SetGradBasisFunction(GradBasis_i, GradBasis_j);
-  }
 
   /*--- Compute and update residual ---*/
 
@@ -422,12 +371,13 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
 
-    if (implicit)
+    if (implicit) {
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      
+      /*--- Compute Jacobian correction for influence from all neighbors ---*/
+      CorrectJacobian(geometry, config, iPoint, jPoint, residual.jacobian_ic, residual.jacobian_jc);
+    }
   }
-  
-  delete [] GradBasis_i;
-  delete [] GradBasis_j;
 
 }
 

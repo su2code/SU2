@@ -306,6 +306,13 @@ public:
    * \brief Move the mesh in time
    */
   inline virtual void SetDualTime_Mesh(void){ }
+  
+  void CorrectJacobian(CGeometry       *geometry,
+                       CConfig         *config,
+                       unsigned long   iPoint,
+                       unsigned long   jPoint,
+                       const su2double ***Jacobian_ic,
+                       const su2double ***Jacobian_jc);
 
   /*!
    * \brief Make the eigenvalues of the Hessians positive.

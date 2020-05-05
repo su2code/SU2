@@ -7046,7 +7046,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   su2double *Normal = new su2double[nDim];
-  su2double *GradBasis_i = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -7298,27 +7297,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
                                  geometry->node[iPoint]->GetVolume());
-        
-        /*--- Set the basis function for the gradient Jacobian ---*/
-        if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            GradBasis_i[iDim] = 0.;
-          }
-          for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-            const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
-            const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-            const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-            const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-              GradBasis_i[iDim] += 0.5*Normalk[iDim]*sign;
-            }
-          }
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            GradBasis_i[iDim] += Normal[iDim];
-          }
-          
-          visc_numerics->SetGradBasisFunction(GradBasis_i, GradBasis_i);
-        }
 
         /*--- Compute and update viscous residual ---*/
 
@@ -7329,8 +7307,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         if (implicit){
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-          /*--- BCM: Account for 0.5(Grad_i+Grad_i) ---*/
-//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_j);
+          
+          /*--- Compute Jacobian correction for influence from all neighbors ---*/
+          CorrectJacobian(geometry, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
         }
         
       }
@@ -7340,7 +7319,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
-  delete [] GradBasis_i;
 
 }
 

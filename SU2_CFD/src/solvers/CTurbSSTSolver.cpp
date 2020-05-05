@@ -619,7 +619,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint, iVertex, Point_Normal;
   su2double *Normal, *V_infty, *V_domain;
   su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
-  su2double *GradBasis_i = new su2double[nDim];
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
   su2double Kine_Infty, Omega_Infty;
   unsigned short iVar, iDim;
@@ -724,27 +723,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
                                geometry->node[iPoint]->GetVolume());
-      
-      /*--- Set the basis function for the gradient Jacobian ---*/
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          GradBasis_i[iDim] = 0.;
-        }
-        for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
-          const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-          const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-          const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            GradBasis_i[iDim] += 0.5*Normalk[iDim]*sign;
-          }
-        }
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          GradBasis_i[iDim] += Normal[iDim];
-        }
-        
-        visc_numerics->SetGradBasisFunction(GradBasis_i, GradBasis_i);
-      }
 
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);
@@ -752,14 +730,14 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      /*--- BCM: Account for 0.5(Grad_i+Grad_i) ---*/
-//      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
+      
+      /*--- Compute Jacobian correction for influence from all neighbors ---*/
+      CorrectJacobian(geometry, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
 
     }
   }
 
   delete [] Normal;
-  delete [] GradBasis_i;
 
 }
 

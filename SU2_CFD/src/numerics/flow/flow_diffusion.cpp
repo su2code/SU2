@@ -66,9 +66,19 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
+  Jacobian_ic = new su2double** [nDim];
+  Jacobian_jc = new su2double** [nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Jacobian_ic[iDim] = new su2double* [nVar];
+    Jacobian_jc[iDim] = new su2double* [nVar];
+  }
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Jacobian_ic[iDim][iVar] = new su2double [nVar];
+      Jacobian_jc[iDim][iVar] = new su2double [nVar];
+    }
   }
 
 }
@@ -100,9 +110,13 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
       delete [] Jacobian_j[iVar];
+      delete [] Jacobian_ic[iVar];
+      delete [] Jacobian_jc[iVar];
     }
     delete [] Jacobian_i;
     delete [] Jacobian_j;
+    delete [] Jacobian_ic;
+    delete [] Jacobian_jc;
   }
 
 }
@@ -611,47 +625,31 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
                                     su2double **val_Proj_Jac_Tensor_i,
                                     su2double **val_Proj_Jac_Tensor_j,
                                     const CConfig *config) {
+  
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_ic[iDim][iVar][jVar] = 0.;
+        Jacobian_jc[iDim][iVar][jVar] = 0.;
+      }
+    }
+  }
 
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
     const su2double halfOnVol_i = 0.5 / (Volume_i);
     const su2double halfOnVol_j = 0.5 / (Volume_j);
     
-    vector<vector<su2double> > jac_i(nVar,vector<su2double>(nVar,0.0)),
-                               jac_j(nVar,vector<su2double>(nVar,0.0));
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        jac_i[iVar][jVar] = val_Proj_Jac_Tensor_i[iVar][jVar];
-        jac_j[iVar][jVar] = val_Proj_Jac_Tensor_j[iVar][jVar];
-      }
-    }
-    
-    if (!correct_gradient) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          val_Proj_Jac_Tensor_i[iVar][jVar] = 0.;
-          val_Proj_Jac_Tensor_j[iVar][jVar] = 0.;
-        }
-      }
-    }
-    
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double weight_i, weight_j;
-      if (correct_gradient) {
-        weight_i = GradBasis_i[iDim]*halfOnVol_i - 0.5*Normal[iDim]*halfOnVol_j;
-        weight_j = GradBasis_j[iDim]*halfOnVol_j + 0.5*Normal[iDim]*halfOnVol_i;
-      }
-      else {
-        weight_i = GradBasis_i[iDim]*halfOnVol_i;
-        weight_j = GradBasis_j[iDim]*halfOnVol_j;
-      }
+      const su2double weight_i = halfOnVol_i;
+      const su2double weight_j = halfOnVol_j;
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          val_Proj_Jac_Tensor_i[iVar][jVar] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
-                                             * jac_i[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
-          val_Proj_Jac_Tensor_j[iVar][jVar] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
-                                             * jac_j[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
+          Jacobian_ic[iDim][iVar][jVar] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+                                         * Jacobian_i[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
+          Jacobian_jc[iDim][iVar][jVar] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+                                         * Jacobian_j[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
         }
       }
     }
@@ -798,7 +796,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
   AD::EndPreacc();
 
-  return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
+  return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j, Jacobian_ic, Jacobian_jc);
 
 }
 

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file turb_diffusion.hpp
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in turbulence problems.
@@ -55,7 +55,9 @@ protected:
   proj_vector_ij = 0.0,                     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node i. */
-  **Jacobian_j = nullptr;                   /*!< \brief Flux Jacobian w.r.t. node j. */
+  **Jacobian_j = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node j. */
+  ***Jacobian_ic = nullptr,                 /*!< \brief Flux Jacobian correction termw.r.t. node i. */
+  ***Jacobian_jc = nullptr;                 /*!< \brief Flux Jacobian correction term w.r.t. node j. */
 
   const bool correct_gradient = false, implicit = false, incompressible = false;
 
