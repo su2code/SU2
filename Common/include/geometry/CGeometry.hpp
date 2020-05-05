@@ -49,6 +49,7 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 #include <memory>
+#include <unordered_map>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -201,7 +202,7 @@ public:
 
   /*--- Partitioning-specific variables ---*/
 
-  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unordered_map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
   unsigned long *beg_node;           /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
   unsigned long *end_node;           /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
   unsigned long *nPointLinear;       /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */

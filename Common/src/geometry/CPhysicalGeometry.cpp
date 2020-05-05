@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
+#include <unordered_set>
 #ifdef _MSC_VER
 #include <direct.h>
 #endif
@@ -691,10 +692,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   unsigned short iNode, jNode;
   unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
 
-  map<unsigned long, unsigned long> Point_Map;
-  map<unsigned long, unsigned long>::iterator MI;
-
-  vector<unsigned long>::iterator it;
+  unordered_set<unsigned long> Point_Map;
 
   SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL;
   SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
@@ -711,7 +709,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = geometry->elem[iElem]->GetNode(iNode);
-      Point_Map[iPoint] = iPoint;
+      Point_Map.insert(iPoint);
     }
   }
 
@@ -727,7 +725,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Create a global to local mapping that includes the unowned points. ---*/
 
-  map<unsigned long, unsigned long> Global2Local;
+  unordered_map<unsigned long, unsigned long> Global2Local;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
@@ -735,11 +733,10 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   /*--- Find extra points that carry an index higher than nPoint. ---*/
 
   jPoint = geometry->GetnPoint();
-  for (MI = Point_Map.begin(); MI != Point_Map.end(); MI++) {
-    iPoint = MI->first;
-    if ((Point_Map[iPoint] <  pointPartitioner.GetFirstIndexOnRank(rank)) ||
-        (Point_Map[iPoint] >= pointPartitioner.GetLastIndexOnRank(rank))){
-      Global2Local[Point_Map[iPoint]] = jPoint;
+  for (auto iPoint : Point_Map) {
+    if ((iPoint <  pointPartitioner.GetFirstIndexOnRank(rank)) ||
+        (iPoint >= pointPartitioner.GetLastIndexOnRank(rank))){
+      Global2Local[iPoint] = jPoint;
       jPoint++;
     }
   }
@@ -762,7 +759,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
     sort(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
-    it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
+    auto it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
     Neighbors[iPoint].resize(it - Neighbors[iPoint].begin());
   }
 
@@ -943,11 +940,11 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (colorSendReq != NULL) delete [] colorSendReq;
-  if (idSendReq    != NULL) delete [] idSendReq;
+  delete [] colorSendReq;
+  delete [] idSendReq;
 
-  if (colorRecvReq != NULL) delete [] colorRecvReq;
-  if (idRecvReq    != NULL) delete [] idRecvReq;
+  delete [] colorRecvReq;
+  delete [] idRecvReq;
 
   delete [] colorSend;
   delete [] colorRecv;
@@ -1003,12 +1000,10 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Prepare a mapping for local to global element index. ---*/
 
-  map<unsigned long, unsigned long> Local2GlobalElem;
-  map<unsigned long, unsigned long>::iterator MI;
+  vector<unsigned long> Local2GlobalElem(geometry->Global_to_Local_Elem.size());
 
-  for (MI = geometry->Global_to_Local_Elem.begin();
-       MI != geometry->Global_to_Local_Elem.end(); MI++) {
-    Local2GlobalElem[MI->second] = MI->first;
+  for (auto p : geometry->Global_to_Local_Elem) {
+    Local2GlobalElem[p.second] = p.first;
   }
 
   /*--- We start with the connectivity distributed across all procs in a
@@ -1278,8 +1273,6 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   }
 
   /*--- Free temporary memory from communications ---*/
-
-  Local2GlobalElem.clear();
 
   if (connSendReq != NULL) delete [] connSendReq;
   if (idSendReq   != NULL) delete [] idSendReq;
@@ -2714,12 +2707,8 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   /*--- Communicate the number of each element type to all processors. These
    values are important for merging and writing output later. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&Local_Elem, &Global_nElem, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nElem = nElem;
-#endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
@@ -2832,14 +2821,14 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     }
   }
 
-  /*--- Create a mapping from global to local marker ID (and vice-versa). ---*/
+  /*--- Create a mapping from global to local marker ID and v.v.
+   *    (the latter being just an alias). ---*/
 
-  map<unsigned long, unsigned long> Marker_Global_to_Local;
-  map<unsigned long, unsigned long> Marker_Local_to_Global;
+  unordered_map<unsigned long, unsigned long> Marker_Global_to_Local;
+  const vector<unsigned long>& Marker_Local_to_Global = Marker_Local;
 
   for (iMarker = 0; iMarker < Marker_Local.size(); iMarker++) {
     Marker_Global_to_Local[Marker_Local[iMarker]] = iMarker;
-    Marker_Local_to_Global[iMarker] = Marker_Local[iMarker];
   }
 
   /*--- Set up our element counters on each marker so that we can avoid
@@ -3037,8 +3026,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
     /*--- Now each domain has the right information ---*/
 
-    string Grid_Marker = config->GetMarker_All_TagBound(Marker_Local_to_Global[iMarker]);
-    short SendRecv     = config->GetMarker_All_SendRecv(Marker_Local_to_Global[iMarker]);
+    string Grid_Marker = config->GetMarker_All_TagBound(Global_Marker);
+    short SendRecv     = config->GetMarker_All_SendRecv(Global_Marker);
 
     Tag_to_Marker[iMarker] = Marker_Tags[Global_Marker];
     Marker_All_SendRecv[iMarker] = SendRecv;
@@ -3055,19 +3044,19 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   nSpanWiseSections       = new unsigned short[2] ();
   SpanWiseValue           = new su2double*[2] ();
 
-  nSpanSectionsByMarker             = new unsigned short[nMarker] ();
-  nVertexSpan                       = new long* [nMarker] ();
-  nTotVertexSpan                    = new unsigned long* [nMarker] ();
-  turbovertex                       = new CTurboVertex***[nMarker] ();
-  AverageTurboNormal                = new su2double**[nMarker] ();
-  AverageNormal                     = new su2double**[nMarker] ();
-  AverageGridVel                    = new su2double**[nMarker] ();
-  AverageTangGridVel                = new su2double*[nMarker] ();
-  SpanArea                          = new su2double*[nMarker] ();
-  TurboRadius                       = new su2double*[nMarker] ();
-  MaxAngularCoord                   = new su2double*[nMarker] ();
-  MinAngularCoord                   = new su2double*[nMarker] ();
-  MinRelAngularCoord                = new su2double*[nMarker] ();
+  nSpanSectionsByMarker   = new unsigned short[nMarker] ();
+  nVertexSpan             = new long* [nMarker] ();
+  nTotVertexSpan          = new unsigned long* [nMarker] ();
+  turbovertex             = new CTurboVertex***[nMarker] ();
+  AverageTurboNormal      = new su2double**[nMarker] ();
+  AverageNormal           = new su2double**[nMarker] ();
+  AverageGridVel          = new su2double**[nMarker] ();
+  AverageTangGridVel      = new su2double*[nMarker] ();
+  SpanArea                = new su2double*[nMarker] ();
+  TurboRadius             = new su2double*[nMarker] ();
+  MaxAngularCoord         = new su2double*[nMarker] ();
+  MinAngularCoord         = new su2double*[nMarker] ();
+  MinRelAngularCoord      = new su2double*[nMarker] ();
 
   /*--- Initialize pointers for turbomachinery performance computation  ---*/
 
@@ -3427,7 +3416,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   vector<vector<unsigned long> > SendDomainLocal;       /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
   vector<vector<unsigned long> > ReceivedDomainLocal;   /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
 
-  map<unsigned long, unsigned long>::const_iterator MI;
+  unordered_map<unsigned long, unsigned long>::const_iterator MI;
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
@@ -4152,33 +4141,18 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
   /*--- Reduce the global counts of all element types found in
    the CGNS grid with all ranks. ---*/
 
-#ifdef HAVE_MPI
-  unsigned long Local_nElemTri     = nelem_triangle;
-  unsigned long Local_nElemQuad    = nelem_quad;
-  unsigned long Local_nElemTet     = nelem_tetra;
-  unsigned long Local_nElemHex     = nelem_hexa;
-  unsigned long Local_nElemPrism   = nelem_prism;
-  unsigned long Local_nElemPyramid = nelem_pyramid;
-  SU2_MPI::Allreduce(&Local_nElemTri,     &Global_nelem_triangle,  1,
+  SU2_MPI::Allreduce(&nelem_triangle,&Global_nelem_triangle,  1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemQuad,    &Global_nelem_quad,      1,
+  SU2_MPI::Allreduce(&nelem_quad,    &Global_nelem_quad,      1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemTet,     &Global_nelem_tetra,     1,
+  SU2_MPI::Allreduce(&nelem_tetra,   &Global_nelem_tetra,     1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemHex,     &Global_nelem_hexa,      1,
+  SU2_MPI::Allreduce(&nelem_hexa,    &Global_nelem_hexa,      1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemPrism,   &Global_nelem_prism,     1,
+  SU2_MPI::Allreduce(&nelem_prism,   &Global_nelem_prism,     1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid,   1,
+  SU2_MPI::Allreduce(&nelem_pyramid, &Global_nelem_pyramid,   1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nelem_triangle = nelem_triangle;
-  Global_nelem_quad     = nelem_quad;
-  Global_nelem_tetra    = nelem_tetra;
-  Global_nelem_hexa     = nelem_hexa;
-  Global_nelem_prism    = nelem_prism;
-  Global_nelem_pyramid  = nelem_pyramid;
-#endif
 
 }
 
@@ -5434,7 +5408,7 @@ void CPhysicalGeometry::SetElement_Connectivity(void) {
           /*--- If it is a new element in this face ---*/
 
           if ((elem[iElem]->GetNeighbor_Elements(iFace) == -1) && (iElem < Test_Elem) &&
-              (FindFace(iElem, Test_Elem, first_elem_face, second_elem_face))) {
+              FindFace(iElem, Test_Elem, first_elem_face, second_elem_face)) {
 
             /*--- Localice which faces are sharing both elements ---*/
 
@@ -8551,94 +8525,72 @@ void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2doubl
 bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                                  unsigned short &face_second_elem) {
 
-  /*--- Find repeated nodes between two elements to identify the common face ---*/
-  unsigned long iPoint = 0, jPoint = 0;
-  unsigned short face_node, iFace, iNode, jNode, nNodesFace;
-  vector<unsigned long> CommonPoints, PointFaceFirst, PointFaceSecond;
-  vector<unsigned long>::iterator IterPoint;
-  pair<vector <unsigned long>::iterator, vector <unsigned long>::iterator> mypair;
-  bool face_first_found = false, face_second_found =false;
-
   if (first_elem == second_elem) return false;
 
-  for (iNode = 0; iNode < elem[first_elem]->GetnNodes(); iNode++) {
-    iPoint = elem[first_elem]->GetNode(iNode);
-    for (jNode = 0; jNode < elem[second_elem]->GetnNodes(); jNode++) {
-      jPoint = elem[second_elem]->GetNode(jNode);
+  /*--- Find repeated nodes between two elements to identify the common face. ---*/
+
+  unsigned long numCommonPoints = 0;
+  unsigned long CommonPoints[N_POINTS_MAXIMUM] = {0};
+
+  for (auto iNode = 0u; iNode < elem[first_elem]->GetnNodes(); iNode++) {
+    const auto iPoint = elem[first_elem]->GetNode(iNode);
+    for (auto jNode = 0u; jNode < elem[second_elem]->GetnNodes(); jNode++) {
+      const auto jPoint = elem[second_elem]->GetNode(jNode);
       if (iPoint == jPoint) {
-        CommonPoints.push_back(iPoint);
+        CommonPoints[numCommonPoints] = iPoint;
+        ++numCommonPoints;
         break;
       }
     }
   }
 
   /*--- Sort point in face and check that the list is unique ---*/
-  sort( CommonPoints.begin(), CommonPoints.end());
-  IterPoint = unique( CommonPoints.begin(), CommonPoints.end());
-  CommonPoints.resize( distance(CommonPoints.begin(), IterPoint) );
+  sort(CommonPoints, CommonPoints+numCommonPoints);
 
   /*--- In 2D, the two elements must share two points that make up
    an edge, as all "faces" are edges in 2D. In 3D, we need to find
    exactly 3 (tri) or 4 (quad) common points. Return immediately to
    avoid a memory issue due to vectors of different lengths below. ---*/
 
-  if ((nDim == 2) && (CommonPoints.size() != 2)) return false;
-  if ((nDim == 3) && ((CommonPoints.size() != 3) &&
-                      (CommonPoints.size() != 4))) return false;
+  if (numCommonPoints < nDim) return false;
 
-  /*--- Search the sequence in the first element ---*/
-  for (iFace = 0; iFace < elem[first_elem]->GetnFaces(); iFace++) {
-    nNodesFace = elem[first_elem]->GetnNodesFace(iFace);
+  /*--- Find the faces with the CommonPoint sequence in the first and second elements ---*/
+  for (auto iElem = 0ul; iElem < 2; ++iElem) {
 
-    if (nNodesFace == CommonPoints.size()) {
-    for (iNode = 0; iNode < nNodesFace; iNode++) {
-      face_node = elem[first_elem]->GetFaces(iFace, iNode);
-      PointFaceFirst.push_back(elem[first_elem]->GetNode(face_node));
+    const auto idxElem = (iElem==0)? first_elem : second_elem;
+    auto& idxFaceOut = (iElem==0)? face_first_elem : face_second_elem;
+    bool faceFound = false;
+
+    for (auto iFace = 0u; iFace < elem[idxElem]->GetnFaces(); iFace++) {
+      const auto nNodesFace = elem[idxElem]->GetnNodesFace(iFace);
+
+      if (nNodesFace != numCommonPoints) continue;
+
+      unsigned long PointsFace[N_POINTS_MAXIMUM] = {0};
+
+      for (auto iNode = 0u; iNode < nNodesFace; iNode++) {
+        const auto face_node = elem[idxElem]->GetFaces(iFace, iNode);
+        PointsFace[iNode] = elem[idxElem]->GetNode(face_node);
+      }
+
+      /*--- Sort face_poin to perform comparison ---*/
+      const auto PointsFaceEnd = PointsFace+nNodesFace;
+      sort(PointsFace, PointsFaceEnd);
+
+      /*--- List comparison ---*/
+      auto mypair = mismatch(PointsFace, PointsFaceEnd, CommonPoints);
+      if (mypair.first == PointsFaceEnd) {
+        idxFaceOut = iFace;
+        faceFound = true;
+        break;
+      }
     }
 
-    /*--- Sort face_poin to perform comparison ---*/
-    sort( PointFaceFirst.begin(), PointFaceFirst.end());
-
-    /*--- List comparison ---*/
-    mypair = mismatch (PointFaceFirst.begin(), PointFaceFirst.end(), CommonPoints.begin());
-    if (mypair.first == PointFaceFirst.end()) {
-      face_first_elem = iFace;
-      face_first_found = true;
-      break;
-    }
-
-    PointFaceFirst.erase (PointFaceFirst.begin(), PointFaceFirst.end());
-  }
+    if (!faceFound) return false;
   }
 
-  /*--- Search the secuence in the second element ---*/
-  for (iFace = 0; iFace < elem[second_elem]->GetnFaces(); iFace++) {
-    nNodesFace = elem[second_elem]->GetnNodesFace(iFace);
-
-    if (nNodesFace == CommonPoints.size()) {
-    for (iNode = 0; iNode < nNodesFace; iNode++) {
-      face_node = elem[second_elem]->GetFaces(iFace, iNode);
-      PointFaceSecond.push_back(elem[second_elem]->GetNode(face_node));
-    }
-
-    /*--- Sort face_poin to perform comparison ---*/
-    sort( PointFaceSecond.begin(), PointFaceSecond.end());
-
-    /*--- List comparison ---*/
-    mypair = mismatch (PointFaceSecond.begin(), PointFaceSecond.end(), CommonPoints.begin());
-    if (mypair.first == PointFaceSecond.end()) {
-      face_second_elem = iFace;
-      face_second_found = true;
-      break;
-    }
-
-    PointFaceSecond.erase (PointFaceSecond.begin(), PointFaceSecond.end());
-  }
-  }
-
-  if (face_first_found && face_second_found) return true;
-  else return false;
-
+  /*--- To get here, the face was found for both elements. ---*/
+  return true;
 }
 
 void CPhysicalGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {
@@ -11651,28 +11603,27 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
 }
 
-void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
-
+void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  if (!WallADT->IsEmpty()){
+  SU2_OMP_PARALLEL
+  if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
 
+    SU2_OMP_FOR_DYN(roundUpDiv(nPoint,2*omp_get_max_threads()))
     for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
       unsigned short markerID;
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
-
-      WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID,
-                                       elemID, rankID);
-      if (dist < nodes->GetWall_Distance(iPoint))
-        nodes->SetWall_Distance(iPoint, dist);
+      WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+      nodes->SetWall_Distance(iPoint, min(dist,nodes->GetWall_Distance(iPoint)));
     }
   }
+  // end SU2_OMP_PARALLEL
 }

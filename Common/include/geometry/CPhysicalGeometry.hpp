@@ -38,16 +38,17 @@
  */
 class CPhysicalGeometry final : public CGeometry {
 
-  map<unsigned long, unsigned long> Global_to_Local_Point;  /*!< \brief Global-local indexation for the points. */
-  long *Local_to_Global_Point;                              /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker;                   /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker;                   /*!< \brief Global to Local marker. */
-  unsigned long *adj_counter;                               /*!< \brief Adjacency counter. */
-  unsigned long **adjacent_elem;                            /*!< \brief Adjacency element list. */
-  su2activematrix Sensitivity;                              /*!< \brief Matrix holding the sensitivities at each point. */
+  unordered_map<unsigned long, unsigned long>
+  Global_to_Local_Point;                    /*!< \brief Global-local indexation for the points. */
+  long *Local_to_Global_Point;              /*!< \brief Local-global indexation for the points. */
+  unsigned short *Local_to_Global_Marker;   /*!< \brief Local to Global marker. */
+  unsigned short *Global_to_Local_Marker;   /*!< \brief Global to Local marker. */
+  unsigned long *adj_counter;               /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem;            /*!< \brief Adjacency element list. */
+  su2activematrix Sensitivity;              /*!< \brief Matrix holding the sensitivities at each point. */
 
   vector<vector<unsigned long> > Neighbors;
-  map<unsigned long, unsigned long> Color_List;
+  unordered_map<unsigned long, unsigned long> Color_List;
   vector<string> Marker_Tags;
   unsigned long nLocal_Point,
   nLocal_PointDomain,
