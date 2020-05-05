@@ -79,9 +79,19 @@ def get_flow_iter(config):
             flow_iter.append(config['ITER'])        
         return flow_iter
 
-def get_cfl(config):
-    if 'PYADAP_CFL' in config:
-        return config['PYADAP_CFL'].strip('()').split(",")
+def get_flow_cfl(config):
+    if 'PYADAP_FLOW_CFL' in config:
+        return config['PYADAP_FLOW_CFL'].strip('()').split(",")
+    else:
+        ncfl = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
+        cfl = []
+        for i in range(ncfl):
+            cfl.append(config['CFL_NUMBER'])        
+        return cfl
+
+def get_adj_cfl(config):
+    if 'PYADAP_ADJ_CFL' in config:
+        return config['PYADAP_ADJ_CFL'].strip('()').split(",")
     else:
         ncfl = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
         cfl = []

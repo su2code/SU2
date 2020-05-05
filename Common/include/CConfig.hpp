@@ -1141,7 +1141,8 @@ private:
   bool Wrt_InriaMesh;                  /*!< \brief Whether or not to write meshb files */
   su2double Adap_Norm,                 /*!< \brief Lp-norm for mesh adaptation */
             Adap_Hmax,                 /*!< \brief Maximum cell size */
-            Adap_Hmin;                 /*!< \brief Minimum cell size */
+            Adap_Hmin,                 /*!< \brief Minimum cell size */
+            Adap_ARmax;                /*!< \brief Maximum cell aspect ratio */
   unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
@@ -9457,6 +9458,12 @@ public:
    * \return Minimum cell size
    */
   su2double GetAdap_Hmin(void) const { return Adap_Hmin; }
+
+  /*!
+   * \brief Get maximum cell aspect ratio
+   * \return Maximum cell aspect ratio
+   */
+  su2double GetAdap_ARmax(void) const { return Adap_ARmax; }
 
   /*!
    * \brief Get constraint complexity

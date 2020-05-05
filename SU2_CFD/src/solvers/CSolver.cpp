@@ -5712,12 +5712,13 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
   su2double localScale = 0.0,
             globalScale = 0.0;
 
-  su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
   
   const su2double p = config->GetAdap_Norm(),
                   eigmax = 1./(pow(config->GetAdap_Hmin(),2.0)),
                   eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
+                  armax2 = pow(config->GetAdap_ARmax(), 2.0),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
   su2double **A      = new su2double*[nDim],
@@ -5779,6 +5780,11 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    
+    unsigned short iMax = 0;
+    for (unsigned short iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
+
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -5789,25 +5795,31 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
     const su2double density = sqrt(abs(EigVal[0]*EigVal[1]));
+    const su2double hmin    = 1./sqrt(max(EigVal[0], EigVal[1]));
+    const su2double hmax    = 1./sqrt(min(EigVal[0], EigVal[1]));
 
     localMinDensity = min(localMinDensity, density);
     localMaxDensity = max(localMaxDensity, density);
+    localMaxAspectR = max(hmax/hmin, localMaxAspectR);
     localTotComplex += density*Vol;
   }
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   globalMinDensity = localMinDensity;
   globalMaxDensity = localMaxDensity;
+  globalMaxAspectR = localMaxAspectR;
   globalTotComplex = localTotComplex;
 #endif
 
   if(rank == MASTER_NODE) {
     cout << "Minimum density: " << globalMinDensity << "." << endl;
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 
@@ -5828,12 +5840,13 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   su2double localScale = 0.0,
             globalScale = 0.0;
 
-  su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
   
   const su2double p = config->GetAdap_Norm(),
                   eigmax = 1./(pow(config->GetAdap_Hmin(),2.0)),
                   eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
+                  armax2 = pow(config->GetAdap_ARmax(), 2.0),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
   su2double **A      = new su2double*[nDim],
@@ -5905,6 +5918,11 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    
+    unsigned short iMax = 0;
+    for (unsigned short iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
+
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -5919,25 +5937,31 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
     const su2double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+    const su2double hmin    = 1./sqrt(max(max(EigVal[0], EigVal[1]), EigVal[2]));
+    const su2double hmax    = 1./sqrt(min(min(EigVal[0], EigVal[1]), EigVal[2]));
 
     localMinDensity = min(localMinDensity, density);
     localMaxDensity = max(localMaxDensity, density);
+    localMaxAspectR = max(hmax/hmin, localMaxAspectR);
     localTotComplex += density*Vol;
   }
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   globalMinDensity = localMinDensity;
   globalMaxDensity = localMaxDensity;
+  globalMaxAspectR = localMaxAspectR;
   globalTotComplex = localTotComplex;
 #endif
 
   if(rank == MASTER_NODE) {
     cout << "Minimum density: " << globalMinDensity << "." << endl;
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 

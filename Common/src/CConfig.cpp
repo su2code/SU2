@@ -2812,6 +2812,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
 
+  /* DESCRIPTION: Constraint maximum cell aspect ratio */
+  addDoubleOption("ADAP_ARMAX", Adap_ARmax, 1.0E6);
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_COMPLEXITY");
   
@@ -2825,7 +2828,10 @@ void CConfig::SetConfig_Options() {
   addPythonOption("PYADAP_ADJ_ITER");
   
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_CFL");
+  addPythonOption("PYADAP_FLOW_CFL");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ADJ_CFL");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_BACK");
@@ -2841,6 +2847,9 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_HMIN");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ARMAX");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_HGRAD");
