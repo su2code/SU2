@@ -222,6 +222,8 @@ protected:
 
   su2double Volume_i, /*!< \brief Volume of the control volume around point i. */
             Volume_j; /*!< \brief Volume of the control volume around point j. */
+  su2double *GradBasis_i, /*!< \brief Basis function for the gradient at point i. */
+            *GradBasis_j; /*!< \brief Basis function for the gradient at point j. */
 
 public:
   /*!
@@ -719,6 +721,11 @@ public:
   inline void SetVolume(su2double val_volume_i, su2double val_volume_j) {
     Volume_i = val_volume_i;
     Volume_j = val_volume_j;
+  }
+  
+  inline void SetGradBasisFunction(su2double *val_basis_i, su2double *val_basis_j) {
+    GradBasis_i = val_basis_i;
+    GradBasis_j = val_basis_j;
   }
 
   /*!

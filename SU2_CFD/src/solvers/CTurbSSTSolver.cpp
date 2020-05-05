@@ -723,6 +723,28 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
                                geometry->node[iPoint]->GetVolume());
+      
+      /*--- Set the basis function for the gradient Jacobian ---*/
+      su2double *GradBasis_i = new su2double[nDim];
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          GradBasis_i[iDim] = 0.;
+        }
+        for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+          const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
+          const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
+          const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
+          const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            GradBasis_i[iDim] += 0.5*Normalk[iDim]*sign;
+          }
+        }
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          GradBasis_i[iDim] += Normal[iDim];
+        }
+        
+        visc_numerics->SetGradBasisFunction(GradBasis_i, GradBasis_i);
+      }
 
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);

@@ -636,19 +636,21 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     }
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double weight;
+      su2double weight_i, weight_j;
       if (correct_gradient) {
-        weight = 0.5*Normal[iDim]*(halfOnVol_i - halfOnVol_j);
+        weight_i = GradBasis_i[iDim]*halfOnVol_i - Normal[iDim]*halfOnVol_j;
+        weight_j = GradBasis_j[iDim]*halfOnVol_j + Normal[iDim]*halfOnVol_i;
       }
       else {
-        weight = 2.0*Normal[iDim]*halfOnVol_i;
+        weight_i = 2.*GradBasis_i[iDim]*halfOnVol_i;
+        weight_j = 0.;
       }
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          val_Proj_Jac_Tensor_i[iVar][jVar] -= weight*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+          val_Proj_Jac_Tensor_i[iVar][jVar] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
                                              * jac_i[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
-          val_Proj_Jac_Tensor_j[iVar][jVar] += weight*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+          val_Proj_Jac_Tensor_j[iVar][jVar] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
                                              * jac_j[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
         }
       }
