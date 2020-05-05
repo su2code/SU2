@@ -545,7 +545,6 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                                 * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
             }
             Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-            break;
           }
         }
       }

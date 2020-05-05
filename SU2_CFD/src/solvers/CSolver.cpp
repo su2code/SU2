@@ -5100,6 +5100,9 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
                               const su2double *const *const *const Jacobian_jc) {
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    
+    AD_BEGIN_PASSIVE
+    
     /*--- Influence of i's neighbors on R(i,j) ---*/
     for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
       const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
@@ -5207,6 +5210,8 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         }
       }
     }
+    
+    AD_END_PASSIVE
     
   }
   
