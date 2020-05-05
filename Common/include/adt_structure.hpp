@@ -63,23 +63,22 @@ public:
   CADTComparePointClass(const su2double      *coor,
                         const unsigned short splitDir,
                         const unsigned short nDimADT);
-  /*!
-   * \brief Destructor, nothing to be done.
-   */
-  ~CADTComparePointClass();
 
   /*!
    * \brief Operator used for the sorting of the points.
    * \param[in] p0  Index of the first point to be compared.
    * \param[in] p1  Index of the second point to be compared.
    */
-  bool operator()(const unsigned long p0,
-                  const unsigned long p1) const;
-private:
+  inline bool operator()(const unsigned long p0,
+                         const unsigned long p1) const {
+    return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
+  }
+
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  CADTComparePointClass();
+  CADTComparePointClass() = delete;
+
 };
 
 /*!
@@ -89,8 +88,8 @@ private:
  * \author E. van der Weide
  * \version 7.0.4 "Blackbird"
  */
-class CBBoxTargetClass {
-public:
+struct CBBoxTargetClass {
+
   unsigned long boundingBoxID;      /*!< \brief Corresponding bounding box ID. */
   su2double     possibleMinDist2;   /*!< \brief Possible minimimum distance squared to the
                                                 given coordinate. */
@@ -100,12 +99,7 @@ public:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  CBBoxTargetClass();
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CBBoxTargetClass();
+  CBBoxTargetClass() = default;
 
   /*!
    * \brief Constructor of the class, which initializes the member variables.
@@ -120,30 +114,11 @@ public:
                    const su2double     val_guarDist2);
 
   /*!
-   * \brief Copy constructor of the class.
-   * \param[in] other  Object from which the data must be copied.
-   */
-  CBBoxTargetClass(const CBBoxTargetClass &other);
-
-  /*!
-   * \brief Assignment operator.
-   * \param[in] other  Object from which the data must be copied.
-   */
-  CBBoxTargetClass& operator=(const CBBoxTargetClass &other);
-
-  /*!
    * \brief Less than operator. Needed for the sorting of the candidates.
    * \param[in] other  Object to which the current object must be compared.
    */
   bool operator <(const CBBoxTargetClass &other) const;
 
-private:
-
-  /*!
-   * \brief Copy function, which copies the data from the given object.
-   * \param[in] other  Object from which the data must be copied.
-   */
-  void Copy(const CBBoxTargetClass &other);
 };
 
 /*!
@@ -151,8 +126,8 @@ private:
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
  */
-class CADTNodeClass {
-public:
+struct CADTNodeClass {
+
   bool          childrenAreTerminal[2];  /*!< \brief Whether or not the child leaves are terminal. */
   unsigned long children[2];             /*!< \brief Child leaves. If childrenAreTerminal is true the children
                                                      contain the point ID's or bounding box ID's. Note that it
@@ -163,36 +138,6 @@ public:
                                 vector, which contains the coordinates of all leaves. */
   su2double *xMax;  /*!< \brief The maximum coordinates of this leaf. It points to a position in the large
                                 vector, which contains the coordinates of all leaves. */
-
-  /*!
-   * \brief Constructor of the class. Nothing to be done.
-   */
-  CADTNodeClass();
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CADTNodeClass();
-
-  /*!
-   * \brief Copy constructor of the class.
-   * \param[in] other  Object from which the data must be copied.
-   */
-  CADTNodeClass(const CADTNodeClass &other);
-
-  /*!
-   * \brief Assignment operator.
-   * \param[in] other  Object from which the data must be copied.
-   */
-  CADTNodeClass& operator=(const CADTNodeClass &other);
-
-private:
-
-  /*!
-   * \brief Copy function, which copies the data from the given object.
-   * \param[in] other  Object from which the data must be copied.
-   */
-  void Copy(const CADTNodeClass &other);
 };
 
 /*!
@@ -202,15 +147,19 @@ private:
  */
 class CADTBaseClass {
 protected:
-  unsigned long nLeaves;    /*!< \brief Number of leaves in the ADT. */
+  unsigned long  nLeaves;   /*!< \brief Number of leaves in the ADT. */
   unsigned short nDimADT;   /*!< \brief Number of dimensions of the ADT. */
   bool           isEmpty;   /*!< \brief Whether or not the ADT is empty. */
 
   vector<CADTNodeClass> leaves; /*!< \brief Vector, which contains all the leaves of the ADT. */
 
-  vector<unsigned long> frontLeaves;    /*!< \brief Vector used in the tree traversal. */
-  vector<unsigned long> frontLeavesNew; /*!< \brief Vector used in the tree traversal. */
-
+#ifdef HAVE_OMP
+  vector<vector<unsigned long> > FrontLeaves;    /*!< \brief Vector used in the tree traversal. */
+  vector<vector<unsigned long> > FrontLeavesNew; /*!< \brief Vector used in the tree traversal. */
+#else
+  array<vector<unsigned long>,1> FrontLeaves;
+  array<vector<unsigned long>,1> FrontLeavesNew;
+#endif
 private:
   vector<su2double> coorMinLeaves; /*!< \brief Vector, which contains all the minimum coordinates
                                                of the leaves. */
@@ -220,12 +169,16 @@ protected:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  CADTBaseClass();
+  CADTBaseClass() = default;
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  virtual ~CADTBaseClass();
+  virtual ~CADTBaseClass() = default;
+
+  /*--- Disable copy operations ---*/
+  CADTBaseClass(const CADTBaseClass &) = delete;
+  CADTBaseClass& operator=(const CADTBaseClass &) = delete;
 
   /*!
    * \brief Function, which builds the ADT of the given coordinates.
@@ -236,24 +189,15 @@ protected:
   void BuildADT(unsigned short  nDim,
                 unsigned long   nPoints,
                 const su2double *coor);
+
 public:
+
   /*!
    * \brief Function, which returns whether or not the ADT is empty.
    * \return  Whether or not the ADT is empty.
-   *
    */
-  bool IsEmpty(void) const;
+  inline bool IsEmpty(void) const { return isEmpty;}
 
-private:
-  /*!
-   * \brief Copy constructor of the class, disabled.
-   */
-  CADTBaseClass(const CADTBaseClass &);
-
-  /*!
-   * \brief Assignment operator, disabled.
-   */
-  CADTBaseClass& operator=(const CADTBaseClass &);
 };
 
 /*!
@@ -286,37 +230,39 @@ public:
                       const bool     globalTree);
 
   /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CADTPointsOnlyClass() override;
-
-  /*!
-   * \brief Function, which determines the nearest node in the ADT for the
-            given coordinate.
+   * \brief Function, which determines the nearest node in the ADT for the given coordinate.
+   * \note This simply forwards the call to the implementation function selecting the right
+   *       working variables for the current thread.
    * \param[in]  coor    Coordinate for which the nearest node in the ADT must be determined.
    * \param[out] dist    Distance to the nearest node in the ADT.
    * \param[out] pointID Local point ID of the nearest node in the ADT.
    * \param[out] rankID  Rank on which the nearest node in the ADT is stored.
    */
-  void DetermineNearestNode(const su2double *coor,
-                            su2double       &dist,
-                            unsigned long   &pointID,
-                            int             &rankID);
-private:
+  inline void DetermineNearestNode(const su2double *coor,
+                                   su2double       &dist,
+                                   unsigned long   &pointID,
+                                   int             &rankID) {
+    const auto iThread = omp_get_thread_num();
+    DetermineNearestNode_impl(FrontLeaves[iThread], FrontLeavesNew[iThread],
+                              coor, dist, pointID, rankID);
+  }
+
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  CADTPointsOnlyClass();
+  CADTPointsOnlyClass() = delete;
 
+private:
   /*!
-   * \brief Copy constructor of the class, disabled.
+   * \brief Implementation of DetermineNearestNode.
+   * \note Working variables (first two) passed explicitly for thread safety.
    */
-  CADTPointsOnlyClass(const CADTPointsOnlyClass &);
-
-  /*!
-   * \brief Assignment operator, disabled.
-   */
-  CADTPointsOnlyClass& operator=(const CADTPointsOnlyClass &);
+  void DetermineNearestNode_impl(vector<unsigned long>& frontLeaves,
+                                 vector<unsigned long>& frontLeavesNew,
+                                 const su2double *coor,
+                                 su2double       &dist,
+                                 unsigned long   &pointID,
+                                 int             &rankID) const;
 };
 
 /*!
@@ -348,14 +294,10 @@ private:
   vector<int>           ranksOfElems;  /*!< \brief Vector, which contains the ranks
                                                    of the elements in the ADT. */
 #ifdef HAVE_OMP
-  mutable vector<vector<CBBoxTargetClass> >
-  BBoxTargets; /*!< \brief Vector, used to store possible bounding box candidates during the nearest element search. */
-  mutable vector<vector<unsigned long> > FrontLeaves;    /*!< \brief Vector used in the tree traversal. */
-  mutable vector<vector<unsigned long> > FrontLeavesNew; /*!< \brief Vector used in the tree traversal. */
+  vector<vector<CBBoxTargetClass> >BBoxTargets; /*!< \brief Vector, used to store possible bounding box
+                                                            candidates during the nearest element search. */
 #else
-  mutable array<vector<CBBoxTargetClass>,1> BBoxTargets;
-  mutable array<vector<unsigned long>,1> FrontLeaves;
-  mutable array<vector<unsigned long>,1> FrontLeavesNew;
+  array<vector<CBBoxTargetClass>,1> BBoxTargets;
 #endif
 public:
   /*!
@@ -380,13 +322,9 @@ public:
                 const bool             globalTree);
 
   /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CADTElemClass() override;
-
-  /*!
-   * \brief Function, which determines the element that contains the given
-            coordinate.
+   * \brief Function, which determines the element that contains the given coordinate.
+   * \note This simply forwards the call to the implementation function selecting the right
+   *       working variables for the current thread.
    * \param[in]  coor             Coordinate which the element must contain.
    * \param[out] markerID         Local marker ID of the element containing the coordinate.
    * \param[out] elemID           Local element ID of the element containing the coordinate.
@@ -397,12 +335,16 @@ public:
                                   which contains the coordinate.
    * \return                      True if an element is found, false if not.
    */
-  bool DetermineContainingElement(const su2double *coor,
-                                  unsigned short  &markerID,
-                                  unsigned long   &elemID,
-                                  int             &rankID,
-                                  su2double       *parCoor,
-                                  su2double       *weightsInterpol);
+  inline bool DetermineContainingElement(const su2double *coor,
+                                         unsigned short  &markerID,
+                                         unsigned long   &elemID,
+                                         int             &rankID,
+                                         su2double       *parCoor,
+                                         su2double       *weightsInterpol) {
+    const auto iThread = omp_get_thread_num();
+    return DetermineContainingElement_impl(FrontLeaves[iThread], FrontLeavesNew[iThread],
+                                coor, markerID, elemID, rankID, parCoor, weightsInterpol);
+  }
 
   /*!
    * \brief Function, which determines the nearest element in the ADT for the given coordinate.
@@ -418,24 +360,29 @@ public:
                                       su2double       &dist,
                                       unsigned short  &markerID,
                                       unsigned long   &elemID,
-                                      int             &rankID) const {
+                                      int             &rankID) {
     const auto iThread = omp_get_thread_num();
     DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread],
-        FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
+              FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
   }
 
 private:
   /*!
+   * \brief Implementation of DetermineContainingElement.
+   * \note Working variables (first two) passed explicitly for thread safety.
+   */
+  bool DetermineContainingElement_impl(vector<unsigned long>& frontLeaves,
+                                       vector<unsigned long>& frontLeavesNew,
+                                       const su2double *coor,
+                                       unsigned short  &markerID,
+                                       unsigned long   &elemID,
+                                       int             &rankID,
+                                       su2double       *parCoor,
+                                       su2double       *weightsInterpol) const;
+
+  /*!
    * \brief Implementation of DetermineNearestElement.
    * \note Working variables (first three) passed explicitly for thread safety.
-   * \param[in,out] BBoxTargets    Coordinate for which the nearest element in the ADT must be determined.
-   * \param[in,out] frontLeaves    Coordinate for which the nearest element in the ADT must be determined.
-   * \param[in,out] frontLeavesNew Coordinate for which the nearest element in the ADT must be determined.
-   * \param[in]  coor     Coordinate for which the nearest element in the ADT must be determined.
-   * \param[out] dist     Distance to the nearest element in the ADT.
-   * \param[out] markerID Local marker ID of the nearest element in the ADT.
-   * \param[out] elemID   Local element ID of the nearest element in the ADT.
-   * \param[out] rankID   Rank on which the nearest element in the ADT is stored.
    */
   void DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets,
                                     vector<unsigned long>& frontLeaves,
@@ -461,7 +408,7 @@ private:
   bool CoorInElement(const unsigned long elemID,
                      const su2double     *coor,
                      su2double           *parCoor,
-                     su2double           *weightsInterpol);
+                     su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -478,7 +425,7 @@ private:
   bool CoorInQuadrilateral(const unsigned long elemID,
                            const su2double     *coor,
                            su2double           *parCoor,
-                           su2double           *weightsInterpol);
+                           su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -495,7 +442,7 @@ private:
   bool CoorInTriangle(const unsigned long elemID,
                       const su2double     *coor,
                       su2double           *parCoor,
-                      su2double           *weightsInterpol);
+                      su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -512,7 +459,7 @@ private:
   bool CoorInHexahedron(const unsigned long elemID,
                         const su2double     *coor,
                         su2double           *parCoor,
-                        su2double           *weightsInterpol);
+                        su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -529,7 +476,7 @@ private:
   bool CoorInPrism(const unsigned long elemID,
                    const su2double     *coor,
                    su2double           *parCoor,
-                   su2double           *weightsInterpol);
+                   su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -546,7 +493,7 @@ private:
   bool CoorInPyramid(const unsigned long elemID,
                      const su2double     *coor,
                      su2double           *parCoor,
-                     su2double           *weightsInterpol);
+                     su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -563,7 +510,7 @@ private:
   bool CoorInTetrahedron(const unsigned long elemID,
                          const su2double     *coor,
                          su2double           *parCoor,
-                         su2double           *weightsInterpol);
+                         su2double           *weightsInterpol) const;
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
@@ -578,7 +525,7 @@ private:
    */
   bool InitialGuessContainmentHexahedron(const su2double xRelC[3],
                                          const su2double xRel[8][3],
-                                         su2double       *parCoor);
+                                         su2double       *parCoor) const;
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
@@ -593,7 +540,7 @@ private:
    */
   bool InitialGuessContainmentPrism(const su2double xRelC[3],
                                     const su2double xRel[6][3],
-                                    su2double       *parCoor);
+                                    su2double       *parCoor) const;
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
@@ -608,7 +555,7 @@ private:
    */
   bool InitialGuessContainmentPyramid(const su2double xRelC[3],
                                       const su2double xRel[5][3],
-                                      su2double       *parCoor);
+                                      su2double       *parCoor) const;
 
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
@@ -685,17 +632,6 @@ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  CADTElemClass();
+  CADTElemClass() = delete;
 
-  /*!
-   * \brief Copy constructor of the class, disabled.
-   */
-  CADTElemClass(const CADTElemClass &);
-
-  /*!
-   * \brief Assignment operator, disabled.
-   */
-  CADTElemClass& operator=(const CADTElemClass &);
 };
-
-#include "adt_structure.inl"
