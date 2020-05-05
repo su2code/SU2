@@ -234,7 +234,7 @@ public:
    */
   template<class Vector_t = const su2double*,
            class Matrix_t = const Vector_t*,
-           class VecMat_t = const Vector_t**>
+           class VecMat_t = const Matrix_t*>
   struct ResidualType {
     const Vector_t residual;
     const Matrix_t jacobian_i;

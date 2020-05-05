@@ -5096,8 +5096,8 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
                               CConfig        *config,
                               unsigned long  iPoint,
                               unsigned long  jPoint,
-                              const su2double ***Jacobian_ic,
-                              const su2double ***Jacobian_jc) {
+                              const su2double *const *const *const Jacobian_ic,
+                              const su2double *const *const *const Jacobian_jc) {
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     /*--- Influence of i's neighbors on R(i,j) ---*/

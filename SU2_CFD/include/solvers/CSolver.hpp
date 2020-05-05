@@ -311,8 +311,8 @@ public:
                        CConfig         *config,
                        unsigned long   iPoint,
                        unsigned long   jPoint,
-                       const su2double ***Jacobian_ic,
-                       const su2double ***Jacobian_jc);
+                       const su2double *const *const *const Jacobian_ic,
+                       const su2double *const *const *const Jacobian_jc);
 
   /*!
    * \brief Make the eigenvalues of the Hessians positive.
