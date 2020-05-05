@@ -752,8 +752,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      /*--- BCM: Account for 0.5(Grad_i+Grad_j) ---*/
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
+      /*--- BCM: Account for 0.5(Grad_i+Grad_i) ---*/
+//      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
 
     }
   }
