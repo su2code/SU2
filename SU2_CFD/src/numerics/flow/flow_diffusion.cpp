@@ -648,9 +648,9 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          val_Proj_Jac_Tensor_i[iVar][jVar] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+          val_Proj_Jac_Tensor_i[iVar][jVar] += weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
                                              * jac_i[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
-          val_Proj_Jac_Tensor_j[iVar][jVar] += 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+          val_Proj_Jac_Tensor_j[iVar][jVar] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
                                              * jac_j[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
         }
       }
