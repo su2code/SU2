@@ -277,8 +277,8 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
-    const su2double oneOnVol_i = 1.0 / (Volume_i);
-    const su2double oneOnVol_j = 1.0 / (Volume_j);
+    const su2double halfOnVol_i = 0.5 / (Volume_i);
+    const su2double halfOnVol_j = 0.5 / (Volume_j);
     
     su2double jac_i[2] = {Jacobian_i[0][0], Jacobian_i[1][1]},
               jac_j[2] = {Jacobian_j[0][0], Jacobian_j[1][1]};
@@ -289,21 +289,19 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
     }
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double weight_i, weight_j;
+      su2double weight;
       if (correct_gradient) {
-        weight_i = -0.5*Normal[iDim]*oneOnVol_i;
-        weight_j = 0.5*Normal[iDim]*oneOnVol_j;
+        weight = 0.5*Normal[iDim]*(halfOnVol_i - halfOnVol_j);
       }
       else {
-        weight_i = -Normal[iDim]*oneOnVol_i;
-        weight_j = 0.;
+        weight = Normal[iDim]*halfOnVol_i;
       }
       
-      Jacobian_i[0][0] += weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0]/proj_vector_ij;
-      Jacobian_i[1][1] += weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[1]/proj_vector_ij;
+      Jacobian_i[0][0] -= weight*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0]/proj_vector_ij;
+      Jacobian_i[1][1] -= weight*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[1]/proj_vector_ij;
       
-      Jacobian_j[0][0] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0]/proj_vector_ij;
-      Jacobian_j[1][1] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1]/proj_vector_ij;
+      Jacobian_j[0][0] += weight*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0]/proj_vector_ij;
+      Jacobian_j[1][1] += weight*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1]/proj_vector_ij;
     }
   }
   

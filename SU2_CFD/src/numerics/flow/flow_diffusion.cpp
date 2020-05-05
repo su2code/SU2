@@ -614,8 +614,8 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
 
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
-    const su2double oneOnVol_i = 1.0 / (Volume_i);
-    const su2double oneOnVol_j = 1.0 / (Volume_j);
+    const su2double halfOnVol_i = 0.5 / (Volume_i);
+    const su2double halfOnVol_j = 0.5 / (Volume_j);
     
     vector<vector<su2double> > jac_i(nVar,vector<su2double>(nVar,0.0)),
                                jac_j(nVar,vector<su2double>(nVar,0.0));
@@ -636,21 +636,19 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     }
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double weight_i, weight_j;
+      su2double weight;
       if (correct_gradient) {
-        weight_i = -0.5*Normal[iDim]*oneOnVol_i;
-        weight_j = 0.5*Normal[iDim]*oneOnVol_j;
+        weight = 0.5*Normal[iDim]*(halfOnVol_i - halfOnVol_j);
       }
       else {
-        weight_i = -Normal[iDim]*oneOnVol_i;
-        weight_j = 0.;
+        weight = Normal[iDim]*halfOnVol_i;
       }
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          val_Proj_Jac_Tensor_i[iVar][jVar] += weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+          val_Proj_Jac_Tensor_i[iVar][jVar] -= weight*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
                                              * jac_i[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
-          val_Proj_Jac_Tensor_j[iVar][jVar] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
+          val_Proj_Jac_Tensor_j[iVar][jVar] += weight*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
                                              * jac_j[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
         }
       }
