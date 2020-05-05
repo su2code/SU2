@@ -7300,16 +7300,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Compute and update viscous residual ---*/
 
-        auto residual = visc_numerics->ComputeResidual(config);
-        LinSysRes.SubtractBlock(iPoint, residual);
+        auto visc_residual = visc_numerics->ComputeResidual(config);
+        LinSysRes.SubtractBlock(iPoint, visc_residual);
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
         if (implicit){
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          CorrectJacobian(geometry, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
+          CorrectJacobian(geometry, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
         }
         
       }

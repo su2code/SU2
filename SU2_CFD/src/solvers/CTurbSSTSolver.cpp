@@ -732,7 +732,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      CorrectJacobian(geometry, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
+      CorrectJacobian(geometry, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
 
     }
   }
