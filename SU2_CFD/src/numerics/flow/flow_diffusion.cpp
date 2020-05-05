@@ -110,8 +110,12 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
       delete [] Jacobian_j[iVar];
-      delete [] Jacobian_ic[iVar];
-      delete [] Jacobian_jc[iVar];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        delete [] Jacobian_ic[iDim][iVar];
+        delete [] Jacobian_jc[iDim][iVar];
+      }
+      delete [] Jacobian_ic[iDim];
+      delete [] Jacobian_jc[iDim];
     }
     delete [] Jacobian_i;
     delete [] Jacobian_j;

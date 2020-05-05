@@ -234,7 +234,7 @@ public:
    */
   template<class Vector_t = const su2double*,
            class Matrix_t = const Vector_t*,
-           class VecMat_t = const su2double***>
+           class VecMat_t = const Vector_t**>
   struct ResidualType {
     const Vector_t residual;
     const Matrix_t jacobian_i;
@@ -245,7 +245,7 @@ public:
     ResidualType() = delete;
     
     ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j) :
-    residual(res), jacobian_i(jac_i), jacobian_j(jac_j) { }
+    residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobian_ic(nullptr), jacobian_jc(nullptr) { }
 
     ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j, const VecMat_t& jac_ic, const VecMat_t& jac_jc) :
       residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobian_ic(jac_ic), jacobian_jc(jac_jc) { }
