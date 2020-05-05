@@ -7252,8 +7252,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           su2double StaticEnergy = Energy - 0.5*Velocity2;
           if (tkeNeeded) {
 //            if (Qn_Infty < 0.0) StaticEnergy -= GetTke_Inf();
-            if (Qn_Infty < 0.0) StaticEnergy -= Kine_Infty;
-            else StaticEnergy -= solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+//            if (Qn_Infty < 0.0) StaticEnergy -= Kine_Infty;
+//            else StaticEnergy -= solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+            StaticEnergy -= Kine_Infty;
           }
           GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
           V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
