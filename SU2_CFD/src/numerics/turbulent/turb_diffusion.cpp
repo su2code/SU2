@@ -291,7 +291,7 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       su2double weight_i, weight_j;
       if (correct_gradient) {
-        weight_i = 0.5*Normal[iDim]*oneOnVol_i;
+        weight_i = -0.5*Normal[iDim]*oneOnVol_i;
         weight_j = 0.5*Normal[iDim]*oneOnVol_j;
       }
       else {
@@ -299,11 +299,11 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
         weight_j = Normal[iDim]*oneOnVol_j;
       }
       
-      Jacobian_i[0][0] -= 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0]/proj_vector_ij;
-      Jacobian_i[1][1] -= 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[1]/proj_vector_ij;
+      Jacobian_i[0][0] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0]/proj_vector_ij;
+      Jacobian_i[1][1] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[1]/proj_vector_ij;
       
-      Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0]/proj_vector_ij;
-      Jacobian_j[1][1] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1]/proj_vector_ij;
+      Jacobian_j[0][0] += 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0]/proj_vector_ij;
+      Jacobian_j[1][1] += 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1]/proj_vector_ij;
     }
   }
   
