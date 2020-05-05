@@ -5445,7 +5445,7 @@ void CPhysicalGeometry::SetElement_Connectivity(void) {
           /*--- If it is a new element in this face ---*/
 
           if ((elem[iElem]->GetNeighbor_Elements(iFace) == -1) && (iElem < Test_Elem) &&
-              (FindFace(iElem, Test_Elem, first_elem_face, second_elem_face))) {
+              FindFace(iElem, Test_Elem, first_elem_face, second_elem_face)) {
 
             /*--- Localice which faces are sharing both elements ---*/
 
@@ -8569,94 +8569,72 @@ void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2doubl
 bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                                  unsigned short &face_second_elem) {
 
-  /*--- Find repeated nodes between two elements to identify the common face ---*/
-  unsigned long iPoint = 0, jPoint = 0;
-  unsigned short face_node, iFace, iNode, jNode, nNodesFace;
-  vector<unsigned long> CommonPoints, PointFaceFirst, PointFaceSecond;
-  vector<unsigned long>::iterator IterPoint;
-  pair<vector <unsigned long>::iterator, vector <unsigned long>::iterator> mypair;
-  bool face_first_found = false, face_second_found =false;
-
   if (first_elem == second_elem) return false;
 
-  for (iNode = 0; iNode < elem[first_elem]->GetnNodes(); iNode++) {
-    iPoint = elem[first_elem]->GetNode(iNode);
-    for (jNode = 0; jNode < elem[second_elem]->GetnNodes(); jNode++) {
-      jPoint = elem[second_elem]->GetNode(jNode);
+  /*--- Find repeated nodes between two elements to identify the common face. ---*/
+
+  unsigned long numCommonPoints = 0;
+  unsigned long CommonPoints[N_POINTS_MAXIMUM] = {0};
+
+  for (auto iNode = 0u; iNode < elem[first_elem]->GetnNodes(); iNode++) {
+    const auto iPoint = elem[first_elem]->GetNode(iNode);
+    for (auto jNode = 0u; jNode < elem[second_elem]->GetnNodes(); jNode++) {
+      const auto jPoint = elem[second_elem]->GetNode(jNode);
       if (iPoint == jPoint) {
-        CommonPoints.push_back(iPoint);
+        CommonPoints[numCommonPoints] = iPoint;
+        ++numCommonPoints;
         break;
       }
     }
   }
 
   /*--- Sort point in face and check that the list is unique ---*/
-  sort( CommonPoints.begin(), CommonPoints.end());
-  IterPoint = unique( CommonPoints.begin(), CommonPoints.end());
-  CommonPoints.resize( distance(CommonPoints.begin(), IterPoint) );
+  sort(CommonPoints, CommonPoints+numCommonPoints);
 
   /*--- In 2D, the two elements must share two points that make up
    an edge, as all "faces" are edges in 2D. In 3D, we need to find
    exactly 3 (tri) or 4 (quad) common points. Return immediately to
    avoid a memory issue due to vectors of different lengths below. ---*/
 
-  if ((nDim == 2) && (CommonPoints.size() != 2)) return false;
-  if ((nDim == 3) && ((CommonPoints.size() != 3) &&
-                      (CommonPoints.size() != 4))) return false;
+  if (numCommonPoints < nDim) return false;
 
-  /*--- Search the sequence in the first element ---*/
-  for (iFace = 0; iFace < elem[first_elem]->GetnFaces(); iFace++) {
-    nNodesFace = elem[first_elem]->GetnNodesFace(iFace);
+  /*--- Find the faces with the CommonPoint sequence in the first and second elements ---*/
+  for (auto iElem = 0ul; iElem < 2; ++iElem) {
 
-    if (nNodesFace == CommonPoints.size()) {
-    for (iNode = 0; iNode < nNodesFace; iNode++) {
-      face_node = elem[first_elem]->GetFaces(iFace, iNode);
-      PointFaceFirst.push_back(elem[first_elem]->GetNode(face_node));
+    const auto idxElem = (iElem==0)? first_elem : second_elem;
+    auto& idxFaceOut = (iElem==0)? face_first_elem : face_second_elem;
+    bool faceFound = false;
+
+    for (auto iFace = 0u; iFace < elem[idxElem]->GetnFaces(); iFace++) {
+      const auto nNodesFace = elem[idxElem]->GetnNodesFace(iFace);
+
+      if (nNodesFace != numCommonPoints) continue;
+
+      unsigned long PointsFace[N_POINTS_MAXIMUM] = {0};
+
+      for (auto iNode = 0u; iNode < nNodesFace; iNode++) {
+        const auto face_node = elem[idxElem]->GetFaces(iFace, iNode);
+        PointsFace[iNode] = elem[idxElem]->GetNode(face_node);
+      }
+
+      /*--- Sort face_poin to perform comparison ---*/
+      const auto PointsFaceEnd = PointsFace+nNodesFace;
+      sort(PointsFace, PointsFaceEnd);
+
+      /*--- List comparison ---*/
+      auto mypair = mismatch(PointsFace, PointsFaceEnd, CommonPoints);
+      if (mypair.first == PointsFaceEnd) {
+        idxFaceOut = iFace;
+        faceFound = true;
+        break;
+      }
     }
 
-    /*--- Sort face_poin to perform comparison ---*/
-    sort( PointFaceFirst.begin(), PointFaceFirst.end());
-
-    /*--- List comparison ---*/
-    mypair = mismatch (PointFaceFirst.begin(), PointFaceFirst.end(), CommonPoints.begin());
-    if (mypair.first == PointFaceFirst.end()) {
-      face_first_elem = iFace;
-      face_first_found = true;
-      break;
-    }
-
-    PointFaceFirst.erase (PointFaceFirst.begin(), PointFaceFirst.end());
-  }
+    if (!faceFound) return false;
   }
 
-  /*--- Search the secuence in the second element ---*/
-  for (iFace = 0; iFace < elem[second_elem]->GetnFaces(); iFace++) {
-    nNodesFace = elem[second_elem]->GetnNodesFace(iFace);
-
-    if (nNodesFace == CommonPoints.size()) {
-    for (iNode = 0; iNode < nNodesFace; iNode++) {
-      face_node = elem[second_elem]->GetFaces(iFace, iNode);
-      PointFaceSecond.push_back(elem[second_elem]->GetNode(face_node));
-    }
-
-    /*--- Sort face_poin to perform comparison ---*/
-    sort( PointFaceSecond.begin(), PointFaceSecond.end());
-
-    /*--- List comparison ---*/
-    mypair = mismatch (PointFaceSecond.begin(), PointFaceSecond.end(), CommonPoints.begin());
-    if (mypair.first == PointFaceSecond.end()) {
-      face_second_elem = iFace;
-      face_second_found = true;
-      break;
-    }
-
-    PointFaceSecond.erase (PointFaceSecond.begin(), PointFaceSecond.end());
-  }
-  }
-
-  if (face_first_found && face_second_found) return true;
-  else return false;
-
+  /*--- To get here, the face was found for both elements. ---*/
+  return true;
 }
 
 void CPhysicalGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {
