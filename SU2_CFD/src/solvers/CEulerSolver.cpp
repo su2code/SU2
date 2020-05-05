@@ -7281,7 +7281,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+                                              Kine_Infty);
 
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
@@ -7326,8 +7326,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
-        if (implicit)
+        if (implicit){
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+          /*--- BCM: Account for 0.5(Grad_i+Grad_j) ---*/
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_j);
+        }
         
       }
 
