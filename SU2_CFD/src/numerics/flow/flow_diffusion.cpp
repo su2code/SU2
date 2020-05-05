@@ -641,7 +641,7 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
         weight = 0.5*Normal[iDim]*(halfOnVol_i - halfOnVol_j);
       }
       else {
-        weight = Normal[iDim]*halfOnVol_i;
+        weight = 2.0*Normal[iDim]*halfOnVol_i;
       }
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {

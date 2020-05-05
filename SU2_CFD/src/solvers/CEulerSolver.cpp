@@ -7280,7 +7280,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              Kine_Infty);
+                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
 
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
