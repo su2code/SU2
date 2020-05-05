@@ -489,6 +489,13 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
   /* Copy the dimension of the problem into nDim. */
   nDim = val_nDim;
 
+  /* Allocate some thread-safe working variables if required. */
+#ifdef HAVE_OMP
+  BBoxTargets.resize(omp_get_max_threads());
+  FrontLeaves.resize(omp_get_max_threads());
+  FrontLeavesNew.resize(omp_get_max_threads());
+#endif
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: If a global tree must be built, gather the local grids on  ---*/
   /*---         all ranks, such that the entire grid to be searched is     ---*/
@@ -785,11 +792,14 @@ bool CADTElemClass::DetermineContainingElement(const su2double *coor,
   return false;
 }
 
-void CADTElemClass::DetermineNearestElement(const su2double *coor,
-                                            su2double       &dist,
-                                            unsigned short  &markerID,
-                                            unsigned long   &elemID,
-                                            int             &rankID) {
+void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets,
+                                                 vector<unsigned long>& frontLeaves,
+                                                 vector<unsigned long>& frontLeavesNew,
+                                                 const su2double *coor,
+                                                 su2double       &dist,
+                                                 unsigned short  &markerID,
+                                                 unsigned long   &elemID,
+                                                 int             &rankID) const {
 
   AD_BEGIN_PASSIVE
 
@@ -1002,7 +1012,7 @@ bool CADTElemClass::CoorInElement(const unsigned long elemID,
 
 void CADTElemClass::Dist2ToElement(const unsigned long elemID,
                                    const su2double     *coor,
-                                   su2double           &dist2Elem) {
+                                   su2double           &dist2Elem) const {
 
   /*--- Make a distinction between the element types. ---*/
   switch( elemVTK_Type[elemID] ) {
@@ -2322,7 +2332,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
 void CADTElemClass::Dist2ToLine(const unsigned long i0,
                                 const unsigned long i1,
                                 const su2double     *coor,
-                                su2double           &dist2Line) {
+                                su2double           &dist2Line) const {
 
   /*--- The line is parametrized by X = X0 + (r+1)*(X1-X0)/2, -1 <= r <= 1.
         As a consequence the minimum distance is found where the expression
@@ -2361,7 +2371,7 @@ bool CADTElemClass::Dist2ToTriangle(const unsigned long i0,
                                     const su2double     *coor,
                                     su2double           &dist2Tria,
                                     su2double           &r,
-                                    su2double           &s) {
+                                    su2double           &s) const {
 
   constexpr unsigned short nDim = 3; // boundary triangles only exist in 3D
 
@@ -2420,7 +2430,7 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                          const su2double     *coor,
                                          su2double           &r,
                                          su2double           &s,
-                                         su2double           &dist2Quad) {
+                                         su2double           &dist2Quad) const {
 
   constexpr unsigned short nDim = 3; // boundary quadrilaterals only exist in 3D
 

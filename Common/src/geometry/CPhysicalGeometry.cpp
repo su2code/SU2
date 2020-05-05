@@ -11647,28 +11647,27 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
 }
 
-void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
-
+void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  if (!WallADT->IsEmpty()){
+  SU2_OMP_PARALLEL
+  if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
 
+    SU2_OMP_FOR_DYN(roundUpDiv(nPoint,2*omp_get_max_threads()))
     for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
       unsigned short markerID;
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
-
-      WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
-                                       elemID, rankID);
-      if (dist < node[iPoint]->GetWall_Distance())
-        node[iPoint]->SetWall_Distance(dist);
+      WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID, elemID, rankID);
+      node[iPoint]->SetWall_Distance(min(dist,node[iPoint]->GetWall_Distance()));
     }
   }
+  // end SU2_OMP_PARALLEL
 }

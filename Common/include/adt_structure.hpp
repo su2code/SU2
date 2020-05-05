@@ -8,7 +8,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -37,11 +37,12 @@
 #include <algorithm>
 
 #include "./mpi_structure.hpp"
+#include "./omp_structure.hpp"
 #include "./option_structure.hpp"
 
 using namespace std;
 
-/*! 
+/*!
  * \class CADTComparePointClass
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
@@ -81,7 +82,7 @@ private:
   CADTComparePointClass();
 };
 
-/*! 
+/*!
  * \class CBBoxTargetClass
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
@@ -145,7 +146,7 @@ private:
   void Copy(const CBBoxTargetClass &other);
 };
 
-/*! 
+/*!
  * \class CADTNodeClass
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
@@ -194,7 +195,7 @@ private:
   void Copy(const CADTNodeClass &other);
 };
 
-/*! 
+/*!
  * \class CADTBaseClass
  * \brief  Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
@@ -224,7 +225,7 @@ protected:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  virtual ~CADTBaseClass();  
+  virtual ~CADTBaseClass();
 
   /*!
    * \brief Function, which builds the ADT of the given coordinates.
@@ -255,7 +256,7 @@ private:
   CADTBaseClass& operator=(const CADTBaseClass &);
 };
 
-/*! 
+/*!
  * \class CADTPointsOnlyClass
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
@@ -274,7 +275,7 @@ public:
    * \param[in] nDim       Number of spatial dimensions of the problem.
    * \param[in] nPoints    Number of local points to be stored in the ADT.
    * \param[in] coor       Coordinates of the local points.
-   * \param[in] pointID    Local point IDs of the local points. 
+   * \param[in] pointID    Local point IDs of the local points.
    * \param[in] globalTree Whether or not a global tree must be built. If false
                            a local ADT is built.
    */
@@ -318,7 +319,7 @@ private:
   CADTPointsOnlyClass& operator=(const CADTPointsOnlyClass &);
 };
 
-/*! 
+/*!
  * \class CADTElemClass
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
@@ -343,13 +344,19 @@ private:
   vector<unsigned short> localMarkers; /*!< \brief Vector, which contains the marker ID's
                                                    of the elements in the ADT. */
   vector<unsigned long> localElemIDs;  /*!< \brief Vector, which contains the local element ID's
-                                                    of the elements in the ADT. */
+                                                   of the elements in the ADT. */
   vector<int>           ranksOfElems;  /*!< \brief Vector, which contains the ranks
-                                                    of the elements in the ADT. */
-
-  vector<CBBoxTargetClass> BBoxTargets; /*!< \brief Vector, used to store possible bounding
-                                                    box candidates during the nearest element
-                                                    search. */
+                                                   of the elements in the ADT. */
+#ifdef HAVE_OMP
+  mutable vector<vector<CBBoxTargetClass> >
+  BBoxTargets; /*!< \brief Vector, used to store possible bounding box candidates during the nearest element search. */
+  mutable vector<vector<unsigned long> > FrontLeaves;    /*!< \brief Vector used in the tree traversal. */
+  mutable vector<vector<unsigned long> > FrontLeavesNew; /*!< \brief Vector used in the tree traversal. */
+#else
+  mutable array<vector<CBBoxTargetClass>,1> BBoxTargets;
+  mutable array<vector<unsigned long>,1> FrontLeaves;
+  mutable array<vector<unsigned long>,1> FrontLeavesNew;
+#endif
 public:
   /*!
    * \brief Constructor of the class.
@@ -360,7 +367,7 @@ public:
                                  offset in node numbers of the rank.
    * \param[in]     val_VTKElem  Type of the elements using the VTK convention.
    * \param[in]     val_markerID Markers of the local elements.
-   * \param[in]     val_elemID   Local element IDs of the elements. 
+   * \param[in]     val_elemID   Local element IDs of the elements.
    * \param[in]     globalTree   Whether or not a global tree must be built. If false
                                  a local ADT is built.
    */
@@ -398,20 +405,46 @@ public:
                                   su2double       *weightsInterpol);
 
   /*!
-   * \brief Function, which determines the nearest element in the ADT for the
-            given coordinate.
+   * \brief Function, which determines the nearest element in the ADT for the given coordinate.
+   * \note This simply forwards the call to the implementation function selecting the right
+   *       working variables for the current thread.
    * \param[in]  coor     Coordinate for which the nearest element in the ADT must be determined.
    * \param[out] dist     Distance to the nearest element in the ADT.
    * \param[out] markerID Local marker ID of the nearest element in the ADT.
    * \param[out] elemID   Local element ID of the nearest element in the ADT.
    * \param[out] rankID   Rank on which the nearest element in the ADT is stored.
    */
-  void DetermineNearestElement(const su2double *coor,
-                               su2double       &dist,
-                               unsigned short  &markerID,
-                               unsigned long   &elemID,
-                               int             &rankID);
+  inline void DetermineNearestElement(const su2double *coor,
+                                      su2double       &dist,
+                                      unsigned short  &markerID,
+                                      unsigned long   &elemID,
+                                      int             &rankID) const {
+    const auto iThread = omp_get_thread_num();
+    DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread],
+        FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
+  }
+
 private:
+  /*!
+   * \brief Implementation of DetermineNearestElement.
+   * \note Working variables (first three) passed explicitly for thread safety.
+   * \param[in,out] BBoxTargets    Coordinate for which the nearest element in the ADT must be determined.
+   * \param[in,out] frontLeaves    Coordinate for which the nearest element in the ADT must be determined.
+   * \param[in,out] frontLeavesNew Coordinate for which the nearest element in the ADT must be determined.
+   * \param[in]  coor     Coordinate for which the nearest element in the ADT must be determined.
+   * \param[out] dist     Distance to the nearest element in the ADT.
+   * \param[out] markerID Local marker ID of the nearest element in the ADT.
+   * \param[out] elemID   Local element ID of the nearest element in the ADT.
+   * \param[out] rankID   Rank on which the nearest element in the ADT is stored.
+   */
+  void DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets,
+                                    vector<unsigned long>& frontLeaves,
+                                    vector<unsigned long>& frontLeavesNew,
+                                    const su2double *coor,
+                                    su2double       &dist,
+                                    unsigned short  &markerID,
+                                    unsigned long   &elemID,
+                                    int             &rankID) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -586,7 +619,7 @@ private:
    */
   void Dist2ToElement(const unsigned long elemID,
                       const su2double     *coor,
-                      su2double           &dist2Elem);
+                      su2double           &dist2Elem) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
@@ -600,7 +633,7 @@ private:
   void Dist2ToLine(const unsigned long i0,
                    const unsigned long i1,
                    const su2double     *coor,
-                   su2double           &dist2Line);
+                   su2double           &dist2Line) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
@@ -626,7 +659,7 @@ private:
                             const su2double     *coor,
                             su2double           &r,
                             su2double           &s,
-                            su2double           &dist2Quad);
+                            su2double           &dist2Quad) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear triangular element if the projection is inside the triangle.
@@ -648,7 +681,7 @@ private:
                        const su2double     *coor,
                        su2double           &dist2Tria,
                        su2double           &r,
-                       su2double           &s);
+                       su2double           &s) const;
   /*!
    * \brief Default constructor of the class, disabled.
    */
