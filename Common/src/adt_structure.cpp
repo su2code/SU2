@@ -703,7 +703,9 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
         which are needed during the tree search. ---*/
   frontLeaves.reserve(200);
   frontLeavesNew.reserve(200);
-  BBoxTargets.reserve(200);
+  for (auto& vec : BBoxTargets) vec.reserve(200);
+  for (auto& vec : FrontLeaves) vec.reserve(200);
+  for (auto& vec : FrontLeavesNew) vec.reserve(200);
 }
 
 bool CADTElemClass::DetermineContainingElement(const su2double *coor,
