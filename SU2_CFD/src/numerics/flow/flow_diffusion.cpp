@@ -617,7 +617,8 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     const su2double oneOnVol_i = 1.0 / (Volume_i);
     const su2double oneOnVol_j = 1.0 / (Volume_j);
     
-    su2double jac_i[nVar][nVar], jac_j[nVar][nVar];
+    vector<vector<su2double> > jac_i(nVar,vector<su2double>(nVar,0.0)),
+                               jac_j(nVar,vector<su2double>(nVar,0.0));
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       for (unsigned short jVar = 0; jVar < nVar; jVar++) {
         jac_i[iVar][jVar] = val_Proj_Jac_Tensor_i[iVar][jVar];
