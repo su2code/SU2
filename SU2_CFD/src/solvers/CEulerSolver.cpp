@@ -7046,6 +7046,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   su2double *Normal = new su2double[nDim];
+  su2double *GradBasis_i = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -7298,7 +7299,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                  geometry->node[iPoint]->GetVolume());
         
         /*--- Set the basis function for the gradient Jacobian ---*/
-        su2double *GradBasis_i = new su2double[nDim];
         if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             GradBasis_i[iDim] = 0.;
@@ -7336,6 +7336,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+  delete [] GradBasis_i;
 
 }
 

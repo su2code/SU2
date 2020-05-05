@@ -425,6 +425,9 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
     if (implicit)
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
+  
+  delete [] GradBasis_i;
+  delete [] GradBasis_j;
 
 }
 

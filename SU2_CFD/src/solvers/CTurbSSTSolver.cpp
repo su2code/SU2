@@ -619,6 +619,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint, iVertex, Point_Normal;
   su2double *Normal, *V_infty, *V_domain;
   su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
+  su2double *GradBasis_i = new su2double[nDim];
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
   su2double Kine_Infty, Omega_Infty;
   unsigned short iVar, iDim;
@@ -725,7 +726,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
                                geometry->node[iPoint]->GetVolume());
       
       /*--- Set the basis function for the gradient Jacobian ---*/
-      su2double *GradBasis_i = new su2double[nDim];
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           GradBasis_i[iDim] = 0.;
@@ -757,6 +757,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   }
 
   delete [] Normal;
+  delete [] GradBasis_i;
 
 }
 
