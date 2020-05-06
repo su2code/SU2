@@ -2618,7 +2618,7 @@ void CDiscAdjFEAIteration::SetRecording(CSolver *****solver,
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
-  if(kind_recording != MESH_COORDS && kind_recording != MESH_DEFORM) {
+  if(kind_recording != MESH_COORDS) {
 
     /*--- Register structural displacements as input ---*/
 
@@ -2636,14 +2636,6 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
     /*--- Register mesh coordinates for geometric sensitivities ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
-  }
-  else if (kind_recording == MESH_DEFORM) {
-
-    /*--- Undeformed mesh coordinates ---*/
-    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    /*--- Boundary displacements ---*/
-    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
 

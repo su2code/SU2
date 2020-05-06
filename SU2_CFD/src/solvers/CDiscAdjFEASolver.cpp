@@ -906,8 +906,10 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
         AD::ResetInput(Coord[iDim]);
       }
       if (!time_domain || multizone) {
+        if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: SetSensitivity[" << iDim << "] = " << Sensitivity << " (Current only)" << endl;    
         nodes->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
+        if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: SetSensitivity[" << iDim << "] = " << Sensitivity << " (Adding previous = " << nodes->GetSensitivity(iPoint, iDim) << ")" << endl;
         nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint, iDim) + Sensitivity);
       }
     }
