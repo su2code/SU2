@@ -407,7 +407,7 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
-    if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return -1.0
+    if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return 1.0
     if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0
