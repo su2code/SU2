@@ -43,7 +43,8 @@ protected:
   VectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   VectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   
-  MatrixType FlowPrimitive;   /*!<\brief Primitives from the flow solver. */
+  MatrixType FlowPrimitive;     /*!<\brief Primitives from the flow solver. */
+  VectorOfMatrix FlowGradient;  /*!< \brief Gradients from the flow solver. */
 
 public:
   /*!
@@ -139,6 +140,14 @@ public:
   inline su2double* GetFlowPrimitive(unsigned long iPoint) { return FlowPrimitive[iPoint]; }
   
   inline su2double GetFlowPrimitive(unsigned long iPoint, unsigned long iVar) { return FlowPrimitive(iPoint,iVar); }
+  
+  inline void SetFlowGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { FlowGradient(iPoint,iVar,iDim) = value; }
+
+  inline VectorOfMatrix& GetFlowGradient(void) { return FlowGradient; }
+
+  inline su2double **GetFlowGradient(unsigned long iPoint) { return FlowGradient[iPoint]; }
+
+  inline su2double GetFlowGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return FlowGradient(iPoint,iVar,iDim); }
   
 
 };

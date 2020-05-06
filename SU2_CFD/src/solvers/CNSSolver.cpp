@@ -219,7 +219,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   }
   SU2_OMP_BARRIER
 
-  nodes->SetVorticity_StrainMag();
+  if (!Output) nodes->SetVorticity_StrainMag();
 
   su2double strainMax = 0.0, omegaMax = 0.0;
 

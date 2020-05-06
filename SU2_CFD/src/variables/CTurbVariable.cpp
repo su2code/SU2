@@ -65,5 +65,6 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     
   /*--- Flow primitive variables ---*/
   FlowPrimitive.resize(nPoint,nDim+9) = su2double(0.0);
+  FlowGradient.resize(nPoint,nDim+1,nDim,0.0);
   
 }

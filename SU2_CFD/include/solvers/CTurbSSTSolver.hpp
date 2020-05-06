@@ -96,6 +96,8 @@ public:
                       unsigned short iMesh) override;
   
   void SetPrimitive_Variables(CSolver **solver_container) final;
+  
+  void SetFlowPrimitive_Gradients(CSolver **solver_container);
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
