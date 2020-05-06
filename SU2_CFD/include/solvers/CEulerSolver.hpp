@@ -1037,6 +1037,12 @@ public:
    */
   inline bool GetEnd_AoA_FD(void) const final { return End_AoA_FD; }
 
+  /*!
+   * \brief Resetting (for restart) End_AoA_FD boolean, Start_AoA_FD and Iter_Update_AoA
+   * \param[in] Start_AoA_FD_in and End_AoA_FD_in boolean for whether the Fixed CL mode is currently in finite-differencing mode
+   */
+  inline void ResetAoA_FD() {End_AoA_FD = false; Start_AoA_FD = false; Iter_Update_AoA = 0;}  
+  
     /*!
    * \brief Get the iteration of the last AoA update (Fixed CL Mode)
    * \return value for the last iteration that the AoA was updated

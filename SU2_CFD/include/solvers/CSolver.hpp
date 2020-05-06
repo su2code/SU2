@@ -687,6 +687,12 @@ public:
                                          unsigned short iMesh) {}
 
   /*!
+   * \brief Setting End_AoA_FD boolean and Start_AoA_FD
+   * \param[in] Start_AoA_FD_in and End_AoA_FD_in boolean for whether the Fixed CL mode is currently in finite-differencing mode
+   */
+  inline virtual void ResetAoA_FD() { }   
+  
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

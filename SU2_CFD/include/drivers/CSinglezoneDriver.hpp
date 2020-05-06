@@ -65,7 +65,7 @@ public:
   /*!
    * \brief Preprocess the single-zone iteration
    */
-  virtual void Preprocess(unsigned long TimeIter);
+  virtual void Preprocess(unsigned long TimeIter, unsigned long Iter_dCL_dAlpha_in = 0);
 
   /*!
    * \brief Run the iteration for ZONE_0.

@@ -337,7 +337,7 @@ public:
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  virtual void Preprocess(unsigned long TimeIter){ }
+  virtual void Preprocess(unsigned long TimeIter, unsigned long Iter_dCL_dAlpha_in = 0){ }
 
   /*!
    * \brief Monitor the computation.

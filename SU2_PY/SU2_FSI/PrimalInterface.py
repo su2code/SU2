@@ -471,9 +471,9 @@ class Interface:
             self.globalSolidDispY = np.zeros(self.nSolidInterfaceNodes)
             self.globalSolidDispZ = np.zeros(self.nSolidInterfaceNodes)
 
-        if self.haveSolidSolver:
-            scipy.io.savemat( './globalFluidIndex.mat', mdict={'globalFluidIndex': self.globalFluidIndex }) 
-            scipy.io.savemat( './globalFluidCoordinates.mat', mdict={'globalFluidCoordinates': self.globalFluidCoordinates })
+        #if self.haveSolidSolver:
+        #    scipy.io.savemat( './globalFluidIndex.mat', mdict={'globalFluidIndex': self.globalFluidIndex }) 
+        #    scipy.io.savemat( './globalFluidCoordinates.mat', mdict={'globalFluidCoordinates': self.globalFluidCoordinates })
 
     def transferFluidTractions(self, FluidSolver, SolidSolver, MLSSolver):
         """
@@ -686,8 +686,8 @@ class Interface:
 
         # Add design parameter for sensitivity evaluation with finite differences
         if myid == self.rootProcess:
-           print("Adding design parameter ") 
            if self.FD_sens is not None:
+              print("Adding design parameter ")  
               if self.FD_sens[1] == 0:
                  self.globalFluidDispX[self.FD_sens[0]] +=  self.FD_sens[2]
               elif self.FD_sens[1] == 1:   
@@ -818,6 +818,18 @@ class Interface:
                 hist_file.close()
 
         self.MPIBarrier()
+        
+        
+        # --- Fluid solver call for FSI subiteration --- #
+        self.MPIPrint('\n##### If fixed Cl mode, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
+        self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
+        FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
+        FluidSolver.Preprocess(0,250)          # Time iteration pre-processing
+        FluidSolver.Run()                  # Run one time-step (static: one simulation)
+        FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
+        FluidSolver.Update()               # Update the solver for the next time iteration
+        FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
+        FluidSolver.Output(0)              # Output the solution to file
 
         self.MPIPrint('\nBGS is converged (strong coupling)')
         self.MPIPrint(' ')

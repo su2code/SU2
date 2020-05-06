@@ -1037,6 +1037,7 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
   bool fixed_cl_convergence = flow_solver->FixedCL_Convergence(config, output->GetConvergence());
 
   /* --- If Fixed CL mode has ended and Finite Differencing has started: --- */
+  /* --- At this point I need to extract primal values to pass to the structural solver --- */
 
   if (flow_solver->GetStart_AoA_FD() && flow_solver->GetIter_Update_AoA() == config->GetInnerIter()){
 
