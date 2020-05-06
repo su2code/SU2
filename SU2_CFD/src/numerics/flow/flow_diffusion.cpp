@@ -663,6 +663,15 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
   
   /*--- TODO: add contributions of WLS gradients ---*/
   else if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) {}
+  
+  if (!correct_gradient) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.;
+        Jacobian_j[iVar][jVar] = 0.;
+      }
+    }
+  }
 
 }
 
