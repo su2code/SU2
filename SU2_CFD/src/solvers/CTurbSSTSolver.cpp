@@ -503,7 +503,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
     /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-//    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
 
   }
   
@@ -530,28 +530,25 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
         const su2double r_j      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
 //        const su2double r_j      = nodes->GetFlowPrimitive(jPoint,nDim+2);
+        const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
         Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
         Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
         Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_i[1][0] += (1. - F1_i)*constants[3]
+          Jacobian_i[1][0] += sign*(1. - F1_i)*constants[3]
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-          Jacobian_i[1][1] += (1. - F1_i)*constants[3]
+          Jacobian_i[1][1] += sign*(1. - F1_i)*constants[3]
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
-          Jacobian_j[1][0] += (1. - F1_i)*constants[3]*r_i
+          Jacobian_j[1][0] += sign*(1. - F1_i)*constants[3]*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
-          Jacobian_j[1][1] += (1. - F1_i)*constants[3]*r_i
+          Jacobian_j[1][1] += sign*(1. - F1_i)*constants[3]*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
         }
-        if (iPoint < jPoint) {
-          if (Jacobian_i[1][1] < 0.) Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-          if (Jacobian_j[1][1] < 0.) Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-        }
-        else {
-          if (Jacobian_i[1][1] > 0.) Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-          if (Jacobian_j[1][1] > 0.) Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-        }
+//        if (Jacobian_i[1][1] < 0.) Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//        if (Jacobian_j[1][1] < 0.) Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
       }
       
       /*--- Boundary contribution to cross diffusion gradient Jacobian at i*/
