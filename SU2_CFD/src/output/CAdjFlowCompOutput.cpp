@@ -111,7 +111,7 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
       AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
-    case SST:
+    case SST: case SST_SUST:
       /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
       AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
@@ -139,7 +139,7 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
       /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
       AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
-    case SST:
+    case SST: case SST_SUST:
       /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
       AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the adjoint dissipation.
@@ -168,7 +168,7 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
       /// DESCRIPTION: BGS residual of the adjoint nu tilde.
       AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
-    case SST:
+    case SST: case SST_SUST:
       /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
       AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: BGS residual of the adjoint dissipation.
@@ -214,7 +214,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
       break;
-    case SST:
+    case SST: case SST_SUST:
       SetHistoryOutputValue("RMS_ADJ_TKE", log10(adjturb_solver->GetRes_RMS(0)));
       SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
       break;
@@ -235,7 +235,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
       break;
-    case SST:
+    case SST: case SST_SUST:
       SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
       SetHistoryOutputValue("MAX_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_Max(1)));
       break;
@@ -258,7 +258,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
       case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
         SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
         break;
-      case SST:
+      case SST: case SST_SUST:
         SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
         SetHistoryOutputValue("BGS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
         break;
@@ -301,7 +301,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
       /// DESCRIPTION: Adjoint nu tilde.
       AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION", "Adjoint Spalart-Allmaras variable");
       break;
-    case SST:
+    case SST: case SST_SUST:
       /// DESCRIPTION: Adjoint kinetic energy.
       AddVolumeOutput("ADJ_TKE", "Adjoint_TKE", "SOLUTION", "Adjoint kinetic energy");
       /// DESCRIPTION: Adjoint dissipation.
@@ -330,7 +330,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
       /// DESCRIPTION: Residual of the nu tilde.
       AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
       break;
-    case SST:
+    case SST: case SST_SUST:
       /// DESCRIPTION: Residual of the adjoint kinetic energy.
       AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL", "Residual of the turb. kinetic energy");
       /// DESCRIPTION: Residual of the adjoint dissipation.
@@ -385,7 +385,7 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     // Turbulent
     switch(turb_model){
-    case SST:
+    case SST: case SST_SUST:
       SetVolumeOutputValue("ADJ_TKE",         iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1));
       break;
@@ -411,7 +411,7 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
 
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(config->GetKind_Turb_Model()){
-    case SST:
+    case SST: case SST_SUST:
       SetVolumeOutputValue("RES_ADJ_TKE",         iPoint, Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
       SetVolumeOutputValue("RES_ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1) - Node_AdjTurb->GetSolution_Old(iPoint, 1));
       break;
