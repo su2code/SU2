@@ -5093,6 +5093,7 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 }
 
 void CSolver::CorrectJacobian(CGeometry      *geometry,
+                              CSolver        **solver_container,
                               CConfig        *config,
                               unsigned long  iPoint,
                               unsigned long  jPoint,
@@ -5104,29 +5105,33 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     AD_BEGIN_PASSIVE
     
     /*--- Influence of i's neighbors on R(i,j) ---*/
+    const su2double r_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
     for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
       const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
       const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
       const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
       const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
+      const su2double r_k = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(kPoint,(nDim+2));
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] = 0.;
+          Jacobian_j[iVar][jVar] = 0.;
         }
       }
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           for (unsigned short jVar = 0; jVar < nVar; jVar++) {
             Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign;
+            Jacobian_j[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*r_i/r_k;
           }
         }
       }
       
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
       if (jPoint != iPoint) {
-        Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       }
     }
@@ -5160,28 +5165,32 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     
     if (jPoint != iPoint) {
       /*--- Influence of j's neighbors on R(i,j) ---*/
+      const su2double r_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
       for (unsigned short iNode = 0; iNode < geometry->node[jPoint]->GetnPoint(); iNode++) {
         const unsigned long kPoint = geometry->node[jPoint]->GetPoint(iNode);
         const unsigned long kEdge = geometry->FindEdge(jPoint,kPoint);
         const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
         const su2double sign = (jPoint < kPoint) ? 1.0 : -1.0;
+        const su2double r_k = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(kPoint,(nDim+2));
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           for (unsigned short jVar = 0; jVar < nVar; jVar++) {
             Jacobian_i[iVar][jVar] = 0.;
+            Jacobian_j[iVar][jVar] = 0.;
           }
         }
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             for (unsigned short jVar = 0; jVar < nVar; jVar++) {
               Jacobian_i[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign;
+              Jacobian_j[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign*r_i/r_k;
             }
           }
         }
         
-        Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
         Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
         
-        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
         Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
       }
       

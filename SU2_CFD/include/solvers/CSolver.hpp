@@ -308,6 +308,7 @@ public:
   inline virtual void SetDualTime_Mesh(void){ }
   
   void CorrectJacobian(CGeometry       *geometry,
+                       CSolver         **solver_container,
                        CConfig         *config,
                        unsigned long   iPoint,
                        unsigned long   jPoint,
