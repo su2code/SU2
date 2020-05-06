@@ -7193,18 +7193,15 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-//      if (tkeNeeded) Energy += GetTke_Inf();
       if (tkeNeeded) {
-//        if (Qn_Infty < 0.0) {
-//          const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-//          Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-//          Energy += Kine_Infty;
-//        }
-////        if (Qn_Infty < 0.0) Energy += Kine_Infty;
-//        else Energy += solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
-        const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        Energy += Kine_Infty;
+        /*--- Inflow ---*/
+        if (Qn_Infty < 0.0) Energy += GetTke_Inf();
+        /*--- Outflow ---*/
+        else {
+          const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+          Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+          Energy += Kine_Infty;
+        }
       }
 
       /*--- Store new primitive state for computing the flux. ---*/
@@ -7244,24 +7241,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-//        /*--- Inflow ---*/
-//        if(Qn_Infty < 0.0) {
-          su2double StaticEnergy = Energy - 0.5*Velocity2;
-          if (tkeNeeded) {
-//            if (Qn_Infty < 0.0) StaticEnergy -= GetTke_Inf();
-//            if (Qn_Infty < 0.0) StaticEnergy -= Kine_Infty;
-//            else StaticEnergy -= solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
-            StaticEnergy -= Kine_Infty;
-          }
-          GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
-          V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
-          V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
-//        }
-//        /*--- Outflow ---*/
-//        else {
-//          V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//          V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
-//        }
+        su2double StaticEnergy = Energy - 0.5*Velocity2;
+        if (tkeNeeded) {
+          /*--- Inflow ---*/
+          if (Qn_Infty < 0.0) StaticEnergy -= GetTke_Inf();
+          /*--- Outflow ---*/
+          else StaticEnergy -= Kine_Infty;
+        }
+        GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+        V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+        V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
 
