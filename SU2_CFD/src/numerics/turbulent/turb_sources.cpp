@@ -843,29 +843,29 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    }
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-//       Jacobian_i[0][0] = min(-2./3.*diverg*Volume, 0.);
-//       Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
-       const su2double factor = (Eddy_Viscosity_i > 1.e-10) ? 1.0 : 0.0;
-        /*--- Vanilla production Jacobian ---*/
-        if (1.0/TurbVar_i[1] < a1/(VorticityMag*F2_i)) {
-          Jacobian_i[0][0] = (factor*StrainMag_i*StrainMag_i/TurbVar_i[1]-2./3.*diverg)*Volume;
-          Jacobian_i[0][1] = -factor*StrainMag_i*StrainMag_i*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
-//          Jacobian_i[0][0] = -2./3.*diverg*Volume;
-        }
-        /*--- Production Jacobian with stress limiter ---*/
-        else {
-          Jacobian_i[0][0] = (factor*StrainMag_i*StrainMag_i*a1/(VorticityMag*F2_i)-2./3.*diverg)*Volume;
-//          Jacobian_i[0][0] = -2./3.*diverg*Volume;
-        }
-       Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
-      }
-     /*--- Clipped production Jacobian ---*/
-      else if (pk > 0) {
-        Jacobian_i[0][0] = 20.0*beta_star*TurbVar_i[1]*Volume;
-        Jacobian_i[0][1] = 20.0*beta_star*TurbVar_i[0]*Volume;
-        Jacobian_i[1][1] = 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
-      }
+//     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
+       Jacobian_i[0][0] = min(-2./3.*diverg*Volume, 0.);
+       Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
+//       const su2double factor = (Eddy_Viscosity_i > 1.e-10) ? 1.0 : 0.0;
+//        /*--- Vanilla production Jacobian ---*/
+//        if (1.0/TurbVar_i[1] < a1/(VorticityMag*F2_i)) {
+//          Jacobian_i[0][0] = (factor*StrainMag_i*StrainMag_i/TurbVar_i[1]-2./3.*diverg)*Volume;
+//          Jacobian_i[0][1] = -factor*StrainMag_i*StrainMag_i*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+////          Jacobian_i[0][0] = -2./3.*diverg*Volume;
+//        }
+//        /*--- Production Jacobian with stress limiter ---*/
+//        else {
+//          Jacobian_i[0][0] = (factor*StrainMag_i*StrainMag_i*a1/(VorticityMag*F2_i)-2./3.*diverg)*Volume;
+////          Jacobian_i[0][0] = -2./3.*diverg*Volume;
+//        }
+//       Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
+//      }
+//     /*--- Clipped production Jacobian ---*/
+//      else if (pk > 0) {
+//        Jacobian_i[0][0] = 20.0*beta_star*TurbVar_i[1]*Volume;
+//        Jacobian_i[0][1] = 20.0*beta_star*TurbVar_i[0]*Volume;
+//        Jacobian_i[1][1] = 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
+//      }
    }
 
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
@@ -919,7 +919,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[1][0] += 0.0;
    Jacobian_i[1][1] += -2.0*beta_blended*TurbVar_i[1]*Volume;
 
-   Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   Jacobian_i[1][1] += min(-(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume, 0.0);
   }
 
   AD::SetPreaccOut(Residual, nVar);
