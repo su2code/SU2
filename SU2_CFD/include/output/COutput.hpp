@@ -675,6 +675,12 @@ public:
    */
   virtual ~COutput(void);
 
+  /*!
+   * \brief Resets inner iter.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ResetLastInnerIter_Output() {};    
+  
 protected:
 
   /*!

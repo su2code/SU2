@@ -162,9 +162,9 @@ def main():
             #scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
             #np.save('./Spline.npy', MLS.interpolation_matrix)
             #Load spline matrix
-            print('Loading spline matrix')
-            MLS.interpolation_matrix = None
-            MLS.interpolation_matrix = np.load('./Spline.npy')
+            #print('Loading spline matrix')
+            #MLS.interpolation_matrix = None
+            #MLS.interpolation_matrix = np.load('./Spline.npy')
            
            
         except TypeError as exception:

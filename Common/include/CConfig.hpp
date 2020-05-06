@@ -8198,6 +8198,11 @@ public:
   unsigned long GetIter_dCL_dAlpha(void) const { return Iter_dCL_dAlpha; }
 
   /*!
+   * \brief Set Number of iterations to evaluate dCL_dAlpha.
+   */
+  void SetIter_dCL_dAlpha( unsigned int Iter_dCL_dAlpha_in ) { Iter_dCL_dAlpha = Iter_dCL_dAlpha_in; }  
+  
+  /*!
    * \brief Get the value of the damping coefficient for fixed CL mode.
    * \return Damping coefficient for fixed CL mode.
    */

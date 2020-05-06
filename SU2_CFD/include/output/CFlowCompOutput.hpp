@@ -126,4 +126,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteHistoryFile_Output(CConfig *config) override;
+  
+  
+  /*!
+   * \brief Resets inner iter.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void ResetLastInnerIter_Output() {lastInnerIter = 0;}
 };

@@ -107,8 +107,8 @@ void CSinglezoneDriver::StartSolver() {
 
 }
 
-void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-
+void CSinglezoneDriver::Preprocess(unsigned long TimeIter, unsigned long Iter_dCL_dAlpha_in ) {
+ 
   /*--- Set runtime option ---*/
 
   Runtime_Options();
@@ -134,6 +134,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
       (config_container[ZONE_0]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  INC_RANS) ) {
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
+      /*--- Specifically in case of fixed CL  approach-*/
+      if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->ResetAoA_FD();
+      config_container[ZONE_0]->SetFinite_Difference_Mode(false);
+      output_container[ZONE_0]->ResetLastInnerIter_Output();
+      if (Iter_dCL_dAlpha_in != 0) {config_container[ZONE_0]->SetIter_dCL_dAlpha(Iter_dCL_dAlpha_in);}
+      }
   }
 
 #ifdef HAVE_MPI
@@ -150,7 +157,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
           mesh cordinates are read from the restart files. ---*/
   if (!(config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetDiscrete_Adjoint()))
     DynamicMeshUpdate(TimeIter);
-
+ 
 }
 
 void CSinglezoneDriver::Run() {
