@@ -124,7 +124,7 @@ public:
   bool findAndErase(const ItemType value) {
     if (empty()) return false;
 
-    /*--- Get the hint. ---*/
+    /*--- Get the item position. ---*/
     auto it = indexes.find(value);
     if (it == indexes.end()) return false; // value is not here
 

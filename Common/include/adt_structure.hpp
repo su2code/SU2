@@ -171,11 +171,6 @@ protected:
    */
   CADTBaseClass() = default;
 
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  virtual ~CADTBaseClass() = default;
-
   /*--- Disable copy operations ---*/
   CADTBaseClass(const CADTBaseClass &) = delete;
   CADTBaseClass& operator=(const CADTBaseClass &) = delete;

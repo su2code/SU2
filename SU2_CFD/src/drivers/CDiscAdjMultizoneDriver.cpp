@@ -482,7 +482,9 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
    *    It is necessary to include data transfer and mesh updates in this section as some functions
    *    computed in one zone depend explicitly on the variables of others through that path. --- */
 
-  HandleDataTransfer();
+  if (tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
+    HandleDataTransfer();
+  }
 
   SetObjFunction(kind_recording);
 
