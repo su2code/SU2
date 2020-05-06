@@ -5182,7 +5182,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             for (unsigned short jVar = 0; jVar < nVar; jVar++) {
               Jacobian_i[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign;
-              Jacobian_j[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign*r_i/r_k;
+              Jacobian_j[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign*r_j/r_k;
             }
           }
         }
