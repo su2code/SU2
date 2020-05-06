@@ -2542,24 +2542,22 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   /*--- Set the primitive variables ---*/
 
-  if (!Output) {
-    SU2_OMP_MASTER
-    ErrorCounter = 0;
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
+  SU2_OMP_BARRIER
+
+  SU2_OMP_ATOMIC
+  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     SU2_OMP_BARRIER
-
-    SU2_OMP_ATOMIC
-    ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
-
-    if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-      SU2_OMP_BARRIER
-      SU2_OMP_MASTER
-      {
-        unsigned long tmp = ErrorCounter;
-        SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        config->SetNonphysical_Points(ErrorCounter);
-      }
-      SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    {
+      unsigned long tmp = ErrorCounter;
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      config->SetNonphysical_Points(ErrorCounter);
     }
+    SU2_OMP_BARRIER
   }
 
   /*--- Compute the engine properties ---*/
