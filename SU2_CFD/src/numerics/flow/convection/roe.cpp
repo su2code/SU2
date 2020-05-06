@@ -160,6 +160,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
       }
     }
     AD::SetPreaccOut(Flux, nVar);
+    AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+    AD::SetPreaccOut(Jacobian_j, nVar, nVar);
     AD::EndPreacc();
 
     return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
@@ -243,6 +245,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
 
   AD::SetPreaccOut(Flux, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);

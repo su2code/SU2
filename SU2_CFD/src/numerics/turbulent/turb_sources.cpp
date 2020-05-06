@@ -919,6 +919,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   }
 
   AD::SetPreaccOut(Residual, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Residual, Jacobian_i, nullptr);

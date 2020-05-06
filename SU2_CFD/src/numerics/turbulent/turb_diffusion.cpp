@@ -162,6 +162,12 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
+    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
+  }
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j, Jacobian_ic, Jacobian_jc);

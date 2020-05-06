@@ -5101,7 +5101,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    AD_BEGIN_PASSIVE
+//    AD_BEGIN_PASSIVE
     
     /*--- Influence of i's neighbors on R(i,j) ---*/
     for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
@@ -5211,7 +5211,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
       }
     }
     
-    AD_END_PASSIVE
+//    AD_END_PASSIVE
     
   }
   
