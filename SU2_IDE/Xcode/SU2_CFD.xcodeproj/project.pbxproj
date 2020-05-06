@@ -351,6 +351,12 @@
 		02048C14242BEE300059A17E /* CInriaFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CInriaFileWriter.cpp; sourceTree = "<group>"; };
 		02048C15242BEE300059A17E /* CParaviewXMLFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CParaviewXMLFileWriter.cpp; sourceTree = "<group>"; };
 		02048C1B242BEE4D0059A17E /* CWindowingTools.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CWindowingTools.cpp; sourceTree = "<group>"; };
+		023F6AB3246241A900341262 /* CFEM_DG_Integration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CFEM_DG_Integration.hpp; path = ../../SU2_CFD/include/integration/CFEM_DG_Integration.hpp; sourceTree = "<group>"; };
+		023F6AB4246241A900341262 /* CIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CIntegration.hpp; path = ../../SU2_CFD/include/integration/CIntegration.hpp; sourceTree = "<group>"; };
+		023F6AB5246241A900341262 /* CSingleGridIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CSingleGridIntegration.hpp; path = ../../SU2_CFD/include/integration/CSingleGridIntegration.hpp; sourceTree = "<group>"; };
+		023F6AB6246241A900341262 /* CMultiGridIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMultiGridIntegration.hpp; path = ../../SU2_CFD/include/integration/CMultiGridIntegration.hpp; sourceTree = "<group>"; };
+		023F6AB7246241A900341262 /* CIntegrationFactory.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CIntegrationFactory.hpp; path = ../../SU2_CFD/include/integration/CIntegrationFactory.hpp; sourceTree = "<group>"; };
+		023F6AB8246241AA00341262 /* CStructuralIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CStructuralIntegration.hpp; path = ../../SU2_CFD/include/integration/CStructuralIntegration.hpp; sourceTree = "<group>"; };
 		029901782451223200639D5C /* turb_convection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_convection.cpp; sourceTree = "<group>"; };
 		029901792451223200639D5C /* turb_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_sources.cpp; sourceTree = "<group>"; };
 		0299017A2451223200639D5C /* turb_diffusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_diffusion.cpp; sourceTree = "<group>"; };
@@ -894,6 +900,19 @@
 			path = ../../SU2_CFD/src/output/tools;
 			sourceTree = "<group>";
 		};
+		023F6AB22462418200341262 /* Integration */ = {
+			isa = PBXGroup;
+			children = (
+				023F6AB3246241A900341262 /* CFEM_DG_Integration.hpp */,
+				023F6AB4246241A900341262 /* CIntegration.hpp */,
+				023F6AB7246241A900341262 /* CIntegrationFactory.hpp */,
+				023F6AB6246241A900341262 /* CMultiGridIntegration.hpp */,
+				023F6AB5246241A900341262 /* CSingleGridIntegration.hpp */,
+				023F6AB8246241AA00341262 /* CStructuralIntegration.hpp */,
+			);
+			name = Integration;
+			sourceTree = "<group>";
+		};
 		029901772451223200639D5C /* turbulent */ = {
 			isa = PBXGroup;
 			children = (
@@ -1279,6 +1298,7 @@
 				E96FAF192189FF620046BF5D /* graph_coloring_structure.hpp */,
 				05E6DAC817EB608000FA1F7E /* grid_adaptation_structure.hpp */,
 				05E6DAC917EB608000FA1F7E /* grid_movement_structure.hpp */,
+				023F6AB22462418200341262 /* Integration */,
 				4040B268235FBF1B00843C83 /* Interfaces */,
 				029901E52451234C00639D5C /* Interpolation */,
 				05E6DBB617EB627400FA1F7E /* iteration_structure.hpp */,

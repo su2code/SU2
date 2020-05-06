@@ -113,9 +113,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
 
-  NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
-                            numerics_container[iZone][iInst], config[iZone],
-                            FinestMesh, RunTime_EqSystem, &monitor);
+  if (!config[iZone]->GetDiscrete_Adjoint())
+    NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
+                              numerics_container[iZone][iInst], config[iZone],
+                              FinestMesh, RunTime_EqSystem, &monitor);
 
   } // end SU2_OMP_PARALLEL
 
@@ -220,7 +221,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
 
-    solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem, false);
+    solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem, true);
 
     /// TODO: For implicit schemes, this call to Space_Integration can skip building the system matrix.
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
@@ -231,7 +232,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
+    solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, true);
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 

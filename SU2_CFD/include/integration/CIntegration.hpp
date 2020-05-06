@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
@@ -151,6 +151,19 @@ public:
   virtual void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                    CNumerics ******numerics_container, CConfig **config,
                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+  
+  /*!
+   * \brief Compute the non-dimensional parameters.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
+   */
+  virtual void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
+                                         CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem,
+                                         su2double *monitor) { };
 
   /*!
    * \brief A virtual member.

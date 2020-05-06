@@ -316,7 +316,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   su2double a1 = constants[7];
-    
+  
+  solver_container[FLOW_SOL]->Preprocessing(geometry, solver_container, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  
   SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
