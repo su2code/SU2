@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -152,7 +152,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CPhysicalGeometry(void);
+  ~CPhysicalGeometry(void) override;
 
   /*!
    * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.

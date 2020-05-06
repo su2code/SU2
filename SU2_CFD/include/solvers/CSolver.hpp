@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -619,16 +619,14 @@ public:
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
-            It is a virtual function, because for the DG-FEM solver a different version is needed.
-   * \param[in] geometry - Geometrical definition of the problem.
+   *        It is a virtual function, because for the DG-FEM solver a different version is needed.
    */
-  inline virtual void Set_OldSolution(CGeometry *geometry) { base_nodes->Set_OldSolution(); }
+  inline virtual void Set_OldSolution() { base_nodes->Set_OldSolution(); }
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline virtual void Set_NewSolution(CGeometry *geometry) { }
+  inline virtual void Set_NewSolution() { }
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.

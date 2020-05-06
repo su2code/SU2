@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1103,8 +1103,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
   long FineEdge, CoarseEdge;
   unsigned short iChildren, iNode, iDim;
   bool change_face_orientation;
-  su2double *Normal, Coarse_Volume, Area, *NormalFace = NULL;
-  Normal = new su2double [nDim];
+  su2double Coarse_Volume, Area;
 
   /*--- Compute the area of the coarse volume ---*/
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
@@ -1119,8 +1118,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   /*--- Update or not the values of faces at the edge ---*/
   if (action != ALLOCATE) {
-    for (iEdge=0; iEdge < nEdge; iEdge++)
-      edge[iEdge]->SetZeroValues();
+    edges->SetZeroValues();
   }
 
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
@@ -1139,27 +1137,28 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
           CoarseEdge = FindEdge(iParent, iCoarsePoint);
 
-          fine_grid->edge[FineEdge]->GetNormal(Normal);
+          const auto Normal = fine_grid->edges->GetNormal(FineEdge);
 
           if (change_face_orientation) {
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-            edge[CoarseEdge]->AddNormal(Normal);
+            edges->SubNormal(CoarseEdge,Normal);
           }
           else {
-            edge[CoarseEdge]->AddNormal(Normal);
+            edges->AddNormal(CoarseEdge,Normal);
           }
         }
       }
     }
-  delete[] Normal;
 
   /*--- Check if there is a normal with null area ---*/
 
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
-    NormalFace = edge[iEdge]->GetNormal();
+    const auto NormalFace = edges->GetNormal(iEdge);
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
     Area = sqrt(Area);
-    if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+    if (Area == 0.0) {
+      su2double DefaultNormal[3] = {EPS*EPS};
+      edges->SetNormal(iEdge, DefaultNormal);
+    }
   }
 
 }

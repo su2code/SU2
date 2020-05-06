@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -116,7 +116,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbSolver(void);
+  ~CTurbSolver(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -226,6 +226,20 @@ public:
                    CSolver **solver_container,
                    CNumerics *numerics,
                    CConfig *config) final;
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit solver.
