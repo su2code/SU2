@@ -1,0 +1,97 @@
+Build started at 2020-05-07T13:28:35.781134
+Main binary: /usr/bin/python3
+Build Options: -Denable-pythonwrapper=true -Denable-pywrapper=true -Denable-tecio=false -Dprefix=/home/wallymaier/SU2 -Dbackend=ninja
+Python system: Linux
+The Meson build system
+Version: 0.53.2
+Source dir: /home/wallymaier/SU2
+Build dir: /home/wallymaier/SU2/build
+Build type: native build
+Project name: SU2
+Project version: 7.0.4 "Blackbird"
+C compiler for the build machine: cc (gcc 7.5.0 "cc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0")
+C linker for the build machine: cc ld.bfd 2.30
+C++ compiler for the build machine: c++ (gcc 7.5.0 "c++ (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0")
+C++ linker for the build machine: c++ ld.bfd 2.30
+C compiler for the host machine: cc (gcc 7.5.0 "cc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0")
+C linker for the host machine: cc ld.bfd 2.30
+C++ compiler for the host machine: c++ (gcc 7.5.0 "c++ (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0")
+C++ linker for the host machine: c++ ld.bfd 2.30
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+Program python3 found: YES (/usr/bin/python3)
+Dependency mpi found: YES 3.1.6 (cached)
+Dependency mpi found: YES 3.1.6 (cached)
+Program swig found: YES (/usr/bin/swig)
+Running command: /usr/bin/python3 -c import mpi4py; print(mpi4py.get_include())
+--- stdout ---
+/home/wallymaier/.local/lib/python3.6/site-packages/mpi4py/include
+
+--- stderr ---
+
+
+Message: Using mpi4py from /home/wallymaier/.local/lib/python3.6/site-packages/mpi4py/include
+Dependency python3 found: YES 3.6 (cached)
+Program install.sh found: YES (/bin/sh /home/wallymaier/SU2/SU2_PY/pySU2/install.sh)
+Message: -------------------------------------------------------------------------
+         |    ___ _   _ ___                                                      |
+         |   / __| | | |_  )   Release 7.0.4 "Blackbird"                         |
+         |   \__ \ |_| |/ /                                                      |
+         |   |___/\___//___|   Meson Configuration Summary                       |
+         |                                                                       |
+         -------------------------------------------------------------------------
+         
+         Option          Value
+         ---------------------
+         TecIO:          false
+         CGNS:           true
+         AD (reverse):   false
+         AD (forward):   false
+         Python Wrapper: true
+         Intel-MKL:      false
+         OpenBlas:       false
+         PaStiX:         false
+
+         Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
+         and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
+
+         Based on the input to this configuration, add these lines to your .bashrc file:
+
+         export SU2_RUN=/home/wallymaier/SU2/bin
+         export SU2_HOME=/home/wallymaier/SU2
+         export PATH=$PATH:$SU2_RUN
+         export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+         Use './ninja -C build install' to compile and install SU2
+
+Build targets in project: 12
+
+Found ninja-1.9.0.git at /home/wallymaier/SU2/ninja
+Running compile:
+Working directory:  /tmp/tmpnkat2m06
+Command line:  c++ /tmp/tmpnkat2m06/testfile.cpp -o /tmp/tmpnkat2m06/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
+
+Code:
+ int i = static_cast<int>(0);
+Compiler stdout:
+ 
+Compiler stderr:
+ 
+Compiler accepts -std=c++11: YES
+Running compile:
+Working directory:  /home/wallymaier/SU2/build/meson-private/tmpw0so437h
+Command line:  c++ /home/wallymaier/SU2/build/meson-private/tmpw0so437h/testfile.cpp -o /home/wallymaier/SU2/build/meson-private/tmpw0so437h/output.obj -pipe -c -O3 -Wall -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/7/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/7/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../lib/:/lib/x86_64-linux-gnu/7/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/7/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/7/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ 

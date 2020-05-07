@@ -1,0 +1,9 @@
+[options]
+enable-pythonwrapper = true
+enable-pywrapper = true
+enable-tecio = false
+prefix = /home/wallymaier/SU2
+backend = ninja
+
+[properties]
+

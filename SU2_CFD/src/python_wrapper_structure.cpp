@@ -676,6 +676,30 @@ vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsig
 
 }
 
+vector<passivedouble> CDriver::GetStates(unsigned short iMarker){
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned short iPoint;
+  vector<passivedouble> states(nVertex*7,0.0);
+
+  for (unsigned short iVertex=0; iVertex < nVertex; iVertex++){
+    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    
+    states[7*iVertex]    = solver->GetNodes()->GetDensity(iPoint);
+    states[7*iVertex+1]  = solver->GetNodes()->GetVelocity(iPoint,0);
+    states[7*iVertex+2]  = solver->GetNodes()->GetVelocity(iPoint,1);
+    states[7*iVertex+3]  = solver->GetNodes()->GetVelocity(iPoint,2);
+    states[7*iVertex+4]  = solver->GetNodes()->GetPressure(iPoint);
+    states[7*iVertex+5]  = solver->GetNodes()->GetSoundSpeed(iPoint);
+    states[7*iVertex+6]  = solver->GetNodes()->GetTemperature(iPoint);
+                                       
+  }
+  return states;
+}
+
 vector<string> CDriver::GetAllBoundaryMarkersTag(){
 
   vector<string> boundariesTagList;

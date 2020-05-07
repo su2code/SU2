@@ -672,6 +672,13 @@ public:
   vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex);
 
   /*!
+   * \brief Get the solution state vector of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return States (vector) at the marker.
+   */
+  vector<passivedouble> GetStates(unsigned short iMarker);
+
+  /*!
    * \brief Get all the boundary markers tags.
    * \return List of boundary markers tags.
    */
