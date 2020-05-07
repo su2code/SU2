@@ -375,7 +375,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
     const su2double rho = flowNodes->GetDensity(iPoint);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double cons = nodes->GetSolution(iPoint,iVar);
-      static_cast<CTurbSSTVariable*>(nodes)->SetPrimitive(iPoint,iVar,cons/rho);
+      nodes->SetPrimitive(iPoint,iVar,cons/rho);
     }
   }
 
@@ -399,7 +399,7 @@ void CTurbSSTSolver::SetFlowPrimitive_Gradients(CSolver **solver_container) {
 //--- This is hacky, fix later
 void CTurbSSTSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
 
-  const auto& primitives = static_cast<CTurbSSTVariable*>(nodes)->GetPrimitive();
+  const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
 
   computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
@@ -416,7 +416,7 @@ void CTurbSSTSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *conf
   else
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
-  const auto& primitives = static_cast<CTurbSSTVariable*>(nodes)->GetPrimitive();
+  const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
@@ -428,7 +428,7 @@ void CTurbSSTSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *conf
 void CTurbSSTSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
-  const auto& primitives = static_cast<CTurbSSTVariable*>(nodes)->GetPrimitive();
+  const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();
   auto& primMax = nodes->GetSolution_Max();
@@ -464,7 +464,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetTurbVar(static_cast<CTurbSSTVariable*>(nodes)->GetPrimitive(iPoint), nullptr);
+    numerics->SetTurbVar(nodes->GetPrimitive(iPoint), nullptr);
     numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Set volume ---*/
@@ -521,7 +521,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      const su2double om_i     = static_cast<CTurbSSTVariable*>(nodes)->GetPrimitive(iPoint,1);
+      const su2double om_i     = nodes->GetPrimitive(iPoint,1);
       
       /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
       for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -671,7 +671,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = static_cast<CTurbSSTVariable*>(nodes)->GetPrimitive(iPoint,iVar);
+      for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
