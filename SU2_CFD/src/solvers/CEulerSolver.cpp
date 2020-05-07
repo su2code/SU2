@@ -10733,9 +10733,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
-    /*cout<<GlobalIndex<<"\t and donor\t"<<GlobalIndex_donor<<"\tfor\t"<<config->GetMarker_All_TagBound(val_marker)<<endl;
-    cout<<GlobalIndex<<"\t"<<geometry->node[GlobalIndex]->GetCoord(0)<<"\t"<<geometry->node[GlobalIndex]->GetCoord(1)<<"\t"<<geometry->node[GlobalIndex]->GetCoord(1)<<endl;
-    cout<<GlobalIndex_donor<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(0)<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(1)<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(1)<<endl;*/
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 

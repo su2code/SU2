@@ -6579,9 +6579,6 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
-    /*cout<<GlobalIndex<<"\t and donor\t"<<GlobalIndex_donor<<"\tfor\t"<<config->GetMarker_All_TagBound(val_marker)<<endl;
-    cout<<GlobalIndex<<"\t"<<geometry->node[GlobalIndex]->GetCoord(0)<<"\t"<<geometry->node[GlobalIndex]->GetCoord(1)<<"\t"<<geometry->node[GlobalIndex]->GetCoord(1)<<endl;
-    cout<<GlobalIndex_donor<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(0)<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(1)<<"\t"<<geometry->node[GlobalIndex_donor]->GetCoord(1)<<endl;*/
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
@@ -6623,18 +6620,20 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
         }
 
         PressureAdj = 1.0; 
-        if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
+        /*if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
 
           Pstag_out = Pressure_out + 0.5*Density_out*Velocity2_out;
           Pstag_in = Pressure_in + 0.5*Density_in*Velocity2_in;
           PressureAdj    = Pstag_out/Pstag_in;
-        }
+        }*/
 
         if (ratio) {
-          P_static = V_outlet[0] / (Target_Press_Jump/PressureAdj);
+          //P_static = V_outlet[0] / (Target_Press_Jump/PressureAdj);
+          P_static = Pressure_out * (Target_Press_Jump/PressureAdj);
         }
         else { 
-          P_static = V_outlet[0] + Target_Press_Jump;
+          //P_static = V_outlet[0] + Target_Press_Jump;
+          P_static = Pressure_out + Target_Press_Jump;
         }
       }
       else {
@@ -6654,15 +6653,15 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
         }
 
         PressureAdj = 1.0; 
-        if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
+        /*if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
 
           Pstag_out = Pressure_out + 0.5*Density_out*Velocity2_out;
           Pstag_in = Pressure_in + 0.5*Density_in*Velocity2_in;
           PressureAdj    = Pstag_out/Pstag_in;
-        }
+        }*/
 
         if (ratio) {
-          P_static = V_inlet[0] * (Target_Press_Jump/PressureAdj);
+          P_static = V_inlet[0] / (Target_Press_Jump/PressureAdj);
         }
         else  { 
           P_static = V_inlet[0] - Target_Press_Jump;
@@ -6701,7 +6700,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
         /*--- Conservative variables, using the derived quantities ---*/
 
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Velocity[iDim];
+          V_inlet[iDim+1] = 0.5*(V_domain[iDim+1] + V_outlet[iDim+1]);
         V_inlet[0] = Pressure;
         V_inlet[nDim+1] = Density;
         conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -6729,13 +6728,13 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
 
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Face-Vn)*UnitNormal[iDim];
+          Velocity[iDim] = Velocity[iDim] - (Vn_Face-Vn)*UnitNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
 
         /*--- Primitive variables, using the derived quantities ---*/
         for (iDim = 0; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = Velocity[iDim];
+          V_outlet[iDim+1] = 0.5*(V_domain[iDim+1] + V_inlet[iDim+1]);
         V_outlet[0] = Pressure;
         V_outlet[nDim+1] = Density;
         conv_numerics->SetPrimitive(V_domain, V_outlet);
