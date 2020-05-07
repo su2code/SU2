@@ -605,14 +605,12 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
 void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
-  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
-
   /*--- Update the multigrid structure after moving the finest grid,
    including computing the grid velocities on the coarser levels
    when the problem is solved in unsteady conditions. ---*/
 
-  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
-    iMGfine = iMGlevel-1;
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    const auto iMGfine = iMGlevel-1;
     geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
     geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
