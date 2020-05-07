@@ -3939,7 +3939,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
       //            string("The displacement required for parallel reading is too large.\n") +
       //             string("CSolver::Read_SU2_Restart_Binary needs to read the restart file differently\n"), CURRENT_FUNCTION);
       //}
-      displace[counter] = iPoint_Global*nFields*sizeof(double);
+      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
       counter++;
     }
   }

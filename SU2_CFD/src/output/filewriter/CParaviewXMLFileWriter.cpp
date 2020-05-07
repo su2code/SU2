@@ -330,7 +330,8 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
                                             unsigned long globalSize, unsigned long offset){
 
 
-  int totalByteSize, byteSize;
+  long int totalByteSize;
+  int byteSize;
 
   std::string typeStr;
   unsigned long typeSize = 0;
@@ -347,7 +348,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
 
   /*--- Only the master node writes the total size in bytes as int32 in front of the array data ---*/
   
-  if (!WriteMPIBinaryData(&totalByteSize, sizeof(int), MASTER_NODE)){
+  if (!WriteMPIBinaryData(&totalByteSize, sizeof(long int), MASTER_NODE)){
     SU2_MPI::Error("Writing array size failed", CURRENT_FUNCTION);
   }
   
