@@ -2,14 +2,14 @@
  * \file CTransLMSolver.cpp
  * \brief Main subrotuines for Transition model solver.
  * \author A. Aranake
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -259,16 +259,20 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 }
 
-void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[CONV_TERM];
+
   su2double *trans_var_i, *trans_var_j, *U_i, *U_j;
   unsigned long iEdge, iPoint, jPoint;
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge and normal vectors ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Conservative variables w/o reconstruction ---*/
     U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
@@ -286,31 +290,31 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Residual);
 
     /*--- Implicit part ---*/
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
 
   }
 
 }
 
 
-void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iEdge, iPoint, jPoint;
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and normal vector ---*/
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                      geometry->node[jPoint]->GetCoord());
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Conservative variables w/o reconstruction ---*/
     numerics->SetConservative(solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint),
@@ -339,16 +343,16 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
 
   }
 }
 
-void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                       CConfig *config, unsigned short iMesh) {
+void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
   unsigned long iPoint;
   su2double gamma_sep = 0.0;
 
@@ -394,7 +398,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
   }
 }
@@ -449,7 +453,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      cout << "Implicit part -AA" << endl;
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }

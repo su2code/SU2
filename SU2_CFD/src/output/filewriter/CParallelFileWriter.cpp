@@ -2,14 +2,14 @@
  * \file CFileWriter.cpp
  * \brief Filewriter base class.
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,7 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   
 #ifdef HAVE_MPI
 
-  startTime = MPI_Wtime();
+  startTime = SU2_MPI::Wtime();
   
   MPI_Datatype filetype;
   
@@ -91,14 +91,14 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   disp      += totalSizeInBytes;
   fileSize  += sizeInBytes;
   
-  stopTime = MPI_Wtime();
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
   return (ierr == MPI_SUCCESS);
 #else
 
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = SU2_MPI::Wtime();
   
   unsigned long bytesWritten;
   
@@ -107,7 +107,7 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
   fileSize += bytesWritten;
   
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -120,7 +120,7 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   
 #ifdef HAVE_MPI
   
-  startTime = MPI_Wtime();
+  startTime = SU2_MPI::Wtime();
   
   int ierr = MPI_SUCCESS;
   
@@ -135,14 +135,14 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   disp     += sizeInBytes;
   fileSize += sizeInBytes;
   
-  stopTime = MPI_Wtime();
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
   return (ierr == MPI_SUCCESS);
 #else
   
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = SU2_MPI::Wtime();
   
   unsigned long bytesWritten = sizeInBytes;
   
@@ -150,7 +150,7 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   
   bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
   
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -164,7 +164,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
 #ifdef HAVE_MPI
 
-  startTime = MPI_Wtime();
+  startTime = SU2_MPI::Wtime();
   
   int ierr = MPI_SUCCESS;
   
@@ -180,7 +180,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   disp += str.size()*sizeof(char);
   fileSize += sizeof(char)*str.size();
   
-  stopTime = MPI_Wtime();
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -188,14 +188,14 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
 #else
   
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = SU2_MPI::Wtime();
   
   unsigned long bytesWritten;  
   bytesWritten = fwrite(str.c_str(), sizeof(char), str.size(), fhw);
   
   fileSize += bytesWritten;
   
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   

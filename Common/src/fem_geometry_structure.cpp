@@ -2,14 +2,14 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -5761,7 +5761,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /* Loop over the different standard elements. */
   for(unsigned long i=0; i<standardElementsSol.size(); ++i) {
-    
+
     /* Get the required data from the standard element. */
     const unsigned short nInt  = standardElementsSol[i].GetNIntegration();
     const unsigned short nDOFs = standardElementsSol[i].GetNDOFs();
@@ -6313,7 +6313,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
             case LOGARITHMIC_WALL_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
-              
+
               boundaries[iMarker].wallModel = new CWallModelLogLaw(config, Marker_Tag);
               break;
             }
@@ -6677,7 +6677,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
                                 config->GetRotation_Rate(1)/Omega_Ref,
                                 config->GetRotation_Rate(2)/Omega_Ref};
 
-      /* Array used to store the distance to the rotation center. */ 
+      /* Array used to store the distance to the rotation center. */
       su2double dist[] = {0.0, 0.0, 0.0};
 
       /* Loop over the owned volume elements. */
@@ -6865,15 +6865,15 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
     default:  /* Just to avoid a compiler warning. */
       break;
   }
-  
+
   if (config->GetSurface_Movement(MOVING_WALL)){
     /*--- Loop over the physical boundaries. Skip the periodic boundaries. ---*/
     for(unsigned short i=0; i<boundaries.size(); ++i) {
       if( !boundaries[i].periodicBoundary ) {
-        
+
         /* Check if for this boundary a motion has been specified. */
         if (config->GetMarker_All_Moving(i) == YES) {
-          
+
           /* Determine the prescribed translation velocity, rotation rate
                and rotation center. */
           const su2double Center[] = {config->GetMotion_Origin(0),
@@ -6885,31 +6885,31 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
           const su2double vTrans[] = {config->GetTranslation_Rate(0)/Vel_Ref,
                                       config->GetTranslation_Rate(1)/Vel_Ref,
                                       config->GetTranslation_Rate(2)/Vel_Ref};
-          
+
           /* Easier storage of the surface elements and loop over them. */
           vector<CSurfaceElementFEM> &surfElem = boundaries[i].surfElem;
-          
+
           for(unsigned long l=0; l<surfElem.size(); ++l) {
-            
+
             /* Determine the corresponding standard face element and get the
                  relevant information from it. Note that the standard element
                  of the solution must be taken and not of the grid. */
             const unsigned short ind  = surfElem[l].indStandardElement;
             const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-            
+
             /* Loop over the number of integration points. */
             for(unsigned short j=0; j<nInt; ++j) {
-              
+
               /* Set the pointers for the coordinates and grid velocities
                    for this integration points. */
               const su2double *Coord = surfElem[l].coorIntegrationPoints.data() + j*nDim;
               su2double *gridVel     = surfElem[l].gridVelocities.data() + j*nDim;
-              
+
               /* Calculate non-dim. position from rotation center. */
               su2double r[] = {0.0, 0.0, 0.0};
               for(unsigned short iDim=0; iDim<nDim; ++iDim)
                 r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
-              
+
               /* Cross Product of angular velocity and distance from center to
                    get the rotational velocity. Note that we are adding on the
                    velocity due to pure translation as well. Note that for the
@@ -6917,7 +6917,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
               su2double velGrid[] = {vTrans[0] + Omega[1]*r[2] - Omega[2]*r[1],
                                      vTrans[1] + Omega[2]*r[0] - Omega[0]*r[2],
                                      vTrans[2] + Omega[0]*r[1] - Omega[1]*r[0]};
-              
+
               /* Store the grid velocities. */
               for(unsigned short iDim=0; iDim<nDim; ++iDim)
                 gridVel[iDim] = velGrid[iDim];
@@ -6930,10 +6930,10 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 }
 
 CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
-  
+
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
-  
+
   nEdge      = 0;
   nPoint     = 0;
   nPointDomain = 0;
@@ -6941,17 +6941,17 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   nElem      = 0;
   nMarker    = 0;
   nZone = config->GetnZone();
-  
+
   nVolElemOwned = 0;
   nVolElemTot = 0;
-  
+
   nElem_Bound         = NULL;
   Tag_to_Marker       = NULL;
   elem                = NULL;
   face                = NULL;
   bound               = NULL;
   node                = NULL;
-  edge                = NULL;
+  edges               = NULL;
   vertex              = NULL;
   nVertex             = NULL;
   newBound            = NULL;
@@ -6964,12 +6964,12 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   Zcoord_plane.clear();
   FaceArea_plane.clear();
   Plane_points.clear();
-  
+
   /*--- Arrays for defining the linear partitioning ---*/
-  
+
   beg_node = NULL;
   end_node = NULL;
-  
+
   nPointLinear     = NULL;
   nPointCumulative = NULL;
 
@@ -6979,82 +6979,82 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   CustomBoundaryTemperature = NULL;   //Customized temperature wall
 
   /*--- MPI point-to-point data structures ---*/
-  
+
   nP2PSend = 0;
   nP2PRecv = 0;
-  
+
   countPerPoint = 0;
-  
+
   bufD_P2PSend = NULL;
   bufD_P2PRecv = NULL;
-  
+
   bufS_P2PSend = NULL;
   bufS_P2PRecv = NULL;
-  
+
   req_P2PSend = NULL;
   req_P2PRecv = NULL;
-  
+
   nPoint_P2PSend = new int[size];
   nPoint_P2PRecv = new int[size];
-  
+
   Neighbors_P2PSend = NULL;
   Neighbors_P2PRecv = NULL;
-  
+
   Local_Point_P2PSend = NULL;
   Local_Point_P2PRecv = NULL;
 
   /*--- MPI periodic data structures ---*/
-  
+
   nPeriodicSend = 0;
   nPeriodicRecv = 0;
-  
+
   countPerPeriodicPoint = 0;
-  
+
   bufD_PeriodicSend = NULL;
   bufD_PeriodicRecv = NULL;
-  
+
   bufS_PeriodicSend = NULL;
   bufS_PeriodicRecv = NULL;
-  
+
   req_PeriodicSend = NULL;
   req_PeriodicRecv = NULL;
-  
+
   nPoint_PeriodicSend = NULL;
   nPoint_PeriodicRecv = NULL;
-  
+
   Neighbors_PeriodicSend = NULL;
   Neighbors_PeriodicRecv = NULL;
-  
+
   Local_Point_PeriodicSend = NULL;
   Local_Point_PeriodicRecv = NULL;
-  
+
   Local_Marker_PeriodicSend = NULL;
   Local_Marker_PeriodicRecv = NULL;
-  
+
   nVertex = new unsigned long[config->GetnMarker_All()];
-  
+
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     nVertex[iMarker] = 0;
   }
-  
+
   Tag_to_Marker = new string[config->GetnMarker_All()];
-  
+
   this->nDim = nDim;
-  
-  
+
+
   for (unsigned short iRank = 0; iRank < size; iRank++){
     nPoint_P2PRecv[iRank] = 0;
     nPoint_P2PSend[iRank] = 0;
   }
-  
+
   for (unsigned short i=0; i <= config->GetnLevels_TimeAccurateLTS(); i++){
     nMatchingFacesWithHaloElem.push_back(0);
-  } 
-  
+  }
+
   boundaries.resize(config->GetnMarker_All());
-      
+
   nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
+
 }
 
 CDummyMeshFEM_DG::~CDummyMeshFEM_DG(){}

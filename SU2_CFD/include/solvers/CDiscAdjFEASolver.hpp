@@ -2,14 +2,14 @@
  * \file CDiscAdjFEASolver.hpp
  * \brief Headers of the CDiscAdjFEASolver class
  * \author R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,61 +38,59 @@
  */
 class CDiscAdjFEASolver final : public CSolver {
 private:
-  unsigned short KindDirect_Solver;
-  CSolver *direct_solver;
-  su2double *Sens_E,            /*!< \brief Young modulus sensitivity coefficient for each boundary. */
-  *Sens_Nu,                     /*!< \brief Poisson's ratio sensitivity coefficient for each boundary. */
-  *Sens_nL,                     /*!< \brief Normal pressure sensitivity coefficient for each boundary. */
-  **CSensitivity;               /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  unsigned short KindDirect_Solver = 0;
+  CSolver *direct_solver = nullptr;
+  su2double *Sens_E = nullptr,          /*!< \brief Young modulus sensitivity coefficient for each boundary. */
+  *Sens_Nu = nullptr,                   /*!< \brief Poisson's ratio sensitivity coefficient for each boundary. */
+  *Sens_nL = nullptr,                   /*!< \brief Normal pressure sensitivity coefficient for each boundary. */
+  **CSensitivity = nullptr;             /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
 
-  su2double *Solution_Vel,      /*!< \brief Velocity componenent of the solution. */
-  *Solution_Accel;              /*!< \brief Acceleration componenent of the solution. */
+  su2double *Solution_Vel = nullptr,    /*!< \brief Velocity componenent of the solution. */
+  *Solution_Accel = nullptr;            /*!< \brief Acceleration componenent of the solution. */
 
-  su2double *SolRest;            /*!< \brief Auxiliary vector to restart the solution */
+  su2double ObjFunc_Value = 0.0;        /*!< \brief Value of the objective function. */
+  su2double *normalLoads = nullptr;     /*!< \brief Values of the normal loads for each marker iMarker_nL. */
+  unsigned long nMarker_nL = 0;         /*!< \brief Total number of markers that have a normal load applied. */
 
-  su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
-  su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
+  unsigned short nMPROP = 0;            /*!< \brief Number of material properties */
 
-  unsigned short nMPROP;        /*!< \brief Number of material properties */
+  su2double *E_i = nullptr,               /*!< \brief Values of the Young's Modulus. */
+            *Nu_i = nullptr,              /*!< \brief Values of the Poisson's ratio. */
+            *Rho_i = nullptr,             /*!< \brief Values of the density (for inertial effects). */
+            *Rho_DL_i = nullptr;          /*!< \brief Values of the density (for volume loading). */
+  int       *AD_Idx_E_i = nullptr,        /*!< \brief Derivative index of the Young's Modulus. */
+            *AD_Idx_Nu_i = nullptr,       /*!< \brief Derivative index of the Poisson's ratio. */
+            *AD_Idx_Rho_i = nullptr,      /*!< \brief Derivative index of the density (for inertial effects). */
+            *AD_Idx_Rho_DL_i = nullptr;   /*!< \brief Derivative index of the density (for volume loading). */
 
-  su2double *E_i,               /*!< \brief Values of the Young's Modulus. */
-            *Nu_i,              /*!< \brief Values of the Poisson's ratio. */
-            *Rho_i,             /*!< \brief Values of the density (for inertial effects). */
-            *Rho_DL_i;          /*!< \brief Values of the density (for volume loading). */
-  int       *AD_Idx_E_i,        /*!< \brief Derivative index of the Young's Modulus. */
-            *AD_Idx_Nu_i,       /*!< \brief Derivative index of the Poisson's ratio. */
-            *AD_Idx_Rho_i,      /*!< \brief Derivative index of the density (for inertial effects). */
-            *AD_Idx_Rho_DL_i;   /*!< \brief Derivative index of the density (for volume loading). */
+  su2double *Local_Sens_E = nullptr,        /*!< \brief Local sensitivity of the Young's modulus. */
+            *Global_Sens_E = nullptr,       /*!< \brief Global sensitivity of the Young's modulus. */
+            *Total_Sens_E = nullptr;        /*!< \brief Total sensitivity of the Young's modulus (time domain). */
+  su2double *Local_Sens_Nu = nullptr,       /*!< \brief Local sensitivity of the Poisson ratio. */
+            *Global_Sens_Nu = nullptr,      /*!< \brief Global sensitivity of the Poisson ratio. */
+            *Total_Sens_Nu = nullptr;       /*!< \brief Total sensitivity of the Poisson ratio (time domain). */
+  su2double *Local_Sens_Rho = nullptr,      /*!< \brief Local sensitivity of the density. */
+            *Global_Sens_Rho = nullptr,     /*!< \brief Global sensitivity of the density. */
+            *Total_Sens_Rho = nullptr;      /*!< \brief Total sensitivity of the density (time domain). */
+  su2double *Local_Sens_Rho_DL = nullptr,   /*!< \brief Local sensitivity of the volume load. */
+            *Global_Sens_Rho_DL = nullptr,  /*!< \brief Global sensitivity of the volume load. */
+            *Total_Sens_Rho_DL = nullptr;   /*!< \brief Total sensitivity of the volume load (time domain). */
 
-  su2double *Local_Sens_E,        /*!< \brief Local sensitivity of the Young's modulus. */
-            *Global_Sens_E,       /*!< \brief Global sensitivity of the Young's modulus. */
-            *Total_Sens_E;        /*!< \brief Total sensitivity of the Young's modulus (time domain). */
-  su2double *Local_Sens_Nu,       /*!< \brief Local sensitivity of the Poisson ratio. */
-            *Global_Sens_Nu,      /*!< \brief Global sensitivity of the Poisson ratio. */
-            *Total_Sens_Nu;       /*!< \brief Total sensitivity of the Poisson ratio (time domain). */
-  su2double *Local_Sens_Rho,      /*!< \brief Local sensitivity of the density. */
-            *Global_Sens_Rho,     /*!< \brief Global sensitivity of the density. */
-            *Total_Sens_Rho;      /*!< \brief Total sensitivity of the density (time domain). */
-  su2double *Local_Sens_Rho_DL,   /*!< \brief Local sensitivity of the volume load. */
-            *Global_Sens_Rho_DL,  /*!< \brief Global sensitivity of the volume load. */
-            *Total_Sens_Rho_DL;   /*!< \brief Total sensitivity of the volume load (time domain). */
+  bool de_effects = false;                  /*!< \brief Determines if DE effects are considered. */
+  unsigned short nEField = 0;               /*!< \brief Number of electric field areas in the problem. */
+  su2double *EField = nullptr;              /*!< \brief Array that stores the electric field as design variables. */
+  int       *AD_Idx_EField = nullptr;       /*!< \brief Derivative index of the electric field as design variables. */
+  su2double *Local_Sens_EField = nullptr,   /*!< \brief Local sensitivity of the Electric Field. */
+            *Global_Sens_EField = nullptr,  /*!< \brief Global sensitivity of the Electric Field. */
+            *Total_Sens_EField = nullptr;   /*!< \brief Total sensitivity of the Electric Field (time domain). */
 
-  bool de_effects;                /*!< \brief Determines if DE effects are considered. */
-  unsigned short nEField;         /*!< \brief Number of electric field areas in the problem. */
-  su2double *EField;              /*!< \brief Array that stores the electric field as design variables. */
-  int       *AD_Idx_EField;       /*!< \brief Derivative index of the electric field as design variables. */
-  su2double *Local_Sens_EField,   /*!< \brief Local sensitivity of the Electric Field. */
-            *Global_Sens_EField,  /*!< \brief Global sensitivity of the Electric Field. */
-            *Total_Sens_EField;   /*!< \brief Total sensitivity of the Electric Field (time domain). */
-
-  bool fea_dv;                /*!< \brief Determines if the design variable we study is a FEA parameter. */
-  unsigned short nDV;         /*!< \brief Number of design variables in the problem. */
-  su2double *DV_Val;          /*!< \brief Values of the design variables. */
-  int       *AD_Idx_DV_Val;   /*!< \brief Derivative index of the design variables. */
-  su2double *Local_Sens_DV,   /*!< \brief Local sensitivity of the design variables. */
-            *Global_Sens_DV,  /*!< \brief Global sensitivity of the design variables. */
-            *Total_Sens_DV;   /*!< \brief Total sensitivity of the design variables (time domain). */
+  bool fea_dv = false;                  /*!< \brief Determines if the design variable we study is a FEA parameter. */
+  unsigned short nDV = 0;               /*!< \brief Number of design variables in the problem. */
+  su2double *DV_Val = nullptr;          /*!< \brief Values of the design variables. */
+  int       *AD_Idx_DV_Val = nullptr;   /*!< \brief Derivative index of the design variables. */
+  su2double *Local_Sens_DV = nullptr,   /*!< \brief Local sensitivity of the design variables. */
+            *Global_Sens_DV = nullptr,  /*!< \brief Global sensitivity of the design variables. */
+            *Total_Sens_DV = nullptr;   /*!< \brief Total sensitivity of the design variables (time domain). */
 
   CDiscAdjFEABoundVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -128,7 +126,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEASolver(void);
+  ~CDiscAdjFEASolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -162,22 +160,6 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Sets the adjoint values of the structural variables due to cross term contributions
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config) override;
 
   /*!
    * \brief Register the objective function as output.
@@ -387,12 +369,5 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
-
-  /*!
-   * \brief Compute the multizone residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
 };

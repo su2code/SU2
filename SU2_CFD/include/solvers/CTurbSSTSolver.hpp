@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,10 +35,10 @@
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
  */
-
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double *constants,  /*!< \brief Constants for the model. */
+  su2double
+  constants[10] = {0.0}, /*!< \brief Constants for the model. */
   kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
   omega_Inf;             /*!< \brief Free-stream specific dissipation. */
 
@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void);
+  ~CTurbSSTSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -95,16 +95,15 @@ public:
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Source_Residual(CGeometry *geometry,
                        CSolver **solver_container,
-                       CNumerics *numerics,
-                       CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) override;
+                       CNumerics **numerics_container,
+                       CConfig *config,
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -229,25 +228,12 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) override;
- /*!
-  * \brief Impose the interface state across sliding meshes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] conv_numerics - Description of the numerical method.
-  * \param[in] visc_numerics - Description of the numerical method.
-  * \param[in] config - Definition of the particular problem.
-  */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) override;
 
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
    */
-  inline su2double* GetConstants() const override { return constants; }
+  inline const su2double* GetConstants() const override { return constants; }
 
   /*!
    * \brief Set the solution using the Freestream values.
@@ -259,7 +245,6 @@ public:
       nodes->SetSolution(iPoint, 1, omega_Inf);
     }
   }
-
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

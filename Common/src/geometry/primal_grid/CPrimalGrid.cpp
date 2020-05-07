@@ -2,14 +2,14 @@
  * \file CPrimalGrid.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
 }
 
-void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(const su2double* const* val_coord) {
   unsigned short iDim, iNode, NodeFace, iFace;
 
   AD::StartPreacc();

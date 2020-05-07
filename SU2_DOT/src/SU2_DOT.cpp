@@ -2,14 +2,14 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,16 +31,10 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  unsigned short iZone, nZone = SINGLE_ZONE, iInst;
+  unsigned short iZone, iInst;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 
   char config_file_name[MAX_STRING_SIZE];
-  ofstream Gradient_file;
-  bool fem_solver = false;
-
-  su2double** Gradient;
-  unsigned short iDV, iDV_Value;
-  int rank, size;
 
   /*--- MPI initialization, and buffer setting ---*/
 
@@ -56,17 +50,17 @@ int main(int argc, char *argv[]) {
   SU2_Comm MPICommunicator(0);
 #endif
 
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
+  const int rank = SU2_MPI::GetRank();
+  const int size = SU2_MPI::GetSize();
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
-  CConfig **config_container            = NULL;
-  CConfig *driver_config                = NULL;
-  CGeometry ***geometry_container       = NULL;
-  CSurfaceMovement **surface_movement   = NULL;
-  CVolumetricMovement **grid_movement   = NULL;
-  unsigned short *nInst                 = NULL;
+  CConfig **config_container            = nullptr;
+  CConfig *driver_config                = nullptr;
+  CGeometry ***geometry_container       = nullptr;
+  CSurfaceMovement **surface_movement   = nullptr;
+  CVolumetricMovement **grid_movement   = nullptr;
+  unsigned short *nInst                 = nullptr;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -78,27 +72,23 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation)  ---*/
 
-  CConfig *config = NULL;
+  CConfig *config = nullptr;
   config = new CConfig(config_file_name, SU2_DOT);
 
-  nZone    = config->GetnZone();
+  const auto nZone = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
 
-  config_container    = new CConfig*[nZone];
-  geometry_container  = new CGeometry**[nZone];
-  surface_movement    = new CSurfaceMovement*[nZone];
-  grid_movement       = new CVolumetricMovement*[nZone];
+  config_container    = new CConfig*[nZone] ();
+  geometry_container  = new CGeometry**[nZone] ();
+  surface_movement    = new CSurfaceMovement*[nZone] ();
+  grid_movement       = new CVolumetricMovement*[nZone] ();
 
   nInst               = new unsigned short[nZone];
-  driver_config       = NULL;
+  driver_config       = nullptr;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]       = NULL;
-    geometry_container[iZone]     = NULL;
-    grid_movement [iZone]         = NULL;
-    surface_movement[iZone]       = NULL;
-    nInst[iZone]                  = 1;
+    nInst[iZone] = 1;
   }
 
   /*--- Initialize the configuration of the driver ---*/
@@ -144,13 +134,7 @@ int main(int argc, char *argv[]) {
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
-    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)          ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)           ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_LES)            ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+    const bool fem_solver = config_container[iZone]->GetFEMSolver();
 
     /*--- Read the number of instances for each zone ---*/
 
@@ -162,7 +146,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
-      CGeometry *geometry_aux = NULL;
+      CGeometry *geometry_aux = nullptr;
 
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
@@ -231,11 +215,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
-#ifdef HAVE_MPI
-  StartTime = MPI_Wtime();
-#else
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -312,31 +292,26 @@ int main(int argc, char *argv[]) {
     SetSensitivity_Files(geometry_container, config_container, nZone);
   }
 
-  if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
-      (config_container[ZONE_0]->GetDesign_Variable(0) != SURFACE_FILE)) {
+  for (iZone = 0; iZone < nZone; iZone++){
+    if ((config_container[iZone]->GetDesign_Variable(0) != NONE) &&
+        (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) {
 
-    /*--- Initialize structure to store the gradient ---*/
+      /*--- Initialize structure to store the gradient ---*/
 
-    Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+      su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
 
-    for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-      Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
-      for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
-        Gradient[iDV][iDV_Value] = 0.0;
+      for (auto iDV = 0u; iDV  < config_container[iZone]->GetnDV(); iDV++) {
+        Gradient[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)] ();
       }
-    }
 
-    if (rank == MASTER_NODE)
-      cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
+      if (rank == MASTER_NODE)
+        cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
 
-    /*--- Write the gradient in a external file ---*/
+      /*--- Write the gradient in a external file ---*/
 
-    if (rank == MASTER_NODE)
-      Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
-
-    /*--- Loop through each zone and add it's contribution to the gradient array ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++){
+      ofstream Gradient_file;
+      if (rank == MASTER_NODE)
+        Gradient_file.open(config_container[iZone]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
       /*--- Definition of the Class for surface deformation ---*/
 
@@ -353,32 +328,29 @@ int main(int argc, char *argv[]) {
         SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
       else
         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
+
+      /*--- Print gradients to screen and file ---*/
+
+      OutputGradient(Gradient, config_container[iZone], Gradient_file);
+
+      for (auto iDV = 0u; iDV  < config_container[iZone]->GetnDV(); iDV++){
+        delete [] Gradient[iDV];
+      }
+      delete [] Gradient;
     }
-
-    /*--- Print gradients to screen and file ---*/
-
-    OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
-
-    if (rank == MASTER_NODE)
-      Gradient_file.close();
-
-    for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-      delete [] Gradient[iDV];
-    }
-    delete [] Gradient;
   }
 
   delete config;
-  config = NULL;
+  config = nullptr;
 
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
 
-  if (geometry_container != NULL) {
+  if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != NULL) {
+      if (geometry_container[iZone] != nullptr) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++){
-          if (geometry_container[iZone][iInst] != NULL) {
+          if (geometry_container[iZone][iInst] != nullptr) {
             delete geometry_container[iZone][iInst];
           }
         }
@@ -389,9 +361,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
-  if (surface_movement != NULL) {
+  if (surface_movement != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (surface_movement[iZone] != NULL) {
+      if (surface_movement[iZone] != nullptr) {
         delete surface_movement[iZone];
       }
     }
@@ -399,9 +371,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
 
-  if (grid_movement != NULL) {
+  if (grid_movement != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (grid_movement[iZone] != NULL) {
+      if (grid_movement[iZone] != nullptr) {
         delete grid_movement[iZone];
       }
     }
@@ -410,10 +382,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
   delete config;
-  config = NULL;
-  if (config_container != NULL) {
+  config = nullptr;
+  if (config_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
+      if (config_container[iZone] != nullptr) {
         delete config_container[iZone];
       }
     }
@@ -424,11 +396,7 @@ int main(int argc, char *argv[]) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
 
-#ifdef HAVE_MPI
-  StopTime = MPI_Wtime();
-#else
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StopTime = SU2_MPI::Wtime();
 
   /*--- Compute/print the total time for performance benchmarking. ---*/
 
@@ -474,7 +442,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
   unsigned short nFFDBox = MAX_NUMBER_FFD;
   FFDBox = new CFreeFormDefBox*[nFFDBox];
-  for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
+  for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = nullptr;
 
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
@@ -695,9 +663,9 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
   /*--- Delete memory for parameterization. ---*/
 
-  if (FFDBox != NULL) {
+  if (FFDBox != nullptr) {
     for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
-      if (FFDBox[iFFDBox] != NULL) {
+      if (FFDBox[iFFDBox] != nullptr) {
         delete FFDBox[iFFDBox];
       }
     }
@@ -721,7 +689,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
 
-  VarCoord = NULL;
+  VarCoord = nullptr;
 
   /*--- Discrete adjoint gradient computation ---*/
 
@@ -891,9 +859,8 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
   unsigned short iZone;
 
-  CSolver *solver  = NULL;
-  COutput *output  = NULL;
-
+  CSolver *solver  = nullptr;
+  COutput *output  = nullptr;
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
 
@@ -1003,4 +970,3 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
   }
 
 }
-

@@ -2,14 +2,14 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -113,15 +113,14 @@ public:
                                                                         \
   AccessorImpl& operator= (AccessorImpl&& other) noexcept               \
   {                                                                     \
-    if(m_data!=nullptr) free(m_data);                                   \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
     MOVE; m_data=other.m_data; other.m_data=nullptr;                    \
     return *this;                                                       \
   }                                                                     \
                                                                         \
   ~AccessorImpl()                                                       \
   {                                                                     \
-    if(m_data!=nullptr)                                                 \
-      MemoryAllocation::aligned_free<Scalar_t>(m_data);                 \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
   /*!
    * Shorthand for when specialization has only one more member than m_data.
@@ -371,6 +370,7 @@ public:
   using Base::size;
   using Index = Index_t;
   using Scalar = Scalar_t;
+  static constexpr StorageType Storage = Store;
 
 private:
   /*!
@@ -380,7 +380,7 @@ private:
   {
     /*--- fully static, no allocation needed ---*/
     if(StaticRows!=DynamicSize && StaticCols!=DynamicSize)
-        return StaticRows*StaticCols;
+      return StaticRows*StaticCols;
 
     /*--- dynamic row vector, swap size specification ---*/
     if(StaticRows==1 && StaticCols==DynamicSize) {cols = rows; rows = 1;}
@@ -399,12 +399,10 @@ private:
     /*--- compare with current dimensions to determine if deallocation
      is needed, also makes the container safe against self assignment
      no need to check for 0 size as the allocators handle that ---*/
-    if(m_data!=nullptr)
-    {
-      if(rows==this->rows() && cols==this->cols())
-        return reqSize;
-      free(m_data);
-    }
+    if(rows==this->rows() && cols==this->cols())
+      return reqSize;
+
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);
 
     /*--- request actual allocation to base class as it needs specialization ---*/
     size_t bytes = reqSize*sizeof(Scalar_t);

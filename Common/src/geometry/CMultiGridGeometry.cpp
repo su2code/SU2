@@ -2,14 +2,14 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -624,13 +624,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   Local_nPointCoarse = nPoint;
   Local_nPointFine = fine_grid->GetnPoint();
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&Local_nPointCoarse, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&Local_nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nPointCoarse = Local_nPointCoarse;
-  Global_nPointFine = Local_nPointFine;
-#endif
 
   su2double Coeff = 1.0, CFL = 0.0, factor = 1.5;
 
@@ -669,6 +664,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
       }
     }
   }
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   delete [] copy_marker;
 
@@ -1106,8 +1103,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
   long FineEdge, CoarseEdge;
   unsigned short iChildren, iNode, iDim;
   bool change_face_orientation;
-  su2double *Normal, Coarse_Volume, Area, *NormalFace = NULL;
-  Normal = new su2double [nDim];
+  su2double Coarse_Volume, Area;
 
   /*--- Compute the area of the coarse volume ---*/
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
@@ -1122,8 +1118,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   /*--- Update or not the values of faces at the edge ---*/
   if (action != ALLOCATE) {
-    for (iEdge=0; iEdge < nEdge; iEdge++)
-      edge[iEdge]->SetZeroValues();
+    edges->SetZeroValues();
   }
 
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
@@ -1142,27 +1137,28 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
           CoarseEdge = FindEdge(iParent, iCoarsePoint);
 
-          fine_grid->edge[FineEdge]->GetNormal(Normal);
+          const auto Normal = fine_grid->edges->GetNormal(FineEdge);
 
           if (change_face_orientation) {
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-            edge[CoarseEdge]->AddNormal(Normal);
+            edges->SubNormal(CoarseEdge,Normal);
           }
           else {
-            edge[CoarseEdge]->AddNormal(Normal);
+            edges->AddNormal(CoarseEdge,Normal);
           }
         }
       }
     }
-  delete[] Normal;
 
   /*--- Check if there is a normal with null area ---*/
 
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
-    NormalFace = edge[iEdge]->GetNormal();
+    const auto NormalFace = edges->GetNormal(iEdge);
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
     Area = sqrt(Area);
-    if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+    if (Area == 0.0) {
+      su2double DefaultNormal[3] = {EPS*EPS};
+      edges->SetNormal(iEdge, DefaultNormal);
+    }
   }
 
 }

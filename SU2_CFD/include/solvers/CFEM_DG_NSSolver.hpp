@@ -2,14 +2,14 @@
  * \file CFEM_DG_NSSolver.hpp
  * \brief Headers of the CFEM_DG_NSSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEM_DG_NSSolver final : public CFEM_DG_EulerSolver {
 private:
@@ -104,7 +104,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_DG_NSSolver(void);
+  ~CFEM_DG_NSSolver(void) override;
 
   /*!
    * \brief Function to compute the time step for solving the Navier-Stokes equations.
@@ -450,18 +450,6 @@ public:
    * \return Value of the max Strain rate magnitude.
    */
   inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the StrainMag_Max
-   */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) override { StrainMag_Max = val_strainmag_max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Omega_Max
-   */
-  inline void SetOmega_Max(su2double val_omega_max) override { Omega_Max = val_omega_max; }
 
 private:
 

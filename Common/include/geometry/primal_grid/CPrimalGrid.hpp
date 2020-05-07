@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -170,7 +170,7 @@ public:
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.
    */
-  void SetCoord_CG(su2double **val_coord);
+  void SetCoord_CG(const su2double* const* val_coord);
 
   /*!
    * \brief Get the center of gravity of an element (including edges).

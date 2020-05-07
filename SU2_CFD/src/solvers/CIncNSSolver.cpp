@@ -2,14 +2,14 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -768,13 +768,13 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
-  solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
+  nodes->SetVorticity_StrainMag();
 
   StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-    Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    StrainMag = nodes->GetStrainMag(iPoint);
+    Vorticity = nodes->GetVorticity(iPoint);
     Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
     StrainMag_Max = max(StrainMag_Max, StrainMag);
@@ -800,11 +800,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-    if (iMesh == MESH_0) {
+    if (iMesh == MESH_0)
       config->SetNonphysical_Points(ErrorCounter);
-      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
-      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
-    }
 
   }
 
@@ -823,7 +820,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
     /*--- Retrieve the value of the kinetic energy (if needed) ---*/
 
-    if (turb_model != NONE) {
+    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
@@ -856,11 +853,12 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
 void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
 
-  su2double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
+  su2double Mean_BetaInc2, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
   Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Mean_Thermal_Conductivity = 0.0, Mean_Cv = 0.0, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   unsigned short iDim, iMarker;
   su2double ProjVel, ProjVel_i, ProjVel_j;
+  const su2double* Normal;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -882,10 +880,10 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Point identification, Normal vector and area ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
     /*--- Mean Values ---*/
@@ -1086,8 +1084,10 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
   unsigned long iPoint, jPoint, iEdge;
 
@@ -1097,11 +1097,11 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Points, coordinates and normal vector in edge ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                        geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive and secondary variables ---*/
 
@@ -1121,18 +1121,15 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute and update residual ---*/
 
-    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
-    LinSysRes.SubtractBlock(iPoint, Res_Visc);
-    LinSysRes.AddBlock(jPoint, Res_Visc);
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
 
     /*--- Implicit part ---*/
 
     if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
   }
@@ -1601,7 +1598,8 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar;// Wall_Function;
   unsigned long iVertex, iPoint, total_index;
@@ -1702,7 +1700,8 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar, Wall_Function;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -1823,7 +1822,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
           Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*proj_vector_ij;
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         }
 
         /*--- Viscous contribution to the residual at the wall ---*/
@@ -1948,6 +1947,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
           Twall = Tconjugate;
         }
         else {
+          Twall = 0.0;
           SU2_MPI::Error("Unknown CHT coupling method.", CURRENT_FUNCTION);
         }
 

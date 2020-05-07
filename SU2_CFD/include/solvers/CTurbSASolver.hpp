@@ -2,14 +2,14 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,16 @@ class CTurbSASolver final : public CTurbSolver {
 private:
   su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetDES_LengthScale(CSolver** solver,
+                          CGeometry *geometry,
+                          CConfig *config);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -59,7 +69,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver(void);
+  ~CTurbSASolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -93,16 +103,15 @@ public:
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Source_Residual(CGeometry *geometry,
                        CSolver **solver_container,
-                       CNumerics *numerics,
-                       CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) override;
+                       CNumerics **numerics_container,
+                       CConfig *config,
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -277,20 +286,6 @@ public:
                              unsigned short val_marker) override;
 
   /*!
-   * \brief Impose the fluid interface boundary condition using tranfer data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) override;
-
-  /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -361,17 +356,6 @@ public:
   inline void SetFreeStream_Solution(CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
-
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver - Solver container
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetDES_LengthScale(CSolver** solver,
-                          CGeometry *geometry,
-                          CConfig *config) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

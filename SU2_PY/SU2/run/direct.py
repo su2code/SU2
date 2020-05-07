@@ -3,14 +3,14 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -87,7 +87,15 @@ def direct ( config ):
     # filenames
     plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
-    history_filename = konfig['CONV_FILENAME'] + plot_extension
+
+    # adapt the history_filename, if a restart solution is chosen
+    # check for 'RESTART_ITER' is to avoid forced restart situation in "compute_polar.py"...
+    if konfig.get('RESTART_SOL','NO') == 'YES' and konfig.get('RESTART_ITER',1) != 1:
+        restart_iter = '_'+str(konfig['RESTART_ITER']).zfill(5)
+        history_filename = konfig['CONV_FILENAME'] + restart_iter + plot_extension
+    else:
+        history_filename = konfig['CONV_FILENAME'] + plot_extension
+
     special_cases    = su2io.get_specialCases(konfig)
     
     # averaging final iterations

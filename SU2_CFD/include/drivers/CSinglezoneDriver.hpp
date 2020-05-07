@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
  * \class CSinglezoneDriver
  * \brief Class for driving single-zone solvers.
  * \author R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CSinglezoneDriver : public CDriver {
 protected:
@@ -55,22 +55,22 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSinglezoneDriver(void);
+  ~CSinglezoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for single-zone problems.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
    * \brief Preprocess the single-zone iteration
    */
-  virtual void Preprocess(unsigned long TimeIter);
+  void Preprocess(unsigned long TimeIter) override;
 
   /*!
    * \brief Run the iteration for ZONE_0.
    */
-  virtual void Run();
+  void Run() override;
 
   /*!
    * \brief Postprocess the iteration for ZONE_0.
@@ -80,23 +80,23 @@ public:
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long TimeIter);
+  void Output(unsigned long TimeIter) override;
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
    */
-  void DynamicMeshUpdate(unsigned long TimeIter);
+  void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
    * \brief Monitor
    * \param ExtIter
    */
-  virtual bool Monitor(unsigned long TimeIter);
+  bool Monitor(unsigned long TimeIter) override;
 
   /*!
      * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged

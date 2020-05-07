@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -96,7 +96,7 @@ def parse_output(files):
 
 
     outputFields.update(addedOutputFields)
-    f = open(os.path.join(su2_home) + '/SU2_PY/SU2/io/historyMap.py', 'w')
+    f = open(os.path.join(su2_home, 'SU2_PY/SU2/io/historyMap.py'), 'w')
     f.write('history_header_map = ')
     pprint.pprint(outputFields, f)
     f.close()

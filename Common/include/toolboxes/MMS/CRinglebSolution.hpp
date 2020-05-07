@@ -3,14 +3,14 @@
  * \brief Header file for the class CRinglebSolution.hpp.
  *        The implementations are in the <i>CRinglebSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
  * \brief Class to define the required data for the Ringleb flow.
  * \author E. van der Weide, T. Economon
  */
-class CRinglebSolution: public CVerificationSolution {
+class CRinglebSolution final: public CVerificationSolution {
 
 protected:
 
@@ -48,12 +48,12 @@ protected:
   su2double tGamOvGm1;    /*!< \brief 2 Gamma over Gamma minus 1 */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CRinglebSolution(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -65,11 +65,11 @@ public:
                    unsigned short val_nvar,
                    unsigned short val_iMesh,
                    CConfig*       config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  ~CRinglebSolution(void);
+  ~CRinglebSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.
@@ -79,7 +79,7 @@ public:
    */
   void GetSolution(const su2double *val_coords,
                    const su2double val_t,
-                   su2double       *val_solution);
+                   su2double       *val_solution) const override;
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
@@ -89,5 +89,5 @@ public:
    */
   void GetBCState(const su2double *val_coords,
                   const su2double val_t,
-                  su2double       *val_solution);
+                  su2double       *val_solution) const override;
 };
