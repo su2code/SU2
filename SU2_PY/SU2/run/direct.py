@@ -91,10 +91,13 @@ def direct ( config ):
     # adapt the history_filename, if a restart solution is chosen
     # check for 'RESTART_ITER' is to avoid forced restart situation in "compute_polar.py"...
     if konfig.get('RESTART_SOL','NO') == 'YES' and konfig.get('RESTART_ITER',1) != 1:
+        konfig['CONV_FILENAME'] = 'config_CFD'
         restart_iter = '_'+str(konfig['RESTART_ITER']).zfill(5)
         history_filename = konfig['CONV_FILENAME'] + restart_iter + plot_extension
     else:
+        konfig['CONV_FILENAME'] = 'config_CFD'
         history_filename = konfig['CONV_FILENAME'] + plot_extension
+        
 
     special_cases    = su2io.get_specialCases(konfig)
     

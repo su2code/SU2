@@ -222,6 +222,8 @@ def aerodynamics( config, state=None ):
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
+
+    pull.extend(config.get('CONFIG_LIST',[]))
     
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
@@ -299,10 +301,11 @@ def aerodynamics( config, state=None ):
     su2io.update_persurface(konfig,state)
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.historyOutFields:
-        if key in state['FUNCTIONS']:
+    for key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
-            
+    
+    print('funcs output')
+    print(funcs)
     return funcs
 
 #: def aerodynamics()
@@ -883,7 +886,6 @@ def update_mesh(config,state=None):
         log_decomp = None
         log_deform = None
     
-        
     # ----------------------------------------------------
     #  Deformation
     # ----------------------------------------------------
@@ -897,7 +899,9 @@ def update_mesh(config,state=None):
         pull = []
         link = config['MESH_FILENAME']
         link = su2io.expand_part(link,config)
-        
+
+        pull.extend(config.get('CONFIG_LIST',[]))
+
         # output redirection
         with redirect_folder('DEFORM',pull,link) as push:
             with redirect_output(log_deform):

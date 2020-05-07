@@ -451,6 +451,10 @@ def read_config(filename):
                 data_dict[this_param] = this_value.strip("()").split(",")
                 data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
                 break
+            if case("CONFIG_LIST"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
             if case("HISTORY_OUTPUT"):
                 data_dict[this_param] = this_value.strip("()").split(",")
                 data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
@@ -883,6 +887,16 @@ def write_config(filename,param_dict):
                 output_file.write(" )") 
                 break                
             if case("OUTPUT_FILES"):
+                n_lists = len(new_value)
+                output_file.write("(")
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(")")
+                break
+
+            if case("CONFIG_LIST"):
                 n_lists = len(new_value)
                 output_file.write("(")
                 for i_value in range(n_lists):

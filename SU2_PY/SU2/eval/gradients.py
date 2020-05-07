@@ -742,15 +742,21 @@ def findiff( config, state=None ):
     else:
         step = 0.001 
 
+
+    opt_names = []
+    for i in range(config['NZONES']):
+        for key in sorted(su2io.historyOutFields):  
+            if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+                if (config['NZONES'] == 1):
+                    opt_names.append(key)
+                else: 
+                    opt_names.append(key + '[' + str(i) + ']')
+
     # ----------------------------------------------------
     #  Redundancy Check
     # ----------------------------------------------------    
 
     # master redundancy check
-    opt_names = []
-    for key in sorted(su2io.historyOutFields):  
-        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
-            opt_names.append(key)
     findiff_todo = all([key in state.GRADIENTS for key in opt_names])
     if findiff_todo:
         grads = state['GRADIENTS']
@@ -802,7 +808,8 @@ def findiff( config, state=None ):
 
     # files to pull
     files = state['FILES']
-    pull = []; link = []    
+    pull = []; link = []
+    pull.extend(config.get('CONFIG_LIST',[]))  
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,konfig)
