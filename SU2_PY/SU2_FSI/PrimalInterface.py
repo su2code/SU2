@@ -819,12 +819,15 @@ class Interface:
 
         self.MPIBarrier()
         
+        # --- Extract drag and lift in case fixed CL mode and doing finite differences on AoA
+        cl = FluidSolver.Get_LiftCoeff()
+        cd = FluidSolver.Get_DragCoeff()
         
         # --- Fluid solver call for FSI subiteration --- #
         self.MPIPrint('\n##### If fixed Cl mode, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
         self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
         FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
-        FluidSolver.Preprocess(0,250)          # Time iteration pre-processing
+        FluidSolver.Preprocess(0,0)          # Time iteration pre-processing
         FluidSolver.Run()                  # Run one time-step (static: one simulation)
         FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
         FluidSolver.Update()               # Update the solver for the next time iteration
@@ -837,6 +840,8 @@ class Interface:
         self.MPIPrint('*  End FSI computation  *')
         self.MPIPrint('*************************')
         self.MPIPrint(' ')
+        
+        return cl, cd
 
     def __getGlobalIndex(self, physics, iProc, iLocalVertex):
         """

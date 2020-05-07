@@ -37,8 +37,6 @@
 
 import os, sys, shutil, copy
 import time as timer
-import scipy.io
-import numpy as np
 
 from optparse import OptionParser  # use a parser for configuration
 
@@ -56,15 +54,7 @@ import pyBeam
 #  Main
 # -------------------------------------------------------------------
 
-def main():
-    # --- Get the FSI config file name form the command line options --- #
-    parser = OptionParser()
-    parser.add_option("-f", "--file", dest="filename",
-                      help="read config from FILE", metavar="FILE")
-    parser.add_option("--serial", action="store_true",
-                      help="Specify if we need to initialize MPI", dest="serial", default=False)
-
-    (options, args) = parser.parse_args()
+def Sens(options,FD_sens):
 
     if options.serial:
         comm = 0
@@ -100,6 +90,7 @@ def main():
 
     if have_MPI:
         comm.barrier()
+
 
     # --- Initialize the fluid solver: SU2 --- #
     if myid == rootProcess:
@@ -157,16 +148,6 @@ def main():
         try:
             MLS = Spline_Module.pyMLSInterface(MLS_confFile, FSIInterface.globalFluidCoordinates, 
                                                FSIInterface.globalSolidCoordinates)
-            # Save spline matrix
-            #print('Saving spline matrix')
-            #scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
-            #np.save('./Spline.npy', MLS.interpolation_matrix)
-            #Load spline matrix
-            #print('Loading spline matrix')
-            #MLS.interpolation_matrix = None
-            #MLS.interpolation_matrix = np.load('./Spline.npy')
-           
-           
         except TypeError as exception:
             print('ERROR building the MLS Interpolation: ', exception)
 
@@ -183,10 +164,12 @@ def main():
     if have_MPI:
         comm.Barrier()
 
-    cl, cd = FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS)
+    FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS, FD_sens)
     
-    if myid == rootProcess:    
-       print('DRAG COEFFICIENT: ', cd)
+    # Get drag coefficient
+    drag = FluidSolver.Get_DragCoeff()
+    if myid == rootProcess:
+       print('DRAG COEFFICIENT: ', drag)
 
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
@@ -195,8 +178,60 @@ def main():
         del FluidSolver
 
 
-    return
+    return drag
 
+
+# -------------------------------------------------------------------
+#  Run Main Program
+# -------------------------------------------------------------------
+def main():
+   # --- Get the FSI config file name form the command line options --- #
+   parser = OptionParser()
+   parser.add_option("-f", "--file", dest="filename",
+                      help="read config from FILE", metavar="FILE")
+   parser.add_option("--serial", action="store_true",
+                      help="Specify if we need to initialize MPI", dest="serial", default=False)
+
+   (options, args) = parser.parse_args()
+
+
+
+   # --- This is only accessed if running from command prompt --- #
+   #delta = [1.0e-05, 5.0e-05, 1.0e-04, 5.0e-04, 1.0e-03, 5.0e-03, 1.0e-02, 5.0e-02, 1.0e-01]
+   delta = [5.0e-06, 1.0e-06, 5.0e-07, 1.0e-07, 5.0e-08, 1.0e-08,]
+   
+   node = 2312
+   Coord = 2
+   file = open("Sensitivity_FD_node" + str(node) + "_centered.txt", "w")
+   file.write("node = {}\n".format(node))
+   file.flush()
+   for i in range(len(delta)):
+
+      delta_used = delta[i]
+
+      # --- Set Parameter for surface sensitivity --- #
+   
+      file.write("Delta used = {}\n".format(delta_used)) 
+      file.flush()
+      FD_sens = [node,Coord,delta_used]
+      drag_plus = Sens(options, FD_sens)
+      file.write("drag_plus = {:16.12f}\n".format(drag_plus))
+      file.flush()
+      FD_sens = [node,Coord,-delta_used]
+      drag_minus = Sens(options, FD_sens)   
+      file.write("drag_minus = {:16.12f}\n".format(drag_minus))
+      file.flush()
+      Sensitivity = (drag_plus - drag_minus)/(2*delta_used)
+
+      file.write("Sensitivity = {:16.12f}\n".format(Sensitivity))
+      file.flush()
+      file.write("\n")
+      file.write("\n")
+      file.flush()
+   
+   file.close()
+
+   return
 
 # -------------------------------------------------------------------
 #  Run Main Program
