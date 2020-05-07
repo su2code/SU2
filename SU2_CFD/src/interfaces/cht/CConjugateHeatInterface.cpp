@@ -191,7 +191,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   
 
-    delete [] Edge_Vector;
+  delete [] Edge_Vector;
   
 }
 

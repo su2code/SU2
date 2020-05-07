@@ -527,7 +527,7 @@ void CDriver::Postprocessing() {
   }
 
   
-    delete driver_output;
+  delete driver_output;
   
 
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
@@ -3404,8 +3404,8 @@ CHBDriver::~CHBDriver(void) {
   unsigned short kInst;
 
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
-  for (kInst = 0; kInst < nInstHB; kInst++) if (D[kInst] != nullptr) delete [] D[kInst];
-  if (D[kInst] != nullptr) delete [] D;
+  for (kInst = 0; kInst < nInstHB; kInst++) delete [] D[kInst];
+  delete [] D;
 
   if (rank == MASTER_NODE){
   /*--- Close the convergence history file. ---*/

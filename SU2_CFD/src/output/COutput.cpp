@@ -174,23 +174,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 }
 
 COutput::~COutput(void) {
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
 
-  
-    delete volumeDataSorter;
-
+  delete volumeDataSorter;
   volumeDataSorter = nullptr;
 
-  
-    delete surfaceDataSorter;
-
+  delete surfaceDataSorter;
   surfaceDataSorter = nullptr;
-
-
 }
 
 
