@@ -5138,11 +5138,6 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     
     /*--- Influence of boundary i on R(i,j) ---*/
     if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_i[iVar][jVar] = 0.;
-        }
-      }
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
@@ -5154,12 +5149,12 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
               }
             }
           }
-          
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-          if (jPoint != iPoint) {
-            Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-          }
         }
+      }
+      
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      if (jPoint != iPoint) {
+        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       }
     }
     
@@ -5212,11 +5207,11 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
                 }
               }
             }
-            
-            Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
-            Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
           }
         }
+        
+        Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
       }
     }
     
