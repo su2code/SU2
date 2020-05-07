@@ -521,20 +521,21 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-//      const su2double r_i      = nodes->GetFlowPrimitive(iPoint,nDim+2);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
+      
       /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
       for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-        const su2double r_j      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-//        const su2double r_j      = nodes->GetFlowPrimitive(jPoint,nDim+2);
+        const su2double r_j     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
+        
         Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
         Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
         Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
+        
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           Jacobian_i[1][0] += sign*(1. - F1_i)*constants[3]
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
@@ -551,7 +552,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
       }
       
-      /*--- Boundary contribution to cross diffusion gradient Jacobian at i*/
+      /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
       if (geometry->node[iPoint]->GetPhysicalBoundary()) {
         Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
