@@ -7244,13 +7244,14 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         su2double StaticEnergy = Energy - 0.5*Velocity2;
         if (tkeNeeded) StaticEnergy -= Kine_Infty;
         
-        if (Qn_Infty < 0.0) {
-          V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
-        }
-        else {
-          GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
-          V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
-        }
+//        if (Qn_Infty < 0.0) {
+//          V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
+//        }
+//        else {
+//          GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+//          V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+//        }
+        V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
         V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
