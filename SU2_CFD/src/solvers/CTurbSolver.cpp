@@ -981,9 +981,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
   SU2_OMP_BARRIER
-  
-  solver[MESH_0][TURB_SOL]->Set_OldSolution(geometry[MESH_0]);
-  solver[MESH_0][FLOW_SOL]->Set_OldSolution(geometry[MESH_0]);
     
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   if (sst) static_cast<CTurbSSTSolver*>(solver[MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[MESH_0]);
