@@ -164,12 +164,10 @@ def Sens(options,FD_sens):
     if have_MPI:
         comm.Barrier()
 
-    FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS, FD_sens)
+    cl, cd = FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS, FD_sens)
     
-    # Get drag coefficient
-    drag = FluidSolver.Get_DragCoeff()
     if myid == rootProcess:
-       print('DRAG COEFFICIENT: ', drag)
+       print('DRAG COEFFICIENT: ', cd)
 
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
@@ -178,7 +176,7 @@ def Sens(options,FD_sens):
         del FluidSolver
 
 
-    return drag
+    return cd
 
 
 # -------------------------------------------------------------------
@@ -198,7 +196,7 @@ def main():
 
    # --- This is only accessed if running from command prompt --- #
    #delta = [1.0e-05, 5.0e-05, 1.0e-04, 5.0e-04, 1.0e-03, 5.0e-03, 1.0e-02, 5.0e-02, 1.0e-01]
-   delta = [5.0e-06, 1.0e-06, 5.0e-07, 1.0e-07, 5.0e-08, 1.0e-08,]
+   delta = [1.0e-05, 5.0e-05, 5.0e-06, 1.0e-06, 5.0e-07, 1.0e-07, 5.0e-08, 1.0e-08,]
    
    node = 2312
    Coord = 2

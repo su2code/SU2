@@ -183,12 +183,10 @@ def main():
     if have_MPI:
         comm.Barrier()
 
-    FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS)
+    cl, cd = FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS)
     
-    # Get drag coefficient
-    drag = FluidSolver.Get_DragCoeff()
     if myid == rootProcess:    
-       print('DRAG COEFFICIENT: ', drag)
+       print('DRAG COEFFICIENT: ', cd)
 
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
