@@ -7191,16 +7191,18 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
-      Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
+//      Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
+      Pressure = 2.0*(Density*SoundSpeed*SoundSpeed/Gamma) - nodes->GetPressure(iPoint);
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
       if (tkeNeeded) {
-        /*--- Inflow ---*/
-        if (Qn_Infty < 0.0) Kine_Infty = GetTke_Inf();
-        /*--- Outflow ---*/
-        else {
+//        /*--- Inflow ---*/
+//        if (Qn_Infty < 0.0) Kine_Infty = GetTke_Inf();
+//        /*--- Outflow ---*/
+//        else {
           const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-          Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        }
+          Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
+          Kine_Infty = 2.0*Kine_Infty - solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+//        }
         Energy += Kine_Infty;
       }
 
