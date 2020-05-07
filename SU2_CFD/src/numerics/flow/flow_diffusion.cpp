@@ -787,24 +787,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /*--- Compute the implicit part ---*/
 
   if (implicit) {
+    
+    if (!correct_gradient) proj_vector_ij = Area;
+    SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
-//    if (dist_ij_2 == 0.0) {
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        for (jVar = 0; jVar < nVar; jVar++) {
-//          Jacobian_i[iVar][jVar] = 0.0;
-//          Jacobian_j[iVar][jVar] = 0.0;
-//        }
-//      }
-//    } else {
-      // const su2double dist_ij = sqrt(dist_ij_2);
-      if (!correct_gradient) proj_vector_ij = Area;
-      SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
+    SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
+                        Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
-      SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
-                          Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
-
-      GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
-//    }
+    GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
 
   }
 
