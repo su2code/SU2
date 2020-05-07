@@ -227,7 +227,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
       }
 
       /*--- Store the sensitivities ---*/
-      if (!time_stepping){//CVC: Multizone logic not needed for deforming gradient because sensitivities evaluated only once per outer iteration
+      if (!time_stepping) {
         solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
         solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint, iDim,

@@ -4769,12 +4769,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
-      /*if (GetKind_GridMovement() != RIGID_MOTION &&
-          GetKind_GridMovement() != NO_MOVEMENT) {
-        SU2_MPI::Error(string("Dynamic mesh movement currently only supported for the discrete adjoint solver for\n") +
-                       string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
-      }*/
-
       if (Unst_AdjointIter- long(nTimeIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
                        string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
@@ -9651,7 +9645,6 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   unsigned short iZone = 0;
 
   /*--- If there is at least a fluid and a structural zone ---*/
-  if (nZone > 1) {
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
@@ -9663,7 +9656,6 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
       Relaxation = true;
       break;
     }
-  }
   }
 
   /*--- If the problem has FSI properties ---*/

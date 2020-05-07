@@ -506,10 +506,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     }
 
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[0] = " << Solution[0] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[1] = " << Solution[1] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[2] = " << Solution[2] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[3] = " << Solution[3] << endl;
     /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -537,10 +533,7 @@ if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[3] 
       }
 
       /*--- Store the adjoint solution at time n ---*/
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[0] = " << Solution[0] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[1] = " << Solution[1] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[2] = " << Solution[2] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[3] = " << Solution[3] << endl;
+
       if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
     }
   }
@@ -558,10 +551,7 @@ if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_tim
       }
 
       /*--- Store the adjoint solution at time n-1 ---*/
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[0] = " << Solution[0] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[1] = " << Solution[1] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[2] = " << Solution[2] << endl;
-if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[3] = " << Solution[3] << endl;
+
       if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
     }
   }
@@ -579,10 +569,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
     Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
     Local_Sens_Press = SU2_TYPE::GetDerivative(Pressure);
-if (rank == MASTER_NODE) cout << "CVC: Debug: Local_Sens_Mach = " << Local_Sens_Mach << endl;
-if (rank == MASTER_NODE) cout << "CVC: Debug: Local_Sens_AoA = " << Local_Sens_AoA << endl;
-if (rank == MASTER_NODE) cout << "CVC: Debug: Local_Sens_Temp = " << Local_Sens_Temp << endl;
-if (rank == MASTER_NODE) cout << "CVC: Debug: Local_Sens_Press = " << Local_Sens_Press << endl;
+
     SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_Temp,  &Total_Sens_Temp,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -791,10 +778,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
           Sensitivity = 0.0;
       }
       if (!time_stepping || multizone) {
-//        if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Sensitivity[" << iDim << "] = " << Sensitivity << " (Current only)" << endl;
         nodes->SetSensitivity(iPoint,iDim, Sensitivity);
       } else {
-//        if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Sensitivity[" << iDim << "] = " << Sensitivity << " (Adding previous = " << nodes->GetSensitivity(iPoint, iDim) << ")" << endl;
         nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim) + Sensitivity);
       }
     }

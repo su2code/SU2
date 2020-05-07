@@ -2599,13 +2599,6 @@ void CDiscAdjFEAIteration::SetRecording(CSolver *****solver,
                                         unsigned short val_iInst,
                                         unsigned short kind_recording) {
 
-  /*--- Set correct time iteration for recording if dynamic simulation ---*/
-
-  if (config[val_iZone]->GetTime_Domain()) {
-    unsigned long TimeIter = config[val_iZone]->GetTimeIter();
-    config[val_iZone]->SetTimeIter(TimeIter);
-  }
-
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
   solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
@@ -2624,7 +2617,7 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
 
     solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  else if (kind_recording == MESH_COORDS) {
+  else {
     /*--- Register topology optimization densities (note direct solver) ---*/
 
     solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);

@@ -57,9 +57,8 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
   if (nRequestedVolumeFields == 0){
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
-    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (config->GetGrid_Movement()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
+    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 

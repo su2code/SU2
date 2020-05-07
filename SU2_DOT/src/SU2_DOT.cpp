@@ -796,7 +796,6 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       }
 
       Gradient[iDV][iDV_Value] += localGradient;
-      if (rank == MASTER_NODE) cout << "CVC: Debug: SU2_DOT.cpp: SetProjection_AD localGradient["<< iDV << "][" << iDV_Value << "] = " << localGradient << endl;
     }
   }
 

@@ -392,7 +392,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     break;
   }
 
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
   }
 
