@@ -5104,14 +5104,16 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     
     AD_BEGIN_PASSIVE
     
+    CVariable *nodesFlo = solver_container[FLOW_SOL]->GetNodes();
+    
     /*--- Influence of i's neighbors on R(i,j) ---*/
-    const su2double r_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,(nDim+2));
+    const su2double r_i = nodesFlo->GetDensity(iPoint);
     for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
       const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
       const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
       const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
       const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
-      const su2double r_k = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(kPoint,(nDim+2));
+      const su2double r_k = nodesFlo->GetDensity(kPoint);
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] = 0.;
@@ -5160,13 +5162,13 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     
     if (jPoint != iPoint) {
       /*--- Influence of j's neighbors on R(i,j) ---*/
-      const su2double r_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint,(nDim+2));
+      const su2double r_j = nodesFlo->GetDensity(jPoint);
       for (unsigned short iNode = 0; iNode < geometry->node[jPoint]->GetnPoint(); iNode++) {
         const unsigned long kPoint = geometry->node[jPoint]->GetPoint(iNode);
         const unsigned long kEdge = geometry->FindEdge(jPoint,kPoint);
         const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
         const su2double sign = (jPoint < kPoint) ? 1.0 : -1.0;
-        const su2double r_k = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(kPoint,(nDim+2));
+        const su2double r_k = nodesFlo->GetDensity(kPoint);
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           for (unsigned short jVar = 0; jVar < nVar; jVar++) {
             Jacobian_i[iVar][jVar] = 0.;
