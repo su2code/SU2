@@ -4251,13 +4251,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
       blocklen[counter] = nFields;
-      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
-//      displace[counter] = iPoint_Global*nFields;
+//      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
+      displace[counter] = iPoint_Global*nFields;
       counter++;
     }
   }
-//  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
-  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+//  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
