@@ -3331,7 +3331,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
-      Weight_ObjFunc[iObj] = 1.0;
+      Weight_ObjFunc[iObj] = -1.0;
   }
 
   /*--- One final check for multi-objective with the set of objectives
