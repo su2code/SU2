@@ -82,7 +82,7 @@ def gradient( func_name, method, config, state=None ):
             func_name = func_name[0]
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
-        config.OBJECTIVE_WEIGHT = "1.0"
+        config.OBJECTIVE_WEIGHT = "-1.0"
 
     # redundancy check
     if not func_output in state['GRADIENTS']:

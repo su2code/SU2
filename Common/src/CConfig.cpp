@@ -3327,7 +3327,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nObjW<nObj) {
     if (Weight_ObjFunc!= NULL && nObjW>1) {
       SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+                     string("be length 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
