@@ -503,7 +503,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
     /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-//    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
 
   }
   
@@ -565,7 +565,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
               Jacobian_i[1][1] -= 2.*(1. - F1_i)*constants[3]
                                 * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
             }
-            if (Jacobian_i[1][1] < 0.) Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//            if (Jacobian_i[1][1] < 0.) Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
           }
         }
       }
