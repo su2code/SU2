@@ -4113,6 +4113,15 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
                    string("Note that backward compatibility for ASCII restart files is\n") +
                    string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
   }
+  
+  /*--- Check that the number of points in the file is correct. ---*/
+
+  if (Restart_Vars[2] != geometry->GetGlobal_nPointDomain()) {
+    SU2_MPI::Error(string("File ") + string(fname) + string(" does not contain the correct\n") +
+                   string("number of points.\n") +
+                   string(to_string(Restart_Vars[2])) + string("points in restart.\n") +
+                   string(to_string(geometry->GetGlobal_nPointDomain())) + string("points in mesh."), CURRENT_FUNCTION);
+  }
 
   /*--- Store the number of fields to be read for clarity. ---*/
 

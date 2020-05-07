@@ -529,8 +529,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         SU2_OMP_FOR_STAT(omp_chunk_size)
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-          su2double density = flowNodes->GetDensity(iPoint);
-          su2double density_old = density;
+//          su2double density = flowNodes->GetDensity(iPoint);
+//          su2double density_old = density;
 
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
             nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
