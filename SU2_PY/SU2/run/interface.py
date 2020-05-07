@@ -121,10 +121,10 @@ def MSH(config):
         currently forced to run serially
     """    
     konfig = copy.deepcopy(config)
-    
+
     tempname = 'config_MSH.cfg'
     konfig.dump(tempname)
-    
+
     # must run with rank 1
     processes = konfig['NUMBER_PART']
     processes = min([1,processes])    
@@ -251,6 +251,30 @@ def SOL_FSI(config):
     
     #os.remove(tempname)
     
+    return
+
+def CFD_SERIAL(config):
+    """ run SU2_CFD_AD forced to be in serial
+        added for smoothing, since serial execution is required
+         - forces run in serial
+         - only does 1 adjoint iteration
+        TODO: change for smoothings dependent on accurate adjoint solution.
+    """
+    konfig = copy.deepcopy(config)
+    konfig['ITER'] = 1
+    tempname = 'config_CFD_AD.cfg'
+    konfig.dump(tempname)
+
+    processes = konfig['NUMBER_PART']
+    processes = min([1,processes])
+
+    the_Command = 'SU2_CFD_AD%s %s' % (quote, tempname)
+
+    the_Command = build_command( the_Command, processes )
+    run_command( the_Command )
+
+    #os.remove(tempname)
+
     return
 
 

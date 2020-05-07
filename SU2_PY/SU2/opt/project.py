@@ -77,6 +77,7 @@ class Project(object):
             
             obj_f(dvs)     - objective function              : float
             obj_df(dvs)    - objective function derivatives  : list
+            obj_ddf(dvs)   - objective function second derivatives : list
             con_ceq(dvs)   - equality constraints            : list
             con_dceq(dvs)  - equality constraint derivatives : list[list]
             con_cieq(dvs)  - inequality constraints          : list
@@ -238,6 +239,11 @@ class Project(object):
         konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
+    def obj_ddf(self,dvs):
+        func = su2eval.obj_ddf
+        konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(konfig, func,dvs)
+
     def con_ceq(self,dvs):
         func = su2eval.con_ceq
         konfig,dvs = self.unpack_dvs(dvs)

@@ -103,7 +103,7 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY', 'HESSIAN']:
         NewClass[key] = ordered_bunch()
             
     if config:

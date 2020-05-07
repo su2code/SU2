@@ -1516,7 +1516,31 @@ void CSysMatrix<ScalarType>::printMat(ofstream &file) {
 template<class ScalarType>
 Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> CSysMatrix<ScalarType>::ConvertToEigen() {
 
-  Eigen::Map<Eigen::SparseMatrix<ScalarType, Eigen::RowMajor, unsigned long int> > eigen_matrix(nPoint*nVar,nPoint*nVar,nnz,row_ptr,col_ind,matrix);
+  // TODO: this function needs a better implementation!
+  Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> eigen_matrix(nPoint*nVar, nPoint*nVar);
+  if (nVar==1) {
+
+    Eigen::Map<Eigen::SparseMatrix<ScalarType, Eigen::RowMajor, unsigned long int> > eigen_map(nPoint*nVar,nPoint*nVar,nnz,row_ptr,col_ind,matrix);
+    eigen_matrix = eigen_map;
+
+  } else {
+
+    eigen_matrix.setZero();
+    unsigned long iVar, jVar;
+    auto row=0;
+    for (auto entr=0; entr<nnz; entr++) {
+      if (entr >= row_ptr[row+1]) {
+        row++;
+      }
+      ScalarType* block = GetBlock(row, col_ind[entr]);
+      for (iVar=0; iVar < nVar; iVar++ ) {
+        for (jVar=0; jVar < nVar; jVar++ ) {
+          eigen_matrix( row*nVar+iVar, col_ind[entr]*nVar+jVar ) = block[iVar*nVar+jVar];
+        }
+      }
+    }
+  }
+
   return eigen_matrix;
 
 }

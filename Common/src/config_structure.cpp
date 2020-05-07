@@ -1753,6 +1753,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
   addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
+  /*!\brief HESS_OBJFUNC_FILENAME
+   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
+  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
@@ -2426,6 +2429,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Optimization gradient factor */
   addPythonOption("OPT_GRADIENT_FACTOR");
   
+  /* DESCRIPTION: Optimization hessian factor */
+  addPythonOption("OPT_HESSIAN_FACTOR");
+
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
   

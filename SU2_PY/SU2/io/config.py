@@ -636,6 +636,8 @@ def read_config(filename):
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
     if 'MARKER_OUTLET' not in data_dict:
         data_dict['MARKER_OUTLET'] = '(NONE)'
+    if 'OPT_HESSIAN_FACTOR' not in data_dict:
+        data_dict['OPT_HESSIAN_FACTOR'] = 1.0
 
     #
     # Multipoints requires some particular default values

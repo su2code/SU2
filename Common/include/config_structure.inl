@@ -1531,6 +1531,8 @@ inline string CConfig::GetSurfSens_FileName(void) { return SurfSens_FileName; }
 
 inline string CConfig::GetVolSens_FileName(void) { return VolSens_FileName; }
 
+inline string CConfig::GetObjFunc_Hess_FileName(void) { return ObjFunc_Hess_FileName; }
+
 inline unsigned short CConfig::GetResidual_Criteria_FEM(void) { return Res_FEM_CRIT; }
 
 inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }

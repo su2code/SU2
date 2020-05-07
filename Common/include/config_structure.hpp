@@ -781,7 +781,8 @@ private:
   SurfAdjCoeff_FileName,		 /*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		 /*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			 /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;			     /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,			     /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  ObjFunc_Hess_FileName;	     /*!< \brief Hessian of the objective function. */
 
   bool Wrt_Output,           /*!< \brief Write any output files */
   Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
@@ -5665,6 +5666,12 @@ public:
    */
   string GetObjFunc_Extension(string val_filename);
   
+  /*!
+   * \brief Get the name of the file with the hessian of the objective function.
+   * \return Name of the file with the hessian of the objective function.
+   */
+  string GetObjFunc_Hess_FileName(void);
+
   /*!
    * \brief Get the criteria for structural residual (relative/absolute).
    * \return Relative/Absolute criteria for structural convergence.

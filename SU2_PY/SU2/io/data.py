@@ -104,7 +104,8 @@ def load_data( file_name, var_names=None   ,
         elif file_format == 'pickle':
             input_data = load_pickle(file_name)
             # pull core variable
-            assert input_data.has_key(core_name) , 'core data not found'
+            # changed has_key to in to make this compadible with python3
+            assert core_name in input_data , 'core data not found'
             input_data = input_data[core_name]
             
         #: if file_format

@@ -1132,7 +1132,11 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
   unsigned short nDV_Total= config->GetnDV_Total(), nVertex, nDim = geometry->GetnDim();
   unsigned long nPoint  = geometry->GetnPoint();
-  MatrixType SysMat, stiffness, surf2vol, param_jacobi_eigen;
+
+  // SysMat can be sized here
+  // param_jacobi_eigen needs dynamic resize depending on volume or surface?
+  // stiffness is overwritten (resized) by return
+  MatrixType SysMat(nDV_Total, nDV_Total), stiffness, param_jacobi_eigen;
 
   if (twoD) {
 
@@ -1140,6 +1144,8 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
       if ( config->GetMarker_All_DV(iMarker) == YES ) {
 
         nVertex = geometry->nVertex[iMarker];
+
+        param_jacobi_eigen.resize(nDV_Total, nVertex*nDim);
 
         // get the reduced parameterization jacobian
         for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
@@ -1161,6 +1167,7 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
   } else {
 
     // get the parameterization jacobian
+    param_jacobi_eigen.resize(nDV_Total, nPoint*nDim);
     for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
       for (auto iPoint = 0; iPoint <nPoint; iPoint++) {
         for (auto iDim = 0; iDim < nDim; iDim++){
@@ -1171,19 +1178,23 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
     // get the inverse stiffness matrix for the mesh movement
     CSysMatrix<su2double>& linear_elasticity_stiffness = grid_movement->GetStiffnessMatrix(geometry, config, true);
-    auto surf2vol = (linear_elasticity_stiffness.ConvertToEigen()).inverse();
+    MatrixType surf2vol = (linear_elasticity_stiffness.ConvertToEigen()).inverse();
 
     // get the inner stiffness matrix
     stiffness = GetStiffnessMatrix(geometry, numerics, config);
-
-    stiffness = surf2vol.transpose() * stiffness * surf2vol;
+    stiffness = stiffness * surf2vol;
+    stiffness = surf2vol.transpose() * stiffness;
   }
 
   // calculate the overall system
   SysMat = param_jacobi_eigen * stiffness * param_jacobi_eigen.transpose();
 
-  ofstream SysMatrix("SysMatrix.dat");
-  SysMatrix << SysMat;
+  // output the matrix
+  // define the format you want, you only need one instance of this...
+  const static Eigen::IOFormat CSVFormat(15, 0, ", ", "\n");
+
+  ofstream SysMatrix(config->GetObjFunc_Hess_FileName());
+  SysMatrix << SysMat.format(CSVFormat);
   SysMatrix.close();
 
   // solve the system
