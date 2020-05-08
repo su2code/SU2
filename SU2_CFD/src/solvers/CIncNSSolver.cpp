@@ -707,17 +707,17 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned short iDim;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool cont_adjoint       = config->GetContinuous_Adjoint();
+  unsigned long InnerIter     = config->GetInnerIter();
+  bool cont_adjoint         = config->GetContinuous_Adjoint();
   bool disc_adjoint       = config->GetDiscrete_Adjoint();
-  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center             = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
-  bool center_jst         = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool outlet             = ((config->GetnMarker_Outlet() != 0));
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
+  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
+  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
+  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool outlet               = ((config->GetnMarker_Outlet() != 0));
   bool energy             = config->GetEnergy_Equation();
 
   /*--- Set the primitive variables ---*/
@@ -839,7 +839,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if (implicit && !Output) Jacobian.SetValZero();
 
   /*--- Error message ---*/
 
@@ -915,7 +915,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   su2double ProjVel, ProjVel_i, ProjVel_j;
   const su2double* Normal;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool energy = config->GetEnergy_Equation();
@@ -1146,7 +1146,7 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
   unsigned long iPoint, jPoint, iEdge;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -1807,7 +1807,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double Twall, dTdn;
   su2double thermal_conductivity;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary by string name ---*/
@@ -1953,7 +1953,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
   Temperature_Ref = config->GetTemperature_Ref();
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary ---*/

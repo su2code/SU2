@@ -18,7 +18,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -1509,8 +1509,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   unsigned long InnerIter = config->GetInnerIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
@@ -1567,7 +1566,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if (implicit && !Output) Jacobian.SetValZero();
 
   /*--- Error message ---*/
 
@@ -1619,7 +1618,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -1824,7 +1823,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iEdge, iPoint, jPoint;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1886,7 +1885,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim, iVar;
 
   unsigned long InnerIter = config->GetInnerIter();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
@@ -2041,19 +2040,18 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   unsigned short iDim, iMarker;
   unsigned long iVertex;
-  
-  bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame      = config->GetRotating_Frame();
-  bool axisymmetric        = config->GetAxisymmetric();
-  bool body_force          = config->GetBody_Force();
-  bool boussinesq          = (config->GetKind_DensityModel() == BOUSSINESQ);
-  bool viscous             = config->GetViscous();
-  bool energy              = config->GetEnergy_Equation();
-  bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
-  bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
+  const bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool rotating_frame = config->GetRotating_Frame();
+  const bool axisymmetric   = config->GetAxisymmetric();
+  const bool body_force     = config->GetBody_Force();
+  const bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
+  const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
+  const bool energy              = config->GetEnergy_Equation();
+  const bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
+  const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
 
   /*--- Initialize the source residual to zero ---*/
@@ -4124,7 +4122,7 @@ void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   su2double  Velocity[3] = {0.0,0.0,0.0};
 
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
 
   /*--- Access the primitive variables at this node. ---*/
@@ -4222,7 +4220,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   su2double *V_infty, *V_domain;
 
-  bool implicit      = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  bool implicit      = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous       = config->GetViscous();
 
   su2double *Normal = new su2double[nDim];
@@ -4360,7 +4358,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double dV[3] = {0.0,0.0,0.0};
   su2double Damping = config->GetInc_Inlet_Damping();
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
 
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
@@ -4611,7 +4609,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
   su2double Damping = config->GetInc_Outlet_Damping();
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
@@ -4833,7 +4831,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
        viscous  = config->GetViscous();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
@@ -5100,7 +5098,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
 
   su2double *Normal = new su2double[nDim];
@@ -5283,7 +5281,7 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
     unsigned short iVar;
     unsigned long iVertex, iPoint, total_index;
 
-    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
     /*--- Get the physical time. ---*/
 
@@ -5355,7 +5353,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
   const su2double* Normal;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy   = config->GetEnergy_Equation();
 
   /*--- Store the physical time step ---*/
