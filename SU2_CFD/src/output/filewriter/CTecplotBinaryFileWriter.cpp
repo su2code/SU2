@@ -35,7 +35,7 @@ const string CTecplotBinaryFileWriter::fileExt = ".szplt";
 
 CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
                                                    unsigned long valTimeIter, su2double valTimeStep) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 

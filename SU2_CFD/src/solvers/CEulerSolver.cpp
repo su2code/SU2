@@ -8503,7 +8503,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   }
 
 
-  complex<su2double> I, c2ks, c2js, c3ks, c3js, c4ks, c4js, cOutks, cOutjs, Beta_inf;
+  complex<su2double> I, c2ks, c2js, c3ks, c3js, cOutks, cOutjs, Beta_inf;
   I = complex<su2double>(0.0,1.0);
 
   /*--- Compute coeff for under relaxation of Avg and Fourier Coefficient for hub and shroud---*/

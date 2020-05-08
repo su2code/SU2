@@ -671,7 +671,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
           
-            delete [] alreadyVisitedDonor;
+          delete [] alreadyVisitedDonor;
 
           alreadyVisitedDonor = tmpVect;
 

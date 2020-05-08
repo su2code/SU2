@@ -207,8 +207,6 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 
 bool CFileWriter::OpenMPIFile(){
   
-  int ierr;
-
 #ifdef HAVE_MPI
   
   disp     = 0.0;

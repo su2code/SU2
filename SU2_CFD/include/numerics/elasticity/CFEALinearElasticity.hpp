@@ -95,7 +95,6 @@ private:
 class CFEAMeshElasticity final : public CFEALinearElasticity {
 
   bool element_based;
-  bool stiffness_set;
 
 public:
   /*!
