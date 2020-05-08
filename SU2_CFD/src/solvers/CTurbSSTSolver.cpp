@@ -363,13 +363,6 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-//    for (unsigned short iVar = 0; iVar < nDim+9; iVar++) {
-//      if (iVar == nDim+2)
-//        nodes->SetFlowPrimitive(iPoint, iVar, flowNodes->GetDensity(iPoint));
-//      else
-//        nodes->SetFlowPrimitive(iPoint, iVar, flowNodes->GetPrimitive(iPoint,iVar));
-//    }
-//    const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
     const su2double rho = flowNodes->GetDensity(iPoint);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double cons = nodes->GetSolution(iPoint,iVar);
@@ -453,12 +446,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Conservative variables w/o reconstruction ---*/
 
     numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
-//    numerics->SetPrimitive(nodes->GetFlowPrimitive(iPoint), nullptr);
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
     numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
-//    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -603,9 +594,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
       density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
       laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-//      density_s = nodes->GetFlowPrimitive(iPoint,nDim+2);
-//      density_v = nodes->GetFlowPrimitive(jPoint,nDim+2);
-//      laminar_viscosity_v = nodes->GetFlowPrimitive(jPoint,nDim+5);
 
       Solution[0] = 0.0;
       Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
@@ -663,7 +651,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-//      V_domain = nodes->GetFlowPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 

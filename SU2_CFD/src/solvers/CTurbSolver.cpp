@@ -136,8 +136,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     const auto V_i = flowNodes->GetPrimitive(iPoint);
     const auto V_j = flowNodes->GetPrimitive(jPoint);
-//    const auto V_i = nodes->GetFlowPrimitive(iPoint);
-//    const auto V_j = nodes->GetFlowPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
 
     /*--- Turbulent variables w/o reconstruction ---*/
@@ -269,8 +267,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
                          flowNodes->GetPrimitive(jPoint));
-//  numerics->SetPrimitive(nodes->GetFlowPrimitive(iPoint),
-//                         nodes->GetFlowPrimitive(jPoint));
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
@@ -529,9 +525,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         SU2_OMP_FOR_STAT(omp_chunk_size)
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-//          su2double density = flowNodes->GetDensity(iPoint);
-//          su2double density_old = density;
-
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
             nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
                                       lowerlimit[iVar], upperlimit[iVar]);
@@ -599,18 +592,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
 
       }
     }
-    
-//    else {
-//      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-//        const unsigned long index = iPoint*nVar + iVar;
-//        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
-//        if (ratio > allowableIncrease) {
-//          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-//        } else if (ratio < allowableDecrease) {
-//          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
-//        }
-//      }
-//    }
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
@@ -984,7 +965,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   if (sst) static_cast<CTurbSSTSolver*>(solver[MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[MESH_0]);
-//  if (sst) solver[MESH_0][TURB_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TURB_SYS, false);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   
@@ -1014,7 +994,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     SU2_OMP_BARRIER
     
     if (sst) static_cast<CTurbSSTSolver*>(solver[iMesh][TURB_SOL])->SetPrimitive_Variables(solver[iMesh]);
-//    if (sst) solver[iMesh][TURB_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TURB_SYS, false);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
