@@ -691,7 +691,19 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
   
-  unsigned short iVar, iDim;
+  unsigned short iVar, jVar, iDim;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_j[iVar][jVar] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Jacobian_ic[iDim][iVar][jVar] = 0.0;
+        Jacobian_jc[iDim][iVar][jVar] = 0.0;
+      }
+    }
+  }
   
 //  if ((TurbVar_Grad_i) && (TurbVar_Grad_j)) {
 //    AD::SetPreaccIn(TurbVar_Grad_i, 2, nDim);

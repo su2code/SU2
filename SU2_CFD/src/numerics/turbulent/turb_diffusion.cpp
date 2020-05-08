@@ -89,7 +89,7 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
 CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar, jVar, iDim;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
@@ -114,6 +114,18 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  }
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Flux[iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_j[iVar][jVar] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Jacobian_ic[iDim][iVar][jVar] = 0.0;
+        Jacobian_jc[iDim][iVar][jVar] = 0.0;
+      }
+    }
   }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
