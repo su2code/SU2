@@ -283,8 +283,8 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                            (config->GetInnerIter() <= config->GetLimiterIter());
+//  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+//                            (config->GetInnerIter() <= config->GetLimiterIter());
   
 //  SetPrimitive_Variables(solver_container);
 
@@ -314,6 +314,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+  
+  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                            (config->GetInnerIter() <= config->GetLimiterIter());
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   
