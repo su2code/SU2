@@ -231,7 +231,7 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
 
   /*--- Perform the elasticity mesh movement ---*/
 
-  bool ActiveTape = AD::TapeActive();
+  const bool ActiveTape = AD::TapeActive();
 
   if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
     /*--- In a primal run, AD::TapeActive returns a false ---*/
