@@ -129,6 +129,7 @@ public:
    *        after tape has been evaluated.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
