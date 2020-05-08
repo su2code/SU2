@@ -333,8 +333,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     const su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-//    const su2double rho = nodes->GetFlowPrimitive(iPoint,nDim+2);
-//    const su2double mu  = nodes->GetFlowPrimitive(iPoint,nDim+5);
 
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
