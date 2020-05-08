@@ -803,13 +803,11 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
   unsigned long jj = 0;
 
   dist = 0.0;
-  for(unsigned short k=0; k<nDim; ++k) {
-    const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
-    const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
-    const su2double ds    = max(dsMin, dsMax);
-
-    dist += ds*ds;
-  }
+  su2double ds;
+  ds = max(fabs(coor[0]-coorBBMin[0]), fabs(coor[0]-coorBBMax[0])); dist += ds*ds;
+  ds = max(fabs(coor[1]-coorBBMin[1]), fabs(coor[1]-coorBBMax[1])); dist += ds*ds;
+  if(nDim==3) {
+  ds = max(fabs(coor[2]-coorBBMin[2]), fabs(coor[2]-coorBBMax[2])); dist += ds*ds;}
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 2: Traverse the tree and store the bounding boxes for which the ---*/
@@ -844,7 +842,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
         if( leaves[ll].childrenAreTerminal[mm] ) {
 
           /*--- Child contains a bounding. Compute the possible distance squared
-                to this bounding box. ---*/
+                to this bounding box. Tf a coordinate is inside the box ds = 0. ---*/
           coorBBMin = BBoxCoor.data() + nDimADT*kk;
           coorBBMax = coorBBMin + nDim;
 
@@ -853,13 +851,6 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
           ds = min(0.0, coor[1]-coorBBMin[1]) + max(0.0, coor[1]-coorBBMax[1]); posDist2 += ds*ds;
           if(nDim==3) {
           ds = min(0.0, coor[2]-coorBBMin[2]) + max(0.0, coor[2]-coorBBMax[2]); posDist2 += ds*ds;}
-          /*--- The above is equivalent to this:
-          for(unsigned short k=0; k<nDim; ++k) {
-            su2double ds = 0.0;
-            if(     coor[k] < coorBBMin[k]) ds = coor[k] - coorBBMin[k];
-            else if(coor[k] > coorBBMax[k]) ds = coor[k] - coorBBMax[k];
-            posDist2 += ds*ds;
-          }, but a bit faster. ---*/
 
           /* Check if the possible minimum distance is less than or equal to
              the currently stored distance. If so, this bounding box is a
@@ -873,13 +864,6 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
             ds = max(fabs(coor[1]-coorBBMin[1]), fabs(coor[1]-coorBBMax[1])); guarDist2 += ds*ds;
             if(nDim==3) {
             ds = max(fabs(coor[2]-coorBBMin[2]), fabs(coor[2]-coorBBMax[2])); guarDist2 += ds*ds;}
-            /*--- Again the above is equivalent to this:
-            for(unsigned short k=0; k<nDim; ++k) {
-              const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
-              const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
-              const su2double ds    = max(dsMin, dsMax);
-              guarDist2 += ds*ds;
-            } ---*/
 
             /* Store this bounding box in BBoxTargets and update the currently
                stored value of the distance squared. */
@@ -994,7 +978,7 @@ bool CADTElemClass::CoorInElement(const unsigned long elemID,
 
     default:
       /* This should not happen. */
-      SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
+      SU2_MPI::Error("Element type not recognized.", CURRENT_FUNCTION);
       return false;
   }
 }

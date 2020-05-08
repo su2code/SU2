@@ -306,6 +306,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
@@ -377,6 +378,7 @@ void CMultizoneDriver::Run_Jacobi() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/

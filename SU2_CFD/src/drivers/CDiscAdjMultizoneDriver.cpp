@@ -232,6 +232,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
+
       if (retape) {
         SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
         SetRecording(SOLUTION_VARIABLES, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
