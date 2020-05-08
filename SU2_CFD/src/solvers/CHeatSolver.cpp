@@ -1584,7 +1584,7 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
-  unsigned long iPoint, total_index;
+  unsigned long iPoint, total_index, IterLinSol = 0;;
   su2double Delta, Vol, *local_Res_TruncError;
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
@@ -1656,7 +1656,15 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system ---*/
 
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  /*--- Store the value of the residual. ---*/
+
+  SetResLinSolver(System.GetResidual());
+
+  /*--- The the number of iterations of the linear solver ---*/
+
+  SetIterLinSolver(IterLinSol);
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
