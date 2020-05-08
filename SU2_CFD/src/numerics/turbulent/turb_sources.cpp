@@ -845,7 +845,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
 //     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = min(-2./3.*diverg*Volume, 0.);
-       Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
+//       Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
 //       const su2double factor = (Eddy_Viscosity_i > 1.e-10) ? 1.0 : 0.0;
 //        /*--- Vanilla production Jacobian ---*/
 //        if (1.0/TurbVar_i[1] < a1/(VorticityMag*F2_i)) {
@@ -879,9 +879,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
    }
    else {
-     // pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
+      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+     if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
+//    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
    }
+    pw = alfa_blended*Density_i*max(pw,0.0);
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
