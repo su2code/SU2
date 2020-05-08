@@ -306,7 +306,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config) {
 
-  const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
                          (config->GetKind_Turb_Model() == SST_SUST);
 
@@ -956,7 +956,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
 
@@ -1208,7 +1208,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
 
@@ -1532,7 +1532,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
   su2double Temperature_Ref = config->GetTemperature_Ref();
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
 

@@ -1032,8 +1032,8 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Variable initialization ---*/
 
-  TimeIter    = 0;
-  InnerIter    = 0;
+  TimeIter   = 0;
+  InnerIter  = 0;
   nIntCoeffs = 0;
   OuterIter  = 0;
 
@@ -1057,6 +1057,8 @@ void CConfig::SetPointersNull(void) {
   Delta_UnstTimeND = 0.0;
   Total_UnstTime   = 0.0;
   Total_UnstTimeND = 0.0;
+
+  Kind_TimeNumScheme = EULER_IMPLICIT;
 
 }
 
