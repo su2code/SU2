@@ -883,7 +883,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 //     if ((pw > 0.) && (TurbVar_i[1] > VorticityMag*F2_i/a1)) Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
    }
-    pw = alfa_blended*Density_i*max(pw,0.0);
+//    pw = alfa_blended*Density_i*max(pw,0.0);
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
