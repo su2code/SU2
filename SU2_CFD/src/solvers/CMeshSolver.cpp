@@ -508,7 +508,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   if (ActiveTape) AD::StartRecording();
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
-  if (time_domain && !config->GetDiscrete_Adjoint()) ComputeGridVelocity(geometry[MESH_0], config);
+  if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
 
   /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);

@@ -912,7 +912,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
-  if (config->GetTime_Marching() && (config->GetDynamic_Grid() || config->GetGrid_Movement())) {
+  if (config->GetTime_Marching() && config->GetGrid_Movement()) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
 
@@ -922,10 +922,9 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
         geometry[iMGlevel]->node[iPoint]->SetVolume_nM1();
 
         /*--- Update point coordinates ---*/
-        if (config->GetGrid_Movement()) {
-          geometry[iMGlevel]->node[iPoint]->SetCoord_n();
-          geometry[iMGlevel]->node[iPoint]->SetCoord_n1();
-        }
+        geometry[iMGlevel]->node[iPoint]->SetCoord_n();
+        geometry[iMGlevel]->node[iPoint]->SetCoord_n1();
+
       }
     }
   }
