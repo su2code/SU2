@@ -1880,6 +1880,15 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double sigmaomega2 = constants[3];
   const su2double beta        = F1*constants[4] + (1.0 - F1)*constants[5];
   const su2double betastar    = constants[6];
+  const su2double a1          = constants[7];
+  
+  const su2double *Vorticity   = varFlo->GetVorticity(iPoint);
+  const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+                                      Vorticity[1]*Vorticity[1] +
+                                      Vorticity[2]*Vorticity[2]);
+  
+  const su2double lim      = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+  const su2double omegalim = min(1./omega,a1/(VorticityMag*F1));
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
@@ -1911,8 +1920,10 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
             + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
-  TmpWeights[nVarFlo+0] += 1./omega*factor;
-  TmpWeights[nVarFlo+1] += -k/pow(omega,2.)*factor;
+//  TmpWeights[nVarFlo+0] += 1./omega*factor;
+//  TmpWeights[nVarFlo+1] += -k/pow(omega,2.)*factor;
+  TmpWeights[nVarFlo+0] += omegalim*factor;
+  TmpWeights[nVarFlo+1] += -lim*k/pow(omega,2.)*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
