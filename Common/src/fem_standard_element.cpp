@@ -2083,7 +2083,7 @@ CFEMStandardElement::CFEMStandardElement(unsigned short          val_VTK_Type,
          if should be included. */
       blasFunctions.gemm(nIntegration, nDOFs, nDOFs, matDerBasisInt,
                          matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
-                         mat2ndDerBasisIntPoint, NULL);
+                         mat2ndDerBasisIntPoint, nullptr);
 
       /* Update the pointer to the position where the next second
          derivative will be stored. */

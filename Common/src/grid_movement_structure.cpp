@@ -178,8 +178,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (Derivative) { SetBoundaryDerivatives(geometry, config); }
 
-    CMatrixVectorProduct<su2double>* mat_vec = NULL;
-    CPreconditioner<su2double>* precond = NULL;
+    CMatrixVectorProduct<su2double>* mat_vec = nullptr;
+    CPreconditioner<su2double>* precond = nullptr;
 
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
@@ -516,7 +516,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
 
   unsigned short iVar, iDim, nNodes = 0, iNodes, StiffMatrix_nElem = 0;
   unsigned long iElem, PointCorners[8];
-  su2double **StiffMatrix_Elem = NULL, CoordCorners[8][3];
+  su2double **StiffMatrix_Elem = nullptr, CoordCorners[8][3];
   su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
 
   bool Screen_Output  = config->GetDeform_Output();
@@ -1674,7 +1674,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
 
-      su2double *Coord_0 = NULL;
+      su2double *Coord_0 = nullptr;
+
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
 
       /*--- Store the coord of the first point to help identify the axis. ---*/
@@ -5851,7 +5852,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   unsigned short iDim, nDim;
   unsigned long iPoint = 0, flowIter = 0;
   unsigned long jPoint, GlobalIndex;
-  su2double VarCoord[3], *Coord_Old = NULL, *Coord_New = NULL, Center[3] = {0.0,0.0,0.0};
+  su2double VarCoord[3], *Coord_Old = nullptr, *Coord_New = nullptr, Center[3] = {0.0,0.0,0.0};
   su2double Lref   = config->GetLength_Ref();
   su2double NewCoord[3] = {0.0,0.0,0.0}, rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0};
@@ -7040,7 +7041,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
   /*--- Local variables needed for merging the geometry with MPI. ---*/
 
   unsigned long jPoint, iPointLocal;
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
+  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long nBuffer_Scalar = 0;
 
@@ -7071,19 +7072,19 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
     /*--- Send and Recv buffers. ---*/
 
     su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
-    su2double *Buffer_Recv_X = NULL;
+    su2double *Buffer_Recv_X = nullptr;
 
     su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
-    su2double *Buffer_Recv_Y = NULL;
+    su2double *Buffer_Recv_Y = nullptr;
 
     su2double *Buffer_Send_Z = new su2double[MaxLocalPoint];
-    su2double *Buffer_Recv_Z = NULL;
+    su2double *Buffer_Recv_Z = nullptr;
 
     unsigned long *Buffer_Send_Point = new unsigned long[MaxLocalPoint];
-    unsigned long *Buffer_Recv_Point = NULL;
+    unsigned long *Buffer_Recv_Point = nullptr;
 
     unsigned short *Buffer_Send_MarkerIndex_CfgFile = new unsigned short[MaxLocalPoint];
-    unsigned short *Buffer_Recv_MarkerIndex_CfgFile = NULL;
+    unsigned short *Buffer_Recv_MarkerIndex_CfgFile = nullptr;
 
     /*--- Prepare the receive buffers in the master node only. ---*/
 
@@ -7908,7 +7909,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool 
 
   cgns_err = cg_zone_write(FFDBox_cgns_file, cgns_base, zonename, dims, CGNS_ENUMV(Structured), &cgns_zone);
   if (cgns_err) cg_error_print();
-  cgns_err = cg_goto(FFDBox_cgns_file, cgns_base, zonename, 0, NULL);
+  cgns_err = cg_goto(FFDBox_cgns_file, cgns_base, zonename, 0, nullptr);
   if (cgns_err) cg_error_print();
   cgns_err = cg_famname_write(Tag.c_str());
   if (cgns_err) cg_error_print();

@@ -137,7 +137,7 @@ CNSSolver::~CNSSolver(void) {
   delete [] Surface_MaxHF_Visc;
   delete [] Surface_Buffet_Metric;
 
-  if (CSkinFriction != NULL) {
+  if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete [] CSkinFriction[iMarker][iDim];
@@ -147,7 +147,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] CSkinFriction;
   }
 
-  if (HeatConjugateVar != NULL) {
+  if (HeatConjugateVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         delete [] HeatConjugateVar[iMarker][iVertex];
@@ -157,7 +157,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] HeatConjugateVar;
   }
 
-  if (Buffet_Sensor != NULL) {
+  if (Buffet_Sensor != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++){
       delete [] Buffet_Sensor[iMarker];
     }

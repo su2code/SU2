@@ -30,8 +30,8 @@
 
 CHeatSolver::CHeatSolver(void) : CSolver() {
 
-  ConjugateVar = NULL;
-  HeatFlux     = NULL;
+  ConjugateVar = nullptr;
+  HeatFlux     = nullptr;
 }
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -258,14 +258,14 @@ CHeatSolver::~CHeatSolver(void) {
 
   unsigned short iMarker;
 
-  if (HeatFlux != NULL) {
+  if (HeatFlux != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -445,9 +445,9 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }
 

@@ -155,7 +155,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
 CRadP1Solver::~CRadP1Solver(void) {
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 
 }
 
@@ -258,11 +258,11 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
     /*--- Radiation variables w/o reconstruction ---*/
 
-    numerics->SetRadVar(nodes->GetSolution(iPoint), NULL);
+    numerics->SetRadVar(nodes->GetSolution(iPoint), nullptr);
 
     /*--- Set volume ---*/
 

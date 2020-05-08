@@ -49,7 +49,7 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 
 CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
 
-  if (linearPartitioner != NULL) delete linearPartitioner;
+  delete linearPartitioner;
   delete [] passiveDoubleBuffer;
 
 }
@@ -61,7 +61,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   unsigned long Global_Index;
 
   int VARS_PER_POINT = GlobalField_Counter;
-  int *Local_Halo = NULL;
+  int *Local_Halo = nullptr;
   int iNode, count;
 
 #ifdef HAVE_MPI
@@ -438,9 +438,9 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we can allocate the new data structure to hold these points alone. Here,
    we also copy the data for those points from our volume data structure. ---*/
 
-  if (passiveDoubleBuffer != NULL){
+  
     delete [] passiveDoubleBuffer;
-  }
+  
 
   passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
@@ -545,13 +545,13 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Allocate memory to hold the globals that we are
    sending. ---*/
 
-  unsigned long *globalSend = NULL;
+  unsigned long *globalSend = nullptr;
   globalSend = new unsigned long[nElem_Send[size]]();
 
   /*--- Allocate memory to hold the renumbering that we are
    sending. ---*/
 
-  unsigned long *renumbSend = NULL;
+  unsigned long *renumbSend = nullptr;
   renumbSend = new unsigned long[nElem_Send[size]]();
 
   /*--- Create an index variable to keep track of our index
@@ -595,10 +595,10 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *globalRecv = NULL;
+  unsigned long *globalRecv = nullptr;
   globalRecv = new unsigned long[nElem_Recv[size]]();
 
-  unsigned long *renumbRecv = NULL;
+  unsigned long *renumbRecv = nullptr;
   renumbRecv = new unsigned long[nElem_Recv[size]]();
 
 #ifdef HAVE_MPI
@@ -1128,7 +1128,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
   unsigned long iMarker;
 
-  int *Conn_Elem  = NULL;
+  int *Conn_Elem  = nullptr;
 
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
@@ -1247,7 +1247,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
     connSend[ii] = 0;
@@ -1346,7 +1346,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
     connRecv[ii] = 0;
@@ -1480,15 +1480,15 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
   switch (Elem_Type) {
     case LINE:
-      if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
+      delete [] Conn_Line_Par;
       Conn_Line_Par = Conn_Elem;
       break;
     case TRIANGLE:
-      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_Elem;
       break;
     default:

@@ -809,7 +809,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff = 0.0;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff = 0.0;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
@@ -1068,25 +1068,25 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     0.0, Visc_CL = 0.0,
     Visc_CD = 0.0, Visc_CSF = 0.0, Visc_CMx = 0.0, Visc_CMy = 0.0,
     Visc_CMz = 0.0, Visc_CEff = 0.0, Visc_CFx = 0.0, Visc_CFy = 0.0, Visc_CFz =
-    0.0, *Surface_CL = NULL, *Surface_CD = NULL,
-    *Surface_CSF = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL,
-    *Surface_CFy = NULL, *Surface_CFz = NULL,
-    *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
-    *Surface_CL_Inv = NULL,
-    *Surface_CD_Inv = NULL, *Surface_CSF_Inv = NULL,
-    *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv =
-    NULL, *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL,
-    *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL,
-    *Surface_CL_Visc = NULL,
-    *Surface_CD_Visc = NULL, *Surface_CSF_Visc = NULL,
-    *Surface_CEff_Visc = NULL, *Surface_CFx_Visc = NULL, *Surface_CFy_Visc =
-    NULL, *Surface_CFz_Visc = NULL, *Surface_CMx_Visc = NULL,
-    *Surface_CMy_Visc = NULL, *Surface_CMz_Visc = NULL,
-    *Surface_CL_Mnt = NULL,
-    *Surface_CD_Mnt = NULL, *Surface_CSF_Mnt = NULL,
-    *Surface_CEff_Mnt = NULL, *Surface_CFx_Mnt = NULL, *Surface_CFy_Mnt =
-    NULL, *Surface_CFz_Mnt = NULL, *Surface_CMx_Mnt = NULL,
-    *Surface_CMy_Mnt = NULL, *Surface_CMz_Mnt = NULL;
+    0.0, *Surface_CL = nullptr, *Surface_CD = nullptr,
+    *Surface_CSF = nullptr, *Surface_CEff = nullptr, *Surface_CFx = nullptr,
+    *Surface_CFy = nullptr, *Surface_CFz = nullptr,
+    *Surface_CMx = nullptr, *Surface_CMy = nullptr, *Surface_CMz = nullptr,
+    *Surface_CL_Inv = nullptr,
+    *Surface_CD_Inv = nullptr, *Surface_CSF_Inv = nullptr,
+    *Surface_CEff_Inv = nullptr, *Surface_CFx_Inv = nullptr, *Surface_CFy_Inv =
+    nullptr, *Surface_CFz_Inv = nullptr, *Surface_CMx_Inv = nullptr,
+    *Surface_CMy_Inv = nullptr, *Surface_CMz_Inv = nullptr,
+    *Surface_CL_Visc = nullptr,
+    *Surface_CD_Visc = nullptr, *Surface_CSF_Visc = nullptr,
+    *Surface_CEff_Visc = nullptr, *Surface_CFx_Visc = nullptr, *Surface_CFy_Visc =
+    nullptr, *Surface_CFz_Visc = nullptr, *Surface_CMx_Visc = nullptr,
+    *Surface_CMy_Visc = nullptr, *Surface_CMz_Visc = nullptr,
+    *Surface_CL_Mnt = nullptr,
+    *Surface_CD_Mnt = nullptr, *Surface_CSF_Mnt = nullptr,
+    *Surface_CEff_Mnt = nullptr, *Surface_CFx_Mnt = nullptr, *Surface_CFy_Mnt =
+    nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
+    *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
 
     /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
      the two lines below that use the dt variable. ---*/

@@ -66,8 +66,8 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
   C10 = Mu/2.0;
   D1  = 2.0/Kappa;
 
-  F_Mat_Iso = NULL;
-  b_Mat_Iso = NULL;
+  F_Mat_Iso = nullptr;
+  b_Mat_Iso = nullptr;
 
   F_Mat_Iso = new su2double *[3];
   b_Mat_Iso = new su2double *[3];
@@ -82,9 +82,9 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
   nElectric_Field   = 0;
   nDim_Electric_Field = 0;
 
-  EField_Ref_Unit   = NULL;
-  EField_Ref_Mod    = NULL;
-  EField_Curr_Unit  = NULL;
+  EField_Ref_Unit   = nullptr;
+  EField_Ref_Mod    = nullptr;
+  EField_Curr_Unit  = nullptr;
 
   if (maxwell_stress == true) {
 
@@ -197,22 +197,22 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
   delete [] KAux_P_ab;
   delete [] currentCoord;
 
-  if (F_Mat_Iso != NULL) {
+  if (F_Mat_Iso != nullptr) {
     for (iVar = 0; iVar < 3; iVar++){
-      if (F_Mat_Iso[iVar] != NULL) delete [] F_Mat_Iso[iVar];
+      if (F_Mat_Iso[iVar] != nullptr) delete [] F_Mat_Iso[iVar];
     }
     delete [] F_Mat_Iso;
   }
-  if (b_Mat_Iso != NULL){
+  if (b_Mat_Iso != nullptr){
     for (iVar = 0; iVar < 3; iVar++){
-      if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
+      if (b_Mat_Iso[iVar] != nullptr) delete [] b_Mat_Iso[iVar];
     }
     delete [] b_Mat_Iso;
   }
 
-  if (EField_Ref_Unit  != NULL)   delete [] EField_Ref_Unit;
-  if (EField_Ref_Mod   != NULL)   delete [] EField_Ref_Mod;
-  if (EField_Curr_Unit != NULL)   delete [] EField_Curr_Unit;
+  delete [] EField_Ref_Unit;
+  delete [] EField_Ref_Mod;
+  delete [] EField_Curr_Unit;
 
 }
 
