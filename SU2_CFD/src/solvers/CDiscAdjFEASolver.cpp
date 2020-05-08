@@ -669,6 +669,9 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   SetResidual_RMS(geometry, config);
 
+  SetIterLinSolver(direct_solver->System.GetIterations());
+  SetResLinSolver(direct_solver->System.GetResidual());
+
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
