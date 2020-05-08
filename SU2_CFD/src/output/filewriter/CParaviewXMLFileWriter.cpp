@@ -107,9 +107,9 @@ void CParaviewXMLFileWriter::Write_Data(){
   */
 
   if (!bigEndian){
-    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">\n", MASTER_NODE);
+    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n", MASTER_NODE);
   } else {
-    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\">\n", MASTER_NODE);
+    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\" header_type=\"UInt64\">\n", MASTER_NODE);
   }
 
   WriteMPIString("<UnstructuredGrid>\n", MASTER_NODE);
@@ -330,7 +330,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
                                             unsigned long globalSize, unsigned long offset){
 
 
-  long int totalByteSize;
+  unsigned long totalByteSize;
   int byteSize;
 
   std::string typeStr;
@@ -348,7 +348,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
 
   /*--- Only the master node writes the total size in bytes as int32 in front of the array data ---*/
   
-  if (!WriteMPIBinaryData(&totalByteSize, sizeof(long int), MASTER_NODE)){
+  if (!WriteMPIBinaryData(&totalByteSize, sizeof(unsigned long), MASTER_NODE)){
     SU2_MPI::Error("Writing array size failed", CURRENT_FUNCTION);
   }
   
@@ -392,6 +392,6 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
                  string(" offset=") + offsetStr +
                  string(" format=\"appended\"/>\n"), MASTER_NODE);
 
-  dataOffset += totalByteSize + sizeof(int);
+  dataOffset += totalByteSize + sizeof(unsigned long);
 
 }
