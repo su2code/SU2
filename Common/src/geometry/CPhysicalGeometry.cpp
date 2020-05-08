@@ -9681,6 +9681,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
 
   su2double orthoMin = 1.e6, arMin = 1.e6, vrMin = 1.e6;
   su2double orthoMax = 0.0,  arMax = 0.0,  vrMax = 0.0;
+  long PointMax = -1;
   for (unsigned long iPoint= 0; iPoint < nPointDomain; iPoint++) {
     Orthogonality[iPoint] = Orthogonality[iPoint]/SurfaceArea[iPoint];
     orthoMin = min(Orthogonality[iPoint], orthoMin);
@@ -9691,6 +9692,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     arMax = max(Aspect_Ratio[iPoint], arMax);
 
     Volume_Ratio[iPoint] = SubVolume_Max[iPoint]/SubVolume_Min[iPoint];
+    if (Volume_Ratio[iPoint] > vrMax) PointMax = node[iPoint]->GetGlobalIndex();
     vrMin = min(Volume_Ratio[iPoint], vrMin);
     vrMax = max(Volume_Ratio[iPoint], vrMax);
   }
@@ -9714,6 +9716,11 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
                      MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&vrMax, &Global_VR_Max, 1,
                      MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  
+  if (vrMax < Global_VR_Max) PointMax = -1;
+  long Global_PointMax;
+  SU2_MPI::Allreduce(&PointMax, &Global_PointMax, 1,
+                     MPI_LONG, MPI_MAX, MPI_COMM_WORLD);
 
   /*--- Print the summary to the console for the user. ---*/
 
@@ -9721,11 +9728,12 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
   MetricsTable.AddColumn("Mesh Quality Metric", 30);
   MetricsTable.AddColumn("Minimum", 15);
   MetricsTable.AddColumn("Maximum", 15);
+  MetricsTable.AddColumn("Point Max", 15);
   if (rank == MASTER_NODE){
     MetricsTable.PrintHeader();
-    MetricsTable << "Orthogonality Angle (deg.)" << Global_Ortho_Min << Global_Ortho_Max;
-    MetricsTable << "CV Face Area Aspect Ratio" << Global_AR_Min << Global_AR_Max;
-    MetricsTable << "CV Sub-Volume Ratio" << Global_VR_Min << Global_VR_Max;
+    MetricsTable << "Orthogonality Angle (deg.)" << Global_Ortho_Min << Global_Ortho_Max << "--";
+    MetricsTable << "CV Face Area Aspect Ratio" << Global_AR_Min << Global_AR_Max << "--";
+    MetricsTable << "CV Sub-Volume Ratio" << Global_VR_Min << Global_VR_Max << Global_PointMax;
     MetricsTable.PrintFooter();
   }
 
