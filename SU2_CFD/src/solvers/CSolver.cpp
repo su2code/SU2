@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2729,14 +2729,15 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
   unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
   unsigned long iVertex, iEdge;
-  su2double ProjGridVel, *Normal;
+  su2double ProjGridVel;
+  const su2double* Normal;
 
   /*--- Loop interior edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
-    const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
+    const unsigned long iPoint = geometry->edges->GetNode(iEdge,0);
+    const unsigned long jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Solution at each edge point ---*/
 
@@ -2753,7 +2754,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
     for (iDim = 0; iDim < nDim; iDim++)
       Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
 
     ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)

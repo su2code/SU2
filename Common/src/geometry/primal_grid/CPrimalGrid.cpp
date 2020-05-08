@@ -2,7 +2,7 @@
  * \file CPrimalGrid.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
 }
 
-void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(const su2double* const* val_coord) {
   unsigned short iDim, iNode, NodeFace, iFace;
 
   AD::StartPreacc();

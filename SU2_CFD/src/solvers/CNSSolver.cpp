@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -315,13 +315,13 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
-  auto iPoint = geometry->edge[iEdge]->GetNode(0);
-  auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
 
   numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                      geometry->node[jPoint]->GetCoord());
 
-  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
   /*--- Primitive and secondary variables. ---*/
 

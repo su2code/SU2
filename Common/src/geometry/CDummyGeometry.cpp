@@ -2,7 +2,7 @@
  * \file CDummyGeometry.hpp
  * \brief Implementation of the dummy geometry class used in "dry run" mode.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   face                = NULL;
   bound               = NULL;
   node                = NULL;
-  edge                = NULL;
+  edges               = NULL;
   vertex              = NULL;
   nVertex             = NULL;
   newBound            = NULL;

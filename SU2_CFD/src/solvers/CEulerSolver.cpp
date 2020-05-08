@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2725,7 +2725,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       auto node_j = geometry->node[jPoint];
 
       iEdge = node_i->GetEdge(iNeigh);
-      Normal = geometry->edge[iEdge]->GetNormal();
+      Normal = geometry->edges->GetNormal(iEdge);
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
       /*--- Mean Values ---*/
@@ -2958,10 +2958,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edges->GetNode(iEdge,0);
+    auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
     /*--- Set primitive variables w/o reconstruction ---*/
@@ -3062,10 +3062,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Points in edge and normal vectors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edges->GetNode(iEdge,0);
+    auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     auto Coord_i = geometry->node[iPoint]->GetCoord();
     auto Coord_j = geometry->node[jPoint]->GetCoord();
@@ -3277,7 +3277,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
 
-      if (iPoint == geometry->edge[iEdge]->GetNode(0))
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
@@ -3573,7 +3573,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      auto Normal = geometry->edge[iEdge]->GetNormal();
+      auto Normal = geometry->edges->GetNormal(iEdge);
       su2double Area = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
       Area = sqrt(Area);
@@ -11280,13 +11280,13 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
 
         iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-        Normal = geometry->edge[iEdge]->GetNormal();
+        Normal = geometry->edges->GetNormal(iEdge);
 
         jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         GridVel_j = geometry->node[jPoint]->GetGridVel();
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edge[iEdge]->GetNode(0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
