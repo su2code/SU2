@@ -286,7 +286,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
   
-  SetPrimitive_Variables(solver_container);
+//  SetPrimitive_Variables(solver_container);
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -294,6 +294,32 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
   }
+  
+  /*--- Compute mean flow and turbulence gradients ---*/
+
+//  if (config->GetReconstructionGradientRequired()) {
+//    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+//      SetPrimitive_Gradient_GG(geometry, config, true);
+//    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+//      SetPrimitive_Gradient_LS(geometry, config, true);
+//    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+//      SetPrimitive_Gradient_LS(geometry, config, true);
+//  }
+//
+//  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+//  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+//
+//  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+
+}
+
+void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  
+  su2double a1 = constants[7];
+    
+  SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
@@ -310,21 +336,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
   if (limiter_turb) SetPrimitive_Limiter(geometry, config);
-
-}
-
-void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  
-  su2double a1 = constants[7];
-    
-  SetPrimitive_Variables(solver_container);
-  
-  /*--- Compute mean flow and turbulence gradients ---*/
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
