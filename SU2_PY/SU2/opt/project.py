@@ -296,7 +296,7 @@ class Project(object):
         # start new design
         else:
             design = self.init_design(konfig,closest)
-        #: if new design    
+        #: if new design
         return design
     
     def get_design(self,config):
