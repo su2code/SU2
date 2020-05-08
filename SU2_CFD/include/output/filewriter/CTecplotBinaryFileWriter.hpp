@@ -33,6 +33,9 @@
 
 class CTecplotBinaryFileWriter final: public CFileWriter{
 
+  unsigned long timeIter;  //!< Current value of the time iteration
+  su2double timeStep;       //!< Current value of the time step
+
 public:
 
   /*!

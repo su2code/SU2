@@ -208,7 +208,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 bool CFileWriter::OpenMPIFile(){
   
 #ifdef HAVE_MPI
-  
+  int ierr;
   disp     = 0.0;
   
   /*--- All ranks open the file using MPI. Here, we try to open the file with
