@@ -386,7 +386,7 @@ def main():
 	# test optimization, with with restart files
     unsteady_NACA0012_opt_restart            = TestCase('unsteady_NACA0012_opt_restart')
     unsteady_NACA0012_opt_restart.cfg_dir    = "optimization_rans/naca0012"
-    unsteady_NACA0012_opt_restart.cfg_file   = "naca0012cfg"
+    unsteady_NACA0012_opt_restart.cfg_file   = "naca0012.cfg"
     unsteady_NACA0012_opt_restart.test_iter  = 12
     unsteady_NACA0012_opt_restart.su2_exec   = "shape_optimization.py -q False -f "
     unsteady_NACA0012_opt_restart.timeout    = 1600
