@@ -93,19 +93,29 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   rhoResNew = EPS;
   rhoResOld = EPS;
 
-  nRequestedHistoryFields = config->GetnHistoryOutput();
-  for (unsigned short iField = 0; iField < nRequestedHistoryFields; iField++){
-    requestedHistoryFields.push_back(config->GetHistoryOutput_Field(iField));
-  }
+  if (customOutput){
+    nRequestedHistoryFields = config->GetnHistoryOutput();
+    for (unsigned short iField = 0; iField < nRequestedHistoryFields; iField++){
+      requestedHistoryFields.push_back(config->GetHistoryOutput_Field(iField));
+    }
 
-  nRequestedScreenFields = config->GetnScreenOutput();
-  for (unsigned short iField = 0; iField < nRequestedScreenFields; iField++){
-    requestedScreenFields.push_back(config->GetScreenOutput_Field(iField));
-  }
+    nRequestedScreenFields = config->GetnScreenOutput();
+    for (unsigned short iField = 0; iField < nRequestedScreenFields; iField++){
+      requestedScreenFields.push_back(config->GetScreenOutput_Field(iField));
+    }
 
-  nRequestedVolumeFields = config->GetnVolumeOutput();
-  for (unsigned short iField = 0; iField < nRequestedVolumeFields; iField++){
-    requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
+    nRequestedVolumeFields = config->GetnVolumeOutput();
+    for (unsigned short iField = 0; iField < nRequestedVolumeFields; iField++){
+      requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
+    }
+
+    historyFieldsAll.SetScope(interpreter::globalScope);
+    volumeFieldsAll.SetScope(interpreter::globalScope);
+
+    historyUserFunctions = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::HISTFIELD});
+    volumeUserFunctions  = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::VOLUMEFIELD,
+                                                                                    interpreter::FunctionType::VOLUMEINTEGRAL,
+                                                                                    interpreter::FunctionType::SURFACEINTEGRAL});
   }
 
   gridMovement = config->GetGrid_Movement();
@@ -169,15 +179,6 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   surfaceDataSorter = nullptr;
 
   headerNeeded = false;
-
-
-  historyFieldsAll.SetScope(interpreter::globalScope);
-  volumeFieldsAll.SetScope(interpreter::globalScope);
-
-  historyUserFunctions = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::HISTFIELD});
-  volumeUserFunctions  = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::VOLUMEFIELD,
-                                                                                  interpreter::FunctionType::VOLUMEINTEGRAL,
-                                                                                  interpreter::FunctionType::SURFACEINTEGRAL});
 
 
 }
