@@ -318,7 +318,7 @@ public:
    * \brief Get the number of iterations.
    * \return The number of iterations done by Solve or Solve_b
    */
-  inline ScalarType GetIterations(void) const { return Iterations; }
+  inline unsigned long GetIterations(void) const { return Iterations; }
 
   /*!
    * \brief Get the final residual.
