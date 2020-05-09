@@ -256,9 +256,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    SU2_OMP_MASTER
     SetTauWall_WF(geometry, solver_container, config);
-    SU2_OMP_BARRIER
   }
 
 }
@@ -951,12 +949,15 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0;
-  su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0, 0.0, 0.0}, UnitNormal[3] = {0.0, 0.0, 0.0};
-  su2double laminar_viscosity = 0.0, eddy_viscosity = 0.0, Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
-  tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
+  su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0}, UnitNormal[3] = {0.0}, Vector[3] = {0.0};
+  su2double laminar_viscosity = 0.0, eddy_viscosity = 0.0, Grad_Vel[3][3] = {{0.0}}, tau[3][3] = {{0.0}};
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
-  bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  su2double **Jacobian_i = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Jacobian_i[iVar] = new su2double [nVar];
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
 
@@ -974,6 +975,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -999,10 +1001,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
-        Res_Visc[iVar] = 0.0;
-      }
+      su2double Res_Conv[MAXNVAR] = {0.0};
+      su2double Res_Visc[MAXNVAR] = {0.0};
 
       /*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
@@ -1184,9 +1184,13 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
+
 }
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -1199,16 +1203,20 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double Twall, dTdn, dTdrho, thermal_conductivity;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
-  su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
-  su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-  tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double total_viscosity, div_vel, tau_vel[3] = {0.0}, UnitNormal[3] = {0.0}, Vector[3] = {0.0};
+  su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{0.0}}, tau[3][3] = {{0.0}};
+  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  su2double **Jacobian_i = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Jacobian_i[iVar] = new su2double [nVar];
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
 
@@ -1226,6 +1234,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Loop over boundary points ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1277,10 +1286,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
-        Res_Visc[iVar] = 0.0;
-      }
+      su2double Res_Conv[MAXNVAR] = {0.0};
+      su2double Res_Visc[MAXNVAR] = {0.0};
 
       /*--- Set the residual, truncation error and velocity value on the boundary ---*/
 
@@ -1483,9 +1490,13 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
+
 }
 
 void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
@@ -1521,9 +1532,9 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   su2double Twall= 0.0, There, dTdn= 0.0, dTdrho, thermal_conductivity, Tconjugate, HF_FactorHere, HF_FactorConjugate;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
-  su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
-  su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-  tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double total_viscosity, div_vel, tau_vel[3] = {0.0}, UnitNormal[3] = {0.0}, Vector[3] = {0.0};
+  su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{0.0}}, tau[3][3] = {{0.0}};
+  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -1532,7 +1543,11 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
   su2double Temperature_Ref = config->GetTemperature_Ref();
 
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  su2double **Jacobian_i = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Jacobian_i[iVar] = new su2double [nVar];
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
 
@@ -1547,6 +1562,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
   /*--- Loop over boundary points ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1594,10 +1610,8 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
-        Res_Visc[iVar] = 0.0;
-      }
+      su2double Res_Conv[MAXNVAR] = {0.0};
+      su2double Res_Visc[MAXNVAR] = {0.0};
 
       /*--- Set the residual, truncation error and velocity value on the boundary ---*/
 
@@ -1827,6 +1841,11 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
       }
     }
   }
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
+
 }
 
 void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -1869,8 +1888,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+    if (config->GetViscous_Wall(iMarker)) {
 
       /*--- Identify the boundary by string name ---*/
 
@@ -1882,6 +1900,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Loop over all of the vertices on this boundary marker ---*/
 
+      SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2037,24 +2056,23 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
             counter++;
             if (counter > max_iter) {
-              cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
+              cout << "WARNING: Tau_Wall evaluation has not converged in CNSSolver.cpp" << endl;
               cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
               break;
             }
 
           }
 
-
           /*--- Store this value for the wall shear stress at the node.  ---*/
 
           nodes->SetTauWall(iPoint,Tau_Wall);
-
 
         }
 
       }
 
     }
+
   }
 
 }

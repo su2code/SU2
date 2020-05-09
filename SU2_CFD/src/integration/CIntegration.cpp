@@ -76,11 +76,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
 
-  /// TODO: No boundary condition supports hybrid parallelism yet, master thread does all the work.
-
-  SU2_OMP_MASTER
-  {
-
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
@@ -182,9 +177,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   }
-
-  } // end SU2_OMP_MASTER
-  SU2_OMP_BARRIER
 
 }
 

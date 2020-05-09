@@ -169,14 +169,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Define some auxiliar vector related with the residual ---*/
 
-  Residual      = new su2double[nVar]();
   Residual_RMS  = new su2double[nVar]();
   Residual_Max  = new su2double[nVar]();
-  Residual_i    = new su2double[nVar]();
-  Residual_j    = new su2double[nVar]();
-  Res_Conv      = new su2double[nVar]();
-  Res_Visc      = new su2double[nVar]();
-  Res_Sour      = new su2double[nVar]();
 
   /*--- Define some structures for locating max residuals ---*/
 
@@ -185,14 +179,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   for (iVar = 0; iVar < nVar; iVar++) {
     Point_Max_Coord[iVar] = new su2double[nDim]();
   }
-
-  /*--- Define some auxiliary vectors related to the solution ---*/
-
-  Solution = new su2double[nVar]();
-
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-
-  Vector = new su2double[nDim]();
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
@@ -262,13 +248,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Jacobians and vector structures for implicit computations ---*/
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
 
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
@@ -491,6 +470,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
     /*--- Use the values at the infinity ---*/
 
+    su2double Solution[MAXNVAR] = {0.0};
     if ((Pressure < 0.0) || (Density < 0.0) || (Temperature < 0.0)) {
       Solution[0] = Density_Inf;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4901,6 +4881,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double DeltaPress = 0.0, DeltaTemp = 0.0, TotalPressRatio = 0.0, TotalTempRatio = 0.0, StaticPressRatio = 0.0, StaticTempRatio = 0.0,
   NetThrust = 0.0, GrossThrust = 0.0, Power = 0.0, MassFlow = 0.0, Mach = 0.0, Force = 0.0;
   bool ReverseFlow, Engine = false, Pair = true;
+  su2double Vector[MAXNDIM] = {0.0};
 
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = Gas_Constant*Gamma / (Gamma-1.0);
@@ -5795,6 +5776,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   su2double Target_Force, Force, Target_Power, Power, NetThrust, BCThrust_old, Initial_BCThrust;
   bool ActDisk_Info;
   su2double MyBCThrust, BCThrust_Init;
+  su2double Vector[MAXNDIM] = {0.0};
 
   su2double dNetThrust_dBCThrust        = config->GetdNetThrust_dBCThrust();
   unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
@@ -6769,6 +6751,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
     Grad_Reflected[iVar] = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     if (iVertex == 0 ||
@@ -7039,6 +7023,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -7282,8 +7267,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
   su2double ProjVelocity_i;
-  su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
-  su2double *gridVel;
+  su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **Jacobian_i, **DubDu, *dw, *u_e, *u_i, *u_b;
+  su2double *gridVel, *Residual;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
 
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -7305,17 +7290,23 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   u_b = new su2double[nVar];
   dw = new su2double[nVar];
 
+  Residual = new su2double[nVar];
+
   S_boundary = new su2double[8];
 
   P_Tensor = new su2double*[nVar];
   invP_Tensor = new su2double*[nVar];
+  Jacobian_i = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
   {
     P_Tensor[iVar] = new su2double[nVar];
     invP_Tensor[iVar] = new su2double[nVar];
+    Jacobian_i[iVar] = new su2double[nVar];
   }
 
   /*--- Loop over all the vertices on this boundary marker ---*/
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     V_boundary= GetCharacPrimVar(val_marker, iVertex);
@@ -7763,14 +7754,17 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] u_b;
   delete [] dw;
 
+  delete [] Residual;
 
   for (iVar = 0; iVar < nVar; iVar++)
   {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
+    delete [] Jacobian_i[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] Jacobian_i;
 
 }
 
@@ -7786,8 +7780,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   su2double *Velocity_e, Velocity2_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
   su2double ProjVelocity_i;
-  su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
-  su2double *gridVel;
+  su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **Jacobian_i, **DubDu, *dw, *u_e, *u_i, *u_b;
+  su2double *gridVel, *Residual;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   su2double AverageEnthalpy, AverageEntropy;
   unsigned short  iZone  = config->GetiZone();
@@ -7814,18 +7808,24 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   u_b = new su2double[nVar];
   dw = new su2double[nVar];
 
+  Residual = new su2double[nVar];
+
   S_boundary = new su2double[8];
 
   P_Tensor = new su2double*[nVar];
   invP_Tensor = new su2double*[nVar];
+  Jacobian_i = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
   {
     P_Tensor[iVar] = new su2double[nVar];
     invP_Tensor[iVar] = new su2double[nVar];
+    Jacobian_i[iVar] = new su2double[nVar];
   }
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- using the other vertex information for retrieving some information ---*/
@@ -8270,14 +8270,17 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   delete [] u_b;
   delete [] dw;
 
+  delete [] Residual;
 
   for (iVar = 0; iVar < nVar; iVar++)
   {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
+    delete [] Jacobian_i[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] Jacobian_i;
 
 }
 
@@ -8749,6 +8752,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- using the other vertex information for retrieving some information ---*/
@@ -9198,6 +9202,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the inlet ---*/
@@ -9493,6 +9498,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the outlet ---*/
@@ -9693,6 +9700,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the outlet ---*/
@@ -9810,6 +9818,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -9992,6 +10001,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the outlet ---*/
@@ -10180,6 +10190,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the exhaust ---*/
@@ -10403,6 +10414,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double PrimVar_i[MAXNVAR] = {0.0};
   su2double PrimVar_j[MAXNVAR] = {0.0};
   su2double Secondary_j[MAXNVAR] = {0.0};
+  su2double Residual[MAXNVAR] = {0.0};
+  su2double **Jacobian_i = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Jacobian_i[iVar] = new su2double [nVar];
 
   su2double weight;
   su2double P_static, rho_static;
@@ -10411,6 +10426,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
+      SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -10555,6 +10571,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
     }
   }
 
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
+
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -10572,6 +10592,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
   /*--- Do the send process, by the moment we are sending each
    node individually, this must be changed ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -10634,6 +10655,7 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
   /*--- Do the send process, by the moment we are sending each
    node individually, this must be changed ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -10725,6 +10747,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -11117,10 +11140,12 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
    accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
 
+  SU2_OMP_MASTER
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
+  SU2_OMP_BARRIER
 
 }
 
@@ -11147,6 +11172,7 @@ void CEulerSolver::BC_Custom(CGeometry      *geometry,
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
       /*--- Get the point index for the current node. ---*/
@@ -11163,6 +11189,7 @@ void CEulerSolver::BC_Custom(CGeometry      *geometry,
 
         /*--- Get the conservative state from the verification solution. ---*/
 
+        su2double Solution[MAXNVAR] = {0.0};
         VerificationSolution->GetBCState(coor, time, Solution);
 
         /*--- For verification cases, we will apply a strong Dirichlet
