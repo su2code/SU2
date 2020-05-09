@@ -39,14 +39,15 @@ public:
    * \param[in] key - The key associated to the item
    * \param[in] item - The item that should be stored
    */
-  void AddItem(const Key& key, const Item& item){
+  typename Map::iterator AddItem(const Key& key, const Item& item){
     bool success;
     typename Map::iterator iter;
     std::tie(iter, success) = map.insert({key, item});
-    insertionVector.emplace_back(map.insert({key, item}).first);
+    insertionVector.emplace_back(iter);
     if (!success){
       SU2_MPI::Error(std::string("Key with name ") + key + std::string(" already exists"), CURRENT_FUNCTION);
     }
+    return insertionVector.back();
   }
 
   /*!
@@ -72,7 +73,10 @@ public:
    * \param[in] key - The key value
    * \return The item associated with the specified key
    */
-  const Item& GetItemByKey(const Key& key) const {
+  Item& GetItemByKey(const Key& key) {
+    if (map.count(key) == 0)
+      SU2_MPI::Error("Key not found " + key, CURRENT_FUNCTION);
+
     return map.at(key);
   }
 
@@ -81,7 +85,7 @@ public:
    * \param[in] i - The position of the item
    * \return The item at the specified position
    */
-  const Item& GetItemByIndex(const int i) const {
+  Item& GetItemByIndex(const int i) {
     return insertionVector[i]->second;
   }
 
@@ -90,7 +94,7 @@ public:
    * \param[in] key - The key value
    * \return The item associated with the specified key
    */
-  const Item& operator[](const Key& key) const {
+  Item& operator[](const Key& key) {
     return GetItemByKey(key);
   }
 
