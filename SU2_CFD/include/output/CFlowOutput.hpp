@@ -36,12 +36,13 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
+  CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput, bool customOutput, moduleManagerPtr moduleBase);
 
   /*!
    * \brief Destructor of the class.
    */
   ~CFlowOutput(void) override;
+
 
 protected:
 

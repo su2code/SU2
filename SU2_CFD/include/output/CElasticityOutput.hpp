@@ -42,6 +42,11 @@ protected:
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
        dynamic;            //!< Boolean indicating a dynamic analysis
 
+  using Modules = ModuleList<CCommonModule,
+                             CConvergenceModule,
+                             CResidualModule,
+                             CDirectDiffModule,
+                             CUserFunctionModule>;
 public:
 
   /*!

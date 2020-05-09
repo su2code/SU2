@@ -36,6 +36,7 @@
  */
 class CMeshOutput final: public COutput {
 
+  using Modules = ModuleList<>;
 public:
 
   /*!

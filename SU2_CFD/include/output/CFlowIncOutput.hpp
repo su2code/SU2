@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CFlowOutput.hpp"
+#include "../../include/output/modules/CModuleManager.hpp"
 
 class CVariable;
 
@@ -37,6 +38,15 @@ class CVariable;
  *  \date May 30, 2018.
  */
 class CFlowIncOutput final: public CFlowOutput {
+
+  using Modules = ModuleList<CCommonModule,
+                             CTurbOutputModule,
+                             CAerodynamicsModule,
+                             CFlowCoefficientModule,
+                             CConvergenceModule,
+                             CResidualModule,
+                             CDirectDiffModule,
+                             CUserFunctionModule>;
 private:
 
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/

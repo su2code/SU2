@@ -31,7 +31,8 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) :
+  CFlowOutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config))){
 
   turb_model = config->GetKind_Turb_Model();
 

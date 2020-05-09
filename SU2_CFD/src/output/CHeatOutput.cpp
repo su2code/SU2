@@ -30,7 +30,8 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
+CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) :
+  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config))) {
 
   multiZone = config->GetMultizone_Problem();
 
@@ -73,6 +74,26 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
   if (convFields.empty() ) convFields.emplace_back("RMS_TEMPERATURE");
 
+
+}
+
+void CHeatOutputModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+
+  fieldCollection.AddItem("RMS_TEMPERATURE", COutputField("rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root mean square residual of the temperature"));
+  fieldCollection.AddItem("MAX_TEMPERATURE", COutputField("max[T]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Maximum residual of the temperature"));
+  fieldCollection.AddItem("BGS_TEMPERATURE", COutputField("bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "Block-Gauss seidel residual of the temperature"));
+
+}
+
+void CHeatOutputModule::LoadHistoryData(COutFieldCollection &fieldCollection){
+
+  CSolver* heat_solver =  solverData.solver[HEAT_SOL];
+
+  fieldCollection.SetValueByKey("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
+  fieldCollection.SetValueByKey("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
+  fieldCollection.SetValueByKey("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
+  if (solverData.config->GetMultizone_Problem())
+    fieldCollection.SetValueByKey("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
 
 }
 

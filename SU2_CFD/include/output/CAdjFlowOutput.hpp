@@ -35,6 +35,11 @@
  *  \date June 5, 2018.
  */
 class CAdjFlowCompOutput final: public COutput {
+
+  using Modules = ModuleList<CCommonModule,
+                             CConvergenceModule,
+                             CResidualModule>;
+
 private:
 
   bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */

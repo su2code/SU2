@@ -35,6 +35,11 @@
  *  \date June 5, 2018.
  */
 class CAdjElasticityOutput final : public COutput {
+
+  using Modules = ModuleList<CCommonModule,
+                             CConvergenceModule,
+                             CResidualModule>;
+
 private:
   unsigned short nVar_FEM; //!< Number of FEM variables
 

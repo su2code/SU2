@@ -35,6 +35,11 @@
  *  \date June 5, 2018.
  */
 class CAdjFlowIncOutput final: public COutput {
+
+  using Modules = ModuleList<CCommonModule,
+                             CConvergenceModule,
+                             CResidualModule>;
+
 private:
 
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/

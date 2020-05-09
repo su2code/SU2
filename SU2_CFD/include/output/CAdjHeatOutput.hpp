@@ -35,6 +35,10 @@
  *  \date June 5, 2018.
  */
 class CAdjHeatOutput final: public COutput {
+
+  using Modules = ModuleList<CCommonModule,
+                             CConvergenceModule,
+                             CResidualModule>;
 public:
 
   /*!

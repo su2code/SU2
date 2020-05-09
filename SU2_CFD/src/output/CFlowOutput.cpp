@@ -29,7 +29,9 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output, bool customOutput,
+                         moduleManagerPtr moduleBase) :
+  COutput (config, nDim, fem_output, customOutput, std::move(moduleBase)){
 
 }
 
@@ -49,7 +51,9 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("NORMAL_Z", "n_z", "NORMALS", "z-component of the normal vector");
 
-  AddVolumeOutput("MASSFLOW", "Mass Flow", "SURFACE_QUANTITIES", "Mass flow rate per unit area");
+  AddVolumeOutput("INT_MASSFLOW", "Mass Flow", "SURFACE_QUANTITIES", "Mass flow rate", FieldType::SURFACE_INTEGRATE);
+  AddVolumeOutput("MASSFLOW", "Mass flow", "SURFACE_QUANTITIES", "Mass flow rate per unit area");
+  AddVolumeOutput("INT_AREA", "Total area", "SURFACE_QUANTITIES", "Area", FieldType::SURFACE_INTEGRATE);
   AddVolumeOutput("AREA", "Area", "SURFACE_QUANTITIES", "Area");
   AddVolumeOutput("NORMAL_VELOCITY", "Normal velocity", "SURFACE_QUANTITIES", "Velocity component normal to the surface");
   AddVolumeOutput("TANGENTIAL_VELOCITY", "Tangential velocity", "SURFACE_QUANTITIES", "Velocity component tangential to the surface");
@@ -82,7 +86,9 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
     Vt += solver[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim) - Vn*Vector[iDim]/Area;
   }
 
+  SetVolumeOutputValue("INT_MASSFLOW", iPoint, MassFlux);
   SetVolumeOutputValue("MASSFLOW", iPoint, MassFlux);
+  SetVolumeOutputValue("INT_AREA", iPoint, Area);
   SetVolumeOutputValue("AREA", iPoint, Area);
   SetVolumeOutputValue("NORMAL_VELOCITY", iPoint, Vn);
   SetVolumeOutputValue("TANGENTIAL_VELOCITY", iPoint, Vt);

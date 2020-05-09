@@ -28,8 +28,22 @@
 #pragma once
 
 #include "CFlowOutput.hpp"
+#include "../../include/output/modules/CModuleManager.hpp"
 
 class CVariable;
+
+class CFlowCompOutputModule final : public CSolverOutputModule {
+
+  int turb_model;
+
+public:
+  explicit CFlowCompOutputModule(CConfig *config) : turb_model(config->GetKind_Turb_Model()) {}
+
+  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+
+  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+
+};
 
 /*! \class CFlowCompOutput
  *  \brief Output class for compressible flow problems.
@@ -41,6 +55,18 @@ private:
 
   unsigned short turb_model; //!< Kind of turbulence model
   unsigned long lastInnerIter;
+
+  using Modules = ModuleList<CCommonModule,
+                             CFlowCompOutputModule,
+                             CTurbOutputModule,
+                             CAerodynamicsModule,
+                             CFlowCoefficientModule,
+                             CConvergenceModule,
+                             CResidualModule,
+                             CDirectDiffModule,
+                             CUserFunctionModule>;
+
+//  CModuleManager<Modules> modules;
 
 public:
 

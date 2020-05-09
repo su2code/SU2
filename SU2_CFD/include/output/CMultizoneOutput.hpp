@@ -58,6 +58,11 @@ protected:
   string bgs_res_name; //!< Block-Gauss seidel residual name
   bool write_zone;     //!< Boolean indicating whether the individual zones write to screen
 
+  using Modules = ModuleList<CCommonModule,
+                             CConvergenceModule,
+                             CResidualModule,
+                             CDirectDiffModule,
+                             CUserFunctionModule>;
 public:
 
   /*!

@@ -40,6 +40,7 @@
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
 #include "fields/COutFieldCollection.hpp"
+#include "modules/CModuleManager.hpp"
 
 class CGeometry;
 class CSolver;
@@ -160,6 +161,12 @@ protected:
   std::vector<interpreter::UserFunction*> historyUserFunctions;
   std::vector<interpreter::UserFunction*> volumeUserFunctions;
 
+
+  bool customOutput = true;
+
+  typedef std::unique_ptr<CModuleManagerBase> moduleManagerPtr;
+  moduleManagerPtr modules;
+
 public:
 
   /*----------------------------- Public member functions ----------------------------*/
@@ -167,7 +174,8 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  COutput(CConfig *config, unsigned short nDim, bool femOutput);
+  COutput(CConfig *config, unsigned short nDim, bool femOutput, bool customOutput,
+          moduleManagerPtr modulesBase);
 
   /*!
    * \brief Preprocess the volume output by setting the requested volume output fields.

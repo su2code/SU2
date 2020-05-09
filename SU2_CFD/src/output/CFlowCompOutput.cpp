@@ -31,7 +31,8 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) :
+  CFlowOutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config))){
 
   turb_model = config->GetKind_Turb_Model();
   lastInnerIter = curInnerIter;
@@ -100,7 +101,63 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
 CFlowCompOutput::~CFlowCompOutput(void) {}
 
+void CFlowCompOutputModule::LoadHistoryData(COutFieldCollection &fieldCollection){
 
+  CSolver* flow_solver = solverData.solver[FLOW_SOL];
+
+  fieldCollection.SetValueByKey("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
+  fieldCollection.SetValueByKey("RMS_MOMENTUM_X", log10(flow_solver->GetRes_RMS(1)));
+  fieldCollection.SetValueByKey("RMS_MOMENTUM_Y", log10(flow_solver->GetRes_RMS(2)));
+  if (solverData.geometry->GetnDim() == 2)
+    fieldCollection.SetValueByKey("RMS_ENERGY", log10(flow_solver->GetRes_RMS(3)));
+  else {
+    fieldCollection.SetValueByKey("RMS_MOMENTUM_Z", log10(flow_solver->GetRes_RMS(3)));
+    fieldCollection.SetValueByKey("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
+  }
+  fieldCollection.SetValueByKey("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
+  fieldCollection.SetValueByKey("MAX_MOMENTUM_X", log10(flow_solver->GetRes_Max(1)));
+  fieldCollection.SetValueByKey("MAX_MOMENTUM_Y", log10(flow_solver->GetRes_Max(2)));
+  if (solverData.geometry->GetnDim() == 2)
+    fieldCollection.SetValueByKey("MAX_ENERGY", log10(flow_solver->GetRes_Max(3)));
+  else {
+    fieldCollection.SetValueByKey("MAX_MOMENTUM_Z", log10(flow_solver->GetRes_Max(3)));
+    fieldCollection.SetValueByKey("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
+  }
+  if (solverData.config->GetMultizone_Problem()){
+    fieldCollection.SetValueByKey("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
+    fieldCollection.SetValueByKey("BGS_MOMENTUM_X", log10(flow_solver->GetRes_BGS(1)));
+    fieldCollection.SetValueByKey("BGS_MOMENTUM_Y", log10(flow_solver->GetRes_BGS(2)));
+    if (solverData.geometry->GetnDim() == 2)
+      fieldCollection.SetValueByKey("BGS_ENERGY", log10(flow_solver->GetRes_BGS(3)));
+    else {
+      fieldCollection.SetValueByKey("BGS_MOMENTUM_Z", log10(flow_solver->GetRes_BGS(3)));
+      fieldCollection.SetValueByKey("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
+    }
+  }
+}
+
+void CFlowCompOutputModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+
+  fieldCollection.AddItem("RMS_DENSITY",    COutputField("rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the density."));
+  fieldCollection.AddItem("RMS_MOMENTUM_X", COutputField("rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the momentum x-component."));
+  fieldCollection.AddItem("RMS_MOMENTUM_Y", COutputField("rms[RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the momentum y-component."));
+  fieldCollection.AddItem("RMS_MOMENTUM_Z", COutputField("rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the momentum z-component."));
+  fieldCollection.AddItem("RMS_ENERGY",     COutputField("rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the energy."));
+
+  fieldCollection.AddItem("MAX_DENSITY",    COutputField("max[Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the density."));
+  fieldCollection.AddItem("MAX_MOMENTUM_X", COutputField("max[RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum x-component."));
+  fieldCollection.AddItem("MAX_MOMENTUM_Y", COutputField("max[RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum y-component."));
+  fieldCollection.AddItem("MAX_MOMENTUM_Z", COutputField("max[RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum z-component."));
+  fieldCollection.AddItem("MAX_ENERGY",     COutputField("max[RhoE]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the energy."));
+
+  if (solverData.config->GetMultizone_Problem()){
+    fieldCollection.AddItem("BGS_DENSITY",    COutputField("bgs[Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the density."));
+    fieldCollection.AddItem("BGS_MOMENTUM_X", COutputField("bgs[RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum x-component."));
+    fieldCollection.AddItem("BGS_MOMENTUM_Y", COutputField("bgs[RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum y-component."));
+    fieldCollection.AddItem("BGS_MOMENTUM_Z", COutputField("bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum z-component."));
+    fieldCollection.AddItem("BGS_ENERGY",     COutputField("bgs[RhoE]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the energy."));
+  }
+}
 
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 

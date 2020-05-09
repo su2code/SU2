@@ -31,7 +31,8 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
+CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) :
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config))) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

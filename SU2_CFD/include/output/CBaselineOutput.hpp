@@ -37,6 +37,9 @@
 class CBaselineOutput : public COutput {
 
   std::vector<string> fields;
+
+  using Modules = ModuleList<>;
+
 public:
 
   /*!

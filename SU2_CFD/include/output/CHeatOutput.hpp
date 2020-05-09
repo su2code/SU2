@@ -30,12 +30,30 @@
 #include "COutput.hpp"
 
 
+class CHeatOutputModule final : public CSolverOutputModule {
+
+public:
+
+  explicit CHeatOutputModule(CConfig* config) {}
+
+  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+
+  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+};
+
 /*! \class CHeatOutput
  *  \brief Output class for heat problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CHeatOutput final: public COutput {
+
+  using Modules = ModuleList<CCommonModule,
+                             CHeatOutputModule,
+                             CConvergenceModule,
+                             CResidualModule,
+                             CDirectDiffModule,
+                             CUserFunctionModule>;
 public:
 
   /*!

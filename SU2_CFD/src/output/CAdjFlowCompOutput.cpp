@@ -31,7 +31,8 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
+CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) :
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config))) {
 
   turb_model = config->GetKind_Turb_Model();
 

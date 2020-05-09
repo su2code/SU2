@@ -17,6 +17,7 @@ enum class FieldType {
   AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
   CUSTOM_EVAL,      /*!< \brief Custom evaluation field */
   CUSTOM_INTEGRATE, /*!< \brief Custom integration field */
+  PER_SURFACE_COEFFICIENT,
   CUSTOM_SURFACE_INTEGRATE,
   SURFACE_INTEGRATE,
   DEFAULT           /*!< \brief Default field type */

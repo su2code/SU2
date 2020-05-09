@@ -29,7 +29,8 @@
 #include "../../include/output/CMeshOutput.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 
-CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
+CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) :
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config))) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

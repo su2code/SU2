@@ -37,6 +37,9 @@ class CVariable;
  *  \date May 30, 2018.
  */
 class CFlowCompFEMOutput final: public CFlowOutput {
+
+  using Modules = ModuleList<>;
+
 private:
 
   unsigned short nVar; //!< Number of variables

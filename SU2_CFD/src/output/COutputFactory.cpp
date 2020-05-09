@@ -73,7 +73,8 @@ COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
       output = new CFlowCompFEMOutput(config, nDim);
       break;
     default:
-      output = new COutput(config, nDim, false);
+      output = new COutput(config, nDim, false, false,
+                           std::unique_ptr<CModuleManagerBase>(new CModuleManager<ModuleList<>>(config)));
       break;
   }
 

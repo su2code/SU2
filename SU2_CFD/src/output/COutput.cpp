@@ -47,7 +47,9 @@
 
 #include <regex>
 
-COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
+COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output, bool customOutput,
+                 moduleManagerPtr modulesBase):
+  femOutput(fem_output), customOutput(customOutput), modules(std::move(modulesBase)){
 
   this->nDim = nDim;
 

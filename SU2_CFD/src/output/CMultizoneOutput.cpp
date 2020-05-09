@@ -28,7 +28,8 @@
 
 #include "../../include/output/CMultizoneOutput.hpp"
 
-CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim, false) {
+CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) :
+  COutput(driver_config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(driver_config))) {
 
   unsigned short iZone = 0;
   rank = SU2_MPI::GetRank();
