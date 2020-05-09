@@ -7194,13 +7194,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
       if (tkeNeeded) {
-        /*--- Inflow ---*/
-        if (Qn_Infty < 0.0) Kine_Infty = GetTke_Inf();
-        /*--- Outflow ---*/
-        else {
+//        /*--- Inflow ---*/
+//        if (Qn_Infty < 0.0) Kine_Infty = GetTke_Inf();
+//        /*--- Outflow ---*/
+//        else {
           const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
           Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        }
+//        }
         Energy += Kine_Infty;
       }
 
@@ -7248,10 +7248,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 //          V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
 //        }
 //        else {
-//          GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
-//          V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+          GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+          V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
 //        }
-        V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
+//        V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
         V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
