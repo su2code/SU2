@@ -2,7 +2,7 @@
  * \file ausm_slau.cpp
  * \brief Implementations of the AUSM-family of schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -314,6 +314,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2dou
 
 CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   unsigned short iDim, iVar;
 
   /*--- Space to start preaccumulation ---*/
@@ -836,6 +837,8 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);

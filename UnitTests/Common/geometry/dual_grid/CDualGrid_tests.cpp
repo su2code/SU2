@@ -2,7 +2,7 @@
  * \file CDualGrid_tests.cpp
  * \brief Unit tests for the dual grid classes
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,15 +44,13 @@ TEST_CASE("Volume Computation", "[Dual Grid]") {
   Coord_Elem_CG[0]     = scaling*0.653846; Coord_Elem_CG[1]     = scaling*1.12927; Coord_Elem_CG[2]     = scaling*0.00835789;
   Coord_Edge_CG[0]     = scaling*0.664943; Coord_Edge_CG[1]     = scaling*1.14623; Coord_Edge_CG[2]     = scaling*0.00935524;
 
-  CEdge edge2d(0, 1, 2);
   SECTION("2D Edge"){
-    su2double volume = edge2d.GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
+    su2double volume = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
     REQUIRE(volume == Approx(0.00607415));
   }
 
-  CEdge edge3d(0, 1, 3);
   SECTION("3D Edge"){
-    su2double volume = edge3d.GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+    su2double volume = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
     REQUIRE(volume == Approx(0.000546832));
   }
   

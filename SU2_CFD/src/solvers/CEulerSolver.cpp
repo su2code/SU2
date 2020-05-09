@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2521,8 +2521,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
+                          (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
@@ -2612,7 +2613,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit && !disc_adjoint) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
@@ -2681,7 +2682,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
                                 unsigned short iMesh, unsigned long Iteration) {
 
   const bool viscous       = config->GetViscous();
-  const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -2727,7 +2728,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       auto node_j = geometry->node[jPoint];
 
       iEdge = node_i->GetEdge(iNeigh);
-      Normal = geometry->edge[iEdge]->GetNormal();
+      Normal = geometry->edges->GetNormal(iEdge);
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
       /*--- Mean Values ---*/
@@ -2943,7 +2944,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
 
   /*--- Pick one numerics object per thread. ---*/
@@ -2960,10 +2961,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edges->GetNode(iEdge,0);
+    auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
     /*--- Set primitive variables w/o reconstruction ---*/
@@ -3026,7 +3027,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const auto InnerIter        = config->GetInnerIter();
-  const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
 
@@ -3064,10 +3065,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Points in edge and normal vectors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edges->GetNode(iEdge,0);
+    auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     auto Coord_i = geometry->node[iPoint]->GetCoord();
     auto Coord_j = geometry->node[jPoint]->GetCoord();
@@ -3279,7 +3280,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
 
-      if (iPoint == geometry->edge[iEdge]->GetNode(0))
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
@@ -3349,7 +3350,7 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
@@ -3575,7 +3576,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      auto Normal = geometry->edge[iEdge]->GetNormal();
+      auto Normal = geometry->edges->GetNormal(iEdge);
       su2double Area = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
       Area = sqrt(Area);
@@ -6751,7 +6752,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
        viscous  = config->GetViscous();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
@@ -7035,7 +7036,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
-  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
@@ -7290,7 +7291,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
 
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
@@ -7642,7 +7643,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           for (iDim = 0; iDim < nDim; iDim++)
             projVelocity +=  gridVel[iDim]*Normal[iDim];
           for (iVar = 0; iVar < nVar; iVar++) {
-            Residual[iVar] -= projVelocity *(u_b[iVar]);
             Jacobian_b[iVar][iVar] -= projVelocity;
           }
 
@@ -7796,7 +7796,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   su2double AverageEnthalpy, AverageEntropy;
   unsigned short  iZone  = config->GetiZone();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous = config->GetViscous();
@@ -8453,7 +8453,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   su2double Pressure_e;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   unsigned short  iZone     = config->GetiZone();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
@@ -9193,7 +9193,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   su2double *V_inlet, *V_domain;
 
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
   su2double Gas_Constant       = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
@@ -9490,7 +9490,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   Area, UnitNormal[3];
   su2double *V_outlet, *V_domain;
 
-  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Gas_Constant     = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
@@ -9663,7 +9663,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   su2double Density, Pressure, Temperature, Energy, *Vel, Velocity2;
   su2double Gas_Constant = config->GetGas_ConstantND();
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   su2double *Normal = new su2double[nDim];
@@ -9805,7 +9805,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
   unsigned long iVertex, iPoint;
   su2double *V_outlet, *V_domain;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
@@ -9927,7 +9927,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   su2double *V_inflow, *V_domain;
 
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   unsigned short Kind_Engine_Inflow = config->GetKind_Engine_Inflow();
   su2double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -10149,7 +10149,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
 
   su2double Gas_Constant = config->GetGas_ConstantND();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   su2double DampingFactor = config->GetDamp_Engine_Exhaust();
@@ -10401,7 +10401,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -10568,7 +10568,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
   unsigned short iDim, iVar;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -10630,7 +10630,7 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
   unsigned short iDim, iVar;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -10719,7 +10719,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
   Mach_in, PressureAdj, TemperatureAdj;
 
-  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Gas_Constant  = config->GetGas_ConstantND();
   bool tkeNeeded          = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
@@ -11143,7 +11143,7 @@ void CEulerSolver::BC_Custom(CGeometry      *geometry,
     unsigned short iVar;
     unsigned long iVertex, iPoint, total_index;
 
-    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
     /*--- Get the physical time. ---*/
 
@@ -11213,7 +11213,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
   su2double Residual_GCL;
 
-  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
 
@@ -11282,13 +11282,13 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
 
         iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-        Normal = geometry->edge[iEdge]->GetNormal();
+        Normal = geometry->edges->GetNormal(iEdge);
 
         jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         GridVel_j = geometry->node[jPoint]->GetGridVel();
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edge[iEdge]->GetNode(0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)

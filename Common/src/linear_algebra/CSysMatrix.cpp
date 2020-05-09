@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -986,7 +986,8 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
   bool add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
   unsigned short iMarker, iNode;
-  su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+  su2double alpha = 0.9, weight, max_weight, area, volume_iPoint, volume_jPoint;
+  const su2double* normal;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
 
   /*--- Memory allocation --*/
@@ -1051,7 +1052,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
           if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
             iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edge[iEdge]->GetNormal();
+            normal = geometry->edges->GetNormal(iEdge);
             if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
             else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
             volume_iPoint = geometry->node[iPoint]->GetVolume();
@@ -1069,7 +1070,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
         for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edge[iEdge]->GetNormal();
+          normal = geometry->edges->GetNormal(iEdge);
           if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
           else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
           volume_iPoint = geometry->node[iPoint]->GetVolume();

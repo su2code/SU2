@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,8 +41,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionEnum() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionEnum() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check if there is more than one string
     string out = optionCheckMultipleValues(option_value, "enum", this->name);
@@ -65,7 +65,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -81,8 +81,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDouble() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionDouble() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
@@ -97,7 +97,7 @@ public:
     }
     return badValue(option_value, "su2double", this->name);
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -113,8 +113,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionString() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionString() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
@@ -124,7 +124,7 @@ public:
     this->field.assign(option_value[0]);
     return "";
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -140,8 +140,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInt() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionInt() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "int", this->name);
     if (out.compare("") != 0) {
@@ -155,7 +155,7 @@ public:
     }
     return badValue(option_value, "int", this->name);
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -171,8 +171,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionULong() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionULong() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
     if (out.compare("") != 0) {
@@ -186,7 +186,7 @@ public:
     }
     return badValue(option_value, "unsigned long", this->name);
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -202,8 +202,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionUShort() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionUShort() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -217,7 +217,7 @@ public:
     }
     return badValue(option_value, "unsigned short", this->name);
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -233,8 +233,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionLong() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionLong() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "long", this->name);
     if (out.compare("") != 0) {
@@ -248,7 +248,7 @@ public:
     }
     return badValue(option_value, "long", this->name);
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -264,8 +264,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionBool() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionBool() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "bool", this->name);
@@ -282,7 +282,7 @@ public:
     }
     return badValue(option_value, "bool", this->name);
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->field = this->def;
   }
 };
@@ -301,8 +301,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionEnumList() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionEnumList() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
@@ -328,7 +328,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     // No default to set
     size = 0;
   }
@@ -352,12 +352,12 @@ public:
     vals = NULL;
   }
 
-  ~COptionDoubleArray() {
+  ~COptionDoubleArray() override {
      if(def  != NULL) delete [] def;
      if(vals != NULL) delete [] vals;
      if(default_value != NULL) delete [] default_value;
   };
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
     if (option_value.size() != (unsigned long)this->size) {
@@ -403,8 +403,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDoubleList() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionDoubleList() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -431,7 +431,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0; // There is no default value for list
   }
 };
@@ -446,8 +446,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionShortList() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionShortList() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -473,7 +473,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0; // There is no default value for list
   }
 };
@@ -488,8 +488,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionUShortList() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionUShortList() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -515,7 +515,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0; // There is no default value for list
   }
 };
@@ -530,8 +530,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionStringList() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionStringList() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -550,7 +550,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0; // There is no default value for list
   }
 };
@@ -565,7 +565,7 @@ public:
   COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field)
     : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -591,7 +591,7 @@ public:
 
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->centered = NO_CENTERED;
     this->upwind = NO_UPWIND;
     this->space = NO_CONVECTIVE;
@@ -608,8 +608,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionFEMConvect() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionFEMConvect() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -629,7 +629,7 @@ public:
 
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->fem = NO_FEM;
   }
 };
@@ -651,8 +651,8 @@ public:
     this->restart_def = restart_default;
   }
 
-  ~COptionMathProblem() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionMathProblem() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -685,7 +685,7 @@ public:
     return "option in math problem map not considered in constructor";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->cont_adjoint = this->cont_adjoint_def;
     this->disc_adjoint = this->disc_adjoint_def;
     this->restart = this->restart_def;
@@ -705,9 +705,9 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDVParam() {};
+  ~COptionDVParam() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV = 0;
@@ -856,7 +856,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->nDV = 0;
     this->paramDV = NULL;
     this->FFDTag = NULL;
@@ -877,9 +877,9 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDVValue() {};
+  ~COptionDVValue() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV_Value = NULL;
@@ -965,7 +965,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->nDV_Value = 0;
     this->valueDV = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
@@ -983,9 +983,9 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionFFDDef() {};
+  ~COptionFFDDef() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
@@ -1060,7 +1060,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->nFFD = 0;
     this->CoordFFD = NULL;
     this->FFDTag = NULL;
@@ -1078,9 +1078,9 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionFFDDegree() {};
+  ~COptionFFDDegree() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
@@ -1149,7 +1149,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->nFFD = 0;
     this->DegreeFFD = NULL;
   }
@@ -1169,8 +1169,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionStringDoubleList() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionStringDoubleList() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // There must be an even number of entries (same number of strings and doubles
     unsigned short totalVals = option_value.size();
@@ -1203,7 +1203,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0; // There is no default value for list
   }
 };
@@ -1221,8 +1221,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInlet() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionInlet() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1283,7 +1283,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->marker = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
@@ -1311,9 +1311,9 @@ public:
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionRiemann() {};
+  ~COptionRiemann() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1390,7 +1390,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->marker = NULL;
     this->var1 = NULL;
     this->var2 = NULL;
@@ -1419,9 +1419,9 @@ public:
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionGiles() {};
+  ~COptionGiles() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1512,7 +1512,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->marker = NULL;
     this->var1 = NULL;
     this->var2 = NULL;
@@ -1536,9 +1536,9 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionExhaust() {};
+  ~COptionExhaust() override {};
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1579,7 +1579,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->marker = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
@@ -1604,8 +1604,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionPeriodic() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionPeriodic() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 11;
 
@@ -1747,7 +1747,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0;
     this->marker_bound = NULL;
     this->marker_donor = NULL;
@@ -1769,8 +1769,8 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionTurboPerformance() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionTurboPerformance() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 2;
 
@@ -1805,7 +1805,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->size = 0;
     this->marker_turboIn= NULL;
     this->marker_turboOut = NULL;
@@ -1818,14 +1818,14 @@ public:
   COptionPython(const string name) {
     this->name = name;
   }
-  ~COptionPython() {};
+  ~COptionPython() override {};
   // No checking happens with python options
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     return "";
   }
   // No defaults with python options
-  void SetDefault() {
+  void SetDefault() override {
     return;
   };
 };
@@ -1849,8 +1849,8 @@ public:
     this->name = name;
   }
 
-  ~COptionActDisk() {};
-  string SetValue(vector<string> option_value) {
+  ~COptionActDisk() override {};
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 8;
     unsigned short totalVals = option_value.size();
@@ -1914,7 +1914,7 @@ public:
     }
     return "";
   }
-  void SetDefault() {
+  void SetDefault() override {
     this->inlet_size = 0;
     this->outlet_size = 0;
     this->marker_inlet = NULL;
@@ -1942,9 +1942,9 @@ public:
     this->name = name;
   }
 
-  ~COptionWallFunction(){}
+  ~COptionWallFunction() override{}
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     /*--- First check if NONE is specified. ---*/
     unsigned short totalSize = option_value.size();
@@ -2137,7 +2137,7 @@ public:
     return "";
   }
 
-  void SetDefault() {
+  void SetDefault() override {
     this->nMarkers   = 0;
     this->markers    = NULL;
     this->walltype   = NULL;

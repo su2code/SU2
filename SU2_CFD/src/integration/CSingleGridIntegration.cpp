@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,7 +55,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   /*--- Set the old solution ---*/
 
-  solvers_fine[Solver_Position]->Set_OldSolution(geometry_fine);
+  solvers_fine[Solver_Position]->Set_OldSolution();
 
   /*--- Time step evaluation ---*/
 

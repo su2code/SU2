@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,7 +71,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerVariable() = default;
+  ~CEulerVariable() override = default;
 
   /*!
    * \brief Get the new solution of the problem (Classical RK4).
@@ -245,7 +245,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
+  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
   /*!
    * \brief Get the primitive variables for all points.
