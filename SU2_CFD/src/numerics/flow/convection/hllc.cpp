@@ -83,6 +83,8 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
 
 CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   /*--- Face area (norm or the normal vector) ---*/
 
   Area = 0.0;
@@ -608,6 +610,8 @@ CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Face area (norm or the normal vector) ---*/
 
