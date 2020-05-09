@@ -3277,7 +3277,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
-    Weight_ObjFunc[0] = 1.0;
+    Weight_ObjFunc[0] = -1.0;
     nObj=1;
     nObjW=1;
   }
