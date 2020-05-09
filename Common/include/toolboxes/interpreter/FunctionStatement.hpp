@@ -12,17 +12,32 @@ namespace interpreter {
     VOLUMEINTEGRAL
   };
 
+  /*!
+   * \brief Map defining the string identifier for every function type
+   */
   extern const std::map<std::string, FunctionType> FuncTypeMap;
 
-  class FuncDeclaration : public Statement {
-    args_t args;
-    BlockStatement body;
-    std::string name;
-    std::string type;
+  class FuncDeclaration final : public Statement {
+    args_t args;           //!<\brief string list containing the function argument names
+    BlockStatement body;   //!<\brief Body of the function
+    std::string name;      //!<\brief Name of the function
+    std::string type;      //!<\brief Type of the function
 
   private:
-    void _compile(const char* code, const char** rest, TokenMap parent_scope);
-    returnState _exec(TokenMap scope) const;
+    /*!
+     * \brief Compile the statement, i.e. transform the source code into objects.
+     * \param[in] code - Pointer to the beginning of the code for the statement
+     * \param[out] rest - Pointer to the rest of the code
+     * \param[in] parent_scope - Scope of the parent statement
+     */
+void _compile(const char* code, const char** rest, TokenMap parent_scope) override;
+
+    /*!
+     * \brief Execute the statement
+     * \param[in] - The scope of execution
+     * \return the return state
+     */
+    returnState _exec(TokenMap scope) const override;
 
     void _compile(std::string name, const char* code, const char** rest = 0,
                   TokenMap parent_scope = &TokenMap::empty);
@@ -42,7 +57,7 @@ namespace interpreter {
   public:
     packToken asFunc() const;
 
-    virtual Statement* clone() const {
+    virtual Statement* clone() const override {
       return new FuncDeclaration(*this);
     }
 

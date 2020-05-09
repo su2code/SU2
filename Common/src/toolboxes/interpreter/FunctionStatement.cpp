@@ -11,10 +11,10 @@ namespace interpreter {
 
   constexpr char FuncDeclaration::literal[];
 
-  const std::map<std::string, FunctionType> FuncTypeMap = {
-    {"",            FunctionType::DEFAULT},
-    {"historyfield", FunctionType::HISTFIELD},
-    {"volumefield", FunctionType::VOLUMEFIELD},
+   const std::map<std::string, FunctionType> FuncTypeMap = {
+    {"",                FunctionType::DEFAULT},
+    {"historyfield",    FunctionType::HISTFIELD},
+    {"volumefield",     FunctionType::VOLUMEFIELD},
     {"surfaceintegral", FunctionType::SURFACEINTEGRAL}
   };
 

@@ -13,9 +13,13 @@ namespace interpreter {
 
   bool checkStatement(const char* code, const char *literal, uint size){
     uint i=0;
+    /*--- Check that the full name of the token matches the statement literal ---*/
+
     for (i = 0; i < size; i++){
       if (code[i] != literal[i]) return false;
     }
+
+    /*--- Check that the name does not continue ---*/
 
     if ((i == size) && !(isalnum(code[i]) || code[i] == '_'))
       return true;
@@ -24,9 +28,10 @@ namespace interpreter {
   };
 
 
-  // Decide what type of statement to build:
   Statement* Statement::buildStatement(const char** source, TokenMap scope) {
     const char* code = *source;
+
+    // Decide what type of statement to build by looking at the first character
 
     switch (*code) {
       case BlockStatement::literal[0]:
