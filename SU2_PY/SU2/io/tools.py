@@ -448,7 +448,7 @@ def get_adjointSuffix(objective_function=None):
                  "FLOW_ANGLE_IN"               : "fai"       ,
                  "MASS_FLOW_OUT"               : "mfo"       ,
                  "MASS_FLOW_IN"                : "mfi"       ,
-                 "TOTAL_EFFICIENCY"            : "teff"      ,
+                 "AVG_TOTALPRESS"              : "teff"      ,
                  "TOTAL_STATIC_EFFICIENCY"     : "tseff"     ,
                  "COMBO"                       : "combo"}
     

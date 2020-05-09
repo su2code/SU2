@@ -7849,7 +7849,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case PRESSURE_DROP:               AdjExt = "_pl";       break;
         case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
         case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
-        case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
+        case AVG_TOTALPRESS:              AdjExt = "_teff";     break;
         case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
         case EULERIAN_WORK:               AdjExt = "_ew";       break;
         case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
