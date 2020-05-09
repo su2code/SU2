@@ -82,16 +82,16 @@ protected:
   char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
   ofstream histFile;        /*! \brief Output file stream for the history */
 
-  HistoryOutFieldCollection historyFieldsAll;
+  COutFieldCollection historyFieldsAll;
 
   /*! \brief Requested history field names in the config file. */
   std::vector<string> requestedHistoryFields;
   /*! \brief Number of requested history field names in the config file. */
-  unsigned short nRequestedHistoryFields;
+  unsigned short nRequestedHistoryFields = 0;
   /*! \brief Requested screen field names in the config file. */
   std::vector<string> requestedScreenFields;
   /*! \brief Number of requested screen field names in the config file. */
-  unsigned short nRequestedScreenFields;
+  unsigned short nRequestedScreenFields = 0;
 
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
@@ -118,23 +118,12 @@ protected:
   surfaceFilename,                     //!< Surface output filename
   restartFilename;                     //!< Restart output filename
 
-  VolumeOutFieldCollection volumeFieldsAll;
-
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            fieldIndexCache;
-  /*! \brief Current value of the cache index */
-  unsigned short                                cachePosition;
-  /*! \brief Boolean to store whether the field index cache should be build. */
-  bool                                          buildFieldIndexCache;
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            fieldGetIndexCache;
-  /*! \brief Current value of the cache index */
-  unsigned short                                curGetFieldIndex;
+  COutFieldCollection volumeFieldsAll;
 
   /*! \brief Requested volume field names in the config file. */
   std::vector<string> requestedVolumeFields;
   /*! \brief Number of requested volume field names in the config file. */
-  unsigned short nRequestedVolumeFields;
+  unsigned short nRequestedVolumeFields = 0;
 
   /*----------------------------- Convergence monitoring ----------------------------*/
 
@@ -184,7 +173,7 @@ public:
    * \brief Preprocess the volume output by setting the requested volume output fields.
    * \param[in] config - Definition of the particular problem.
    */
-  void PreprocessVolumeOutput(CConfig *config);
+  void PreprocessVolumeOutput(CConfig *config, bool wrt = true);
 
   /*!
    * \brief Load the data from the solvers into the data sorters and sort it for the linear partitioning.
@@ -201,12 +190,6 @@ public:
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
   void PreprocessHistoryOutput(CConfig *config, bool wrt = true);
-
-  /*!
-   * \brief SetUserDefinedHistoryFields
-   * \param config
-   */
-  void SetUserDefinedHistoryFields(CConfig* config);
 
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
@@ -298,7 +281,7 @@ public:
     curInnerIter = InnerIter;
   }
 
-  const HistoryOutFieldCollection& GetHistoryFieldsAll(){
+  const COutFieldCollection& GetHistoryFieldsAll(){
     return historyFieldsAll;
   }
 
@@ -375,7 +358,7 @@ public:
 
   inline void AddCustomHistoryOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", type, "");
+    COutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", type, "User-defined field");
     string tokenName = name;
     replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
     replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
@@ -385,6 +368,9 @@ public:
 
   }
 
+  inline void AddCustomHistoryOutput(string name){
+    AddCustomHistoryOutput(name, CreateInlineUserFunction(name));
+  }
 protected:
 
   /*----------------------------- Protected member functions ----------------------------*/
@@ -426,7 +412,7 @@ protected:
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
                                FieldType field_type = FieldType::DEFAULT ){
-    HistoryOutputField newField(field_name, format, groupname, field_type, description);
+    COutputField newField(field_name, format, groupname, field_type, description);
     newField.tokenRef = &historyFieldsAll.GetScope()[name];
     historyFieldsAll.AddItem(name, newField);
   }
@@ -484,13 +470,12 @@ protected:
 
   inline void AddCustomVolumeOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    VolumeOutputField customField(name, -1, "CUSTOM", "");
+    COutputField customField(name, -1, "CUSTOM", "User-defined field", type);
     string tokenName = name;
     replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
     replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
     customField.tokenRef = &volumeFieldsAll.GetScope()[tokenName];
     customField.userFunction = userFunction;
-    customField.fieldType = type;
     volumeFieldsAll.AddItem(name, customField);
 
   }
@@ -515,9 +500,8 @@ protected:
    * \param[in] description - Description of the volume field.
    */
   inline void AddVolumeOutput(string name, string field_name, string groupname, string description, FieldType type = FieldType::DEFAULT){
-    VolumeOutputField newField(field_name, -1, groupname, description);
+    COutputField newField(field_name, -1, groupname, description, type);
     newField.tokenRef = &volumeFieldsAll.GetScope()[name];
-    newField.fieldType = type;
     volumeFieldsAll.AddItem(name, newField);
   }
 
@@ -556,13 +540,21 @@ protected:
   void PrepareHistoryFile(CConfig *config);
 
   /*!
+   * \brief SetUserDefinedHistoryFields
+   * \param config
+   */
+  void SetUserDefinedHistoryFields(CConfig* config);
+
+  /*!
    * \brief Load up the values of the requested volume fields into ::Local_Data array.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - The container holding all solution data.
    */
-  void LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver);
+  void LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
 
+
+  void LoadSurfaceData(CConfig* config, CGeometry* geometry, CSolver** solver);
   /*!
    * \brief Postprocess_HistoryData
    * \param[in] config - Definition of the particular problem.

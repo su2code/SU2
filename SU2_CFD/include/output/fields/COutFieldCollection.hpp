@@ -6,11 +6,10 @@
 #include "../../../Common/include/toolboxes/interpreter/FunctionStatement.hpp"
 #include "COutField.hpp"
 
-template <class Field>
-class COutFieldCollection : public CIndexedMap<std::string, Field> {
+class COutFieldCollection : public CIndexedMap<std::string, COutputField> {
 
 public:
-  using CurrentType     = CIndexedMap<std::string, Field>;
+  using CurrentType     = CIndexedMap<std::string, COutputField>;
   using InsertionVector = typename CurrentType::InsertionVector;
   using KeyVector       = typename CurrentType::KeyVector;
   using KeyType         = typename CurrentType::KeyType;
@@ -21,6 +20,15 @@ protected:
   TokenMap outFieldScope;
   using CurrentType::insertionVector;
   using CurrentType::map;
+
+  /*! \brief Vector to cache the positions of the field in the data array */
+  std::vector<short>                            cacheIndexVector;
+  /*! \brief Current value of the cache index */
+  unsigned short                                cacheIndex;
+  /*! \brief Boolean to store whether the field index cache should be build. */
+  bool                                          buildIndexCache;
+
+  bool cacheEnabled = false;
 
 private:
 
@@ -163,13 +171,43 @@ public:
     return CurrentType::GetReferences(type, dummy, insertionVector, findFieldWithType);
   }
 
+  void SetCaching(bool cacheEnable){
+    cacheEnabled = cacheEnable;
+    cacheIndex = 0;
+    cacheIndexVector.clear();
+  }
+
+  void StartCaching(){
+    buildIndexCache = cacheIndexVector.empty();
+  }
+
+  ItemType& GetItemByKey(const KeyType& key){
+    if (cacheEnabled){
+      if (buildIndexCache){
+        const int index = CurrentType::GetIndex(key);
+        cacheIndexVector.push_back(index);
+        return CurrentType::GetItemByIndex(index);
+      } else {
+        const int index = cacheIndexVector[cacheIndex++];
+        if (cacheIndex == cacheIndexVector.size()) cacheIndex = 0;
+        return CurrentType::GetItemByIndex(index);
+      }
+    } else {
+      return CurrentType::GetItemByKey(key);
+    }
+  }
+
+  su2double GetValueByKey(const KeyType& key){
+    return GetItemByKey(key).value;
+  }
+
   /*!
    * \brief Set the value of specific field by using its key
    * \param[in] key   - The key of the field
    * \param[in] value - The new value for this field
    */
   void SetValueByKey(const KeyType& key, su2double value){
-    map.find(key)->second.value = value;
+    GetItemByKey(key).value = value;
   }
 
   /*!
@@ -187,9 +225,7 @@ public:
    */
   void UpdateTokens(){
     for (const auto& field : insertionVector){
-      if (field->second.fieldType != FieldType::CUSTOM_EVAL &&
-          field->second.fieldType != FieldType::CUSTOM_INTEGRATE &&
-          field->second.fieldType != FieldType::CUSTOM_SURFACE_INTEGRATE){
+      if (field->second.tokenRef != nullptr){
         (*field->second.tokenRef) = field->second.value;
       }
     }
@@ -217,11 +253,11 @@ public:
 /*!
  * \brief Typedef for a collection of history fields
  */
-typedef COutFieldCollection<HistoryOutputField> HistoryOutFieldCollection;
+//typedef COutFieldCollection<COutputField> COutFieldCollection;
 
 /*!
  * \brief Typedef for a collection of volume fields
  */
-typedef COutFieldCollection<VolumeOutputField> VolumeOutFieldCollection;
+//typedef COutFieldCollection<COutputField> COutFieldCollection;
 
 

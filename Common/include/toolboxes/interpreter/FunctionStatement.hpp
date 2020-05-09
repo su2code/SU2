@@ -4,6 +4,9 @@
 
 namespace interpreter {
 
+  /*!
+   * \brief Enum defining the different types of functions
+   */
   enum class FunctionType{
     DEFAULT,
     HISTFIELD,

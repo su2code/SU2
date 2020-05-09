@@ -639,7 +639,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
   nOuterIter = driver_config->GetnOuter_Iter();
   nTimeIter  = driver_config->GetnTime_Iter();
   MaxTime    = driver_config->GetMax_Time();
-  CurTime    = driver_output->GetHistoryFieldsAll()["CUR_TIME"].value;
+  CurTime    = driver_output->GetHistoryFieldsAll().GetFieldsByKey({"CUR_TIME"})[0]->second.value;
 
   TimeDomain = driver_config->GetTime_Domain();
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 /** \brief Enum to identify the screen output format. */
 enum class ScreenOutputFormat {
@@ -34,6 +35,10 @@ public:
   FieldType    fieldType = FieldType::DEFAULT;
   /*! \brief The value of the field. */
   su2double           value = 0.0;
+  /*! \brief The format that is used to print this value to screen. */
+  ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED;
+  /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
+  short       offset;
 
   packToken* tokenRef = nullptr;
 
@@ -45,44 +50,14 @@ public:
     : fieldName(std::move(fieldName_)), outputGroup(std::move(OutputGroup_)),  description(std::move(description_)),
       fieldType(type_), value(0.0)
   {}
-};
 
-/** \brief Structure to store information for a history output field.
- *
- *  The stored information is printed to the history file and to screen.
- * Each individual instance represents a single field (i.e. column) in the history file or on screen.
- */
-class HistoryOutputField final : public COutputField {
-public:
-
-
-  /*! \brief The format that is used to print this value to screen. */
-  ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED;
-
-  /*! \brief Default constructor. */
-  HistoryOutputField() = default;
   /*! \brief Constructor to initialize all members. */
-  HistoryOutputField(std::string fieldName_, ScreenOutputFormat screenFormat_, std::string OutputGroup_,
-                     FieldType fieldType_, std::string description_): COutputField(fieldName_, fieldType_, OutputGroup_, description_),
-     screenFormat(screenFormat_)
-    {}
+  COutputField(std::string fieldName_, ScreenOutputFormat screenFormat_, std::string OutputGroup_,
+                     FieldType fieldType_, std::string description_): COutputField(std::move(fieldName_), fieldType_, std::move(OutputGroup_), std::move(description_))
+  {screenFormat = screenFormat_;}
 
+  COutputField(std::string fieldName_, int offset_, std::string volumeOutputGroup_, std::string description_, FieldType type_):
+     COutputField(std::move(fieldName_), type_, std::move(volumeOutputGroup_), std::move(description_))
+  {offset = offset_;}
 };
 
-/** \brief Structure to store information for a volume output field.
- *
- *  The stored information is used to create the volume solution file.
- */
-class VolumeOutputField : public COutputField {
-
-public:
-  /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-  short       offset;
-
-  /*! \brief Default constructor. */
-  VolumeOutputField () {}
-  /*! \brief Constructor to initialize all members. */
-  VolumeOutputField(std::string fieldName_, int offset_, std::string volumeOutputGroup_, std::string description_):
-     COutputField(fieldName_, FieldType::DEFAULT, volumeOutputGroup_, description_),
-    offset(std::move(offset_)){}
-};
