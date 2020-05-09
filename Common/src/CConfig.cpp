@@ -3277,7 +3277,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
-    Weight_ObjFunc[0] = -1.0;
+    Weight_ObjFunc[0] = 1.0;
     nObj=1;
     nObjW=1;
   }
@@ -3331,7 +3331,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
-      Weight_ObjFunc[iObj] = -1.0;
+      Weight_ObjFunc[iObj] = 1.0;
   }
 
   /*--- One final check for multi-objective with the set of objectives
