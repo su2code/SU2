@@ -55,6 +55,8 @@ protected:
 
   COutputLegacy* output_legacy;
 
+  string ObjectiveFunction;
+
 public:
 
   /*!

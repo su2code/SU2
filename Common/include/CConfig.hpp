@@ -166,6 +166,7 @@ private:
   unsigned short Kind_Regime;        /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;      /*!< \brief Kind of objective function. */
   su2double *Weight_ObjFunc;         /*!< \brief Weight applied to objective function. */
+  string ObjectiveFunction;
   unsigned short Kind_SensSmooth;    /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns;    /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns;      /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -9394,30 +9395,7 @@ public:
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
-  /*!
-   * \brief Return the code for the user defined functions.
-   * \return String containing the code for the user defined functions
-   */
-  string GetUserFunctionCode(){
-    return UserFunctionCode;
-  }
-
-  TokenMap& GetGlobalScope(){
-    return globalScope;
-  }
-
-  std::vector<interpreter::UserFunction*> GetUserFunctions(std::list<interpreter::FunctionType> functionType) const {
-    std::vector<interpreter::UserFunction*> userFunctions;
-    for (auto iter = globalScope.map().begin();
-         iter != globalScope.map().end(); iter++){
-      interpreter::UserFunction* function = dynamic_cast<interpreter::UserFunction*>(iter->second.token());
-      if (function != NULL){
-        if (std::any_of(functionType.begin(), functionType.end(),
-                        [&](const interpreter::FunctionType& item){return item == function->getType();})){
-          userFunctions.push_back(function);
-        }
-      }
-    }
-    return userFunctions;
+  string GetObjectiveFunction(){
+    return ObjectiveFunction;
   }
 };
