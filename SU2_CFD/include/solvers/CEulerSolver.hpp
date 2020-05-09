@@ -52,8 +52,8 @@ protected:
   Density_Inf = 0.0,         /*!< \brief Density at the infinity. */
   Energy_Inf = 0.0,          /*!< \brief Energy at the infinity. */
   Temperature_Inf = 0.0,     /*!< \brief Energy at the infinity. */
-  Pressure_Inf = 0.0,        /*!< \brief Pressure at the infinity. */
-  *Velocity_Inf = nullptr;   /*!< \brief Flow Velocity vector at the infinity. */
+  Pressure_Inf = 0.0;        /*!< \brief Pressure at the infinity. */
+  su2double Velocity_Inf[3];   /*!< \brief Flow Velocity vector at the infinity. */
 
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */

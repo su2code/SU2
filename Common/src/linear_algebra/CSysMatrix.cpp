@@ -127,29 +127,31 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const auto& csr = geometry->GetSparsePattern(type,0);
 
-  nnz = csr.getNumNonZeros();
-  row_ptr = csr.outerPtr();
-  col_ind = csr.innerIdx();
-  dia_ptr = csr.diagPtr();
+  if (npoint != 0){
+    nnz = csr.getNumNonZeros();
+    row_ptr = csr.outerPtr();
+    col_ind = csr.innerIdx();
+    dia_ptr = csr.diagPtr();
 
-  if (needTranspPtr)
-    col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
+    if (needTranspPtr)
+      col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
-  if (type == ConnectivityType::FiniteVolume)
-    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
+    if (type == ConnectivityType::FiniteVolume)
+      edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
 
-  /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
+    /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 
-  if(ilu_needed)
-  {
-    ilu_fill_in = config->GetLinear_Solver_ILU_n();
+    if(ilu_needed)
+    {
+      ilu_fill_in = config->GetLinear_Solver_ILU_n();
 
-    const auto& csr_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
+      const auto& csr_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
 
-    row_ptr_ilu = csr_ilu.outerPtr();
-    col_ind_ilu = csr_ilu.innerIdx();
-    dia_ptr_ilu = csr_ilu.diagPtr();
-    nnz_ilu = csr_ilu.getNumNonZeros();
+      row_ptr_ilu = csr_ilu.outerPtr();
+      col_ind_ilu = csr_ilu.innerIdx();
+      dia_ptr_ilu = csr_ilu.diagPtr();
+      nnz_ilu = csr_ilu.getNumNonZeros();
+    }
   }
 
   /*--- Allocate data. ---*/

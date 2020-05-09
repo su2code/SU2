@@ -345,7 +345,9 @@ class COptionDoubleArray : public COptionBase {
 public:
   COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
     this->name = option_field_name;
-    this->default_value = default_value;
+    this->default_value = new su2double[size];
+    for (int i = 0; i < size; i++){ this->default_value[i] = default_value[i]; }
+
     def  = NULL;
     vals = NULL;
   }
@@ -353,6 +355,7 @@ public:
   ~COptionDoubleArray() {
      if(def  != NULL) delete [] def;
      if(vals != NULL) delete [] vals;
+     if(default_value != NULL) delete [] default_value;
   };
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
@@ -386,11 +389,7 @@ public:
   }
 
   void SetDefault() {
-    def = new su2double [size];
-    for (int i = 0; i < size; i++) {
-      def[i] = default_value[i];
-    }
-    this->field = def;
+    this->field = this->default_value;
   }
 };
 

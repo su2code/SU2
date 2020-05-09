@@ -509,8 +509,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
-  Velocity_Inf    = config->GetVelocity_FreeStreamND();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  for (iDim = 0; iDim < nDim; iDim++){
+    Velocity_Inf[iDim] = config->GetVelocity_FreeStreamND()[iDim];
+  }
   Tke_Inf         = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
@@ -1160,7 +1161,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea     = config->GetRefArea();
   su2double RefLength   = config->GetRefLength();
   su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  su2double *Origin = NULL;
+  const su2double *Origin = NULL;
 
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
 

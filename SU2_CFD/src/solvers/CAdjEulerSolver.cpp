@@ -68,7 +68,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
   su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
-  su2double *Velocity_Inf;
   string Marker_Tag, Monitoring_Tag;
   unsigned short iMarker_Monitoring, jMarker, ObjFunc;
   bool grid_movement  = config->GetGrid_Movement();
@@ -258,9 +257,9 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- If outflow objective, nonzero initialization ---*/
   if ((config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)) {
-    su2double SoundSpeed,*vel_inf,R,vel2,vel;
+    su2double SoundSpeed,R,vel2,vel;
     R = config->GetGas_ConstantND();
-    vel_inf = config->GetVelocity_FreeStreamND();
+    const su2double* vel_inf = config->GetVelocity_FreeStreamND();
     vel2=0;
     for (iDim=0; iDim<nDim; iDim++)
       vel2 +=vel_inf[iDim]*vel_inf[iDim];
@@ -341,7 +340,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
     }
     else {
-      Velocity_Inf = config->GetVelocity_FreeStreamND();
+      const su2double* Velocity_Inf = config->GetVelocity_FreeStreamND();
       RefVel2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -1048,7 +1047,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLength  = config->GetRefLength();
-  su2double *RefOriginMoment = config->GetRefOriginMoment(0);
+  const su2double *RefOriginMoment = config->GetRefOriginMoment(0);
   su2double dCD_dCL          = config->GetdCD_dCL();
   su2double dCMx_dCL         = config->GetdCMx_dCL();
   su2double dCMy_dCL         = config->GetdCMy_dCL();
@@ -2325,7 +2324,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   ConsPsi, d_press, grad_v, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
   eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
-  su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
+  su2double RefVel2, RefDensity, Mach2Vel, factor;
   su2double Vn, SoundSpeed, *Velocity;
 
   USens = new su2double[nVar];
@@ -2350,7 +2349,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
   }
   else {
-    Velocity_Inf = config->GetVelocity_FreeStreamND();
+    const su2double* Velocity_Inf = config->GetVelocity_FreeStreamND();
     RefVel2 = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];

@@ -294,13 +294,13 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     /*--- Recompute the free stream velocity ---*/
 
     if (nDim == 2) {
-      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+      config->SetVelocity_FreeStreamND(cos(Alpha)*Mach*SoundSpeed/Velocity_Ref, 0);
+      config->SetVelocity_FreeStreamND(sin(Alpha)*Mach*SoundSpeed/Velocity_Ref, 1);
     }
     if (nDim == 3) {
-      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+      config->SetVelocity_FreeStreamND(cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref, 0);
+      config->SetVelocity_FreeStreamND(sin(Beta)*Mach*SoundSpeed/Velocity_Ref, 1);
+      config->SetVelocity_FreeStreamND(sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref, 3);
     }
 
     config->SetTemperature_FreeStreamND(Temperature);

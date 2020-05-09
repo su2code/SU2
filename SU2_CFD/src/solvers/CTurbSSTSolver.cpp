@@ -160,10 +160,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
-  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
+  su2double rhoInf, muLamInf, Intensity, viscRatio, muT_Inf;
 
   rhoInf    = config->GetDensity_FreeStreamND();
-  VelInf    = config->GetVelocity_FreeStreamND();
+  const su2double* VelInf    = config->GetVelocity_FreeStreamND();
   muLamInf  = config->GetViscosity_FreeStreamND();
   Intensity = config->GetTurbulenceIntensity_FreeStream();
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();

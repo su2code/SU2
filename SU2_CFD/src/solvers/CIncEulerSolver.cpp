@@ -477,7 +477,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
-  Velocity_Inf    = config->GetVelocity_FreeStreamND();
+  for (int iDim = 0; iDim < nDim; iDim++){
+    Velocity_Inf[iDim] = config->GetVelocity_FreeStreamND()[iDim];
+  }
   Temperature_Inf = config->GetTemperature_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
@@ -2586,7 +2588,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea   = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
 
-  su2double *Origin = NULL;
+  const su2double *Origin = NULL;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -2980,7 +2982,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   su2double Beta      = config->GetAoS()*PI_NUMBER/180.0;
   su2double RefArea   = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
-  su2double *Origin = NULL;
+  const su2double *Origin = NULL;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }

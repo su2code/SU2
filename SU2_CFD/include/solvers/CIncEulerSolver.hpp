@@ -43,8 +43,8 @@ protected:
   su2double
   Density_Inf,      /*!< \brief Density at the infinity. */
   Pressure_Inf,     /*!< \brief Pressure at the infinity. */
-  *Velocity_Inf,    /*!< \brief Flow Velocity vector at the infinity. */
   Temperature_Inf;  /*!< \brief Temperature at infinity. */
+  su2double Velocity_Inf[3];    /*!< \brief Flow Velocity vector at the infinity. */
 
   su2double
   *CD_Inv,       /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */

@@ -1944,11 +1944,11 @@ void CConfig::SetConfig_Options() {
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
 
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
-  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
+  array<su2double, 3> default_mesh_box_length = {1.0, 1.0, 1.0};
   addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
 
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
-  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
+  array<su2double, 3> default_mesh_box_offset = {0.0, 0.0, 0.0};
   addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
 
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
@@ -2859,10 +2859,9 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
     /*--- Check if there is a line continuation character at the end of the current line.
      * If yes, read until there is a line without one or a comment. If there is a statement after a cont. char
      * throw an error. ---*/
-
-    while (text_line.back() == '\\'){
+    while (!text_line.empty() && text_line.back() == '\\'){
       string tmp;
-      getline (case_file, tmp);
+      getline (config_buffer, tmp);
       line_count++;
       if (tmp.find_first_of('=') != string::npos){
         errorString.append("Line " + to_string(line_count)  + ": Statement found after continuation character.\n");
@@ -7058,7 +7057,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
     // skip delimiters
     last_pos = value_part.find_first_not_of(delimiters, pos);
     // find next "non-delimiter"
-    if (value_part[last_pos] != '{')
+    if (last_pos == string::npos || value_part[last_pos] != '{')
       pos = value_part.find_first_of(delimiters, last_pos);
     else
       pos = value_part.find_first_of('}', last_pos) + 1;
@@ -7156,7 +7155,7 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
   return 0;
 }
 
-string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
+string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) const {
   return Marker_CfgFile_TagBound[val_marker];
 }
 

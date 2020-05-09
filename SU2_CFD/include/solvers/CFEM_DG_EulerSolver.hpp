@@ -50,8 +50,8 @@ protected:
   Density_Inf,      /*!< \brief Density at infinity. */
   Energy_Inf,     /*!< \brief Energy at infinity. */
   Temperature_Inf,  /*!< \brief Energy at infinity. */
-  Pressure_Inf,     /*!< \brief Pressure at infinity. */
-  *Velocity_Inf;    /*!< \brief Flow velocity vector at infinity. */
+  Pressure_Inf;     /*!< \brief Pressure at infinity. */
+  su2double Velocity_Inf[3];    /*!< \brief Flow velocity vector at infinity. */
 
   vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
                                         conservative variables. */

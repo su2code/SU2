@@ -1831,7 +1831,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
 
-  su2double *VelInf = config->GetVelocity_FreeStreamND();
+  const su2double *VelInf = config->GetVelocity_FreeStreamND();
   VelInfMod = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     VelInfMod += VelInf[iDim];

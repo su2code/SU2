@@ -4502,7 +4502,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
-  su2double *Velocity_ND, *Velocity_Real;
+  su2double *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
   su2double factor;
 
@@ -4535,7 +4535,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
   Velocity_Real = config->GetVelocity_FreeStream();
   Density_Real  = config->GetDensity_FreeStream();
 
-  Velocity_ND = config->GetVelocity_FreeStreamND();
+  const su2double* Velocity_ND = config->GetVelocity_FreeStreamND();
   Density_ND  = config->GetDensity_FreeStreamND();
 
   Velocity2_Real = 0.0;

@@ -1375,7 +1375,7 @@ public:
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin (in cartesians coordinates) for moment computation.
    */
-  su2double *GetRefOriginMoment(unsigned short val_marker) {
+  const su2double *GetRefOriginMoment(unsigned short val_marker) {
     if(val_marker < nMarker_Monitoring) {
       RefOriginMoment[0] = RefOriginMoment_X[val_marker];
       RefOriginMoment[1] = RefOriginMoment_Y[val_marker];
@@ -1846,7 +1846,7 @@ public:
    * \brief Get the vector of the non-dimensionalized freestream velocity.
    * \return Non-dimensionalized freestream velocity vector.
    */
-  su2double* GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
+  const su2double* GetVelocity_FreeStreamND(void) const { return Velocity_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream energy.
@@ -6047,7 +6047,7 @@ public:
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Name of the marker in the config information of the marker <i>val_marker</i>.
    */
-  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker) const;
 
   /*!
    * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.

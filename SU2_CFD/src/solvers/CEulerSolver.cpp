@@ -391,7 +391,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
-  Velocity_Inf    = config->GetVelocity_FreeStreamND();
+  for (int iDim = 0; iDim < nDim; iDim++){
+    Velocity_Inf[iDim] = config->GetVelocity_FreeStreamND()[iDim];
+  }
   Energy_Inf      = config->GetEnergy_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
   Mach_Inf        = config->GetMach();

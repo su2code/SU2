@@ -44,7 +44,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   su2double Mach_Motion     = config->GetMach_Motion();
   su2double Area=0.0, *Normal = NULL, myArea_Monitored;
   su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
-  su2double *Velocity_Inf;
 
   string Marker_Tag, Monitoring_Tag;
   unsigned short iMarker_Monitoring, jMarker, ObjFunc;
@@ -279,7 +278,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
        RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
      }
      else {
-       Velocity_Inf = config->GetVelocity_FreeStreamND();
+       const su2double* Velocity_Inf = config->GetVelocity_FreeStreamND();
        RefVel2 = 0.0;
        for (iDim = 0; iDim < nDim; iDim++)
          RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -614,7 +613,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   su2double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
   normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0}, CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
-  su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
+  su2double RefVel2, RefDensity, Mach2Vel, factor;
 
   su2double *USens = new su2double[nVar];
   su2double *UnitNormal = new su2double[nDim];
@@ -658,7 +657,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
   }
   else {
-    Velocity_Inf = config->GetVelocity_FreeStreamND();
+    const su2double* Velocity_Inf = config->GetVelocity_FreeStreamND();
     RefVel2 = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
