@@ -41,7 +41,6 @@ class CTurbSAVariable final : public CTurbVariable {
 private:
   VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
   VectorType DES_LengthScale;
-  VectorType Vortex_Tilting;
 
 public:
   /*!
@@ -103,19 +102,5 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
-
-  /*!
-   * \brief Set the vortex tilting measure for computation of the EDDES length scale
-   * \param[in] iPoint - Point index.
-   */
-  void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
-                         const su2double* Vorticity, su2double LaminarViscosity) override;
-
-  /*!
-   * \brief Get the vortex tilting measure for computation of the EDDES length scale
-   * \param[in] iPoint - Point index.
-   * \return Value of the DES length Scale
-   */
-  inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
 
 };

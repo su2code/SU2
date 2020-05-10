@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -45,7 +45,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
   }
-  
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
@@ -62,5 +62,52 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
+
+}
+
+void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                                        const su2double* Vorticity, su2double LaminarViscosity) {
+
+  su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
+  su2double numerator, trace0, trace1, denominator;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(PrimGrad_Flow, nDim+1, nDim);
+  AD::SetPreaccIn(Vorticity, 3);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(muT(iPoint));
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(LaminarViscosity);
+
+  Strain[0][0] = PrimGrad_Flow[1][0];
+  Strain[1][0] = 0.5*(PrimGrad_Flow[2][0] + PrimGrad_Flow[1][1]);
+  Strain[0][1] = 0.5*(PrimGrad_Flow[1][1] + PrimGrad_Flow[2][0]);
+  Strain[1][1] = PrimGrad_Flow[2][1];
+  if (nDim == 3){
+    Strain[0][2] = 0.5*(PrimGrad_Flow[3][0] + PrimGrad_Flow[1][2]);
+    Strain[1][2] = 0.5*(PrimGrad_Flow[3][1] + PrimGrad_Flow[2][2]);
+    Strain[2][0] = 0.5*(PrimGrad_Flow[1][2] + PrimGrad_Flow[3][0]);
+    Strain[2][1] = 0.5*(PrimGrad_Flow[2][2] + PrimGrad_Flow[3][1]);
+    Strain[2][2] = PrimGrad_Flow[3][2];
+  }
+
+  Omega = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+
+  StrainDotVort[0] = Strain[0][0]*Vorticity[0]+Strain[0][1]*Vorticity[1]+Strain[0][2]*Vorticity[2];
+  StrainDotVort[1] = Strain[1][0]*Vorticity[0]+Strain[1][1]*Vorticity[1]+Strain[1][2]*Vorticity[2];
+  StrainDotVort[2] = Strain[2][0]*Vorticity[0]+Strain[2][1]*Vorticity[1]+Strain[2][2]*Vorticity[2];
+
+  numVecVort[0] = StrainDotVort[1]*Vorticity[2] - StrainDotVort[2]*Vorticity[1];
+  numVecVort[1] = StrainDotVort[2]*Vorticity[0] - StrainDotVort[0]*Vorticity[2];
+  numVecVort[2] = StrainDotVort[0]*Vorticity[1] - StrainDotVort[1]*Vorticity[0];
+
+  numerator = sqrt(6.0) * sqrt(numVecVort[0]*numVecVort[0] + numVecVort[1]*numVecVort[1] + numVecVort[2]*numVecVort[2]);
+  trace0 = 3.0*(pow(Strain[0][0],2.0) + pow(Strain[1][1],2.0) + pow(Strain[2][2],2.0));
+  trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
+  denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
+
+  Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT(iPoint));
   
+  AD::SetPreaccOut(Vortex_Tilting(iPoint));
+  AD::EndPreacc();
 }

@@ -2438,7 +2438,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           nodes->SetTauWall_Flag(iPoint,true);
           nodes->SetTauWall(iPoint,Tau_Wall);
           nodes->SetTemperature(iPoint,T_Wall);
-          //nodes->SetDensity(iPoint,Density_Wall);
+          nodes->SetSolution(iPoint, 0, Density_Wall);
 
         }
       }

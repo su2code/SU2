@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -42,6 +42,8 @@ protected:
 
   VectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   VectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+
+  VectorType Vortex_Tilting;
 
 public:
   /*!
@@ -82,7 +84,7 @@ public:
   inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Reconstruction(iPoint,iVar,iDim);
   }
-  
+
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -93,7 +95,7 @@ public:
   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
   }
-  
+
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -107,5 +109,18 @@ public:
    */
   inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
-};
+  /*!
+   * \brief Set the vortex tilting measure for computation of the SA and SST EDDES length scale
+   * \param[in] iPoint - Point index.
+   */
+  void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                         const su2double* Vorticity, su2double LaminarViscosity);
 
+  /*!
+   * \brief Get the vortex tilting measure for computation of the SA and SST EDDES length scale
+   * \param[in] iPoint - Point index.
+   * \return Value of the DES length Scale
+   */
+  inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+
+};

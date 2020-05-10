@@ -41,16 +41,6 @@ class CTurbSASolver final : public CTurbSolver {
 private:
   su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver - Solver container
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetDES_LengthScale(CSolver** solver,
-                          CGeometry *geometry,
-                          CConfig *config);
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -370,6 +360,16 @@ public:
   inline void SetFreeStream_Solution(CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetDES_LengthScale(CSolver** solver,
+                          CGeometry *geometry,
+                          CConfig *config);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

@@ -277,6 +277,11 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
 
+  unsigned short kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+  const su2double* const* PrimGrad_Flow = nullptr;
+  const su2double* Vorticity = nullptr;
+  su2double Laminar_Viscosity = 0.0;
+
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy) {
@@ -303,6 +308,25 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
 
+  if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
+
+    /*--- Set the vortex tilting coefficient at every node if required ---*/
+
+    if (kind_hybridRANSLES == SST_EDDES || kind_hybridRANSLES == SST_EIDDES){
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+        PrimGrad_Flow = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+        Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+      }
+    }
+
+    /*--- Compute the DES length scale ---*/
+
+    SetDES_LengthScale(solver_container, geometry, config);
+
+  }
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -481,7 +505,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
         Solution[0] = Omega * eddy_viscosity / density;
         Solution[1] = Omega;
-
+        
         nodes->SetSolution_Old(jPoint,Solution);
         nodes->SetSolution(jPoint,Solution);
         LinSysRes.SetBlock_Zero(jPoint);
@@ -1193,6 +1217,266 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   delete [] PrimVar_i;
   delete [] PrimVar_j;
 
+}
+
+void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
+
+  unsigned short kindHybridRANSLES = config->GetKind_HybridRANSLES();
+  unsigned long iPoint = 0, jPoint = 0;
+  unsigned short iDim = 0, iNeigh = 0, nNeigh = 0;
+
+  su2double density, laminarViscosity, kinematicViscosity, strainvort,
+  eddyViscosity, kinematicViscosityTurb, wallDistance, lengthScale = 0.0;
+
+  su2double maxDelta = 0.0, r_d = 0.0, f_d = 0.0,
+  deltaDDES = 0.0, Omega = 0.0, ln_max = 0.0, ln[3] = {0.0},
+  aux_ln = 0.0, f_kh = 0.0, k2 = pow(0.41, 2.0),
+  f_max=1.0, f_min=0.1, a1=0.15, a2=0.3, cw1 = 0.0;
+
+  const su2double *coord_i = nullptr, *coord_j = nullptr, *const *primVarGrad = nullptr, *vorticity = nullptr;
+  su2double delta[3] = {0.0}, ratioOmega[3] = {0.0}, vortexTiltingMeasure = 0.0;
+
+
+  /*--- Note that SST-DDES version uses different cofficients ---*/
+  su2double cDES1 = 0.78, cDES2 = 0.61, cd1 = 20.0, cd2 = 3.0;
+  su2double f1_blend, cDES, turb_ke, turb_omega, lengthRANS, lengthLES;
+
+  /*--- Coefficients for SST IDDES and EIDDES ---*/
+  su2double c_l2 = pow(5.0,2.0), c_t2 = pow(1.87,2.0), f_e1, h_max, alpha, alpha2, f_b, r_dl, fd_tilde;
+  su2double f_l, f_t, f_e, f_e2;
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+
+    coord_i                 = geometry->node[iPoint]->GetCoord();
+    nNeigh                  = geometry->node[iPoint]->GetnPoint();
+    wallDistance            = geometry->node[iPoint]->GetWall_Distance();
+    primVarGrad             = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    vorticity               = solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    density                 = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    laminarViscosity        = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    eddyViscosity           = solver[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+    kinematicViscosity      = laminarViscosity/density;
+    kinematicViscosityTurb  = eddyViscosity/density;
+
+    f1_blend   = solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint);
+    turb_ke    = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+    turb_omega = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint, 1);
+
+    su2double uijuij = 0.0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      for(unsigned short jDim = 0; jDim < nDim; jDim++){
+        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
+      }
+    }
+    uijuij = sqrt(fabs(uijuij));
+    strainvort = max(uijuij,1e-10);
+
+
+    switch(kindHybridRANSLES){
+
+      case SST_DDES:
+        /*--- Development of DDES and IDDES Formulations for the k-Omega Shear Stress Transport Model
+         Mikhail S. Gritskevich, Andrey V. Garbaruk, Jochen Schütze and Florian R. Menter
+         Flow Turbulence Combust DOI 10.1007/s10494-011-9378-4
+         ---*/
+
+        maxDelta = geometry->node[iPoint]->GetMaxLength();
+
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(strainvort*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
+
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = lengthRANS-f_d*max(0.0,(lengthRANS-lengthLES));
+
+        break;
+
+      case SST_EDDES:
+
+        /*--- SA Version: An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
+         Shur et al.
+         Flow Turbulence Combust - 2015
+         SST Version: Assessment of delayed DES and improved delayed DES combined with a shear-layer-adapted
+         subgrid length-scale in separated flows.
+         Guseva, E.K., Garbaruk, A.V., Strelets, M.Kh., 2017.
+         Flow Turbul. Combust. 98 (2), 481–502.
+         ---*/
+
+
+        vortexTiltingMeasure = GetNodes()->GetVortex_Tilting(iPoint);
+        Omega = sqrt(vorticity[0]*vorticity[0] +
+                     vorticity[1]*vorticity[1] +
+                     vorticity[2]*vorticity[2]);
+
+        for (iDim = 0; iDim < 3; iDim++){
+          ratioOmega[iDim] = vorticity[iDim]/Omega;
+        }
+
+        ln_max = 0.0;
+        deltaDDES = 0.0;
+        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
+          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+          coord_j = geometry->node[jPoint]->GetCoord();
+          for (iDim = 0; iDim < nDim; iDim++){
+            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
+          }
+          deltaDDES = geometry->node[iPoint]->GetMaxLength();
+          ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
+          ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
+          ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
+          aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
+          ln_max = max(ln_max,aux_ln);
+          vortexTiltingMeasure += GetNodes()->GetVortex_Tilting(iPoint);
+        }
+
+        vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
+
+        f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(strainvort*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
+
+        maxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        if (f_d < 0.999){
+          maxDelta = deltaDDES;
+        }
+
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = lengthRANS-f_d*max(0.0,(lengthRANS-lengthLES));
+
+        break;
+
+      case SST_IDDES:
+
+        /*--- Development of DDES and IDDES Formulations for the k-Omega Shear Stress Transport Model
+         Mikhail S. Gritskevich, Andrey V. Garbaruk, Jochen Schütze and Florian R. Menter
+         Flow Turbulence Combust DOI 10.1007/s10494-011-9378-4
+         ---*/
+
+        /*--- Model Coefficients ---*/
+        cw1 = 0.15;
+
+        h_max = geometry->node[iPoint]->GetMaxLength();
+        maxDelta = min(cw1*max(wallDistance,h_max),h_max);
+
+        alpha = 0.25 - (wallDistance / h_max);
+        alpha2 = pow(alpha, 2.0);
+        f_b = min(2.0 * exp(-9.0 * pow(alpha,2.0)), 1.0);
+
+        r_dl = kinematicViscosity/(strainvort*k2*pow(wallDistance, 2.0));
+        r_d = kinematicViscosityTurb/(strainvort*k2*pow(wallDistance, 2.0));
+
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
+        fd_tilde = max( 1.0 - f_d, f_b);
+
+        if (alpha >= 0.0) f_e1 = 2.0 * exp(-11.09 * alpha2);
+        else f_e1 = 2.0 * exp(-9.0 * alpha2);
+
+        f_l = tanh(pow(c_l2 * r_dl, 10.0));
+        f_t = tanh(pow(c_t2 * r_d, 3.0));
+        f_e2 = 1.0 - max(f_t , f_l);
+        f_e = f_e2 * max((f_e1 - 1.0), 0.0);
+
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = fd_tilde * (1.0 + f_e) * lengthRANS + (1.0 - fd_tilde) * lengthLES;
+
+        break;
+
+      case SST_EIDDES:
+
+        /*--- Development of DDES and IDDES Formulations for the k-Omega Shear Stress Transport Model
+         Mikhail S. Gritskevich, Andrey V. Garbaruk, Jochen Schütze and Florian R. Menter
+         Flow Turbulence Combust DOI 10.1007/s10494-011-9378-4
+
+         SST Version: Assessment of delayed DES and improved delayed DES combined with a shear-layer-adapted
+         subgrid length-scale in separated flows.
+         Guseva, E.K., Garbaruk, A.V., Strelets, M.Kh., 2017.
+         Flow Turbul. Combust. 98 (2), 481–502.---*/
+
+        /*--- Model Coefficients ---*/
+        cw1 = 0.15;
+
+        vortexTiltingMeasure = GetNodes()->GetVortex_Tilting(iPoint);
+        Omega = sqrt(vorticity[0]*vorticity[0] +
+                     vorticity[1]*vorticity[1] +
+                     vorticity[2]*vorticity[2]);
+
+        for (iDim = 0; iDim < 3; iDim++){
+          ratioOmega[iDim] = vorticity[iDim]/Omega;
+        }
+
+        ln_max = 0.0;
+        deltaDDES = 0.0;
+        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
+          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+          coord_j = geometry->node[jPoint]->GetCoord();
+          for (iDim = 0; iDim < nDim; iDim++){
+            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
+          }
+          deltaDDES = geometry->node[iPoint]->GetMaxLength();
+          ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
+          ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
+          ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
+          aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
+          ln_max = max(ln_max,aux_ln);
+          vortexTiltingMeasure += GetNodes()->GetVortex_Tilting(iPoint);
+        }
+
+        vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
+
+        f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(strainvort*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
+
+        maxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        if (f_d < 0.999){
+          maxDelta = deltaDDES;
+        }
+
+        h_max = geometry->node[iPoint]->GetMaxLength();
+        maxDelta = min(cw1*max(wallDistance,h_max), maxDelta);
+
+        alpha = 0.25 - (wallDistance / h_max);
+        alpha2 = pow(alpha, 2.0);
+        f_b = min(2.0 * exp(-9.0 * pow(alpha,2.0)), 1.0);
+
+        r_dl = kinematicViscosity/(strainvort*k2*pow(wallDistance, 2.0));
+        r_d = kinematicViscosityTurb/(strainvort*k2*pow(wallDistance, 2.0));
+
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
+        fd_tilde = max( 1.0 - f_d, f_b);
+
+        if (alpha >= 0.0) f_e1 = 2.0 * exp(-11.09 * alpha2);
+        else f_e1 = 2.0 * exp(-9.0 * alpha2);
+
+        f_l = tanh(pow(c_l2 * r_dl, 10.0));
+        f_t = tanh(pow(c_t2 * r_d, 3.0));
+        f_e2 = 1.0 - max(f_t , f_l);
+        f_e = f_e2 * max((f_e1 - 1.0), 0.0);
+
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = fd_tilde * (1.0 + f_e) * lengthRANS + (1.0 - fd_tilde) * lengthLES;
+
+        break;
+
+    }
+
+    GetNodes()->SetDES_LengthScale(iPoint, lengthScale);
+
+  }
 }
 
 void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
