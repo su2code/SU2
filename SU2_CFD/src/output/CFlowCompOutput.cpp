@@ -150,13 +150,12 @@ void CFlowCompOutputModule::DefineHistoryFields(COutFieldCollection &fieldCollec
   fieldCollection.AddItem("MAX_MOMENTUM_Z", COutputField("max[RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum z-component."));
   fieldCollection.AddItem("MAX_ENERGY",     COutputField("max[RhoE]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the energy."));
 
-  if (solverData.config->GetMultizone_Problem()){
-    fieldCollection.AddItem("BGS_DENSITY",    COutputField("bgs[Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the density."));
-    fieldCollection.AddItem("BGS_MOMENTUM_X", COutputField("bgs[RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum x-component."));
-    fieldCollection.AddItem("BGS_MOMENTUM_Y", COutputField("bgs[RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum y-component."));
-    fieldCollection.AddItem("BGS_MOMENTUM_Z", COutputField("bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum z-component."));
-    fieldCollection.AddItem("BGS_ENERGY",     COutputField("bgs[RhoE]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the energy."));
-  }
+  fieldCollection.AddItem("BGS_DENSITY",    COutputField("bgs[Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the density."));
+  fieldCollection.AddItem("BGS_MOMENTUM_X", COutputField("bgs[RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum x-component."));
+  fieldCollection.AddItem("BGS_MOMENTUM_Y", COutputField("bgs[RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum y-component."));
+  fieldCollection.AddItem("BGS_MOMENTUM_Z", COutputField("bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum z-component."));
+  fieldCollection.AddItem("BGS_ENERGY",     COutputField("bgs[RhoE]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the energy."));
+
 }
 
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
@@ -282,7 +281,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// DESCRIPTION: Maximal heatflux
   AddHistoryOutput("HEATFLUX_MAX", "maxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// DESCRIPTION: Temperature

@@ -54,9 +54,6 @@ public:
 
   void IntegrateCoefficients(SolverDataContainer* solverData, unsigned short iMarker, const string& markerName);
 
-  void IntegrateCoefficientsFEM(SolverDataContainer* solverData, unsigned short iMarker, const string& markerName);
-
-
   void CommunicateIntegrals(const string& markerName);
 
 };
