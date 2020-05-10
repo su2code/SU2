@@ -336,7 +336,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
 
-  bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
@@ -423,7 +423,7 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
   unsigned long iPoint, jPoint, iEdge;
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -474,7 +474,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   unsigned long iPoint, jPoint, iEdge;
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
 
   /*--- Loop over all the points, note that we are supposing that primitive and
@@ -1216,7 +1216,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
   su2double dSigma5_psi5;
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
 
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
@@ -1589,7 +1589,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double *GradDens;
   su2double *dPoRho2 = new su2double[nDim];
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   bool heat_flux_obj;
 

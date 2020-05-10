@@ -307,6 +307,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
@@ -378,6 +379,7 @@ void CMultizoneDriver::Run_Jacobi() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
@@ -438,23 +440,19 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
 void CMultizoneDriver::Update() {
 
-  unsigned short jZone, UpdateMesh;
-  bool DeformMesh = false;
-
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
   /*--- Loop over the number of zones (IZONE) ---*/
   for (iZone = 0; iZone < nZone; iZone++){
 
-    UpdateMesh = 0;
+    unsigned short UpdateMesh = 0;
 
-      /*--- Transfer from all the remaining zones (JZONE != IZONE)---*/
-      for (jZone = 0; jZone < nZone; jZone++){
-        /*--- The target zone is iZone ---*/
-        if (jZone != iZone){
-          DeformMesh = Transfer_Data(jZone, iZone);
-          if (DeformMesh) UpdateMesh += 1;
-        }
+    /*--- Transfer from all the remaining zones (JZONE != IZONE)---*/
+    for (auto jZone = 0u; jZone < nZone; jZone++){
+      /*--- The target zone is iZone ---*/
+      if (jZone != iZone){
+        UpdateMesh += Transfer_Data(jZone, iZone);
       }
+    }
     /*--- If a mesh update is required due to the transfer of data ---*/
     if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
@@ -507,16 +505,21 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
-  bool harmonic_balance;
+  bool AnyDeformMesh = false;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-   harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
+    const auto harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
-                                                               grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
-                                                               config_container[iZone], 0, TimeIter);
+                                                           grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
+                                                           config_container[iZone], 0, TimeIter);
+      AnyDeformMesh = true;
     }
+  }
+  /*--- Update the wall distances if the mesh was deformed. ---*/
+  if (AnyDeformMesh) {
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
   }
 }
 
@@ -525,7 +528,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
   auto iteration = iteration_container[val_iZone][INST_0];
 
   /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
-  if (config_container[ZONE_0]->GetGrid_Movement()) {
+  if (config_container[val_iZone]->GetGrid_Movement()) {
     iteration->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone],
                                 grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                 config_container[val_iZone], 0, TimeIter);
@@ -538,6 +541,11 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
                                  numerics_container[val_iZone][INST_0][MESH_0],
                                  config_container[val_iZone], NONE);
 
+  /*--- Update the wall distances if the mesh was deformed. ---*/
+  if (config_container[val_iZone]->GetGrid_Movement() ||
+      config_container[val_iZone]->GetDeform_Mesh()) {
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
+  }
 }
 
 bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
