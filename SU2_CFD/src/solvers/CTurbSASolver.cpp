@@ -1042,7 +1042,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+        Normal[iDim] = -geometry->vertex[val_marker][oldVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
 
       /*--- Allocate the value at the inlet ---*/
@@ -1144,7 +1144,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+        Normal[iDim] = -geometry->vertex[val_marker][oldVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
 
       /*--- Allocate the value at the inlet ---*/
