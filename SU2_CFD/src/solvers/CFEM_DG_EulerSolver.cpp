@@ -7315,6 +7315,171 @@ void CFEM_DG_EulerSolver::SUPERLU_LinSolver(unsigned long mat_size, int nnz, pas
   SuperLU::superlu_gridexit(&grid);
 }
 
+Eigen::VectorXd LUSolve(const Eigen::MatrixXd& U, const Eigen::VectorXd& b, int k){
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+  int size = 1, rank = 0;
+#ifdef HAVE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  for (int i = k ; i >= 0; --i) {
+    x(i) = b(i);
+    for (int j = i + 1; j < k + 1; ++j) {
+      x(i) -= U(i,j)*x(j);
+    }
+    x(i) /= U(i,i);
+  }
+  return x;
+}
+
+Eigen::VectorXd MatVec(const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& x, const int* m_loc){
+  assert(A.cols() == x.size());
+  Eigen::VectorXd y_loc(x.size());
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  Eigen::VectorXd y_g = A*x;
+  MPI_Reduce_scatter(y_g.data(), y_loc.data(), m_loc, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  y_loc = A*x;
+#endif
+  return y_loc;
+}
+
+Eigen::VectorXd RowMatVec(const Eigen::MatrixXd& A, const Eigen::VectorXd& x){
+  assert(A.cols() == x.size());
+#ifdef HAVE_MPI
+  Eigen::VectorXd y_loc = A*x;
+  return y_loc.head(A.rows());
+#else
+  return A*x;
+#endif
+}
+
+double VecNorm(const Eigen::VectorXd& A){
+  double norm_loc = A.norm();
+#ifdef HAVE_MPI
+  norm_loc *= norm_loc;
+  double norm_global = 0.0;
+  MPI_Allreduce(&norm_loc, &norm_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  return sqrt(norm_global); 
+#else
+  return norm_loc;
+#endif
+}
+
+double VecDot(const Eigen::VectorXd& A, const Eigen::VectorXd& B) {
+  assert(A.size() == B.size());
+  double dot_loc = A.dot(B);
+#ifdef HAVE_MPI
+  double dot_global{0.0};
+  MPI_Allreduce(&dot_loc, &dot_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  return dot_global;
+#else
+  return dot_loc;
+#endif
+}
+
+template <typename Precond>
+void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M, int n, int restart, unsigned long* m_loc_long, unsigned long* fst_col_long){
+  assert(A.cols() == b.size());
+  int size = 1, rank = 0;
+  int m = restart;
+
+#ifdef HAVE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  int* m_loc;
+  int* fst_col;
+  m_loc = new int [size];
+  fst_col = new int [size+1];
+  for (int i = 0; i < size; ++i){
+    m_loc[i] = m_loc_long[i];
+    fst_col[i] = fst_col_long[i];
+  }
+  fst_col[size] = fst_col_long[size];
+
+  // use x as the initial vector
+  Eigen::VectorXd r = b - MatVec(A, b, m_loc);
+  M.solve(r); //M\q
+  double b_norm = VecNorm(b);
+  double r_norm = VecNorm(r);
+  assert(!std::isnan(r_norm));
+  double error = r_norm/b_norm;
+
+  // initialize the 1D vectors
+  Eigen::VectorXd sn = Eigen::VectorXd::Zero(m);
+  Eigen::VectorXd cs = Eigen::VectorXd::Zero(m);
+  Eigen::VectorXd e1 = Eigen::VectorXd::Zero(n);
+  e1(0) = 1;
+  Eigen::VectorXd e = Eigen::VectorXd::Zero(n);
+  e(0) = error;
+
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(m_loc[rank],n+1);
+  Q.col(0) = r / r_norm;
+  Eigen::VectorXd beta = Eigen::VectorXd::Zero(n + 1);
+  beta.head(n) = r_norm * e1;
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n+1, n);
+  int k = 0;
+
+  for (; k < m; ++k) {
+
+    // Arnoldi process
+    Eigen::VectorXd q = MatVec(A, Q.col(k), m_loc);
+    M.solve(q); // M\q
+    for (int i = 0; i < k + 1; ++i) {
+      H(i,k) = VecDot(q, Q.col(i));
+      q -= H(i,k) * Q.col(i);
+    }
+    H(k + 1, k) = VecNorm(q);
+    q = q / H(k + 1, k);
+    Q.col(k + 1) = q;
+
+    // Givens Rotation
+    for (int i = 0; i < k; ++i) {
+      double temp = cs(i) * H(i, k) + sn(i) * H(i + 1, k);
+      H(i + 1, k) = -sn(i) * H(i, k) + cs(i) * H(i + 1, k);
+      H(i, k) = temp;
+    }
+
+    if (H(k, k) == 0){
+      cs(k) = 0;
+      sn(k) = 1;
+    }
+    else {
+      double t = sqrt(H(k, k) * H(k, k) + H(k + 1, k) * H(k + 1, k));
+      cs(k) = abs(H(k, k)) / t;
+      sn(k) = cs(k) * H(k + 1, k) / H(k, k);
+    }
+    H(k, k) = cs(k) * H(k, k) + sn(k) * H(k + 1, k);
+    H(k + 1, k) = 0.0;
+
+    beta(k+1) = -sn(k) * beta(k);
+    beta(k) = cs(k) * beta(k);
+    error = abs(beta(k+1)) / b_norm;
+    // if (rank == 0)
+    //   printf("error at iteration %d is %e\n", k, error);
+    if (error <= 1e-14) {
+      if (rank == 0)
+        printf("Converged error at iteration %d is %e\n", k, error);
+      break;
+    }
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  }
+
+  k = min(k, n - 1);
+  Eigen::VectorXd y = LUSolve(H.block(0,0,k+1,k+1), beta.head(k+1), k);
+  Eigen::VectorXd xxx = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
+  b += RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
+
+  delete m_loc;
+  delete fst_col;
+  return;
+}
+
 typedef Eigen::Triplet<double> T;
 void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config) {
@@ -7349,7 +7514,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   /*---  Please choose one of the following 2 options for CSC/CSR format by setting  ---*/
   /*---  the boolean variable StorageCSR. Only CSR can be used for superlu.          ---*/
   /*------------------------------------------------------------------------------------*/
-  const bool StorageCSR = true;
+  const bool StorageCSR = false;
   const Eigen::StorageOptions storage = StorageCSR ? Eigen::RowMajor : Eigen::ColMajor;
   vector<T> tripletList, tripletList_massMatrix;
   unsigned long m_Global, n_Global;
@@ -7404,21 +7569,21 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
 
     for (int i = 0; i < nonZeroEntriesJacobian.size(); ++i){
-      std::cout<< "[i] = " << i << ": ";
+      // std::cout<< "[i] = " << i << ": ";
       for (int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-        std::cout << nonZeroEntriesJacobian[i][j] << " ";
-        std::cout << "( ";
+        // std::cout << nonZeroEntriesJacobian[i][j] << " ";
+        // std::cout << "( ";
         int rank_dest = upper_bound(fst_row_vec.begin(), fst_row_vec.end(), nonZeroEntriesJacobian[i][j]*nVar) - fst_row_vec.begin() - 1;
         unsigned long block_i = fst_row[rank]/nVar + i;
         unsigned long block_j = nonZeroEntriesJacobian[i][j];
         unsigned long offset = nNonZeroEntries[i] + j;
         adj_list[block_j][block_i] = rank_offset[rank_dest];
         Jacobian_sendbuf[rank_dest].insert(Jacobian_sendbuf[rank_dest].end(), SpatialJacobian.data() + offset*nVar*nVar, SpatialJacobian.data() + (offset+1)*nVar*nVar);
-        std::cout << rank_offset[rank_dest] << " ";
-        std::cout << ") ";
+        // std::cout << rank_offset[rank_dest] << " ";
+        // std::cout << ") ";
         ++rank_offset[rank_dest];
       }
-      std::cout << std::endl;
+      // std::cout << std::endl;
     }
 
     for (int i = 0; i < size; ++i) {
@@ -7453,7 +7618,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
           Jacobian_offset = rank_offset[rank_dest]*nVar*nVar + sdispls[rank_dest];
           rank_offset[rank_dest]++;
         }
-        std::cout << "(" << block_i << ", " << block_j << ") = " << Jacobian_offset/nVar/nVar  << ": " << Jacobian_recvbuf[Jacobian_offset]<< std::endl;
+        // std::cout << "(" << block_i << ", " << block_j << ") = " << Jacobian_offset/nVar/nVar  << ": " << Jacobian_recvbuf[Jacobian_offset]<< std::endl;
         for (int iVar = 0; iVar < nVar*nVar; ++iVar) {
           tripletList.push_back(T(block_i*nVar + iVar/nVar, block_j*nVar - fst_row[rank] + iVar%nVar, Jacobian_recvbuf[Jacobian_offset+iVar]));
         }
@@ -7511,9 +7676,30 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     mSol_delta(i) = -Res_global(i);
   } 
 
+  Eigen::MatrixXd Coord(nDOFsLocOwned, 2);
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    const unsigned long *DOFs = volElem[l].nodeIDsGrid.data();
+    const unsigned long nDOFs  = volElem[l].nDOFsSol;
+    const unsigned long offset = volElem[l].offsetDOFsSolLocal;
+    for(unsigned short k=0; k<nDOFs; ++k) {
+      Coord(offset + k, 0) = SU2_TYPE::GetValue(meshPoints[DOFs[k]].coor[0]);
+      Coord(offset + k, 1) = SU2_TYPE::GetValue(meshPoints[DOFs[k]].coor[1]);
+    }
+  }
+
+  // dummy preconditioner
+  class precond {
+  public: 
+    void solve(Eigen::VectorXd& x) {
+      return;
+    }
+  };
+  precond M;
+
+  GMRES(Jacobian_global, mSol_delta, M, nDOFsGlobal*nVar, nDOFsGlobal*nVar, &m_loc[0], &fst_row[0]);
   /*--- Solve the linear system using linear solver SUPERLU. ---*/
-  SUPERLU_LinSolver(nDOFsGlobal*nVar, Jacobian_global.nonZeros(), Jacobian_global.valuePtr(), Jacobian_global.innerIndexPtr(), 
-    Jacobian_global.outerIndexPtr(), mSol_delta.data(), &m_loc[0], &fst_row[0]);
+  // SUPERLU_LinSolver(nDOFsGlobal*nVar, Jacobian_global.nonZeros(), Jacobian_global.valuePtr(), Jacobian_global.innerIndexPtr(), 
+  //   Jacobian_global.outerIndexPtr(), mSol_delta.data(), &m_loc[0], &fst_row[0]);
 
   /*--- Newton iteration with damping parameter lambda ---*/
   double lambda = 1.0;
@@ -7530,7 +7716,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   
   /*--- update final solution ---*/
   Sol_global += mSol_delta * lambda;
-  Res_global += MassMatrix_global.block(0,fst_row[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta * lambda;
+  Res_global += MassMatrix_global.block(fst_row[rank],0,nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta * lambda;
 
   /*--- convert solution back into the SU2 solver format ---*/
   for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
