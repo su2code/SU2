@@ -3366,9 +3366,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Include the residual contribution from GCL due to the static
      mesh movement that is set for rotating frame. ---*/
 
-    SU2_OMP_MASTER
     SetRotatingFrame_GCL(geometry, config);
-    SU2_OMP_BARRIER
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
