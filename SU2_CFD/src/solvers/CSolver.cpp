@@ -2737,7 +2737,6 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
       const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
       const su2double* GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      const su2double* Solution_j = base_nodes->GetSolution(jPoint);
 
       /*--- Determine whether to consider the normal outward or inward. ---*/
       su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
@@ -2747,7 +2746,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
         Flux += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
       for (auto iVar = 0u; iVar < nVar; iVar++)
-        LinSysRes(iPoint,iVar) += Flux*0.5*(Solution_i[iVar]+Solution_j[iVar]);
+        LinSysRes(iPoint,iVar) += Flux * Solution_i[iVar];
     }
   }
 
