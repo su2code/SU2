@@ -436,7 +436,7 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_MACH"                : "mach"      ,
                  "SURFACE_UNIFORMITY"          : "uniform"   ,
                  "SURFACE_SECONDARY"           : "second"    ,
-                 "SURFACE_MOM_DISTORTION"      : "distort"   ,
+                 "MOMENTUM_DISTORTION"         : "distort"   ,
                  "SURFACE_SECOND_OVER_UNIFORM" : "sou"       ,
                  "SURFACE_PRESSURE_DROP"       : "dp"        ,
                  "CUSTOM_OBJFUNC"              : "custom"    ,

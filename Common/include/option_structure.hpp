@@ -1431,7 +1431,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
   SURFACE_SECONDARY = 53,       /*!< \brief Secondary flow strength objective function definition. */
-  SURFACE_MOM_DISTORTION = 54,  /*!< \brief Momentum distortion objective function definition. */
+  MOMENTUM_DISTORTION = 54,  /*!< \brief Momentum distortion objective function definition. */
   SURFACE_SECOND_OVER_UNIFORM = 55, /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
   SURFACE_PRESSURE_DROP = 56, 	/*!< \brief Pressure drop objective function definition. */
   CUSTOM_OBJFUNC = 31, 	        /*!< \brief Custom objective function definition. */
@@ -1481,7 +1481,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
   MakePair("SURFACE_SECONDARY", SURFACE_SECONDARY)
-  MakePair("SURFACE_MOM_DISTORTION", SURFACE_MOM_DISTORTION)
+  MakePair("MOMENTUM_DISTORTION", MOMENTUM_DISTORTION)
   MakePair("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
   MakePair("SURFACE_PRESSURE_DROP", SURFACE_PRESSURE_DROP)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)

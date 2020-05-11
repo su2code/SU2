@@ -3351,7 +3351,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         case SURFACE_MASSFLOW:
         case SURFACE_UNIFORMITY:
         case SURFACE_SECONDARY:
-        case SURFACE_MOM_DISTORTION:
+        case MOMENTUM_DISTORTION:
         case SURFACE_SECOND_OVER_UNIFORM:
         case SURFACE_PRESSURE_DROP:
         case CUSTOM_OBJFUNC:
@@ -3360,7 +3360,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                            string("problem or as a single objective applied to multiple monitoring markers:\n")+
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
-                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
+                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, MOMENTUM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
                            string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
@@ -7840,7 +7840,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
         case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;
-        case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
+        case MOMENTUM_DISTORTION:         AdjExt = "_distort";  break;
         case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
         case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
