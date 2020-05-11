@@ -903,7 +903,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[1][0] += 0.0;
    Jacobian_i[1][1] += -2.0*beta_blended*TurbVar_i[1]*Volume;
 
-//   Jacobian_i[1][1] += min(-(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume, 0.0);
+   Jacobian_i[1][1] += min(-(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume, 0.0);
   }
 
   AD::SetPreaccOut(Residual, nVar);
