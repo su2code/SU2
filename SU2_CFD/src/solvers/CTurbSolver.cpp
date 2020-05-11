@@ -440,7 +440,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-      for (auto jVertex = 0u; jVertex < nDonorVertex; jVertex++) {
+      for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
 
         for (auto iVar = 0u; iVar < nPrimVar; iVar++)
           PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
@@ -721,7 +721,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
   const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-  const bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
   const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);

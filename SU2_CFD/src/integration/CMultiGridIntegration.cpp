@@ -135,6 +135,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
 
@@ -218,11 +219,14 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     CSolver* solver_coarse = solver_container_coarse[Solver_Position];
     CNumerics** numerics_coarse = numerics_container[iZone][iInst][iMesh+1][Solver_Position];
 
+    /*--- Temporarily disable implicit integration, for what follows we do not need the Jacobian. ---*/
+
+    if (implicit) config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
 
     solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem, false);
 
-    /// TODO: For implicit schemes, this call to Space_Integration can skip building the system matrix.
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
     SetResidual_Term(geometry_fine, solver_fine);
@@ -238,6 +242,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+
+    /*--- Restore the time integration settings. ---*/
+
+    if (implicit) config->SetKind_TimeIntScheme(EULER_IMPLICIT);
 
     /*--- Recursive call to MultiGrid_Cycle (this routine). ---*/
 
