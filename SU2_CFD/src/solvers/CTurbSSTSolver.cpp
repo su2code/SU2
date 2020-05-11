@@ -35,7 +35,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() { }
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config) {
-  unsigned short iVar, iDim, nLineLets;
+  unsigned short iVar, nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
@@ -111,19 +111,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   }
 
-  /*--- Computation of gradients by least squares ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-  }
-
   /*--- Initialize value for model constants ---*/
   constants[0] = 0.85;   //sigma_k1
   constants[1] = 1.0;    //sigma_k2
@@ -152,12 +139,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Intensity = config->GetTurbulenceIntensity_FreeStream();
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();
 
-  su2double VelMag = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    VelMag += VelInf[iDim]*VelInf[iDim];
-  VelMag = sqrt(VelMag);
+  su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, VelInf);
 
-  kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
+  kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/

@@ -94,8 +94,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Jacobian_jj        = nullptr;
   iPoint_UndLapl     = nullptr;
   jPoint_UndLapl     = nullptr;
-  Smatrix            = nullptr;
-  Cvector            = nullptr;
   Restart_Vars       = nullptr;
   Restart_Data       = nullptr;
   base_nodes         = nullptr;
@@ -140,7 +138,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
 CSolver::~CSolver(void) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   unsigned long iMarker, iVertex;
 
   /*--- Public variables, may be accessible outside ---*/
@@ -226,18 +224,6 @@ CSolver::~CSolver(void) {
     delete [] Jacobian_jj;
   }
 
-  if (Smatrix != nullptr) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      delete [] Smatrix[iDim];
-    delete [] Smatrix;
-  }
-
-  if (Cvector != nullptr) {
-    for (iVar = 0; iVar < nVarGrad; iVar++)
-      delete [] Cvector[iVar];
-    delete [] Cvector;
-  }
-
   if (VertexTraction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
@@ -303,6 +289,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
+  su2activematrix Cvector;
 
   string Marker_Tag;
 
@@ -933,9 +920,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Inizialization of variables ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] = 0.0;
+            Cvector.resize(nVar,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -1034,7 +1019,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                   for (iVar = 0; iVar < nVar; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
-                  Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                  Cvector(iVar,iDim) += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
 
                 }
@@ -1068,7 +1053,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset] = Cvector[iVar][iDim];
+                bufDSend[buf_offset] = Cvector(iVar,iDim);
                 buf_offset++;
               }
             }
@@ -1142,9 +1127,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Inizialization of variables ---*/
 
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] = 0.0;
+            Cvector.resize(nPrimVarGrad,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -1243,7 +1226,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
-                  Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                  Cvector(iVar,iDim) += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
 
                 }
@@ -1277,7 +1260,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset] = Cvector[iVar][iDim];
+                bufDSend[buf_offset] = Cvector(iVar,iDim);
                 buf_offset++;
               }
             }

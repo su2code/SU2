@@ -36,7 +36,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config) {
 
-  unsigned short iVar, iDim, nLineLets;
+  unsigned short iVar, nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
@@ -98,20 +98,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       else if (nDim == 3) { nOutputVariables = 19; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
-    }
-
-    /*--- Computation of gradients by least squares ---*/
-
-    if (config->GetLeastSquaresRequired()) {
-      /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-      Smatrix = new su2double* [nDim];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Smatrix[iDim] = new su2double [nDim];
-
-      /*--- c vector := transpose(WA)*(Wb) ---*/
-      Cvector = new su2double* [nVar];
-      for (iVar = 0; iVar < nVar; iVar++)
-        Cvector[iVar] = new su2double [nDim];
     }
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
