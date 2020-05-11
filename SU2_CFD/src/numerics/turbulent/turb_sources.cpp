@@ -852,7 +852,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    }
    else {
 //     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     pk = Eddy_Viscosity_i*StrainMag - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+     pk = Eddy_Viscosity_i*(StrainMag - 2.0/3.0*diverg*diverg) - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
      if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
 //       Jacobian_i[0][0] = min(-2./3.*diverg*Volume, 0.);
 //       Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
@@ -891,7 +891,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    }
    else {
 //      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-     pw = StrainMag - 2.0/3.0*zeta*diverg;
+     pw = StrainMag - 2.0/3.0*diverg*diverg - 2.0/3.0*zeta*diverg;
      if ((pw > 0.) && (TurbVar_i[1] > VorticityMag*F2_i/a1)) Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
 //    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
    }
