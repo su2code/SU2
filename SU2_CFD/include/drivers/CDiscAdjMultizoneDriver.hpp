@@ -2,7 +2,7 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,7 +92,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMultizoneDriver(void);
+  ~CDiscAdjMultizoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.

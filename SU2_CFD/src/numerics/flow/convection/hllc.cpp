@@ -2,7 +2,7 @@
  * \file hllc.cpp
  * \brief Implementations of HLLC schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,6 +82,8 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Face area (norm or the normal vector) ---*/
 
@@ -608,6 +610,8 @@ CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Face area (norm or the normal vector) ---*/
 

@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncEulerVariable() = default;
+  ~CIncEulerVariable() override = default;
 
   /*!
    * \brief Get the primitive variable gradients for all points.

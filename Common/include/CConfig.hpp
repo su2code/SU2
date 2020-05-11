@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1279,6 +1279,11 @@ public:
   CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
 
   /*!
+   * \brief Constructor of the class which takes an istream buffer containing the config options.
+   */
+  CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
+  
+  /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
   CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
@@ -1297,11 +1302,26 @@ public:
    * \brief Destructor of the class.
    */
   ~CConfig(void);
+  
+  /*!
+  * \brief Initialize common fields of the config structure.
+  */
+  void Init();
 
+  /*!
+  * \brief Set the number of zones
+  */
   void SetnZone();
 
+  /*!
+  * \brief Set the physical dimension of the problem
+  */
   void SetnDim();
 
+  /*!
+  * \brief Print the header to screen
+  * \param val_software - Kind of software component
+  */
   void SetHeader(unsigned short val_software);
 
   /*!
@@ -7986,6 +8006,11 @@ public:
    */
   void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);
 
+  /*!
+   * \brief Set the config file parsing.
+   */
+  void SetConfig_Parsing(istream &config_buffer);  
+  
   /*!
    * \brief Set the config file parsing.
    */

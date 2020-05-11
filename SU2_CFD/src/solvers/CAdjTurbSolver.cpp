@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -305,8 +305,8 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Conservative variables w/o reconstruction ---*/
     U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
@@ -314,7 +314,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetConservative(U_i, U_j);
 
     /*--- Set normal vectors and length ---*/
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
     TurbPsi_i = nodes->GetSolution(iPoint);
@@ -327,7 +327,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
 
     /*--- Set normal vectors and length ---*/
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
@@ -354,14 +354,14 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and set normal vectors and length ---*/
     Coord_i = geometry->node[iPoint]->GetCoord();
     Coord_j = geometry->node[jPoint]->GetCoord();
     numerics->SetCoord(Coord_i, Coord_j);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Conservative variables w/o reconstruction, turbulent variables w/o reconstruction,
      and turbulent adjoint variables w/o reconstruction ---*/
@@ -451,8 +451,8 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 //
 //    /*--- Points in edge ---*/
-//    iPoint = geometry->edge[iEdge]->GetNode(0);
-//    jPoint = geometry->edge[iEdge]->GetNode(1);
+//    iPoint = geometry->edges->GetNode(iEdge,0);
+//    jPoint = geometry->edges->GetNode(iEdge,1);
 //
 //    /*--- Gradient of turbulent variables w/o reconstruction ---*/
 //    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
@@ -465,7 +465,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    second_numerics->SetTurbAdjointVar(TurbPsi_i, TurbPsi_j);
 //
 //    /*--- Set normal vectors and length ---*/
-//    second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+//    second_numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 //
 //    /*--- Add and Subtract Residual ---*/
 //    second_numerics->ComputeResidual(Residual, Jacobian_ii, Jacobian_jj, config);

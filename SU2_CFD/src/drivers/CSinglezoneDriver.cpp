@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -225,6 +225,11 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
                                  numerics_container[ZONE_0][INST_0][MESH_0],
                                  config_container[ZONE_0], NONE);
 
+  /*--- Update the wall distances if the mesh was deformed. ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement() ||
+      config_container[ZONE_0]->GetDeform_Mesh()) {
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
+  }
 }
 
 bool CSinglezoneDriver::Monitor(unsigned long TimeIter){

@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,7 +66,7 @@ CGeometry::CGeometry(void) {
   face                = NULL;
   bound               = NULL;
   node                = NULL;
-  edge                = NULL;
+  edges               = NULL;
   vertex              = NULL;
   nVertex             = NULL;
   newBound            = NULL;
@@ -143,7 +143,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint, iVertex;
+  unsigned long iElem, iElem_Bound, iFace, iPoint, iVertex;
   unsigned short iMarker;
 
   if (elem != NULL) {
@@ -174,12 +174,7 @@ CGeometry::~CGeometry(void) {
     delete[] node;
   }
 
-
-  if (edge != NULL) {
-    for (iEdge = 0; iEdge < nEdge; iEdge ++)
-      if (edge[iEdge] != NULL) delete edge[iEdge];
-    delete[] edge;
-  }
+  delete edges;
 
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1553,35 +1548,36 @@ bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point)
 }
 
 void CGeometry::SetEdges(void) {
-  unsigned long iPoint, jPoint;
-  long iEdge;
-  unsigned short jNode, iNode;
-  long TestEdge = 0;
 
   nEdge = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-      jPoint = node[iPoint]->GetPoint(iNode);
-      for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); iNode++) {
+      auto jPoint = node[iPoint]->GetPoint(iNode);
+      for (auto jNode = 0u; jNode < node[jPoint]->GetnPoint(); jNode++) {
         if (node[jPoint]->GetPoint(jNode) == iPoint) {
-          TestEdge = node[jPoint]->GetEdge(jNode);
+          auto TestEdge = node[jPoint]->GetEdge(jNode);
+          if (TestEdge == -1) {
+            node[iPoint]->SetEdge(nEdge, iNode);
+            node[jPoint]->SetEdge(nEdge, jNode);
+            nEdge++;
+          }
           break;
         }
-      if (TestEdge == -1) {
-        node[iPoint]->SetEdge(nEdge, iNode);
-        node[jPoint]->SetEdge(nEdge, jNode);
-        nEdge++;
       }
     }
+  }
 
-  edge = new CEdge*[nEdge];
+  edges = new CEdge(nEdge,nDim);
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-      jPoint = node[iPoint]->GetPoint(iNode);
-      iEdge = FindEdge(iPoint, jPoint);
-      if (iPoint < jPoint) edge[iEdge] = new CEdge(iPoint, jPoint, nDim);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); iNode++) {
+      auto jPoint = node[iPoint]->GetPoint(iNode);
+      if (iPoint < jPoint) {
+        auto iEdge = FindEdge(iPoint, jPoint);
+        edges->SetNodes(iEdge, iPoint, jPoint);
+      }
     }
+  }
 }
 
 void CGeometry::SetFaces(void) {
@@ -1625,8 +1621,8 @@ void CGeometry::TestGeometry(void) {
 
   for (unsigned long iEdge = 0; iEdge < nEdge; iEdge++) {
     para_file << "Edge index: " << iEdge << endl;
-    para_file << "   Point index: " << edge[iEdge]->GetNode(0) << "\t" << edge[iEdge]->GetNode(1) << endl;
-    edge[iEdge]->GetNormal(Normal);
+    para_file << "   Point index: " << edges->GetNode(iEdge,0) << "\t" << edges->GetNode(iEdge,1) << endl;
+    edges->GetNormal(iEdge,Normal);
     para_file << "      Face normal : ";
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       para_file << Normal[iDim] << "\t";
@@ -4027,8 +4023,8 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
 
     for (unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
       outerPtr(iEdge) = 2*iEdge;
-      innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
-      innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
+      innerIdx(iEdge*2+0) = edges->GetNode(iEdge,0);
+      innerIdx(iEdge*2+1) = edges->GetNode(iEdge,1);
     }
     outerPtr(nEdge) = 2*nEdge;
 

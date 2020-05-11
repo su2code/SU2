@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -213,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEASolver(void);
+  ~CFEASolver(void) override;
 
   /*!
    * \brief Set residuals to zero.

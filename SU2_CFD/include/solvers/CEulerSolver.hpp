@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -412,7 +412,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerSolver(void);
+  ~CEulerSolver(void) override;
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -830,7 +830,6 @@ public:
                   CConfig *config,
                   unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the boundary condition using characteristic recostruction.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -876,7 +875,6 @@ public:
                 CNumerics *visc_numerics,
                 CConfig *config,
                 unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose a subsonic inlet boundary condition.
@@ -942,7 +940,6 @@ public:
                  CConfig *config,
                  unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -958,7 +955,6 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose the nacelle inflow boundary condition.
@@ -996,7 +992,7 @@ public:
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline void Set_NewSolution(CGeometry *geometry) final { nodes->SetSolution_New(); }
+  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.

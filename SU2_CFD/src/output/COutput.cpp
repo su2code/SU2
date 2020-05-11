@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2041,7 +2041,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 
   StopTime = SU2_MPI::Wtime();
 
-  UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
+  UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
   SetHistoryOutputValue("WALL_TIME", UsedTime);
 
