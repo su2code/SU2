@@ -3,23 +3,14 @@
 ## \file Interface.py
 #  \brief Interface class that handles fluid/solid solvers synchronisation and communication.
 #  \author Rocco Bombardieri and Ruben Sanchez based on previous work by David Thomas.
-#  \version 7.0.0
+#  \version 7.0.2 "Blackbird"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# SU2 Project Website: https://su2code.github.io
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+# The SU2 Project is maintained by the SU2 Foundation
+# (http://su2foundation.org)
 #
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
