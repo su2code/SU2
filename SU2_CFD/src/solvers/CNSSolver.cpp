@@ -25,10 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
 
 CNSSolver::CNSSolver(void) : CEulerSolver() { }
 
@@ -943,252 +944,209 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim, jDim, iVar, jVar;
-  unsigned long iVertex, iPoint, Point_Normal, total_index;
-
-  su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
-  su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
-  su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0;
-  su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0}, UnitNormal[3] = {0.0}, Vector[3] = {0.0};
-  su2double laminar_viscosity = 0.0, eddy_viscosity = 0.0, Grad_Vel[3][3] = {{0.0}}, tau[3][3] = {{0.0}};
-  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-
-  su2double **Jacobian_i = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Jacobian_i[iVar] = new su2double [nVar];
+  /*--- Identify the boundary by string name and get the specified wall
+   heat flux from config as well as the wall function treatment. ---*/
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  /*--- Identify the boundary by string name ---*/
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  /*--- Get the specified wall heat flux from config as well as the
-        wall function treatment.---*/
-
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != NO_WALL_FUNCTION) {
 //    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
 //  }
 
+  /*--- Jacobian, initialized to zero if needed. ---*/
+  su2double **Jacobian_i = nullptr;
+  if (dynamic_grid && implicit) {
+    Jacobian_i = new su2double* [nVar];
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      Jacobian_i[iVar] = new su2double [nVar] ();
+  }
+
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
+    /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
-      if (config->GetMarker_All_PyCustom(val_marker)) Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+    if (config->GetMarker_All_PyCustom(val_marker))
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
 
-      /*--- Compute dual-grid area and boundary normal ---*/
+    /*--- Compute dual-grid area and boundary normal ---*/
 
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+    su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
+    su2double UnitNormal[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      UnitNormal[iDim] = -Normal[iDim]/Area;
 
-      /*--- Initialize the convective & viscous residuals to zero ---*/
+    /*--- Apply a weak boundary condition for the energy equation.
+     Compute the residual due to the prescribed heat flux.
+     The convective part will be zero if the grid is not moving. ---*/
 
-      su2double Res_Conv[MAXNVAR] = {0.0};
-      su2double Res_Visc[MAXNVAR] = {0.0};
+    su2double Res_Conv = 0.0;
+    su2double Res_Visc = Wall_HeatFlux * Area;
 
-      /*--- Store the corrected velocity at the wall which will
-       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
+    /*--- Impose the value of the velocity as a strong boundary
+     condition (Dirichlet). Fix the velocity and remove any
+     contribution to the residual at this node. ---*/
 
-      if (dynamic_grid) {
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
-      } else {
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+    if (dynamic_grid) {
+      nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+    }
+    else {
+      su2double zero[MAXNDIM] = {0.0};
+      nodes->SetVelocity_Old(iPoint, zero);
+    }
+
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+    nodes->SetVel_ResTruncError_Zero(iPoint);
+
+    /*--- If the wall is moving, there are additional residual contributions
+     due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+
+    if (dynamic_grid) {
+
+      /*--- Get the grid velocity at the current boundary node ---*/
+
+      const auto GridVel = geometry->nodes->GetGridVel(iPoint);
+
+      su2double ProjGridVel = Area * GeometryToolbox::DotProduct(nDim, GridVel, UnitNormal);
+
+      /*--- Retrieve other primitive quantities and viscosities ---*/
+
+      su2double Density  = nodes->GetDensity(iPoint);
+      su2double Pressure = nodes->GetPressure(iPoint);
+      su2double laminar_viscosity = nodes->GetLaminarViscosity(iPoint);
+      su2double eddy_viscosity    = nodes->GetEddyViscosity(iPoint);
+      su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
+
+      const auto Grad_Vel = &nodes->GetGradient_Primitive(iPoint)[1];
+
+      /*--- Divergence of the velocity ---*/
+
+      su2double div_vel = Grad_Vel[0][0] + Grad_Vel[1][1] + Grad_Vel[2][2];
+
+      /*--- Compute the viscous stress tensor ---*/
+
+      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        for (auto jDim = 0u; jDim < nDim; jDim++) {
+          tau[iDim][jDim] = total_viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]);
+        }
+        tau[iDim][iDim] -= TWO3*total_viscosity*div_vel;
       }
 
-      /*--- Impose the value of the velocity as a strong boundary
-       condition (Dirichlet). Fix the velocity and remove any
-       contribution to the residual at this node. ---*/
+      /*--- Dot product of the stress tensor with the grid velocity ---*/
 
-      nodes->SetVelocity_Old(iPoint,Vector);
+      su2double tau_vel[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        tau_vel[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], GridVel);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-      nodes->SetVel_ResTruncError_Zero(iPoint);
+      /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
 
-      /*--- Apply a weak boundary condition for the energy equation.
-       Compute the residual due to the prescribed heat flux. ---*/
+      Res_Conv = Pressure*ProjGridVel;
+      Res_Visc += GeometryToolbox::DotProduct(nDim, tau_vel, UnitNormal) * Area;
 
-      Res_Visc[nDim+1] = Wall_HeatFlux * Area;
-
-      /*--- If the wall is moving, there are additional residual contributions
-       due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
-
-      if (dynamic_grid) {
-
-        /*--- Get the grid velocity at the current boundary node ---*/
-
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        ProjGridVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
-
-        /*--- Retrieve other primitive quantities and viscosities ---*/
-
-        Density  = nodes->GetDensity(iPoint);
-        Pressure = nodes->GetPressure(iPoint);
-        laminar_viscosity = nodes->GetLaminarViscosity(iPoint);
-        eddy_viscosity    = nodes->GetEddyViscosity(iPoint);
-        total_viscosity   = laminar_viscosity + eddy_viscosity;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
-            Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint,iDim+1, jDim);
-          }
-        }
-
-        /*--- Divergence of the velocity ---*/
-
-        div_vel = 0.0; for (iDim = 0 ; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
-
-        /*--- Compute the viscous stress tensor ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) -
-                              TWO3*total_viscosity*div_vel*delta[iDim][jDim];
-          }
-        }
-
-        /*--- Dot product of the stress tensor with the grid velocity ---*/
-
-        for (iDim = 0 ; iDim < nDim; iDim++) {
-          tau_vel[iDim] = 0.0;
-          for (jDim = 0 ; jDim < nDim; jDim++)
-            tau_vel[iDim] += tau[iDim][jDim]*GridVel[jDim];
-        }
-
-        /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
-
-        Res_Conv[nDim+1] = Pressure*ProjGridVel;
-        for (iDim = 0 ; iDim < nDim; iDim++)
-          Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
-
-        /*--- Implicit Jacobian contributions due to moving walls ---*/
-
-        if (implicit) {
-
-          /*--- Jacobian contribution related to the pressure term ---*/
-
-          GridVel2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            GridVel2 += GridVel[iDim]*GridVel[iDim];
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              Jacobian_i[iVar][jVar] = 0.0;
-          Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
-          for (jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[nDim+1][jDim+1] = -(Gamma-1.0)*GridVel[jDim]*ProjGridVel;
-          Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*ProjGridVel;
-
-          /*--- Add the block to the Global Jacobian structure ---*/
-
-          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-
-          /*--- Now the Jacobian contribution related to the shear stress ---*/
-
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              Jacobian_i[iVar][jVar] = 0.0;
-
-          /*--- Compute closest normal neighbor ---*/
-
-          Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-          /*--- Get coordinates of i & nearest normal and compute distance ---*/
-
-          Coord_i = geometry->nodes->GetCoord(iPoint);
-          Coord_j = geometry->nodes->GetCoord(Point_Normal);
-
-          dist_ij = 0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-          dist_ij = sqrt(dist_ij);
-
-          theta2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            theta2 += UnitNormal[iDim]*UnitNormal[iDim];
-
-          factor = total_viscosity*Area/(Density*dist_ij);
-
-          if (nDim == 2) {
-            thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
-            thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
-
-            etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
-
-            pix = GridVel[0]*thetax + GridVel[1]*etaz;
-            piy = GridVel[0]*etaz   + GridVel[1]*thetay;
-
-            Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]);
-            Jacobian_i[nDim+1][1] -= factor*pix;
-            Jacobian_i[nDim+1][2] -= factor*piy;
-          } else {
-            thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
-            thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
-            thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
-
-            etaz = UnitNormal[0]*UnitNormal[1]/3.0;
-            etax = UnitNormal[1]*UnitNormal[2]/3.0;
-            etay = UnitNormal[0]*UnitNormal[2]/3.0;
-
-            pix = GridVel[0]*thetax + GridVel[1]*etaz   + GridVel[2]*etay;
-            piy = GridVel[0]*etaz   + GridVel[1]*thetay + GridVel[2]*etax;
-            piz = GridVel[0]*etay   + GridVel[1]*etax   + GridVel[2]*thetaz;
-
-            Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]+piz*GridVel[2]);
-            Jacobian_i[nDim+1][1] -= factor*pix;
-            Jacobian_i[nDim+1][2] -= factor*piy;
-            Jacobian_i[nDim+1][3] -= factor*piz;
-          }
-
-          /*--- Subtract the block from the Global Jacobian structure ---*/
-
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-
-        }
-      }
-
-      /*--- Convective contribution to the residual at the wall ---*/
-
-      LinSysRes.AddBlock(iPoint, Res_Conv);
-
-      /*--- Viscous contribution to the residual at the wall ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-      /*--- Enforce the no-slip boundary condition in a strong way by
-       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+      /*--- Implicit Jacobian contributions due to moving walls ---*/
 
       if (implicit) {
-        for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
+
+        /*--- Jacobian contribution related to the pressure term ---*/
+
+        su2double GridVel2 = GeometryToolbox::SquaredNorm(nDim, GridVel);
+
+        Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
+
+        for (auto jDim = 0u; jDim < nDim; jDim++)
+          Jacobian_i[nDim+1][jDim+1] = -(Gamma-1.0)*GridVel[jDim]*ProjGridVel;
+
+        Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*ProjGridVel;
+
+        /*--- Now the Jacobian contribution related to the shear stress ---*/
+        /*--- Compute closest normal neighbor ---*/
+
+        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+
+        su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+
+        const su2double theta2 = 1.0;
+
+        su2double factor = total_viscosity*Area/(Density*dist_ij);
+
+        if (nDim == 2) {
+          su2double thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+          su2double thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+
+          su2double etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+
+          su2double pix = GridVel[0]*thetax + GridVel[1]*etaz;
+          su2double piy = GridVel[0]*etaz   + GridVel[1]*thetay;
+
+          Jacobian_i[nDim+1][0] += factor*(-pix*GridVel[0]+piy*GridVel[1]);
+          Jacobian_i[nDim+1][1] += factor*pix;
+          Jacobian_i[nDim+1][2] += factor*piy;
         }
+        else {
+          su2double thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+          su2double thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+          su2double thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
+
+          su2double etaz = UnitNormal[0]*UnitNormal[1]/3.0;
+          su2double etax = UnitNormal[1]*UnitNormal[2]/3.0;
+          su2double etay = UnitNormal[0]*UnitNormal[2]/3.0;
+
+          su2double pix = GridVel[0]*thetax + GridVel[1]*etaz   + GridVel[2]*etay;
+          su2double piy = GridVel[0]*etaz   + GridVel[1]*thetay + GridVel[2]*etax;
+          su2double piz = GridVel[0]*etay   + GridVel[1]*etax   + GridVel[2]*thetaz;
+
+          Jacobian_i[nDim+1][0] += factor*(-pix*GridVel[0]+piy*GridVel[1]+piz*GridVel[2]);
+          Jacobian_i[nDim+1][1] += factor*pix;
+          Jacobian_i[nDim+1][2] += factor*piy;
+          Jacobian_i[nDim+1][3] += factor*piz;
+        }
+
+        /*--- Add the block (convective - viscous) from the Global Jacobian structure. ---*/
+
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+
+      }
+    }
+
+    /*--- Convective and viscous contributions to the residual at the wall ---*/
+
+    LinSysRes(iPoint, nDim+1) += Res_Conv - Res_Visc;
+
+    /*--- Enforce the no-slip boundary condition in a strong way by
+     modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+
+    if (implicit) {
+      for (auto iVar = 1u; iVar <= nDim; iVar++) {
+        auto total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
       }
     }
   }
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Jacobian_i[iVar];
+  if (Jacobian_i)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      delete [] Jacobian_i[iVar];
   delete [] Jacobian_i;
 
 }
