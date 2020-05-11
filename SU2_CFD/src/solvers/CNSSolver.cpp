@@ -1167,7 +1167,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
      And add the contributions to the Jacobian due to energy. ---*/
 
     if (implicit) {
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      if (dynamic_grid) {
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      }
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
         auto total_index = iPoint*nVar+iVar;
