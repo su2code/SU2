@@ -3154,6 +3154,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     VolumeOutputFiles[2] = SURFACE_PARAVIEW_BINARY;
   }
 
+  if(OptionIsSet("DISCRETE_ADJOINT")){
+    // Check, if sensitivity is set.
+    bool sensIsSet = false;
+    for (unsigned long i  = 0; i < nVolumeOutput; i++) {
+      if(GetVolumeOutput_Field(i).compare(string("SENSITIVITY")) == 0){
+        sensIsSet = true;
+      }
+    }
+    if(!sensIsSet){
+      // Add sensitivity volume output for adjoint runs
+      string * vals = new string[nVolumeOutput+1];
+      for (unsigned long i  = 0; i < nVolumeOutput; i++) {
+        vals[i].assign(VolumeOutput[i]);
+      }
+      vals[nVolumeOutput] = string("SENSITIVITY");
+      nVolumeOutput++; //Array has one entry more now
+
+      delete [] VolumeOutput;
+      VolumeOutput = &vals[0];
+    }
+  }
+
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){

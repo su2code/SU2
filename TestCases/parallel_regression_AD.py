@@ -378,23 +378,6 @@ def main():
     unsteady_naca0012.unsteady  = True
     pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
-
-	####################################################################################
-    ### Unsteady Disc. adj. compressible RANS Windowed Average  restart optimization ###
-    ####################################################################################
-    
-	# test optimization, with with restart files
-    unsteady_NACA0012_opt_restart            = TestCase('unsteady_NACA0012_opt_restart')
-    unsteady_NACA0012_opt_restart.cfg_dir    = "optimization_rans/naca0012"
-    unsteady_NACA0012_opt_restart.cfg_file   = "naca0012.cfg"
-    unsteady_NACA0012_opt_restart.test_iter  = 12
-    unsteady_NACA0012_opt_restart.su2_exec   = "shape_optimization.py -q False -f "
-    unsteady_NACA0012_opt_restart.timeout    = 1600
-    unsteady_NACA0012_opt_restart.reference_file = "history_project.csv.ref"
-    unsteady_NACA0012_opt_restart.test_file = "history_project.csv"
-    unsteady_NACA0012_opt_restart.unsteady  = True
-    pass_list.append(unsteady_NACA0012_opt_restart.run_filediff())
-    test_list.append(unsteady_NACA0012_opt_restart)
 	
     # Tests summary
     print('==================================================================')
