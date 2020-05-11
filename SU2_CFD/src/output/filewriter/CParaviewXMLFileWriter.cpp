@@ -329,10 +329,6 @@ void CParaviewXMLFileWriter::Write_Data(){
 void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize,
                                             unsigned long globalSize, unsigned long offset){
 
-
-  unsigned long totalByteSize;
-  int byteSize;
-
   std::string typeStr;
   unsigned long typeSize = 0;
 
@@ -340,10 +336,11 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
 
   /*--- Compute the size of the data to write in bytes ---*/
 
+  int byteSize;
   byteSize = arraySize*typeSize;
 
   /*--- The total data size ---*/
-
+  unsigned long totalByteSize;
   totalByteSize = globalSize*typeSize;
 
   /*--- Only the master node writes the total size in bytes as int32 in front of the array data ---*/

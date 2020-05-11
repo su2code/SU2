@@ -3935,11 +3935,6 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
       blocklen[counter] = nFields;
-      //if (iPoint_Global*nFields > INT_MAX){
-      //  SU2_MPI::Error(string("File ") + string(fname) + string(" is causing an over-run of int.\n") +
-      //            string("The displacement required for parallel reading is too large.\n") +
-      //             string("CSolver::Read_SU2_Restart_Binary needs to read the restart file differently\n"), CURRENT_FUNCTION);
-      //}
       displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
       counter++;
     }
