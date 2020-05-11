@@ -6713,21 +6713,18 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
 
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
-       viscous  = config->GetViscous();
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool viscous = config->GetViscous();
+  bool preprocessed = false;
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
-  su2double Area, ProjVelocity_i,
-            *V_reflected,
-            *V_domain,
-            *Normal     = new su2double[nDim],
-            *UnitNormal = new su2double[nDim];
+  su2double Area, ProjVelocity_i, *V_reflected, *V_domain,
+            Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
   su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
-            *Tangential  = new su2double[nDim],
-            *GradNormVel = new su2double[nDim],
-            *GradTangVel = new su2double[nDim];
+            Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0},
+            GradTangVel[MAXNDIM] = {0.0};
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
@@ -6739,7 +6736,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    if (iVertex == 0 ||
+    if (!preprocessed ||
         geometry->bound_is_straight[val_marker] != true) {
 
       /*----------------------------------------------------------------------------------------------*/
@@ -6754,6 +6751,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       /*--- such that the recomputation is done for each node (which comes with a tiny performance ---*/
       /*--- penalty).                                                                              ---*/
       /*----------------------------------------------------------------------------------------------*/
+
+      preprocessed = true;
 
       /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -6950,7 +6949,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), Grad_Reflected);
 
         /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -6968,12 +6967,6 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   }//for iVertex
 
   /*--- Free locally allocated memory ---*/
-  delete [] Normal;
-  delete [] UnitNormal;
-  delete [] Tangential;
-  delete [] GradNormVel;
-  delete [] GradTangVel;
-
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     delete [] Grad_Reflected[iVar];
   delete [] Grad_Reflected;
