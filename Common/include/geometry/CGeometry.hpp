@@ -257,6 +257,8 @@ public:
   vector<su2double> Aspect_Ratio;        /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
   vector<su2double> Volume_Ratio;        /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
 
+  int iMesh = MESH_0;
+
   /*!
    * \brief Constructor of the class.
    */
@@ -1693,5 +1695,10 @@ public:
    */
   static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
 
+  /*!
+   * \brief Get the mesh index
+   * \return The mesh index
+   */
+  inline int GetiMesh() { return iMesh; }
 };
 
