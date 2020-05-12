@@ -131,10 +131,16 @@ def shape_optimization( filename                           ,
     state.find_files(config)
 
     # add restart files to state.FILES
-    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES':
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES' and gradient != 'CONTINUOUS_ADJOINT':
         restart_name = config['RESTART_FILENAME'].split('.')[0]
         state['FILES']['RESTART_FILE_1'] = restart_name + '_' + str(int(config['RESTART_ITER'])-1).zfill(5) + '.dat'
         state['FILES']['RESTART_FILE_2'] = restart_name + '_' + str(int(config['RESTART_ITER'])-2).zfill(5) + '.dat'
+
+        # throw, if restart files does not exist
+        if not os.path.isfile(state['FILES']['RESTART_FILE_1']):
+            sys.exit("Restart file <" + state['FILES']['RESTART_FILE_1'] + "> not found.")
+            sys.exit("Restart file <" + state['FILES']['RESTART_FILE_2'] + "> not found.")
+
     # Project
 
     if os.path.exists(projectname):
