@@ -30,7 +30,7 @@ virtualenv:
 env:
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabledi -Denable-tecio=false"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tecio=false"
           TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
