@@ -47,8 +47,8 @@ env:
 
 before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
-    - export PATH=/usr/bin:$PATH
-    - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+    #- export PATH=/usr/bin:$PATH
+    #- sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
     # Install the necessary packages using apt-get with sudo
     - sudo apt-get update -qq
     - sudo apt-get install -qq build-essential python3-numpy python3-scipy libopenmpi-dev openmpi-bin swig python3-mpi4py  
