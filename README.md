@@ -14,7 +14,7 @@ For an overview of the technical details in SU2, please see the following AIAA J
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
 
 Continuous Integration:<br/>
-[![Regression Testing](https://github.com/su2code/SU2/workflows/Regression%20Testing/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
+[![Regression Testing](https://github.com/EduardoMolina/SU2/workflows/Regression%20Testing/badge.svg?branch=feature_WallModelLES)](https://github.com/EduardoMolina/SU2/actions)
 [![Release](https://github.com/su2code/SU2/workflows/Release%20Management/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
 
 Code Quality:<br/>
