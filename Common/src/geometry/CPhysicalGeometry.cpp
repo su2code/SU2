@@ -3441,13 +3441,13 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
+  bool wmles = config->GetWall_Models();
+
   /*--- Check for a wall treatment of the viscous boundaries. If present, some
         additional elements (and nodes) may be added as halo's. Only needed
         in parallel mode. ---*/
 
 #ifdef HAVE_MPI
-  bool wmles = config->GetWall_Models();
-
   if (wmles){
     if (rank == MASTER_NODE)
       cout << "Adding wall model donor elements to the halo list. " << endl;
@@ -3503,37 +3503,39 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     }
   }
 
-  /*--- The points of the elements that are only used as donors for interpolation
-        must be added to the communication pattern. ---*/
+  if (wmles){
+    
+    /*--- The points of the elements that are only used as donors for interpolation
+          must be added to the communication pattern. ---*/
+    for (iElem = 0; iElem < nElem; iElem++) {
 
-  for (iElem = 0; iElem < nElem; iElem++) {
+      for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
+        iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
 
-    for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
-      iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
+        if(iDomain == (unsigned long) rank) {
 
-      if(iDomain == (unsigned long) rank) {
+          /*--- This is a halo element that only serves as a donor for interpolation
+                on this processor. This means that all its points are halo points as
+                well and must be added to the receive pattern. ---*/
+          for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
-        /*--- This is a halo element that only serves as a donor for interpolation
-              on this processor. This means that all its points are halo points as
-              well and must be added to the receive pattern. ---*/
-        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
-
-          jPoint  = elem[iElem]->GetNode(jNode);
-          jDomain = node[jPoint]->GetColor();
-          ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+            jPoint  = elem[iElem]->GetNode(jNode);
+            jDomain = node[jPoint]->GetColor();
+            ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+          }
         }
-      }
-      else {
+        else {
 
-        /*--- This element is only an interpolation donor on rank iDomain.
-              Add the owned points of this element to the send pattern. ---*/
-        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+          /*--- This element is only an interpolation donor on rank iDomain.
+                Add the owned points of this element to the send pattern. ---*/
+          for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
-          jPoint  = elem[iElem]->GetNode(jNode);
-          jDomain = node[jPoint]->GetColor();
+            jPoint  = elem[iElem]->GetNode(jNode);
+            jDomain = node[jPoint]->GetColor();
 
-          if(jDomain == (unsigned long) rank)
-            SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
+            if(jDomain == (unsigned long) rank)
+              SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
+          }
         }
       }
     }
