@@ -264,7 +264,9 @@ def adjoint( func_name, config, state=None ):
         link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO' #Can this be deleted?
-        #konfig['RESTART_SOL'] = 'NO' #Restart solution gets handled just before solver starts
+        if config.get('TIME_DOMAIN', 'NO') != 'YES':  # rules out steady state optimization special cases.
+            konfig['RESTART_SOL'] = 'NO'  # for shape optimization with restart files.
+        # Restart solution gets handled just before solver starts for unsteady optimization
 
     # files: target equivarea adjoint weights
     if 'EQUIV_AREA' in special_cases:

@@ -244,8 +244,9 @@ def aerodynamics( config, state=None ):
         name = su2io.expand_time(name,config)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
-    #else:
-        #config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
+    else:
+        if config.get('TIME_DOMAIN', 'NO') != 'YES': #rules out steady state optimization special cases.
+            config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
         
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 

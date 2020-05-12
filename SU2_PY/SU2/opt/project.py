@@ -199,7 +199,7 @@ class Project(object):
             timestamp = design.state.tic()
 
             # set right option in design config.
-            if konfig.get('RESTART_SOL', 'NO') == 'YES':
+            if konfig.get('TIME_DOMAIN', 'NO') == 'YES' and konfig.get('RESTART_SOL', 'NO') == 'YES':
                 design.config['RESTART_SOL'] = 'YES'
 
             # run design+
