@@ -102,13 +102,13 @@ def direct_differentiation( filename           ,
         if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
             #throw, if restart file does not exist
             if not os.path.isfile(restart_filename):
-                sys.exit("Restart file <" + restart_filename + "> not found." )
+                sys.exit("Error: Restart file <" + restart_filename + "> not found." )
             shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
         restart_filename = restart_name + '_' + str(int(config['RESTART_ITER']) - 2).zfill(5) + '.dat'
         if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
             # throw, if restart file does not exist
             if not os.path.isfile(restart_filename):
-                sys.exit("Restart file <" + restart_filename + "> not found.")
+                sys.exit("Error: Restart file <" + restart_filename + "> not found.")
             shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
 
     # Direct Differentiation Gradients

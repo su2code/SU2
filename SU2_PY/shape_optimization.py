@@ -135,12 +135,12 @@ def shape_optimization( filename                           ,
         restart_name = config['RESTART_FILENAME'].split('.')[0]
         restart_filename = restart_name + '_' + str(int(config['RESTART_ITER'])-1).zfill(5) + '.dat'
         if not os.path.isfile(restart_filename): # throw, if restart files does not exist
-            sys.exit("Restart file <" + restart_filename + "> not found.")
+            sys.exit("Error: Restart file <" + restart_filename + "> not found.")
         state['FILES']['RESTART_FILE_1'] = restart_filename
 
         restart_filename = restart_name + '_' + str(int(config['RESTART_ITER'])-2).zfill(5) + '.dat'
         if not os.path.isfile(restart_filename): # throw, if restart files does not exist
-            sys.exit("Restart file <" + restart_filename + "> not found.")
+            sys.exit("Error: Restart file <" + restart_filename + "> not found.")
         state['FILES']['RESTART_FILE_2'] =restart_filename
 
 
