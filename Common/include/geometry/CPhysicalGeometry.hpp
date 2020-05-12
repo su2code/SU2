@@ -391,7 +391,7 @@ public:
   /*!
    * \brief Set points which surround a point.
    */
-  void SetPoint_Connectivity(void) override;
+  void SetPoint_Connectivity(bool sort_points) override;
 
   /*!
    * \brief Set a renumbering using a Reverse Cuthill-McKee Algorithm

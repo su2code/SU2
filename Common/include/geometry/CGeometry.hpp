@@ -585,9 +585,10 @@ public:
   inline virtual void SetPositive_ZArea(CConfig *config) {}
 
   /*!
-   * \brief Setas connectivity between points.
+   * \brief Set connectivity between points.
+   * \param[in] sort_points - Whether to sort the list of neighbors for each point.
    */
-  inline virtual void SetPoint_Connectivity(void) {}
+  inline virtual void SetPoint_Connectivity(bool sort_points) {}
 
   /*!
    * \brief Orders the RCM.

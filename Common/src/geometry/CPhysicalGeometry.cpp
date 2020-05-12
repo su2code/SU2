@@ -5139,7 +5139,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::SetPoint_Connectivity(void) {
+void CPhysicalGeometry::SetPoint_Connectivity(bool sort_points) {
 
   vector<vector<unsigned long> > points(nPoint);
 
@@ -5195,7 +5195,9 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
         }
       }
     }
-    //sort(points[iPoint].begin(), points[iPoint].end());
+
+    if (sort_points)
+      sort(points[iPoint].begin(), points[iPoint].end());
 
     /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
     nodes->SetnNeighbor(iPoint, points[iPoint].size());
@@ -5313,36 +5315,25 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
   /*--- Set the new coordinates ---*/
 
-  su2double **AuxCoord;
-  unsigned long *AuxGlobalIndex;
-
-  AuxGlobalIndex = new unsigned long [nPoint];
-  AuxCoord = new su2double* [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    AuxCoord[iPoint] = new su2double [nDim];
+  su2activematrix AuxCoord(nPoint, nDim);
+  vector<unsigned long> AuxGlobalIndex(nPoint);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     AuxGlobalIndex[iPoint] = nodes->GetGlobalIndex(iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
-      AuxCoord[iPoint][iDim] = nodes->GetCoord(iPoint, iDim);
+      AuxCoord(iPoint,iDim) = nodes->GetCoord(iPoint, iDim);
     }
   }
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nodes->SetGlobalIndex(iPoint, AuxGlobalIndex[Result[iPoint]]);
     for (iDim = 0; iDim < nDim; iDim++)
-      nodes->SetCoord(iPoint, iDim, AuxCoord[Result[iPoint]][iDim]);
+      nodes->SetCoord(iPoint, iDim, AuxCoord(Result[iPoint],iDim));
   }
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    delete[] AuxCoord[iPoint];
-  delete[] AuxCoord;
-  delete[] AuxGlobalIndex;
 
   /*--- Set the new conectivities ---*/
 
-  unsigned long *InvResult;
-  InvResult = new unsigned long [nPoint];
+  auto& InvResult = AuxGlobalIndex; // alias to re-use storage
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     InvResult[Result[iPoint]] = iPoint;
 
@@ -5383,9 +5374,6 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       }
     }
   }
-
-
-  delete[] InvResult;
 
 }
 
