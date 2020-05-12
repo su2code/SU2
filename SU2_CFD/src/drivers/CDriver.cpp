@@ -776,7 +776,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Compute elements surrounding points, points surrounding points ---*/
 
   if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
-  geometry[MESH_0]->SetPoint_Connectivity(false);
+  geometry[MESH_0]->SetPoint_Connectivity();
 
   /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
 
