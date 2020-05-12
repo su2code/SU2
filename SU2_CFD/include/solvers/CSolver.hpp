@@ -4761,9 +4761,15 @@ public:
 
   /*!
    * \brief A virtual member
-   * Set source term for pressure correction.
+   * Set coefficients for pressure correction equation.
    */
-  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh) { }
+  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+  
+  /*!
+   * \brief A virtual member
+   * Set coefficients for pressure correction equation in periodic problems.
+   */
+  inline virtual void SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 protected:
   /*!

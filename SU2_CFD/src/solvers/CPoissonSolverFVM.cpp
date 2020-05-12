@@ -56,7 +56,8 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   nDim =          geometry->GetnDim();
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
-  nVar =          1;
+  nVar = 1;
+  nPrimVar = 1;
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -76,9 +77,7 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
     Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
-  
-  
-  
+
   /*--- Define some auxiliar vector related with the solution ---*/
 
   Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
@@ -122,6 +121,12 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   nodes = new CPoissonVariable(0.0, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
   
+  /*--- The poisson equation always solved implicitly, so set the
+   implicit flag in case we have periodic BCs. Geometry info is 
+   communicated in the flow solver. ---*/
+
+  SetImplicitPeriodic(true);
+
   /*--- Perform the MPI communication of the solution ---*/
 
   InitiateComms(geometry, config, SOLUTION);
@@ -539,6 +544,12 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       //nodes->AddSolution(iPoint, iVar, config->GetRelaxation_Factor_PBFlow()*LinSysSol[iPoint*nVar+iVar]);
      }
   }
+  
+  /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
 
 
   /*--- MPI solution ---*/
@@ -566,7 +577,11 @@ void CPoissonSolverFVM::Direct_Solve(CGeometry *geometry, CSolver **solver_conta
 
 void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh, unsigned long Iteration){
-							
+
+  /*--- Set a value for periodic communication routines. Is not used during any computations. ---*/
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    nodes->SetDelta_Time(iPoint, 0.0);
+  }
    
 }
 
@@ -935,4 +950,23 @@ string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 	}
 	/*--- Free locally allocated memory ---*/
   delete [] Normal;
+}
+
+
+/*--- Note that velocity indices in residual are hard coded in solver_structure. Need to be careful. ---*/
+
+void CPoissonSolverFVM::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                               CNumerics *numerics, CConfig *config) {
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated correctly during the communications. For implicit calculations,
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+  
 }

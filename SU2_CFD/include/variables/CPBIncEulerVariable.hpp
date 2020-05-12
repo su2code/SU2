@@ -348,6 +348,8 @@ public:
   }
   
   inline void Add_Mom_Coeff_nb(unsigned long iPoint, su2double val_coeff_nb, unsigned short val_Var) { Mom_Coeff_nb(iPoint,val_Var) += val_coeff_nb;}
+
+  inline void Add_Mom_Coeff(unsigned long iPoint, su2double val_coeff, unsigned short val_Var) { Mom_Coeff(iPoint,val_Var) += val_coeff;}
   
   inline void SetStrongBC(unsigned long iPoint) { strong_bc(iPoint) = true; }
   

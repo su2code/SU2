@@ -194,6 +194,7 @@ CPoissonVariable::CPoissonVariable(su2double val_SourceTerm, unsigned long nPoin
  /*--- Intitialize the source term of Poisson equation. ---*/
  
   SourceTerm.resize(nPoint) = su2double(0.0);
+  Delta_Time.resize(nPoint) = su2double(0.0);
   
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)

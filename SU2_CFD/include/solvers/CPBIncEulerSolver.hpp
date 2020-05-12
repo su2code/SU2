@@ -1404,11 +1404,18 @@ public:
   void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
   
   /*!
-   * \brief Compute the source term for the pressure correction equation based 
+   * \brief Compute the coefficients for the pressure correction equation based 
    *        on the residuals from the solution of momentum equation.
    * 
    */
-  void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh);
+  void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh);
+  
+  /*!
+   * \brief Compute the coefficients for the pressure correction equation based 
+   *        on the residuals from the solution of momentum equation in a periodic problem.
+   * 
+   */
+  void SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.

@@ -779,6 +779,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
   //bool piso = true;
   bool piso = (config[iZone]->GetKind_PBIter() == PISO);
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  bool periodic = (config[iZone]->GetnMarker_Periodic() > 0);
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   
@@ -804,7 +805,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
                   Iteration, iZone, iInst);
       
      /*--- Set source term for pressure correction equation based on current flow solution ---*/
-     solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], false, iMesh);
+     solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], periodic, iMesh);
      
      solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
 
@@ -841,7 +842,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 		config[iZone]->SetKind_TimeIntScheme(EULER_IMPLICIT);
 
 		/*--- Set source term for pressure correction equation based on current flow solution ---*/
-		solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], false, iMesh);
+		solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], periodic, iMesh);
 
 		solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
 
@@ -882,7 +883,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
                   Iteration, iZone, iInst);
       
             /*--- Set source term for pressure correction equation based on current flow solution ---*/
-            solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], false, iMesh);
+            solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], periodic, iMesh);
      
             solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone],  iMesh);
 	

@@ -2800,10 +2800,12 @@ public:
   inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, su2double *val_Mom_Coeff) {}
   
   inline virtual void Add_Mom_Coeff_nb(unsigned long iPoint, su2double val_coeff_nb, unsigned short val_Var) {}
+
+  inline virtual void Add_Mom_Coeff(unsigned long iPoint, su2double val_coeff, unsigned short val_Var) {}
   
-  inline virtual void Set_Mom_Coeff_nbZero() {}
+  inline virtual void Set_Mom_Coeff_nbZero(unsigned long iPoint) {}
   
-  inline virtual void Set_Mom_CoeffZero() {}
+  inline virtual void Set_Mom_CoeffZero(unsigned long iPoint) {}
   
   inline virtual void Set_Mom_Coeff(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
   

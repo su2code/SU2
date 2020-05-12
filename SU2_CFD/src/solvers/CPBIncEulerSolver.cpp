@@ -3073,11 +3073,21 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     //cout<<endl;
   }
  
+  /*cout<<"Before periodic implicit"<<endl;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    cout<<iPoint<<"\t"<<nodes->GetSolution(iPoint, 0)<<"\t"<<nodes->GetSolution(iPoint, 0)<<endl;
+  }*/
+  
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
+  
+  /*cout<<"After periodic implicit"<<endl;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    cout<<iPoint<<"\t"<<nodes->GetSolution(iPoint, 0)<<"\t"<<nodes->GetSolution(iPoint, 0)<<endl;
+  }*/
   
   /*--- MPI solution ---*/
   
@@ -3095,42 +3105,83 @@ void CPBIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container,
 }
 
 
-void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh) {
+void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) {
 	
-	unsigned short iVar, jVar, iDim, jDim;
-	unsigned long iPoint, jPoint, iNeigh;
-	su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
-	int ranknp = SU2_MPI::GetRank();
-	
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  unsigned short iVar, jVar, iDim, jDim;
+  unsigned long iPoint, jPoint, iNeigh;
+  su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+  
+  if (!periodic)  {
 
+    /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Self contribution. ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
       }
-      Vol = (geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume());
-	  delT = nodes->GetDelta_Time(iPoint);
-      //cout<<iPoint<<"\t";
-      nodes->Set_Mom_Coeff_nbZero(iPoint);
 
-	  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      /*--- Contribution from neighbors. ---*/  
+      nodes->Set_Mom_Coeff_nbZero(iPoint);
+      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         for (iVar = 0; iVar < nVar; iVar++) {
           nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
         }
       }
+
+      Vol = geometry->node[iPoint]->GetVolume(); delT = nodes->GetDelta_Time(iPoint);
+
       for (iVar = 0; iVar < nVar; iVar++) {
-        //Mom_Coeff[iVar] = config->GetRelaxation_Factor_PBFlow()*Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar);
         Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - config->GetRCFactor()*(Vol/delT);
         Mom_Coeff[iVar] = nodes->GetDensity(iPoint)*Vol/Mom_Coeff[iVar];
-        //cout<<Mom_Coeff[iVar]<<"\t";
       }
-      //cout<<endl;
       nodes->Set_Mom_Coeff(iPoint, Mom_Coeff);
-
     }
-	/*--- Insert MPI call here. ---*/
-	InitiateComms(geometry, config, MOM_COEFF);
-	CompleteComms(geometry, config, MOM_COEFF);
+  
+  /*--- Insert MPI call here. ---*/
+  InitiateComms(geometry, config, MOM_COEFF);
+  CompleteComms(geometry, config, MOM_COEFF);
+  }
+
+}
+
+
+void CPBIncEulerSolver::SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned short iVar, jVar, iDim, jDim;
+  unsigned long iPoint, jPoint, iNeigh;
+  su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Self contribution. ---*/
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
+    }
+    
+    /*--- Contribution from neighbors. ---*/  
+    nodes->Set_Mom_Coeff_nbZero(iPoint);
+    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+      }
+    }
+    
+    Vol = geometry->node[iPoint]->GetVolume();	delT = nodes->GetDelta_Time(iPoint);
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Mom_Coeff[iVar] = Mom_Coeff[iVar] + config->GetRCFactor()*(Vol/delT) - nodes->Get_Mom_Coeff_nb(iPoint, iVar);
+      Mom_Coeff[iVar] = nodes->GetDensity(iPoint)*Vol/Mom_Coeff[iVar];
+    }
+    nodes->Set_Mom_Coeff(iPoint, Mom_Coeff);
+  }
+  
+  /*--- Insert MPI call here. ---*/
+  InitiateComms(geometry, config, MOM_COEFF);
+  CompleteComms(geometry, config, MOM_COEFF);
+
 }
 
 
@@ -3479,9 +3530,9 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       /*--- Rhie Chow correction for time step must go here ---*/
 
 	  MassFlux_Part += dir*(MassFlux_Avg - RhieChowInterp);
-    } 
-    nodes->AddMassFlux(iPoint,MassFlux_Part);
+    }
 
+    nodes->AddMassFlux(iPoint,MassFlux_Part);
   }
 
   /*--- Mass flux correction for outflow ---*/
@@ -3594,12 +3645,22 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
             break;
 	      }
 		break;
+		
+		/*case PERIODIC_BOUNDARY:
+		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+              if (geometry->node[iPoint]->GetDomain()) {
+		        cout<<iPoint<<"\t"<<config->GetMarker_All_TagBound(iMarker)<<endl;
+		      }
+        }
+        break;*/
 
 		default:
 		break;
 	}
-  }
-
+  }  
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
     AddResMassFlux(nodes->GetMassFlux(iPoint)*nodes->GetMassFlux(iPoint));
 
@@ -3697,67 +3758,63 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     
   /*--- Velocity corrections and relaxation factor ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
-	for (iVar = 0; iVar < nVar; iVar++) 
-		vel_corr[iPoint][iVar] = 0.0;
-		
+    for (iVar = 0; iVar < nVar; iVar++) 
+      vel_corr[iPoint][iVar] = 0.0;
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	  factor = 0.0;
-	  Vol = geometry->node[iPoint]->GetVolume();
-	  delT = nodes->GetDelta_Time(iPoint);
-	  for (iVar = 0; iVar < nVar; iVar++) {
-			Coeff_Mom = nodes->Get_Mom_Coeff(iPoint,iVar);
-			vel_corr[iPoint][iVar] = Coeff_Mom*(solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iVar));
-			factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
-	  }
-	  //alpha_p[iPoint] = 1.0 - config->GetRelaxation_Factor_PBFlow(); //*(Vol/delT) / (factor);
-	  alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
-   }   
+    factor = 0.0;
+    Vol = geometry->node[iPoint]->GetVolume();
+    delT = nodes->GetDelta_Time(iPoint);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Coeff_Mom = nodes->Get_Mom_Coeff(iPoint,iVar);
+      vel_corr[iPoint][iVar] = Coeff_Mom*(solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iVar));
+      factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
+    }
+    alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
+  }
    
   /*--- Reassign strong boundary conditions ---*/
   /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
    *  where different treatment of pressure might be needed. Symmetry and Euler wall are weak BCs. ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-	
-	  KindBC = config->GetMarker_All_KindBC(iMarker);
-	  Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
-    
+
+    KindBC = config->GetMarker_All_KindBC(iMarker);
+    Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
+
     switch (KindBC) {
-		/*--- Only a fully developed outlet is implemented. For pressure, a dirichlet
-		 * BC has to be applied and no correction is necessary. Velocity has a neumann BC. ---*/
-		case OUTLET_FLOW: 
-		
-		Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
-		
-		switch (Kind_Outlet) {
-			case PRESSURE_OUTLET:
-              for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					if (geometry->node[iPoint]->GetDomain()) {
-					Pressure_Correc[iPoint] = PCorr_Ref;
-	               }
-              }
-	        break;
-	        // Not working yet
-	        case OPEN:
-	            for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					if (geometry->node[iPoint]->GetDomain()) {		
-						geometry->vertex[iMarker][iVertex]->GetNormal(Normal); 
-						
-						MassFlux_Part = 0.0;
-						for (iDim = 0; iDim < nDim; iDim++) 
-						    MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint,iDim))*Normal[iDim];
-						
-						/*if (!(MassFlux_Part >= 0.0))
-						  for (iDim = 0; iDim < nDim; iDim++)
-						     vel_corr[iPoint][iDim] = 0.0;
-						else*/
-						/*if (MassFlux_Part >= 0.0)
-						  Pressure_Correc[iPoint] = PCorr_Ref;*/
-		           }
-                }
-	        break;
+    /*--- Only a fully developed outlet is implemented. For pressure, a dirichlet
+          BC has to be applied and no correction is necessary. Velocity has a neumann BC. ---*/
+      case OUTLET_FLOW: 
+
+        Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
+        switch (Kind_Outlet) {
+          case PRESSURE_OUTLET:
+            for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              if (geometry->node[iPoint]->GetDomain()) {
+                Pressure_Correc[iPoint] = PCorr_Ref;
+	          }
+            }
+	      break;
+	      // Not working yet
+	      case OPEN:
+	        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              if (geometry->node[iPoint]->GetDomain()) {		
+                geometry->vertex[iMarker][iVertex]->GetNormal(Normal); 
+                MassFlux_Part = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) 
+				  MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint,iDim))*Normal[iDim];
+                /*if (!(MassFlux_Part >= 0.0))
+				    for (iDim = 0; iDim < nDim; iDim++)
+					  vel_corr[iPoint][iDim] = 0.0;
+                  else*/
+                    /*if (MassFlux_Part >= 0.0)
+                        Pressure_Correc[iPoint] = PCorr_Ref;*/
+		      }
+            }
+	      break;
 	    }
 		break;
 		
@@ -3813,50 +3870,60 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	}
   }
   
+  /*--- Velocity corrections ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	  //cout<<iPoint<<"\t";
-	 /*--- Velocity corrections ---*/
-	  for (iVar = 0; iVar < nVar; iVar++) {
-           Vel = nodes->GetVelocity(iPoint,iVar);
-           Vel = Vel - vel_corr[iPoint][iVar];
-           nodes->SetSolution(iPoint,iVar,Vel);
-           //cout<<Vel<<"\t";
-		}
-		nodes->SetVelocity(iPoint);
-		/*--- Pressure corrections ---*/
-		Current_Pressure = nodes->GetPressure(iPoint);
-		Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
-		nodes->SetPressure_val(iPoint,Current_Pressure);
-		//cout<<Pressure_Correc[iPoint]<<"\t\t"<<alpha_p[iPoint]<<endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Vel = nodes->GetVelocity(iPoint,iVar);
+      Vel = Vel - vel_corr[iPoint][iVar];
+      nodes->SetSolution(iPoint,iVar,Vel);
+    }
+    nodes->SetVelocity(iPoint);
+	/*--- Pressure corrections ---*/
+    Current_Pressure = nodes->GetPressure(iPoint);
+    Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
+    nodes->SetPressure_val(iPoint,Current_Pressure);
    }
      
-   /*--- Communicate updated velocities and pressure ---*/
-   InitiateComms(geometry, config, SOLUTION);
-   CompleteComms(geometry, config, SOLUTION);
-   
-   InitiateComms(geometry, config, PRESSURE_VAR);
-   CompleteComms(geometry, config, PRESSURE_VAR);  
+  /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
 
-   /*--- Reset pressure corrections to zero for next iteration. ---*/
-   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	   solver_container[POISSON_SOL]->GetNodes()->SetSolution(iPoint,0,0.0);
-   }
-   /*--- Communicate updated Poisson solution ---*/
-   solver_container[POISSON_SOL]->InitiateComms(geometry, config, SOLUTION);
-   solver_container[POISSON_SOL]->CompleteComms(geometry, config, SOLUTION);
-   
-   /*--- Deallocate local variables ---*/
-   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	  delete [] vel_corr[iPoint];
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
   }
-	delete [] Normal;
-	delete [] vel_corr;
-	delete [] Pressure_Correc;
-    delete [] alpha_p;
-	
+   
+   
+  /*--- Communicate updated velocities and pressure ---*/
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+   
+  InitiateComms(geometry, config, PRESSURE_VAR);
+  CompleteComms(geometry, config, PRESSURE_VAR);  
+
+  /*--- Reset pressure corrections to zero for next iteration. ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    solver_container[POISSON_SOL]->GetNodes()->SetSolution(iPoint,0,0.0);
+  }
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    solver_container[POISSON_SOL]->InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    solver_container[POISSON_SOL]->CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+  
+  /*--- Communicate updated Poisson solution ---*/
+  solver_container[POISSON_SOL]->InitiateComms(geometry, config, SOLUTION);
+  solver_container[POISSON_SOL]->CompleteComms(geometry, config, SOLUTION);
+
+  /*--- Deallocate local variables ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    delete [] vel_corr[iPoint];
+  }
+  delete [] Normal;
+  delete [] vel_corr;
+  delete [] Pressure_Correc;
+  delete [] alpha_p;
 }
-
-
 
 
 void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -4815,11 +4882,24 @@ void CPBIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_contai
    adjacent periodic markers, the repeated points will have their residuals
    accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
+  /*cout<<"Before periodic res"<<endl;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    cout<<iPoint<<"\t"<<LinSysRes(iPoint, 0)<<"\t"<<LinSysRes(iPoint, 1)<<endl;
+    cout<<iPoint<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,0,0)<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,1,1)<<endl;
+  }*/
+  
+  SetMomCoeffPer(geometry, solver_container, config);
   
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
+  
+  /*cout<<"After periodic res"<<endl;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    cout<<iPoint<<"\t"<<LinSysRes(iPoint, 0)<<"\t"<<LinSysRes(iPoint, 1)<<endl;
+    cout<<iPoint<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,0,0)<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,1,1)<<endl;
+  }*/
   
 }
 

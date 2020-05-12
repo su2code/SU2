@@ -2131,7 +2131,8 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   = 15,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
   PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
-  PERIODIC_PRIM_ULS   = 17   /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   = 17,  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_PRESSURE   = 18,   /*!< \brief Corrected pressure communication . */
 };
 
 /*!
