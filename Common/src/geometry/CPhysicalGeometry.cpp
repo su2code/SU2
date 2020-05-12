@@ -6421,12 +6421,14 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
   delete[] InvResult;
 
-  /* Adapt the array Local_to_Global_Point and the map Global_to_Local_Point
-     to the new numbering. */
-  Global_to_Local_Point.clear();
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    Local_to_Global_Point[iPoint] = node[iPoint]->GetGlobalIndex();
-    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+  if (config->GetWall_Models()){
+    /* Adapt the array Local_to_Global_Point and the map Global_to_Local_Point
+       to the new numbering. */
+    Global_to_Local_Point.clear();
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      Local_to_Global_Point[iPoint] = node[iPoint]->GetGlobalIndex();
+      Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+    }
   }
 }
 
