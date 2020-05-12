@@ -19,7 +19,7 @@ class CFixedCLModule : public CSolverModule{
 
 public:
 
-  explicit CFixedCLModule(CConfig *config)  {};
+  explicit CFixedCLModule(CConfig *config) : CSolverModule(config->GetFixed_CL_Mode()) {};
 
   void PreIterationHook(COutput *output, CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
