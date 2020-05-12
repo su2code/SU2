@@ -2537,7 +2537,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   if (fixed_cl && !disc_adjoint && !cont_adjoint) {
     SU2_OMP_MASTER
-    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
+//    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
     SU2_OMP_BARRIER
   }
 

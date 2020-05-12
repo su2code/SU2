@@ -74,6 +74,7 @@
 #include "../../include/numerics/elasticity/nonlinear_models.hpp"
 
 #include "../../include/integration/CIntegrationFactory.hpp"
+#include "../../include/iteration/modules/SolverModules.hpp"
 
 #include "../../../Common/include/omp_structure.hpp"
 
@@ -294,6 +295,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   /*--- Reset timer for compute performance benchmarking. ---*/
 
   StartTime = SU2_MPI::Wtime();
+
+  modules = ModulesPtr(new Modules(driver_config));
 
 }
 

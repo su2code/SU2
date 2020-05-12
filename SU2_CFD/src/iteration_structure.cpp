@@ -28,6 +28,7 @@
 
 #include "../include/iteration_structure.hpp"
 #include "../include/solvers/CFEASolver.hpp"
+#include "../include/iteration/modules/SolverModules.hpp"
 
 CIteration::CIteration(CConfig *config) {
   rank = SU2_MPI::GetRank();
@@ -567,23 +568,13 @@ bool CFluidIteration::Monitor(COutput *output,
   UsedTime = StopTime - StartTime;
 
 
-  if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0],
-                              solver[val_iZone][INST_0][MESH_0],
-                              config[val_iZone],
-                              config[val_iZone]->GetTimeIter(),
-                              config[val_iZone]->GetOuterIter(),
-                              config[val_iZone]->GetInnerIter());
-  }
 
-  /*--- If convergence was reached --*/
-  StopCalc =  output->GetConvergence();
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
-  if (config[val_iZone]->GetFixed_CL_Mode()){
-    StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
-  }
+//  if (config[val_iZone]->GetFixed_CL_Mode()){
+//    StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
+//  }
 
   return StopCalc;
 
@@ -664,13 +655,28 @@ void CFluidIteration::Solve(COutput *output,
 
     config[val_iZone]->SetInnerIter(Inner_Iter);
 
+    CSolverModule::for_each(*modules, CSolverModule::ActionPreIterationHook, output, config[val_iZone],
+                            geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0]);
+
     /*--- Run a single iteration of the solver ---*/
     Iterate(output, integration, geometry, solver, numerics, config,
             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-    /*--- Monitor the pseudo-time ---*/
-    StopCalc = Monitor(output, integration, geometry, solver, numerics, config,
-                       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+    if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
+      output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0],
+                                solver[val_iZone][INST_0][MESH_0],
+                                config[val_iZone],
+                                config[val_iZone]->GetTimeIter(),
+                                config[val_iZone]->GetOuterIter(),
+                                config[val_iZone]->GetInnerIter());
+    }
+
+    CSolverModule::for_each(*modules, CSolverModule::ActionPostIterationHook, output, config[val_iZone],
+                            geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0]);
+
+    /*--- If convergence was reached --*/
+    StopCalc =  output->GetConvergence();
 
     /*--- Output files at intermediate iterations if the problem is single zone ---*/
 
