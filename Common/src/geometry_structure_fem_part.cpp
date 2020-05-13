@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -584,7 +584,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim);
 
   /*--- Open the grid file again and go to the position where
         the correct zone is stored.                           ---*/
@@ -618,24 +618,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         if( binary_search(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end(), i) ) {
           istringstream point_line(text_line);
-
-          switch(nDim) {
-            case 2: {
-              su2double Coord_2D[2];
-              point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
-              node[ii] = new CPoint(Coord_2D[0], Coord_2D[1], i, config);
-              ii++;
-              break;
-            }
-
-            case 3: {
-              su2double Coord_3D[3];
-              point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
-              node[ii] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], i, config);
-              ii++;
-              break;
-            }
-          }
+          su2double Coord[3] = {0.0};
+          point_line >> Coord[0];
+          point_line >> Coord[1];
+          if (nDim==3) point_line >> Coord[2];
+          nodes->SetCoord(ii, Coord);
+          nodes->SetGlobalIndex(ii, i);
+          ++ii;
         }
       }
 
@@ -1159,7 +1148,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim);
 
   /*--- Store the global ID's of the nodes in such a way that they can
         be sent to the rank that actually stores the coordinates.. ---*/
@@ -1274,28 +1263,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
           This data is created by taking the offset of the source rank into
           account. In this way the nodes are numbered with increading
           global node ID. ---*/
-    switch ( nDim ) {
-      case 2: {
-        for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
-          const unsigned long jj = nDim*j;
-          const unsigned long kk = startingIndRanksInNode[source] + j;
+    for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
+      const unsigned long jj = nDim*j;
+      const unsigned long kk = startingIndRanksInNode[source] + j;
 
-          node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
-                                nodeBuf[source][j], config);
-        }
-        break;
-      }
-
-      case 3: {
-        for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
-          const unsigned long jj = nDim*j;
-          const unsigned long kk = startingIndRanksInNode[source] + j;
-
-          node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
-                                coorRecvBuf[jj+2], nodeBuf[source][j], config);
-        }
-        break;
-      }
+      nodes->SetCoord(kk, &coorRecvBuf[jj]);
+      nodes->SetGlobalIndex(kk, nodeBuf[source][j]);
     }
   }
 
@@ -1312,21 +1285,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         number of points equals the local number of points. ---*/
   nPoint     = Global_nPoint;
   nPointNode = nPoint;
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim);
 
-  switch(nDim) {
-    case 2: {
-      for(unsigned long i=0; i<nPoint; ++i)
-        node[i] = new CPoint(coorBuf[0][i], coorBuf[1][i], i, config);
-      break;
-    }
-
-    case 3: {
-      for(unsigned long i=0; i<nPoint; ++i)
-        node[i] = new CPoint(coorBuf[0][i], coorBuf[1][i], coorBuf[2][i],
-                             i, config);
-      break;
-    }
+  for(unsigned long i=0; i<nPoint; ++i) {
+    for (unsigned short iDim=0; iDim < nDim; ++iDim)
+      nodes->SetCoord(i, iDim, coorBuf[iDim][i]);
+    nodes->SetGlobalIndex(i, i);
   }
 
 #endif
@@ -2769,7 +2733,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned i=0; i<nPoint; ++i) {
-    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
   }
 
   /*--- Loop over the number of markers present in the grid and check for a periodic one. ---*/
@@ -2856,7 +2820,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
           unsigned long ind = MI->second;
 
           for(unsigned l=0; l<nDim; ++l)
-            facesDonor[k].cornerCoor[j][l] = node[ind]->GetCoord(l);
+            facesDonor[k].cornerCoor[j][l] = nodes->GetCoord(ind, l);
         }
 
         /*--- Create the tolerance for this face and sort the coordinates. ---*/
@@ -3038,7 +3002,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
           map<unsigned long,unsigned long>::const_iterator MI;
           MI = globalPointIDToLocalInd.find(faceConn[0][j]);
           unsigned long ind = MI->second;
-          const su2double *coor = node[ind]->GetCoord();
+          const su2double *coor = nodes->GetCoord(ind);
 
           const su2double dx =             coor[0] - center[0];
           const su2double dy =             coor[1] - center[1];
@@ -3083,7 +3047,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
         of the points.    ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned long i=0; i<nPoint; ++i) {
-    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
   }
 
   /*--- Define the vectors to store the standard elements for the volume elements
@@ -3135,7 +3099,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
       unsigned long ind = MI->second;
       for(unsigned short k=0; k<nDim; ++k, ++jj)
-        vecRHS[jj] = node[ind]->GetCoord(k);
+        vecRHS[jj] = nodes->GetCoord(ind, k);
     }
 
     /*--- Get the pointer to the matrix storage of the basis functions and its
@@ -3414,7 +3378,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
      of the points. */
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned long i=0; i<nPoint; ++i) {
-    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
   }
 
   /* Define the vector to store the standard element for the volume elements. */
@@ -3497,7 +3461,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   unsigned long jj = 0;
   for(unsigned long l=0; l<nPoint; ++l) {
     for(unsigned short k=0; k<nDim; ++k, ++jj)
-      volCoor[jj] = node[l]->GetCoord(k);
+      volCoor[jj] = nodes->GetCoord(l, k);
   }
 
   /* Build the local ADT. */
@@ -3658,7 +3622,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
               MI = globalPointIDToLocalInd.find(nodeID);
               nodeID = MI->second;
               for(unsigned short k=0; k<nDim; ++k, ++ii)
-              coorBoundFace[ii] = node[nodeID]->GetCoord(k);
+              coorBoundFace[ii] = nodes->GetCoord(nodeID, k);
             }
 
             /* Set the multiplication factor for the normal, such that

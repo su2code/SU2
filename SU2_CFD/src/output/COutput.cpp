@@ -1611,7 +1611,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->node[iPoint]->GetDomain()){
+          if(geometry->nodes->GetDomain(iPoint)){
 
             buildFieldIndexCache = fieldIndexCache.empty();
 
@@ -2041,7 +2041,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 
   StopTime = SU2_MPI::Wtime();
 
-  UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
+  UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
   SetHistoryOutputValue("WALL_TIME", UsedTime);
 

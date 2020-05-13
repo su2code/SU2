@@ -80,10 +80,10 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     for (iDim = 0; iDim < nDim; ++iDim)
-      nodes->SetMesh_Coord(iPoint, iDim, geometry->node[iPoint]->GetCoord(iDim));
+      nodes->SetMesh_Coord(iPoint, iDim, geometry->nodes->GetCoord(iPoint, iDim));
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
@@ -284,22 +284,15 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
-  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
-  unsigned short iMarker, iDim;
-  su2double dist, MaxDistance_Local, MinDistance_Local;
-  int rankID;
-
   /*--- Initialize min and max distance ---*/
 
   MaxDistance = -1E22; MinDistance = 1E22;
 
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
 
-  nVertex_SolidWall = 0;
-  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+  unsigned long nVertex_SolidWall = 0;
+  for(auto iMarker=0u; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if(config->GetSolid_Wall(iMarker)) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -313,17 +306,16 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   /*--- Retrieve and store the coordinates of the no-slip boundary nodes
    and their local point IDs. ---*/
 
-  ii = 0; jj = 0;
-  for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-         (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-      for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        PointIDs[jj++] = iPoint;
-        for (iDim=0; iDim<nDim; ++iDim){
-          Coord_bound[ii++] = nodes->GetMesh_Coord(iPoint,iDim);
-        }
+
+  for (unsigned long iMarker=0, ii=0, jj=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+
+    if (!config->GetSolid_Wall(iMarker)) continue;
+
+    for (auto iVertex=0u; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
+      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      PointIDs[jj++] = iPoint;
+      for (auto iDim=0u; iDim<nDim; ++iDim){
+        Coord_bound[ii++] = nodes->GetMesh_Coord(iPoint,iDim);
       }
     }
   }
@@ -333,47 +325,60 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
                               PointIDs.data(), true);
 
-
+  SU2_OMP_PARALLEL
+  {
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
    for each interior mesh node. ---*/
 
   if( WallADT.IsEmpty() ) {
 
-    /*--- No solid wall boundary nodes in the entire mesh.
-     Set the wall distance to zero for all nodes. ---*/
+    /*--- No solid wall boundary nodes in the entire mesh. Set the
+     wall distance to MaxDistance so we get stiffness of 1. ---*/
 
-    geometry->SetWallDistance(0.0);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      nodes->SetWallDistance(iPoint, MaxDistance);
+    }
   }
   else {
+    su2double MaxDistance_Local = -1E22, MinDistance_Local = 1E22;
 
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
-
-    for(iPoint=0; iPoint< nPoint; ++iPoint) {
-
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for(auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      su2double dist;
+      unsigned long pointID;
+      int rankID;
       WallADT.DetermineNearestNode(nodes->GetMesh_Coord(iPoint), dist,
                                    pointID, rankID);
       nodes->SetWallDistance(iPoint,dist);
 
-      MaxDistance = max(MaxDistance, dist);
+      MaxDistance_Local = max(MaxDistance_Local, dist);
 
       /*--- To discard points on the surface we use > EPS ---*/
 
-      if (sqrt(dist) > EPS)  MinDistance = min(MinDistance, dist);
+      if (dist > EPS)  MinDistance_Local = min(MinDistance_Local, dist);
 
     }
+    SU2_OMP_CRITICAL
+    {
+      MaxDistance = max(MaxDistance, MaxDistance_Local);
+      MinDistance = min(MinDistance, MinDistance_Local);
+    }
+    SU2_OMP_BARRIER
 
-    MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
-    MinDistance_Local = MinDistance; MinDistance = 0.0;
-
-    SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
+    SU2_OMP_MASTER
+    {
+      MaxDistance_Local = MaxDistance;
+      MinDistance_Local = MinDistance;
+      SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    }
+    SU2_OMP_BARRIER
   }
 
-  SU2_OMP_PARALLEL
-  {
   /*--- Normalize distance from 0 to 1 ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
@@ -400,8 +405,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     element[iElem].SetWallDistance(ElemDist);
   }
-  }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
@@ -530,7 +535,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
       su2double val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
       /*--- Update the geometry container ---*/
-      geometry->node[iPoint]->SetCoord(iDim, val_coord);
+      geometry->nodes->SetCoord(iPoint, iDim, val_coord);
     }
   }
 
@@ -587,7 +592,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
       /*--- Store grid velocity for this point ---*/
 
-      geometry->node[iPoint]->SetGridVel(iDim, GridVel);
+      geometry->nodes->SetGridVel(iPoint, iDim, GridVel);
 
     }
   }
@@ -600,14 +605,12 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
 void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
-  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
-
   /*--- Update the multigrid structure after moving the finest grid,
    including computing the grid velocities on the coarser levels
    when the problem is solved in unsteady conditions. ---*/
 
-  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
-    iMGfine = iMGlevel-1;
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    const auto iMGfine = iMGlevel-1;
     geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
     geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
@@ -728,7 +731,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         su2double curr_coord = Restart_Data[index+iDim];
         /// TODO: "Double deformation" in multizone adjoint if this is set here?
         ///       In any case it should not be needed as deformation is called before other solvers
-        ///geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+        ///geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, curr_coord);
 
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
@@ -995,7 +998,7 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
         /*--- Index and coordinates of the current point ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->node[iPoint]->GetCoord();
+        Coord  = geometry->nodes->GetCoord(iPoint);
 
         /*--- Calculate non-dim. position from rotation center ---*/
 
@@ -1101,7 +1104,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
         /*--- Index and coordinates of the current point ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->node[iPoint]->GetCoord();
+        Coord  = geometry->nodes->GetCoord(iPoint);
 
         /*--- Calculate non-dim. position from rotation center ---*/
 

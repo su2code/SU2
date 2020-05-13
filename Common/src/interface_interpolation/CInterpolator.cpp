@@ -68,7 +68,7 @@ void CInterpolator::Determine_ArraySize(int markDonor, int markTarget,
   auto nLocalVertex_Donor = 0ul;
   for (auto iVertex = 0ul; iVertex < nVertexDonor; iVertex++) {
     auto iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
-    nLocalVertex_Donor += donor_geometry->node[iPointDonor]->GetDomain();
+    nLocalVertex_Donor += donor_geometry->nodes->GetDomain(iPointDonor);
   }
 
   Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
@@ -94,10 +94,10 @@ void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
 
   for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
     auto iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
-    if (donor_geometry->node[iPointDonor]->GetDomain()) {
-      Buffer_Send_GlobalPoint[iLocalVertexDonor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
+    if (donor_geometry->nodes->GetDomain(iPointDonor)) {
+      Buffer_Send_GlobalPoint[iLocalVertexDonor] = donor_geometry->nodes->GetGlobalIndex(iPointDonor);
       for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[iLocalVertexDonor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
+        Buffer_Send_Coord[iLocalVertexDonor*nDim+iDim] = donor_geometry->nodes->GetCoord(iPointDonor, iDim);
       iLocalVertexDonor++;
     }
   }
@@ -138,7 +138,7 @@ unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short n
 
     for (auto iNode = 0u; iNode < nNode; ++iNode) {
       auto iPoint = donor_geometry->bound[markDonor][iElem]->GetNode(iNode);
-      auto iPointGlobal = donor_geometry->node[iPoint]->GetGlobalIndex();
+      auto iPointGlobal = donor_geometry->nodes->GetGlobalIndex(iPoint);
       bufferSendIdx(iElem, iNode) = iPointGlobal;
     }
   }
@@ -210,24 +210,24 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
 
-    if (geom->node[iPoint]->GetDomain()) {
-      Buffer_Send_GlobalPoint[nLocalVertex] = geom->node[iPoint]->GetGlobalIndex();
+    if (geom->nodes->GetDomain(iPoint)) {
+      Buffer_Send_GlobalPoint[nLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[nLocalVertex*nDim+iDim] = geom->node[iPoint]->GetCoord(iDim);
+        Buffer_Send_Coord[nLocalVertex*nDim+iDim] = geom->nodes->GetCoord(iPoint, iDim);
 
       nNodes = 0;
-      nEdges = geom->node[iPoint]->GetnPoint();
+      nEdges = geom->nodes->GetnPoint(iPoint);
 
       for (jEdge = 0; jEdge < nEdges; jEdge++){
-        EdgeIndex = geom->node[iPoint]->GetEdge(jEdge);
+        EdgeIndex = geom->nodes->GetEdge(iPoint, jEdge);
 
         if( iPoint == geom->edges->GetNode(EdgeIndex,0) )
           dPoint = geom->edges->GetNode(EdgeIndex,1);
         else
           dPoint = geom->edges->GetNode(EdgeIndex,0);
 
-        if ( geom->node[dPoint]->GetVertex(val_marker) != -1 )
+        if ( geom->nodes->GetVertex(dPoint, val_marker) != -1 )
           nNodes++;
       }
 
@@ -240,15 +240,15 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       nNodes = 0;
 
       for (jEdge = 0; jEdge < nEdges; jEdge++){
-        EdgeIndex = geom->node[iPoint]->GetEdge(jEdge);
+        EdgeIndex = geom->nodes->GetEdge(iPoint, jEdge);
 
         if( iPoint == geom->edges->GetNode(EdgeIndex,0) )
           dPoint = geom->edges->GetNode(EdgeIndex,1);
         else
           dPoint = geom->edges->GetNode(EdgeIndex,0);
 
-        if ( geom->node[dPoint]->GetVertex(val_marker) != -1 ){
-          Aux_Send_Map[nLocalVertex][nNodes] = geom->node[dPoint]->GetGlobalIndex();
+        if ( geom->nodes->GetVertex(dPoint, val_marker) != -1 ){
+          Aux_Send_Map[nLocalVertex][nNodes] = geom->nodes->GetGlobalIndex(dPoint);
           nNodes++;
         }
       }
