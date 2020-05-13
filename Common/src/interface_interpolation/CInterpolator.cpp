@@ -206,7 +206,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
 
     Buffer_Send_nLinkedNodes[iVertex] = 0;
-    Aux_Send_Map[iVertex]             = NULL;
+    Aux_Send_Map[iVertex]             = nullptr;
 
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
 
@@ -268,10 +268,10 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   }
 
   for (iVertex = 0; iVertex < nVertex; iVertex++){
-    if( Aux_Send_Map[iVertex] != NULL )
+    if( Aux_Send_Map[iVertex] != nullptr )
       delete [] Aux_Send_Map[iVertex];
   }
-  delete [] Aux_Send_Map; Aux_Send_Map = NULL;
+  delete [] Aux_Send_Map; Aux_Send_Map = nullptr;
 
   /*--- Reconstruct  boundary by gathering data from all ranks ---*/
 
@@ -386,10 +386,10 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes, nGlobalVertex, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
   SU2_MPI::Bcast(Buffer_Receive_LinkedNodes, nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
-  delete [] Buffer_Send_Coord;            Buffer_Send_Coord            = NULL;
-  delete [] Buffer_Send_GlobalPoint;      Buffer_Send_GlobalPoint      = NULL;
-  delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = NULL;
-  delete [] Buffer_Send_nLinkedNodes;     Buffer_Send_nLinkedNodes     = NULL;
-  delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = NULL;
+  delete [] Buffer_Send_Coord;            Buffer_Send_Coord            = nullptr;
+  delete [] Buffer_Send_GlobalPoint;      Buffer_Send_GlobalPoint      = nullptr;
+  delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = nullptr;
+  delete [] Buffer_Send_nLinkedNodes;     Buffer_Send_nLinkedNodes     = nullptr;
+  delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = nullptr;
 
 }

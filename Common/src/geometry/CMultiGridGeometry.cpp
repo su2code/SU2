@@ -42,8 +42,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
   unsigned long iPoint, Index_CoarseCV, CVPoint, iElem, iVertex, jPoint, iteration, nVertexS, nVertexR,
                 nBufferS_Vector, nBufferR_Vector, iParent, jVertex,Local_nPointCoarse, Local_nPointFine, Global_nPointCoarse, Global_nPointFine,
-                *Buffer_Receive_Parent = NULL, *Buffer_Send_Parent = NULL, *Buffer_Receive_Children = NULL, *Buffer_Send_Children = NULL,
-                *Parent_Remote = NULL,         *Children_Remote = NULL,    *Parent_Local = NULL,            *Children_Local = NULL;
+                *Buffer_Receive_Parent = nullptr, *Buffer_Send_Parent = nullptr, *Buffer_Receive_Children = nullptr, *Buffer_Send_Children = nullptr,
+                *Parent_Remote = nullptr,         *Children_Remote = nullptr,    *Parent_Local = nullptr,            *Children_Local = nullptr;
   short marker_seed;
   bool agglomerate_seed = true;
   unsigned short nChildren, iNode, counter, iMarker, jMarker, priority, MarkerS, MarkerR, *nChildren_MPI;
@@ -1171,7 +1171,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
   unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
   unsigned short iMarker, iChildren, iDim;
-  su2double *Normal, Area, *NormalFace = NULL;
+  su2double *Normal, Area, *NormalFace = nullptr;
 
   Normal = new su2double [nDim];
 

@@ -60,43 +60,43 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   /*--- Array initialization ---*/
 
-  OutputHeadingNames = NULL;
-  Residual_RMS       = NULL;
-  Residual_Max       = NULL;
-  Residual_BGS       = NULL;
-  Residual_Max_BGS   = NULL;
-  Residual           = NULL;
-  Residual_i         = NULL;
-  Residual_j         = NULL;
-  Point_Max          = NULL;
-  Point_Max_Coord    = NULL;
-  Point_Max_BGS      = NULL;
-  Point_Max_Coord_BGS = NULL;
-  Solution           = NULL;
-  Solution_i         = NULL;
-  Solution_j         = NULL;
-  Vector             = NULL;
-  Vector_i           = NULL;
-  Vector_j           = NULL;
-  Res_Conv           = NULL;
-  Res_Visc           = NULL;
-  Res_Sour           = NULL;
-  Res_Conv_i         = NULL;
-  Res_Visc_i         = NULL;
-  Res_Conv_j         = NULL;
-  Res_Visc_j         = NULL;
-  Jacobian_i         = NULL;
-  Jacobian_j         = NULL;
-  Jacobian_ii        = NULL;
-  Jacobian_ij        = NULL;
-  Jacobian_ji        = NULL;
-  Jacobian_jj        = NULL;
-  iPoint_UndLapl     = NULL;
-  jPoint_UndLapl     = NULL;
-  Smatrix            = NULL;
-  Cvector            = NULL;
-  Restart_Vars       = NULL;
-  Restart_Data       = NULL;
+  OutputHeadingNames = nullptr;
+  Residual_RMS       = nullptr;
+  Residual_Max       = nullptr;
+  Residual_BGS       = nullptr;
+  Residual_Max_BGS   = nullptr;
+  Residual           = nullptr;
+  Residual_i         = nullptr;
+  Residual_j         = nullptr;
+  Point_Max          = nullptr;
+  Point_Max_Coord    = nullptr;
+  Point_Max_BGS      = nullptr;
+  Point_Max_Coord_BGS = nullptr;
+  Solution           = nullptr;
+  Solution_i         = nullptr;
+  Solution_j         = nullptr;
+  Vector             = nullptr;
+  Vector_i           = nullptr;
+  Vector_j           = nullptr;
+  Res_Conv           = nullptr;
+  Res_Visc           = nullptr;
+  Res_Sour           = nullptr;
+  Res_Conv_i         = nullptr;
+  Res_Visc_i         = nullptr;
+  Res_Conv_j         = nullptr;
+  Res_Visc_j         = nullptr;
+  Jacobian_i         = nullptr;
+  Jacobian_j         = nullptr;
+  Jacobian_ii        = nullptr;
+  Jacobian_ij        = nullptr;
+  Jacobian_ji        = nullptr;
+  Jacobian_jj        = nullptr;
+  iPoint_UndLapl     = nullptr;
+  jPoint_UndLapl     = nullptr;
+  Smatrix            = nullptr;
+  Cvector            = nullptr;
+  Restart_Vars       = nullptr;
+  Restart_Data       = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
@@ -106,7 +106,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   IterLinSolver = 0;
 
   /*--- Initialize pointer for any verification solution. ---*/
-  VerificationSolution  = NULL;
+  VerificationSolution  = nullptr;
 
   /*--- Flags for the periodic BC communications. ---*/
 
@@ -121,8 +121,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   dynamic_grid = false;
 
   /*--- Container to store the vertex tractions. ---*/
-  VertexTraction = NULL;
-  VertexTractionAdjoint = NULL;
+  VertexTraction = nullptr;
+  VertexTractionAdjoint = nullptr;
 
   /*--- Auxiliary data needed for CFL adaption. ---*/
 
@@ -144,102 +144,102 @@ CSolver::~CSolver(void) {
 
   /*--- Public variables, may be accessible outside ---*/
 
-  if ( OutputHeadingNames != NULL) {
+  
     delete [] OutputHeadingNames;
-  }
+  
 
   /*--- Private ---*/
 
-  if (Residual_RMS != NULL) delete [] Residual_RMS;
-  if (Residual_Max != NULL) delete [] Residual_Max;
-  if (Residual != NULL) delete [] Residual;
-  if (Residual_i != NULL) delete [] Residual_i;
-  if (Residual_j != NULL) delete [] Residual_j;
-  if (Point_Max != NULL) delete [] Point_Max;
+  delete [] Residual_RMS;
+  delete [] Residual_Max;
+  delete [] Residual;
+  delete [] Residual_i;
+  delete [] Residual_j;
+  delete [] Point_Max;
 
-  if (Residual_BGS != NULL) delete [] Residual_BGS;
-  if (Residual_Max_BGS != NULL) delete [] Residual_Max_BGS;
-  if (Point_Max_BGS != NULL) delete [] Point_Max_BGS;
+  delete [] Residual_BGS;
+  delete [] Residual_Max_BGS;
+  delete [] Point_Max_BGS;
 
-  if (Point_Max_Coord != NULL) {
+  if (Point_Max_Coord != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord[iVar];
     }
     delete [] Point_Max_Coord;
   }
 
-  if (Point_Max_Coord_BGS != NULL) {
+  if (Point_Max_Coord_BGS != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord_BGS[iVar];
     }
     delete [] Point_Max_Coord_BGS;
   }
 
-  if (Solution != NULL) delete [] Solution;
-  if (Solution_i != NULL) delete [] Solution_i;
-  if (Solution_j != NULL) delete [] Solution_j;
-  if (Vector != NULL) delete [] Vector;
-  if (Vector_i != NULL) delete [] Vector_i;
-  if (Vector_j != NULL) delete [] Vector_j;
-  if (Res_Conv != NULL) delete [] Res_Conv;
-  if (Res_Visc != NULL) delete [] Res_Visc;
-  if (Res_Sour != NULL) delete [] Res_Sour;
-  if (Res_Conv_i != NULL) delete [] Res_Conv_i;
-  if (Res_Visc_i != NULL) delete [] Res_Visc_i;
-  if (Res_Visc_j != NULL) delete [] Res_Visc_j;
+  delete [] Solution;
+  delete [] Solution_i;
+  delete [] Solution_j;
+  delete [] Vector;
+  delete [] Vector_i;
+  delete [] Vector_j;
+  delete [] Res_Conv;
+  delete [] Res_Visc;
+  delete [] Res_Sour;
+  delete [] Res_Conv_i;
+  delete [] Res_Visc_i;
+  delete [] Res_Visc_j;
 
-  if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
+  delete [] iPoint_UndLapl;
+  delete [] jPoint_UndLapl;
 
-  if (Jacobian_i != NULL) {
+  if (Jacobian_i != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_i[iVar];
     delete [] Jacobian_i;
   }
 
-  if (Jacobian_j != NULL) {
+  if (Jacobian_j != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_j[iVar];
     delete [] Jacobian_j;
   }
 
-  if (Jacobian_ii != NULL) {
+  if (Jacobian_ii != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_ii[iVar];
     delete [] Jacobian_ii;
   }
 
-  if (Jacobian_ij != NULL) {
+  if (Jacobian_ij != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_ij[iVar];
     delete [] Jacobian_ij;
   }
 
-  if (Jacobian_ji != NULL) {
+  if (Jacobian_ji != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_ji[iVar];
     delete [] Jacobian_ji;
   }
 
-  if (Jacobian_jj != NULL) {
+  if (Jacobian_jj != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
   }
 
-  if (Smatrix != NULL) {
+  if (Smatrix != nullptr) {
     for (iDim = 0; iDim < nDim; iDim++)
       delete [] Smatrix[iDim];
     delete [] Smatrix;
   }
 
-  if (Cvector != NULL) {
+  if (Cvector != nullptr) {
     for (iVar = 0; iVar < nVarGrad; iVar++)
       delete [] Cvector[iVar];
     delete [] Cvector;
   }
 
-  if (VertexTraction != NULL) {
+  if (VertexTraction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] VertexTraction[iMarker][iVertex];
@@ -248,7 +248,7 @@ CSolver::~CSolver(void) {
     delete [] VertexTraction;
   }
 
-  if (VertexTractionAdjoint != NULL) {
+  if (VertexTractionAdjoint != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] VertexTractionAdjoint[iMarker][iVertex];
@@ -257,12 +257,12 @@ CSolver::~CSolver(void) {
     delete [] VertexTractionAdjoint;
   }
 
-  if (nVertex != nullptr) delete [] nVertex;
+  delete [] nVertex;
 
-  if (Restart_Vars != NULL) {delete [] Restart_Vars; Restart_Vars = NULL;}
-  if (Restart_Data != NULL) {delete [] Restart_Data; Restart_Data = NULL;}
+  if (Restart_Vars != nullptr) {delete [] Restart_Vars; Restart_Vars = nullptr;}
+  if (Restart_Data != nullptr) {delete [] Restart_Data; Restart_Data = nullptr;}
 
-  if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
+  if (VerificationSolution != nullptr) {delete VerificationSolution; VerificationSolution = nullptr;}
 
 }
 
@@ -3831,16 +3831,16 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
   int *blocklen = new int[geometry->GetnPointDomain()];
-  int *displace = new int[geometry->GetnPointDomain()];
+  MPI_Aint *displace = new MPI_Aint[geometry->GetnPointDomain()];
   int counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
       blocklen[counter] = nFields;
-      displace[counter] = iPoint_Global*nFields;
+      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
       counter++;
     }
   }
-  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -4623,7 +4623,7 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
   switch( config->GetVerification_Solution() ) {
 
     case NO_VERIFICATION_SOLUTION:
-      VerificationSolution = NULL; break;
+      VerificationSolution = nullptr; break;
     case INVISCID_VORTEX:
       VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
     case RINGLEB:

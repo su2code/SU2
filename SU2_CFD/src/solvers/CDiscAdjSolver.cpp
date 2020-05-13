@@ -50,7 +50,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Initialize arrays to NULL ---*/
 
-  CSensitivity = NULL;
+  CSensitivity = nullptr;
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
@@ -146,14 +146,14 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
   unsigned short iMarker;
 
-  if (CSensitivity != NULL) {
+  if (CSensitivity != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] CSensitivity[iMarker];
     }
     delete [] CSensitivity;
   }
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){

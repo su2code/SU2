@@ -189,10 +189,10 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
   }
 
-  if (Edge_Vector != NULL) {
+  
 
-    delete [] Edge_Vector;
-  }
+  delete [] Edge_Vector;
+  
 }
 
 void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
