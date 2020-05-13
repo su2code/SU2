@@ -9574,17 +9574,17 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
     int *blocklen = new int[GetnPointDomain()];
-    int *displace = new int[GetnPointDomain()];
+    MPI_Aint *displace = new MPI_Aint[GetnPointDomain()];
 
     counter = 0;
     for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
       if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
         blocklen[counter] = nFields;
-        displace[counter] = iPoint_Global*nFields;
+        displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
         counter++;
       }
     }
-    MPI_Type_indexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+    MPI_Type_create_hindexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
     MPI_Type_commit(&filetype);
 
     /*--- Set the view for the MPI file write, i.e., describe the location in
