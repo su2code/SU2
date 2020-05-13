@@ -49,6 +49,7 @@
 #include <sys/stat.h>
 #include <iterator>
 #include <unordered_set>
+#include <queue>
 #ifdef _MSC_VER
 #include <direct.h>
 #endif
@@ -5139,7 +5140,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::SetPoint_Connectivity(void) {
+void CPhysicalGeometry::SetPoint_Connectivity() {
 
   vector<vector<unsigned long> > points(nPoint);
 
@@ -5195,7 +5196,6 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
         }
       }
     }
-    //sort(points[iPoint].begin(), points[iPoint].end());
 
     /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
     nodes->SetnNeighbor(iPoint, points[iPoint].size());
@@ -5208,21 +5208,18 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
-  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem, iNode, jNode;
-  vector<unsigned long> Queue, AuxQueue, Result;
-  unsigned short Degree, MinDegree, iDim, iMarker;
-  bool *inQueue;
 
-  inQueue = new bool [nPoint];
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    inQueue[iPoint] = false;
+  queue<unsigned long> Queue;
+  vector<char> inQueue(nPoint, false);
+  vector<unsigned long> AuxQueue, Result;
+  Result.reserve(nPoint);
 
   /*--- Select the node with the lowest degree in the grid. ---*/
 
-  MinDegree = nodes->GetnNeighbor(0); AddPoint = 0;
-  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
-    Degree = nodes->GetnPoint(iPoint);
+  unsigned long AddPoint = 0;
+  auto MinDegree = nodes->GetnPoint(AddPoint);
+  for (auto iPoint = 1ul; iPoint < nPointDomain; iPoint++) {
+    auto Degree = nodes->GetnPoint(iPoint);
     if (Degree < MinDegree) { MinDegree = Degree; AddPoint = iPoint; }
   }
 
@@ -5239,30 +5236,26 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
      in the Queue. ---*/
 
     AuxQueue.clear();
-    for (iNode = 0; iNode < nodes->GetnPoint(AddPoint); iNode++) {
-      AdjPoint = nodes->GetPoint(AddPoint, iNode);
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
+      auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
       if ((!inQueue[AdjPoint]) && (AdjPoint < nPointDomain)) {
         AuxQueue.push_back(AdjPoint);
       }
     }
 
-    if (AuxQueue.size() != 0) {
+    if (!AuxQueue.empty()) {
 
       /*--- Sort the auxiliar queue based on the number of neighbors ---*/
 
-      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-        for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
-          if (nodes->GetnPoint(AuxQueue[jNode]) > nodes->GetnPoint(AuxQueue[jNode+1])) {
-            AuxPoint = AuxQueue[jNode];
-            AuxQueue[jNode] = AuxQueue[jNode+1];
-            AuxQueue[jNode+1] = AuxPoint;
-          }
+      stable_sort(AuxQueue.begin(), AuxQueue.end(),
+        [&](unsigned long iPoint, unsigned long jPoint) {
+          return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
         }
-      }
+      );
 
-      Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
-      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-        inQueue[AuxQueue[iNode]] = true;
+      for (auto iPoint : AuxQueue) {
+        Queue.push(iPoint);
+        inQueue[iPoint] = true;
       }
 
     }
@@ -5270,31 +5263,25 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
     /*--- Extract the first node from the queue and add it in the first free
      position. ---*/
 
-    if (Queue.size() != 0) {
-      AddPoint = Queue[0];
-      Result.push_back(Queue[0]);
-      Queue.erase (Queue.begin(), Queue.begin()+1);
+    if (!Queue.empty()) {
+      AddPoint = Queue.front();
+      Result.push_back(AddPoint);
+      Queue.pop();
     }
 
-    /*--- Add to the queue all the nodes adjacent in the increasing
-     order of their degree, checking if the element is already
-     in the Queue. ---*/
-
-  } while (Queue.size() != 0);
+  } while (!Queue.empty());
 
   /*--- Check that all the points have been added ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
     if (inQueue[iPoint] == false) Result.push_back(iPoint);
   }
-
-  delete[] inQueue;
 
   reverse(Result.begin(), Result.end());
 
   /*--- Add the MPI points ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     Result.push_back(iPoint);
   }
 
@@ -5303,7 +5290,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   nodes->ResetElems();
   nodes->ResetPoints();
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     nodes->ResetBoundary(iPoint);
     nodes->SetPhysicalBoundary(iPoint, false);
     nodes->SetSolidBoundary(iPoint, false);
@@ -5313,59 +5300,45 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
   /*--- Set the new coordinates ---*/
 
-  su2double **AuxCoord;
-  unsigned long *AuxGlobalIndex;
+  su2activematrix AuxCoord(nPoint, nDim);
+  vector<unsigned long> AuxGlobalIndex(nPoint);
 
-  AuxGlobalIndex = new unsigned long [nPoint];
-  AuxCoord = new su2double* [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    AuxCoord[iPoint] = new su2double [nDim];
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     AuxGlobalIndex[iPoint] = nodes->GetGlobalIndex(iPoint);
-    for (iDim = 0; iDim < nDim; iDim++) {
-      AuxCoord[iPoint][iDim] = nodes->GetCoord(iPoint, iDim);
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      AuxCoord(iPoint,iDim) = nodes->GetCoord(iPoint, iDim);
     }
   }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     nodes->SetGlobalIndex(iPoint, AuxGlobalIndex[Result[iPoint]]);
-    for (iDim = 0; iDim < nDim; iDim++)
-      nodes->SetCoord(iPoint, iDim, AuxCoord[Result[iPoint]][iDim]);
+    nodes->SetCoord(iPoint, AuxCoord[Result[iPoint]]);
   }
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    delete[] AuxCoord[iPoint];
-  delete[] AuxCoord;
-  delete[] AuxGlobalIndex;
 
   /*--- Set the new conectivities ---*/
 
-  unsigned long *InvResult;
-  InvResult = new unsigned long [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  auto& InvResult = AuxGlobalIndex; // alias to re-use storage
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     InvResult[Result[iPoint]] = iPoint;
+  }
 
-  for (iElem = 0; iElem < nElem; iElem++) {
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+    for (auto iNode = 0u; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      auto iPoint = elem[iElem]->GetNode(iNode);
       elem[iElem]->SetNode(iNode, InvResult[iPoint]);
     }
   }
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    for (auto iElem = 0ul; iElem < nElem_Bound[iMarker]; iElem++) {
 
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      if (Marker_Tag == "SEND_RECEIVE") {
-        for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          if (config->GetMarker_All_SendRecv(iMarker) < 0)
-            nodes->SetDomain(bound[iMarker][iElem_Bound]->GetNode(0), false);
-        }
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE &&
+          config->GetMarker_All_SendRecv(iMarker) < 0) {
+        nodes->SetDomain(bound[iMarker][iElem]->GetNode(0), false);
       }
 
-      for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        iPoint = bound[iMarker][iElem]->GetNode(iNode);
+      for (auto iNode = 0u; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
         bound[iMarker][iElem]->SetNode(iNode, InvResult[iPoint]);
         nodes->SetBoundary(InvResult[iPoint], nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
@@ -5383,9 +5356,6 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       }
     }
   }
-
-
-  delete[] InvResult;
 
 }
 

@@ -35,6 +35,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <array>
 
 #include "./mpi_structure.hpp"
 #include "./omp_structure.hpp"
