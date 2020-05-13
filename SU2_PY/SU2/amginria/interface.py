@@ -128,9 +128,11 @@ def call_pyamg(mesh, config):
     if 'sensor' in mesh:
         mesh['sensor']           = mesh['sensor'].tolist()
         remesh_options['Lp']     = config['Lp']
-        remesh_options['hmax']   = config['hmax']
-        remesh_options['hmin']   = config['hmin']
-        remesh_options['target'] = config['size']
+
+    #--- TODO: do I need these with metric?
+    remesh_options['hmax']   = config['hmax']
+    remesh_options['hmin']   = config['hmin']
+    remesh_options['target'] = config['size']
 
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
