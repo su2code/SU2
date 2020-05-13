@@ -50,7 +50,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Initialize arrays to NULL ---*/
 
-  CSensitivity = NULL;
+  CSensitivity = nullptr;
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
@@ -146,14 +146,14 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
   unsigned short iMarker;
 
-  if (CSensitivity != NULL) {
+  if (CSensitivity != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] CSensitivity[iMarker];
     }
     delete [] CSensitivity;
   }
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
@@ -212,7 +212,7 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
-      geometry[MESH_0]->node[iPoint]->SetCoord(iDim,nodes->GetGeometry_Direct(iPoint,iDim));
+      geometry[MESH_0]->nodes->SetCoord(iPoint, iDim,nodes->GetGeometry_Direct(iPoint,iDim));
     }
   }
 
@@ -514,7 +514,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       residual *= isdomain;
       AddRes_RMS(iVar,pow(residual,2));
-      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
     }
   }
 
@@ -639,9 +639,9 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
     /*--- Extract the adjoint solution ---*/
 
     if (config->GetMultizone_Problem())
-      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
+      geometry->nodes->GetAdjointCoord_LocalIndex(iPoint, Solution_Geometry);
     else
-      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+      geometry->nodes->GetAdjointCoord(iPoint, Solution_Geometry);
 
     /*--- Store the adjoint solution ---*/
 
@@ -681,7 +681,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 //          residual = node[iPoint]->GetSolution_Geometry(iVar) - node[iPoint]->Get_OldSolution_Geometry(iVar);
 //
 //          AddRes_RMS(iVar,residual*residual);
-//          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+//          AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
 //      }
 //  }
 //
@@ -734,7 +734,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
     for (iDim = 0; iDim < nDim; iDim++){
       nodes->SetSensitivity(iPoint,iDim, Solution_Geometry[iDim]);
     }
-    geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
+    geometry->nodes->SetAdjointCoord(iPoint, Solution_Geometry);
   }
 
 }
@@ -748,12 +748,12 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
   bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    Coord = geometry->node[iPoint]->GetCoord();
+    Coord = geometry->nodes->GetCoord(iPoint);
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
       if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+        Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
       }
       else {
         Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
@@ -767,7 +767,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
 
       if (config->GetSens_Remove_Sharp()) {
         eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
+        if ( geometry->nodes->GetSharpEdge_Distance(iPoint) < config->GetAdjSharp_LimiterCoeff()*eps )
           Sensitivity = 0.0;
       }
       if (!time_stepping) {
@@ -982,11 +982,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
