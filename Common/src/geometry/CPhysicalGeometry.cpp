@@ -29,6 +29,7 @@
 #include "../../include/adt_structure.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
@@ -48,6 +49,7 @@
 #include <sys/stat.h>
 #include <iterator>
 #include <unordered_set>
+#include <queue>
 #ifdef _MSC_VER
 #include <direct.h>
 #endif
@@ -157,7 +159,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
   unsigned long iPoint, iElem_Bound;
-  su2double *NewCoord;
   nZone = val_nZone;
   ofstream boundary_file;
   string Grid_Marker;
@@ -206,20 +207,15 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   if (config->GetKind_SU2() == SU2_CFD) {
 
-    NewCoord = new su2double [nDim];
-
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
 
     if (config->GetSystemMeasurements() == US) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
+          nodes->SetCoord(iPoint, iDim, nodes->GetCoord(iPoint, iDim)/12.0);
         }
-        node[iPoint]->SetCoord(NewCoord);
       }
     }
-
-    delete [] NewCoord;
 
   }
 
@@ -682,7 +678,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
 void CPhysicalGeometry::SetGlobal_to_Local_Point(void) {
   Global_to_Local_Point.clear();
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Global_to_Local_Point[node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global_to_Local_Point[nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
 }
 
@@ -732,7 +728,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   unordered_map<unsigned long, unsigned long> Global2Local;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
 
   /*--- Find extra points that carry an index higher than nPoint. ---*/
@@ -868,8 +864,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
         /*--- Load the data values. ---*/
 
-        idSend[nn]    = geometry->node[iPoint]->GetGlobalIndex();
-        colorSend[nn] = geometry->node[iPoint]->GetColor();
+        idSend[nn]    = geometry->nodes->GetGlobalIndex(iPoint);
+        colorSend[nn] = geometry->nodes->GetColor(iPoint);
 
         /*--- Increment the index by the message length ---*/
 
@@ -1421,12 +1417,12 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
         /*--- Load the global ID, color, and coordinate values. ---*/
 
-        idSend[nn]    = geometry->node[iPoint]->GetGlobalIndex();
-        colorSend[nn] = geometry->node[iPoint]->GetColor();
+        idSend[nn]    = geometry->nodes->GetGlobalIndex(iPoint);
+        colorSend[nn] = geometry->nodes->GetColor(iPoint);
 
         nn = coordIndex[iProcessor];
         for (iDim  = 0; iDim < nDim; iDim++) {
-          coordSend[nn] = geometry->node[iPoint]->GetCoord(iDim); nn++;
+          coordSend[nn] = geometry->nodes->GetCoord(iPoint, iDim); nn++;
         }
 
         /*--- Increment the index by the message length ---*/
@@ -2345,7 +2341,7 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
   nPointDomain = nLocal_PointDomain;
   nPointNode   = nPoint;
 
-  node = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim, MESH_0, config);
 
   Local_to_Global_Point = new long[nPoint];
 
@@ -2384,19 +2380,12 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
     /*--- Allocating the Point object ---*/
 
-    if ( nDim == 2 )
-      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
-                                Local_Coords[iPoint*nDim+1],
-                                Local_to_Global_Point[jPoint], config);
-    if ( nDim == 3 )
-      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
-                                Local_Coords[iPoint*nDim+1],
-                                Local_Coords[iPoint*nDim+2],
-                                Local_to_Global_Point[jPoint], config);
+    nodes->SetCoord(jPoint, &Local_Coords[iPoint*nDim]);
+    nodes->SetGlobalIndex(jPoint, Local_to_Global_Point[jPoint]);
 
     /*--- Set the color ---*/
 
-    node[jPoint]->SetColor(Local_Colors[iPoint]);
+    nodes->SetColor(jPoint, Local_Colors[iPoint]);
 
     /*--- Increment the correct counter before moving to the next point. ---*/
 
@@ -3448,13 +3437,13 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
 
       iPoint  = elem[iElem]->GetNode(iNode);
-      iDomain = node[iPoint]->GetColor();
+      iDomain = nodes->GetColor(iPoint);
 
       if (iDomain == (unsigned long) rank) {
         for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
           jPoint  = elem[iElem]->GetNode(jNode);
-          jDomain = node[jPoint]->GetColor();
+          jDomain = nodes->GetColor(jPoint);
 
           /*--- If one of the neighbors is a different color and connected
            by an edge, then we add them to the list. ---*/
@@ -3860,7 +3849,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
-          node[bound[iMarker][iElem_Bound]->GetNode(0)]->SetDomain(false);
+          nodes->SetDomain(bound[iMarker][iElem_Bound]->GetNode(0), false);
       }
 
     }
@@ -3873,18 +3862,18 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
       for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
         Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-        node[Point_Surface]->SetBoundary(nMarker);
+        nodes->SetBoundary(Point_Surface, nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
             config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPhysicalBoundary(true);
+          nodes->SetPhysicalBoundary(Point_Surface, true);
 
         if (config->GetSolid_Wall(iMarker))
-          node[Point_Surface]->SetSolidBoundary(true);
+          nodes->SetSolidBoundary(Point_Surface, true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPeriodicBoundary(true);
+          nodes->SetPeriodicBoundary(Point_Surface, true);
       }
     }
 
@@ -3994,13 +3983,12 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
 
   /*--- Get the linearly partitioned coordinates from the mesh object. ---*/
 
-  const vector<vector<passivedouble> > &gridCoords =
-  mesh->GetLocalPointCoordinates();
+  const auto& gridCoords = mesh->GetLocalPointCoordinates();
 
   /*--- Initialize point counts and the grid node data structure. ---*/
 
   nPointNode = nPoint;
-  node       = new CPoint*[nPoint];
+  nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
    structure. Note that since we have performed a linear partitioning
@@ -4010,23 +3998,10 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
   CLinearPartitioner pointPartitioner(Global_nPointDomain,0);
   unsigned long GlobalIndex = pointPartitioner.GetFirstIndexOnRank(rank);
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    switch(nDim) {
-      case 2:
-        node[iPoint] = new CPoint(gridCoords[0][iPoint],
-                                  gridCoords[1][iPoint],
-                                  GlobalIndex,
-                                  config);
-        GlobalIndex++;
-        break;
-      case 3:
-        node[iPoint] = new CPoint(gridCoords[0][iPoint],
-                                  gridCoords[1][iPoint],
-                                  gridCoords[2][iPoint],
-                                  GlobalIndex,
-                                  config);
-        GlobalIndex++;
-        break;
-    }
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+      nodes->SetCoord(iPoint, iDim, gridCoords[iDim][iPoint]);
+    nodes->SetGlobalIndex(iPoint, GlobalIndex);
+    ++GlobalIndex;
   }
 
 }
@@ -4596,9 +4571,9 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4615,10 +4590,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(3); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4650,10 +4625,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(3); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4675,12 +4650,12 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == PRISM) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(3); Coord_4 = node[Point_4]->GetCoord();
-      Point_5 = elem[iElem]->GetNode(4); Coord_5 = node[Point_5]->GetCoord();
-      Point_6 = elem[iElem]->GetNode(5); Coord_6 = node[Point_6]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4);
+      Point_5 = elem[iElem]->GetNode(4); Coord_5 = nodes->GetCoord(Point_5);
+      Point_6 = elem[iElem]->GetNode(5); Coord_6 = nodes->GetCoord(Point_6);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
@@ -4721,10 +4696,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(5); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(5); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4736,10 +4711,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
       test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
 
-      Point_1 = elem[iElem]->GetNode(2); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(3); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(0); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(7); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(2); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(3); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(0); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(7); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4751,10 +4726,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
       test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
 
-      Point_1 = elem[iElem]->GetNode(1); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(2); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(3); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(6); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(1); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(2); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(3); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(6); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4766,10 +4741,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
       test_3 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
 
-      Point_1 = elem[iElem]->GetNode(3); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(0); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(1); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(4); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(3); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(0); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(1); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(4); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4791,10 +4766,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == PYRAMID) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(4); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(4); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4806,10 +4781,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
       test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
 
-      Point_1 = elem[iElem]->GetNode(2); Coord_1 = node[Point_1]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(3); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(0); Coord_3 = node[Point_3]->GetCoord();
-      Point_4 = elem[iElem]->GetNode(4); Coord_4 = node[Point_4]->GetCoord();
+      Point_1 = elem[iElem]->GetNode(2); Coord_1 = nodes->GetCoord(Point_1);
+      Point_2 = elem[iElem]->GetNode(3); Coord_2 = nodes->GetCoord(Point_2);
+      Point_3 = elem[iElem]->GetNode(0); Coord_3 = nodes->GetCoord(Point_3);
+      Point_4 = elem[iElem]->GetNode(4); Coord_4 = nodes->GetCoord(Point_4);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4888,9 +4863,9 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
         if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
 
-          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
-          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
-          Coord_3 = node[Point_Domain]->GetCoord();
+          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1_Surface);
+          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2_Surface);
+          Coord_3 = nodes->GetCoord(Point_Domain);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4900,8 +4875,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
           if (test < 0.0) {
             bound[iMarker][iElem_Surface]->Change_Orientation();
-            node[Point_1_Surface]->SetFlip_Orientation();
-            node[Point_2_Surface]->SetFlip_Orientation();
             line_flip++;
           }
 
@@ -4911,10 +4884,10 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
         if (bound[iMarker][iElem_Surface]->GetVTK_Type() == TRIANGLE) {
 
-          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
-          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
-          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = node[Point_3_Surface]->GetCoord();
-          Coord_4 = node[Point_Domain]->GetCoord();
+          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1_Surface);
+          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2_Surface);
+          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3_Surface);
+          Coord_4 = nodes->GetCoord(Point_Domain);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4928,9 +4901,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
           test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
           if (test < 0.0) {
             bound[iMarker][iElem_Surface]->Change_Orientation();
-            node[Point_1_Surface]->SetFlip_Orientation();
-            node[Point_2_Surface]->SetFlip_Orientation();
-            node[Point_3_Surface]->SetFlip_Orientation();
             triangle_flip++;
           }
 
@@ -4940,11 +4910,11 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
         if (bound[iMarker][iElem_Surface]->GetVTK_Type() == QUADRILATERAL) {
 
-          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
-          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
-          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = node[Point_3_Surface]->GetCoord();
-          Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3); Coord_4 = node[Point_4_Surface]->GetCoord();
-          Coord_5 = node[Point_Domain]->GetCoord();
+          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1_Surface);
+          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2_Surface);
+          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3_Surface);
+          Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4_Surface);
+          Coord_5 = nodes->GetCoord(Point_Domain);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
@@ -4988,10 +4958,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
           if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
             bound[iMarker][iElem_Surface]->Change_Orientation();
-            node[Point_1_Surface]->SetFlip_Orientation();
-            node[Point_2_Surface]->SetFlip_Orientation();
-            node[Point_3_Surface]->SetFlip_Orientation();
-            node[Point_4_Surface]->SetFlip_Orientation();
             quad_flip++;
           }
 
@@ -5047,13 +5013,13 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
 
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           Normal = vertex[iMarker][iVertex]->GetNormal();
-          CoordX = node[iPoint]->GetCoord(0);
-          CoordY = node[iPoint]->GetCoord(1);
-          if (nDim == 3) CoordZ = node[iPoint]->GetCoord(2);
+          CoordX = nodes->GetCoord(iPoint, 0);
+          CoordY = nodes->GetCoord(iPoint, 1);
+          if (nDim == 3) CoordZ = nodes->GetCoord(iPoint, 2);
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           if (nDim == 2) WettedArea += AxiFactor * sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1]);
@@ -5079,7 +5045,6 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -5093,21 +5058,6 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
   SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-  TotalPositiveXArea = PositiveXArea;
-  TotalPositiveYArea = PositiveYArea;
-  TotalPositiveZArea = PositiveZArea;
-
-  TotalMinCoordX = MinCoordX;
-  TotalMinCoordY = MinCoordY;
-  TotalMinCoordZ = MinCoordZ;
-
-  TotalMaxCoordX = MaxCoordX;
-  TotalMaxCoordY = MaxCoordY;
-  TotalMaxCoordZ = MaxCoordZ;
-
-  TotalWettedArea    = WettedArea;
-#endif
 
   /*--- Set a reference area if no value is provided ---*/
 
@@ -5190,77 +5140,86 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::SetPoint_Connectivity(void) {
+void CPhysicalGeometry::SetPoint_Connectivity() {
 
+  vector<vector<unsigned long> > points(nPoint);
+
+  SU2_OMP_PARALLEL
+  {
   unsigned short Node_Neighbor, iNode, iNeighbor;
   unsigned long jElem, Point_Neighbor, iPoint, iElem;
 
   /*--- Loop over all the elements ---*/
+  SU2_OMP_MASTER
+  {
+    vector<vector<long> > elems(nPoint);
 
-  for (iElem = 0; iElem < nElem; iElem++)
+    for (iElem = 0; iElem < nElem; iElem++) {
 
-  /*--- Loop over all the nodes of an element ---*/
-
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
-
-      /*--- Store the element into the point ---*/
-
-      node[iPoint]->SetElem(iElem);
+      /*--- Loop over all the nodes of an element ---*/
+      for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+        iPoint = elem[iElem]->GetNode(iNode);
+        elems[iPoint].push_back(iElem);
+      }
     }
+    nodes->SetElems(elems);
+  }
+  SU2_OMP_BARRIER
 
   /*--- Loop over all the points ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  SU2_OMP_FOR_DYN(roundUpDiv(nPoint,2*omp_get_max_threads()))
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-  /*--- Loop over all elements shared by the point ---*/
+    /*--- Loop over all elements shared by the point ---*/
 
-    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+    for (iElem = 0; iElem < nodes->GetnElem(iPoint); iElem++) {
 
-      jElem = node[iPoint]->GetElem(iElem);
+      jElem = nodes->GetElem(iPoint, iElem);
 
       /*--- If we find the point iPoint in the surronding element ---*/
 
-      for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
+      for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++) {
 
-        if (elem[jElem]->GetNode(iNode) == iPoint)
+        if (elem[jElem]->GetNode(iNode) != iPoint) continue;
 
         /*--- Localize the local index of the neighbor of iPoint in the element ---*/
 
-          for (iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
-            Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode, iNeighbor);
-            Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
+        for (iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+          Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode, iNeighbor);
+          Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
 
-            /*--- Store the point into the point ---*/
-
-            node[iPoint]->SetPoint(Point_Neighbor);
-          }
+          /*--- Store the point into the point, if it is new ---*/
+          auto End = points[iPoint].end();
+          if (find(points[iPoint].begin(), End, Point_Neighbor) == End)
+            points[iPoint].push_back(Point_Neighbor);
+        }
+      }
     }
 
-  /*--- Set the number of neighbors variable, this is
-   important for JST and multigrid in parallel ---*/
+    /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
+    nodes->SetnNeighbor(iPoint, points[iPoint].size());
+  }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
+  SU2_OMP_MASTER
+  nodes->SetPoints(points);
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
-  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem, iNode, jNode;
-  vector<unsigned long> Queue, AuxQueue, Result;
-  unsigned short Degree, MinDegree, iDim, iMarker;
-  bool *inQueue;
 
-  inQueue = new bool [nPoint];
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    inQueue[iPoint] = false;
+  queue<unsigned long> Queue;
+  vector<char> inQueue(nPoint, false);
+  vector<unsigned long> AuxQueue, Result;
+  Result.reserve(nPoint);
 
   /*--- Select the node with the lowest degree in the grid. ---*/
 
-  MinDegree = node[0]->GetnNeighbor(); AddPoint = 0;
-  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
-    Degree = node[iPoint]->GetnPoint();
+  unsigned long AddPoint = 0;
+  auto MinDegree = nodes->GetnPoint(AddPoint);
+  for (auto iPoint = 1ul; iPoint < nPointDomain; iPoint++) {
+    auto Degree = nodes->GetnPoint(iPoint);
     if (Degree < MinDegree) { MinDegree = Degree; AddPoint = iPoint; }
   }
 
@@ -5277,30 +5236,26 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
      in the Queue. ---*/
 
     AuxQueue.clear();
-    for (iNode = 0; iNode < node[AddPoint]->GetnPoint(); iNode++) {
-      AdjPoint = node[AddPoint]->GetPoint(iNode);
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
+      auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
       if ((!inQueue[AdjPoint]) && (AdjPoint < nPointDomain)) {
         AuxQueue.push_back(AdjPoint);
       }
     }
 
-    if (AuxQueue.size() != 0) {
+    if (!AuxQueue.empty()) {
 
       /*--- Sort the auxiliar queue based on the number of neighbors ---*/
 
-      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-        for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
-          if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
-            AuxPoint = AuxQueue[jNode];
-            AuxQueue[jNode] = AuxQueue[jNode+1];
-            AuxQueue[jNode+1] = AuxPoint;
-          }
+      stable_sort(AuxQueue.begin(), AuxQueue.end(),
+        [&](unsigned long iPoint, unsigned long jPoint) {
+          return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
         }
-      }
+      );
 
-      Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
-      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-        inQueue[AuxQueue[iNode]] = true;
+      for (auto iPoint : AuxQueue) {
+        Queue.push(iPoint);
+        inQueue[iPoint] = true;
       }
 
     }
@@ -5308,121 +5263,99 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
     /*--- Extract the first node from the queue and add it in the first free
      position. ---*/
 
-    if (Queue.size() != 0) {
-      AddPoint = Queue[0];
-      Result.push_back(Queue[0]);
-      Queue.erase (Queue.begin(), Queue.begin()+1);
+    if (!Queue.empty()) {
+      AddPoint = Queue.front();
+      Result.push_back(AddPoint);
+      Queue.pop();
     }
 
-    /*--- Add to the queue all the nodes adjacent in the increasing
-     order of their degree, checking if the element is already
-     in the Queue. ---*/
-
-  } while (Queue.size() != 0);
+  } while (!Queue.empty());
 
   /*--- Check that all the points have been added ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
     if (inQueue[iPoint] == false) Result.push_back(iPoint);
   }
-
-  delete[] inQueue;
 
   reverse(Result.begin(), Result.end());
 
   /*--- Add the MPI points ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     Result.push_back(iPoint);
   }
 
   /*--- Reset old data structures ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->ResetElem();
-    node[iPoint]->ResetPoint();
-    node[iPoint]->ResetBoundary();
-    node[iPoint]->SetPhysicalBoundary(false);
-    node[iPoint]->SetSolidBoundary(false);
-    node[iPoint]->SetPeriodicBoundary(false);
-    node[iPoint]->SetDomain(true);
+  nodes->ResetElems();
+  nodes->ResetPoints();
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    nodes->ResetBoundary(iPoint);
+    nodes->SetPhysicalBoundary(iPoint, false);
+    nodes->SetSolidBoundary(iPoint, false);
+    nodes->SetPeriodicBoundary(iPoint, false);
+    nodes->SetDomain(iPoint, true);
   }
 
   /*--- Set the new coordinates ---*/
 
-  su2double **AuxCoord;
-  unsigned long *AuxGlobalIndex;
+  su2activematrix AuxCoord(nPoint, nDim);
+  vector<unsigned long> AuxGlobalIndex(nPoint);
 
-  AuxGlobalIndex = new unsigned long [nPoint];
-  AuxCoord = new su2double* [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    AuxCoord[iPoint] = new su2double [nDim];
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    AuxGlobalIndex[iPoint] = node[iPoint]->GetGlobalIndex();
-    for (iDim = 0; iDim < nDim; iDim++) {
-      AuxCoord[iPoint][iDim] = node[iPoint]->GetCoord(iDim);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    AuxGlobalIndex[iPoint] = nodes->GetGlobalIndex(iPoint);
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      AuxCoord(iPoint,iDim) = nodes->GetCoord(iPoint, iDim);
     }
   }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->SetGlobalIndex(AuxGlobalIndex[Result[iPoint]]);
-    for (iDim = 0; iDim < nDim; iDim++)
-      node[iPoint]->SetCoord(iDim, AuxCoord[Result[iPoint]][iDim]);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    nodes->SetGlobalIndex(iPoint, AuxGlobalIndex[Result[iPoint]]);
+    nodes->SetCoord(iPoint, AuxCoord[Result[iPoint]]);
   }
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    delete[] AuxCoord[iPoint];
-  delete[] AuxCoord;
-  delete[] AuxGlobalIndex;
 
   /*--- Set the new conectivities ---*/
 
-  unsigned long *InvResult;
-  InvResult = new unsigned long [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  auto& InvResult = AuxGlobalIndex; // alias to re-use storage
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     InvResult[Result[iPoint]] = iPoint;
+  }
 
-  for (iElem = 0; iElem < nElem; iElem++) {
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+    for (auto iNode = 0u; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      auto iPoint = elem[iElem]->GetNode(iNode);
       elem[iElem]->SetNode(iNode, InvResult[iPoint]);
     }
   }
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    for (auto iElem = 0ul; iElem < nElem_Bound[iMarker]; iElem++) {
 
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      if (Marker_Tag == "SEND_RECEIVE") {
-        for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          if (config->GetMarker_All_SendRecv(iMarker) < 0)
-            node[bound[iMarker][iElem_Bound]->GetNode(0)]->SetDomain(false);
-        }
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE &&
+          config->GetMarker_All_SendRecv(iMarker) < 0) {
+        nodes->SetDomain(bound[iMarker][iElem]->GetNode(0), false);
       }
 
-      for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        iPoint = bound[iMarker][iElem]->GetNode(iNode);
+      for (auto iNode = 0u; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
         bound[iMarker][iElem]->SetNode(iNode, InvResult[iPoint]);
-        node[InvResult[iPoint]]->SetBoundary(nMarker);
+        nodes->SetBoundary(InvResult[iPoint], nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
             config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-          node[InvResult[iPoint]]->SetPhysicalBoundary(true);
+          nodes->SetPhysicalBoundary(InvResult[iPoint], true);
 
         if (config->GetSolid_Wall(iMarker))
-          node[InvResult[iPoint]]->SetSolidBoundary(true);
+          nodes->SetSolidBoundary(InvResult[iPoint], true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
-          node[InvResult[iPoint]]->SetPeriodicBoundary(true);
+          nodes->SetPeriodicBoundary(InvResult[iPoint], true);
       }
     }
   }
-
-
-  delete[] InvResult;
 
 }
 
@@ -5439,8 +5372,8 @@ void CPhysicalGeometry::SetElement_Connectivity(void) {
 
         /*--- Loop over all elements sharing the face point ---*/
 
-        for (jElem = 0; jElem < node[face_point]->GetnElem(); jElem++) {
-          Test_Elem = node[face_point]->GetElem(jElem);
+        for (jElem = 0; jElem < nodes->GetnElem(face_point); jElem++) {
+          Test_Elem = nodes->GetElem(face_point, jElem);
 
           /*--- If it is a new element in this face ---*/
 
@@ -5472,9 +5405,9 @@ void CPhysicalGeometry::SetBoundVolume(void) {
       Point = bound[iMarker][iElem_Surface]->GetNode(0);
       CheckVol = false;
 
-      for (iElem = 0; iElem < node[Point]->GetnElem(); iElem++) {
+      for (iElem = 0; iElem < nodes->GetnElem(Point); iElem++) {
         /*--- Look for elements surronding that point --*/
-        cont = 0; iElem_Domain = node[Point]->GetElem(iElem);
+        cont = 0; iElem_Domain = nodes->GetElem(Point, iElem);
         for (iNode_Domain = 0; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
           Point_Domain = elem[iElem_Domain]->GetNode(iNode_Domain);
           for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
@@ -5507,7 +5440,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      node[iPoint]->SetVertex(-1, iMarker);
+      nodes->SetVertex(iPoint, -1, iMarker);
 
   /*--- Create and compute the vector with the number of vertex per marker ---*/
 
@@ -5523,8 +5456,8 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
         /*--- Set the vertex in the node information ---*/
 
-        if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
-          node[iPoint]->SetVertex(nVertex[iMarker], iMarker);
+        if ((nodes->GetVertex(iPoint, iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
+          nodes->SetVertex(iPoint, nVertex[iMarker], iMarker);
           nVertex[iMarker]++;
         }
       }
@@ -5534,7 +5467,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      node[iPoint]->SetVertex(-1, iMarker);
+      nodes->SetVertex(iPoint, -1, iMarker);
 
   /*--- Create the bound vertex structure, note that the order
    is the same as in the input file, this is important for Send/Receive part ---*/
@@ -5552,14 +5485,14 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
         /*--- Set the vertex in the node information ---*/
 
-        if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
+        if ((nodes->GetVertex(iPoint, iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
           iVertex = nVertex[iMarker];
           vertex[iMarker][iVertex] = new CVertex(iPoint, nDim);
 
           if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
             vertex[iMarker][iVertex]->SetRotation_Type(bound[iMarker][iElem]->GetRotation_Type());
           }
-          node[iPoint]->SetVertex(nVertex[iMarker], iMarker);
+          nodes->SetVertex(iPoint, nVertex[iMarker], iMarker);
           nVertex[iMarker]++;
         }
       }
@@ -5610,7 +5543,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = node[iPoint]->GetVertex(jMarker);
+                    jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                         nSpan++;
                     }
@@ -5653,9 +5586,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                  	jVertex = node[iPoint]->GetVertex(jMarker);
+                  	jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                      coord = node[iPoint]->GetCoord();
+                      coord = nodes->GetCoord(iPoint);
                       switch (config->GetKind_TurboMachinery(val_iZone)){
                       case CENTRIFUGAL:
                         valueSpan[nSpan_loc] = coord[2];
@@ -5786,9 +5719,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = node[iPoint]->GetVertex(jMarker);
+                    jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                      coord = node[iPoint]->GetCoord();
+                      coord = nodes->GetCoord(iPoint);
                       switch (config->GetKind_TurboMachinery(val_iZone)){
                       case CENTRIFUGAL: case CENTRIPETAL:
                         if (coord[2] < min) min = coord[2];
@@ -5965,7 +5898,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               if (nDim == 3){
                 dist = 10E+06;
                 jSpan = -1;
-                coord = node[iPoint]->GetCoord();
+                coord = nodes->GetCoord(iPoint);
 
                 switch (config->GetKind_TurboMachinery(val_iZone)){
                 case CENTRIFUGAL: case CENTRIPETAL:
@@ -6032,7 +5965,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 jSpan = 0;
               }
 
-              if(node[iPoint]->GetDomain()){
+              if(nodes->GetDomain(iPoint)){
                 nVertexSpan[iMarker][jSpan]++;
               }
               nVertexSpanHalo[jSpan]++;
@@ -6067,7 +6000,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 dist  = 10E+06;
                 jSpan = -1;
 
-                coord = node[iPoint]->GetCoord();
+                coord = nodes->GetCoord(iPoint);
                 switch (config->GetKind_TurboMachinery(val_iZone)){
                 case CENTRIFUGAL: case CENTRIPETAL:
                   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
@@ -6158,7 +6091,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               max    = -10E+06;
               for(iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++){
                 iPoint = disordered[iSpan][iSpanVertex];
-                coord = node[iPoint]->GetCoord();
+                coord = nodes->GetCoord(iPoint);
                 /*--- find nodes at minimum pitch among all nodes---*/
                 if (coord[1]<min){
                   min = coord[1];
@@ -6174,7 +6107,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
                 /*--- find nodes at minimum pitch among the internal nodes---*/
                 if (coord[1]<minInt){
-                  if(node[iPoint]->GetDomain()){
+                  if(nodes->GetDomain(iPoint)){
                     minInt = coord[1];
                     if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
                       minIntAngPitch[iSpan] = coord[1];
@@ -6187,7 +6120,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
                 /*--- find nodes at maximum pitch among the internal nodes---*/
                 if (coord[1]>max){
-                  if(node[iPoint]->GetDomain()){
+                  if(nodes->GetDomain(iPoint)){
                     max =coord[1];
                     if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
                       MaxAngularCoord[iMarker][iSpan] = coord[1];
@@ -6207,7 +6140,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 dist = 10E+06;
                 ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
                 checkAssign[iSpan][kSpanVertex] = true;
-                coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
+                coord = nodes->GetCoord(ordered[iSpan][iSpanVertex]);
                 target = coord[1];
                 if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
                    angPitch[iSpan][iSpanVertex]=coord[1];
@@ -6222,7 +6155,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   deltaAngPitch[iSpan][iSpanVertex]= angPitch[iSpan][iSpanVertex] - angPitch[iSpan][iSpanVertex - 1];
                 }
                 /*---create turbovertex structure only for the internal nodes---*/
-                if(node[ordered[iSpan][iSpanVertex]]->GetDomain()){
+                if(nodes->GetDomain(ordered[iSpan][iSpanVertex])){
                   if (allocate){
                     turbovertex[iMarker][iSpan][iInternalVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
                   }
@@ -6320,7 +6253,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 
                 for(jSpanVertex = 0; jSpanVertex<nVertexSpanHalo[iSpan]; jSpanVertex++){
-                  coord = node[disordered[iSpan][jSpanVertex]]->GetCoord();
+                  coord = nodes->GetCoord(disordered[iSpan][jSpanVertex]);
                   if(dist >= (coord[1] - target) && !checkAssign[iSpan][jSpanVertex] && (coord[1] - target) >= 0.0){
                     dist= coord[1] - target;
                     kSpanVertex =jSpanVertex;
@@ -6438,7 +6371,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
           for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
             for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
-              coord  = node[iPoint]->GetCoord();
+              coord  = nodes->GetCoord(iPoint);
               x_loc[iSpan][iSpanVertex]   = coord[0];
               y_loc[iSpan][iSpanVertex]   = coord[1];
               if (nDim == 3){
@@ -6652,7 +6585,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
           for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
             for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
-              coord  = node[iPoint]->GetCoord();
+              coord  = nodes->GetCoord(iPoint);
               /*--- compute appropriate turbo normal ---*/
               switch (config->GetKind_TurboMachinery(val_iZone)){
               case CENTRIFUGAL:
@@ -6822,7 +6755,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
               iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
               turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
               turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
-              coord  = node[iPoint]->GetCoord();
+              coord  = nodes->GetCoord(iPoint);
 
               if (nDim == 3){
                 radius = sqrt(coord[0]*coord[0] + coord[1]*coord[1]);
@@ -6838,7 +6771,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 TotalNormal[iDim]       +=Normal[iDim];
               }
               if (grid_movement){
-                gridVel = node[iPoint]->GetGridVel();
+                gridVel = nodes->GetGridVel(iPoint);
                 for (iDim = 0; iDim < nDim; iDim++) TotalGridVel[iDim] +=gridVel[iDim];
               }
             }
@@ -7180,6 +7113,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 
 void CPhysicalGeometry::SetCoord_CG(void) {
+
+  SU2_OMP_PARALLEL
+  {
   unsigned short iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
 
@@ -7188,13 +7124,14 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
   /*--- Compute the center of gravity for elements ---*/
 
+  SU2_OMP_FOR_STAT(roundUpDiv(nElem,2*omp_get_max_threads()))
   for (iElem = 0; iElem<nElem; iElem++) {
     assert(elem[iElem]->GetnNodes() <= N_POINTS_MAXIMUM && "Insufficient N_POINTS_MAXIMUM");
 
     /*--- Store the coordinates for all the element nodes ---*/
     for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
       elem_poin = elem[iElem]->GetNode(iNode);
-      Coord[iNode] = node[elem_poin]->GetCoord();
+      Coord[iNode] = nodes->GetCoord(elem_poin);
     }
 
     /*--- Compute the element CG coordinates ---*/
@@ -7203,13 +7140,14 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
   /*--- Center of gravity for face elements ---*/
 
+  SU2_OMP_FOR_DYN(1)
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
 
       /*--- Store the coordinates for all the element nodes ---*/
       for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
         elem_poin = bound[iMarker][iElem]->GetNode(iNode);
-        Coord[iNode] = node[elem_poin]->GetCoord();
+        Coord[iNode] = nodes->GetCoord(elem_poin);
       }
 
       /*--- Compute the element CG coordinates ---*/
@@ -7219,18 +7157,20 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
   /*--- Center of gravity for edges ---*/
 
+  SU2_OMP_FOR_STAT(roundUpDiv(nEdge,2*omp_get_max_threads()))
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
 
     /*--- Store the coordinates for all the element nodes ---*/
     for (iNode = 0; iNode < edges->GetnNodes(); iNode++) {
       edge_poin=edges->GetNode(iEdge,iNode);
-      Coord[iNode] = node[edge_poin]->GetCoord();
+      Coord[iNode] = nodes->GetCoord(edge_poin);
     }
 
     /*--- Compute the edge CG coordinates ---*/
     edges->SetCoord_CG(iEdge, Coord.data());
   }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
@@ -7262,7 +7202,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 
       for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
         iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        iVertex = node[iPoint]->GetVertex(iMarker);
+        iVertex = nodes->GetVertex(iPoint, iMarker);
 
         /*--- Loop over the neighbor nodes, there is a face for each one ---*/
 
@@ -7276,7 +7216,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
           for (iDim = 0; iDim < nDim; iDim++) {
             Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
             Coord_Elem_CG[iDim] = bound[iMarker][iElem]->GetCG(iDim);
-            Coord_Vertex[iDim] = node[iPoint]->GetCoord(iDim);
+            Coord_Vertex[iDim] = nodes->GetCoord(iPoint, iDim);
           }
           switch (nDim) {
             case 2:
@@ -7316,8 +7256,8 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
-    const unsigned short nNeigh = node[iPoint]->GetnPoint();
-    const su2double* Coord_i = node[iPoint]->GetCoord();
+    const unsigned short nNeigh = nodes->GetnPoint(iPoint);
+    const su2double* Coord_i = nodes->GetCoord(iPoint);
 
     /*--- If using AD, computing the maximum grid length can generate
      * a lot of unnecessary overhead since we would store all computations
@@ -7332,8 +7272,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
       /*-- Calculate the cell-center to cell-center length ---*/
 
-      const unsigned long jPoint  = node[iPoint]->GetPoint(iNeigh);
-      const su2double* Coord_j = node[jPoint]->GetCoord();
+      const unsigned long jPoint  = nodes->GetPoint(iPoint, iNeigh);
+      const su2double* Coord_j = nodes->GetCoord(jPoint);
 
       passivedouble delta_aux = 0;
       for (unsigned short iDim = 0;iDim < nDim; iDim++){
@@ -7351,8 +7291,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     /*--- Now that we know where the maximum distance is, repeat
      * calculation with the AD-friendly su2double datatype ---*/
 
-    const unsigned long jPoint  = node[iPoint]->GetPoint(max_neighbor);
-    const su2double* Coord_j = node[jPoint]->GetCoord();
+    const unsigned long jPoint  = nodes->GetPoint(iPoint, max_neighbor);
+    const su2double* Coord_j = nodes->GetCoord(jPoint);
 
     su2double max_delta = 0;
     for (unsigned short iDim = 0;iDim < nDim; iDim++) {
@@ -7360,7 +7300,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     }
     max_delta = sqrt(max_delta);
 
-    node[iPoint]->SetMaxLength(max_delta);
+    nodes->SetMaxLength(iPoint, max_delta);
   }
 
   InitiateComms(this, config, MAX_LENGTH);
@@ -7396,7 +7336,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
         for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          if (node[iPoint]->GetDomain()) nLocalVertex_NearField ++;
+          if (nodes->GetDomain(iPoint)) nLocalVertex_NearField ++;
         }
 
     Buffer_Send_nVertex[0] = nLocalVertex_NearField;
@@ -7440,14 +7380,14 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
         for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
-          if (node[iPoint]->GetDomain()) {
+          iPointGlobal = nodes->GetGlobalIndex(iPoint);
+          if (nodes->GetDomain(iPoint)) {
             Buffer_Send_Point[nLocalVertex_NearField] = iPoint;
             Buffer_Send_GlobalIndex[nLocalVertex_NearField] = iPointGlobal;
             Buffer_Send_Vertex[nLocalVertex_NearField] = iVertex;
             Buffer_Send_Marker[nLocalVertex_NearField] = iMarker;
             for (iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+              Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
             nLocalVertex_NearField++;
           }
         }
@@ -7467,13 +7407,13 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
+          iPointGlobal = nodes->GetGlobalIndex(iPoint);
 
-          if (node[iPoint]->GetDomain()) {
+          if (nodes->GetDomain(iPoint)) {
 
             /*--- Coordinates of the boundary point ---*/
 
-            Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+            Coord_i = nodes->GetCoord(iPoint); mindist = 1E6; pProcessor = 0; pPoint = 0;
 
             /*--- Loop over all the boundaries to find the pair ---*/
             for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
@@ -7581,7 +7521,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
         if (config->GetMarker_All_KindBC(iMarker) == Donor) {
           for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
             iPoint = vertex[iMarker][iVertex]->GetNode();
-            if (node[iPoint]->GetDomain()) nLocalVertex_ActDisk ++;
+            if (nodes->GetDomain(iPoint)) nLocalVertex_ActDisk ++;
           }
         }
       }
@@ -7629,14 +7569,14 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
         if (config->GetMarker_All_KindBC(iMarker) == Donor) {
           for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
             iPoint = vertex[iMarker][iVertex]->GetNode();
-            iPointGlobal = node[iPoint]->GetGlobalIndex();
-            if (node[iPoint]->GetDomain()) {
+            iPointGlobal = nodes->GetGlobalIndex(iPoint);
+            if (nodes->GetDomain(iPoint)) {
               Buffer_Send_Point[nLocalVertex_ActDisk] = iPoint;
               Buffer_Send_GlobalIndex[nLocalVertex_ActDisk] = iPointGlobal;
               Buffer_Send_Vertex[nLocalVertex_ActDisk] = iVertex;
               Buffer_Send_Marker[nLocalVertex_ActDisk] = iMarker;
               for (iDim = 0; iDim < nDim; iDim++)
-                Buffer_Send_Coord[nLocalVertex_ActDisk*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+                Buffer_Send_Coord[nLocalVertex_ActDisk*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
               nLocalVertex_ActDisk++;
             }
           }
@@ -7658,14 +7598,14 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
 
           for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
             iPoint = vertex[iMarker][iVertex]->GetNode();
-            iPointGlobal = node[iPoint]->GetGlobalIndex();
+            iPointGlobal = nodes->GetGlobalIndex(iPoint);
 
 
-            if (node[iPoint]->GetDomain()) {
+            if (nodes->GetDomain(iPoint)) {
 
               /*--- Coordinates of the boundary point ---*/
 
-              Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+              Coord_i = nodes->GetCoord(iPoint); mindist = 1E6; pProcessor = 0; pPoint = 0;
 
               /*--- Loop over all the boundaries to find the pair ---*/
 
@@ -7804,7 +7744,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
           (iPeriodic == val_periodic + nPeriodic/2)) {
         for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          if (node[iPoint]->GetDomain()) nLocalVertex_Periodic++;
+          if (nodes->GetDomain(iPoint)) nLocalVertex_Periodic++;
         }
       }
     }
@@ -7868,14 +7808,14 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
           (iPeriodic == val_periodic + nPeriodic/2)) {
         for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
-          if (node[iPoint]->GetDomain()) {
+          iPointGlobal = nodes->GetGlobalIndex(iPoint);
+          if (nodes->GetDomain(iPoint)) {
             Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
             Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
             Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
             Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
             for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+            Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
             nLocalVertex_Periodic++;
           }
         }
@@ -7954,15 +7894,15 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
           /*--- Local and global index for the owned periodic point. ---*/
 
           iPoint       = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
+          iPointGlobal = nodes->GetGlobalIndex(iPoint);
 
           /*--- If this is not a ghost, find the periodic match. ---*/
 
-          if (node[iPoint]->GetDomain()) {
+          if (nodes->GetDomain(iPoint)) {
 
             /*--- Coordinates of the current boundary point ---*/
 
-            Coord_i = node[iPoint]->GetCoord();
+            Coord_i = nodes->GetCoord(iPoint);
 
             /*--- Get the position vector from rotation center to point. ---*/
 
@@ -8140,27 +8080,19 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 }
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
+
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
-  long iEdge;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
-  Volume, DomainVolume, my_DomainVolume;
-  bool change_face_orientation;
+  su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
 
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
     edges->SetZeroValues();
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->SetVolume (0.0);
+      nodes->SetVolume(iPoint, 0.0);
   }
 
-  Coord_Edge_CG = new su2double [nDim];
-  Coord_FaceElem_CG = new su2double [nDim];
-  Coord_Elem_CG = new su2double [nDim];
-  Coord_FaceiPoint = new su2double [nDim];
-  Coord_FacejPoint = new su2double [nDim];
-
-  my_DomainVolume = 0.0;
+  su2double my_DomainVolume = 0.0;
   for (iElem = 0; iElem < nElem; iElem++) {
     for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
 
@@ -8188,67 +8120,66 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         }
 
         /*--- We define a direction (from the smalest index to the greatest) --*/
-        change_face_orientation = false;
-        if (face_iPoint > face_jPoint) change_face_orientation = true;
-        iEdge = FindEdge(face_iPoint, face_jPoint);
+        const bool change_face_orientation = (face_iPoint > face_jPoint);
+        const auto iEdge = FindEdge(face_iPoint, face_jPoint);
 
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
-          Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
 
-        switch (nDim) {
-          case 2:
-            /*--- Two dimensional problem ---*/
-            if (change_face_orientation) edges->SetNodes_Coord(iEdge, Coord_Elem_CG, Coord_Edge_CG);
-            else edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
-            Area = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
-            node[face_iPoint]->AddVolume(Area); my_DomainVolume +=Area;
-            Area = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
-            node[face_jPoint]->AddVolume(Area); my_DomainVolume +=Area;
-            break;
-          case 3:
-            /*--- Three dimensional problem ---*/
-            if (change_face_orientation) edges->SetNodes_Coord(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
-            else edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            Volume = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
-            Volume = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            node[face_jPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
-            break;
+        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
+        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
+
+        su2double Volume_i, Volume_j;
+
+        if (nDim == 2) {
+          /*--- Two dimensional problem ---*/
+          if (change_face_orientation)
+            edges->SetNodes_Coord(iEdge, Coord_Elem_CG, Coord_Edge_CG);
+          else
+            edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
+
+          Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
         }
+        else {
+          /*--- Three dimensional problem ---*/
+          if (change_face_orientation)
+            edges->SetNodes_Coord(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
+          else
+            edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+
+          Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+        }
+
+        nodes->AddVolume(face_iPoint, Volume_i);
+        nodes->AddVolume(face_jPoint, Volume_j);
+
+        my_DomainVolume += Volume_i+Volume_j;
       }
     }
   }
 
   /*--- Check if there is a normal with null area ---*/
-  for (iEdge = 0; iEdge < (long)nEdge; iEdge++) {
-    const auto NormalFace = edges->GetNormal(iEdge);
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-    Area = sqrt(Area);
-    if (Area == 0.0) {
+  for (auto iEdge = 0ul; iEdge < nEdge; iEdge++) {
+    const auto Area2 = GeometryToolbox::SquaredNorm(nDim, edges->GetNormal(iEdge));
+    if (Area2 == 0.0) {
       su2double DefaultArea[3] = {EPS*EPS};
       edges->SetNormal(iEdge, DefaultArea);
     }
   }
 
+  su2double DomainVolume;
   SU2_MPI::Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  config->SetDomainVolume(DomainVolume);
 
   if ((rank == MASTER_NODE) && (action == ALLOCATE)) {
     if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<< endl;
     if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
-
-  config->SetDomainVolume(DomainVolume);
-
-  delete[] Coord_Edge_CG;
-  delete[] Coord_FaceElem_CG;
-  delete[] Coord_Elem_CG;
-  delete[] Coord_FaceiPoint;
-  delete[] Coord_FacejPoint;
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {
@@ -8318,8 +8249,8 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
           Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
-          Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
+          Coord_FaceiPoint[iDim] = nodes->GetCoord(face_iPoint, iDim);
+          Coord_FacejPoint[iDim] = nodes->GetCoord(face_jPoint, iDim);
         }
 
         /*--- Print out the coordinates for a set of triangles making
@@ -8438,11 +8369,11 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   output_file.precision(15);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
+      output_file << scientific << "\t" << nodes->GetCoord(iPoint, iDim) ;
 #ifndef HAVE_MPI
     output_file << "\t" << iPoint << endl;
 #else
-    output_file << "\t" << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
+    output_file << "\t" << iPoint << "\t" << nodes->GetGlobalIndex(iPoint) << endl;
 #endif
 
   }
@@ -8504,37 +8435,32 @@ void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2doubl
 
   Coord = new su2double [nDim];
 
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    su2double *Coord = node[iPoint]->GetCoord();
-    node[iPoint]->SetCoord_Old(Coord);
-  }
+  nodes->SetCoord_Old();
 
   /*--- Jacobi iterations ---*/
   for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->SetCoord_SumZero();
-
+    nodes->SetCoord_SumZero();
 
     /*--- Loop over Interior edges ---*/
     for (iEdge = 0; iEdge < nEdge; iEdge++) {
       iPoint = edges->GetNode(iEdge,0);
-      Coord_i = node[iPoint]->GetCoord();
+      Coord_i = nodes->GetCoord(iPoint);
 
       jPoint = edges->GetNode(iEdge,1);
-      Coord_j = node[jPoint]->GetCoord();
+      Coord_j = nodes->GetCoord(jPoint);
 
       /*--- Accumulate nearest neighbor Coord to Res_sum for each variable ---*/
-      node[iPoint]->AddCoord_Sum(Coord_j);
-      node[jPoint]->AddCoord_Sum(Coord_i);
+      nodes->AddCoord_Sum(iPoint, Coord_j);
+      nodes->AddCoord_Sum(jPoint, Coord_i);
 
     }
 
     /*--- Loop over all mesh points (Update Coords with averaged sum) ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      nneigh = node[iPoint]->GetnPoint();
-      Coord_Sum = node[iPoint]->GetCoord_Sum();
-      Coord_Old = node[iPoint]->GetCoord_Old();
+      nneigh = nodes->GetnPoint(iPoint);
+      Coord_Sum = nodes->GetCoord_Sum(iPoint);
+      Coord_Old = nodes->GetCoord_Old(iPoint);
 
       if (nDim == 2) {
         Coord[0] =(Coord_Old[0] + val_smooth_coeff*Coord_Sum[0]) /(1.0 + val_smooth_coeff*su2double(nneigh));
@@ -8551,15 +8477,15 @@ void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2doubl
           Coord[2] = Coord_Old[2];
       }
 
-      node[iPoint]->SetCoord(Coord);
+      nodes->SetCoord(iPoint, Coord);
     }
 
     /*--- Copy boundary values ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
-        Coord_Old = node[iPoint]->GetCoord_Old();
-        node[iPoint]->SetCoord(Coord_Old);
+        Coord_Old = nodes->GetCoord_Old(iPoint);
+        nodes->SetCoord(iPoint, Coord_Old);
       }
   }
 
@@ -8664,7 +8590,7 @@ void CPhysicalGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      Tecplot_File << scientific << node[iPoint]->GetCoord(iDim) << "\t";
+      Tecplot_File << scientific << nodes->GetCoord(iPoint, iDim) << "\t";
     Tecplot_File << "\n";
   }
 
@@ -8725,7 +8651,7 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
 
   PointSurface = new unsigned long[nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    if (node[iPoint]->GetBoundary()) {
+    if (nodes->GetBoundary(iPoint)) {
       PointSurface[iPoint] = nPointSurface;
       nPointSurface++;
     }
@@ -8764,17 +8690,17 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
 
     if (nDim == 3) {
       for (iPoint = 0; iPoint < nPoint; iPoint++)
-        if (node[iPoint]->GetBoundary()) {
+        if (nodes->GetBoundary(iPoint)) {
           for (Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
-          Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
+            Tecplot_File << nodes->GetCoord(iPoint, Coord_i) << " ";
+          Tecplot_File << nodes->GetCoord(iPoint, nDim-1) << "\n";
         }
     }
     else {
       for (iPoint = 0; iPoint < nPoint; iPoint++)
-        if (node[iPoint]->GetBoundary()) {
+        if (nodes->GetBoundary(iPoint)) {
           for (Coord_i = 0; Coord_i < nDim; Coord_i++)
-            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+            Tecplot_File << nodes->GetCoord(iPoint, Coord_i) << " ";
           Tecplot_File << "\n";
         }
     }
@@ -8832,7 +8758,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   /*--- Initialize the color vector ---*/
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetColor(0);
+    nodes->SetColor(iPoint, 0);
 
   /*--- We need to have parallel support with MPI and have the ParMETIS
    library compiled and linked for parallel graph partitioning. ---*/
@@ -8899,7 +8825,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
      results for its initial piece of the grid. ---*/
 
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      node[iPoint]->SetColor(part[iPoint]);
+      nodes->SetColor(iPoint, part[iPoint]);
     }
 
     /*--- Free all memory needed for the ParMETIS structures ---*/
@@ -8948,8 +8874,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     const unsigned long iPoint = edges->GetNode(iEdge,0);
     const unsigned long jPoint = edges->GetNode(iEdge,1);
 
-    const unsigned long GlobalIndex_i = node[iPoint]->GetGlobalIndex();
-    const unsigned long GlobalIndex_j = node[iPoint]->GetGlobalIndex();
+    const unsigned long GlobalIndex_i = nodes->GetGlobalIndex(iPoint);
+    const unsigned long GlobalIndex_j = nodes->GetGlobalIndex(iPoint);
 
     /*-- Area normal for the current edge. Recall that this normal
      is computed by summing the normals of adjacent faces along
@@ -8959,8 +8885,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
 
     /*--- Get the coordinates for point i & j. ---*/
 
-    const su2double *Coord_i = node[iPoint]->GetCoord();
-    const su2double *Coord_j = node[jPoint]->GetCoord();
+    const su2double *Coord_i = nodes->GetCoord(iPoint);
+    const su2double *Coord_j = nodes->GetCoord(jPoint);
 
     /*--- Compute the vector pointing from iPoint to jPoint and
      its distance. We also compute face area (norm of the normal vector). ---*/
@@ -8981,12 +8907,12 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
      of the aspect ratio of the dual control volume. Smaller
      is better (closer to isotropic). ----*/
 
-    if (node[iPoint]->GetDomain()) {
+    if (nodes->GetDomain(iPoint)) {
       Area_Min[iPoint] = min(Area_Min[iPoint], area);
       Area_Max[iPoint] = max(Area_Max[iPoint], area);
     }
 
-    if (node[jPoint]->GetDomain()) {
+    if (nodes->GetDomain(jPoint)) {
       Area_Min[jPoint] = min(Area_Min[jPoint], area);
       Area_Max[jPoint] = max(Area_Max[jPoint], area);
     }
@@ -9013,24 +8939,24 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
      not aligned, the orthogonality will reduce from there. Good values
      are close to 90 degress, poor values are typically below 20 degress. ---*/
 
-    if (node[iPoint]->GetDomain()) {
+    if (nodes->GetDomain(iPoint)) {
       Orthogonality[iPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
       SurfaceArea[iPoint]   += area;
     }
-    if (node[jPoint]->GetDomain()) {
+    if (nodes->GetDomain(jPoint)) {
       Orthogonality[jPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
       SurfaceArea[jPoint]   += area;
     }
 
     /*--- Error check for zero volume of the dual CVs. ---*/
 
-    if (node[iPoint]->GetVolume() <= 0.0) {
+    if (nodes->GetVolume(iPoint) <= 0.0) {
       char buf[200];
       SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_i);
       SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
     }
 
-    if (node[jPoint]->GetVolume() <= 0.0) {
+    if (nodes->GetVolume(jPoint) <= 0.0) {
       char buf[200];
       SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_j);
       SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -9048,7 +8974,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
         const unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
         const su2double *Normal    = vertex[iMarker][iVertex]->GetNormal();
 
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
 
           /*--- Face area (norm of the normal vector) ---*/
 
@@ -9125,8 +9051,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
           Coord_Edge_CG[iDim]     = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim]     = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim]  = node[face_iPoint]->GetCoord(iDim);
-          Coord_FacejPoint[iDim]  = node[face_jPoint]->GetCoord(iDim);
+          Coord_FaceiPoint[iDim]  = nodes->GetCoord(face_iPoint, iDim);
+          Coord_FacejPoint[iDim]  = nodes->GetCoord(face_jPoint, iDim);
         }
 
         /*--- Access the sub-volume of the element separately in 2D or 3D. ---*/
@@ -9157,14 +9083,14 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
 
         /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
 
-        if (node[face_iPoint]->GetDomain()) {
+        if (nodes->GetDomain(face_iPoint)) {
           SubVolume_Min[face_iPoint] = min(SubVolume_Min[face_iPoint], Volume_i);
           SubVolume_Max[face_iPoint] = max(SubVolume_Max[face_iPoint], Volume_i);
         }
 
         /*--- Check if sub-elem volume is the min or max for jPoint. ---*/
 
-        if (node[face_jPoint]->GetDomain()) {
+        if (nodes->GetDomain(face_jPoint)) {
           SubVolume_Min[face_jPoint] = min(SubVolume_Min[face_jPoint], Volume_j);
           SubVolume_Max[face_jPoint] = max(SubVolume_Max[face_jPoint], Volume_j);
         }
@@ -9255,11 +9181,11 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
 
         /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
         Point_Normal = 0; cos_max = -1.0;
-        for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
-          jPoint = node[iPoint]->GetPoint(iNeigh);
+        for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+          jPoint = nodes->GetPoint(iPoint, iNeigh);
           scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+            diff_coord = nodes->GetCoord(jPoint, iDim)-nodes->GetCoord(iPoint, iDim);
             scalar_prod += diff_coord*Normal[iDim];
             norm_vect += diff_coord*diff_coord;
             norm_Normal += Normal[iDim]*Normal[iDim];
@@ -9300,7 +9226,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
         /*--- The sensitivity file uses the global numbering ---*/
-        iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+        iPoint = nodes->GetGlobalIndex(vertex[iMarker][iVertex]->GetNode());
 
         if (vertex[iMarker][iVertex]->GetNode() < GetnPointDomain()) {
           Point2Vertex[iPoint][0] = iMarker;
@@ -9990,7 +9916,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     PointIDs[iPoint] = iPoint;
     for (iDim = 0; iDim < nDim; iDim++)
-      Coords[iPoint*nDim + iDim] = node[iPoint]->GetCoord(iDim);
+      Coords[iPoint*nDim + iDim] = nodes->GetCoord(iPoint, iDim);
   }
 
   /*--- Build the ADT of all interior nodes. ---*/
@@ -11624,7 +11550,7 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
       meshToSurface[i] = nVertex_SolidWall++;
 
       for(unsigned short k=0; k<nDim; ++k)
-        surfaceCoor.push_back(node[i]->GetCoord(k));
+        surfaceCoor.push_back(nodes->GetCoord(i, k));
     }
   }
 
@@ -11665,8 +11591,8 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
-      WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID, elemID, rankID);
-      node[iPoint]->SetWall_Distance(min(dist,node[iPoint]->GetWall_Distance()));
+      WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+      nodes->SetWall_Distance(iPoint, min(dist,nodes->GetWall_Distance(iPoint)));
     }
   }
   // end SU2_OMP_PARALLEL
