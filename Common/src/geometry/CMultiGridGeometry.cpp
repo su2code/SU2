@@ -413,7 +413,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
           }
         }
       }
-      //sort(points[iCoarsePoint].begin(), points[iCoarsePoint].end());
     }
     nodes->SetPoints(points);
   }
@@ -948,7 +947,6 @@ void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
         }
       }
     }
-    //sort(points[iCoarsePoint].begin(), points[iCoarsePoint].end());
   }
   nodes->SetPoints(points);
 

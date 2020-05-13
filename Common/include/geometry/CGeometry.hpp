@@ -585,9 +585,9 @@ public:
   inline virtual void SetPositive_ZArea(CConfig *config) {}
 
   /*!
-   * \brief Setas connectivity between points.
+   * \brief Set connectivity between points.
    */
-  inline virtual void SetPoint_Connectivity(void) {}
+  inline virtual void SetPoint_Connectivity() {}
 
   /*!
    * \brief Orders the RCM.
