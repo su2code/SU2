@@ -31,6 +31,8 @@
 
 CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
                                          unsigned short val_nVar,
+                                         unsigned short val_nPrimVar,
+                                         unsigned short val_nPrimVarGrad,
                                          CConfig *config) : CNumerics(val_nDim,
                                                                       val_nVar,
                                                                       config) {
@@ -41,6 +43,8 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
 
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
+  nPrimVar = val_nPrimVar;
+  nPrimVarGrad = val_nPrimVarGrad;
   nDim     = val_nDim;
   nSpecies = config->GetnSpecies();
 
@@ -72,6 +76,19 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
   u_j     = new su2double [nDim];
   dPdU_i  = new su2double [nVar];
   dPdU_j  = new su2double [nVar];
+
+  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+
+  RHOS_INDEX    = variable->GetRhosIndex()    ;
+  RHO_INDEX     = variable->GetRhoIndex()     ;
+  P_INDEX       = variable->GetPIndex()       ;
+  T_INDEX       = variable->GetTIndex()       ;
+  TVE_INDEX     = variable->GetTveIndex()     ;
+  VEL_INDEX     = variable->GetVelIndex()     ;
+  H_INDEX       = variable->GetHIndex()       ;
+  A_INDEX       = variable->GetAIndex()       ;
+  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
+  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CUpwAUSMPWplus_NEMO::~CUpwAUSMPWplus_NEMO(void) {

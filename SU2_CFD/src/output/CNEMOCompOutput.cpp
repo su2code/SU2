@@ -367,13 +367,13 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   if (/*config->GetKind_Solver() == NEMO_RANS ||*/ config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
 
-    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
-    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
-    if (nDim == 3)
-      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
+    //AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+    //AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
+    //if (nDim == 3)
+    //  AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
-    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
-    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
+    //AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
+    //AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
   }
 
@@ -604,14 +604,14 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
 
-  if(/*config->GetKind_Solver() == NEMO_RANS ||*/ config->GetKind_Solver() == NEMO_NAVIER_STOKES){
-    if (nDim == 3){
-      SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
-      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
-      SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
-    }
-    SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
-  }
+  //if(/*config->GetKind_Solver() == NEMO_RANS ||*/ config->GetKind_Solver() == NEMO_NAVIER_STOKES){
+  //  if (nDim == 3){
+  //    SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
+  //    SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
+  //    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
+  //  }
+  //  SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
+  //}
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
@@ -620,15 +620,15 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
 void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES) /*|| (config->GetKind_Solver()  == NEMO_RANS)*/) {
-    SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-    SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
-    if (nDim == 3)
-      SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+  //if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES) /*|| (config->GetKind_Solver()  == NEMO_RANS)*/) {
+  // SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+  //  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+  //  if (nDim == 3)
+  //    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
 
-    SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[NEMO_SOL]->GetHeatFlux(iMarker, iVertex));
-    SetVolumeOutputValue("Y_PLUS", iPoint, solver[NEMO_SOL]->GetYPlus(iMarker, iVertex));
-  }
+  //  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[NEMO_SOL]->GetHeatFlux(iMarker, iVertex));
+  //  SetVolumeOutputValue("Y_PLUS", iPoint, solver[NEMO_SOL]->GetYPlus(iMarker, iVertex));
+  //}
 }
 
 void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {

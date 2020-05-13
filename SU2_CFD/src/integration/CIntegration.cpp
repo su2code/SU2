@@ -64,11 +64,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
 
   /*--- Compute viscous residuals ---*/
-
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
 
   /*--- Compute source term residuals ---*/
-
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
@@ -157,6 +155,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        exit(0);
         break;
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);

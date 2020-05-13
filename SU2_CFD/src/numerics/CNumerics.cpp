@@ -160,9 +160,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Diffusion_Coeff_j = new su2double[nSpecies];
     unsigned short nPrimVar     = nSpecies+nDim+8;
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
-//    cout << "delete me: ln242" << endl;
     unsigned long nPoint = 1;
-    variable = new CNEMOEulerVariable(nPoint, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+    
   }
 
   /* --- Initializing variables for the UQ methodology --- */
@@ -209,6 +208,10 @@ CNumerics::~CNumerics(void) {
   delete [] UnitNormal;
   delete [] UnitNormald;
 
+
+  //if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
+  //if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
+
   // visc
   delete [] Proj_Flux_Tensor;
 
@@ -236,8 +239,6 @@ CNumerics::~CNumerics(void) {
     delete [] delta3;
   }
 
-  delete [] Diffusion_Coeff_i;
-  delete [] Diffusion_Coeff_j;
   delete [] Vector;
 
   delete [] l;

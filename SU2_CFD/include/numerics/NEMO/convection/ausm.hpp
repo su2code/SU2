@@ -48,6 +48,8 @@ private:
   su2double a_i, P_i, h_i, ProjVel_i;
   su2double a_j, P_j, h_j, ProjVel_j;
   su2double sq_vel, Proj_ModJac_Tensor_ij;
+  unsigned short nPrimVar, nPrimVarGrad;
+  CNEMOEulerVariable *variable;
   
 
 public:
@@ -58,7 +60,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

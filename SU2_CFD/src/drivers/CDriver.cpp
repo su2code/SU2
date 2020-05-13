@@ -1072,7 +1072,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver, geometry, config);
+  Inlet_Preprocessing(solver, geometry, config); 
 
 }
 
@@ -1934,8 +1934,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
             case AUSM:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][NEMO_SOL][conv_term] = new CUpwAUSM_NEMO(nDim, nVar_NEMO, config);
-                numerics[iMGlevel][NEMO_SOL][conv_bound_term] = new CUpwAUSM_NEMO(nDim, nVar_NEMO, config);
+                numerics[iMGlevel][NEMO_SOL][conv_term] = new CUpwAUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][NEMO_SOL][conv_bound_term] = new CUpwAUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
 
@@ -1955,8 +1955,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
             case AUSMPWplus:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][NEMO_SOL][conv_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, config);
-                numerics[iMGlevel][NEMO_SOL][conv_bound_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, config);
+                numerics[iMGlevel][NEMO_SOL][conv_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][NEMO_SOL][conv_bound_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
 

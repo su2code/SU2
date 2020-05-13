@@ -241,7 +241,7 @@ protected:
   *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
-  CNEMOEulerVariable *variable;
+  
 
 public:
   /*!
@@ -1506,25 +1506,25 @@ public:
    * \brief Set variable indexes for NEMO solver.
    */
 
-  inline void SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
-  
-  inline void SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
-  
-  inline void SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
-  
-  inline void SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
-  
-  inline void SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
-  
-  inline void SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
-  
-  inline void SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
-  
-  inline void SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
-  
-  inline void SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
-  
-  inline void SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
+ // inline void SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
+ // 
+ // inline void SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
+ // 
+ // inline void SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
+ // 
+ // inline void SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
+ // 
+ // inline void SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
+ // 
+ // inline void SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
+ // 
+ // inline void SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
+ // 
+ // inline void SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
+ // 
+ // inline void SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
+ // 
+ // inline void SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
   
   inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
   

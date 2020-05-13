@@ -81,6 +81,19 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
   }
+
+  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+
+  RHOS_INDEX    = variable->GetRhosIndex()    ;
+  RHO_INDEX     = variable->GetRhoIndex()     ;
+  P_INDEX       = variable->GetPIndex()       ;
+  T_INDEX       = variable->GetTIndex()       ;
+  TVE_INDEX     = variable->GetTveIndex()     ;
+  VEL_INDEX     = variable->GetVelIndex()     ;
+  H_INDEX       = variable->GetHIndex()       ;
+  A_INDEX       = variable->GetAIndex()       ;
+  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
+  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CSource_NEMO::~CSource_NEMO(void) {

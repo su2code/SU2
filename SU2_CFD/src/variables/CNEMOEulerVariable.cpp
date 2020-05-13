@@ -43,10 +43,11 @@ CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
                                        unsigned long val_nvar,
                                        unsigned long val_nprimvar,
                                        unsigned long val_nprimvargrad,
-                                       const CConfig *config) : CVariable(npoint,
+                                       CConfig *config) : CVariable(npoint,
                                                                     val_ndim,
                                                                     val_nvar,
-                                                                    config) {
+                                                                    config),
+                                       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
   nDim         = val_ndim;
   nVar         = val_nvar;
@@ -60,8 +61,19 @@ CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
   /*--- Array initialization ---*/
   Limiter.resize(nPoint,nVar) = su2double(0.0);
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
+  Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
+
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+
   Gradient.resize(nPoint,nVar,nDim,0.0);
+
+  //cat apagar isto se só for necessario no constructor já a seguir. same para o header disto
+
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
+  }
+
+  //cat
 
   /*--- Define structure of the primtive variable vector ---*/
   // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
@@ -95,8 +107,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        CConfig *config) : CVariable(npoint,
                                                                     ndim,
                                                                     nvar,
-                                                                    config   ) {
+                                                                    config   ),
+                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
+ 
   unsigned short iEl, iDim, iSpecies, iVar, nEl, nHeavy, nMGSmooth;
   unsigned short *nElStates;
   su2double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
@@ -152,7 +166,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Primitive and secondary variables ---*/
 
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
+  Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
 
+
+  
   dPdU.resize(nPoint, nVar)      = su2double(0.0);
   dTdU.resize(nPoint, nVar)      = su2double(0.0);
   dTvedU.resize(nPoint, nVar)    = su2double(0.0);
@@ -166,9 +183,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  //if (config->GetReconstructionGradientRequired()) {
-  //  Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  //}
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
@@ -303,6 +320,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     Primitive(iPoint,T_INDEX)   = val_temperature;
     Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
     Primitive(iPoint,P_INDEX)   = val_pressure;
+
   }
 
 }
@@ -891,8 +909,6 @@ bool CNEMOEulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
   bool nonPhys, bkup;
   unsigned short iVar;
 
-  //std::cout << "CNEMOEulerVariable::SetPrimVar_Compressible" <<  std::endl << std::endl;
-
   /*--- Convert conserved to primitive variables ---*/
   nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint],
                          dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
@@ -924,7 +940,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   su2double radical2;
   su2double *xi, *Ms, *hf, *Tref;
 
-  //std::cout << "CNEMOEulerVariable::Cons2PrimVar " << std::endl << std::endl;
+//  for (int iVar = 0; iVar < nVar; iVar++) cout << "U[" << iVar << "]=" << U[iVar] << endl;
 
   /*--- Conserved & primitive vector layout ---*/
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -967,16 +983,14 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   // Note: if any species densities are < 0, these values are re-assigned
   //       in the primitive AND conserved vectors to ensure positive density
 
-  //std::cout << "inside U_i[3] =" << U[3] << std::endl << std::endl;
-  //std::cout << "inside U_i[8] =" << U[8] << std::endl << std::endl;
-
+ 
   V[RHO_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
       //std::cout << "nonPhys " << std::endl << std::endl;
       //std::cout << " inside nonPhys U_i[3] =" << U[3] << std::endl << std::endl;
-      //std::cout << iSpecies << std::endl << std::endl;
+     // std::cout << "rhos" << std::endl << std::endl;
       U[iSpecies]            = 1E-20;
       //nonPhys                = true;
       
@@ -1013,6 +1027,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] < Tmin) {
+   // std::cout << "Tmin, T=" << V[T_INDEX] << std::endl << std::endl;
     V[T_INDEX] = Tmin;
     nonPhys = true;
     errT    = true;
@@ -1020,6 +1035,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     V[T_INDEX] = Tmax;
     nonPhys = true;
     errT    = true;
+  //  std::cout << "Tmax" << std::endl << std::endl;
   }
 
 
@@ -1036,10 +1052,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemin;
+  //  std::cout << "rhoEve_min" << std::endl << std::endl;
   } else if (rhoEve > rhoEve_max) {
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemax;
+  //  std::cout << "rhoEve_max" << std::endl << std::endl;
   } else {
 
     /*--- Execute a Newton-Raphson root-finding method to find Tve ---*/
@@ -1150,6 +1168,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   if (V[P_INDEX] < 0.0) {
     V[P_INDEX] = 1E-20;
     nonPhys = true;
+   // std::cout << "p" << std::endl << std::endl;
   }
 
   /*--- Partial derivatives of pressure and temperature ---*/
@@ -1171,6 +1190,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   if (radical2 < 0.0) {
     nonPhys = true;
     V[A_INDEX] = EPS;
+   // std::cout << "radical2" << std::endl << std::endl;
   }
 
   /*--- Enthalpy ---*/
@@ -1446,3 +1466,5 @@ void CNEMOEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *Flui
 }
 
 void CNEMOEulerVariable::SetSolution_New() { Solution_New = Solution; }
+
+

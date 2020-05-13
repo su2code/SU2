@@ -63,6 +63,8 @@ private:
   su2double *RoedPdU;
   unsigned short nPrimVar, nPrimVarGrad;
 
+  CNEMOEulerVariable *variable;
+
 public:
 
 

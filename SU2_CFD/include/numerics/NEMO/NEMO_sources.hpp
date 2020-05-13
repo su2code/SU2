@@ -50,6 +50,7 @@ private:
   su2double *dkf, *dkb, *dRfok, *dRbok, *A;
   su2double *Cvvs, *Cvvsst;
   su2double *Cves;
+  CNEMOEulerVariable *variable;
 
 public:
 

@@ -71,19 +71,6 @@ public:
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of conserved variables.
-   * \param[in] val_nVarPrim - Number of primitive variables.
-   * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
-   * \param[in] npoint - Number of points/nodes/vertices in the domain.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CNEMONSVariable(unsigned long val_nDim, unsigned long val_nVar,
-                  unsigned long val_nPrimVar, unsigned long val_nPrimVarGrad,
-                  unsigned long npoint, CConfig *config);
-
-  /*!
-   * \brief Constructor of the class.
    * \param[in] val_density - Value of the flow density (initialization value).
    * \param[in] val_massfrac - Value of the flow mass fraction (initialization value).
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
@@ -118,6 +105,23 @@ public:
    * \brief Destructor of the class.
    */
   ~CNEMONSVariable() = default;
+
+    /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  inline const MatrixType& GetPrimitive_Aux(void) const { return Primitive_Aux; }
+
+  /*!
+   * \brief Set the value of the reconstruction variables gradient at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iVar   - Index of the variable.
+   * \param[in] iDim   - Index of the dimension.
+   * \param[in] value  - Value of the reconstruction gradient component.
+   */
+  /* Works as a dummy function for consistency since no reconstruction is needed for primitive variables*/
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override { }
+
 
   /*!
    * \brief Set all the primitive variables for compressible flows.
@@ -186,5 +190,6 @@ public:
    * \return Value of the vorticity.
    */
   inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
+
 
 };

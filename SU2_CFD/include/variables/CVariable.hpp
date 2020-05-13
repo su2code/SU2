@@ -129,7 +129,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
+  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -1937,7 +1937,7 @@ public:
    * \param[in] val_dim - Index of the dimension.
    * \param[in] val_value - Value of the gradient.
    */
-  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) {}
+  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
@@ -1950,6 +1950,10 @@ public:
    * \return Reference to variable reconstruction gradient.
    */
   inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
+
+  //virtual inline void uselesstestfunction(void) {  }
+
+
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
