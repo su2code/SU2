@@ -179,7 +179,7 @@ def process_surface_adjoint( config_filename       ,
         Sens_smoother = smooth( S_clip, Sens_smooth, smth_len  , 'blackman' ) 
         Sens_filter = Sens_smooth + (Sens_smooth - Sens_smoother)             # sharpener
     else:
-        raise Exception, 'unknown filter type'
+        raise Exception('unknown filter type')
         
     # --------------------------------------------
     #  PLOTTING
@@ -472,10 +472,10 @@ def window(t,x,window_delta,window='hanning'):
     """
     
     if x.ndim != 1:
-        raise ValueError, "smooth only accepts 1 dimension arrays."
+        raise ValueError("smooth only accepts 1 dimension arrays.")
 
     if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-        raise ValueError, "Window is not of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+        raise ValueError("Window is not of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
 
     # interpolate to constant time sample width
     min_dt = np.min( np.diff(t) )
