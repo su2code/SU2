@@ -36,51 +36,51 @@
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
 
-  CD_Inv  = NULL; CL_Inv  = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
-  CoPx_Inv = NULL; CoPy_Inv = NULL; CoPz_Inv = NULL;
+  CD_Inv  = nullptr; CL_Inv  = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
+  CoPx_Inv = nullptr; CoPy_Inv = nullptr; CoPz_Inv = nullptr;
 
-  CD_Mnt  = NULL; CL_Mnt  = NULL; CSF_Mnt = NULL;  CEff_Mnt = NULL;
-  CMx_Mnt = NULL; CMy_Mnt = NULL; CMz_Mnt = NULL;
-  CFx_Mnt = NULL; CFy_Mnt = NULL; CFz_Mnt = NULL;
-  CoPx_Mnt = NULL; CoPy_Mnt = NULL; CoPz_Mnt = NULL;
+  CD_Mnt  = nullptr; CL_Mnt  = nullptr; CSF_Mnt = nullptr;  CEff_Mnt = nullptr;
+  CMx_Mnt = nullptr; CMy_Mnt = nullptr; CMz_Mnt = nullptr;
+  CFx_Mnt = nullptr; CFy_Mnt = nullptr; CFz_Mnt = nullptr;
+  CoPx_Mnt = nullptr; CoPy_Mnt = nullptr; CoPz_Mnt = nullptr;
 
-  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
-  ForceInviscid = NULL; MomentInviscid = NULL;
-  ForceMomentum = NULL; MomentMomentum = NULL;
+  CPressure = nullptr; CPressureTarget = nullptr; HeatFlux = nullptr; HeatFluxTarget = nullptr; YPlus = nullptr;
+  ForceInviscid = nullptr; MomentInviscid = nullptr;
+  ForceMomentum = nullptr; MomentMomentum = nullptr;
 
   /*--- Surface based array initialization ---*/
 
-  Surface_CL_Inv  = NULL; Surface_CD_Inv  = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv  = nullptr; Surface_CD_Inv  = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL_Mnt  = NULL; Surface_CD_Mnt  = NULL; Surface_CSF_Mnt = NULL; Surface_CEff_Mnt = NULL;
-  Surface_CFx_Mnt = NULL; Surface_CFy_Mnt = NULL; Surface_CFz_Mnt = NULL;
-  Surface_CMx_Mnt = NULL; Surface_CMy_Mnt = NULL; Surface_CMz_Mnt = NULL;
+  Surface_CL_Mnt  = nullptr; Surface_CD_Mnt  = nullptr; Surface_CSF_Mnt = nullptr; Surface_CEff_Mnt = nullptr;
+  Surface_CFx_Mnt = nullptr; Surface_CFy_Mnt = nullptr; Surface_CFz_Mnt = nullptr;
+  Surface_CMx_Mnt = nullptr; Surface_CMy_Mnt = nullptr; Surface_CMz_Mnt = nullptr;
 
-  Surface_CL  = NULL; Surface_CD  = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL  = nullptr; Surface_CD  = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr; Surface_CFy = nullptr; Surface_CFz = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
 
-  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+  CMerit_Inv = nullptr;  CT_Inv = nullptr;  CQ_Inv = nullptr;
 
   /*--- Numerical methods array initialization ---*/
 
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
-  Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  CharacPrimVar = NULL;
-  Smatrix = NULL; Cvector = NULL;
-  Preconditioner = NULL;
+  iPoint_UndLapl = nullptr;
+  jPoint_UndLapl = nullptr;
+  Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
+  CharacPrimVar = nullptr;
+  Smatrix = nullptr; Cvector = nullptr;
+  Preconditioner = nullptr;
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  SlidingState     = NULL;
-  SlidingStateNodes = NULL;
+  SlidingState     = nullptr;
+  SlidingStateNodes = nullptr;
 
   nodes = nullptr;
 }
@@ -146,49 +146,49 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Basic array initialization ---*/
 
-  CD_Inv  = NULL; CL_Inv  = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
-  CoPx_Inv = NULL; CoPy_Inv = NULL; CoPz_Inv = NULL;
+  CD_Inv  = nullptr; CL_Inv  = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
+  CoPx_Inv = nullptr; CoPy_Inv = nullptr; CoPz_Inv = nullptr;
 
-  CD_Mnt  = NULL; CL_Mnt  = NULL; CSF_Mnt = NULL; CEff_Mnt = NULL;
-  CMx_Mnt = NULL; CMy_Mnt = NULL; CMz_Mnt = NULL;
-  CFx_Mnt = NULL; CFy_Mnt = NULL; CFz_Mnt = NULL;
-  CoPx_Mnt= NULL;   CoPy_Mnt= NULL;   CoPz_Mnt= NULL;
+  CD_Mnt  = nullptr; CL_Mnt  = nullptr; CSF_Mnt = nullptr; CEff_Mnt = nullptr;
+  CMx_Mnt = nullptr; CMy_Mnt = nullptr; CMz_Mnt = nullptr;
+  CFx_Mnt = nullptr; CFy_Mnt = nullptr; CFz_Mnt = nullptr;
+  CoPx_Mnt= nullptr;   CoPy_Mnt= nullptr;   CoPz_Mnt= nullptr;
 
-  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
-  ForceInviscid = NULL; MomentInviscid = NULL;
-  ForceMomentum = NULL;  MomentMomentum = NULL;
+  CPressure = nullptr; CPressureTarget = nullptr; HeatFlux = nullptr; HeatFluxTarget = nullptr; YPlus = nullptr;
+  ForceInviscid = nullptr; MomentInviscid = nullptr;
+  ForceMomentum = nullptr;  MomentMomentum = nullptr;
 
   /*--- Surface based array initialization ---*/
 
-  Surface_CL_Inv  = NULL; Surface_CD_Inv  = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv  = nullptr; Surface_CD_Inv  = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL_Mnt  = NULL; Surface_CD_Mnt  = NULL; Surface_CSF_Mnt = NULL; Surface_CEff_Mnt= NULL;
-  Surface_CFx_Mnt = NULL; Surface_CFy_Mnt = NULL; Surface_CFz_Mnt = NULL;
-  Surface_CMx_Mnt = NULL; Surface_CMy_Mnt = NULL; Surface_CMz_Mnt = NULL;
+  Surface_CL_Mnt  = nullptr; Surface_CD_Mnt  = nullptr; Surface_CSF_Mnt = nullptr; Surface_CEff_Mnt= nullptr;
+  Surface_CFx_Mnt = nullptr; Surface_CFy_Mnt = nullptr; Surface_CFz_Mnt = nullptr;
+  Surface_CMx_Mnt = nullptr; Surface_CMy_Mnt = nullptr; Surface_CMz_Mnt = nullptr;
 
-  Surface_CL  = NULL; Surface_CD  = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL  = nullptr; Surface_CD  = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
 
-  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+  CMerit_Inv = nullptr;  CT_Inv = nullptr;  CQ_Inv = nullptr;
 
   /*--- Numerical methods array initialization ---*/
 
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
-  Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  CharacPrimVar = NULL;
-  Smatrix = NULL; Cvector = NULL;
-  Preconditioner = NULL;
+  iPoint_UndLapl = nullptr;
+  jPoint_UndLapl = nullptr;
+  Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
+  CharacPrimVar = nullptr;
+  Smatrix = nullptr; Cvector = nullptr;
+  Preconditioner = nullptr;
 
   /*--- Fluid model pointer initialization ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
   /*--- Set the gamma value ---*/
 
@@ -510,8 +510,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   SlidingStateNodes  = new int*         [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
+    SlidingState[iMarker]      = nullptr;
+    SlidingStateNodes[iMarker] = nullptr;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
@@ -523,7 +523,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
         SlidingStateNodes[iMarker][iPoint] = 0;
         for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
+          SlidingState[iMarker][iPoint][iVar] = nullptr;
       }
 
     }
@@ -610,103 +610,103 @@ CIncEulerSolver::~CIncEulerSolver(void) {
 
   /*--- Array deallocation ---*/
 
-  if (CD_Inv  != NULL)  delete [] CD_Inv;
-  if (CL_Inv  != NULL)  delete [] CL_Inv;
-  if (CSF_Inv != NULL)  delete [] CSF_Inv;
-  if (CMx_Inv != NULL)  delete [] CMx_Inv;
-  if (CMy_Inv != NULL)  delete [] CMy_Inv;
-  if (CMz_Inv != NULL)  delete [] CMz_Inv;
-  if (CFx_Inv != NULL)  delete [] CFx_Inv;
-  if (CFy_Inv != NULL)  delete [] CFy_Inv;
-  if (CFz_Inv != NULL)  delete [] CFz_Inv;
-  if (CoPx_Inv != NULL) delete [] CoPx_Inv;
-  if (CoPy_Inv != NULL) delete [] CoPy_Inv;
-  if (CoPz_Inv != NULL) delete [] CoPz_Inv;
+   delete [] CD_Inv;
+   delete [] CL_Inv;
+   delete [] CSF_Inv;
+   delete [] CMx_Inv;
+   delete [] CMy_Inv;
+   delete [] CMz_Inv;
+   delete [] CFx_Inv;
+   delete [] CFy_Inv;
+   delete [] CFz_Inv;
+  delete [] CoPx_Inv;
+  delete [] CoPy_Inv;
+  delete [] CoPz_Inv;
 
-  if (Surface_CL_Inv   != NULL) delete [] Surface_CL_Inv;
-  if (Surface_CD_Inv   != NULL) delete [] Surface_CD_Inv;
-  if (Surface_CSF_Inv  != NULL) delete [] Surface_CSF_Inv;
-  if (Surface_CEff_Inv != NULL) delete [] Surface_CEff_Inv;
-  if (Surface_CFx_Inv  != NULL) delete [] Surface_CFx_Inv;
-  if (Surface_CFy_Inv  != NULL) delete [] Surface_CFy_Inv;
-  if (Surface_CFz_Inv  != NULL) delete [] Surface_CFz_Inv;
-  if (Surface_CMx_Inv  != NULL) delete [] Surface_CMx_Inv;
-  if (Surface_CMy_Inv  != NULL) delete [] Surface_CMy_Inv;
-  if (Surface_CMz_Inv  != NULL) delete [] Surface_CMz_Inv;
+  delete [] Surface_CL_Inv;
+  delete [] Surface_CD_Inv;
+  delete [] Surface_CSF_Inv;
+  delete [] Surface_CEff_Inv;
+  delete [] Surface_CFx_Inv;
+  delete [] Surface_CFy_Inv;
+  delete [] Surface_CFz_Inv;
+  delete [] Surface_CMx_Inv;
+  delete [] Surface_CMy_Inv;
+  delete [] Surface_CMz_Inv;
 
-  if (CD_Mnt  != NULL)  delete [] CD_Mnt;
-  if (CL_Mnt  != NULL)  delete [] CL_Mnt;
-  if (CSF_Mnt != NULL)  delete [] CSF_Mnt;
-  if (CMx_Mnt != NULL)  delete [] CMx_Mnt;
-  if (CMy_Mnt != NULL)  delete [] CMy_Mnt;
-  if (CMz_Mnt != NULL)  delete [] CMz_Mnt;
-  if (CFx_Mnt != NULL)  delete [] CFx_Mnt;
-  if (CFy_Mnt != NULL)  delete [] CFy_Mnt;
-  if (CFz_Mnt != NULL)  delete [] CFz_Mnt;
-  if (CoPx_Mnt != NULL) delete [] CoPx_Mnt;
-  if (CoPy_Mnt != NULL) delete [] CoPy_Mnt;
-  if (CoPz_Mnt != NULL) delete [] CoPz_Mnt;
+   delete [] CD_Mnt;
+   delete [] CL_Mnt;
+   delete [] CSF_Mnt;
+   delete [] CMx_Mnt;
+   delete [] CMy_Mnt;
+   delete [] CMz_Mnt;
+   delete [] CFx_Mnt;
+   delete [] CFy_Mnt;
+   delete [] CFz_Mnt;
+  delete [] CoPx_Mnt;
+  delete [] CoPy_Mnt;
+  delete [] CoPz_Mnt;
 
-  if (Surface_CL_Mnt   != NULL) delete [] Surface_CL_Mnt;
-  if (Surface_CD_Mnt   != NULL) delete [] Surface_CD_Mnt;
-  if (Surface_CSF_Mnt  != NULL) delete [] Surface_CSF_Mnt;
-  if (Surface_CEff_Mnt != NULL) delete [] Surface_CEff_Mnt;
-  if (Surface_CFx_Mnt  != NULL) delete [] Surface_CFx_Mnt;
-  if (Surface_CFy_Mnt  != NULL) delete [] Surface_CFy_Mnt;
-  if (Surface_CFz_Mnt  != NULL) delete [] Surface_CFz_Mnt;
-  if (Surface_CMx_Mnt  != NULL) delete [] Surface_CMx_Mnt;
-  if (Surface_CMy_Mnt  != NULL) delete [] Surface_CMy_Mnt;
-  if (Surface_CMz_Mnt  != NULL) delete [] Surface_CMz_Mnt;
+  delete [] Surface_CL_Mnt;
+  delete [] Surface_CD_Mnt;
+  delete [] Surface_CSF_Mnt;
+  delete [] Surface_CEff_Mnt;
+  delete [] Surface_CFx_Mnt;
+  delete [] Surface_CFy_Mnt;
+  delete [] Surface_CFz_Mnt;
+  delete [] Surface_CMx_Mnt;
+  delete [] Surface_CMy_Mnt;
+  delete [] Surface_CMz_Mnt;
 
-  if (Surface_CL   != NULL) delete [] Surface_CL;
-  if (Surface_CD   != NULL) delete [] Surface_CD;
-  if (Surface_CSF  != NULL) delete [] Surface_CSF;
-  if (Surface_CEff != NULL) delete [] Surface_CEff;
-  if (Surface_CFx  != NULL) delete [] Surface_CFx;
-  if (Surface_CFy  != NULL) delete [] Surface_CFy;
-  if (Surface_CFz  != NULL) delete [] Surface_CFz;
-  if (Surface_CMx  != NULL) delete [] Surface_CMx;
-  if (Surface_CMy  != NULL) delete [] Surface_CMy;
-  if (Surface_CMz  != NULL) delete [] Surface_CMz;
+  delete [] Surface_CL;
+  delete [] Surface_CD;
+  delete [] Surface_CSF;
+  delete [] Surface_CEff;
+  delete [] Surface_CFx;
+  delete [] Surface_CFy;
+  delete [] Surface_CFz;
+  delete [] Surface_CMx;
+  delete [] Surface_CMy;
+  delete [] Surface_CMz;
 
-  if (CEff_Inv   != NULL) delete [] CEff_Inv;
-  if (CMerit_Inv != NULL) delete [] CMerit_Inv;
-  if (CT_Inv     != NULL) delete [] CT_Inv;
-  if (CQ_Inv     != NULL) delete [] CQ_Inv;
+  delete [] CEff_Inv;
+  delete [] CMerit_Inv;
+  delete [] CT_Inv;
+  delete [] CQ_Inv;
 
-  if (CEff_Mnt   != NULL) delete [] CEff_Mnt;
-  if (CMerit_Mnt != NULL) delete [] CMerit_Mnt;
-  if (CT_Mnt     != NULL) delete [] CT_Mnt;
-  if (CQ_Mnt     != NULL) delete [] CQ_Mnt;
+  delete [] CEff_Mnt;
+  delete [] CMerit_Mnt;
+  delete [] CT_Mnt;
+  delete [] CQ_Mnt;
 
-  if (ForceInviscid  != NULL) delete [] ForceInviscid;
-  if (MomentInviscid != NULL) delete [] MomentInviscid;
-  if (ForceMomentum  != NULL) delete [] ForceMomentum;
-  if (MomentMomentum != NULL) delete [] MomentMomentum;
+  delete [] ForceInviscid;
+  delete [] MomentInviscid;
+  delete [] ForceMomentum;
+  delete [] MomentMomentum;
 
-  if (Primitive   != NULL) delete [] Primitive;
-  if (Primitive_i != NULL) delete [] Primitive_i;
-  if (Primitive_j != NULL) delete [] Primitive_j;
+  delete [] Primitive;
+  delete [] Primitive_i;
+  delete [] Primitive_j;
 
-  if (Preconditioner != NULL) {
+  if (Preconditioner != nullptr) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete [] Preconditioner[iVar];
     delete [] Preconditioner;
   }
 
-  if (CPressure != NULL) {
+  if (CPressure != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressure[iMarker];
     delete [] CPressure;
   }
 
-  if (CPressureTarget != NULL) {
+  if (CPressureTarget != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
 
-  if (CharacPrimVar != NULL) {
+  if (CharacPrimVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex<nVertex[iMarker]; iVertex++)
         delete [] CharacPrimVar[iMarker][iVertex];
@@ -715,11 +715,11 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] CharacPrimVar;
   }
 
-  if (SlidingState != NULL) {
+  if (SlidingState != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
+      if ( SlidingState[iMarker] != nullptr ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != nullptr ){
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -730,31 +730,31 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] SlidingState;
   }
 
-  if ( SlidingStateNodes != NULL ){
+  if ( SlidingStateNodes != nullptr ){
     for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != NULL)
+        if (SlidingStateNodes[iMarker] != nullptr)
             delete [] SlidingStateNodes[iMarker];
     }
     delete [] SlidingStateNodes;
   }
 
-  if (Inlet_Ttotal != NULL) {
+  if (Inlet_Ttotal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != NULL)
+      if (Inlet_Ttotal[iMarker] != nullptr)
         delete [] Inlet_Ttotal[iMarker];
     delete [] Inlet_Ttotal;
   }
 
-  if (Inlet_Ptotal != NULL) {
+  if (Inlet_Ptotal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != NULL)
+      if (Inlet_Ptotal[iMarker] != nullptr)
         delete [] Inlet_Ptotal[iMarker];
     delete [] Inlet_Ptotal;
   }
 
-  if (Inlet_FlowDir != NULL) {
+  if (Inlet_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != NULL) {
+      if (Inlet_FlowDir[iMarker] != nullptr) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
           delete [] Inlet_FlowDir[iMarker][iVertex];
         delete [] Inlet_FlowDir[iMarker];
@@ -763,30 +763,30 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
-  if (HeatFlux != NULL) {
+  if (HeatFlux != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
 
-  if (HeatFluxTarget != NULL) {
+  if (HeatFluxTarget != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFluxTarget[iMarker];
     }
     delete [] HeatFluxTarget;
   }
 
-  if (YPlus != NULL) {
+  if (YPlus != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] YPlus[iMarker];
     }
     delete [] YPlus;
   }
 
-  if (FluidModel != NULL) delete FluidModel;
+  delete FluidModel;
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -1875,7 +1875,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = nullptr, *Limiter_j = nullptr;
 
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
@@ -2113,7 +2113,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the conservative variables ---*/
 
-      numerics->SetConservative(nodes->GetSolution(iPoint), NULL);
+      numerics->SetConservative(nodes->GetSolution(iPoint), nullptr);
 
       /*--- Set incompressible density ---*/
 
@@ -2177,7 +2177,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Conservative variables w/o reconstruction ---*/
 
-      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
       /*--- Set incompressible density  ---*/
 
@@ -2199,11 +2199,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Gradient of the primitive variables ---*/
 
-        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), NULL);
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
 
         /*--- Load the aux variable gradient that we already computed. ---*/
 
-        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), NULL);
+        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
       }
 
@@ -2568,7 +2568,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
+  su2double Pressure = 0.0, *Normal = nullptr, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
   factor, RefVel2 = 0.0, RefDensity = 0.0, RefPressure,
   Force[3] = {0.0,0.0,0.0};
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
@@ -2587,7 +2587,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea   = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
 
-  su2double *Origin = NULL;
+  su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -2958,7 +2958,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
+  su2double *Normal = nullptr, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
   factor, RefVel2 = 0.0, RefDensity = 0.0,
   Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density;
   string Marker_Tag, Monitoring_Tag;
@@ -2981,7 +2981,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   su2double Beta      = config->GetAoS()*PI_NUMBER/180.0;
   su2double RefArea   = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
-  su2double *Origin = NULL;
+  su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -5172,7 +5172,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double *V_time_nM1, *V_time_n, *V_time_nP1;
   su2double U_time_nM1[5], U_time_n[5], U_time_nP1[5];
   su2double Volume_nM1, Volume_nP1, TimeStep;
-  su2double *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
+  su2double *GridVel_i = nullptr, *GridVel_j = nullptr, Residual_GCL;
   const su2double* Normal;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -5515,7 +5515,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  su2double *V_outlet = NULL, Velocity[3], MassFlow,
+  su2double *V_outlet = nullptr, Velocity[3], MassFlow,
   Velocity2, Density, Area, AxiFactor;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;

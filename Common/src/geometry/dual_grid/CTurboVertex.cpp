@@ -30,7 +30,7 @@
 CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
   unsigned short iDim;
  /*--- Pointers initialization ---*/
-  TurboNormal = NULL;
+  TurboNormal = nullptr;
   /*--- Allocate node, and face normal ---*/
   TurboNormal = new su2double [nDim];
 
@@ -41,6 +41,6 @@ CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : C
 
 CTurboVertex::~CTurboVertex() {
 
-  if (TurboNormal != NULL) delete [] TurboNormal;
+  delete [] TurboNormal;
 
 }

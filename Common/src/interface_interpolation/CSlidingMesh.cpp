@@ -314,9 +314,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
             tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != nullptr) delete [] Donor_Vect;
-            if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
-            if (storeProc  != nullptr) delete [] storeProc;
+            delete [] Donor_Vect;
+            delete [] Coeff_Vect;
+            delete [] storeProc;
 
             Donor_Vect = tmp_Donor_Vect;
             Coeff_Vect = tmp_Coeff_Vect;
@@ -397,9 +397,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
             tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != nullptr) delete [] Donor_Vect;
-            if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
-            if (storeProc  != nullptr) delete [] storeProc;
+            delete [] Donor_Vect;
+            delete [] Coeff_Vect;
+            delete [] storeProc;
 
             Donor_Vect = tmp_Donor_Vect;
             Coeff_Vect = tmp_Coeff_Vect;
@@ -594,7 +594,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                   tmpVect[jj] = ToVisit[jj];
                 tmpVect[nToVisit] = donor_iPoint;
 
-                if( ToVisit != nullptr )
+                
                   delete [] ToVisit;
 
                 ToVisit = tmpVect;
@@ -639,9 +639,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
                 tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                if (Donor_Vect != nullptr) {delete [] Donor_Vect; }
-                if (Coeff_Vect != nullptr) {delete [] Coeff_Vect; }
-                if (storeProc  != nullptr) {delete [] storeProc;  }
+                delete [] Donor_Vect; 
+                delete [] Coeff_Vect; 
+                delete [] storeProc;  
 
                 Donor_Vect = tmp_Donor_Vect;
                 Coeff_Vect = tmp_Coeff_Vect;
@@ -670,8 +670,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for( jj = 0; jj < nToVisit; jj++ )
             tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
-          if( alreadyVisitedDonor != nullptr )
-            delete [] alreadyVisitedDonor;
+          
+          delete [] alreadyVisitedDonor;
 
           alreadyVisitedDonor = tmpVect;
 
@@ -721,9 +721,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   delete [] Normal;
   delete [] Direction;
 
-  if (Donor_Vect != nullptr) delete [] Donor_Vect;
-  if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
-  if (storeProc  != nullptr) delete [] storeProc;
+  delete [] Donor_Vect;
+  delete [] Coeff_Vect;
+  delete [] storeProc;
 }
 
 int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,

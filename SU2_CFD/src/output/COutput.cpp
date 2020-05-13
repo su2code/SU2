@@ -174,23 +174,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 }
 
 COutput::~COutput(void) {
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
 
-  if (volumeDataSorter != nullptr)
-    delete volumeDataSorter;
-
+  delete volumeDataSorter;
   volumeDataSorter = nullptr;
 
-  if (surfaceDataSorter != nullptr)
-    delete surfaceDataSorter;
-
+  delete surfaceDataSorter;
   surfaceDataSorter = nullptr;
-
-
 }
 
 
@@ -341,7 +334,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
-  CFileWriter *fileWriter = NULL;
+  CFileWriter *fileWriter = nullptr;
 
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
@@ -715,11 +708,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       break;
 
     default:
-      fileWriter = NULL;
+      fileWriter = nullptr;
       break;
   }
 
-  if (fileWriter != NULL){
+  if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
 

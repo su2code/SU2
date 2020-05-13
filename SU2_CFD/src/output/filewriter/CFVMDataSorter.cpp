@@ -72,9 +72,9 @@ CFVMDataSorter::~CFVMDataSorter(){
 
   delete [] Local_Halo;
 
-  if (Index != NULL)       delete [] Index;
-  if (idSend != NULL)      delete [] idSend;
-  if (linearPartitioner != NULL) delete linearPartitioner;
+        delete [] Index;
+       delete [] idSend;
+  delete linearPartitioner;
 
 }
 
@@ -141,7 +141,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   unsigned long iPoint, jPoint;
   unsigned long nElem_Total = 0, Global_Index;
 
-  int *Conn_Elem  = NULL;
+  int *Conn_Elem  = nullptr;
 
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
@@ -262,7 +262,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
 
   /*--- Allocate arrays for storing halo flags. ---*/
@@ -356,7 +356,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
 
   unsigned short *haloRecv = new unsigned short[nElem_Cum[size]]();
@@ -484,27 +484,27 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   switch (Elem_Type) {
     case TRIANGLE:
-      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_Elem;
       break;
     case TETRAHEDRON:
-      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+      delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_Elem;
       break;
     case HEXAHEDRON:
-      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+      delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_Elem;
       break;
     case PRISM:
-      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+      delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_Elem;
       break;
     case PYRAMID:
-      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+      delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_Elem;
       break;
     default:

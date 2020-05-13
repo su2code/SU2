@@ -509,7 +509,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
       /*--- Allocate space for elements ---*/
       elem = new CPrimalGrid*[nElem];
-      for (unsigned long i = 0; i < nElem; i++) elem[i] = NULL;
+      for (unsigned long i = 0; i < nElem; i++) elem[i] = nullptr;
 
       /*--- Loop over all the elements and store the elements to be stored on
             this rank. Furthermore, determine the total amount of DOFs for
@@ -3113,7 +3113,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
        that this gemm call is ignored in the profiling. Replace by config if
        if should be included. */
     blasFunctions.gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
-                       vecRHS.data(), vecResult.data(), NULL);
+                       vecRHS.data(), vecResult.data(), nullptr);
 
     /*--- Compute the Jacobians in the integration points and determine
           the minimum and maximum values. Make a distinction between
@@ -3212,7 +3212,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
                                                            true, config));
 
       /*--- Set the pointer to store the face connectivity of this face. ---*/
-      unsigned short *connFace = NULL;
+      unsigned short *connFace = nullptr;
       switch( j) {
         case 0: connFace = standardVolumeElements[ii].GetConnFace0(); break;
         case 1: connFace = standardVolumeElements[ii].GetConnFace1(); break;
@@ -3419,7 +3419,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
                                   standardVolumeElements[ii].GetVTK_Type2()};
     unsigned short nSubElems[] = {0, 0};
     unsigned short nDOFsPerSubElem[] = {0, 0};
-    const unsigned short *connSubElems[] = {NULL, NULL};
+    const unsigned short *connSubElems[] = {nullptr, nullptr};
 
     if(VTK_Type[0] != NONE) {
       nSubElems[0]       = standardVolumeElements[ii].GetNSubElemsType1();

@@ -34,7 +34,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(void) : CSolver (){
 
   KindDirect_Solver = 0;
 
-  direct_solver = NULL;
+  direct_solver = nullptr;
 
 }
 
@@ -117,7 +117,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 }
 
 CDiscAdjMeshSolver::~CDiscAdjMeshSolver(void){
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 

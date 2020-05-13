@@ -60,48 +60,48 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
-  Local_to_Global_Point  = NULL;
-  Local_to_Global_Marker = NULL;
-  Global_to_Local_Marker = NULL;
+  Local_to_Global_Point  = nullptr;
+  Local_to_Global_Marker = nullptr;
+  Global_to_Local_Marker = nullptr;
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear      = NULL;
-  nPointCumulative  = NULL;
+  nPointLinear      = nullptr;
+  nPointCumulative  = nullptr;
 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  adjacency = NULL;
-  xadj      = NULL;
+  adjacency = nullptr;
+  xadj      = nullptr;
 #endif
 #endif
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
-  nSpanWiseSections       = NULL;
-  nSpanSectionsByMarker   = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
+  nSpanWiseSections       = nullptr;
+  nSpanSectionsByMarker   = nullptr;
+  SpanWiseValue           = nullptr;
+  nVertexSpan             = nullptr;
+  nTotVertexSpan          = nullptr;
+  turbovertex             = nullptr;
+  AverageTurboNormal      = nullptr;
+  AverageNormal           = nullptr;
+  AverageGridVel          = nullptr;
+  AverageTangGridVel      = nullptr;
+  SpanArea                = nullptr;
+  TurboRadius             = nullptr;
+  MaxAngularCoord         = nullptr;
+  MinAngularCoord         = nullptr;
+  MinRelAngularCoord      = nullptr;
 
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
-  SpanWiseValue           = NULL;
+  TangGridVelIn           = nullptr;
+  SpanAreaIn              = nullptr;
+  TurboRadiusIn           = nullptr;
+  TangGridVelOut          = nullptr;
+  SpanAreaOut             = nullptr;
+  TurboRadiusOut          = nullptr;
+  SpanWiseValue           = nullptr;
 
 }
 
@@ -110,20 +110,20 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
-  Local_to_Global_Point = NULL;
-  Local_to_Global_Marker = NULL;
-  Global_to_Local_Marker = NULL;
+  Local_to_Global_Point = nullptr;
+  Local_to_Global_Marker = nullptr;
+  Global_to_Local_Marker = nullptr;
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear      = NULL;
-  nPointCumulative  = NULL;
+  nPointLinear      = nullptr;
+  nPointCumulative  = nullptr;
 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  adjacency = NULL;
-  xadj      = NULL;
+  adjacency = nullptr;
+  xadj      = nullptr;
 #endif
 #endif
 
@@ -131,29 +131,29 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
-  nSpanWiseSections       = NULL;
-  nSpanSectionsByMarker   = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
+  nSpanWiseSections       = nullptr;
+  nSpanSectionsByMarker   = nullptr;
+  SpanWiseValue           = nullptr;
+  nVertexSpan             = nullptr;
+  nTotVertexSpan          = nullptr;
+  turbovertex             = nullptr;
+  AverageTurboNormal      = nullptr;
+  AverageNormal           = nullptr;
+  AverageGridVel          = nullptr;
+  AverageTangGridVel      = nullptr;
+  SpanArea                = nullptr;
+  TurboRadius             = nullptr;
+  MaxAngularCoord         = nullptr;
+  MinAngularCoord         = nullptr;
+  MinRelAngularCoord      = nullptr;
 
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
-  SpanWiseValue           = NULL;
+  TangGridVelIn           = nullptr;
+  SpanAreaIn              = nullptr;
+  TurboRadiusIn           = nullptr;
+  TangGridVelOut          = nullptr;
+  SpanAreaOut             = nullptr;
+  TurboRadiusOut          = nullptr;
+  SpanWiseValue           = nullptr;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -285,22 +285,22 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Initialize several class data members for later. ---*/
 
-  Local_to_Global_Point  = NULL;
-  Local_to_Global_Marker = NULL;
-  Global_to_Local_Marker = NULL;
+  Local_to_Global_Point  = nullptr;
+  Local_to_Global_Marker = nullptr;
+  Global_to_Local_Marker = nullptr;
 
   /*--- Arrays for defining the linear partitioning. ---*/
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear      = NULL;
-  nPointCumulative  = NULL;
+  nPointLinear      = nullptr;
+  nPointCumulative  = nullptr;
 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  adjacency = NULL;
-  xadj      = NULL;
+  adjacency = nullptr;
+  xadj      = nullptr;
 #endif
 #endif
 
@@ -308,28 +308,28 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
-  nSpanWiseSections       = NULL;
-  nSpanSectionsByMarker   = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
+  nSpanWiseSections       = nullptr;
+  nSpanSectionsByMarker   = nullptr;
+  SpanWiseValue           = nullptr;
+  nVertexSpan             = nullptr;
+  nTotVertexSpan          = nullptr;
+  turbovertex             = nullptr;
+  AverageTurboNormal      = nullptr;
+  AverageNormal           = nullptr;
+  AverageGridVel          = nullptr;
+  AverageTangGridVel      = nullptr;
+  SpanArea                = nullptr;
+  TurboRadius             = nullptr;
+  MaxAngularCoord         = nullptr;
+  MinAngularCoord         = nullptr;
+  MinRelAngularCoord      = nullptr;
 
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
+  TangGridVelIn           = nullptr;
+  SpanAreaIn              = nullptr;
+  TurboRadiusIn           = nullptr;
+  TangGridVelOut          = nullptr;
+  SpanAreaOut             = nullptr;
+  TurboRadiusOut          = nullptr;
 
   /*--- Initialize counters for the points/elements local to a rank. ---*/
 
@@ -347,49 +347,49 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   nLocal_Pris          = 0;
   nLocal_Pyra          = 0;
 
-  Local_Coords = NULL;
-  Local_Points = NULL;
-  Local_Colors = NULL;
+  Local_Coords = nullptr;
+  Local_Points = nullptr;
+  Local_Colors = nullptr;
 
   /*--- Arrays for holding the element connectivity. ---*/
 
-  Conn_Line      = NULL;
-  Conn_BoundTria = NULL;
-  Conn_BoundQuad = NULL;
+  Conn_Line      = nullptr;
+  Conn_BoundTria = nullptr;
+  Conn_BoundQuad = nullptr;
 
-  Conn_Line_Linear      = NULL;
-  Conn_BoundTria_Linear = NULL;
-  Conn_BoundQuad_Linear = NULL;
+  Conn_Line_Linear      = nullptr;
+  Conn_BoundTria_Linear = nullptr;
+  Conn_BoundQuad_Linear = nullptr;
 
-  Conn_Tria = NULL;
-  Conn_Quad = NULL;
-  Conn_Tetr = NULL;
-  Conn_Hexa = NULL;
-  Conn_Pris = NULL;
-  Conn_Pyra = NULL;
+  Conn_Tria = nullptr;
+  Conn_Quad = nullptr;
+  Conn_Tetr = nullptr;
+  Conn_Hexa = nullptr;
+  Conn_Pris = nullptr;
+  Conn_Pyra = nullptr;
 
   /*--- Arrays for holding the element IDs. ---*/
 
-  ID_Line             = NULL;
-  ID_BoundTria        = NULL;
-  ID_BoundQuad        = NULL;
-  ID_Line_Linear      = NULL;
-  ID_BoundTria_Linear = NULL;
-  ID_BoundQuad_Linear = NULL;
+  ID_Line             = nullptr;
+  ID_BoundTria        = nullptr;
+  ID_BoundQuad        = nullptr;
+  ID_Line_Linear      = nullptr;
+  ID_BoundTria_Linear = nullptr;
+  ID_BoundQuad_Linear = nullptr;
 
-  ID_Tria = NULL;
-  ID_Quad = NULL;
-  ID_Tetr = NULL;
-  ID_Hexa = NULL;
-  ID_Pris = NULL;
-  ID_Pyra = NULL;
+  ID_Tria = nullptr;
+  ID_Quad = nullptr;
+  ID_Tetr = nullptr;
+  ID_Hexa = nullptr;
+  ID_Pris = nullptr;
+  ID_Pyra = nullptr;
 
-  Elem_ID_Line             = NULL;
-  Elem_ID_BoundTria        = NULL;
-  Elem_ID_BoundQuad        = NULL;
-  Elem_ID_Line_Linear      = NULL;
-  Elem_ID_BoundTria_Linear = NULL;
-  Elem_ID_BoundQuad_Linear = NULL;
+  Elem_ID_Line             = nullptr;
+  Elem_ID_BoundTria        = nullptr;
+  Elem_ID_BoundQuad        = nullptr;
+  Elem_ID_Line_Linear      = nullptr;
+  Elem_ID_BoundTria_Linear = nullptr;
+  Elem_ID_BoundQuad_Linear = nullptr;
 
   /*--- The new geometry class has the same problem dimension/zone. ---*/
 
@@ -478,87 +478,87 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   Neighbors.clear();
   Color_List.clear();
 
-  if (Local_Points != NULL) delete [] Local_Points;
-  if (Local_Colors != NULL) delete [] Local_Colors;
-  if (Local_Coords != NULL) delete [] Local_Coords;
+  delete [] Local_Points;
+  delete [] Local_Colors;
+  delete [] Local_Coords;
 
-  if (nLinear_Line > 0      && Conn_Line_Linear      != NULL)
+  if (nLinear_Line > 0      && Conn_Line_Linear      != nullptr)
     delete [] Conn_Line_Linear;
-  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != NULL)
+  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != nullptr)
     delete [] Conn_BoundTria_Linear;
-  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != NULL)
+  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != nullptr)
     delete [] Conn_BoundQuad_Linear;
 
-  if (nLocal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
-  if (nLocal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
-  if (nLocal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
-  if (nLocal_Tria > 0      && Conn_Tria      != NULL) delete [] Conn_Tria;
-  if (nLocal_Quad > 0      && Conn_Quad      != NULL) delete [] Conn_Quad;
-  if (nLocal_Tetr > 0      && Conn_Tetr      != NULL) delete [] Conn_Tetr;
-  if (nLocal_Hexa > 0      && Conn_Hexa      != NULL) delete [] Conn_Hexa;
-  if (nLocal_Pris > 0      && Conn_Pris      != NULL) delete [] Conn_Pris;
-  if (nLocal_Pyra > 0      && Conn_Pyra      != NULL) delete [] Conn_Pyra;
+  if (nLocal_Line > 0      && Conn_Line      != nullptr) delete [] Conn_Line;
+  if (nLocal_BoundTria > 0 && Conn_BoundTria != nullptr) delete [] Conn_BoundTria;
+  if (nLocal_BoundQuad > 0 && Conn_BoundQuad != nullptr) delete [] Conn_BoundQuad;
+  if (nLocal_Tria > 0      && Conn_Tria      != nullptr) delete [] Conn_Tria;
+  if (nLocal_Quad > 0      && Conn_Quad      != nullptr) delete [] Conn_Quad;
+  if (nLocal_Tetr > 0      && Conn_Tetr      != nullptr) delete [] Conn_Tetr;
+  if (nLocal_Hexa > 0      && Conn_Hexa      != nullptr) delete [] Conn_Hexa;
+  if (nLocal_Pris > 0      && Conn_Pris      != nullptr) delete [] Conn_Pris;
+  if (nLocal_Pyra > 0      && Conn_Pyra      != nullptr) delete [] Conn_Pyra;
 
-  if (ID_Line             != NULL) delete [] ID_Line;
-  if (ID_BoundTria        != NULL) delete [] ID_BoundTria;
-  if (ID_BoundQuad        != NULL) delete [] ID_BoundQuad;
-  if (ID_Line_Linear      != NULL) delete [] ID_Line_Linear;
-  if (ID_BoundTria_Linear != NULL) delete [] ID_BoundTria_Linear;
-  if (ID_BoundQuad_Linear != NULL) delete [] ID_BoundQuad_Linear;
+  delete [] ID_Line;
+  delete [] ID_BoundTria;
+  delete [] ID_BoundQuad;
+  delete [] ID_Line_Linear;
+  delete [] ID_BoundTria_Linear;
+  delete [] ID_BoundQuad_Linear;
 
-  if (ID_Tria != NULL) delete [] ID_Tria;
-  if (ID_Quad != NULL) delete [] ID_Quad;
-  if (ID_Tetr != NULL) delete [] ID_Tetr;
-  if (ID_Hexa != NULL) delete [] ID_Hexa;
-  if (ID_Pris != NULL) delete [] ID_Pris;
-  if (ID_Pyra != NULL) delete [] ID_Pyra;
+  delete [] ID_Tria;
+  delete [] ID_Quad;
+  delete [] ID_Tetr;
+  delete [] ID_Hexa;
+  delete [] ID_Pris;
+  delete [] ID_Pyra;
 
-  if (Elem_ID_Line             != NULL) delete [] Elem_ID_Line;
-  if (Elem_ID_BoundTria        != NULL) delete [] Elem_ID_BoundTria;
-  if (Elem_ID_BoundQuad        != NULL) delete [] Elem_ID_BoundQuad;
-  if (Elem_ID_Line_Linear      != NULL) delete [] Elem_ID_Line_Linear;
-  if (Elem_ID_BoundTria_Linear != NULL) delete [] Elem_ID_BoundTria_Linear;
-  if (Elem_ID_BoundQuad_Linear != NULL) delete [] Elem_ID_BoundQuad_Linear;
+  delete [] Elem_ID_Line;
+  delete [] Elem_ID_BoundTria;
+  delete [] Elem_ID_BoundQuad;
+  delete [] Elem_ID_Line_Linear;
+  delete [] Elem_ID_BoundTria_Linear;
+  delete [] Elem_ID_BoundQuad_Linear;
 
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
 
-  if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
-  if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
-  if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
+  delete [] Local_to_Global_Point;
+  delete [] Global_to_Local_Marker;
+  delete [] Local_to_Global_Marker;
 
   /*--- Free up memory from turbomachinery performance computation  ---*/
 
   unsigned short iMarker;
-  if (TangGridVelIn != NULL) {
+  if (TangGridVelIn != nullptr) {
     for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
-      if (TangGridVelIn[iMarker] != NULL) delete [] TangGridVelIn[iMarker];
+      if (TangGridVelIn[iMarker] != nullptr) delete [] TangGridVelIn[iMarker];
     delete [] TangGridVelIn;
   }
-  if (SpanAreaIn != NULL) {
+  if (SpanAreaIn != nullptr) {
     for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
-      if (SpanAreaIn[iMarker] != NULL) delete [] SpanAreaIn[iMarker];
+      if (SpanAreaIn[iMarker] != nullptr) delete [] SpanAreaIn[iMarker];
     delete [] SpanAreaIn;
   }
-  if (TurboRadiusIn != NULL) {
+  if (TurboRadiusIn != nullptr) {
     for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
-      if (TurboRadiusIn[iMarker] != NULL) delete [] TurboRadiusIn[iMarker];
+      if (TurboRadiusIn[iMarker] != nullptr) delete [] TurboRadiusIn[iMarker];
     delete [] TurboRadiusIn;
   }
-  if (TangGridVelOut != NULL) {
+  if (TangGridVelOut != nullptr) {
     for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
-      if (TangGridVelOut[iMarker] != NULL) delete [] TangGridVelOut[iMarker];
+      if (TangGridVelOut[iMarker] != nullptr) delete [] TangGridVelOut[iMarker];
     delete [] TangGridVelOut;
   }
-  if (SpanAreaOut != NULL) {
+  if (SpanAreaOut != nullptr) {
     for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
-      if (SpanAreaOut[iMarker] != NULL) delete [] SpanAreaOut[iMarker];
+      if (SpanAreaOut[iMarker] != nullptr) delete [] SpanAreaOut[iMarker];
     delete [] SpanAreaOut;
   }
-  if (TurboRadiusOut != NULL) {
+  if (TurboRadiusOut != nullptr) {
     for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
-      if (TurboRadiusOut[iMarker] != NULL) delete [] TurboRadiusOut[iMarker];
+      if (TurboRadiusOut[iMarker] != nullptr) delete [] TurboRadiusOut[iMarker];
     delete [] TurboRadiusOut;
   }
 
@@ -568,13 +568,13 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
    * that iMarker doesn't point us to memory that was never allocated. ---*/
 
   unsigned short iSpan, iVertex;
-  if (turbovertex != NULL) {
+  if (turbovertex != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Marker_All_SendRecv[iMarker] == 0 && turbovertex[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && turbovertex[iMarker] != nullptr) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++) {
-          if (turbovertex[iMarker][iSpan] != NULL) {
+          if (turbovertex[iMarker][iSpan] != nullptr) {
             for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++)
-              if (turbovertex[iMarker][iSpan][iVertex] != NULL)
+              if (turbovertex[iMarker][iSpan][iVertex] != nullptr)
                 delete turbovertex[iMarker][iSpan][iVertex];
             delete [] turbovertex[iMarker][iSpan];
           }
@@ -584,9 +584,9 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     }
     delete [] turbovertex;
   }
-  if (AverageTurboNormal != NULL) {
+  if (AverageTurboNormal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Marker_All_SendRecv[iMarker] == 0 && AverageTurboNormal[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageTurboNormal[iMarker] != nullptr) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageTurboNormal[iMarker][iSpan];
         delete [] AverageTurboNormal[iMarker];
@@ -594,9 +594,9 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     }
     delete [] AverageTurboNormal;
   }
-  if (AverageNormal != NULL) {
+  if (AverageNormal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Marker_All_SendRecv[iMarker] == 0 && AverageNormal[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageNormal[iMarker] != nullptr) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageNormal[iMarker][iSpan];
         delete [] AverageNormal[iMarker];
@@ -604,9 +604,9 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     }
     delete [] AverageNormal;
   }
-  if (AverageGridVel != NULL) {
+  if (AverageGridVel != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Marker_All_SendRecv[iMarker] == 0 && AverageGridVel[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageGridVel[iMarker] != nullptr) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageGridVel[iMarker][iSpan];
         delete [] AverageGridVel[iMarker];
@@ -615,60 +615,60 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     delete [] AverageGridVel;
   }
 
-  if (AverageTangGridVel != NULL) {
+  if (AverageTangGridVel != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && AverageTangGridVel[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageTangGridVel[iMarker] != nullptr)
         delete [] AverageTangGridVel[iMarker];
     delete [] AverageTangGridVel;
   }
-  if (SpanArea != NULL) {
+  if (SpanArea != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && SpanArea[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && SpanArea[iMarker] != nullptr)
         delete [] SpanArea[iMarker];
     delete [] SpanArea;
   }
-  if (TurboRadius != NULL) {
+  if (TurboRadius != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && TurboRadius[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && TurboRadius[iMarker] != nullptr)
         delete [] TurboRadius[iMarker];
     delete [] TurboRadius;
   }
-  if (MaxAngularCoord != NULL) {
+  if (MaxAngularCoord != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && MaxAngularCoord[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && MaxAngularCoord[iMarker] != nullptr)
         delete [] MaxAngularCoord[iMarker];
     delete [] MaxAngularCoord;
   }
-  if (MinAngularCoord != NULL) {
+  if (MinAngularCoord != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && MinAngularCoord[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && MinAngularCoord[iMarker] != nullptr)
         delete [] MinAngularCoord[iMarker];
     delete [] MinAngularCoord;
   }
-  if (MinRelAngularCoord != NULL) {
+  if (MinRelAngularCoord != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && MinRelAngularCoord[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && MinRelAngularCoord[iMarker] != nullptr)
         delete [] MinRelAngularCoord[iMarker];
     delete [] MinRelAngularCoord;
   }
 
-  if (nSpanWiseSections != NULL) delete [] nSpanWiseSections;
-  if (nSpanSectionsByMarker != NULL) delete [] nSpanSectionsByMarker;
-  if (SpanWiseValue != NULL) {
+  delete [] nSpanWiseSections;
+  delete [] nSpanSectionsByMarker;
+  if (SpanWiseValue != nullptr) {
     for (iMarker = 0; iMarker < 2; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && SpanWiseValue[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && SpanWiseValue[iMarker] != nullptr)
         delete [] SpanWiseValue[iMarker];
     delete [] SpanWiseValue;
   }
-  if (nVertexSpan != NULL) {
+  if (nVertexSpan != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && nVertexSpan[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && nVertexSpan[iMarker] != nullptr)
         delete [] nVertexSpan[iMarker];
     delete [] nVertexSpan;
   }
-  if (nTotVertexSpan != NULL) {
+  if (nTotVertexSpan != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Marker_All_SendRecv[iMarker] == 0 && nTotVertexSpan[iMarker] != NULL)
+      if (Marker_All_SendRecv[iMarker] == 0 && nTotVertexSpan[iMarker] != nullptr)
         delete [] nTotVertexSpan[iMarker];
     delete [] nTotVertexSpan;
   }
@@ -695,8 +695,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   unordered_set<unsigned long> Point_Map;
 
-  SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL;
-  SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
+  SU2_MPI::Request *colorSendReq = nullptr, *idSendReq = nullptr;
+  SU2_MPI::Request *colorRecvReq = nullptr, *idRecvReq = nullptr;
   int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Get a linear partitioner to track the partition counts. ---*/
@@ -965,11 +965,11 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   unsigned long iProcessor;
   unsigned long iElem, iNode, jNode, nElem_Total = 0, Global_Index;
-  unsigned long *Conn_Elem  = NULL;
-  unsigned long *ID_Elems   = NULL;
+  unsigned long *Conn_Elem  = nullptr;
+  unsigned long *ID_Elems   = nullptr;
 
-  SU2_MPI::Request *connSendReq = NULL, *idSendReq = NULL;
-  SU2_MPI::Request *connRecvReq = NULL, *idRecvReq = NULL;
+  SU2_MPI::Request *connSendReq = nullptr, *idSendReq = nullptr;
+  SU2_MPI::Request *connRecvReq = nullptr, *idRecvReq = nullptr;
   int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Store the number of nodes per this element type. ---*/
@@ -1071,7 +1071,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity and element IDs
    that we are sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
   for (iSend = 0; iSend < NODES_PER_ELEMENT*nElem_Send[size]; iSend++)
     connSend[iSend] = 0;
@@ -1146,7 +1146,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
   for (iRecv = 0; iRecv < NODES_PER_ELEMENT*nElem_Recv[size]; iRecv++)
     connRecv[iRecv] = 0;
@@ -1275,11 +1275,11 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq != NULL) delete [] connSendReq;
-  if (idSendReq   != NULL) delete [] idSendReq;
+  delete [] connSendReq;
+  delete [] idSendReq;
 
-  if (connRecvReq != NULL) delete [] connRecvReq;
-  if (idRecvReq   != NULL) delete [] idRecvReq;
+  delete [] connRecvReq;
+  delete [] idRecvReq;
 
   delete [] connSend;
   delete [] connRecv;
@@ -1302,8 +1302,8 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   unsigned long iPoint, iNeighbor, jPoint, iProcessor;
   vector<unsigned long>::iterator it;
 
-  SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL, *coordSendReq = NULL;
-  SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL, *coordRecvReq = NULL;
+  SU2_MPI::Request *colorSendReq = nullptr, *idSendReq = nullptr, *coordSendReq = nullptr;
+  SU2_MPI::Request *colorRecvReq = nullptr, *idRecvReq = nullptr, *coordRecvReq = nullptr;
   int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Prepare structures for communication. ---*/
@@ -1378,7 +1378,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Allocate memory to hold the coordinates that we are sending. ---*/
 
-  su2double *coordSend = NULL;
+  su2double *coordSend = nullptr;
   coordSend = new su2double[nDim*nPoint_Send[size]];
   for (iSend = 0; iSend < nDim*nPoint_Send[size]; iSend++)
     coordSend[iSend] = 0;
@@ -1452,7 +1452,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++)
     idRecv[iRecv] = 0;
 
-  su2double *coordRecv = NULL;
+  su2double *coordRecv = nullptr;
   coordRecv = new su2double[nDim*nPoint_Recv[size]];
   for (iRecv = 0; iRecv < nDim*nPoint_Recv[size]; iRecv++)
     coordRecv[iRecv] = 0;
@@ -1534,13 +1534,13 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Free temporary memory from communications ---*/
 
-  if (colorSendReq != NULL) delete [] colorSendReq;
-  if (idSendReq    != NULL) delete [] idSendReq;
-  if (coordSendReq != NULL) delete [] coordSendReq;
+  delete [] colorSendReq;
+  delete [] idSendReq;
+  delete [] coordSendReq;
 
-  if (colorRecvReq != NULL) delete [] colorRecvReq;
-  if (idRecvReq    != NULL) delete [] idRecvReq;
-  if (coordRecvReq != NULL) delete [] coordRecvReq;
+  delete [] colorRecvReq;
+  delete [] idRecvReq;
+  delete [] coordRecvReq;
 
   delete [] colorSend;
   delete [] colorRecv;
@@ -1574,12 +1574,12 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
   unsigned long iMarker, iProcessor, iElem, iNode, jNode;
   unsigned long nElem_Total = 0, Global_Index, Global_Elem_Index;
 
-  unsigned long *Conn_Elem      = NULL;
-  unsigned long *Linear_Markers = NULL;
-  unsigned long *ID_SurfElem    = NULL;
+  unsigned long *Conn_Elem      = nullptr;
+  unsigned long *Linear_Markers = nullptr;
+  unsigned long *ID_SurfElem    = nullptr;
 
-  SU2_MPI::Request *connSendReq = NULL, *markerSendReq = NULL, *idSendReq = NULL;
-  SU2_MPI::Request *connRecvReq = NULL, *markerRecvReq = NULL, *idRecvReq = NULL;
+  SU2_MPI::Request *connSendReq = nullptr, *markerSendReq = nullptr, *idSendReq = nullptr;
+  SU2_MPI::Request *connRecvReq = nullptr, *markerRecvReq = nullptr, *idRecvReq = nullptr;
   int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Store the local number of this element type and the number of nodes
@@ -1675,9 +1675,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Allocate memory to hold the connectivity that we are sending. ---*/
 
-  unsigned long *connSend   = NULL;
-  unsigned long *markerSend = NULL;
-  unsigned long *idSend     = NULL;
+  unsigned long *connSend   = nullptr;
+  unsigned long *markerSend = nullptr;
+  unsigned long *idSend     = nullptr;
 
   if (rank == MASTER_NODE) {
 
@@ -1774,7 +1774,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
   for (iRecv = 0; iRecv < NODES_PER_ELEMENT*nElem_Recv[size]; iRecv++)
     connRecv[iRecv] = 0;
@@ -1912,17 +1912,17 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq   != NULL) delete [] connSendReq;
-  if (markerSendReq != NULL) delete [] markerSendReq;
-  if (idSendReq     != NULL) delete [] idSendReq;
+  delete [] connSendReq;
+  delete [] markerSendReq;
+  delete [] idSendReq;
 
-  if (connRecvReq   != NULL) delete [] connRecvReq;
-  if (markerRecvReq != NULL) delete [] markerRecvReq;
-  if (idRecvReq     != NULL) delete [] idRecvReq;
+  delete [] connRecvReq;
+  delete [] markerRecvReq;
+  delete [] idRecvReq;
 
-  if (connSend   != NULL) delete [] connSend;
-  if (markerSend != NULL) delete [] markerSend;
-  if (idSend     != NULL) delete [] idSend;
+  delete [] connSend;
+  delete [] markerSend;
+  delete [] idSend;
 
   delete [] connRecv;
   delete [] markerRecv;
@@ -1943,15 +1943,15 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   unsigned long iProcessor, NELEM = 0;
   unsigned long iElem, iNode, jNode, nElem_Total = 0, Global_Index;
 
-  unsigned long *Conn_Linear        = NULL;
-  unsigned long *Conn_Elem          = NULL;
-  unsigned long *Linear_Markers     = NULL;
-  unsigned long *ID_SurfElem_Linear = NULL;
-  unsigned long *Local_Markers      = NULL;
-  unsigned long *ID_SurfElem        = NULL;
+  unsigned long *Conn_Linear        = nullptr;
+  unsigned long *Conn_Elem          = nullptr;
+  unsigned long *Linear_Markers     = nullptr;
+  unsigned long *ID_SurfElem_Linear = nullptr;
+  unsigned long *Local_Markers      = nullptr;
+  unsigned long *ID_SurfElem        = nullptr;
 
-  SU2_MPI::Request *connSendReq = NULL,*markerSendReq = NULL,*idSendReq = NULL;
-  SU2_MPI::Request *connRecvReq = NULL,*markerRecvReq = NULL,*idRecvReq = NULL;
+  SU2_MPI::Request *connSendReq = nullptr,*markerSendReq = nullptr,*idSendReq = nullptr;
+  SU2_MPI::Request *connRecvReq = nullptr,*markerRecvReq = nullptr,*idRecvReq = nullptr;
   int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Store the local number of this element type and the number of nodes
@@ -2048,7 +2048,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
   for (iSend = 0; iSend < NODES_PER_ELEMENT*nElem_Send[size]; iSend++)
     connSend[iSend] = 0;
@@ -2130,7 +2130,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
   for (iRecv = 0; iRecv < NODES_PER_ELEMENT*nElem_Recv[size]; iRecv++)
     connRecv[iRecv] = 0;
@@ -2261,13 +2261,13 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   /*--- Free temporary memory from communications ---*/
 
-  if (connSendReq   != NULL) delete [] connSendReq;
-  if (markerSendReq != NULL) delete [] markerSendReq;
-  if (idSendReq     != NULL) delete [] idSendReq;
+  delete [] connSendReq;
+  delete [] markerSendReq;
+  delete [] idSendReq;
 
-  if (connRecvReq   != NULL) delete [] connRecvReq;
-  if (markerRecvReq != NULL) delete [] markerRecvReq;
-  if (idRecvReq     != NULL) delete [] idRecvReq;
+  delete [] connRecvReq;
+  delete [] markerRecvReq;
+  delete [] idRecvReq;
 
   delete [] connSend;
   delete [] connRecv;
@@ -2890,7 +2890,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
   bound = new CPrimalGrid**[nMarker+(OVERHEAD*size)];
   for (iMarker = 0; iMarker < nMarker+(OVERHEAD*size); iMarker++)
-    bound[iMarker] = NULL;
+    bound[iMarker] = nullptr;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
@@ -3264,11 +3264,11 @@ void CPhysicalGeometry::PrepareOffsets(unsigned long val_npoint_global) {
    This is a linear partitioning with the addition of a simple load
    balancing for any remainder points. ---*/
 
-  if (beg_node == NULL) beg_node = new unsigned long[size];
-  if (end_node == NULL) end_node = new unsigned long[size];
+  if (beg_node == nullptr) beg_node = new unsigned long[size];
+  if (end_node == nullptr) end_node = new unsigned long[size];
 
-  if (nPointLinear     == NULL) nPointLinear     = new unsigned long[size];
-  if (nPointCumulative == NULL) nPointCumulative = new unsigned long[size+1];
+  if (nPointLinear     == nullptr) nPointLinear     = new unsigned long[size];
+  if (nPointCumulative == nullptr) nPointCumulative = new unsigned long[size+1];
 
   unsigned long quotient = val_npoint_global/size;
   int remainder = int(val_npoint_global%size);
@@ -3340,7 +3340,7 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
 
   /*--- We can already create the array that indexes the adjacency. ---*/
 
-  if (xadj == NULL) xadj = new idx_t[pointPartitioner.GetSizeOnRank(rank)+1];
+  if (xadj == nullptr) xadj = new idx_t[pointPartitioner.GetSizeOnRank(rank)+1];
   xadj[0] = 0;
 
   /*--- Here, we transfer the adjacency information from a multi-dim vector
@@ -3367,7 +3367,7 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
   /*--- Now that we know the size, create the final adjacency array. This
    is the array that we will feed to ParMETIS for partitioning. ---*/
 
-  if (adjacency == NULL) adjacency = new idx_t[total_adj_size];
+  if (adjacency == nullptr) adjacency = new idx_t[total_adj_size];
 
   unsigned long kPoint = 0;
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -3775,10 +3775,10 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
-     if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
-    if (bound[iMarker] != NULL) delete [] bound[iMarker];
+     if (bound[iMarker][iElem_Bound] != nullptr) delete bound[iMarker][iElem_Bound];
+    if (bound[iMarker] != nullptr) delete [] bound[iMarker];
   }
-  if (bound != NULL) delete [] bound;
+  delete [] bound;
 
   /*--- Allocate the new bound variables, and set the number of markers ---*/
 
@@ -3908,7 +3908,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
 
   unsigned short val_format = config->GetMesh_FileFormat();
 
-  CMeshReaderFVM *MeshFVM = NULL;
+  CMeshReaderFVM *MeshFVM = nullptr;
   switch (val_format) {
     case SU2:
       MeshFVM = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
@@ -3974,7 +3974,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
   /*--- Now that we have loaded all information from the mesh,
    delete the mesh reader object. ---*/
 
-  if (MeshFVM != NULL) delete MeshFVM;
+  delete MeshFVM;
 
 }
 
@@ -5871,7 +5871,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             MinRelAngularCoord[iMarker]          = new su2double [nSpanWiseSections[marker_flag-1]];
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
               nVertexSpan[iMarker][iSpan]        = 0;
-              turbovertex[iMarker][iSpan]        = NULL;
+              turbovertex[iMarker][iSpan]        = nullptr;
               MinAngularCoord[iMarker][iSpan]    = 10.0E+06;
               MaxAngularCoord[iMarker][iSpan]    = -10.0E+06;
               MinRelAngularCoord[iMarker][iSpan] = 10.0E+06;
@@ -5976,7 +5976,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               if (allocate){
                 turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
                 for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
-                  turbovertex[iMarker][iSpan][iVertex] = NULL;
+                  turbovertex[iMarker][iSpan][iVertex] = nullptr;
                 }
               }
               ordered[iSpan]                           = new unsigned long [nVertexSpanHalo[iSpan]];
@@ -7177,7 +7177,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
   unsigned long Neighbor_Point, iVertex, iPoint, iElem;
   long iEdge;
-  su2double Area, *NormalFace = NULL;
+  su2double Area, *NormalFace = nullptr;
 
   /*--- Update values of faces of the edge ---*/
 
@@ -8643,7 +8643,7 @@ void CPhysicalGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new
 void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) {
 
   ofstream Tecplot_File;
-  unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
+  unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = nullptr, nPointSurface = 0;
   unsigned short Coord_i, iMarker;
 
   /*--- It is important to do a renumbering to don't add points
@@ -9389,7 +9389,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     strcpy(fname, filename.c_str());
     int nRestart_Vars = 5, nFields;
     int *Restart_Vars = new int[5];
-    passivedouble *Restart_Data = NULL;
+    passivedouble *Restart_Data = nullptr;
     int Restart_Iter = 0;
     passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
@@ -10677,7 +10677,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
 
@@ -10973,7 +10973,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
   }
@@ -11283,7 +11283,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
 
