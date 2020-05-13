@@ -5247,7 +5247,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
       /*--- Sort the auxiliar queue based on the number of neighbors ---*/
 
-      sort(AuxQueue.begin(), AuxQueue.end(),
+      stable_sort(AuxQueue.begin(), AuxQueue.end(),
         [&](unsigned long iPoint, unsigned long jPoint) {
           return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
         }
