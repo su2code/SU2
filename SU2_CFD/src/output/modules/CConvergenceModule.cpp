@@ -28,19 +28,18 @@ CConvergenceModule::CConvergenceModule(CConfig* config){
 void CConvergenceModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
   fieldCollection.AddItem("CONVERGENCE", COutputField("Convergence", ScreenOutputFormat::INTEGER,
-                                                            "CONVERGENCE", FieldType::DEFAULT, "Convergence indicator"));
+                                                      "CONVERGENCE", "Convergence indicator", FieldType::DEFAULT));
 }
 
 void CConvergenceModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCollection){
   /*--- Filter convergence fields which are coefficients ---*/
 
   const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT},
-                                                                             fieldCollection.GetFieldsByKey(convFields));
+                                                                       fieldCollection.GetFieldsByKey(convFields));
   for (const auto& field : convergenceFields){
     const auto histField =  COutputField("Cauchy["  + field->second.fieldName + "]",
-                                               ScreenOutputFormat::SCIENTIFIC,
-                                               "CAUCHY", FieldType::DEFAULT,
-                                               "Cauchy residual value of field set with CONV_FIELD.");
+                                         ScreenOutputFormat::SCIENTIFIC,
+                                         "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.", FieldType::DEFAULT);
     fieldCollection.AddItem("CAUCHY_" + field->first, histField);
   }
 }

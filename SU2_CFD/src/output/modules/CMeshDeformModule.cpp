@@ -14,9 +14,9 @@ void CMeshDeformModule::LoadHistoryData(COutFieldCollection& fieldCollection){
 
 void CMeshDeformModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
-  fieldCollection.AddItem("DEFORM_MIN_VOLUME", COutputField("MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", FieldType::DEFAULT, "Minimum volume in the mesh"));
-  fieldCollection.AddItem("DEFORM_MAX_VOLUME", COutputField("MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", FieldType::DEFAULT, "Maximum volume in the mesh"));
-  fieldCollection.AddItem("DEFORM_ITER", COutputField("DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", FieldType::DEFAULT, "Linear solver iterations for the mesh deformation"));
-  fieldCollection.AddItem("DEFORM_RESIDUAL", COutputField("DeformRes", ScreenOutputFormat::FIXED, "DEFORM", FieldType::DEFAULT, "Residual of the linear solver for the mesh deformation"));
+  fieldCollection.AddItem("DEFORM_MIN_VOLUME", COutputField("MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh", FieldType::DEFAULT));
+  fieldCollection.AddItem("DEFORM_MAX_VOLUME", COutputField("MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Maximum volume in the mesh", FieldType::DEFAULT));
+  fieldCollection.AddItem("DEFORM_ITER",       COutputField("DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation", FieldType::DEFAULT));
+  fieldCollection.AddItem("DEFORM_RESIDUAL",   COutputField("DeformRes", ScreenOutputFormat::FIXED, "DEFORM",  "Residual of the linear solver for the mesh deformation", FieldType::DEFAULT));
 
 }

@@ -7,10 +7,10 @@ CFlowCoefficientModule::CFlowCoefficientModule(CConfig *config){}
 
 void CFlowCoefficientModule::DefineVolumeFields(COutFieldCollection &fieldCollection){
 
-  fieldCollection.AddItem("MASSFLOW", COutputField("Mass flow", -1, "FLOW_COEFFICIENT", "Mass flow rate", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("AREA",     COutputField("Area", -1, "FLOW_COEFFICIENT", "Area", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("NORMAL_VELOCITY", COutputField("Normal velocity", -1, "FLOW_COEFFICIENT", "Velocity component normal to the surface", FieldType::DEFAULT));
-  fieldCollection.AddItem("TANGENTIAL_VELOCITY", COutputField("Tangential velocity", -1, "FLOW_COEFFICIENT", "Velocity component tangential to the surface", FieldType::DEFAULT));
+  fieldCollection.AddItem("MASSFLOW", COutputField("Mass flow", "FLOW_COEFFICIENT", "Mass flow rate", FieldType::SURFACE_INTEGRATE));
+  fieldCollection.AddItem("AREA",     COutputField("Area", "FLOW_COEFFICIENT", "Area", FieldType::SURFACE_INTEGRATE));
+  fieldCollection.AddItem("NORMAL_VELOCITY", COutputField("Normal velocity", "FLOW_COEFFICIENT", "Velocity component normal to the surface", FieldType::DEFAULT));
+  fieldCollection.AddItem("TANGENTIAL_VELOCITY", COutputField("Tangential velocity", "FLOW_COEFFICIENT", "Velocity component tangential to the surface", FieldType::DEFAULT));
 
 }
 

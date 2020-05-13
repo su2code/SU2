@@ -33,6 +33,8 @@ public:
 
   void LoadSurfaceData(COutFieldCollection& fieldCollection) override;
 
+  void LoadVolumeData(COutFieldCollection& fieldCollection) override;
+
   std::string GetName(const std::string& baseName);
 
   void EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,

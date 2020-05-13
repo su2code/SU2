@@ -70,7 +70,7 @@ public:
   virtual void LoadHistoryDataPerSurface(COutFieldCollection& fieldCollection) {};
   CREATE_ACTION(LoadHistoryDataPerSurface, COutFieldCollection& fieldCollection);
   virtual void LoadVolumeData(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(LoadVolumeData);
+  CREATE_ACTION(LoadVolumeData, COutFieldCollection& fieldCollection);
   virtual void LoadSurfaceData(COutFieldCollection& fieldCollection) {};
   CREATE_ACTION(LoadSurfaceData, COutFieldCollection& fieldCollection);
 

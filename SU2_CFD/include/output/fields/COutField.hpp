@@ -39,7 +39,7 @@ public:
   /*! \brief The format that is used to print this value to screen. */
   ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED;
   /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-  short       offset;
+  short       offset = -1;
 
   packToken* tokenRef = nullptr;
 
@@ -47,18 +47,11 @@ public:
 
   COutputField() = default;
 
-  COutputField(std::string fieldName_, FieldType type_, std::string OutputGroup_, std::string description_)
-    : fieldName(std::move(fieldName_)), outputGroup(std::move(OutputGroup_)),  description(std::move(description_)),
-      fieldType(type_), value(0.0)
-  {}
+  COutputField(std::string fieldName_, ScreenOutputFormat format_, std::string OutputGroup_, std::string description_, FieldType type_)
+    : fieldName(std::move(fieldName_)), outputGroup(std::move(OutputGroup_)), description(std::move(description_)), fieldType(type_), screenFormat(format_){}
 
-  /*! \brief Constructor to initialize all members. */
-  COutputField(std::string fieldName_, ScreenOutputFormat screenFormat_, std::string OutputGroup_,
-                     FieldType fieldType_, std::string description_): COutputField(std::move(fieldName_), fieldType_, std::move(OutputGroup_), std::move(description_))
-  {screenFormat = screenFormat_;}
+  COutputField(std::string fieldName_, std::string OutputGroup_, std::string description_, FieldType type_)
+    : fieldName(std::move(fieldName_)), outputGroup(std::move(OutputGroup_)), description(std::move(description_)), fieldType(type_){}
 
-  COutputField(std::string fieldName_, int offset_, std::string volumeOutputGroup_, std::string description_, FieldType type_):
-     COutputField(std::move(fieldName_), type_, std::move(volumeOutputGroup_), std::move(description_))
-  {offset = offset_;}
 };
 

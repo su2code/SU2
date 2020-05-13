@@ -9,20 +9,20 @@ void CResidualModule::DefineHistoryFieldModifier(COutFieldCollection &fieldColle
 
   for (const auto& field : fieldCollection.GetFieldsByType({FieldType::RESIDUAL})){
     fieldCollection.AddItem("REL_" + field->first, COutputField("rel" + field->second.fieldName,
-                                                                      field->second.screenFormat,
-                                                                      "REL_" + field->second.outputGroup,
-                                                                      FieldType::AUTO_RESIDUAL,
-                                                                      "Relative residual."));
+                                                                field->second.screenFormat,
+                                                                "REL_" + field->second.outputGroup,
+                                                                "Relative residual.",
+                                                                FieldType::AUTO_RESIDUAL));
     Average[field->second.outputGroup] = true;
   }
 
   for (auto it = Average.begin(); it != Average.end(); it++){
     if (AverageGroupName.count(it->first) > 0) {
       fieldCollection.AddItem("AVG_" + it->first, COutputField("avg[" + AverageGroupName.at(it->first) + "]",
-                                                                     ScreenOutputFormat::FIXED,
-                                                                     "AVG_" + it->first ,
-                                                                     FieldType::AUTO_RESIDUAL,
-                                                                     "Average residual over all solution variables."));
+                                                               ScreenOutputFormat::FIXED,
+                                                               "AVG_" + it->first ,
+                                                               "Average residual over all solution variables.",
+                                                               FieldType::AUTO_RESIDUAL));
     }
   }
 }

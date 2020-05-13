@@ -14,8 +14,8 @@ void CDirectDiffModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCol
     auto newField = fieldCollection.AddItem(prefix + field->first, COutputField("d[" + field->second.fieldName + "]",
                                                                       field->second.screenFormat,
                                                                       prefix + field->second.outputGroup,
-                                                                      FieldType::AUTO_COEFFICIENT,
-                                                                      "Derivative value (DIRECT_DIFF=YES)"));
+                                                                      "Derivative value (DIRECT_DIFF=YES)",
+                                                                      FieldType::AUTO_COEFFICIENT ));
     modifiedFields.push_back(newField);
   }
 

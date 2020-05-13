@@ -1520,7 +1520,15 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
 
   } else {
 
+    SolverDataContainer data;
+    data.solver = solver;
+    data.geometry = geometry;
+    data.config = config;
+
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+
+
+      modules->LoadVolumeDataAtPoint(&data, iPoint);
 
       /*--- Load the volume data into the data sorter. --- */
 

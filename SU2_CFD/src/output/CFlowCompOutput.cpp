@@ -138,23 +138,23 @@ void CFlowCompOutputModule::LoadHistoryData(COutFieldCollection &fieldCollection
 
 void CFlowCompOutputModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
-  fieldCollection.AddItem("RMS_DENSITY",    COutputField("rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the density."));
-  fieldCollection.AddItem("RMS_MOMENTUM_X", COutputField("rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the momentum x-component."));
-  fieldCollection.AddItem("RMS_MOMENTUM_Y", COutputField("rms[RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the momentum y-component."));
-  fieldCollection.AddItem("RMS_MOMENTUM_Z", COutputField("rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the momentum z-component."));
-  fieldCollection.AddItem("RMS_ENERGY",     COutputField("rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root-mean square residual of the energy."));
+  fieldCollection.AddItem("RMS_DENSITY",    COutputField("rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the density.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("RMS_MOMENTUM_X", COutputField("rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("RMS_MOMENTUM_Y", COutputField("rms[RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum y-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("RMS_MOMENTUM_Z", COutputField("rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("RMS_ENERGY",     COutputField("rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", FieldType::RESIDUAL));
 
-  fieldCollection.AddItem("MAX_DENSITY",    COutputField("max[Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the density."));
-  fieldCollection.AddItem("MAX_MOMENTUM_X", COutputField("max[RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum x-component."));
-  fieldCollection.AddItem("MAX_MOMENTUM_Y", COutputField("max[RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum y-component."));
-  fieldCollection.AddItem("MAX_MOMENTUM_Z", COutputField("max[RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the momentum z-component."));
-  fieldCollection.AddItem("MAX_ENERGY",     COutputField("max[RhoE]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Max residual of the energy."));
+  fieldCollection.AddItem("MAX_DENSITY",    COutputField("max[Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the density.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("MAX_MOMENTUM_X", COutputField("max[RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the momentum x-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("MAX_MOMENTUM_Y", COutputField("max[RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the momentum y-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("MAX_MOMENTUM_Z", COutputField("max[RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the momentum z-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("MAX_ENERGY",     COutputField("max[RhoE]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the energy.", FieldType::RESIDUAL));
 
-  fieldCollection.AddItem("BGS_DENSITY",    COutputField("bgs[Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the density."));
-  fieldCollection.AddItem("BGS_MOMENTUM_X", COutputField("bgs[RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum x-component."));
-  fieldCollection.AddItem("BGS_MOMENTUM_Y", COutputField("bgs[RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum y-component."));
-  fieldCollection.AddItem("BGS_MOMENTUM_Z", COutputField("bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the momentum z-component."));
-  fieldCollection.AddItem("BGS_ENERGY",     COutputField("bgs[RhoE]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "BGS residual of the energy."));
+  fieldCollection.AddItem("BGS_DENSITY",    COutputField("bgs[Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the density.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("BGS_MOMENTUM_X", COutputField("bgs[RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum x-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("BGS_MOMENTUM_Y", COutputField("bgs[RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum y-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("BGS_MOMENTUM_Z", COutputField("bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum z-component.", FieldType::RESIDUAL));
+  fieldCollection.AddItem("BGS_ENERGY",     COutputField("bgs[RhoE]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the energy.", FieldType::RESIDUAL));
 
 }
 

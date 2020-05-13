@@ -5,23 +5,22 @@ void CCommonModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
 
   fieldCollection.AddItem("TIME_ITER", COutputField("Time iter", ScreenOutputFormat::INTEGER,
-                                                          "ITER", FieldType::DEFAULT, "Time iteration index"));
+                                                          "ITER", "Time iteration index", FieldType::DEFAULT));
   fieldCollection.AddItem("OUTER_ITER", COutputField("Outer iter", ScreenOutputFormat::INTEGER,
-                                                           "ITER", FieldType::DEFAULT, "Outer iteration index"));
+                                                           "ITER", "Outer iteration index", FieldType::DEFAULT));
   fieldCollection.AddItem("INNER_ITER", COutputField("Inner iter", ScreenOutputFormat::INTEGER,
-                                                           "ITER", FieldType::DEFAULT, "Inner iteration index"));
+                                                           "ITER", "Inner iteration index", FieldType::DEFAULT));
 
   fieldCollection.AddItem("CUR_TIME", COutputField("Cur_time", ScreenOutputFormat::SCIENTIFIC,
-                                                           "TIME_DOMAIN", FieldType::DEFAULT, "Current physical time (s)"));
+                                                           "TIME_DOMAIN", "Current physical time (s)", FieldType::DEFAULT));
   fieldCollection.AddItem("TIME_STEP", COutputField("Time_Step", ScreenOutputFormat::SCIENTIFIC,
-                                                           "TIME_DOMAIN", FieldType::DEFAULT, "Current time step (s)"));
+                                                           "TIME_DOMAIN", "Current time step (s)", FieldType::DEFAULT));
 
   fieldCollection.AddItem("WALL_TIME", COutputField("Time(sec)", ScreenOutputFormat::SCIENTIFIC,
-                                                          "WALL_TIME", FieldType::DEFAULT, "Average wall-clock time"));
+                                                          "WALL_TIME", "Average wall-clock time", FieldType::DEFAULT));
 
   fieldCollection.AddItem("NONPHYSICAL_POINTS", COutputField("Time(sec)", ScreenOutputFormat::INTEGER,
-                                                                   "NONPHYSICAL_POINTS", FieldType::DEFAULT,
-                                                                    "The number of non-physical points in the solution"));
+                                                             "NONPHYSICAL_POINTS", "The number of non-physical points in the solution", FieldType::DEFAULT));
 
 }
 

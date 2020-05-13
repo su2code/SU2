@@ -25,6 +25,9 @@ protected:
 
 public:
   virtual void LoadData(OutputData* data) = 0;
+
+  virtual void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint) = 0;
+
   COutFieldCollection& GetHistoryFields()  {return historyFieldsAll;}
   COutFieldCollection& GetVolumeFields() {return volumeFieldsAll;}
 };
@@ -32,7 +35,7 @@ public:
 template<typename... Modules>
 class ModuleList : public std::tuple<Modules...>{
 public:
-  explicit ModuleList(CConfig* config): std::tuple<Modules...>(Modules(config)...){};
+  explicit ModuleList(CConfig* config): std::tuple<Modules...>(Modules(config)...){}
 };
 
 template<typename ModuleList>
@@ -55,6 +58,8 @@ public:
   void IntegrateCoefficients(SolverDataContainer* solverData, unsigned short iMarker, const string& markerName);
 
   void CommunicateIntegrals(const string& markerName);
+
+  void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint) override;
 
 };
 
@@ -86,9 +91,9 @@ void CModuleManager<ModuleList>::SetHistoryFields(CConfig *config){
 
   for (const auto& field : surfaceIntegralVolume){
     auto newField = historyFieldsAll.AddItem(field->first, COutputField(field->second.fieldName,
-                                                                              ScreenOutputFormat::SCIENTIFIC,
-                                                                              field->second.outputGroup,
-                                                                              FieldType::COEFFICIENT, ""));
+                                                                        ScreenOutputFormat::SCIENTIFIC,
+                                                                        field->second.outputGroup,
+                                                                        "", FieldType::COEFFICIENT));
     surfaceIntegralHistory.push_back(newField);
   }
 
@@ -111,7 +116,8 @@ void CModuleManager<ModuleList>::SetHistoryFields(CConfig *config){
       historyFieldsAll.AddItem(field->first + "@" + marker, COutputField(field->second.fieldName,
                                                                          ScreenOutputFormat::SCIENTIFIC,
                                                                          field->second.outputGroup,
-                                                                         FieldType::PER_SURFACE_COEFFICIENT, ""));
+                                                                         "",
+                                                                         FieldType::PER_SURFACE_COEFFICIENT));
     }
   }
 }
@@ -158,6 +164,18 @@ void CModuleManager<ModuleList>::LoadData(OutputData* data){
 }
 
 
+template<typename ModuleList>
+void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(OutputData *data, unsigned long iPoint){
+
+  SolverDataContainer *solverData = dynamic_cast<SolverDataContainer*>(data);
+
+  solverData->iPoint = iPoint;
+
+  CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionUpdateData, solverData);
+
+  CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll);
+
+}
 
 template<typename ModuleList>
 void CModuleManager<ModuleList>::IntegrateCoefficients(SolverDataContainer* solverData, unsigned short iMarker, const string& markerName){

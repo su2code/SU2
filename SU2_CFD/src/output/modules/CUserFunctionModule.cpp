@@ -21,7 +21,7 @@ void CUserFunctionModule::DefineVolumeFields(COutFieldCollection &fieldCollectio
   for (const auto function : volumeUserFunctions){
     if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
       const std::string funcName = function->name();
-      auto newField = fieldCollection.AddItem(funcName, COutputField(funcName, -1, "CUSTOM", "User-defined field", FieldType::SURFACE_INTEGRATE));
+      auto newField = fieldCollection.AddItem(funcName, COutputField(funcName, "CUSTOM", "User-defined field", FieldType::SURFACE_INTEGRATE));
       funcVolFieldRefs.push_back({newField, function});
     }
   }
@@ -37,13 +37,18 @@ void CUserFunctionModule::DefineVolumeFields(COutFieldCollection &fieldCollectio
 void CUserFunctionModule::LoadSurfaceData(COutFieldCollection &fieldCollection){
   EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope);
 }
+
+void CUserFunctionModule::LoadVolumeData(COutFieldCollection &fieldCollection){
+  EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope);
+}
+
 void CUserFunctionModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
   funcHistFieldRefs.clear();
 
   for (const auto function : historyUserFunctions){
     const std::string funcName = function->name();
-    auto newField = fieldCollection.AddItem(funcName, COutputField(funcName, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", FieldType::DEFAULT, "User-defined field"));
+    auto newField = fieldCollection.AddItem(funcName, COutputField(funcName, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", FieldType::DEFAULT));
     funcHistFieldRefs.push_back({newField, function});
   }
 }

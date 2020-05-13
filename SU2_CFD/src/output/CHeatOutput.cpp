@@ -79,9 +79,9 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) :
 
 void CHeatOutputModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
-  fieldCollection.AddItem("RMS_TEMPERATURE", COutputField("rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", FieldType::RESIDUAL, "Root mean square residual of the temperature"));
-  fieldCollection.AddItem("MAX_TEMPERATURE", COutputField("max[T]", ScreenOutputFormat::FIXED, "MAX_RES", FieldType::RESIDUAL, "Maximum residual of the temperature"));
-  fieldCollection.AddItem("BGS_TEMPERATURE", COutputField("bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", FieldType::RESIDUAL, "Block-Gauss seidel residual of the temperature"));
+  fieldCollection.AddItem("RMS_TEMPERATURE", COutputField("rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", FieldType::RESIDUAL));
+  fieldCollection.AddItem("MAX_TEMPERATURE", COutputField("max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", FieldType::RESIDUAL));
+  fieldCollection.AddItem("BGS_TEMPERATURE", COutputField("bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", FieldType::RESIDUAL));
 
 }
 

@@ -366,7 +366,7 @@ public:
 
   inline void AddCustomHistoryOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    COutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", type, "User-defined field");
+    COutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", type);
     string tokenName = name;
     replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
     replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
@@ -420,7 +420,7 @@ protected:
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
                                FieldType field_type = FieldType::DEFAULT ){
-    COutputField newField(field_name, format, groupname, field_type, description);
+    COutputField newField(field_name, format, groupname, description, field_type);
     newField.tokenRef = &historyFieldsAll.GetScope()[name];
     historyFieldsAll.AddItem(name, newField);
   }
@@ -478,7 +478,7 @@ protected:
 
   inline void AddCustomVolumeOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    COutputField customField(name, -1, "CUSTOM", "User-defined field", type);
+    COutputField customField(name, "CUSTOM", "User-defined field", type);
     string tokenName = name;
     replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
     replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
@@ -508,7 +508,7 @@ protected:
    * \param[in] description - Description of the volume field.
    */
   inline void AddVolumeOutput(string name, string field_name, string groupname, string description, FieldType type = FieldType::DEFAULT){
-    COutputField newField(field_name, -1, groupname, description, type);
+    COutputField newField(field_name, groupname, description, type);
     newField.tokenRef = &volumeFieldsAll.GetScope()[name];
     volumeFieldsAll.AddItem(name, newField);
   }

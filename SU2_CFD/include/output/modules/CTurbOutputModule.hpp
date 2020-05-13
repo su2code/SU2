@@ -14,5 +14,8 @@ public:
 
   void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
 
+  void LoadVolumeData(COutFieldCollection& fieldCollection) override;
+
+  void DefineVolumeFields(COutFieldCollection& fieldCollection) override;
 };
 

@@ -31,7 +31,7 @@ CTimeConvergenceModule::CTimeConvergenceModule(CConfig* config) : CSolverOutputM
 void CTimeConvergenceModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
 
   fieldCollection.AddItem("TIME_CONVERGENCE", COutputField("Time Convergence", ScreenOutputFormat::INTEGER,
-                                                            "CONVERGENCE", FieldType::DEFAULT, "Time Convergence indicator"));
+                                                            "CONVERGENCE", "Time Convergence indicator", FieldType::DEFAULT));
 }
 
 void CTimeConvergenceModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCollection){
@@ -40,16 +40,16 @@ void CTimeConvergenceModule::DefineHistoryFieldModifier(COutFieldCollection &fie
 
   for (auto field : coefficentFields){
     fieldCollection.AddItem(avgPrefix + field->first, COutputField("tavg["  + field->second.fieldName + "]",
-                            field->second.screenFormat, avgPrefix   + field->second.outputGroup, FieldType::AUTO_COEFFICIENT,"Time averaged values."));
+                            field->second.screenFormat, avgPrefix   + field->second.outputGroup, "Time averaged values.", FieldType::AUTO_COEFFICIENT));
   }
 
   const auto& wndConvergenceFields = fieldCollection.GetFieldsByKey(wndConvFields);
 
   for (const auto& field : wndConvergenceFields){
     fieldCollection.AddItem("CAUCHY_" + field->first, COutputField("Cauchy["  + field->second.fieldName + "]",
-                                                                         ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
-                                                                         FieldType::DEFAULT,
-                                                                         "Cauchy residual value of field set with WND_CONV_FIELD." ));
+                                                                   ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
+                                                                   "Cauchy residual value of field set with WND_CONV_FIELD." ,
+                                                                   FieldType::DEFAULT));
   }
 }
 
