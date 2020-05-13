@@ -5249,7 +5249,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
       sort(AuxQueue.begin(), AuxQueue.end(),
         [&](unsigned long iPoint, unsigned long jPoint) {
-          return nodes->GetnPoint(iPoint) <= nodes->GetnPoint(jPoint);
+          return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
         }
       );
 
@@ -5332,12 +5332,9 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
     for (auto iElem = 0ul; iElem < nElem_Bound[iMarker]; iElem++) {
 
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      if (Marker_Tag == "SEND_RECEIVE") {
-        for (auto iElem_Bound = 0ul; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          if (config->GetMarker_All_SendRecv(iMarker) < 0)
-            nodes->SetDomain(bound[iMarker][iElem_Bound]->GetNode(0), false);
-        }
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE &&
+          config->GetMarker_All_SendRecv(iMarker) < 0) {
+        nodes->SetDomain(bound[iMarker][iElem]->GetNode(0), false);
       }
 
       for (auto iNode = 0u; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
