@@ -58,6 +58,19 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   MeandPdU = new su2double[nVar];
   ProjFlux = new su2double [nVar];
 
+  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+
+  RHOS_INDEX    = variable->GetRhosIndex()    ;
+  RHO_INDEX     = variable->GetRhoIndex()     ;
+  P_INDEX       = variable->GetPIndex()       ;
+  T_INDEX       = variable->GetTIndex()       ;
+  TVE_INDEX     = variable->GetTveIndex()     ;
+  VEL_INDEX     = variable->GetVelIndex()     ;
+  H_INDEX       = variable->GetHIndex()       ;
+  A_INDEX       = variable->GetAIndex()       ;
+  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
+  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
+
 }
 
 CCentLax_NEMO::~CCentLax_NEMO(void) {

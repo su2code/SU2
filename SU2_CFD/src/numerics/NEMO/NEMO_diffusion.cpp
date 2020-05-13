@@ -65,6 +65,19 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
   Mean_GradPrimVar = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
+
+  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+
+  RHOS_INDEX    = variable->GetRhosIndex()    ;
+  RHO_INDEX     = variable->GetRhoIndex()     ;
+  P_INDEX       = variable->GetPIndex()       ;
+  T_INDEX       = variable->GetTIndex()       ;
+  TVE_INDEX     = variable->GetTveIndex()     ;
+  VEL_INDEX     = variable->GetVelIndex()     ;
+  H_INDEX       = variable->GetHIndex()       ;
+  A_INDEX       = variable->GetAIndex()       ;
+  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
+  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
@@ -157,9 +170,15 @@ void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
 
+  ofstream avggrad; //cat:
+  avggrad.open ("avggrad.txt", std::ios_base::app);
+  
+
   /*--- Update viscous residual ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++){
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
+    avggrad << "val_residual[" << iVar << "]="  << val_residual[iVar] << "\n";
+  }
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
@@ -223,7 +242,7 @@ void CAvgGrad_NEMO::GetViscousProjFlux(su2double *val_primvar,
   V   = val_primvar;
   GV  = val_gradprimvar;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    hs[iSpecies]  = variable->CalcHs(config, T, val_eve[iSpecies], iSpecies);
+    hs[iSpecies]= variable->CalcHs(config, T, val_eve[iSpecies], iSpecies);
 
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
@@ -618,6 +637,19 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
 
   Proj_Mean_GradPrimVar_Edge = new su2double[nPrimVarGrad];
   Edge_Vector = new su2double[3];
+
+  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+
+  RHOS_INDEX    = variable->GetRhosIndex()    ;
+  RHO_INDEX     = variable->GetRhoIndex()     ;
+  P_INDEX       = variable->GetPIndex()       ;
+  T_INDEX       = variable->GetTIndex()       ;
+  TVE_INDEX     = variable->GetTveIndex()     ;
+  VEL_INDEX     = variable->GetVelIndex()     ;
+  H_INDEX       = variable->GetHIndex()       ;
+  A_INDEX       = variable->GetAIndex()       ;
+  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
+  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
@@ -637,6 +669,7 @@ CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
 
   delete [] Proj_Mean_GradPrimVar_Edge;
   delete [] Edge_Vector;
+
 }
 
 void CAvgGradCorrected_NEMO::GetViscousProjFlux(su2double *val_primvar,

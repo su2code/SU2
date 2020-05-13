@@ -144,7 +144,7 @@ protected:
   Inflow_Mach_Total,      /*!< \brief Fan face mach number for each boundary. */
   InverseDesign;          /*!< \brief Inverse design functional for each boundary. */
 
-  su2double *Source;   /*!< \brief Auxiliart vector to store source terms. */
+  su2double *Source;   /*!< \brief Auxiliary vector to store source terms. */
 
   unsigned long **DonorGlobalIndex; /*!< \brief Value of the donor global index. */
   su2double **ActDisk_DeltaP,       /*!< \brief Value of the Delta P. */
@@ -338,7 +338,7 @@ protected:
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
 
 public:
@@ -359,32 +359,6 @@ public:
      * \brief Destructor of the class.
      */
   virtual ~CNEMOEulerSolver(void);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
-                                unsigned long val_Point);
 
 // /*!
 //    * \brief Compute slope limiter.
@@ -541,35 +515,27 @@ public:
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   /*!
-     * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-     *        and stores the result in the <i>Gradient_Primitive</i> variable.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config);
+   * \brief Compute the Green-Gauss gradient of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  //void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false) final;
 
   /*!
-     * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-     *        and stores the result in the <i>Gradient_Primitive</i> variable.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+   * \brief Compute the Least Squares gradient of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+ // void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false) final; 
 
   /*!
-     * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-     *        and stores the result in the <i>Gradient_Primitive</i> variable.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
-
-  /*!
-     * \brief A virtual member.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPrimVar_Gradient(CConfig *config);
+   * \brief Compute slope limiter.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  //void SetSolution_Limiter(CGeometry *geometry, CConfig *config) final;
 
   /*!
      * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -933,5 +899,12 @@ public:
    * \param[in] val_und_lapl_j Undivided laplacian at point j.
    */
   inline void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
+            It is a virtual function, because for the DG-FEM solver a different version is needed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  //inline void Set_OldSolution(CGeometry *geometry) final { nodes->Set_OldSolution(); }
 
 };

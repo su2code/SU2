@@ -38,27 +38,6 @@
 #include "../../include/variables/CNEMONSVariable.hpp"
 #include <math.h>
 
-CNEMONSVariable::CNEMONSVariable(unsigned long val_ndim,
-                                 unsigned long val_nvar,
-                                 unsigned long val_nprimvar,
-                                 unsigned long val_nprimvargrad,
-                                 unsigned long  npoint,
-                                 CConfig *config) : CNEMOEulerVariable(npoint,
-                                                                       val_ndim,
-                                                                       val_nvar,
-                                                                       val_nprimvar,
-                                                                       val_nprimvargrad,
-                                                                       config) {
-
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-
-  DiffusionCoeff.resize(nPoint,nSpecies)  = su2double(0.0);
-  Dij.resize(nPoint, nSpecies, nSpecies, 0.0);
-}
-
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure, su2double *val_massfrac,
                                  su2double *val_mach, su2double val_temperature,
                                  su2double val_temperature_ve,
@@ -78,6 +57,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure, su2double *val_massfrac
                                                                        val_nvarprim,
                                                                        val_nvarprimgrad,
                                                                        config) {
+                               
 
 
   Temperature_Ref = config->GetTemperature_Ref();
@@ -86,28 +66,12 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure, su2double *val_massfrac
   Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff.resize(nPoint,nSpecies)  = su2double(0.0);
   Dij.resize(nPoint, nSpecies, nSpecies, 0.0);
+  LaminarViscosity.resize(nPoint)  = su2double(0.0);
+  ThermalCond.resize(nPoint)  = su2double(0.0);  
+  ThermalCond_ve.resize(nPoint)  = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
+  
 }
-
-//CNEMONSVariable::CNEMONSVariable(su2double *val_solution, unsigned short val_ndim,
-//                                 unsigned long val_nvar,
-//                                 unsigned long val_nprimvar,
-//                                 unsigned long val_nprimvargrad,
-//                                 unsigned long npoint,
-//                                 CConfig *config) : CNEMOEulerVariable(val_solution,
-//                                                                       val_ndim,
-//                                                                       val_nvar,
-//                                                                       val_nprimvar,
-//                                                                       val_nprimvargrad,
-//                                                                       config) {
-
-//  Temperature_Ref = config->GetTemperature_Ref();
-//  Viscosity_Ref   = config->GetViscosity_Ref();
-//  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-//  Prandtl_Lam     = config->GetPrandtl_Lam();
-
-//  DiffusionCoeff.resize(nPoint,nSpecies)  = su2double(0.0);
-//  Dij.resize(nPoint, nSpecies, nSpecies, 0.0);
-//}
 
 void CNEMONSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
 
@@ -222,9 +186,7 @@ void CNEMONSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
       DiffusionCoeff(iPoint,iSpecies) = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
           / denom;
     }
-    //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    //    DiffusionCoeff[iSpecies] = 0.0;
-  }
+   }
 }
 
 void CNEMONSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
@@ -518,8 +480,12 @@ void CNEMONSVariable::SetTransportCoefficients_WBE(CConfig *config) {
 
     /*--- Calculate mixture laminar viscosity ---*/
     LaminarViscosity(iPoint) = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+
       LaminarViscosity(iPoint) += Xs[iSpecies]*mus[iSpecies]/phis[iSpecies];
+
+    }
 
     /*---+++                +++---*/
     /*--- Thermal conductivity ---*/
@@ -538,6 +504,7 @@ void CNEMONSVariable::SetTransportCoefficients_WBE(CConfig *config) {
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       ThermalCond(iPoint)    += Xs[iSpecies]*ks[iSpecies]/phis[iSpecies];
       ThermalCond_ve(iPoint) += Xs[iSpecies]*kves[iSpecies]/phis[iSpecies];
+
     }
   }
 }
@@ -573,7 +540,13 @@ bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *con
   bool nonPhys, bkup;
   unsigned short iVar;
 
+//  cout << "cat: CNEMONSVariable::SetPrimVar_Compressible" << endl << endl;
+
+//  for (int iVar = 0; iVar < nVar; iVar++) cout << "Solution[" << iPoint << "," << iVar << "]=" << Solution(iPoint,iVar) << endl;
+
+
   nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
@@ -593,5 +566,9 @@ bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *con
     break;
   }
 
+
   return nonPhys;
 }
+
+
+

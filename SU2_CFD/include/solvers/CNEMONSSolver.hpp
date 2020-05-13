@@ -27,6 +27,11 @@
 
 #pragma once
 
+#include <cmath>
+#include <iostream>
+#include <cstdlib>
+
+#include "CSolver.hpp"
 #include "CNEMOEulerSolver.hpp"
 #include "../variables/CNEMONSVariable.hpp"
 
@@ -98,6 +103,9 @@ private:
   AllBound_HF_Visc,       /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHF_Visc;    /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  su2double *primitives_aux; /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
+
+ 
 
 public:
 
@@ -146,6 +154,28 @@ public:
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   /*!
+   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_GG(CGeometry *geometry,
+                                CConfig *config,
+                                bool reconstruction = false) final;
+
+  /*!
+   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_LS(CGeometry *geometry,
+                                CConfig *config,
+                                bool reconstruction = false) final;
+
+  /*!
    * \brief Impose the symmetry boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -156,6 +186,22 @@ public:
    */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+//   /*!
+//   * \brief A virtual member.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetPrimitive_Gradient_GG(CGeometry *geometry,
+//                                CConfig *config);
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetPrimitive_Gradient_LS(CGeometry *geometry,
+//                                CConfig *config);
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -285,7 +331,7 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
   /*!
@@ -297,8 +343,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-                       CNumerics *second_solver, CConfig *config, unsigned short iMesh);
+ //void Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container,
+ //                     CNumerics *second_solver, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Get the skin friction coefficient.

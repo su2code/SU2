@@ -42,8 +42,7 @@ void CTemplateSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
 void CTemplateSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                        CConfig *config, unsigned short iMesh) { std::cout << "Cat: CTemplateSolver::Upwind_Residual" << std::endl << std::endl;
- }
+                                        CConfig *config, unsigned short iMesh) { }
 
 void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) { }

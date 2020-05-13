@@ -460,7 +460,7 @@ CSolver* CSolverFactory::createNEMOSolver(SUB_SOLVER_TYPE kindNEMO_Solver, CSolv
       NEMOSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
     case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
-      NEMOSolver = new CNEMONSSolver(geometry, config, iMGLevel);
+      NEMOSolver = new CNEMONSSolver(geometry, config, iMGLevel);    
       break;
     default:
       SU2_MPI::Error("NEMO flow solver not found", CURRENT_FUNCTION);

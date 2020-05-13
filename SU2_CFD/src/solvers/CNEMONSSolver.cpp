@@ -27,6 +27,8 @@
 
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CNEMONSSolver.hpp"
+#include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsLeastSquares.hpp"
 
 CNEMONSSolver::CNEMONSSolver(void) : CNEMOEulerSolver() {
 
@@ -207,6 +209,9 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
   Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
   Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+
+  /*--- Define some auxiliary vectors related to the Source term evolution ---*/
+  Source      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
 
   /*--- Allocate arrays for conserved variable limits ---*/
   lowerlimit = new su2double[nVar];
@@ -563,6 +568,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Mach_Inf           = config->GetMach();
+  Velocity_Inf       = config->GetVelocity_FreeStreamND();
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
@@ -606,31 +612,35 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
   }
 
+   /*--- Create a CVariable that stores the free-stream values ---*/
 
-  /*--- Create a CVariable that stores the free-stream values ---*/
   node_infty = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
                                    Mvec_Inf, Temperature_Inf,
-                                   Temperature_ve_Inf, nPoint, nDim, nVar,
+                                   Temperature_ve_Inf, 1, nDim, nVar,
                                    nPrimVar, nPrimVarGrad, config);
-  check_infty = node_infty->SetPrimVar_Compressible(iPoint, config);
 
-  Velocity_Inf = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_Inf[iDim] = node_infty->GetVelocity(iPoint, iDim);
+
+  check_infty = node_infty->SetPrimVar_Compressible(0, config); 
+
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    nodes = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
+  nodes = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
                                        Mvec_Inf, Temperature_Inf,
                                        Temperature_ve_Inf, nPoint, nDim, nVar,
                                        nPrimVar, nPrimVarGrad, config);
 
+  
+
+  SetBaseClassPointerToNodes();
+
+
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    check = nodes->SetPrimVar_Compressible(iPoint, config);
+    check = nodes->SetPrimVar_Compressible(iPoint, config); 
 
     if (check) {
+
       bool ionization;
       unsigned short iEl, nHeavy, nEl, *nElStates;
       su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
@@ -765,12 +775,17 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /* Auxiliary vector for storing primitives for gradient computation in viscous flow */
+  /* V = [Y1, ... , Yn, T, Tve, ... ] */
+  primitives_aux = new su2double[nPrimVar];
+
   /*--- Perform the MPI communication of the solution ---*/
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
   /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
+
 }
 
 CNEMONSSolver::~CNEMONSSolver(void) {
@@ -841,6 +856,8 @@ CNEMONSSolver::~CNEMONSSolver(void) {
     delete [] Buffet_Sensor;
   }
 
+  if (primitives_aux != NULL) delete [] primitives_aux;
+
 }
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -850,11 +867,12 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint, ErrorCounter = 0;
 
   unsigned long InnerIter = config->GetInnerIter();
+  bool muscl              = config->GetMUSCL_NEMO();
   bool disc_adjoint       = config->GetDiscrete_Adjoint();
   bool implicit           = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
   bool center             = (config->GetKind_ConvNumScheme_NEMO() == SPACE_CENTERED);
   bool center_jst         = (center && config->GetKind_Centered_NEMO() == JST);
-  bool limiter_flow       = ((config->GetKind_SlopeLimit_NEMO() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
+  bool limiter            = ((config->GetKind_SlopeLimit_NEMO() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool limiter_turb       = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada         = (config->GetKind_SlopeLimit_NEMO() == VAN_ALBADA_EDGE);
   bool nonPhys;
@@ -879,8 +897,9 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   }
 
   /*--- Allowing for Primitive Variables to be passed ---*/
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
+  //InitiateComms(geometry, config, PRIMITIVE);
+  //CompleteComms(geometry, config, PRIMITIVE);
+
 
   /*--- Artificial dissipation ---*/
   if (center && !Output) {
@@ -891,22 +910,40 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     }
   }
 
-  /*--- Gradient computation ---*/
+
+
+  /*--- Upwind second order reconstruction ---*/
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+
+    /*--- Calculate the gradients ---*/
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetSolution_Gradient_GG(geometry, config, true);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetSolution_Gradient_LS(geometry, config, true);
+    }
+
+    /*--- Limiter computation ---*/
+    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
+      SetSolution_Limiter(geometry, config);
+    }
+
+  }
+
+
+ 
+  /*--- Primitive gradient computation ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
-    SetSolution_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
-    SetSolution_Gradient_LS(geometry, config);
-
   }
 
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb)
-      && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
-
+  //if ((iMesh == MESH_0) && (limiter_flow || limiter_turb)
+  //    && !Output && !van_albada) { SetSolution_Limiter(geometry, config); }
 
   // THIS ISNT SET UP YET
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
@@ -946,6 +983,302 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       //solver_container[NEMO_SOL]->SetOmega_Max(Omega_Max);
     }
   }
+
+}
+
+//void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
+//
+//  unsigned long iPoint, jPoint, iEdge, iVertex;
+//  unsigned short iDim, iSpecies, iVar, iMarker, RHOS_INDEX, RHO_INDEX;
+//  su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
+//      Partial_Gradient, Partial_Res, *Normal;
+//  su2double rho_i,rho_j;
+//
+//  /*--- Initialize arrays ---*/
+//
+//  /*--- Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w]^T ---*/
+//  PrimVar_Vertex = new su2double [nPrimVarGrad];
+//  PrimVar_i = new su2double [nPrimVarGrad];
+//  PrimVar_j = new su2double [nPrimVarGrad];
+//
+//  /*--- Get indices of species & mixture density ---*/
+//  RHOS_INDEX = nodes->GetRhosIndex();
+//  RHO_INDEX  = nodes->GetRhoIndex();
+//
+//  /*--- Set Gradient_Primitive to zero ---*/
+//  nodes->SetGradient_PrimitiveZero();
+//
+//  /*--- Loop interior edges ---*/
+//  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+//    iPoint = geometry->edge[iEdge]->GetNode(0);
+//    jPoint = geometry->edge[iEdge]->GetNode(1);
+//
+//     
+//
+//    /*--- Pull primitives from CVariable ---*/
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+//      PrimVar_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
+//      PrimVar_j[iVar] = nodes->GetPrimitive(jPoint,iVar);
+//    }
+//
+//   
+//    Normal = geometry-> edge[iEdge]->GetNormal();
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+//      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Partial_Res = PrimVar_Average*Normal[iDim];
+//        if (geometry->node[iPoint]->GetDomain())
+//          nodes->AddGradient_Primitive(iPoint, iVar, iDim, Partial_Res);
+//        if (geometry->node[jPoint]->GetDomain())
+//          nodes->SubtractGradient_Primitive(jPoint, iVar, iDim, Partial_Res);
+//      }
+//    }
+//  }
+//
+//  /*--- Loop boundary edges ---*/
+//  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+//    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//      if (geometry->node[iPoint]->GetDomain()) {
+//
+//        /*--- Get primitives from CVariable ---*/
+//        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//          PrimVar_Vertex[iVar] = nodes->GetPrimitive(iPoint, iVar);
+//
+//        /*--- Modify species density to mass concentration ---*/
+//        rho_i = nodes->GetPrimitive(iPoint, RHO_INDEX);
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          PrimVar_Vertex[RHOS_INDEX+iSpecies] = PrimVar_Vertex[RHOS_INDEX+iSpecies]/rho_i;
+//
+//        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
+//            nodes->SubtractGradient_Primitive(iPoint, iVar, iDim, Partial_Res);
+//          }
+//      }
+//    }
+//  }
+//
+//  /*--- Update gradient value ---*/
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Partial_Gradient = nodes->GetGradient_Primitive(iPoint, iVar,iDim) / (geometry->node[iPoint]->GetVolume());
+//        nodes->SetGradient_Primitive(iPoint, iVar, iDim, Partial_Gradient);
+//
+//      }
+//    }
+//  }
+//
+//  delete [] PrimVar_Vertex;
+//  delete [] PrimVar_i;
+//  delete [] PrimVar_j;
+//
+//  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
+//  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
+//
+//}
+//
+//void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
+//
+//
+//  unsigned short iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
+//  unsigned long iPoint, jPoint;
+//  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
+//      r23_b, r33, rho_i, rho_j, weight, product, detR2, z11, z12, z13, z22, z23, z33;
+//  bool singular;
+//
+//  //Unused at the momemnt
+//  //unsigned short iSpecies;
+//  //unsigned long
+//
+//  /*--- Initialize arrays, Primitive variables:
+//   [Y1, ..., YNs, T, Tve, u, v, w, P]^T ---*/
+//  PrimVar_i      = new su2double [nPrimVarGrad];
+//  PrimVar_j      = new su2double [nPrimVarGrad];
+//
+//  /*--- Get indices of species & mixture density ---*/
+//  RHOS_INDEX = nodes->GetRhosIndex();
+//  RHO_INDEX  = nodes->GetRhoIndex();
+//
+//  /*--- Loop over points of the grid ---*/
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//
+//    /*--- Set the value of singulare ---*/
+//    singular = false;
+//
+//    /*--- Get coordinates ---*/
+//    Coord_i = geometry->node[iPoint]->GetCoord();
+//
+//    /*--- Get primitives from CVariable ---*/
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//      PrimVar_i[iVar] = nodes->GetPrimitive(iPoint ,iVar);
+//
+//    /*--- Inizialization of variables ---*/
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Cvector[iVar][iDim] = 0.0;
+//
+//    r11 = 0.0; r12   = 0.0; r13   = 0.0; r22 = 0.0;
+//    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
+//
+//    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+//      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//      Coord_j = geometry->node[jPoint]->GetCoord();
+//
+//      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//        PrimVar_j[iVar] = nodes->GetPrimitive(jPoint, iVar);
+//
+//      weight = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+//
+//      /*--- Sumations for entries of upper triangular matrix R ---*/
+//      if (weight != 0.0){
+//        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+//        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+//        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+//        if (nDim == 3) {
+//          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+//          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+//          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+//          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+//        }
+//
+//        /*--- Entries of c:= transpose(A)*b ---*/
+//        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim]) *
+//                (PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+//      }
+//    }
+//
+//    /*--- Entries of upper triangular matrix R ---*/
+//    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+//    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+//    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+//
+//    if (nDim == 3) {
+//      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+//      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+//      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
+//    }
+//
+//    /*--- Compute determinant ---*/
+//    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
+//    else detR2 = (r11*r22*r33)*(r11*r22*r33);
+//
+//    /*--- Detect singular matrices ---*/
+//    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
+//
+//    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+//    if (singular) {
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        for (jDim = 0; jDim < nDim; jDim++)
+//          Smatrix[iDim][jDim] = 0.0;
+//    }
+//    else {
+//      if (nDim == 2) {
+//        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+//        Smatrix[0][1] = -r11*r12/detR2;
+//        Smatrix[1][0] = Smatrix[0][1];
+//        Smatrix[1][1] = r11*r11/detR2;
+//      }
+//      else {
+//        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
+//        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
+//        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+//        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+//        Smatrix[0][2] = (z13*z33)/detR2;
+//        Smatrix[1][0] = Smatrix[0][1];
+//        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+//        Smatrix[1][2] = (z23*z33)/detR2;
+//        Smatrix[2][0] = Smatrix[0][2];
+//        Smatrix[2][1] = Smatrix[1][2];
+//        Smatrix[2][2] = (z33*z33)/detR2;
+//      }
+//    }
+//
+//    /*--- Computation of the gradient: S*c ---*/
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        product = 0.0;
+//        for (jDim = 0; jDim < nDim; jDim++)
+//          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
+//        nodes->SetGradient_Primitive(iPoint, iVar, iDim, product);
+//      }
+//    }
+//  }
+//
+//  delete [] PrimVar_i;
+//  delete [] PrimVar_j;
+//
+//  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
+//  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
+//
+//}
+
+void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+
+  unsigned long iPoint, iVar;
+  unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
+  
+  auto& gradient = nodes->GetGradient_Primitive();
+
+  /*--- Get indices of species & mixture density ---*/
+  RHOS_INDEX = nodes->GetRhosIndex();
+  RHO_INDEX  = nodes->GetRhoIndex();
+
+  /*--- Modify species density to mass concentration ---*/
+  for ( iPoint = 0; iPoint < nPoint; iPoint++){
+    for( iVar = 0; iVar < nPrimVar; iVar++) {
+      primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
+    }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
+    for( iVar = 0; iVar < nPrimVar; iVar++)
+      nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
+  }
+
+  const auto& primitives = nodes->GetPrimitive_Aux();
+
+  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
+                             *config, primitives, 0, nPrimVarGrad, gradient);
+}
+
+void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+  bool weighted;
+  unsigned long iPoint, iVar;
+  unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
+
+  auto& rmatrix = nodes->GetRmatrix();
+  auto& gradient = nodes->GetGradient_Primitive();
+
+
+  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+
+  /*--- Get indices of species & mixture density ---*/
+  RHOS_INDEX = nodes->GetRhosIndex();
+  RHO_INDEX  = nodes->GetRhoIndex();
+
+  /*--- Modify species density to mass concentration ---*/
+  for ( iPoint = 0; iPoint < nPoint; iPoint++){
+    for( iVar = 0; iVar < nPrimVar; iVar++) {
+      primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
+    }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
+    for( iVar = 0; iVar < nPrimVar; iVar++)
+      nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
+  }
+
+  const auto& primitives = nodes->GetPrimitive_Aux();
+  
+  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
+                               weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
 void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
@@ -1183,9 +1516,10 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
 
 void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CSolver **solution_container,
-                                     CNumerics *numerics,
+                                     CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
+
   bool implicit, err;
   unsigned short iVar, jVar;
   unsigned long iPoint, jPoint, iEdge;
@@ -1193,19 +1527,19 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   /*--- Determine time integration scheme ---*/
   implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
 
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  numerics->SetPIndex      ( nodes->GetPIndex()       );
-  numerics->SetTIndex      ( nodes->GetTIndex()       );
-  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  numerics->SetHIndex      ( nodes->GetHIndex()       );
-  numerics->SetAIndex      ( nodes->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
-  std::cout << "Cat: CNEMONSSolver::Viscous_Residual" << std::endl << std::endl;
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  //numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+  //numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+  //numerics->SetPIndex      ( nodes->GetPIndex()       );
+  //numerics->SetTIndex      ( nodes->GetTIndex()       );
+  //numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+  //numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+  //numerics->SetHIndex      ( nodes->GetHIndex()       );
+  //numerics->SetAIndex      ( nodes->GetAIndex()       );
+  //numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+  //numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1278,314 +1612,323 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   } //iEdge
 }
 
-void CNEMONSSolver::Source_Residual(CGeometry *geometry,
-                                    CSolver **solution_container,
-                                    CNumerics *numerics,
-                                    CNumerics *second_solver, CConfig *config,
-                                    unsigned short iMesh) {
-  bool implicit, err;
-  unsigned short iMarker, iVar, jVar;
-  unsigned long iPoint, iVertex;
-  unsigned long eAxi_local,  eChm_local,  eVib_local;
-  unsigned long eAxi_global, eChm_global, eVib_global;
-  int rank = MASTER_NODE;
-
-  /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-  err = false;
-
-  /*--- Initialize error counters ---*/
-  eAxi_local = 0;
-  eChm_local = 0;
-  eVib_local = 0;
-
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  numerics->SetPIndex      ( nodes->GetPIndex()       );
-  numerics->SetTIndex      ( nodes->GetTIndex()       );
-  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  numerics->SetHIndex      ( nodes->GetHIndex()       );
-  numerics->SetAIndex      ( nodes->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
-  /*--- loop over interior points ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    //    if (geometry->node[iPoint]->GetSolidBoundary()) {
-
-    /*--- Set conserved & primitive variables  ---*/
-    numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
-    numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
-
-    /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint)  );
-    numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint)  );
-    numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
-    numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint)   );
-    numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint)  );
-
-    /*--- Set volume of the dual grid cell ---*/
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[iPoint]->GetCoord() );
-
-    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-    if (config->GetExtraOutput()) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
-      }
-    }
-
-    /*--- Initialize source vector ---*/
-    for (iVar = 0; iVar< nVar; iVar++) Source[iVar] = 0.0;
-
-    /*--- Compute axisymmetric source terms (if needed) ---*/
-    if (config->GetAxisymmetric()) {
-      numerics->ComputeAxisymmetric(Residual, Source, Jacobian_i, config);
-
-      /*--- Check for errors in the axisymmetric source ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        if (err)
-          break;
-        if (Residual[iVar] != Residual[iVar])
-          err = true;
-        if (implicit)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
-              err = true;
-              break;
-            }
-      }
-
-      /*--- Apply the update to the linear system ---*/
-      if (!err) {
-        LinSysRes.AddBlock(iPoint, Residual);
-        if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
-      else
-        eAxi_local++;
-    }
-
-    /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
-
-    /*--- Check for errors in the Chemical source term ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (err)
-        break;
-      if (Residual[iVar] != Residual[iVar])
-        err = true;
-      if (implicit)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
-            err = true;
-            break;
-          }
-    }
-
-    /*--- Apply the chemical sources to the linear system ---*/
-    if (!err) {
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    } else
-      eChm_local++;
-
-    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-    if (config->GetExtraOutput()) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
-      }
-    }
-
-    /*--- Compute vibrational energy relaxation ---*/
-    // NOTE: Jacobians don't account for relaxation time derivatives
-    numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
-
-    /*--- Check for errors in the relaxation source term ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (err)
-        break;
-      if (Residual[iVar] != Residual[iVar])
-        err = true;
-      if (implicit)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
-            err = true;
-            break;
-          }
-    }
-
-    /*--- Apply the vibrational relaxation terms to the linear system ---*/
-    if (!err) {
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    } else
-      eVib_local++;
-
-    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-    if (config->GetExtraOutput()) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
-      }
-    }
-  }
-
-  /*-#ifndef NO_MPI
-  rank = MPI::COMM_WORLD.Get_rank();
-  MPI::COMM_WORLD.Reduce(&eAxi_local, &eAxi_global, 1, MPI::UNSIGNED_LONG,
-                         MPI::SUM, MASTER_NODE                             );
-  MPI::COMM_WORLD.Reduce(&eChm_local, &eChm_global, 1, MPI::UNSIGNED_LONG,
-                         MPI::SUM, MASTER_NODE                             );
-  MPI::COMM_WORLD.Reduce(&eVib_local, &eVib_global, 1, MPI::UNSIGNED_LONG,
-                         MPI::SUM, MASTER_NODE                             );
-  #else
-  eAxi_global = eAxi_local;
-  eChm_global = eChm_local;
-  eVib_global = eVib_local;
-  #endif
-
-  if ((rank == MASTER_NODE) &&
-      (
-       (eAxi_global != 0) ||
-       (eChm_global != 0) ||
-       (eVib_global != 0)
-       )
-      ) {
-    cout << "Warning!! Instances of NaN in the following source terms: " << endl;
-    cout << "Axisymmetry: " << eAxi_global << endl;
-    cout << "Chemical:    " << eChm_global << endl;
-    cout << "Vib. Relax:  " << eVib_global << endl;
-  }
-  -*/
-
-  /*--- Loop over boundaries ---*/
-  //  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-  //		switch (config->GetMarker_All_Boundary(iMarker)) {
-  //      case EULER_WALL: case SYMMETRY_PLANE: case FAR_FIELD:
-  //      case HEAT_FLUX: case ISOTHERMAL:
-  //
-  //        /*--- Loop over all of the vertices on this boundary marker ---*/
-  //        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-  //          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-  //
-  //          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-  //          if (geometry->node[iPoint]->GetDomain()) {
-  //            /*--- Set conserved & primitive variables  ---*/
-  //            numerics->SetConservative(node[iPoint]->GetSolution(),
-  //                                      node[iPoint]->GetSolution());
-  //            numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),
-  //                                      node[iPoint]->GetPrimVar() );
-  //            numerics->SetdPdU        (node[iPoint]->GetdPdU(),
-  //                                      node[iPoint]->GetdPdU());
-  //            numerics->SetdTdU        (node[iPoint]->GetdTdU(),
-  //                                      node[iPoint]->GetdTdU());
-  //            numerics->SetdTvedU      (node[iPoint]->GetdTvedU(),
-  //                                      node[iPoint]->GetdTvedU());
-  //
-  //            /*--- Set volume of the dual grid cell ---*/
-  //            numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-  //
-  //            /*--- Compute the non-equilibrium chemistry ---*/
-  //            numerics->ComputeChemistry(Residual, Jacobian_i, config);
-  //            LinSysRes.SubtractBlock(iPoint, Residual);
-  //            if (implicit)
-  //              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-  //
-  //            /*--- Error checking ---*/
-  //            for (iVar = 0; iVar < nVar; iVar++)
-  //              if (Residual[iVar] != Residual[iVar])
-  //                cout << "NaN in Chemistry Residual" << endl;
-  //            if (implicit) {
-  //              for (iVar = 0; iVar < nVar; iVar++) {
-  //                for (jVar = 0; jVar < nVar; jVar++) {
-  //                  if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-  //                    cout << "NaN in Chemistry Jacobian i" << endl;
-  //                }
-  //              }
-  //            }
-  //            /*--- Compute vibrational energy relaxation ---*/
-  //              // NOTE: Jacobians don't account for relaxation time derivatives
-  //            numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
-  //            LinSysRes.SubtractBlock(iPoint, Residual);
-  //            if (implicit)
-  //              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-  //
-  //            /*--- Error checking ---*/
-  //            for (iVar = 0; iVar < nVar; iVar++)
-  //              if (Residual[iVar] != Residual[iVar])
-  //                cout << "NaN in vibrational Residual" << endl;
-  //            if (implicit) {
-  //              for (iVar = 0; iVar < nVar; iVar++) {
-  //                for (jVar = 0; jVar < nVar; jVar++) {
-  //                  if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-  //                    cout << "NaN in vibrational Jacobian i" << endl;
-  //                }
-  //              }
-  //            }
-  //          }
-  //        }
-  //        break;
-  //
-  //      case HEAT_FLUX_NONCATALYTIC: case HEAT_FLUX_CATALYTIC:
-  //
-  //        /*--- Loop over all of the vertices on this boundary marker ---*/
-  //        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-  //          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-  //
-  //          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-  //          if (geometry->node[iPoint]->GetDomain()) {
-  //            /*--- Set conserved & primitive variables  ---*/
-  //            numerics->SetConservative(node[iPoint]->GetSolution(),
-  //                                      node[iPoint]->GetSolution());
-  //            numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),
-  //                                      node[iPoint]->GetPrimVar() );
-  //            numerics->SetdPdU        (node[iPoint]->GetdPdU(),
-  //                                      node[iPoint]->GetdPdU());
-  //            numerics->SetdTdU        (node[iPoint]->GetdTdU(),
-  //                                      node[iPoint]->GetdTdU());
-  //            numerics->SetdTvedU      (node[iPoint]->GetdTvedU(),
-  //                                      node[iPoint]->GetdTvedU());
-  //
-  //            /*--- Set volume of the dual grid cell ---*/
-  //            numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-  //
-  //            /*--- Compute vibrational energy relaxation ---*/
-  //              // NOTE: Jacobians don't account for relaxation time derivatives
-  //            numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
-  //            LinSysRes.SubtractBlock(iPoint, Residual);
-  //            if (implicit)
-  //              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-  //
-  //            /*--- Error checking ---*/
-  //            for (iVar = 0; iVar < nVar; iVar++)
-  //              if (Residual[iVar] != Residual[iVar])
-  //                cout << "NaN in vibrational Residual" << endl;
-  //            if (implicit) {
-  //              for (iVar = 0; iVar < nVar; iVar++) {
-  //                for (jVar = 0; jVar < nVar; jVar++) {
-  //                  if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-  //                    cout << "NaN in vibrational Jacobian i" << endl;
-  //                }
-  //              }
-  //            }
-  //          }
-  //        }
-  //        break;
-  //
-  //      case ISOTHERMAL_NONCATALYTIC: case ISOTHERMAL_CATALYTIC:
-  //          // NO SOURCE TERMS TO BE SET HERE!
-  //        break;
-  //    }
-  //  }
-  //  }
-}
+//void CNEMONSSolver::Source_Residual(CGeometry *geometry,
+//                                    CSolver **solution_container,
+//                                    CNumerics **numerics_container,
+//                                    CNumerics *second_solver, CConfig *config,
+//                                    unsigned short iMesh) {
+//
+//
+//
+//  bool implicit, err;
+//  unsigned short iMarker, iVar, jVar;
+//  unsigned long iPoint, iVertex;
+//  unsigned long eAxi_local,  eChm_local,  eVib_local;
+//  unsigned long eAxi_global, eChm_global, eVib_global;
+//  int rank = MASTER_NODE;
+//
+//  /*--- Assign booleans ---*/
+//  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+//  err = false;
+//
+//  /*--- Initialize error counters ---*/
+//  eAxi_local = 0;
+//  eChm_local = 0;
+//  eVib_local = 0;
+//  
+//
+//  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+//  
+//
+//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+//  numerics->SetPIndex      ( nodes->GetPIndex()       );
+//  numerics->SetTIndex      ( nodes->GetTIndex()       );
+//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+//  numerics->SetHIndex      ( nodes->GetHIndex()       );
+//  numerics->SetAIndex      ( nodes->GetAIndex()       );
+//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+//
+//  
+//
+//  /*--- loop over interior points ---*/
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    //    if (geometry->node[iPoint]->GetSolidBoundary()) {
+//
+//    /*--- Set conserved & primitive variables  ---*/
+//    numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
+//    numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
+//
+//    /*--- Pass supplementary information to CNumerics ---*/
+//    numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint)  );
+//    numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint)  );
+//    numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+//    numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint)   );
+//    numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint)  );
+//
+//    /*--- Set volume of the dual grid cell ---*/
+//    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+//    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                       geometry->node[iPoint]->GetCoord() );
+//
+//    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+//    if (config->GetExtraOutput()) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
+//      }
+//    }
+//
+//    /*--- Initialize source vector ---*/
+//    for (iVar = 0; iVar< nVar; iVar++) Source[iVar] = 0.0;
+//
+//    /*--- Compute axisymmetric source terms (if needed) ---*/
+//    if (config->GetAxisymmetric()) {
+//      numerics->ComputeAxisymmetric(Residual, Source, Jacobian_i, config);
+//
+//      /*--- Check for errors in the axisymmetric source ---*/
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        if (err)
+//          break;
+//        if (Residual[iVar] != Residual[iVar])
+//          err = true;
+//        if (implicit)
+//          for (jVar = 0; jVar < nVar; jVar++)
+//            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
+//              err = true;
+//              break;
+//            }
+//      }
+//
+//      /*--- Apply the update to the linear system ---*/
+//      if (!err) {
+//        LinSysRes.AddBlock(iPoint, Residual);
+//        if (implicit)
+//          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//      }
+//      else
+//        eAxi_local++;
+//    }
+//
+//    /*--- Compute the non-equilibrium chemistry ---*/
+//    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
+//
+//    /*--- Check for errors in the Chemical source term ---*/
+//    err = false;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      if (err)
+//        break;
+//      if (Residual[iVar] != Residual[iVar])
+//        err = true;
+//      if (implicit)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
+//            err = true;
+//            break;
+//          }
+//    }
+//
+//    /*--- Apply the chemical sources to the linear system ---*/
+//    if (!err) {
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      if (implicit)
+//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//    } else
+//      eChm_local++;
+//
+//    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+//    if (config->GetExtraOutput()) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+//      }
+//    }
+//
+//    /*--- Compute vibrational energy relaxation ---*/
+//    // NOTE: Jacobians don't account for relaxation time derivatives
+//    numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
+//
+//    /*--- Check for errors in the relaxation source term ---*/
+//    err = false;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      if (err)
+//        break;
+//      if (Residual[iVar] != Residual[iVar])
+//        err = true;
+//      if (implicit)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
+//            err = true;
+//            break;
+//          }
+//    }
+//
+//    /*--- Apply the vibrational relaxation terms to the linear system ---*/
+//    if (!err) {
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      if (implicit)
+//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//    } else
+//      eVib_local++;
+//
+//    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+//    if (config->GetExtraOutput()) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+//      }
+//    }
+//  }
+//
+//  /*-#ifndef NO_MPI
+//  rank = MPI::COMM_WORLD.Get_rank();
+//  MPI::COMM_WORLD.Reduce(&eAxi_local, &eAxi_global, 1, MPI::UNSIGNED_LONG,
+//                         MPI::SUM, MASTER_NODE                             );
+//  MPI::COMM_WORLD.Reduce(&eChm_local, &eChm_global, 1, MPI::UNSIGNED_LONG,
+//                         MPI::SUM, MASTER_NODE                             );
+//  MPI::COMM_WORLD.Reduce(&eVib_local, &eVib_global, 1, MPI::UNSIGNED_LONG,
+//                         MPI::SUM, MASTER_NODE                             );
+//  #else
+//  eAxi_global = eAxi_local;
+//  eChm_global = eChm_local;
+//  eVib_global = eVib_local;
+//  #endif
+//
+//  if ((rank == MASTER_NODE) &&
+//      (
+//       (eAxi_global != 0) ||
+//       (eChm_global != 0) ||
+//       (eVib_global != 0)
+//       )
+//      ) {
+//    cout << "Warning!! Instances of NaN in the following source terms: " << endl;
+//    cout << "Axisymmetry: " << eAxi_global << endl;
+//    cout << "Chemical:    " << eChm_global << endl;
+//    cout << "Vib. Relax:  " << eVib_global << endl;
+//  }
+//  -*/
+//
+//  /*--- Loop over boundaries ---*/
+//  //  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//  //		switch (config->GetMarker_All_Boundary(iMarker)) {
+//  //      case EULER_WALL: case SYMMETRY_PLANE: case FAR_FIELD:
+//  //      case HEAT_FLUX: case ISOTHERMAL:
+//  //
+//  //        /*--- Loop over all of the vertices on this boundary marker ---*/
+//  //        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//  //          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//  //
+//  //          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//  //          if (geometry->node[iPoint]->GetDomain()) {
+//  //            /*--- Set conserved & primitive variables  ---*/
+//  //            numerics->SetConservative(node[iPoint]->GetSolution(),
+//  //                                      node[iPoint]->GetSolution());
+//  //            numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),
+//  //                                      node[iPoint]->GetPrimVar() );
+//  //            numerics->SetdPdU        (node[iPoint]->GetdPdU(),
+//  //                                      node[iPoint]->GetdPdU());
+//  //            numerics->SetdTdU        (node[iPoint]->GetdTdU(),
+//  //                                      node[iPoint]->GetdTdU());
+//  //            numerics->SetdTvedU      (node[iPoint]->GetdTvedU(),
+//  //                                      node[iPoint]->GetdTvedU());
+//  //
+//  //            /*--- Set volume of the dual grid cell ---*/
+//  //            numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+//  //
+//  //            /*--- Compute the non-equilibrium chemistry ---*/
+//  //            numerics->ComputeChemistry(Residual, Jacobian_i, config);
+//  //            LinSysRes.SubtractBlock(iPoint, Residual);
+//  //            if (implicit)
+//  //              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//  //
+//  //            /*--- Error checking ---*/
+//  //            for (iVar = 0; iVar < nVar; iVar++)
+//  //              if (Residual[iVar] != Residual[iVar])
+//  //                cout << "NaN in Chemistry Residual" << endl;
+//  //            if (implicit) {
+//  //              for (iVar = 0; iVar < nVar; iVar++) {
+//  //                for (jVar = 0; jVar < nVar; jVar++) {
+//  //                  if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+//  //                    cout << "NaN in Chemistry Jacobian i" << endl;
+//  //                }
+//  //              }
+//  //            }
+//  //            /*--- Compute vibrational energy relaxation ---*/
+//  //              // NOTE: Jacobians don't account for relaxation time derivatives
+//  //            numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+//  //            LinSysRes.SubtractBlock(iPoint, Residual);
+//  //            if (implicit)
+//  //              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//  //
+//  //            /*--- Error checking ---*/
+//  //            for (iVar = 0; iVar < nVar; iVar++)
+//  //              if (Residual[iVar] != Residual[iVar])
+//  //                cout << "NaN in vibrational Residual" << endl;
+//  //            if (implicit) {
+//  //              for (iVar = 0; iVar < nVar; iVar++) {
+//  //                for (jVar = 0; jVar < nVar; jVar++) {
+//  //                  if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+//  //                    cout << "NaN in vibrational Jacobian i" << endl;
+//  //                }
+//  //              }
+//  //            }
+//  //          }
+//  //        }
+//  //        break;
+//  //
+//  //      case HEAT_FLUX_NONCATALYTIC: case HEAT_FLUX_CATALYTIC:
+//  //
+//  //        /*--- Loop over all of the vertices on this boundary marker ---*/
+//  //        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//  //          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//  //
+//  //          /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//  //          if (geometry->node[iPoint]->GetDomain()) {
+//  //            /*--- Set conserved & primitive variables  ---*/
+//  //            numerics->SetConservative(node[iPoint]->GetSolution(),
+//  //                                      node[iPoint]->GetSolution());
+//  //            numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),
+//  //                                      node[iPoint]->GetPrimVar() );
+//  //            numerics->SetdPdU        (node[iPoint]->GetdPdU(),
+//  //                                      node[iPoint]->GetdPdU());
+//  //            numerics->SetdTdU        (node[iPoint]->GetdTdU(),
+//  //                                      node[iPoint]->GetdTdU());
+//  //            numerics->SetdTvedU      (node[iPoint]->GetdTvedU(),
+//  //                                      node[iPoint]->GetdTvedU());
+//  //
+//  //            /*--- Set volume of the dual grid cell ---*/
+//  //            numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+//  //
+//  //            /*--- Compute vibrational energy relaxation ---*/
+//  //              // NOTE: Jacobians don't account for relaxation time derivatives
+//  //            numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+//  //            LinSysRes.SubtractBlock(iPoint, Residual);
+//  //            if (implicit)
+//  //              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//  //
+//  //            /*--- Error checking ---*/
+//  //            for (iVar = 0; iVar < nVar; iVar++)
+//  //              if (Residual[iVar] != Residual[iVar])
+//  //                cout << "NaN in vibrational Residual" << endl;
+//  //            if (implicit) {
+//  //              for (iVar = 0; iVar < nVar; iVar++) {
+//  //                for (jVar = 0; jVar < nVar; jVar++) {
+//  //                  if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+//  //                    cout << "NaN in vibrational Jacobian i" << endl;
+//  //                }
+//  //              }
+//  //            }
+//  //          }
+//  //        }
+//  //        break;
+//  //
+//  //      case ISOTHERMAL_NONCATALYTIC: case ISOTHERMAL_CATALYTIC:
+//  //          // NO SOURCE TERMS TO BE SET HERE!
+//  //        break;
+//  //    }
+//  //  }
+//  //  }
+//}
 
 void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
@@ -1641,10 +1984,10 @@ void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /*--- Get reference values from the freestream node. ---*/
   RefVel2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_Inf[iDim] = node_infty->GetVelocity(1,iDim);
+    Velocity_Inf[iDim] = node_infty->GetVelocity(0,iDim);
     RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
-  RefDensity  = node_infty->GetDensity(1);
+  RefDensity  = node_infty->GetDensity(0);
 
   factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
@@ -2520,6 +2863,19 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
+
+
+      cout << "cat: Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << endl;
+
+      cout << "cat: Res_Visc[nSpecies+nDim+1]=" << Res_Visc[nSpecies+nDim+1] << endl;
+
+      cout << "cat: Ti=" << Ti << endl;
+      cout << "cat: Tj=" << Tj << endl;
+      cout << "cat: Tvei=" << Tvei << endl;
+      cout << "cat: Tvej=" << Tvej << endl;
+      cout << "cat: ktr=" << ktr << endl;
+      cout << "cat: kve=" << kve << endl;
+      cout << "cat: Twall=" << Twall << endl;
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 

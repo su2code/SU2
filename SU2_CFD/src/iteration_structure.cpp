@@ -1069,6 +1069,7 @@ void CNEMOIteration::Preprocess(COutput *output,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone,
                                 unsigned short val_iInst) {
+     
 
   unsigned long TimeIter = config[val_iZone]->GetTimeIter();
 
@@ -1082,7 +1083,7 @@ void CNEMOIteration::Preprocess(COutput *output,
     solver[val_iZone][val_iInst][MESH_0][NEMO_SOL]->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
   }
 
-}
+ }
 
 void CNEMOIteration::Iterate(COutput *output,
                              CIntegration ****integration,
@@ -1310,6 +1311,7 @@ void CNEMOIteration::Solve(COutput *output,
   StartTime = MPI_Wtime();
 #endif
 
+
   /*--- Preprocess the solver ---*/
   Preprocess(output, integration, geometry, solver, numerics, config,
              surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
@@ -1321,7 +1323,7 @@ void CNEMOIteration::Solve(COutput *output,
 
     config[val_iZone]->SetInnerIter(Inner_Iter);
 
-    /*--- Run a single iteration of the solver ---*/
+    /*--- Run a single iteration of the solver ---*/      
     Iterate(output, integration, geometry, solver, numerics, config,
             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 

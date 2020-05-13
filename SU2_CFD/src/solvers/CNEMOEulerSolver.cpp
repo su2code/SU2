@@ -27,6 +27,9 @@
 
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CNEMOEulerSolver.hpp"
+#include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsLeastSquares.hpp"
+#include "../../include/limiters/computeLimiters.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(void) : CSolver() {
 
@@ -863,6 +866,49 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
 }
+/*
+void CNEMOEulerSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+
+  const auto& solution = nodes->GetSolution();
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+
+  computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
+                             *config, solution, 0, nVar, gradient);
+}
+
+void CNEMOEulerSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+/*  bool weighted;
+
+  if (reconstruction)
+    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+  else
+    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+
+  const auto& solution = nodes->GetSolution();
+  auto& rmatrix = nodes->GetRmatrix();
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+
+  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
+
+  computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
+                               weighted, solution, 0, nVar, gradient, rmatrix);
+}
+
+void CNEMOEulerSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
+
+  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
+  const auto& solution = nodes->GetSolution();
+  const auto& gradient = nodes->GetGradient_Reconstruction();
+  auto& solMin  = nodes->GetSolution_Min();
+  auto& solMax  = nodes->GetSolution_Max();
+  auto& limiter = nodes->GetLimiter();
+
+  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
+                  *geometry, *config, 0, nVar, solution, gradient, solMin, solMax, limiter);
+}*/
+
 
 void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
@@ -1107,16 +1153,16 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   //bool centered = ((config->GetKind_Centered_NEMO() == JST) && (iMesh == MESH_0));
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  numerics->SetPIndex      ( nodes->GetPIndex()       );
-  numerics->SetTIndex      ( nodes->GetTIndex()       );
-  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  numerics->SetHIndex      ( nodes->GetHIndex()       );
-  numerics->SetAIndex      ( nodes->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+//  numerics->SetPIndex      ( nodes->GetPIndex()       );
+//  numerics->SetTIndex      ( nodes->GetTIndex()       );
+//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+//  numerics->SetHIndex      ( nodes->GetHIndex()       );
+//  numerics->SetAIndex      ( nodes->GetAIndex()       );
+//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -1174,7 +1220,6 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
   unsigned long iEdge, iPoint, jPoint;
-  unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
   unsigned short iDim, iSpecies, iVar, jVar;
   double *U_i, *U_j, *V_i, *V_j;
   double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
@@ -1183,7 +1228,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
-  
+
   double lim_i, lim_j, lim_ij;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -1216,21 +1261,21 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   Cvve_j      = new su2double[nSpecies];
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  numerics->SetPIndex      ( nodes->GetPIndex()       );
-  numerics->SetTIndex      ( nodes->GetTIndex()       );
-  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  numerics->SetHIndex      ( nodes->GetHIndex()       );
-  numerics->SetAIndex      ( nodes->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+//  numerics->SetPIndex      ( nodes->GetPIndex()       );
+//  numerics->SetTIndex      ( nodes->GetTIndex()       );
+//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+//  numerics->SetHIndex      ( nodes->GetHIndex()       );
+//  numerics->SetAIndex      ( nodes->GetAIndex()       );
+//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
   
-  RHO_INDEX  = nodes->GetRhoIndex();
-  RHOS_INDEX = nodes->GetRhosIndex();
-  P_INDEX    = nodes->GetPIndex();
-  TVE_INDEX  = nodes->GetTveIndex();
+//  RHO_INDEX  = nodes->GetRhoIndex();
+//  RHOS_INDEX = nodes->GetRhosIndex();
+//  P_INDEX    = nodes->GetPIndex();
+//  TVE_INDEX  = nodes->GetTveIndex();
 
   
   /*--- Loop over edges and calculate convective fluxes ---*/
@@ -1262,8 +1307,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       /*---+++ Conserved variable reconstruction & limiting +++---*/
       
       /*--- Retrieve gradient information & limiter ---*/
-      GradU_i = nodes->GetGradient(iPoint);
-      GradU_j = nodes->GetGradient(jPoint);
+      GradU_i = nodes->GetGradient_Reconstruction(iPoint);
+      GradU_j = nodes->GetGradient_Reconstruction(jPoint);
       
       if (limiter) {
         Limiter_i = nodes->GetLimiter(iPoint);
@@ -1377,7 +1422,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Compute the upwind residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-    
+
+
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1420,7 +1466,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-
+  
   unsigned short iVar, jVar;
   unsigned long iPoint;
   unsigned long eAxi_local, eChm_local, eVib_local;
@@ -1439,21 +1485,21 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   eVib_local = 0;
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  numerics->SetPIndex      ( nodes->GetPIndex()       );
-  numerics->SetTIndex      ( nodes->GetTIndex()       );
-  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  numerics->SetHIndex      ( nodes->GetHIndex()       );
-  numerics->SetAIndex      ( nodes->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+// numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+// numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+// numerics->SetPIndex      ( nodes->GetPIndex()       );
+// numerics->SetTIndex      ( nodes->GetTIndex()       );
+// numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+// numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+// numerics->SetHIndex      ( nodes->GetHIndex()       );
+// numerics->SetAIndex      ( nodes->GetAIndex()       );
+// numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+// numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-
+  
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2474,365 +2520,6 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
   SetResidual_RMS(geometry, config);
 }
 
-void CNEMOEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
-  unsigned long iPoint, jPoint, iEdge, iVertex;
-  unsigned short iDim, iSpecies, iVar, iMarker, RHOS_INDEX, RHO_INDEX;
-  su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
-      Partial_Gradient, Partial_Res, *Normal;
-  su2double rho_i,rho_j;
-
-  /*--- Initialize arrays ---*/
-
-  /*--- Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w]^T ---*/
-  PrimVar_Vertex = new su2double [nPrimVarGrad];
-  PrimVar_i = new su2double [nPrimVarGrad];
-  PrimVar_j = new su2double [nPrimVarGrad];
-
-  /*--- Get indices of species & mixture density ---*/
-  RHOS_INDEX = nodes->GetRhosIndex();
-  RHO_INDEX  = nodes->GetRhoIndex();
-
-  /*--- Set Gradient_Primitive to zero ---*/
-  nodes->SetGradient_PrimitiveZero();
-
-  /*--- Loop interior edges ---*/
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-
-    /*--- Pull primitives from CVariable ---*/
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
-      PrimVar_j[iVar] = nodes->GetPrimitive(jPoint,iVar);
-    }
-
-    Normal = geometry-> edge[iEdge]->GetNormal();
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Res = PrimVar_Average*Normal[iDim];
-        if (geometry->node[iPoint]->GetDomain())
-          nodes->AddGradient_Primitive(iPoint, iVar, iDim, Partial_Res);
-        if (geometry->node[jPoint]->GetDomain())
-          nodes->SubtractGradient_Primitive(jPoint, iVar, iDim, Partial_Res);
-      }
-    }
-  }
-
-  /*--- Loop boundary edges ---*/
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()) {
-
-        /*--- Get primitives from CVariable ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          PrimVar_Vertex[iVar] = nodes->GetPrimitive(iPoint, iVar);
-
-        /*--- Modify species density to mass concentration ---*/
-        rho_i = nodes->GetPrimitive(iPoint, RHO_INDEX);
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          PrimVar_Vertex[RHOS_INDEX+iSpecies] = PrimVar_Vertex[RHOS_INDEX+iSpecies]/rho_i;
-
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
-            nodes->SubtractGradient_Primitive(iPoint, iVar, iDim, Partial_Res);
-          }
-      }
-    }
-  }
-
-  /*--- Update gradient value ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = nodes->GetGradient_Primitive(iPoint, iVar,iDim) / (geometry->node[iPoint]->GetVolume());
-        nodes->SetGradient_Primitive(iPoint, iVar, iDim, Partial_Gradient);
-
-      }
-    }
-  }
-
-  delete [] PrimVar_Vertex;
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
-
-}
-
-void CNEMOEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
-  unsigned long iPoint, jPoint;
-  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
-      r23_b, r33, rho_i, rho_j, weight, product, detR2, z11, z12, z13, z22, z23, z33;
-  bool singular;
-
-  //Unused at the momemnt
-  //unsigned short iSpecies;
-  //unsigned long
-
-  /*--- Initialize arrays, Primitive variables:
-   [Y1, ..., YNs, T, Tve, u, v, w, P]^T ---*/
-  PrimVar_i      = new su2double [nPrimVarGrad];
-  PrimVar_j      = new su2double [nPrimVarGrad];
-
-  /*--- Get indices of species & mixture density ---*/
-  RHOS_INDEX = nodes->GetRhosIndex();
-  RHO_INDEX  = nodes->GetRhoIndex();
-
-  /*--- Loop over points of the grid ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Set the value of singulare ---*/
-    singular = false;
-
-    /*--- Get coordinates ---*/
-    Coord_i = geometry->node[iPoint]->GetCoord();
-
-    /*--- Get primitives from CVariable ---*/
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      PrimVar_i[iVar] = nodes->GetPrimitive(iPoint ,iVar);
-
-    /*--- Inizialization of variables ---*/
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      for (iDim = 0; iDim < nDim; iDim++)
-        Cvector[iVar][iDim] = 0.0;
-
-    r11 = 0.0; r12   = 0.0; r13   = 0.0; r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      Coord_j = geometry->node[jPoint]->GetCoord();
-
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        PrimVar_j[iVar] = nodes->GetPrimitive(jPoint, iVar);
-
-      weight = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-      /*--- Sumations for entries of upper triangular matrix R ---*/
-      if (weight != 0.0){
-        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
-        if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
-        }
-
-        /*--- Entries of c:= transpose(A)*b ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim]) *
-                (PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
-      }
-    }
-
-    /*--- Entries of upper triangular matrix R ---*/
-    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
-    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
-    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
-
-    if (nDim == 3) {
-      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
-      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
-      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
-    }
-
-    /*--- Compute determinant ---*/
-    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
-    else detR2 = (r11*r22*r33)*(r11*r22*r33);
-
-    /*--- Detect singular matrices ---*/
-    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
-
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    if (singular) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        for (jDim = 0; jDim < nDim; jDim++)
-          Smatrix[iDim][jDim] = 0.0;
-    }
-    else {
-      if (nDim == 2) {
-        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-        Smatrix[0][1] = -r11*r12/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = r11*r11/detR2;
-      }
-      else {
-        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
-        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
-        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-        Smatrix[0][2] = (z13*z33)/detR2;
-        Smatrix[1][0] = Smatrix[0][1];
-        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-        Smatrix[1][2] = (z23*z33)/detR2;
-        Smatrix[2][0] = Smatrix[0][2];
-        Smatrix[2][1] = Smatrix[1][2];
-        Smatrix[2][2] = (z33*z33)/detR2;
-      }
-    }
-
-    /*--- Computation of the gradient: S*c ---*/
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        product = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
-        nodes->SetGradient_Primitive(iPoint, iVar, iDim, product);
-      }
-    }
-  }
-
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
-}
-
-void CNEMOEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                                CConfig *config,
-                                                unsigned long val_Point) {
-
-  unsigned short iSpecies, iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
-  unsigned long iPoint, jPoint;
-  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
-      r23_b, r33, rho_i, rho_j, weight, product, z11, z12, z13, z22, z23, z33, detR2;
-  bool singular=false;
-
-  /*--- Initialize arrays Primitive variables:
-   [Y1, ..., YNs, T, Tve, u, v, w]^T ---*/
-  PrimVar_i = new su2double [nPrimVarGrad];
-  PrimVar_j = new su2double [nPrimVarGrad];
-
-  /*--- Get indices of species & mixture density ---*/
-  RHOS_INDEX = nodes->GetRhosIndex();
-  RHO_INDEX  = nodes->GetRhoIndex();
-
-  iPoint = val_Point;
-  Coord_i = geometry->node[iPoint]->GetCoord();
-
-  /*--- Get primitives from CVariable ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    PrimVar_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
-
-  /*--- Inizialization of variables ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Cvector[iVar][iDim] = 0.0;
-
-  r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
-  r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-
-  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-    jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-    Coord_j = geometry->node[jPoint]->GetCoord();
-
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      PrimVar_j[iVar] = nodes->GetPrimitive(jPoint,iVar);
-
-    weight = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-    /*--- Sumations for entries of upper triangular matrix R ---*/
-    if (weight != 0.0) {
-      r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
-      r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
-      r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/(weight);
-      if (nDim == 3) {
-        r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
-      }
-
-      /*--- Entries of c:= transpose(A)*b ---*/
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
-    }
-  }
-
-  /*--- Entries of upper triangular matrix R ---*/
-  if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
-  if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
-  if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
-
-  if (nDim == 3) {
-    if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
-    if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
-    if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
-  }
-
-  /*--- Compute determinant ---*/
-  if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
-  else detR2 = (r11*r22*r33)*(r11*r22*r33);
-
-  /*--- Detect singular matrices ---*/
-  if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
-
-  /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-  if (singular) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      for (jDim = 0; jDim < nDim; jDim++)
-        Smatrix[iDim][jDim] = 0.0;
-  }
-  else {
-    if (nDim == 2) {
-      Smatrix[0][0] = (r12*r12+r22*r22)/(detR2);
-      Smatrix[0][1] = -r11*r12/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = r11*r11/(detR2);
-    }
-    else {
-      z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
-      z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/(detR2);
-      Smatrix[0][1] = (z12*z22+z13*z23)/(detR2);
-      Smatrix[0][2] = (z13*z33)/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = (z22*z22+z23*z23)/(detR2);
-      Smatrix[1][2] = (z23*z33)/(detR2);
-      Smatrix[2][0] = Smatrix[0][2];
-      Smatrix[2][1] = Smatrix[1][2];
-      Smatrix[2][2] = (z33*z33)/(detR2);
-    }
-  }
-
-  /*--- Computation of the gradient: S*c ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      product = 0.0;
-      for (jDim = 0; jDim < nDim; jDim++)
-        product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
-      nodes->SetGradient_Primitive(iPoint, iVar, iDim, product);
-    }
-  }
-
-  AD::SetPreaccOut(nodes->GetGradient_Primitive(iPoint), nPrimVarGrad, nDim);
-  AD::EndPreacc();
-
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-
-  /*--- Communicate the gradient values via MPI. ---*/
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
-
-}
-
 //void CNEMOEulerSolver::SetSolution_Limiter(CGeometry *geometry,
 //                                           CConfig *config) {
 //  
@@ -3151,10 +2838,16 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
             viscosity, depending on the input option.---*/
 
       // THIS NEEDS TO BE REVISITED
-      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+      Viscosity_FreeStream = 1.93378e-05; //1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
       Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
       Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
       Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
+
+
+      cout << "cat: visc= " << Viscosity_FreeStream << endl;
+      cout << "cat: rho= " << Density_FreeStream << endl;
+      cout << "cat: p= " << Pressure_FreeStream << endl;
+      cout << "cat: e= " << Energy_FreeStream << endl;
 
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
       config->SetPressure_FreeStream(Pressure_FreeStream);
@@ -3866,27 +3559,27 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double *Normal = new su2double[nDim];
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
-  conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
-  conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
-  conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
-  conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+ //conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+ //conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+ //conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
+ //conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
+ //conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+ //conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+ //conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
+ //conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
+ //conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+ //conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
-  visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
-  visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
-  visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
-  visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
-  visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+ //visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+ //visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+ //visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
+ //visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
+ //visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+ //visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+ //visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
+ //visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
+ //visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+ //visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -4276,27 +3969,27 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   su2double *Ys       = new su2double[nSpecies];
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
-  conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
-  conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
-  conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
-  conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
-  visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
-  visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
-  visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
-  visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
-  visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+ // conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+ // conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+ // conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
+ // conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
+ // conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+ // conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+ // conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
+ // conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
+ // conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+ // conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+//
+ // visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+ // visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+ // visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
+ // visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
+ // visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+ // visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+ // visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
+ // visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
+ // visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+ // visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
   unsigned short T_INDEX       = nodes->GetTIndex();
   unsigned short TVE_INDEX     = nodes->GetTveIndex();
@@ -4845,16 +4538,16 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   su2double *Normal = new su2double[nDim];
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
-  conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
-  conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
-  conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
-  conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+ // conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+ // conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+ // conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
+ // conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
+ // conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+ // conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+ // conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
+ // conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
+ // conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+ // conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/

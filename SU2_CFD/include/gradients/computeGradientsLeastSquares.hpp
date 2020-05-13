@@ -81,8 +81,11 @@ void computeGradientsLeastSquares(CSolver* solver,
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
-    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      AD::SetPreaccIn(field(iPoint,iVar));
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar){
+
+      AD::SetPreaccIn(field(iPoint,iVar));    
+
+    }
 
     /*--- Clear gradient and Rmatrix. ---*/
 
@@ -93,7 +96,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
         Rmatrix(iPoint, iDim, jDim) = 0.0;
-
+  
 
     for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
     {
@@ -102,12 +105,14 @@ void computeGradientsLeastSquares(CSolver* solver,
       const su2double* coord_j = geometry.node[jPoint]->GetCoord();
       AD::SetPreaccIn(coord_j, nDim);
 
+
       /*--- Distance vector from iPoint to jPoint ---*/
 
       su2double dist_ij[MAXNDIM] = {0.0};
 
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = coord_j[iDim] - coord_i[iDim];
+
 
       /*--- Compute inverse weight, default 1 (unweighted). ---*/
 
@@ -175,6 +180,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     }
   }
   SU2_OMP_BARRIER
+
 
   /*--- Second loop over points of the grid to compute final gradient. ---*/
 
