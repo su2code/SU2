@@ -246,12 +246,14 @@ def adjoint( func_name, config, state=None ):
     link.extend(name)
     # files restart
     if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES':
-       name = files['RESTART_FILE_1']
-       name = su2io.expand_part(name, config)
-       link.extend(name)
-       name = files['RESTART_FILE_2']
-       name = su2io.expand_part(name, config)
-       link.extend(name)
+       if 'RESTART_FILE_1' in files:
+           name = files['RESTART_FILE_1']
+           name = su2io.expand_part(name, config)
+           link.extend(name)
+       if 'RESTART_FILE_1' in files:  # not the case for 1st order time stepping
+           name = files['RESTART_FILE_2']
+           name = su2io.expand_part(name, config)
+           link.extend(name)
     
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])

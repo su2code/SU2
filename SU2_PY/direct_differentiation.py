@@ -104,12 +104,15 @@ def direct_differentiation( filename           ,
             if not os.path.isfile(restart_filename):
                 sys.exit("Error: Restart file <" + restart_filename + "> not found." )
             shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
-        restart_filename = restart_name + '_' + str(int(config['RESTART_ITER']) - 2).zfill(5) + '.dat'
-        if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
-            # throw, if restart file does not exist
-            if not os.path.isfile(restart_filename):
-                sys.exit("Error: Restart file <" + restart_filename + "> not found.")
-            shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
+
+        # use only, if time integration is second order
+        if config.get('TIME_MARCHING', 'NO') == 'DUAL_TIME_STEPPING-2ND_ORDER':
+            restart_filename = restart_name + '_' + str(int(config['RESTART_ITER']) - 2).zfill(5) + '.dat'
+            if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
+                # throw, if restart file does not exist
+                if not os.path.isfile(restart_filename):
+                    sys.exit("Error: Restart file <" + restart_filename + "> not found.")
+                shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
 
     # Direct Differentiation Gradients
     SU2.eval.gradients.directdiff(config,state)

@@ -229,7 +229,7 @@ def aerodynamics( config, state=None ):
             name = files['RESTART_FILE_1']
             name = su2io.expand_part(name, config)
             link.extend(name)
-        if 'RESTART_FILE_2' in files:
+        if 'RESTART_FILE_2' in files:  # not the case for 1st order time stepping
             name = files['RESTART_FILE_2']
             name = su2io.expand_part(name, config)
             link.extend(name)
