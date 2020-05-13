@@ -847,7 +847,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = min(-2./3.*diverg*Volume, 0.);
        if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
-//       Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
      }
    }
 
@@ -906,7 +905,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[1][0] += 0.0;
    Jacobian_i[1][1] += -2.0*beta_blended*TurbVar_i[1]*Volume;
 
-//   Jacobian_i[1][1] += min(-(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume, 0.0);
+   Jacobian_i[1][1] += min(-(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume, 0.0);
   }
 
   AD::SetPreaccOut(Residual, nVar);
