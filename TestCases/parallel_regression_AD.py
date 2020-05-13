@@ -322,24 +322,7 @@ def main():
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)		
-	
-    
-    ####################################################################
-    ###  Unsteady Disc. adj. compressible RANS restart optimization  ###
-    ####################################################################
-
-    # test shape_optimization.py
-    naca_restart_shape_opt      = TestCase('restart_shape_optimization')
-    naca_restart_shape_opt.cfg_dir    = "optimization_rans/naca0012"
-    naca_restart_shape_opt.cfg_file   = "naca0012.cfg"
-    naca_restart_shape_opt.test_iter  = 1
-    naca_restart_shape_opt.test_vals = [1.000000, 1.000000, 2.005694, 0.000185] #last 4 columns
-    naca_restart_shape_opt.su2_exec   = "shape_optimization.py -f"
-    naca_restart_shape_opt.timeout    = 1600
-    naca_restart_shape_opt.tol       = 0.00001
-    pass_list.append(naca_restart_shape_opt.run_opt())
-    test_list.append(naca_restart_shape_opt)
-    
+	  
 
     ######################################
     ### RUN TESTS                      ###
@@ -413,6 +396,22 @@ def main():
     unsteady_naca0012_direct_diff.unsteady  = True
     pass_list.append(unsteady_naca0012_direct_diff.run_filediff())
     test_list.append(unsteady_naca0012_direct_diff)
+    
+    ####################################################################
+    ###  Unsteady Disc. adj. compressible RANS restart optimization  ###
+    ####################################################################
+
+    # test shape_optimization.py
+    naca_restart_shape_opt      = TestCase('restart_shape_optimization')
+    naca_restart_shape_opt.cfg_dir    = "optimization_rans/naca0012"
+    naca_restart_shape_opt.cfg_file   = "naca0012.cfg"
+    naca_restart_shape_opt.test_iter  = 1
+    naca_restart_shape_opt.test_vals = [1.000000, 1.000000, 2.005694, 0.000185] #last 4 columns
+    naca_restart_shape_opt.su2_exec   = "shape_optimization.py -f"
+    naca_restart_shape_opt.timeout    = 1600
+    naca_restart_shape_opt.tol       = 0.00001
+    pass_list.append(naca_restart_shape_opt.run_opt())
+    test_list.append(naca_restart_shape_opt)
 
     # Tests summary
     print('==================================================================')
