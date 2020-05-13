@@ -135,6 +135,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     case NO_SGS_MODEL: case IMPLICIT_LES:
       SGSModel = NULL;
       SGSModelUsed = false;
+      break;
     case SMAGORINSKY:
       SGSModel     = new CSmagorinskyModel;
       SGSModelUsed = true;
