@@ -786,7 +786,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- recompute elements surrounding points, points surrounding points ---*/
 
   if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-  geometry[MESH_0]->SetPoint_Connectivity(true);
+  geometry[MESH_0]->SetPoint_Connectivity();
 
   /*--- Compute elements surrounding elements ---*/
 

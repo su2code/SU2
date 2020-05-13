@@ -390,9 +390,8 @@ public:
 
   /*!
    * \brief Set points which surround a point.
-   * \param[in] sort_points - Whether to sort the list of neighbors for each point.
    */
-  void SetPoint_Connectivity(bool sort_points = false) override;
+  void SetPoint_Connectivity() override;
 
   /*!
    * \brief Set a renumbering using a Reverse Cuthill-McKee Algorithm

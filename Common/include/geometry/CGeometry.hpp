@@ -586,9 +586,8 @@ public:
 
   /*!
    * \brief Set connectivity between points.
-   * \param[in] sort_points - Whether to sort the list of neighbors for each point.
    */
-  inline virtual void SetPoint_Connectivity(bool sort_points = false) {}
+  inline virtual void SetPoint_Connectivity() {}
 
   /*!
    * \brief Orders the RCM.
