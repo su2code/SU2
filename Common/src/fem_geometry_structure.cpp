@@ -352,7 +352,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned long i=0; i<geometry->GetnPoint(); ++i)
-    globalPointIDToLocalInd[geometry->node[i]->GetGlobalIndex()] = i;
+    globalPointIDToLocalInd[geometry->nodes->GetGlobalIndex(i)] = i;
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Communicate the elements and the boundary elements to the    ---*/
@@ -468,7 +468,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       unsigned long ind = LMI->second;
       for(unsigned short l=0; l<nDim; ++l)
-        doubleSendBuf[i].push_back(geometry->node[ind]->GetCoord(l));
+        doubleSendBuf[i].push_back(geometry->nodes->GetCoord(ind, l));
     }
   }
 
@@ -6950,7 +6950,7 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   elem                = NULL;
   face                = NULL;
   bound               = NULL;
-  node                = NULL;
+  nodes               = NULL;
   edges               = NULL;
   vertex              = NULL;
   nVertex             = NULL;
