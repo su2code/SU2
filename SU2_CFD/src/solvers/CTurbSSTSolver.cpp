@@ -448,8 +448,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Loop over all points. ---*/
 
-  if (((!config->GetRestart()) && (config->GetInnerIter() > 0)) ||
-      (config->GetDiscrete_Adjoint())) {
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -502,9 +500,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
     /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+//    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
 
-  }
   }
   
 }
