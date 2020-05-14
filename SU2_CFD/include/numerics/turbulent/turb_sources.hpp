@@ -201,7 +201,6 @@ private:
   su2double dfv1, dfv2, dShat;
   su2double dr, dg, dfw;
   su2double Sbar;
-  unsigned short iDim, jDim;
 
 public:
   /*!
@@ -236,7 +235,7 @@ private:
   su2double dr, dg, dfw;
   su2double Sbar;
   su2double aux_cc, CompCorrection, c5;
-  unsigned short iDim, jDim;
+  unsigned short jDim;
 
 public:
   /*!

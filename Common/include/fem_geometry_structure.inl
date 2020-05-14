@@ -94,13 +94,13 @@ inline CSurfaceElementFEM& CSurfaceElementFEM::operator=(const CSurfaceElementFE
 
 inline bool CSurfaceElementFEM::operator< (const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
 
-inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC = false;  wallModel = NULL;}
+inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC = false;  wallModel = nullptr;}
 
-inline CBoundaryFEM::~CBoundaryFEM(void) { if( wallModel ) delete wallModel; }
+inline CBoundaryFEM::~CBoundaryFEM(void) { delete wallModel; }
 
-inline CMeshFEM::CMeshFEM(void) : CGeometry() { blasFunctions = NULL; }
+inline CMeshFEM::CMeshFEM(void) : CGeometry() { blasFunctions = nullptr; }
 
-inline CMeshFEM::~CMeshFEM(void) { if( blasFunctions ) {delete blasFunctions; blasFunctions = NULL;} }
+inline CMeshFEM::~CMeshFEM(void) { if( blasFunctions ) {delete blasFunctions; blasFunctions = nullptr;} }
 
 inline CBoundaryFEM* CMeshFEM::GetBoundaries(void) {return boundaries.data();}
 
