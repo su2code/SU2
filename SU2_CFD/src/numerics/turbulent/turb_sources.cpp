@@ -793,7 +793,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(Vorticity_i, 3);
 
-  unsigned short iDim;
+  unsigned short iDim, jDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
   su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
@@ -831,6 +831,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    diverg = 0.0;
    for (iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
+    
+   su2double delta[3][3] = {{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}};
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -842,8 +844,14 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
    else {
-     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     pk -= 1./3.*Eddy_Viscosity_i*diverg*diverg;
+//     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+     pk = -2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+     for (iDim = 0; iDim < nDim; iDim++) {
+       for (jDim = 0; jDim < nDim; jDim++) {
+         pk += Eddy_Viscosity_i*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
+                               - 2.0/3.0*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
+       }
+     }
      if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = min(-2./3.*diverg*Volume, 0.);
        if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] = min(-2./3.*alfa_blended*diverg*Volume, 0.);
