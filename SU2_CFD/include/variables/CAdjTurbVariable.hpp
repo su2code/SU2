@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -39,8 +39,8 @@ class CAdjTurbVariable final : public CVariable {
 protected:
   // ToDo: These variables were not being allocated... is this class used?
   MatrixType dmuT_dUTvar;         /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
-  VectorOfMatrix dRTstar_dUTvar;  /*!< \brief Sensitivity of modified turbulence residual (no boundary flux) to mean flow and turbulence vars. */
-  VectorOfMatrix dFT_dUTvar;      /*!< \brief Sensitivity of boundary flux to mean flow and turbulence vars. */
+  CVectorOfMatrix dRTstar_dUTvar;  /*!< \brief Sensitivity of modified turbulence residual (no boundary flux) to mean flow and turbulence vars. */
+  CVectorOfMatrix dFT_dUTvar;      /*!< \brief Sensitivity of boundary flux to mean flow and turbulence vars. */
   MatrixType EddyViscSens;        /*!< \brief Eddy Viscosity Sensitivity. */
 
 public:
