@@ -174,12 +174,12 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);
-  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
-  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
-  for (iDim = 0; iDim < nDim; iDim++) {
-    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
-    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
-  }
+//  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+//  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
+//    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
+//  }
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j, Jacobian_ic, Jacobian_jc);
@@ -267,8 +267,8 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
 
 void CAvgGrad_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
-  AD::SetPreaccIn(F2_i); AD::SetPreaccIn(F2_j);
-  AD::SetPreaccIn(Vorticity_i, 3); AD::SetPreaccIn(Vorticity_j, 3);
+//  AD::SetPreaccIn(F2_i); AD::SetPreaccIn(F2_j);
+//  AD::SetPreaccIn(Vorticity_i, 3); AD::SetPreaccIn(Vorticity_j, 3);
 }
 
 void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
