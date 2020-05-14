@@ -268,8 +268,8 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
 
 void CAvgGrad_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
-//  AD::SetPreaccIn(F2_i); AD::SetPreaccIn(F2_j);
-//  AD::SetPreaccIn(Vorticity_i, 3); AD::SetPreaccIn(Vorticity_j, 3);
+  AD::SetPreaccIn(F2_i); AD::SetPreaccIn(F2_j);
+  AD::SetPreaccIn(Vorticity_i, 3); AD::SetPreaccIn(Vorticity_j, 3);
 }
 
 void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
