@@ -191,6 +191,8 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
 
 void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
+  AD_BEGIN_PASSIVE
+  
   /*--- n-1 diagonal entries ---*/
 
   for (iVar = 0; iVar < (nVar-1); iVar++) {
@@ -211,6 +213,8 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
   for (iDim = 0; iDim < nDim; iDim++)
     val_Jacobian_j[nVar-1][iDim+1] += fix_factor*cte_1*Gamma_Minus_One*Velocity_j[iDim];
   val_Jacobian_j[nVar-1][nVar-1] -= fix_factor*cte_1*Gamma;
+  
+  AD_END_PASSIVE
 
 }
 
