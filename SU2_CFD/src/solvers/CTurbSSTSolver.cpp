@@ -749,6 +749,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
