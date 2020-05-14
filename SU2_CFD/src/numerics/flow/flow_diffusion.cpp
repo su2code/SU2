@@ -507,6 +507,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        su2double **val_Proj_Jac_Tensor_i,
                                        su2double **val_Proj_Jac_Tensor_j,
                                        const CConfig *config) {
+  
+  AD_BEGIN_PASSIVE
 
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double factor = 0.5/Density;
@@ -598,6 +600,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     val_Proj_Jac_Tensor_j[4][3] += factor*val_Proj_Visc_Flux[3];
 
   }
+  
+  AD_END_PASSIVE
 
 }
 
@@ -779,12 +783,12 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   }
 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
-  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
-  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
-  for (iDim = 0; iDim < nDim; iDim++) {
-    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
-    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
-  }
+//  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+//  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
+//    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
+//  }
   AD::EndPreacc();
 
   return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j, Jacobian_ic, Jacobian_jc);
