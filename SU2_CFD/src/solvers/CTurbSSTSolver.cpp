@@ -448,7 +448,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Loop over all points. ---*/
 
-  if (((config->GetRestart()) && (config->GetInnerIter() > 0)) ||
+  if (((!config->GetRestart()) && (config->GetInnerIter() > 0)) ||
       (config->GetDiscrete_Adjoint())) {
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
