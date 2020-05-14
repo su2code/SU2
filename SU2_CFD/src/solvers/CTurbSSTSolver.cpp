@@ -283,10 +283,10 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-//  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-//                            (config->GetInnerIter() <= config->GetLimiterIter());
+  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                            (config->GetInnerIter() <= config->GetLimiterIter());
   
-//  SetPrimitive_Variables(solver_container);
+  SetPrimitive_Variables(solver_container);
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -297,19 +297,21 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
-//  if (config->GetReconstructionGradientRequired()) {
-//    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-//      SetPrimitive_Gradient_GG(geometry, config, true);
-//    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-//      SetPrimitive_Gradient_LS(geometry, config, true);
-//    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-//      SetPrimitive_Gradient_LS(geometry, config, true);
-//  }
-//
-//  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-//  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
-//
-//  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+  }
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+
+  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+  
+  SetEddyViscosity(geometry, solver_container);
 
 }
 
@@ -317,11 +319,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  
-  su2double a1 = constants[7];
-    
+      
   SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
@@ -339,14 +337,38 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
   if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+  
+  SetEddyViscosity(geometry, solver_container);
 
+}
+
+void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
+  
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double rho = flowNodes->GetDensity(iPoint);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const su2double cons = nodes->GetSolution(iPoint,iVar);
+      nodes->SetPrimitive(iPoint,iVar,cons/rho);
+    }
+  }
+
+}
+
+void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_container) {
+  
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  
+  su2double a1 = constants[7];
+  
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
     
-    const su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    const su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    const su2double rho = flowNodes->GetDensity(iPoint);
+    const su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
 
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
@@ -368,34 +390,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     nodes->SetmuT(iPoint,muT);
 
-  }
-
-}
-
-void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
-  
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double rho = flowNodes->GetDensity(iPoint);
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      const su2double cons = nodes->GetSolution(iPoint,iVar);
-      nodes->SetPrimitive(iPoint,iVar,cons/rho);
-    }
-  }
-
-}
-
-void CTurbSSTSolver::SetFlowPrimitive_Gradients(CSolver **solver_container) {
-  
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nDim+1; iVar++) {
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetFlowGradient(iPoint,iVar,iDim,flowNodes->GetGradient_Primitive(iPoint,iVar,iDim));
-      }
-    }
   }
 
 }

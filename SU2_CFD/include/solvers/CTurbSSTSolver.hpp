@@ -97,8 +97,8 @@ public:
   
   void SetPrimitive_Variables(CSolver **solver_container) final;
   
-  void SetFlowPrimitive_Gradients(CSolver **solver_container);
-
+  void SetEddyViscosity(CGeometry *geometry, CSolver **solver_container);
+  
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
