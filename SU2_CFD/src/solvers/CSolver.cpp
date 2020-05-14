@@ -5102,7 +5102,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    AD_BEGIN_PASSIVE
+//    AD_BEGIN_PASSIVE
     
     CVariable *nodesFlo = solver_container[FLOW_SOL]->GetNodes();
     
@@ -5217,7 +5217,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
       }
     }
     
-    AD_END_PASSIVE
+//    AD_END_PASSIVE
     
   }
   
