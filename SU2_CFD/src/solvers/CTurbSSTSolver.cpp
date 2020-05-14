@@ -506,7 +506,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
     /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-//    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
 
   }
   
@@ -730,6 +730,14 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Menter's first blending function ---*/
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
                                    nodes->GetF1blending(iPoint));
+      
+      /*--- Menter's second blending function ---*/
+      visc_numerics->SetF2blending(nodes->GetF2blending(iPoint),
+                                   nodes->GetF2blending(iPoint));
+      
+      /*--- Vorticity ---*/
+      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
+                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),

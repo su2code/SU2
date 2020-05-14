@@ -195,9 +195,11 @@ private:
   sigma_k1 = 0.0, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
   sigma_k2 = 0.0,
   sigma_om1 = 0.0,
-  sigma_om2 = 0.0;
+  sigma_om2 = 0.0,
+  a1        = 0.0;
 
   su2double F1_i, F1_j; /*!< \brief Menter's first blending function */
+  su2double F2_i, F2_j; /*!< \brief Menter's second blending function */
 
   /*!
    * \brief Adds any extra variables to AD
@@ -233,6 +235,15 @@ public:
    */
   void SetF1blending(su2double val_F1_i, su2double val_F1_j) override {
     F1_i = val_F1_i; F1_j = val_F1_j;
+  }
+  
+  /*!
+   * \brief Set the value of the second blending function.
+   * \param[in] val_F2_i - Value of the second blending function at point i.
+   * \param[in] val_F2_j - Value of the second blending function at point j.
+   */
+  void SetF2blending(su2double val_F2_i, su2double val_F2_j) override {
+    F2_i = val_F2_i; F2_j = val_F2_j;
   }
 
 };
