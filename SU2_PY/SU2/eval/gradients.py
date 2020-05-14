@@ -278,6 +278,9 @@ def adjoint( func_name, config, state=None ):
       config['OUTPUT_FILES'].append('SURFACE_CSV')
     
 
+    if 'INLET_FILE' in files:
+        link.append(files['INLET_FILE'])
+
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
@@ -825,6 +828,9 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
+    if 'INLET_FILE' in files:
+        link.append(files['INLET_FILE'])
+       
        
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
@@ -1112,6 +1118,9 @@ def directdiff( config, state=None ):
     # files: target heat flux distribution
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
+
+    if 'INLET_FILE' in files:
+        link.append(files['INLET_FILE'])
 
     # output redirection
     with redirect_folder('DIRECTDIFF',pull,link) as push:
