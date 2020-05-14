@@ -183,9 +183,10 @@ protected:
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
   void CorrectJacobian(const su2double val_proj_vector,
-                       su2double val_dS,
+                       const su2double val_dS,
                        su2double **val_Proj_Jac_Tensor_i,
                        su2double **val_Proj_Jac_Tensor_j,
+                       const su2double Density,
                        const CConfig *config);
 
   /*!

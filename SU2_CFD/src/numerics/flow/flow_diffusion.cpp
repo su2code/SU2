@@ -536,7 +536,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
@@ -583,7 +583,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
@@ -605,6 +605,7 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
                                     const su2double val_dS,
                                     su2double **val_Proj_Jac_Tensor_i,
                                     su2double **val_Proj_Jac_Tensor_j,
+                                    const su2double Density,
                                     const CConfig *config) {
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -622,8 +623,8 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     const su2double halfOnVol_j = 0.5 / (Volume_j);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      const su2double weight_i = halfOnVol_i;
-      const su2double weight_j = halfOnVol_j;
+      const su2double weight_i = halfOnVol_i*Density/V_i[nDim+2];
+      const su2double weight_j = halfOnVol_j*Density/V_j[nDim+2];
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
