@@ -324,11 +324,11 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
       Jacobian_j[0][0] += 0.5*sigma_kine_j/TurbVar_j[1]*Proj_Mean_GradTurbVar[0];
       Jacobian_j[0][1] += -0.5*sigma_kine_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0];
       Jacobian_j[1][0] += 0.5*sigma_omega_j/TurbVar_j[1]*Proj_Mean_GradTurbVar[0];
-      Jacobian_j[1][1] += -0.5*sigma_omega_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0];
+      Jacobian_j[1][1] += -0.5*sigma_omega_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1];
     }
     else {
       Jacobian_j[0][0] += 0.5*sigma_kine_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[0];
-      Jacobian_j[1][0] += 0.5*sigma_omega_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[0];
+      Jacobian_j[1][0] += 0.5*sigma_omega_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[1];
     }
   }
 
