@@ -180,8 +180,8 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
 
   if (preacc) {
     AD::SetPreaccOut(ProjFlux, nVar);
-//    AD::SetPreaccOut(Jacobian_i, nVar, nVar);
-//    AD::SetPreaccOut(Jacobian_j, nVar, nVar);
+    AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+    AD::SetPreaccOut(Jacobian_j, nVar, nVar);
     AD::EndPreacc();
   }
 
