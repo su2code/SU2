@@ -97,6 +97,7 @@ def direct_differentiation( filename           ,
             if not os.path.isdir('DIRECTDIFF'):
                 os.mkdir('DIRECTDIFF')
             os.mkdir('DIRECTDIFF/DIRECT')
+
         restart_name = config['RESTART_FILENAME'].split('.')[0]
         restart_filename = restart_name + '_' + str(int(config['RESTART_ITER']) - 1).zfill(5) + '.dat'
         if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
