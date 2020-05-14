@@ -99,6 +99,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
     AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   }
+  AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
   ExtraADPreaccIn();
 
   if (incompressible) {
