@@ -151,10 +151,10 @@ namespace AD{
   }
 
   inline void StartPreacc() {
-    if (globalTape.isActive() && PreaccEnabled) {
-      PreaccHelper.start();
-      PreaccActive = true;
-    }
+//    if (globalTape.isActive() && PreaccEnabled) {
+//      PreaccHelper.start();
+//      PreaccActive = true;
+//    }
   }
 
   inline void SetPreaccOut(su2double& data) {
