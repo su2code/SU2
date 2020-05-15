@@ -5140,6 +5140,11 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     
     /*--- Influence of boundary i on R(i,j) ---*/
     if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.;
+        }
+      }
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
