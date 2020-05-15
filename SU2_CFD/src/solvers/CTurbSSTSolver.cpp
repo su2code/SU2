@@ -715,12 +715,12 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/
-//      visc_numerics->SetPrimitive(V_domain, V_domain);
-      visc_numerics->SetPrimitive(V_domain, V_infty);
+      visc_numerics->SetPrimitive(V_domain, V_domain);
+//      visc_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-//      visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
-      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
+      visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
+//      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                         nodes->GetGradient(iPoint));
 
