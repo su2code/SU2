@@ -221,7 +221,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
       /*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
 
-      if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
+      if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
