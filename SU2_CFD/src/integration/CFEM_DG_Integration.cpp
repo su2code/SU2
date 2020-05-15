@@ -154,10 +154,10 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
         if iStep == 0, set the old solution (working solution for the DG part),
         and if needed, the new solution. ---*/
   if (iStep == 0) {
-    solver_container[MainSolver]->Set_OldSolution(geometry);
+    solver_container[MainSolver]->Set_OldSolution();
 
     if (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT) {
-      solver_container[MainSolver]->Set_NewSolution(geometry);
+      solver_container[MainSolver]->Set_NewSolution();
     }
   }
 

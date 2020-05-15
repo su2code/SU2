@@ -178,7 +178,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
-  SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(NONE, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   SetRecording(SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   RecordingState = NONE;
 
@@ -231,6 +231,8 @@ void CDiscAdjMultizoneDriver::Run() {
     /*-- Start loop over zones. ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
+
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
 
       if (retape) {
         SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
@@ -482,7 +484,9 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
    *    It is necessary to include data transfer and mesh updates in this section as some functions
    *    computed in one zone depend explicitly on the variables of others through that path. --- */
 
-  HandleDataTransfer();
+  if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == MESH_COORDS)) {
+    HandleDataTransfer();
+  }
 
   SetObjFunction(kind_recording);
 
@@ -490,9 +494,13 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if (tape_type != Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
 
-    /*--- We do the communication here to not differentiate wrt updated boundary data. ---*/
+    /*--- We do the communication here to not differentiate wrt updated boundary data.
+     *    For recording w.r.t. mesh coordinates the transfer was included before the
+     *    objective function, so we do not repeat it here. ---*/
 
-    HandleDataTransfer();
+    if (kind_recording != MESH_COORDS) {
+      HandleDataTransfer();
+    }
 
     AD::Push_TapePosition(); /// TRANSFER
 
@@ -912,7 +920,7 @@ void CDiscAdjMultizoneDriver::Set_SolutionOld_To_Solution(unsigned short iZone) 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
-      solver->GetNodes()->Set_OldSolution();
+      solver->Set_OldSolution();
   }
 }
 

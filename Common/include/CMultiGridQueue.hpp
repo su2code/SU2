@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,8 +29,7 @@
 #pragma once
 
 #include <vector>
-
-#include "mpi_structure.hpp"
+#include "toolboxes/CFastFindAndEraseQueue.hpp"
 #include "geometry/CGeometry.hpp"
 
 using namespace std;
@@ -41,90 +40,98 @@ using namespace std;
  * \author F. Palacios
  */
 class CMultiGridQueue {
-  vector<vector<unsigned long> > QueueCV; /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
-  short *Priority;                        /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
-  bool *RightCV;                          /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them */
-  unsigned long nPoint;                   /*!< \brief Total number of points. */
-  
+private:
+  vector<CFastFindAndEraseQueue<> > QueueCV; /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
+  vector<short> Priority;                    /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
+  vector<char> RightCV;                      /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them. */
+  const unsigned long nPoint = 0;            /*!< \brief Total number of points. */
+
+  /*!
+   * \brief Throw error with error message that the point is not in the priority list.
+   */
+  void ThrowPointNotInListError(unsigned long iPoint) const;
+
 public:
-  
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_npoint - Number of control volumes.
+   * \param[in] npoint - Number of control volumes.
    */
-  CMultiGridQueue(unsigned long val_npoint);
-  
+  CMultiGridQueue(unsigned long npoint);
+
   /*!
-   * \brief Destructor of the class.
+   * \brief No default construction.
    */
-  ~CMultiGridQueue(void);
-  
+  CMultiGridQueue() = delete;
+
   /*!
    * \brief Add a new CV to the list.
-   * \param[in] val_new_point - Index of the new point.
-   * \param[in] val_number_neighbors - Number of neighbors of the new point.
+   * \param[in] newPoint - Index of the new point.
+   * \param[in] numberNeighbors - Number of neighbors of the new point.
    */
-  void AddCV(unsigned long val_new_point, unsigned short val_number_neighbors);
-  
+  void AddCV(unsigned long newPoint, short numberNeighbors);
+
   /*!
    * \brief Remove a CV from the list.
-   * \param[in] val_remove_point - Index of the control volume to be removed.
+   * \param[in] removePoint - Index of the control volume to be removed.
    */
-  void RemoveCV(unsigned long val_remove_point);
-  
+  void RemoveCV(unsigned long removePoint);
+
   /*!
    * \brief Change a CV from a list to a different list.
-   * \param[in] val_move_point - Index of the control volume to be moved.
-   * \param[in] val_number_neighbors - New number of neighbors of the control volume.
+   * \param[in] movePoint - Index of the control volume to be moved.
+   * \param[in] numberNeighbors - New number of neighbors of the control volume.
    */
-  void MoveCV(unsigned long val_move_point, short val_number_neighbors);
-  
+  void MoveCV(unsigned long movePoint, short numberNeighbors);
+
   /*!
    * \brief Increase the priority of the CV.
-   * \param[in] val_incr_point - Index of the control volume.
+   * \param[in] incrPoint - Index of the control volume.
    */
-  void IncrPriorityCV(unsigned long val_incr_point);
-  
+  void IncrPriorityCV(unsigned long incrPoint);
+
   /*!
    * \brief Increase the priority of the CV.
-   * \param[in] val_red_point - Index of the control volume.
+   * \param[in] redPoint - Index of the control volume.
    */
-  void RedPriorityCV(unsigned long val_red_point);
-  
+  void RedPriorityCV(unsigned long redPoint);
+
   /*!
    * \brief Visualize the control volume queue.
    */
-  void VisualizeQueue(void);
-  
+  void VisualizeQueue(void) const;
+
   /*!
    * \brief Visualize the priority list.
    */
-  void VisualizePriority(void);
-  
+  void VisualizePriority(void) const;
+
   /*!
    * \brief Find a new seed control volume.
    * \return Index of the new control volume.
    */
-  long NextCV(void);
-  
+  inline long NextCV(void) const {
+    if (!QueueCV.empty()) return QueueCV.back().front();
+    else return -1;
+  }
+
   /*!
    * \brief Check if the queue is empty.
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the queue is empty.
    */
-  bool EmptyQueue(void);
-  
+  bool EmptyQueue(void) const;
+
   /*!
    * \brief Total number of control volume in the queue.
    * \return Total number of control points.
    */
-  unsigned long TotalCV(void);
-  
+  unsigned long TotalCV(void) const;
+
   /*!
    * \brief Update the queue with the new control volume (remove the CV and
-   increase the priority of the neighbors).
-   * \param[in] val_update_point - Index of the new point.
-   * \param[in] fine_grid - Fine grid geometry.
+   *        increase the priority of the neighbors).
+   * \param[in] updatePoint - Index of the new point.
+   * \param[in] fineGrid - Fine grid geometry.
    */
-  void Update(unsigned long val_update_point, CGeometry *fine_grid);
-  
+  void Update(unsigned long updatePoint, CGeometry *fineGrid);
+
 };

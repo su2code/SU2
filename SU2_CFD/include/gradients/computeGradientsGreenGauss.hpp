@@ -103,10 +103,10 @@ void computeGradientsGreenGauss(CSolver* solver,
       /*--- Determine if edge points inwards or outwards of iPoint.
        *    If inwards we need to flip the area vector. ---*/
 
-      su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
+      su2double dir = (iPoint == geometry.edges->GetNode(iEdge,0))? 1.0 : -1.0;
       su2double weight = dir * halfOnVol;
 
-      const su2double* area = geometry.edge[iEdge]->GetNormal();
+      const su2double* area = geometry.edges->GetNormal(iEdge);
       AD::SetPreaccIn(area, nDim);
 
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)

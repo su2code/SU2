@@ -465,8 +465,8 @@ void CHeatSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Solution differences ---*/
 
@@ -523,9 +523,9 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
       /*--- Points in edge ---*/
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Primitive variables w/o reconstruction ---*/
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
@@ -574,9 +574,9 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
       /*--- Points in edge ---*/
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Primitive variables w/o reconstruction ---*/
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
@@ -673,14 +673,14 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and normal vector ---*/
 
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                        geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     Temp_i_Grad = nodes->GetGradient(iPoint);
     Temp_j_Grad = nodes->GetGradient(jPoint);
@@ -1321,8 +1321,9 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
-  su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
+  su2double Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
+  const su2double* Normal;
 
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
@@ -1355,11 +1356,11 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- get the edge's normal vector to compute the edge's area ---*/
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
     /*--- Inviscid contribution ---*/

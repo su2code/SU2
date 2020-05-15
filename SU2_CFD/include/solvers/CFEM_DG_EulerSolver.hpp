@@ -402,16 +402,14 @@ public:
 
   /*!
    * \brief Set the working solution of the first time level to the current
-            solution. Used for Runge-Kutta type schemes.
-   * \param[in] geometry - Geometrical definition of the problem.
+   *        solution. Used for Runge-Kutta type schemes.
    */
-  void Set_OldSolution(CGeometry *geometry) final;
+  void Set_OldSolution() final;
 
   /*!
    * \brief Set the new solution to the current solution for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Set_NewSolution(CGeometry *geometry) final;
+  void Set_NewSolution() final;
 
   /*!
    * \brief Function to compute the time step for solving the Euler equations.
