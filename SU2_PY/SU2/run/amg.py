@@ -215,7 +215,7 @@ def amg ( config , kind='' ):
             config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
             config_cfd.COMPUTE_METRIC   = 'NO'
             config_cfd.MATH_PROBLEM     = 'DIRECT'
-            config_cfd.CFL_NUMBER       = float(adap_flow_cfl[0])
+            # config_cfd.CFL_NUMBER       = float(adap_flow_cfl[0])
             
             SU2_CFD(config_cfd)
                         
@@ -233,7 +233,7 @@ def amg ( config , kind='' ):
                 config_cfd.ADAP_HMIN            = config.PYADAP_HMIN
                 config_cfd.ADAP_ARMAX           = config.PYADAP_ARMAX
                 config_cfd.ADAP_COMPLEXITY      = int(mesh_sizes[0])
-                config_cfd.CFL_NUMBER           = float(adap_adj_cfl[0])
+                # config_cfd.CFL_NUMBER           = float(adap_adj_cfl[0])
                 SU2_CFD(config_cfd)
 
                 func_name      = config.OBJECTIVE_FUNCTION
