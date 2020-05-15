@@ -175,12 +175,12 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);
-//  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
-//  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
-//  for (iDim = 0; iDim < nDim; iDim++) {
-//    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
-//    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
-//  }
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
+  for (iDim = 0; iDim < nDim; iDim++) {
+    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
+    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
+  }
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j, Jacobian_ic, Jacobian_jc);
@@ -297,9 +297,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    
-    AD_BEGIN_PASSIVE
-    
+        
     su2double proj_on_rho = proj_vector_ij/Density_i;
 
     Jacobian_i[0][0] = -diff_kine*proj_on_rho;  Jacobian_i[0][1] = 0.0;
@@ -342,9 +340,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
       Jacobian_j[0][0] += 0.5*sigma_kine_j*a1/(VorticityMag_j*F2_j)*Proj_Mean_GradTurbVar[0];
       Jacobian_j[1][0] += 0.5*sigma_omega_j*a1/(VorticityMag_j*F2_j)*Proj_Mean_GradTurbVar[1];
     }
-    
-    AD_END_PASSIVE
-    
+        
   }
 
 }

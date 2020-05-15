@@ -516,10 +516,13 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     AD_BEGIN_PASSIVE
     
     if ((geometry->node[iPoint]->GetWall_Distance() > 1e-10) && (nodes->GetCrossDiff(iPoint) > 1.0e-20)) {
-//    if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
+      
+      /*--- Reset second row in loop ---*/
+      Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
+      Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
       
       /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
       for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -529,9 +532,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const su2double r_j     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
         
-        Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
-        Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
         Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
         
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {

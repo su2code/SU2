@@ -180,8 +180,8 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
 
   if (preacc) {
     AD::SetPreaccOut(ProjFlux, nVar);
-//    AD::SetPreaccOut(Jacobian_i, nVar, nVar);
-//    AD::SetPreaccOut(Jacobian_j, nVar, nVar);
+    AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+    AD::SetPreaccOut(Jacobian_j, nVar, nVar);
     AD::EndPreacc();
   }
 
@@ -190,8 +190,6 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
 }
 
 void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
-
-  AD_BEGIN_PASSIVE
   
   /*--- n-1 diagonal entries ---*/
 
@@ -214,8 +212,6 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
     val_Jacobian_j[nVar-1][iDim+1] += fix_factor*cte_1*Gamma_Minus_One*Velocity_j[iDim];
   val_Jacobian_j[nVar-1][nVar-1] -= fix_factor*cte_1*Gamma;
   
-  AD_END_PASSIVE
-
 }
 
 CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
