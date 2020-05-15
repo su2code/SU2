@@ -357,14 +357,11 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   }
   
   /*--- Add contributions of GG gradients ---*/
-  if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
-    const su2double halfOnVol_i = 0.5 / (Volume_i);
-    const su2double halfOnVol_j = 0.5 / (Volume_j);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    const su2double weight_i = 0.5 / (Volume_i);
+    const su2double weight_j = 0.5 / (Volume_j);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      const su2double weight_i = halfOnVol_i;
-      const su2double weight_j = halfOnVol_j;
-      
       Jacobian_ic[iDim][0][0] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*Jacobian_i[0][0]/proj_vector_ij;
       Jacobian_ic[iDim][1][1] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*Jacobian_i[1][1]/proj_vector_ij;
       
@@ -374,7 +371,7 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   }
   
   /*--- TODO: add contributions of WLS gradients ---*/
-  else if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) {}
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {}
   
   if (!correct_gradient) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
