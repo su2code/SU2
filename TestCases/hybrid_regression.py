@@ -80,9 +80,9 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-9.365934, -8.752894, 0.281704, 0.011821]
+    oneram6.test_vals = [0.281704, 0.011821]
     oneram6.su2_exec  = "SU2_CFD -t 2"
-    oneram6.timeout   = 3200
+    oneram6.timeout   = 600
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
 
@@ -222,7 +222,7 @@ def main():
     turb_oneram6.test_iter = 10
     turb_oneram6.test_vals = [-2.372345, -6.579369, 0.229866, 0.147638]
     turb_oneram6.su2_exec  = "SU2_CFD -t 2"
-    turb_oneram6.timeout   = 3200
+    turb_oneram6.timeout   = 600
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
 
@@ -233,7 +233,7 @@ def main():
     turb_naca0012_sa.test_iter = 10
     turb_naca0012_sa.test_vals = [-12.076423, -16.147693, 1.064326, 0.019770]
     turb_naca0012_sa.su2_exec  = "SU2_CFD -t 2"
-    turb_naca0012_sa.timeout   = 3200
+    turb_naca0012_sa.timeout   = 600
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
     
@@ -244,7 +244,7 @@ def main():
     turb_naca0012_sst.test_iter = 10
     turb_naca0012_sst.test_vals = [-15.273727, -6.243780, 1.049988, 0.019165]
     turb_naca0012_sst.su2_exec  = "SU2_CFD -t 2"
-    turb_naca0012_sst.timeout   = 3200
+    turb_naca0012_sst.timeout   = 600
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
 
@@ -255,7 +255,7 @@ def main():
     turb_naca0012_sst_sust.test_iter = 10
     turb_naca0012_sst_sust.test_vals = [-14.851214, -6.062557, 1.005233, 0.019014]
     turb_naca0012_sst_sust.su2_exec  = "SU2_CFD -t 2"
-    turb_naca0012_sst_sust.timeout   = 3200
+    turb_naca0012_sst_sust.timeout   = 600
     turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(turb_naca0012_sst_sust)
 
@@ -266,7 +266,7 @@ def main():
     propeller.test_iter = 10
     propeller.test_vals = [-3.389576, -8.409529, 0.000048, 0.056329]
     propeller.su2_exec  = "SU2_CFD -t 2"
-    propeller.timeout   = 3200
+    propeller.timeout   = 600
     propeller.tol       = 0.00001
     test_list.append(propeller)
     
@@ -282,7 +282,7 @@ def main():
     turb_naca0012_sst_restart_mg.ntest_vals = 5
     turb_naca0012_sst_restart_mg.test_vals = [-7.653296, -7.729472, -1.981061, -0.000016, 0.079062]
     turb_naca0012_sst_restart_mg.su2_exec  = "SU2_CFD -t 2"
-    turb_naca0012_sst_restart_mg.timeout   = 3200
+    turb_naca0012_sst_restart_mg.timeout   = 600
     turb_naca0012_sst_restart_mg.tol       = 0.000001
     test_list.append(turb_naca0012_sst_restart_mg)
 
