@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI]
+        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, Hybrid]
         include:
           - config_set: BaseMPI
             flags: '-Denable-pywrapper=true -Denable-tests=true --werror'
@@ -30,6 +30,8 @@ jobs:
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ForwardNoMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled  -Denable-tests=true --werror'
+          - config_set: Hybrid
+            flags: '-Dwith-omp=true -Denable-tecio=false --werror'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
@@ -85,12 +87,36 @@ jobs:
           cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
           cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
-          chmod a+x install/bin/*               
+          chmod a+x install/bin/*
       - name: Run Tests in Container
         uses: docker://su2code/test-su2:20200303
         with:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
-  
+  regression_tests_omp:
+    runs-on: ubuntu-latest
+    name: Regression Tests (OpenMP)
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix: 
+        testscript: ['hybrid_parallel.py']
+        include:
+          - testscript: 'hybrid_parallel.py'
+            tag: OMP
+    steps:
+      - name: Download Base
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Hybrid{0}', matrix.tag)}}
+      - name: Move Binaries
+        run: |
+          mkdir -p install/bin
+          cp -r ${{format('Hybrid{0}', matrix.tag)}}/. install/bin/
+          chmod a+x install/bin/*
+      - name: Run Tests in Container
+        uses: docker://su2code/test-su2:20200303
+        with:
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   unit_tests:
     runs-on: ubuntu-latest
     name: Unit Tests
@@ -125,7 +151,7 @@ jobs:
           cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
           cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
-          chmod a+x install/bin/*  
+          chmod a+x install/bin/*
       - name: Run Unit Tests
         uses: docker://su2code/test-su2:20191031
         with:
