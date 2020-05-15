@@ -780,6 +780,17 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
   delete[] Local_Surface_Areas;
 }
 
+void CHeatSolver::BC_Sym_Plane(CGeometry      *geometry,
+                               CSolver        **solver_container,
+                               CNumerics      *conv_numerics,
+                               CNumerics      *visc_numerics,
+                               CConfig        *config,
+                               unsigned short val_marker) {
+
+  /* In case of a heat solver nothing has to be done for the symmetry BC. */
+
+}
+
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
 
