@@ -4636,8 +4636,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    AD_BEGIN_PASSIVE
-    
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
 
       su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
@@ -4657,8 +4655,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
         local_Res_TruncError[iVar] = 0.0;
       }
     }
-    
-    AD_END_PASSIVE
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
