@@ -880,11 +880,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk, 0.0);
 
-   zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
-
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
+     zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
      pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
      pw = alfa_blended*Density_i*max(pw,0.0);
    }
