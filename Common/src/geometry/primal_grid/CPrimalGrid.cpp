@@ -32,25 +32,25 @@ unsigned short CPrimalGrid::nDim;
 CPrimalGrid::CPrimalGrid(void) {
 
   /*--- Set the default values for the pointers ---*/
-  Nodes = NULL;
-  Neighbor_Elements = NULL;
-  ElementOwnsFace = NULL;
-  PeriodIndexNeighbors = NULL;
-  Coord_CG = NULL;
-  Coord_FaceElems_CG = NULL;
-  JacobianFaceIsConstant = NULL;
+  Nodes = nullptr;
+  Neighbor_Elements = nullptr;
+  ElementOwnsFace = nullptr;
+  PeriodIndexNeighbors = nullptr;
+  Coord_CG = nullptr;
+  Coord_FaceElems_CG = nullptr;
+  JacobianFaceIsConstant = nullptr;
   GlobalIndex = 0;
 
 }
 
 CPrimalGrid::~CPrimalGrid() {
 
- if (Nodes != NULL) delete[] Nodes;
- if (Coord_CG != NULL) delete[] Coord_CG;
- if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
- if (ElementOwnsFace != NULL) delete[] ElementOwnsFace;
- if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
- if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
+ delete[] Nodes;
+ delete[] Coord_CG;
+ delete[] Neighbor_Elements;
+ delete[] ElementOwnsFace;
+ delete[] PeriodIndexNeighbors;
+ delete[] JacobianFaceIsConstant;
 }
 
 void CPrimalGrid::SetCoord_CG(const su2double* const* val_coord) {

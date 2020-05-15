@@ -873,9 +873,9 @@ public:
                       bool                    val_constJac,
                       CConfig                 *config,
                       unsigned short          val_orderExact = 0,
-                      const vector<su2double> *rLocSolDOFs = NULL,
-                      const vector<su2double> *sLocSolDOFs = NULL,
-                      const vector<su2double> *tLocSolDOFs = NULL);
+                      const vector<su2double> *rLocSolDOFs = nullptr,
+                      const vector<su2double> *sLocSolDOFs = nullptr,
+                      const vector<su2double> *tLocSolDOFs = nullptr);
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.

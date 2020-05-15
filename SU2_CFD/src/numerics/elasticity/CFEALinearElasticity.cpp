@@ -347,11 +347,11 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                        unsigned long val_nElem, const CConfig *config) :
                                        CFEALinearElasticity() {
-  DV_Val         = NULL;
-  FAux_Dead_Load = NULL;
-  Rho_s_i        = NULL;
-  Rho_s_DL_i     = NULL;
-  Nu_i           = NULL;
+  DV_Val         = nullptr;
+  FAux_Dead_Load = nullptr;
+  Rho_s_i        = nullptr;
+  Rho_s_DL_i     = nullptr;
+  Nu_i           = nullptr;
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -372,7 +372,7 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
     break;
   }
 
-  E_i  = NULL;
+  E_i  = nullptr;
   if (element_based){
     E_i = new su2double[val_nElem];
     for (iVar = 0; iVar < val_nElem; iVar++){
