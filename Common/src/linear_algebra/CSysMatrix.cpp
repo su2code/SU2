@@ -91,7 +91,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain,
                                         unsigned short nvar, unsigned short neqn,
                                         bool EdgeConnect, CGeometry *geometry,
-                                        CConfig *config, bool needTranspPtr) {
+                                        const CConfig *config, bool needTranspPtr) {
 
   assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -106,15 +106,21 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   /*--- Application of this matrix, FVM or FEM. ---*/
-  auto type = EdgeConnect? ConnectivityType::FiniteVolume : ConnectivityType::FiniteElement;
+  const auto type = EdgeConnect? ConnectivityType::FiniteVolume : ConnectivityType::FiniteElement;
 
-  /*--- Types of preconditioner the matrix will be asked to build. ---*/
-  unsigned short sol_prec = config->GetKind_Linear_Solver_Prec();
-  unsigned short def_prec = config->GetKind_Deform_Linear_Solver_Prec();
-  unsigned short adj_prec = config->GetKind_DiscAdj_Linear_Prec();
-  bool adjoint = config->GetDiscrete_Adjoint();
+  /*--- Type of preconditioner the matrix will be asked to build. ---*/
+  auto prec = config->GetKind_Linear_Solver_Prec();
 
-  bool ilu_needed = (sol_prec==ILU) || (def_prec==ILU) || (adjoint && (adj_prec==ILU));
+  if (!EdgeConnect && !config->GetStructuralProblem()) {
+    /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
+    prec = config->GetKind_Deform_Linear_Solver_Prec();
+  }
+  else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
+    /*--- Else "upgrade" primal solver settings. ---*/
+    prec = config->GetKind_DiscAdj_Linear_Prec();
+  }
+  const bool ilu_needed = (prec==ILU);
+  const bool diag_needed = ilu_needed || (prec==JACOBI) || (prec==LINELET);
 
   /*--- Basic dimensions. ---*/
   nVar = nvar;
@@ -165,9 +171,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ALLOC_AND_INIT(ILU_matrix, nnz_ilu*nVar*nEqn)
   }
 
-  if (ilu_needed || (sol_prec==JACOBI) || (sol_prec==LINELET) ||
-      (adjoint && (adj_prec==JACOBI)) || (def_prec==JACOBI))
-  {
+  if (diag_needed) {
     ALLOC_AND_INIT(invM, nPointDomain*nVar*nEqn);
   }
 #undef ALLOC_AND_INIT
