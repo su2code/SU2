@@ -380,23 +380,6 @@ def main():
     pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
 
-    #################################################################
-    ###  Unsteady Disc. adj. compressible RANS restart directdiff ###
-    #################################################################
-
-    # test dircet_differentiation.py with restart
-    unsteady_naca0012_direct_diff           = TestCase('unsteady_NACA0012_restart_directdiff')
-    unsteady_naca0012_direct_diff.cfg_dir   = "rans/restart_directdiff_naca"
-    unsteady_naca0012_direct_diff.cfg_file  = "naca0012.cfg"
-    unsteady_naca0012_direct_diff.test_iter = 14
-    unsteady_naca0012_direct_diff.su2_exec  = "direct_differentiation.py -f"
-    unsteady_naca0012_direct_diff.timeout   = 1600
-    unsteady_naca0012_direct_diff.reference_file = "of_grad_directdiff.csv.ref"
-    unsteady_naca0012_direct_diff.test_file = "of_grad_directdiff.csv"
-    unsteady_naca0012_direct_diff.unsteady  = True
-    pass_list.append(unsteady_naca0012_direct_diff.run_filediff())
-    test_list.append(unsteady_naca0012_direct_diff)
-    
     ####################################################################
     ###  Unsteady Disc. adj. compressible RANS restart optimization  ###
     ####################################################################
