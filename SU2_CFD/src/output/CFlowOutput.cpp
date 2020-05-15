@@ -449,7 +449,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
     Area = fabs(Surface_Area_Total[iMarker_Analyze]);
     
-    /*--- The definitions for Distortion and Uniformity Parameters is taken as defined by Banko, Andrew J., et al. in section 3.2 of
+    /*--- The definitions for Distortion and Uniformity Parameters are taken as defined by Banko, Andrew J., et al. in section 3.2 of
     https://www.sciencedirect.com/science/article/pii/S0142727X16301412 ------*/
     
     if (Area != 0.0) {
