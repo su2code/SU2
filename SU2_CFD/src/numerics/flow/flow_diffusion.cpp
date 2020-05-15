@@ -663,7 +663,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
   
   unsigned short iVar, jVar, iDim;
   
@@ -776,12 +775,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   }
 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
-//  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
-//  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
-//  for (iDim = 0; iDim < nDim; iDim++) {
-//    AD::SetPreaccOut(Jacobian_ic[iDim], nVar, nVar);
-//    AD::SetPreaccOut(Jacobian_jc[iDim], nVar, nVar);
-//  }
   AD::EndPreacc();
 
   return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j, Jacobian_ic, Jacobian_jc);

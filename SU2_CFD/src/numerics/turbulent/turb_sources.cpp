@@ -788,8 +788,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(TurbVar_i, nVar);
-  AD::SetPreaccIn(dist_i);
-  AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(Vorticity_i, 3);
@@ -934,7 +932,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   }
 
   AD::SetPreaccOut(Residual, nVar);
-//  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Residual, Jacobian_i, nullptr);
