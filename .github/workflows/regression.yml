@@ -92,7 +92,7 @@ jobs:
         uses: docker://su2code/test-su2:20200303
         with:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
-  regression_tests_omp:
+  regression_tests:
     runs-on: ubuntu-latest
     name: Regression Tests (OpenMP)
     needs: build
