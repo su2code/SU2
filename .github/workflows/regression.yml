@@ -94,7 +94,7 @@ jobs:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   regression_tests_omp:
     runs-on: ubuntu-latest
-    name: Regression Tests (OpenMP)
+    name: Regression Tests
     needs: build
     strategy:
       fail-fast: false

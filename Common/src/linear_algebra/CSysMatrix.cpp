@@ -111,8 +111,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Type of preconditioner the matrix will be asked to build. ---*/
   auto prec = config->GetKind_Linear_Solver_Prec();
 
-  if ((!EdgeConnect && !config->GetStructuralProblem()) ||
-      (config->GetKind_SU2() == SU2_DOT) || (config->GetKind_SU2() == SU2_DEF)) {
+  if (!EdgeConnect && !config->GetStructuralProblem()) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
   }

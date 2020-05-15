@@ -221,18 +221,20 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
       /*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
 
-      if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
-          (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
+      if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
     		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, true);
     	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
+    	else if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
     		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, true);
+    	}
+    	else {
+        SU2_MPI::Error("Linear preconditioner not implemented for discrete adjoint applications.",CURRENT_FUNCTION);
     	}
 
     }
