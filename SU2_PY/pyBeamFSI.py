@@ -36,7 +36,7 @@ import numpy as np
 
 from optparse import OptionParser  # use a parser for configuration
 
-from SU2_FSI import FSI_config as io       # imports FSI config tools
+from SU2_FSI.FSI_config import FSIConfig as io       # imports FSI config tools
 from SU2_FSI import PrimalInterface as FSI # imports FSI python tools
 import pyBeamInterface as pyBeamInterface
 import pyMLSInterface as Spline_Module
@@ -87,7 +87,7 @@ def main():
 
     confFile = str(options.filename)
 
-    FSI_config = io.FSIConfig(confFile)  # FSI configuration file
+    FSI_config = io(confFile)  # FSI configuration file
     CFD_ConFile = FSI_config['SU2_CONFIG']  # CFD configuration file
     CSD_ConFile = FSI_config['PYBEAM_CONFIG']  # CSD configuration file
     MLS_confFile = FSI_config['MLS_CONFIG_FILE_NAME']  # MLS configuration file
