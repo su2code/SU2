@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, Hybrid]
+        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP]
         include:
           - config_set: BaseMPI
             flags: '-Denable-pywrapper=true -Denable-tests=true --werror'
@@ -30,7 +30,7 @@ jobs:
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ForwardNoMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled  -Denable-tests=true --werror'
-          - config_set: Hybrid
+          - config_set: BaseOMP
             flags: '-Dwith-omp=true -Denable-tecio=false --werror'
     runs-on: ubuntu-latest
     steps:
@@ -107,11 +107,11 @@ jobs:
       - name: Download Base
         uses: actions/download-artifact@v1
         with:
-          name: ${{format('Hybrid{0}', matrix.tag)}}
+          name: ${{format('Base{0}', matrix.tag)}}
       - name: Move Binaries
         run: |
           mkdir -p install/bin
-          cp -r ${{format('Hybrid{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
           chmod a+x install/bin/*
       - name: Run Tests in Container
         uses: docker://su2code/test-su2:20200303
