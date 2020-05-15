@@ -451,6 +451,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    AD_BEGIN_PASSIVE
 
     /*--- Read the volume ---*/
 
@@ -460,6 +462,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
+    
+    AD_END_PASSIVE
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
