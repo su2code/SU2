@@ -619,8 +619,8 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
 
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    const su2double weight_i = 0.5 / (Volume_i);
-    const su2double weight_j = 0.5 / (Volume_j);
+    const su2double weight_i = 0.5 * Density/ (Volume_i*V_i[nDim+2]);
+    const su2double weight_j = 0.5 * Density/ (Volume_j*V_j[nDim+2]);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
