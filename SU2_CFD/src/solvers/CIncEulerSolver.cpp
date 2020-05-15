@@ -2074,7 +2074,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
                            0.0);
 
       /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- If viscous, we need gradients for extra terms. ---*/
       if (viscous) {
@@ -2121,12 +2121,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
     
-            if (geometry->node[iPoint]->GetDomain()) {
+            if (geometry->nodes->GetDomain(iPoint)) {
               geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
 
               if (axisymmetric) {
-                if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-                  AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+                if (geometry->nodes->GetCoord(iPoint,1) != 0.0)
+                  AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint,1);
                 else
                   AxiFactor = 1.0;
               } else {
@@ -2160,12 +2160,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
     
-            if (geometry->node[iPoint]->GetDomain()) {
+            if (geometry->nodes->GetDomain(iPoint)) {
               geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
     
               if (axisymmetric) {
-                if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-                  AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+                if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+                  AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
                 else
                   AxiFactor = 1.0;
               } else {
@@ -5953,13 +5953,13 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           
           geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
           
           if (axisymmetric) {
-            if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
             else
               AxiFactor = 1.0;
           } else {
@@ -6064,13 +6064,13 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
             geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
 
             if (axisymmetric) {
-              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
               else
                 AxiFactor = 1.0;
             } else {

@@ -8119,13 +8119,13 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
             /*--- Get the squared norm of the current point. ---*/
             norm = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              norm += pow(node[vertex[iMarker][iPoint]->GetNode()]->GetCoord(iDim),2);
+              norm += pow(nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim),2);
             
             /*--- Check if new unique reference node is found. ---*/
             if (norm < min_norm || iPoint == 0) {
               min_norm = norm;
               for (iDim = 0; iDim < nDim; iDim++)
-                Buffer_Send_RefNode[iDim] = node[vertex[iMarker][iPoint]->GetNode()]->GetCoord(iDim);
+                Buffer_Send_RefNode[iDim] = nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim);
 
             } else if (norm == min_norm) {
               // TK::write code later

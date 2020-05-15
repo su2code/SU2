@@ -797,7 +797,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
       dot_product = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        dot_product += fabs( (geometry->node[iPoint]->GetCoord(iDim) - Reference_node[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
+        dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - Reference_node[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
 
       /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
       Pressure_Recovered = nodes->GetSolution(iPoint, 0) - delta_p / norm2_translation * dot_product;
