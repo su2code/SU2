@@ -5100,9 +5100,9 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
                               const su2double *const *const *const Jacobian_ic,
                               const su2double *const *const *const Jacobian_jc) {
   
+  AD_BEGIN_PASSIVE
+  
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    
-    AD_BEGIN_PASSIVE
     
     CVariable *nodesFlo = solver_container[FLOW_SOL]->GetNodes();
     
@@ -5221,10 +5221,9 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
       }
     }
-    
-    AD_END_PASSIVE
-    
   }
+  
+  AD_END_PASSIVE
   
 }
 
