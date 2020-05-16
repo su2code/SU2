@@ -66,7 +66,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
   AD::SetPreaccIn(Primitive[iPoint], nVar);
-//  AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
+  AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
 
   /*--- Cross diffusion ---*/
 
