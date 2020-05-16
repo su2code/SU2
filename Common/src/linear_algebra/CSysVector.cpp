@@ -228,11 +228,8 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
   SU2_OMP_MASTER
   {
     sum = dotRes;
-#ifndef USE_MIXED_PRECISION
-    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+    const auto mpi_type = (sizeof(ScalarType) < 8)? MPI_FLOAT : MPI_DOUBLE;
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, MPI_COMM_WORLD);
   }
 #endif
   /*--- Make view of result consistent across threads. ---*/
