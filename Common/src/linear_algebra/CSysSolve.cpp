@@ -37,7 +37,12 @@
 
 #include <limits>
 
-const su2double eps = numeric_limits<su2mixedfloat>::epsilon(); /*!< \brief machine epsilon */
+/*!< \brief machine epsilon */
+#ifndef USE_MIXED_PRECISION
+const passivedouble eps = numeric_limits<passivedouble>::epsilon();
+#else
+const passivedouble eps = 1e-12;
+#endif
 
 template<class ScalarType>
 CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),

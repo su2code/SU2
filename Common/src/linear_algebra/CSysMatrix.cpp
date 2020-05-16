@@ -196,11 +196,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
 #ifdef USE_MKL
 #ifndef USE_MIXED_PRECISION
+  /*--- Double precision kernels. ---*/
   #define CREATE_GEMM mkl_jit_create_dgemm
   #define GET_GEMM_PTR mkl_jit_get_dgemm_ptr
 #else
+  /*--- Single precision kernels. ---*/
   #define CREATE_GEMM mkl_jit_create_sgemm
-  #define GET_GET_GEMM_PTR mkl_jit_get_sgemm_ptr
+  #define GET_GEMM_PTR mkl_jit_get_sgemm_ptr
 #endif
   CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar);
   MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
