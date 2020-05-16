@@ -664,20 +664,12 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       su2double Vn_Infty = 0.;
       for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
       
-//      /*--- Inflow ---*/
-//      if (Vn_Infty < 0.) {
-//        Kine_Infty  = kine_Inf;
-//        Omega_Infty = omega_Inf;
-//      }
-//      /*--- Outflow ---*/
-//      else {
-        su2double Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-        const su2double Rho_Infty = V_infty[nDim+2];
-        const su2double muT_Infty = V_infty[nDim+6];
-        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
-//      }
+      su2double Velocity2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+      const su2double Rho_Infty = V_infty[nDim+2];
+      const su2double muT_Infty = V_infty[nDim+6];
+      Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+      Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
       
       Primitive_j[0] = Kine_Infty;
       Primitive_j[1] = Omega_Infty;
@@ -706,11 +698,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_domain);
-//      visc_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
-//      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                         nodes->GetGradient(iPoint));
 
