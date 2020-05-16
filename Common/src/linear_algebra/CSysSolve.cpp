@@ -37,7 +37,7 @@
 
 #include <limits>
 
-const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
+const su2double eps = numeric_limits<su2mixedfloat>::epsilon(); /*!< \brief machine epsilon */
 
 template<class ScalarType>
 CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),
@@ -780,9 +780,9 @@ void CSysSolve<su2double>::HandleTemporariesOut(CSysVector<su2double> & LinSysSo
   SU2_OMP_BARRIER
 }
 
-#ifdef CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
 template<>
-void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
+void CSysSolve<su2mixedfloat>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is different we need to copy data to the temporaries ---*/
   /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
@@ -799,7 +799,7 @@ void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> &
 }
 
 template<>
-void CSysSolve<passivedouble>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
+void CSysSolve<su2mixedfloat>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is different we need to copy data from the temporaries ---*/
   /*--- Copy data, only the solution needs to be copied ---*/
@@ -1098,5 +1098,5 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 #ifdef CODI_FORWARD_TYPE
 template class CSysSolve<su2double>;
 #else
-template class CSysSolve<passivedouble>;
+template class CSysSolve<su2mixedfloat>;
 #endif

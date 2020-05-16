@@ -64,7 +64,7 @@ class CGeometry;
 /*!
  * \class CSysMatrix
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
- * \author A. Bueno, F. Palacios
+ * \author A. Bueno, F. Palacios, P. Gomes
  */
 template<class ScalarType>
 class CSysMatrix {
@@ -72,8 +72,8 @@ private:
   /*--- We are friends with all other possible CSysMatrices. ---*/
   template<class T> friend class CSysMatrix;
 
-  int rank;     /*!< \brief MPI Rank. */
-  int size;     /*!< \brief MPI Size. */
+  const int rank;     /*!< \brief MPI Rank. */
+  const int size;     /*!< \brief MPI Size. */
 
   enum : size_t { MAXNVAR = 8 };    /*!< \brief Maximum number of variables the matrix can handle. The static
                                                 size is needed for fast, per-thread, static memory allocation. */
@@ -129,7 +129,7 @@ private:
 #endif
 
 #ifdef HAVE_PASTIX
-  mutable CPastixWrapper pastix_wrapper;
+  mutable CPastixWrapper<ScalarType> pastix_wrapper;
 #endif
 
   /*!
@@ -833,8 +833,8 @@ public:
 
 #ifdef CODI_REVERSE_TYPE
 template<> template<>
-inline passivedouble CSysMatrix<passivedouble>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
+inline su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
 
 template<> template<>
-inline passivedouble CSysMatrix<su2double>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
+inline su2mixedfloat CSysMatrix<su2double>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
 #endif

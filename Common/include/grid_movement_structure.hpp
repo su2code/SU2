@@ -955,8 +955,8 @@ protected:
   CSysVector<su2double> LinSysSol;
   CSysVector<su2double> LinSysRes;
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysSolve<passivedouble> System;       /*!< \brief Linear solver/smoother. */
+  CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysSolve<su2mixedfloat> System;       /*!< \brief Linear solver/smoother. */
 #else
   CSysMatrix<su2double> StiffMatrix;
   CSysSolve<su2double>  System;

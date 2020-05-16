@@ -35,10 +35,9 @@
 #include <cmath>
 
 template<class ScalarType>
-CSysMatrix<ScalarType>::CSysMatrix(void) {
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
+CSysMatrix<ScalarType>::CSysMatrix() :
+  rank(SU2_MPI::GetRank()),
+  size(SU2_MPI::GetSize()) {
 
   nPoint = nPointDomain = nVar = nEqn = 0;
   nnz = nnz_ilu = 0;
@@ -73,16 +72,16 @@ template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
   delete [] omp_partitions;
-  if (ILU_matrix != nullptr) MemoryAllocation::aligned_free(ILU_matrix);
-  if (matrix != nullptr) MemoryAllocation::aligned_free(matrix);
-  if (invM != nullptr) MemoryAllocation::aligned_free(invM);
+  MemoryAllocation::aligned_free(ILU_matrix);
+  MemoryAllocation::aligned_free(matrix);
+  MemoryAllocation::aligned_free(invM);
 
 #ifdef USE_MKL
-  if ( MatrixMatrixProductJitter != nullptr )              mkl_jit_destroy( MatrixMatrixProductJitter );
-  if ( MatrixVectorProductJitterBetaZero != nullptr )      mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
-  if ( MatrixVectorProductJitterBetaOne  != nullptr )      mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
-  if ( MatrixVectorProductJitterAlphaMinusOne != nullptr ) mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
-  if ( MatrixVectorProductTranspJitterBetaOne != nullptr ) mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
+  mkl_jit_destroy( MatrixMatrixProductJitter );
+  mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
+  mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
+  mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
+  mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
 #endif
 
 }
@@ -196,20 +195,27 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
-  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
-  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+#ifndef USE_MIXED_PRECISION
+  #define CREATE_GEMM mkl_jit_create_dgemm
+  #define GET_GEMM_PTR mkl_jit_get_dgemm_ptr
+#else
+  #define CREATE_GEMM mkl_jit_create_sgemm
+  #define GET_GET_GEMM_PTR mkl_jit_get_sgemm_ptr
+#endif
+  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar);
+  MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
 
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
-  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1);
+  MatrixVectorProductKernelBetaZero = GET_GEMM_PTR(MatrixVectorProductJitterBetaZero);
 
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
-  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
+  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1);
+  MatrixVectorProductKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductJitterBetaOne);
 
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar, -1.0, 1, nVar, 1.0, 1 );
-  MatrixVectorProductKernelAlphaMinusOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterAlphaMinusOne );
+  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar, -1.0, 1, nVar, 1.0, 1);
+  MatrixVectorProductKernelAlphaMinusOne = GET_GEMM_PTR(MatrixVectorProductJitterAlphaMinusOne);
 
-  mkl_jit_create_dgemm( &MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar );
-  MatrixVectorProductTranspKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductTranspJitterBetaOne );
+  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar);
+  MatrixVectorProductTranspKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductTranspJitterBetaOne);
 #endif
 
 }
@@ -1422,38 +1428,24 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #endif
 }
 
-#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-template<>
-void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
-                                                      unsigned short kind_fact, bool transposed) {
-  SU2_OMP_MASTER
-  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
-}
-template<>
-void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2double> & vec, CSysVector<su2double> & prod,
-                                                        CGeometry *geometry, CConfig *config) const {
-  SU2_OMP_MASTER
-  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
-}
-#endif
-
 /*--- Explicit instantiations ---*/
 #ifdef CODI_FORWARD_TYPE
+/*--- In forward AD only the active type is used. ---*/
 template class CSysMatrix<su2double>;
-template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+template void CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 #else
-template class CSysMatrix<passivedouble>;
-template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, passivedouble, CSysVector<passivedouble>&);
+/*--- Base and reverse AD, matrix is passive (either float or double). ---*/
+template class CSysMatrix<su2mixedfloat>;
+template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixedfloat>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+/*--- In reverse AD (or mixed precision) the passive matrix is also used to communicate active (or double) vectors resp.. ---*/
+template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 #endif
-#ifdef CODI_REVERSE_TYPE
-template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-#endif
+#endif // CODI_FORWARD_TYPE

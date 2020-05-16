@@ -61,9 +61,14 @@ if get_option('enable-cgns')
   su2_cpp_args += '-DHAVE_CGNS'
 endif
 
-# Check for non-debug build
+# check for non-debug build
 if get_option('buildtype')!='debug'
   su2_cpp_args += '-DNDEBUG'
+endif
+
+# check for mixed precision floating point arithmetic
+if get_option('enable-mixedprec')
+  su2_cpp_args += '-DUSE_MIXED_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them

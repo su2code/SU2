@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -52,6 +52,14 @@
 /*--- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. ---*/
 
 typedef double passivedouble;
+
+/*--- Define a type for potentially lower precision operations. ---*/
+
+#ifdef USE_MIXED_PRECISION
+typedef float su2mixedfloat;
+#else
+typedef double su2mixedfloat;
+#endif
 
 /*!
  * \namespace SU2_TYPE

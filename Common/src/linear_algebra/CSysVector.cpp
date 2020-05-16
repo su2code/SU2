@@ -228,7 +228,11 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
   SU2_OMP_MASTER
   {
     sum = dotRes;
+#ifndef USE_MIXED_PRECISION
     SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+#endif
   }
 #endif
   /*--- Make view of result consistent across threads. ---*/
@@ -238,11 +242,14 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 }
 
 /*--- Explicit instantiations ---*/
+/*--- We allways need su2double (regardless if it is passive or active). ---*/
 template class CSysVector<su2double>;
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
-#ifdef CODI_REVERSE_TYPE
-template class CSysVector<passivedouble>;
-template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<passivedouble>&);
-template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
-template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+/*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors
+ *    and copy operations between them and active (or double) vectors, respectively. ---*/
+template class CSysVector<su2mixedfloat>;
+template void CSysVector<su2mixedfloat>::PassiveCopy(const CSysVector<su2mixedfloat>&);
+template void CSysVector<su2mixedfloat>::PassiveCopy(const CSysVector<su2double>&);
+template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2mixedfloat>&);
 #endif
