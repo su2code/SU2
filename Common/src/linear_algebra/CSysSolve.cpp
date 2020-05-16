@@ -997,7 +997,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
                                              CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
-#ifdef CODI_REVERSE_TYPE
 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
@@ -1044,6 +1043,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       break;
   }
 
+  /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
+  if (config->GetKind_SU2() == SU2_DOT) precond->Build();
+
   auto mat_vec = CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
 
   /*--- Solve the system ---*/
@@ -1085,14 +1087,13 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   delete precond;
 
   return IterLinSol;
-#else
-  return 0;
-#endif
+
 }
 
 /*--- Explicit instantiations ---*/
-template class CSysSolve<su2double>;
 
-#ifdef CODI_REVERSE_TYPE
+#ifdef CODI_FORWARD_TYPE
+template class CSysSolve<su2double>;
+#else
 template class CSysSolve<passivedouble>;
 #endif

@@ -1438,20 +1438,22 @@ void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2doub
 #endif
 
 /*--- Explicit instantiations ---*/
+#ifdef CODI_FORWARD_TYPE
 template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-
-#ifdef CODI_REVERSE_TYPE
+#else
 template class CSysMatrix<passivedouble>;
 template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, passivedouble, CSysVector<passivedouble>&);
+#endif
+#ifdef CODI_REVERSE_TYPE
+template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 #endif
