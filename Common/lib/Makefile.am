@@ -6,8 +6,8 @@
 # \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -118,6 +118,7 @@ lib_sources = \
   ../src/toolboxes/MMS/CNSUnitQuadSolution.cpp \
   ../src/toolboxes/MMS/CRinglebSolution.cpp \
   ../src/toolboxes/MMS/CTGVSolution.cpp \
+  ../src/toolboxes/MMS/CTurbChannelSolution.cpp \
   ../src/toolboxes/MMS/CUserDefinedSolution.cpp \
   ../src/linear_algebra/CSysVector.cpp \
   ../src/linear_algebra/CSysMatrix.cpp \
@@ -154,4 +155,3 @@ libSU2_AD_a_SOURCES = $(lib_sources)
 libSU2_AD_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
 libSU2_AD_a_LIBADD =  ${lib_ldadd}
 endif
-
