@@ -27,7 +27,11 @@
 # imports
 import numpy as np
 from optparse import OptionParser
-import os, sys, shutil, copy, os.path
+import os
+import sys
+import shutil
+import copy
+import os.path
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
 

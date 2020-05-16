@@ -27,11 +27,13 @@
 
 from __future__ import division, print_function, absolute_import
 
-import os, math
+import os
+import math
 from numpy import pi
 from optparse import OptionParser
 import numpy as np
-import libSU2, libSU2_mesh
+import libSU2
+import libSU2_mesh
 
 # plotting with matplotlib
 try:
@@ -282,8 +284,6 @@ def process_surface_adjoint( config_filename       ,
     print('----------------- Exit Success (Process Surface Adjoint) ----------------')
     print('')    
     
-    return
-
 #: def process_surface_adjoint()
 
 
@@ -474,7 +474,7 @@ def window(t,x,window_delta,window='hanning'):
     if x.ndim != 1:
         raise ValueError("smooth only accepts 1 dimension arrays.")
 
-    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+    if window not in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
         raise ValueError("Window is not of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
 
     # interpolate to constant time sample width
@@ -514,6 +514,7 @@ def window(t,x,window_delta,window='hanning'):
 #  Run Main from Command Line
 # -----------------------------------------------------------------
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    main()
     
     
