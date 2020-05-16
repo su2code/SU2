@@ -1027,6 +1027,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     ScreenOutput = config->GetDeform_Output();
   }
 
+  /*--- To keep the behavior of SU2_DOT even though it should not be strictly required. ---*/
+  if (config->GetKind_SU2() == SU2_DOT) RequiresTranspose = true;
+
   /*--- Set up preconditioner and matrix-vector product ---*/
 
   CPreconditioner<ScalarType>* precond  = nullptr;
