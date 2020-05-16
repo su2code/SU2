@@ -771,6 +771,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                         Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
     GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
+    SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
 
   }
 
@@ -838,6 +839,65 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
     heat_flux_jac_i[4] = conductivity_over_Rd * R_dTdu4;
 
   }
+}
+
+void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
+                                             const su2double val_laminar_viscosity,
+                                             const su2double val_eddy_viscosity,
+                                             const su2double *val_normal,
+                                             const CConfig   *config) {
+  
+  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+    
+    const su2double a1 = 0.31;
+    
+    su2double stress_tensor[3][3];
+    su2double heat_flux_vec[3];
+    su2double div_vel = 0.0;
+    const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+    const su2double heat_flux_factor = Cp/Prandtl_Turb;
+    
+    for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
+      div_vel += Mean_GradPrimVar[iDim+1][iDim];
+    
+    for (unsigned short iDim = 0 ; iDim < nDim; iDim++) {
+      heat_flux_vec[iDim] = heat_flux_factor*Mean_GradPrimVar[0][iDim];
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+        stress_tensor[iDim][jDim] = ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
+                                  - TWO3*div_vel*delta[iDim][jDim];
+    }
+  
+    /*--- Jacobian wrt eddy viscosity ---*/
+    const su2double VorticityMag_i = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+                                          Vorticity_i[1]*Vorticity_i[1] +
+                                          Vorticity_i[2]*Vorticity_i[2]);
+
+    if (turb_omega_i > VorticityMag_i*F2_i/a1) {
+      const su2double factor = turb_ke_i/turb_omega_i;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_i[iDim+1][0] += factor*stress_tensor[iDim][jDim]*Normal[jDim];
+          Jacobian_i[nDim+1][0] += factor*(stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]+heat_flux_vec[jDim])*Normal[jDim];
+        }
+      }
+    }
+
+    const su2double VorticityMag_j = sqrt(Vorticity_j[0]*Vorticity_j[0] +
+                                          Vorticity_j[1]*Vorticity_j[1] +
+                                          Vorticity_j[2]*Vorticity_j[2]);
+
+    if (turb_omega_j > VorticityMag_j*F2_j/a1) {
+      const su2double factor = turb_ke_j/turb_omega_j;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_j[iDim+1][0] += factor*stress_tensor[iDim][jDim]*Normal[jDim];
+          Jacobian_j[nDim+1][0] += factor*(stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]+heat_flux_vec[jDim])*Normal[jDim];
+        }
+      }
+    }
+    
+  }
+  
 }
 
 CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,

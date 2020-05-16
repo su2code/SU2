@@ -73,6 +73,7 @@ protected:
   
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
   su2double F1_i, F1_j;
+  su2double F2_i, F2_j;
 
   /*!
    * \brief Add a correction using a Quadratic Constitutive Relation
@@ -290,6 +291,13 @@ public:
   void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
     F1_i = val_F1_i; F1_j = val_F1_j;
   }
+  
+  /*!
+   * \brief Sets value of second blending function.
+   */
+  void SetF2blending(su2double val_F2_i, su2double val_F2_j) {
+    F2_i = val_F2_i; F2_j = val_F2_j;
+  }
 
 };
 
@@ -347,6 +355,25 @@ public:
                            su2double val_proj_vector,
                            su2double val_area,
                            const su2double *val_normal);
+  
+  /*!
+   * \brief Compute the Jacobian of the heat flux vector
+   *
+   * This Jacobian is projected onto the normal vector, so it is of
+   * dimension nVar.
+   *
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   */
+  void SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
+                                const su2double val_laminar_viscosity,
+                                const su2double val_eddy_viscosity,
+                                const su2double *val_normal,
+                                const CConfig   *config);
 };
 
 /*!

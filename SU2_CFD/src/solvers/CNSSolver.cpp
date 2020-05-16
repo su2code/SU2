@@ -342,9 +342,16 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   if (tkeNeeded) {
     numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
                                    turbNodes->GetPrimitive(jPoint,0));
+    numerics->SetTurbSpecificDissipation(turbNodes->GetPrimitive(iPoint,1),
+                                         turbNodes->GetPrimitive(jPoint,1));
     numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
                                  turbNodes->GetGradient(jPoint));
-    numerics->SetF1blending(turbNodes->GetF1blending(iPoint), turbNodes->GetF1blending(jPoint));
+    numerics->SetF1blending(turbNodes->GetF1blending(iPoint),
+                            turbNodes->GetF1blending(jPoint));
+    numerics->SetF2blending(turbNodes->GetF2blending(iPoint),
+                            turbNodes->GetF2blending(jPoint));
+    numerics->SetVorticity(nodes->GetVorticity(iPoint),
+                           nodes->GetVorticity(jPoint));
   }
 
   /*--- Wall shear stress values (wall functions) ---*/

@@ -7272,13 +7272,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-//                                              Kine_Infty);
-
+          visc_numerics->SetTurbSpecificDissipation(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
+                                                    solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
                                        solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
+          visc_numerics->SetF2blending(solver_container[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
+                                       solver_container[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
+          visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
+                                      nodes->GetVorticity(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/

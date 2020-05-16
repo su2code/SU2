@@ -87,6 +87,9 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
+  turb_omega_i,  /*!< \brief Turbulent specific dissipation at point i. */
+  turb_omega_j;  /*!< \brief Turbulent specific dissipation at point j. */
+  su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
   su2double
@@ -471,7 +474,7 @@ public:
    * \param[in] val_F1_i - Value of the second Menter blending function at point i.
    * \param[in] val_F1_j - Value of the second Menter blending function at point j.
    */
-  virtual void SetF2blending(su2double val_F1_i, su2double val_F1_j) {/* empty */};
+  virtual void SetF2blending(su2double val_F2_i, su2double val_F2_j) {/* empty */};
   
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
@@ -555,6 +558,16 @@ public:
   inline void SetTurbKineticEnergy(su2double val_turb_ke_i, su2double val_turb_ke_j) {
     turb_ke_i = val_turb_ke_i;
     turb_ke_j = val_turb_ke_j;
+  }
+  
+  /*!
+   * \brief Set the turbulent specific dissipation.
+   * \param[in] val_omega_i - Value of the specific dissipation at point i.
+   * \param[in] val_omega_j - Value of the specific dissipation at point j.
+   */
+  inline void SetTurbSpecificDissipation(su2double val_omega_i, su2double val_omega_j) {
+    turb_omega_i = val_omega_i;
+    turb_omega_j = val_omega_j;
   }
 
   /*!
