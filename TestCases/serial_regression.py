@@ -6,8 +6,8 @@
 #  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -30,12 +30,12 @@ import sys
 from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
-    
+
     #########################
     ## Compressible Euler ###
     #########################
@@ -59,8 +59,8 @@ def main():
     channel.new_output = True
     channel.tol       = 0.00001
     test_list.append(channel)
-   
-    # NACA0012 
+
+    # NACA0012
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
@@ -72,7 +72,7 @@ def main():
     naca0012.tol       = 0.00001
     test_list.append(naca0012)
 
-    # Supersonic wedge 
+    # Supersonic wedge
     wedge           = TestCase('wedge')
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
@@ -95,7 +95,7 @@ def main():
     oneram6.new_output = True
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
-    
+
     # Fixed CL NACA0012
     fixedCL_naca0012           = TestCase('fixedcl_naca0012')
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
@@ -107,7 +107,7 @@ def main():
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
     test_list.append(fixedCL_naca0012)
-    
+
     # Polar sweep of the inviscid NACA0012
     polar_naca0012           = TestCase('polar_naca0012')
     polar_naca0012.cfg_dir   = "polar/naca0012"
@@ -192,7 +192,7 @@ def main():
     poiseuille.timeout   = 1600
     poiseuille.tol       = 0.00001
     test_list.append(poiseuille)
-    
+
     # 2D Poiseuille flow (inlet profile file)
     poiseuille_profile           = TestCase('poiseuille_profile')
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
@@ -204,7 +204,7 @@ def main():
     poiseuille_profile.timeout   = 1600
     poiseuille_profile.tol       = 0.00001
     test_list.append(poiseuille_profile)
-    
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -228,7 +228,7 @@ def main():
     rae2822_sa.new_output = True
     rae2822_sa.tol       = 0.00001
     test_list.append(rae2822_sa)
-    
+
     # RAE2822 SST
     rae2822_sst           = TestCase('rae2822_sst')
     rae2822_sst.cfg_dir   = "rans/rae2822"
@@ -287,7 +287,7 @@ def main():
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
- 
+
     # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
@@ -311,7 +311,7 @@ def main():
     turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(turb_naca0012_sst_sust)
 
-    # PROPELLER 
+    # PROPELLER
     propeller           = TestCase('propeller')
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
@@ -322,7 +322,7 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
-    
+
     #################################
     ## Compressible RANS Restart  ###
     #################################
@@ -339,7 +339,7 @@ def main():
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
     test_list.append(turb_naca0012_sst_restart_mg)
-    
+
     #############################
     ### Incompressible Euler  ###
     #############################
@@ -423,7 +423,7 @@ def main():
     inc_poly_cylinder.timeout   = 1600
     inc_poly_cylinder.tol       = 0.00001
     test_list.append(inc_poly_cylinder)
-    
+
     # X-coarse laminar bend as a mixed element CGNS test
     inc_lam_bend          = TestCase('inc_lam_bend')
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
@@ -473,7 +473,7 @@ def main():
     ####################
     ### DG-FEM Euler ###
     ####################
-    
+
     # Dry run DG Euler
     fem_euler_naca0012_d           = TestCase('dry run DG Euler')
     fem_euler_naca0012_d.cfg_dir   = "hom_euler/NACA0012_5thOrder"
@@ -493,11 +493,11 @@ def main():
     fem_euler_naca0012.timeout   = 1600
     fem_euler_naca0012.tol       = 0.00001
     test_list.append(fem_euler_naca0012)
-    
+
     ############################
     ### DG-FEM Navier-Stokes ###
     ############################
-    
+
     # Dry run DG NS
     fem_ns_flatplate_d           = TestCase('dry run DG NS')
     fem_ns_flatplate_d.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
@@ -517,7 +517,7 @@ def main():
     fem_ns_flatplate.timeout   = 1600
     fem_ns_flatplate.tol       = 0.00001
     test_list.append(fem_ns_flatplate)
-    
+
     # Steady cylinder
     fem_ns_cylinder           = TestCase('fem_ns_cylinder')
     fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
@@ -644,7 +644,7 @@ def main():
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
     test_list.append(contadj_wedge)
-    
+
     # Inviscid fixed CL NACA0012
     contadj_fixedCL_naca0012           = TestCase('contadj_fixedcl_naca0012')
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
@@ -692,7 +692,7 @@ def main():
     contadj_ns_naca0012_sub.timeout   = 1600
     contadj_ns_naca0012_sub.tol       = 0.00001
     test_list.append(contadj_ns_naca0012_sub)
-    
+
     # Adjoint laminar naca0012 transonic
     contadj_ns_naca0012_trans           = TestCase('contadj_ns_naca0012_trans')
     contadj_ns_naca0012_trans.cfg_dir   = "cont_adj_navierstokes/naca0012_trans"
@@ -720,7 +720,7 @@ def main():
     contadj_rans_naca0012.timeout   = 1600
     contadj_rans_naca0012.tol       = 0.00001
     test_list.append(contadj_rans_naca0012)
-   
+
     # Adjoint turbulent NACA0012 with binary restarts
     contadj_rans_naca0012_bin           = TestCase('contadj_rans_naca0012_bin')
     contadj_rans_naca0012_bin.cfg_dir   = "cont_adj_rans/naca0012"
@@ -732,7 +732,7 @@ def main():
     contadj_rans_naca0012_bin.timeout   = 1600
     contadj_rans_naca0012_bin.tol       = 0.00001
     test_list.append(contadj_rans_naca0012_bin)
- 
+
     # Adjoint turbulent RAE2822
     contadj_rans_rae2822           = TestCase('contadj_rans_rae2822')
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
@@ -812,7 +812,7 @@ def main():
     ######################################
     ### Harmonic Balance               ###
     ######################################
-    
+
     # Description of the regression test
     harmonic_balance           = TestCase('harmonic_balance')
     harmonic_balance.cfg_dir   = "harmonic_balance"
@@ -840,7 +840,7 @@ def main():
     ######################################
     ### Moving Wall                    ###
     ######################################
-    
+
     # Lid-driven cavity
     cavity           = TestCase('cavity')
     cavity.cfg_dir   = "moving_wall/cavity"
@@ -906,7 +906,7 @@ def main():
     aeroelastic.tol       = 0.00001
     aeroelastic.unsteady  = True
     aeroelastic.new_output = True
-    test_list.append(aeroelastic) 
+    test_list.append(aeroelastic)
 
     # Delayed Detached Eddy Simulation
     ddes_flatplate        = TestCase('ddes_flatplate')
@@ -919,7 +919,21 @@ def main():
     ddes_flatplate.tol       = 0.00001
     ddes_flatplate.unsteady  = True
     ddes_flatplate.new_output = True
-    test_list.append(ddes_flatplate)    
+    test_list.append(ddes_flatplate)
+
+    # WMLES Channel Flow
+    wmles_channel        = TestCase('wmles_channel')
+    wmles_channel.cfg_dir   = "wmles/channel"
+    wmles_channel.cfg_file  = "wmles_channel.cfg"
+    wmles_channel.test_iter = 10
+    wmles_channel.test_vals = [ -8.164737,-8.595764,-8.114846,-7.649493] #last 4 columns
+    wmles_channel.su2_exec  = "wmles.py -f wmles_channel.cfg -n 1"
+    wmles_channel.timeout   = 1600
+    wmles_channel.tol       = 0.00001
+    wmles_channel.unsteady  = True
+    wmles_channel.new_output = True
+    test_list.append(wmles_channel)
+
 
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
@@ -973,7 +987,7 @@ def main():
     edge_VW.tol       = 0.00001
     test_list.append(edge_VW)
 
-    # Rarefaction shock wave edge_PPR               
+    # Rarefaction shock wave edge_PPR
     edge_PPR           = TestCase('edge_PPR')
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
@@ -984,12 +998,12 @@ def main():
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
-    
-    
+
+
     ######################################
     ### turbomachinery                 ###
     ######################################
-    
+
     # Jones APU Turbocharger
     Jones_tc           = TestCase('jones_turbocharger')
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
@@ -1025,7 +1039,7 @@ def main():
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
     test_list.append(axial_stage2D)
-    
+
     # 2D transonic stator
     transonic_stator           = TestCase('transonic_stator')
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
@@ -1037,7 +1051,7 @@ def main():
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
-    
+
     # 2D transonic stator restart
     transonic_stator_rst           = TestCase('transonic_stator_restart')
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
@@ -1061,7 +1075,7 @@ def main():
     uniform_flow_d.cfg_file  = "uniform_NN.cfg"
     uniform_flow_d.su2_exec  = "SU2_CFD -d"
     uniform_flow_d.timeout   = 1600
-    test_list.append(uniform_flow_d) 
+    test_list.append(uniform_flow_d)
 
     # Uniform flow
     uniform_flow         = TestCase('uniform_flow')
@@ -1074,7 +1088,7 @@ def main():
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
-    test_list.append(uniform_flow) 
+    test_list.append(uniform_flow)
 
    # Channel_2D
     channel_2D           = TestCase('channel_2D')
@@ -1152,7 +1166,7 @@ def main():
     bars_SST_2D.tol       = 0.00001
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
-    
+
     # Sliding mesh with incompressible flows (steady)
     slinc_steady           = TestCase('slinc_steady')
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
@@ -1164,7 +1178,7 @@ def main():
     slinc_steady.tol       = 0.00001
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
-    
+
     # Sliding mesh with incompressible flows (unsteady)
     # slinc_unsteady           = TestCase('slinc_unsteady')
     # slinc_unsteady.cfg_dir   = "sliding_interface/incompressible_unsteady"
@@ -1302,7 +1316,7 @@ def main():
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
     test_list.append(p1rad)
-   
+
     # ###############################
     # ### Conjugate heat transfer ###
     # ###############################
@@ -1366,7 +1380,7 @@ def main():
     mms_fvm_ns.timeout   = 1600
     mms_fvm_ns.tol       = 0.0001
     test_list.append(mms_fvm_ns)
-    
+
     # FVM, incompressible, euler
     mms_fvm_inc_euler           = TestCase('mms_fvm_inc_euler')
     mms_fvm_inc_euler.cfg_dir   = "mms/fvm_incomp_euler"
@@ -1377,7 +1391,7 @@ def main():
     mms_fvm_inc_euler.timeout   = 1600
     mms_fvm_inc_euler.tol       = 0.0001
     test_list.append(mms_fvm_inc_euler)
-    
+
     # FVM, incompressible, laminar N-S
     mms_fvm_inc_ns           = TestCase('mms_fvm_inc_ns')
     mms_fvm_inc_ns.cfg_dir   = "mms/fvm_incomp_navierstokes"
@@ -1421,18 +1435,18 @@ def main():
     mms_dg_ns_3d.timeout   = 1600
     mms_dg_ns_3d.tol       = 0.0001
     test_list.append(mms_dg_ns_3d)
-    
+
     ######################################
     ### RUN TESTS                      ###
-    ######################################  
+    ######################################
 
     pass_list = [ test.run_test() for test in test_list ]
 
-    
+
     ######################################
     ### RUN SU2_GEO TESTS              ###
     ######################################
-    
+
     # NACA0012
     naca0012_geo           = TestCase('naca0012_geo')
     naca0012_geo.cfg_dir   = "optimization_euler/steady_naca0012"
@@ -1447,7 +1461,7 @@ def main():
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
-    
+
     # Inviscid NACA0012 (triangles)
     naca0012_def            = TestCase('naca0012_def')
     naca0012_def.cfg_dir   = "deformation/naca0012"
@@ -1457,10 +1471,10 @@ def main():
     naca0012_def.su2_exec  = "SU2_DEF"
     naca0012_def.timeout   = 1600
     naca0012_def.tol       = 1e-08
-    
+
     pass_list.append(naca0012_def.run_def())
     test_list.append(naca0012_def)
-    
+
     # Inviscid NACA0012 based on SURFACE_FILE input (surface_bump.dat)
     naca0012_def_file            = TestCase('naca0012_def_file')
     naca0012_def_file.cfg_dir   = "deformation/naca0012"
@@ -1470,10 +1484,10 @@ def main():
     naca0012_def_file.su2_exec  = "SU2_DEF"
     naca0012_def_file.timeout   = 1600
     naca0012_def_file.tol       = 1e-8
-    
+
     pass_list.append(naca0012_def_file.run_def())
     test_list.append(naca0012_def_file)
-    
+
     # RAE2822 (mixed tris + quads)
     rae2822_def            = TestCase('rae2822_def')
     rae2822_def.cfg_dir   = "deformation/rae2822"
@@ -1483,10 +1497,10 @@ def main():
     rae2822_def.su2_exec  = "SU2_DEF"
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
-    
+
     pass_list.append(rae2822_def.run_def())
     test_list.append(rae2822_def)
-    
+
     # Turb NACA4412 (quads, wall distance)
     naca4412_def            = TestCase('naca4412_def')
     naca4412_def.cfg_dir   = "deformation/naca4412"
@@ -1496,7 +1510,7 @@ def main():
     naca4412_def.su2_exec  = "SU2_DEF"
     naca4412_def.timeout   = 1600
     naca4412_def.tol       = 1e-12
-    
+
     pass_list.append(naca4412_def.run_def())
     test_list.append(naca4412_def)
 
@@ -1509,7 +1523,7 @@ def main():
     brick_tets_def.su2_exec  = "SU2_DEF"
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-09
-    
+
     pass_list.append(brick_tets_def.run_def())
     test_list.append(brick_tets_def)
 
@@ -1522,7 +1536,7 @@ def main():
     brick_hex_def.su2_exec  = "SU2_DEF"
     brick_hex_def.timeout   = 1600
     brick_hex_def.tol       = 1e-09
-    
+
     pass_list.append(brick_hex_def.run_def())
     test_list.append(brick_hex_def)
 
@@ -1535,7 +1549,7 @@ def main():
     brick_pyra_def.su2_exec  = "SU2_DEF"
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-08
-    
+
     pass_list.append(brick_pyra_def.run_def())
     test_list.append(brick_pyra_def)
 
@@ -1548,10 +1562,10 @@ def main():
     brick_prism_def.su2_exec  = "SU2_DEF"
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-08
-    
+
     pass_list.append(brick_prism_def.run_def())
     test_list.append(brick_prism_def)
-    
+
     # Brick of prisms with high aspect ratio cells near the wall (wall distance)
     brick_prism_rans_def           = TestCase('brick_prism_rans_def')
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
@@ -1561,10 +1575,10 @@ def main():
     brick_prism_rans_def.su2_exec  = "SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
-    
+
     pass_list.append(brick_prism_rans_def.run_def())
     test_list.append(brick_prism_rans_def)
-    
+
     # Brick of hexas with high aspect ratio cells near the wall (inverse volume)
     brick_hex_rans_def           = TestCase('brick_hex_rans_def')
     brick_hex_rans_def.cfg_dir   = "deformation/brick_hex_rans"
@@ -1574,7 +1588,7 @@ def main():
     brick_hex_rans_def.su2_exec  = "SU2_DEF"
     brick_hex_rans_def.timeout   = 1600
     brick_hex_rans_def.tol       = 1e-12
-    
+
     pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
 
@@ -1603,7 +1617,7 @@ def main():
 
     pass_list.append(sphere_ffd_def.run_def())
     test_list.append(sphere_ffd_def)
-    
+
     # Spherical FFD test using BSplines
     sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
     sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
@@ -1616,11 +1630,11 @@ def main():
 
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
-   
+
     ######################################
     ### RUN PYTHON TESTS               ###
-    ###################################### 
-    
+    ######################################
+
     # test continuous_adjoint.py
     contadj_euler_py = TestCase('contadj_euler_py')
     contadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
@@ -1659,9 +1673,9 @@ def main():
     contadj_multi_py.test_file  = "of_grad_combo.dat"
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
-    
+
     # Optimization with multiple objectives, with gradients evaluated individually
-    # the difference in gradient value relative to combined case 
+    # the difference in gradient value relative to combined case
     # is due to lack of solution file for the adjoint and small number of iterations
 #    opt_multiobj_py            = TestCase('opt_multiobj_py')
 #    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
@@ -1674,7 +1688,7 @@ def main():
 #    pass_list.append(opt_multiobj_py.run_opt())
 #    test_list.append(opt_multiobj_py)
 #
-#    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
+#    # test optimization, with multiple objectives and gradient evaluated as 'combo'
 #    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
 #    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
 #    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
@@ -1702,7 +1716,7 @@ def main():
     opt_2surf1obj_py            = TestCase('opt_2surf1obj_py')
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
-    opt_2surf1obj_py.test_iter  = 1    
+    opt_2surf1obj_py.test_iter  = 1
     opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005694, 0.000185] #last 4 columns
     opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
@@ -1713,8 +1727,8 @@ def main():
     ##########################
     ###   Python wrapper   ###
     ##########################
-    
-    # NACA0012 
+
+    # NACA0012
     pywrapper_naca0012           = TestCase('pywrapper_naca0012')
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
@@ -1809,7 +1823,7 @@ def main():
     pywrapper_rigidMotion.unsteady      = True
     test_list.append(pywrapper_rigidMotion)
     pass_list.append(pywrapper_rigidMotion.run_test())
-    
+
     # Tests summary
     print('==================================================================')
     print('Summary of the serial tests')
@@ -1819,7 +1833,7 @@ def main():
             print('  passed - %s'%test.tag)
         else:
             print('* FAILED - %s'%test.tag)
-    
+
     if all(pass_list):
         sys.exit(0)
     else:
