@@ -497,11 +497,14 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned long iPoint) {
   
+  AD_BEGIN_PASSIVE
+  
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+  
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    AD_BEGIN_PASSIVE
-    
-    if ((geometry->node[iPoint]->GetWall_Distance() > 1e-10) && (nodes->GetCrossDiff(iPoint) > 1e-20)) {
+    if ((geometry->node[iPoint]->GetWall_Distance() > 1e-10) &&
+        (nodes->GetCrossDiff(iPoint) > eps)) {
 //    if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -554,10 +557,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
-    
-    AD_END_PASSIVE
-    
   }
+  
+  AD_END_PASSIVE
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
