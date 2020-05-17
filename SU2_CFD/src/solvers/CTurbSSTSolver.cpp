@@ -295,7 +295,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Compute primitives and gradients in postprocessing ---*/
   
-  Postprocessing(geometry, solver_container, config, iMesh);
+//  Postprocessing(geometry, solver_container, config, iMesh);
   
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
