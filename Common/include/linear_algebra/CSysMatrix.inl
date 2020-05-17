@@ -32,14 +32,6 @@
 
 #include "CSysMatrix.hpp"
 
-#if defined(_MSC_VER)
-  #define FORCEINLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-  #define FORCEINLINE inline __attribute__((always_inline))
-#else
-  #define FORCEINLINE inline
-#endif
-
 template<class ScalarType>
 FORCEINLINE ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
 
