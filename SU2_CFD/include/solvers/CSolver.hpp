@@ -1789,6 +1789,14 @@ public:
   inline virtual void Heat_Fluxes(CGeometry *geometry,
                                   CSolver **solver_container,
                                   CConfig *config) { }
+  
+  /*!
+  * \brief A virtual member.
+  * \param[in] geometry - Geometrical definition.
+  * \param[in] config - Definition of the particular problem.
+  */
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                               CConfig *config, bool Output) { return 0; }
 
   /*!
    * \brief A virtual member.
