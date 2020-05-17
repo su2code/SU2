@@ -118,10 +118,10 @@ private:
 #ifdef USE_MKL
 #ifndef USE_MIXED_PRECISION
   /*--- Double precision kernels. ---*/
-  #define GEMM_T dgemm_jit_kernel_t
+  using GEMM_T = dgemm_jit_kernel_t;
 #else
   /*--- Single precision kernels. ---*/
-  #define GEMM_T sgemm_jit_kernel_t
+  using GEMM_T = sgemm_jit_kernel_t;
 #endif
   void * MatrixMatrixProductJitter;              /*!< \brief Jitter handle for MKL JIT based GEMM. */
   GEMM_T MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
@@ -133,7 +133,6 @@ private:
   GEMM_T MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
   void * MatrixVectorProductTranspJitterBetaOne; /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
   GEMM_T MatrixVectorProductTranspKernelBetaOne; /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
-  #undef GEMM_T
 #endif
 
 #ifdef HAVE_PASTIX
@@ -165,13 +164,7 @@ private:
    * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
    */
   template<class DstType, class SrcType>
-  inline DstType PassiveAssign(const SrcType & val) const {
-#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-    return SU2_TYPE::GetValue(val);
-#else
-    return val;
-#endif
-  }
+  inline DstType PassiveAssign(const SrcType & val) const { return SU2_TYPE::GetValue(val); }
 
   /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
@@ -842,7 +835,4 @@ public:
 #ifdef CODI_REVERSE_TYPE
 template<> template<>
 inline su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
-
-template<> template<>
-inline su2mixedfloat CSysMatrix<su2double>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
 #endif

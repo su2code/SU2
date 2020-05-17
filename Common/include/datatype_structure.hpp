@@ -30,13 +30,14 @@
 #include <iostream>
 #include <complex>
 #include <cstdio>
+#include <type_traits>
 
 #if defined(_MSC_VER)
-  #define FORCEINLINE __forceinline
+#define FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-  #define FORCEINLINE inline __attribute__((always_inline))
+#define FORCEINLINE inline __attribute__((always_inline))
 #else
-  #define FORCEINLINE inline
+#define FORCEINLINE inline
 #endif
 
 /*--- Depending on the datatype defined during the configuration,
@@ -57,35 +58,34 @@
 #endif
 
 #if CODI_INDEX_TAPE
-  typedef codi::RealReverseIndex su2double;
+using su2double = codi::RealReverseIndex;
 #elif CODI_PRIMAL_TAPE
-  typedef codi::RealReversePrimal su2double;
+using su2double = codi::RealReversePrimal;
 #elif CODI_PRIMAL_INDEX_TAPE
-  typedef codi::RealReversePrimalIndex su2double;
+using su2double = codi::RealReversePrimalIndex;
 #else
-  typedef codi::RealReverse su2double;
+using su2double = codi::RealReverse;
 #endif
 
 #elif defined(CODI_FORWARD_TYPE) // forward mode AD
 #include "codi.hpp"
-typedef codi::RealForward su2double;
+using su2double = codi::RealForward;
 
 #else // primal / direct / no AD
-typedef double su2double;
+using su2double = double;
 #endif
 
 #include "ad_structure.hpp"
 
-/*--- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. ---*/
-
-typedef double passivedouble;
+/*--- This type can be used for (rare) compatiblity cases or for
+ * computations that are intended to be (always) passive. ---*/
+using passivedouble = double;
 
 /*--- Define a type for potentially lower precision operations. ---*/
-
 #ifdef USE_MIXED_PRECISION
-typedef float su2mixedfloat;
+using su2mixedfloat = float;
 #else
-typedef double su2mixedfloat;
+using su2mixedfloat = passivedouble;
 #endif
 
 /*!
@@ -194,9 +194,11 @@ namespace SU2_TYPE {
 
   /*--- Special handling of the sprintf routine for non-primitive types. ---*/
   /*--- Pass-through for built-in types. ---*/
-  template<class T> FORCEINLINE const T& _printGetValue(const T& val) {return val;}
-  /*--- By-value overload to force evaluation of AD expressions. ---*/
-  FORCEINLINE passivedouble _printGetValue(su2double val) {return SU2_TYPE::GetValue(val);}
+  template<class T, typename std::enable_if<std::is_trivial<T>::value,bool>::type = 0>
+  FORCEINLINE const T& _printGetValue(const T& val) {return val;}
+  /*--- Overload for expressions of active types. ---*/
+  template<class T, typename std::enable_if<!std::is_trivial<T>::value,bool>::type = 0>
+  FORCEINLINE passivedouble _printGetValue(const T& val) { return val.getValue(); }
 
   /*!
    * \brief Wrapper to sprintf to be able to print active types and AD expressions.
@@ -212,6 +214,6 @@ namespace SU2_TYPE {
   FORCEINLINE void sprintf(char* str, const char* literal) {
     ::sprintf(str, "%s", literal);
   }
-  #define SPRINTF SU2_TYPE::sprintf
+#define SPRINTF SU2_TYPE::sprintf
 
 } // namespace SU2_TYPE
