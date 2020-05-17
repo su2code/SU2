@@ -302,9 +302,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  
-  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                            (config->GetInnerIter() <= config->GetLimiterIter());
       
   SetPrimitive_Variables(solver_container);
   
@@ -321,8 +318,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
-
-  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
   
   SetEddyViscosity(geometry, solver_container);
 
