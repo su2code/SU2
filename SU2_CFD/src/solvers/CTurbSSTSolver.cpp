@@ -405,8 +405,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
 
     nodes->SetmuT(iPoint,muT);
     
-    const su2double eps = numeric_limits<passivedouble>::epsilon();
-    if (muT < eps) cout << "k = " << kine << ", rho = " << rho << ", omega = " << omega << ", zeta = " << zeta << endl;
+    cout << "k = " << kine << ", rho = " << rho << ", omega = " << omega << ", zeta = " << zeta << ", muT = " << muT << endl;
 
   }
 
