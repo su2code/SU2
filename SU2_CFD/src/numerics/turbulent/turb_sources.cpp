@@ -893,9 +893,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
    }
     
-   if (isnan(pw)) cout << "pw" << endl;
-   if (isnan(CDkw_i)) cout << "CDkw_i" << endl;
-    if (isnan(TurbVar_i[1])) cout << "omega" << endl;
+   if (isnan(pk)) cout << "pk" << endl;
+   if (isnan(alfa_blended)) cout << "alfa" << endl;
+    if (isnan(Eddy_Viscosity_i)) cout << "Eddy_Viscosity" << endl;
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
