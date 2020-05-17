@@ -93,8 +93,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   FinishResidualCalc(config);
   
-  if (isnan(Flux[1])) cout << "Convection" << endl;
-
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
 

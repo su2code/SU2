@@ -283,8 +283,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];
   Flux[1] = diff_omega*Proj_Mean_GradTurbVar[1];
-  if (isnan(Flux[1])) cout << "Diffusion" << endl;
-
+  
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
         
