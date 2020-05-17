@@ -311,16 +311,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-      
-//  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, true);
-//  switch (config->GetKind_Gradient_Method()) {
-//    case GREEN_GAUSS:
-//      solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config, true); break;
-//    case LEAST_SQUARES:
-//    case WEIGHTED_LEAST_SQUARES:
-//      solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config, true); break;
-//    default: break;
-//  }
+    
   SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
@@ -358,15 +349,11 @@ void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver_container) {
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    cout << "FlowPrimitive(" << iPoint << ") = (";
     for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
       if (iVar == nDim+2) nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetDensity(iPoint));
       else if (iVar == nDim+6) nodes->SetFlowPrimitive(iPoint,iVar,nodes->GetmuT(iPoint));
       else nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetPrimitive(iPoint,iVar));
-      
-      cout << nodes->GetFlowPrimitive(iPoint,iVar) << ",";
     }
-    cout << ")" << endl;
   }
 }
 
@@ -418,9 +405,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double muT   = max(rho*kine/zeta,0.0);
 
     nodes->SetmuT(iPoint,muT);
-    
-    cout << "muT = " << muT << ", PrimVar[nDim+6] = " << nodes->GetFlowPrimitive(iPoint,nDim+6) << endl;
-    
+        
   }
 
 }
