@@ -471,7 +471,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
-      if (isnan(LinSysRes[total_index])) cout << "iPoint = " << geometry->node[iPoint]->GetGlobalIndex() << ", iVar = " << iVar << endl;
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
 
