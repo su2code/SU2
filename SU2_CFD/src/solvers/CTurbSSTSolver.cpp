@@ -350,7 +350,8 @@ void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver_container) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-      nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetPrimitive(iPoint,iVar));
+      if (iVar == nDim+2) nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetDensity(iPoint));
+      else nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetPrimitive(iPoint,iVar));
     }
   }
 }
