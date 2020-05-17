@@ -35,7 +35,7 @@
 template<class ScalarType>
 FORCEINLINE ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
 
-  for (unsigned long index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++)
+  for (auto index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++)
     if (col_ind_ilu[index] == block_j)
       return &ILU_matrix[index*nVar*nEqn];
   return nullptr;
@@ -44,11 +44,9 @@ FORCEINLINE ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
 
-  unsigned long iVar, index;
-
-  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+  for (auto index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
-      for (iVar = 0; iVar < nVar*nEqn; iVar++)
+      for (auto iVar = 0ul; iVar < nVar*nEqn; iVar++)
         ILU_matrix[index*nVar*nEqn+iVar] = val_block[iVar];
       break;
     }
@@ -58,12 +56,10 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
 
-  unsigned long iVar, jVar, index;
-
-  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+  for (auto index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        for (auto jVar = 0ul; jVar < nEqn; jVar++)
           ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[jVar*nVar+iVar];
       break;
     }
@@ -77,13 +73,17 @@ FORCEINLINE void gemv_impl(const unsigned long n, const T *a, const T *b, T *c) 
    template parameters so that they can be optimized away at compilation.
    This is still the traditional "row dot vector" method.
   ---*/
-  unsigned long i, j;
-  for (i = 0; i < n; i++) {
-    if (!beta) c[i] = 0.0;
-    for (j = 0; j < n; j++) {
-      if (alpha) c[transp? j:i] += a[i*n+j] * b[transp? i:j];
-      else       c[transp? j:i] -= a[i*n+j] * b[transp? i:j];
+  if (!transp) {
+    for (auto i = 0ul; i < n; i++) {
+      if (!beta) c[i] = 0.0;
+      for (auto j = 0ul; j < n; j++)
+        c[i] += (alpha? 1 : -1) * a[i*n+j] * b[j];
     }
+  } else {
+    if (!beta) for (auto j = 0ul; j < n; j++) c[j] = 0.0;
+    for (auto i = 0ul; i < n; i++)
+      for (auto j = 0ul; j < n; j++)
+        c[j] += (alpha? 1 : -1) * a[i*n+j] * b[i];
   }
 }
 
@@ -127,7 +127,8 @@ MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
 }
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const {
+FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a,
+                                                             const ScalarType *matrix_b, ScalarType *product) const {
   gemm_impl<ScalarType>(nVar, matrix_a, matrix_b, product);
 }
 #else
@@ -153,36 +154,12 @@ MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
 }
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const {
+FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a,
+                                                             const ScalarType *matrix_b, ScalarType *product) const {
   MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
                             const_cast<ScalarType*>(matrix_b), product );
 }
-#ifdef CODI_REVERSE_TYPE
-/*--- WHEN using MKL, AND compiling for AD, we need to specialize for su2double to avoid mixing incompatible types. ---*/
-#define MATVECPROD_SPECIALIZATION(NAME) template<> __MATVECPROD_SIGNATURE__(su2double,NAME)
-MATVECPROD_SPECIALIZATION( MatrixVectorProduct ) {
-  gemv_impl<su2double,true,false,false>(nVar, matrix, vector, product);
-}
-
-MATVECPROD_SPECIALIZATION( MatrixVectorProductAdd ) {
-  gemv_impl<su2double,true,true,false>(nVar, matrix, vector, product);
-}
-
-MATVECPROD_SPECIALIZATION( MatrixVectorProductSub ) {
-  gemv_impl<su2double,false,true,false>(nVar, matrix, vector, product);
-}
-
-MATVECPROD_SPECIALIZATION( MatrixVectorProductTransp ) {
-  gemv_impl<su2double,true,true,true>(nVar, matrix, vector, product);
-}
-
-template<>
-FORCEINLINE void CSysMatrix<su2double>::MatrixMatrixProduct(const su2double *matrix_a, const su2double *matrix_b, su2double *product) const {
-  gemm_impl<su2double>(nVar, matrix_a, matrix_b, product);
-}
-#undef MATVECPROD_SPECIALIZATION
-#endif // CODI_REVERSE_TYPE
-#endif // USE_MKL
+#endif
 
 #undef MATVECPROD_SIGNATURE
 #undef __MATVECPROD_SIGNATURE__

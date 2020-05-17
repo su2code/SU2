@@ -220,7 +220,7 @@ private:
   }
 
   /*!
-   * \brief Copy matrix src into dst, transpose is required.
+   * \brief Copy matrix src into dst, transpose if required.
    */
   inline void MatrixCopy(const ScalarType *src, ScalarType *dst, bool transposed = false) const {
     if (!transposed) {
@@ -438,41 +438,25 @@ public:
   }
 
   /*!
-   * \brief Set the value of a block in the sparse matrix.
+   * \brief Set the value of a block in the sparse matrix with scaling.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
    */
-  template<class OtherType>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
-
-    unsigned long iVar, jVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_j) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nEqn; jVar++)
-            matrix[index*nVar*nEqn+iVar*nEqn+jVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-        break;
-      }
-    }
-  }
-
-  /*!
-   * \brief Set the value of a block in the sparse matrix.
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] val_block - Block to set to A(i, j).
-   */
-  template<class OtherType>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType *val_block) {
+  template<class OtherType, bool Overwrite = true,
+           typename enable_if<!is_pointer<OtherType>::value,bool>::type = 0>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j,
+                       const OtherType *val_block, OtherType alpha = 1.0) {
 
     unsigned long iVar, index;
 
     for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
       if (col_ind[index] == block_j) {
+        index *= nVar*nEqn;
         for (iVar = 0; iVar < nVar*nEqn; iVar++)
-          matrix[index*nVar*nEqn+iVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar]);
+          matrix[index+iVar] = (Overwrite? ScalarType(0) : matrix[index+iVar]) +
+                               PassiveAssign<ScalarType,OtherType>(alpha * val_block[iVar]);
         break;
       }
     }
@@ -482,19 +466,36 @@ public:
    * \brief Add a scaled block (in flat format) to the sparse matrix.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
-   * \param[in] alpha - Scale factor.
    * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
    */
-  template<class OtherType>
+  template<class OtherType,
+           typename enable_if<!is_pointer<OtherType>::value,bool>::type = 0>
   inline void AddBlock(unsigned long block_i, unsigned long block_j,
                        OtherType alpha, const OtherType *val_block) {
+    SetBlock<OtherType,false>(block_i, block_j, val_block, alpha);
+  }
 
-    unsigned long iVar, index;
+  /*!
+   * \brief Set the value of a block in the sparse matrix.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to set to A(i, j).
+   */
+  template<class OtherType, int Sign = 1, bool Overwrite = true>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
+
+    unsigned long iVar, jVar, index;
 
     for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
       if (col_ind[index] == block_j) {
-        for (iVar = 0; iVar < nVar*nEqn; iVar++)
-          matrix[index*nVar*nEqn+iVar] += PassiveAssign<ScalarType,OtherType>(alpha * val_block[iVar]);
+        index *= nVar*nEqn;
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nEqn; jVar++) {
+            matrix[index] = (Overwrite? ScalarType(0) : matrix[index]) +
+              Sign * PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+            ++index;
+          }
         break;
       }
     }
@@ -508,17 +509,7 @@ public:
    */
   template<class OtherType>
   inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
-
-    unsigned long iVar, jVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_j) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nEqn; jVar++)
-            matrix[index*nVar*nEqn+iVar*nEqn+jVar] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-        break;
-      }
-    }
+    SetBlock<OtherType,1,false>(block_i, block_j, val_block);
   }
 
   /*!
@@ -529,17 +520,7 @@ public:
    */
   template<class OtherType>
   inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
-
-    unsigned long iVar, jVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_j) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nEqn; jVar++)
-            matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-        break;
-      }
-    }
+    SetBlock<OtherType,-1,false>(block_i, block_j, val_block);
   }
 
   /*!
@@ -631,7 +612,7 @@ public:
    * \param[in] block_i - Diagonal index.
    * \param[in] val_block - Block to add to the diagonal of the matrix.
    */
-  template<class OtherType>
+  template<class OtherType, int Sign = 1>
   inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
 
     ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
@@ -640,8 +621,7 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nEqn; jVar++)
-        bii[offset++] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-
+        bii[offset++] += Sign * PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
   }
 
   /*!
@@ -651,15 +631,7 @@ public:
    */
   template<class OtherType>
   inline void SubtractBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
-
-    ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
-
-    unsigned long iVar, jVar, offset = 0;
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nEqn; jVar++)
-        bii[offset++] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-
+    AddBlock2Diag<OtherType,-1>(block_i, val_block);
   }
 
   /*!
