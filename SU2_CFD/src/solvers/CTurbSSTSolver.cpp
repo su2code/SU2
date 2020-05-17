@@ -406,8 +406,6 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
 
     nodes->SetmuT(iPoint,muT);
     
-    cout << "muT = " << muT << ", flowPrimitive[nDim+6] = " << nodes->GetFlowPrimitive(iPoint, nDim+6) << endl;
-
   }
 
 }
