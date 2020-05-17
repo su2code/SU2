@@ -927,7 +927,7 @@ def main():
     wmles_channel.cfg_file  = "wmles_channel.cfg"
     wmles_channel.test_iter = 10
     wmles_channel.test_vals = [ -8.164737,-8.595764,-8.114846,-7.649493] #last 4 columns
-    wmles_channel.su2_exec  = "wmles.py -f wmles_channel.cfg -n 1"
+    wmles_channel.su2_exec  = "python wmles.py -f wmles_channel.cfg -n 1"
     wmles_channel.timeout   = 1600
     wmles_channel.tol       = 0.00001
     wmles_channel.unsteady  = True
