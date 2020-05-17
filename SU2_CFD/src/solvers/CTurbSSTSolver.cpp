@@ -319,6 +319,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
   
+  /*--- Store variables from the mean flow solver ---*/
+  
+  SetFlowGradient(solver_container);
+  SetFlowPrimitive(solver_container);
+  
+  /*--- Compute eddy viscosity ---*/
+
   SetEddyViscosity(geometry, solver_container);
 
 }
@@ -335,6 +342,30 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
     }
   }
 
+}
+
+void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver_container) {
+  
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
+      nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetPrimitive(iPoint,iVar));
+    }
+  }
+}
+
+void CTurbSSTSolver::SetFlowGradient(CSolver **solver_container) {
+  
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nDim+1; iVar++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        nodes->SetFlowGradient(iPoint,iVar,iDim,flowNodes->GetGradient_Primitive(iPoint,iVar,iDim));
+      }
+    }
+  }
 }
 
 void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_container) {
@@ -357,6 +388,8 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
                                         Vorticity[1]*Vorticity[1] +
                                         Vorticity[2]*Vorticity[2]);
+    
+    nodes->SetVorticityMag(iPoint, VorticityMag);
     
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -434,11 +467,13 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
+//    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
+    numerics->SetPrimitive(nodes->GetFlowPrimitive(iPoint), nullptr);
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
-    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+//    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -464,6 +499,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set vorticity and strain rate magnitude ---*/
 
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
+    
+    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
@@ -502,7 +539,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         (nodes->GetCrossDiff(iPoint) > eps)) {
 //    if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
-      const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+//      const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      const su2double r_i      = nodes->GetFlowPrimitive(iPoint, nDim+1);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
       
       Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
@@ -515,7 +553,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-        const su2double r_j     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+//        const su2double r_j     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+        const su2double r_j      = nodes->GetFlowPrimitive(jPoint, nDim+1);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
         
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -581,9 +620,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set wall values ---*/
 
-      density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+//      density_s = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+//      density_v = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+//      laminar_viscosity_v = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+      density_s = nodes->GetFlowPrimitive(iPoint,nDim+2);
+      density_v = nodes->GetFlowPrimitive(jPoint,nDim+2);
+      laminar_viscosity_v = nodes->GetFlowPrimitive(jPoint,nDim+5);
+      
 
       Solution[0] = 0.0;
       Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
@@ -640,7 +683,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+//      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = nodes->GetFlowPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
@@ -710,6 +754,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Vorticity ---*/
       visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+      
+      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                     nodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),

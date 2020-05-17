@@ -45,6 +45,8 @@ protected:
   
   MatrixType FlowPrimitive;     /*!<\brief Primitives from the flow solver. */
   VectorOfMatrix FlowGradient;  /*!< \brief Gradients from the flow solver. */
+  
+  VectorType VorticityMag;      /*!<\brief Vorticity magnitude from the flow solver. */
 
 public:
   /*!
@@ -148,6 +150,12 @@ public:
   inline su2double **GetFlowGradient(unsigned long iPoint) { return FlowGradient[iPoint]; }
 
   inline su2double GetFlowGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return FlowGradient(iPoint,iVar,iDim); }
+  
+  inline void SetVorticityMag(unsigned long iPoint, su2double val_mag) { VorticityMag(iPoint) = val_mag; }
+  
+  inline su2double GetVorticityMag(unsigned long iPoint) { return VorticityMag(iPoint); }
+
+
   
 
 };

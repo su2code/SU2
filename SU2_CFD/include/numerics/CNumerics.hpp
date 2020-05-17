@@ -204,6 +204,7 @@ protected:
   *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
   *WindGustDer_j;  /*!< \brief Wind gust derivatives at point j. */
   su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
+  su2double VorticityMag_i, VorticityMag_j;    /*!< \brief Vorticity magnitude. */
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
@@ -308,6 +309,15 @@ public:
   void SetVorticity(su2double *val_vorticity_i, su2double *val_vorticity_j) {
     Vorticity_i = val_vorticity_i;
     Vorticity_j = val_vorticity_j;
+  }
+  
+  /*!
+   * \brief Set the magnitude of the vorticity
+   * \param[in] val_vorticity - Value of the vorticity.
+   */
+  void SetVorticityMag(su2double val_vorticity_i, su2double val_vorticity_j) {
+    VorticityMag_i = val_vorticity_i;
+    VorticityMag_j = val_vorticity_j;
   }
 
   /*!
