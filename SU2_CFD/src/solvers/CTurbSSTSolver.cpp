@@ -312,15 +312,15 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
       
-  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, true);
-  switch (config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS:
-      solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config, true); break;
-    case LEAST_SQUARES:
-    case WEIGHTED_LEAST_SQUARES:
-      solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config, true); break;
-    default: break;
-  }
+//  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, true);
+//  switch (config->GetKind_Gradient_Method()) {
+//    case GREEN_GAUSS:
+//      solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config, true); break;
+//    case LEAST_SQUARES:
+//    case WEIGHTED_LEAST_SQUARES:
+//      solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config, true); break;
+//    default: break;
+//  }
   SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
@@ -330,8 +330,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Store variables from the mean flow solver ---*/
   
-  SetFlowGradient(solver_container);
   SetFlowPrimitive(solver_container);
+  SetFlowGradient(solver_container);
   
   /*--- Compute eddy viscosity ---*/
 
