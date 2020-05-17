@@ -471,6 +471,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
+      if (isnan(LinSysRes[total_index])) cout << "iPoint = " << geometry->node[iPoint]->GetGlobalIndex() << ", iVar = " << iVar << endl;
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
 
@@ -504,7 +505,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system ---*/
 
-  if (config->GetInnerIter() > 0 || config->GetRestart_Flow() || config->GetRestart()) {
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   SU2_OMP_MASTER
   {
@@ -512,7 +512,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     SetResLinSolver(System.GetResidual());
   }
   SU2_OMP_BARRIER
-  }
 
 
   ComputeUnderRelaxationFactor(solver_container, config);
