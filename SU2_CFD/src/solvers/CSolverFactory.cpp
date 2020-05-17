@@ -323,7 +323,6 @@ CSolver* CSolverFactory::createTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
       default:
         SU2_MPI::Error("Unknown turbulence model", CURRENT_FUNCTION);

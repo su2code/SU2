@@ -328,14 +328,14 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
   
+  /*--- Compute eddy viscosity ---*/
+
+  SetEddyViscosity(geometry, solver_container);
+  
   /*--- Store variables from the mean flow solver ---*/
   
   SetFlowPrimitive(solver_container);
   SetFlowGradient(solver_container);
-  
-  /*--- Compute eddy viscosity ---*/
-
-  SetEddyViscosity(geometry, solver_container);
 
 }
 
@@ -361,7 +361,7 @@ void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver_container) {
     cout << "FlowPrimitive(" << iPoint << ") = (";
     for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
       if (iVar == nDim+2) nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetDensity(iPoint));
-//      else if (iVar == nDim+6) nodes->SetFlowPrimitive(iPoint,iVar,nodes->GetmuT(iPoint));
+      else if (iVar == nDim+6) nodes->SetFlowPrimitive(iPoint,iVar,nodes->GetmuT(iPoint));
       else nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetPrimitive(iPoint,iVar));
       
       cout << nodes->GetFlowPrimitive(iPoint,iVar) << ",";
