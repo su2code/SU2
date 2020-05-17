@@ -869,6 +869,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   errU = new su2double[nVar];
   errV = new su2double[nPrimVar];
 
+  //cout << endl << "cat: CNEMONSSolver::Preprocessing" << endl << endl;
+
   /*--- Set the primitive variables ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     /*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
@@ -1267,238 +1269,238 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *confi
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
-void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
-                                 CSolver **solution_container,
-                                 CConfig *config,
-                                 unsigned short iMesh,
-                                 unsigned long Iteration) {
-
-  unsigned short iDim, iMarker, iSpecies;
-  unsigned short VEL_INDEX, RHO_INDEX, RHOS_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  su2double *Normal, Area, Vol;
-  su2double Mean_SoundSpeed, Mean_ProjVel;
-  su2double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
-  su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
-  su2double cp, cv, cvve, RuSI, Ru, *xi, *Ms, Na, Mmix, Rmix;
-  su2double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
-  su2double *V_i, *V_j, *X;
-  su2double UnitNormal[3];
-  su2double tmp;
-
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-
-  /*--- Initialize parameters ---*/
-  Global_Delta_Time = 1E6;
-  Min_Delta_Time    = 1.E6;
-  Max_Delta_Time    = 0.0;
-  K_v    = 0.5;
-  iPoint = 0;
-  jPoint = 0;
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
-  Na   = AVOGAD_CONSTANT;
-
-  A_INDEX       = nodes->GetAIndex();
-  VEL_INDEX     = nodes->GetVelIndex();
-  RHO_INDEX     = nodes->GetRhoIndex();
-  RHOS_INDEX    = nodes->GetRhosIndex();
-  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
-
-  X = new su2double[nSpecies];
-
-  /*--- Get from config ---*/
-  xi = config->GetRotationModes();
-  Ms = config->GetMolar_Mass();
-
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    nodes->SetMax_Lambda_Inv(iPoint,0.0);
-    nodes->SetMax_Lambda_Visc(iPoint,0.0);
-  }
-
-  /*--- Loop interior edges ---*/
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    /*--- Calculate geometric quantities ---*/
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
-    const auto* Normal = geometry->edges->GetNormal(iEdge);
-    Area   = 0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
-    for (iDim = 0; iDim < nDim; iDim++)
-      UnitNormal[iDim] = Normal[iDim]/Area;
-
-    /*--- Acquire the primitive variable information at each node ---*/
-    V_i = nodes->GetPrimitive(iPoint);
-    V_j = nodes->GetPrimitive(jPoint);
-
-    /*--- Calculate the required mean values ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      Mean_ProjVel      = 0.5*( V_i[VEL_INDEX+iDim]
-          +V_j[VEL_INDEX+iDim] )*UnitNormal[iDim];
-    Mean_SoundSpeed     = 0.5*(V_i[A_INDEX]   + V_j[A_INDEX]);
-    Mean_Density        = 0.5*(V_i[RHO_INDEX] + V_j[RHO_INDEX]);
-
-    /*--- Calculate the maximum spectral radius from convection ---*/
-    Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;//fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
-
-    /*--- Calculate mean viscous quantities ---*/
-    Mean_LaminarVisc    = 0.5*(nodes->GetLaminarViscosity(iPoint) +
-                               nodes->GetLaminarViscosity(jPoint)  );
-    Mean_ThermalCond    = 0.5*(nodes->GetThermalConductivity(iPoint) +
-                               nodes->GetThermalConductivity(jPoint)  );
-    Mean_ThermalCond_ve = 0.5*(nodes->GetThermalConductivity_ve(iPoint) +
-                               nodes->GetThermalConductivity_ve(jPoint)  );
-    Mean_Density        = 0.5*(nodes->GetDensity(iPoint) +
-                               nodes->GetDensity(jPoint)  );
-    cv = 0.5*(nodes->GetRhoCv_tr(iPoint) + nodes->GetRhoCv_ve(iPoint) +
-              nodes->GetRhoCv_tr(jPoint) + nodes->GetRhoCv_ve(jPoint)  )/ Mean_Density;
-
-    /*--- Determine the viscous spectral radius and apply it to the control volume ---*/
-    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
-    Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
-    Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
-  }
-
-  /*--- Loop boundary edges ---*/
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area   = 0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-
-      /*--- Acquire the primitive variable information at each node ---*/
-      V_i = nodes->GetPrimitive(iPoint);
-
-      /*--- Calculate the required mean values ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        Mean_ProjVel      = V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
-      Mean_SoundSpeed     = V_i[A_INDEX];
-      Mean_Density        = V_i[RHO_INDEX];
-      Mean_ThermalCond    = nodes->GetThermalConductivity(iPoint);
-      Mean_ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
-
-      /*--- Calculate the maximum spectral radius from convection ---*/
-      Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;
-      if (geometry->nodes->GetDomain(iPoint))
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-
-      /*--- Calculate viscous mean quantities ---*/
-      Mean_LaminarVisc    = nodes->GetLaminarViscosity(iPoint);
-      Mean_ThermalCond    = nodes->GetThermalConductivity(iPoint);
-      Mean_ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
-      Mean_Density        = nodes->GetDensity(iPoint);
-      cv = (nodes->GetRhoCv_tr(iPoint) +
-            nodes->GetRhoCv_ve(iPoint)  ) / Mean_Density;
-
-      Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
-      Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
-      Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-
-      if (geometry->nodes->GetDomain(iPoint))
-        nodes->AddMax_Lambda_Visc(iPoint,Lambda);
-    }
-  }
-
-  /*--- Each element uses their own speed ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->nodes->GetVolume(iPoint);
-
-    /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
-    Local_Delta_Time      = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-    Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
-    Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
-    Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
-
-    /*--- Store minimum and maximum dt's within the grid for printing ---*/
-    Min_Delta_Time        = min(Min_Delta_Time, Local_Delta_Time);
-    Max_Delta_Time        = max(Max_Delta_Time, Local_Delta_Time);
-
-    /*--- Set the time step ---*/
-    nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-  }
-
-  /*--- Communicate minimum and maximum time steps ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Min_Delta_Time = rbuf_time;
-
-    sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Max_Delta_Time = rbuf_time;
-#endif
-  }
-
-  /*--- Check if there is any element with only one neighbor...
-   a CV that is inside another CV ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->nodes->GetnPoint(iPoint) == 1)
-      nodes->SetDelta_Time(iPoint,Min_Delta_Time);
-  }
-
-  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-  if (config->GetTime_Marching() == TIME_STEPPING) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_Time = rbuf_time;
-#endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
-  }
-
-  /*--- Recompute the unsteady time step for the dual time stratey
-   if the unsteady CFL is diferent from 0 ---*/
-  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
-
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_UnstTimeND = rbuf_time;
-#endif
-    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
-  }
-  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-  if (dual_time)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!implicit) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        /*--- Check if there is any element with only one neighbor...
-         a CV that is inside another CV ---*/
-        if (geometry->nodes->GetnPoint(iPoint) == 1) Local_Delta_Time = 0.0;
-        nodes->SetDelta_Time(iPoint, Local_Delta_Time);
-      }
-    }
-  delete [] X;
-}
+//void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
+//                                 CSolver **solution_container,
+//                                 CConfig *config,
+//                                 unsigned short iMesh,
+//                                 unsigned long Iteration) {
+//
+//  unsigned short iDim, iMarker, iSpecies;
+//  unsigned short VEL_INDEX, RHO_INDEX, RHOS_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+//  unsigned long iEdge, iVertex, iPoint, jPoint;
+//  su2double *Normal, Area, Vol;
+//  su2double Mean_SoundSpeed, Mean_ProjVel;
+//  su2double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
+//  su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
+//  su2double cp, cv, cvve, RuSI, Ru, *xi, *Ms, Na, Mmix, Rmix;
+//  su2double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
+//  su2double *V_i, *V_j, *X;
+//  su2double UnitNormal[3];
+//  su2double tmp;
+//
+//  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+//  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+//                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+//
+//  /*--- Initialize parameters ---*/
+//  Global_Delta_Time = 1E6;
+//  Min_Delta_Time    = 1.E6;
+//  Max_Delta_Time    = 0.0;
+//  K_v    = 0.5;
+//  iPoint = 0;
+//  jPoint = 0;
+//  RuSI = UNIVERSAL_GAS_CONSTANT;
+//  Ru   = 1000.0*RuSI;
+//  Na   = AVOGAD_CONSTANT;
+//
+//  A_INDEX       = nodes->GetAIndex();
+//  VEL_INDEX     = nodes->GetVelIndex();
+//  RHO_INDEX     = nodes->GetRhoIndex();
+//  RHOS_INDEX    = nodes->GetRhosIndex();
+//  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+//  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
+//
+//  X = new su2double[nSpecies];
+//
+//  /*--- Get from config ---*/
+//  xi = config->GetRotationModes();
+//  Ms = config->GetMolar_Mass();
+//
+//  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    nodes->SetMax_Lambda_Inv(iPoint,0.0);
+//    nodes->SetMax_Lambda_Visc(iPoint,0.0);
+//  }
+//
+//  /*--- Loop interior edges ---*/
+//  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+//
+//    /*--- Calculate geometric quantities ---*/
+//    iPoint = geometry->edge[iEdge]->GetNode(0);
+//    jPoint = geometry->edge[iEdge]->GetNode(1);
+//    Normal = geometry->edge[iEdge]->GetNormal();
+//    Area   = 0;
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      Area += Normal[iDim]*Normal[iDim];
+//    Area = sqrt(Area);
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      UnitNormal[iDim] = Normal[iDim]/Area;
+//
+//    /*--- Acquire the primitive variable information at each node ---*/
+//    V_i = nodes->GetPrimitive(iPoint);
+//    V_j = nodes->GetPrimitive(jPoint);
+//
+//    /*--- Calculate the required mean values ---*/
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      Mean_ProjVel      = 0.5*( V_i[VEL_INDEX+iDim]
+//          +V_j[VEL_INDEX+iDim] )*UnitNormal[iDim];
+//    Mean_SoundSpeed     = 0.5*(V_i[A_INDEX]   + V_j[A_INDEX]);
+//    Mean_Density        = 0.5*(V_i[RHO_INDEX] + V_j[RHO_INDEX]);
+//
+//    /*--- Calculate the maximum spectral radius from convection ---*/
+//    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+//    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+//    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
+//
+//    /*--- Calculate mean viscous quantities ---*/
+//    Mean_LaminarVisc    = 0.5*(nodes->GetLaminarViscosity(iPoint) +
+//                               nodes->GetLaminarViscosity(jPoint)  );
+//    Mean_ThermalCond    = 0.5*(nodes->GetThermalConductivity(iPoint) +
+//                               nodes->GetThermalConductivity(jPoint)  );
+//    Mean_ThermalCond_ve = 0.5*(nodes->GetThermalConductivity_ve(iPoint) +
+//                               nodes->GetThermalConductivity_ve(jPoint)  );
+//    Mean_Density        = 0.5*(nodes->GetDensity(iPoint) +
+//                               nodes->GetDensity(jPoint)  );
+//    cv = 0.5*(nodes->GetRhoCv_tr(iPoint) + nodes->GetRhoCv_ve(iPoint) +
+//              nodes->GetRhoCv_tr(jPoint) + nodes->GetRhoCv_ve(jPoint)  )/ Mean_Density;
+//
+//    /*--- Determine the viscous spectral radius and apply it to the control volume ---*/
+//    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
+//    Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
+//    Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+//
+//    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+//    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
+//  }
+//
+//  /*--- Loop boundary edges ---*/
+//  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+//    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//
+//      /*--- Point identification, Normal vector and area ---*/
+//      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//      Area   = 0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Area += Normal[iDim]*Normal[iDim];
+//      Area = sqrt(Area);
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        UnitNormal[iDim] = Normal[iDim]/Area;
+//
+//      /*--- Acquire the primitive variable information at each node ---*/
+//      V_i = nodes->GetPrimitive(iPoint);
+//
+//      /*--- Calculate the required mean values ---*/
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Mean_ProjVel      = V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
+//      Mean_SoundSpeed     = V_i[A_INDEX];
+//      Mean_Density        = V_i[RHO_INDEX];
+//      Mean_ThermalCond    = nodes->GetThermalConductivity(iPoint);
+//      Mean_ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
+//
+//      /*--- Calculate the maximum spectral radius from convection ---*/
+//      Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;
+//      if (geometry->node[iPoint]->GetDomain())
+//        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+//
+//      /*--- Calculate viscous mean quantities ---*/
+//      Mean_LaminarVisc    = nodes->GetLaminarViscosity(iPoint);
+//      Mean_ThermalCond    = nodes->GetThermalConductivity(iPoint);
+//      Mean_ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
+//      Mean_Density        = nodes->GetDensity(iPoint);
+//      cv = (nodes->GetRhoCv_tr(iPoint) +
+//            nodes->GetRhoCv_ve(iPoint)  ) / Mean_Density;
+//
+//      Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
+//      Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
+//      Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+//
+//      if (geometry->node[iPoint]->GetDomain())
+//        nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+//    }
+//  }
+//
+//  /*--- Each element uses their own speed ---*/
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    Vol = geometry->node[iPoint]->GetVolume();
+//
+//    /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
+//    Local_Delta_Time      = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+//    Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+//    Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+//    Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
+//
+//    /*--- Store minimum and maximum dt's within the grid for printing ---*/
+//    Min_Delta_Time        = min(Min_Delta_Time, Local_Delta_Time);
+//    Max_Delta_Time        = max(Max_Delta_Time, Local_Delta_Time);
+//
+//    /*--- Set the time step ---*/
+//    nodes->SetDelta_Time(iPoint,Local_Delta_Time);
+//  }
+//
+//  /*--- Communicate minimum and maximum time steps ---*/
+//  if (config->GetComm_Level() == COMM_FULL) {
+//#ifdef HAVE_MPI
+//    su2double rbuf_time, sbuf_time;
+//    sbuf_time = Min_Delta_Time;
+//    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+//    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//    Min_Delta_Time = rbuf_time;
+//
+//    sbuf_time = Max_Delta_Time;
+//    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+//    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//    Max_Delta_Time = rbuf_time;
+//#endif
+//  }
+//
+//  /*--- Check if there is any element with only one neighbor...
+//   a CV that is inside another CV ---*/
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    if (geometry->node[iPoint]->GetnPoint() == 1)
+//      nodes->SetDelta_Time(iPoint,Min_Delta_Time);
+//  }
+//
+//  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+//  if (config->GetTime_Marching() == TIME_STEPPING) {
+//#ifdef HAVE_MPI
+//    su2double rbuf_time, sbuf_time;
+//    sbuf_time = Global_Delta_Time;
+//    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+//    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//    Global_Delta_Time = rbuf_time;
+//#endif
+//    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+//      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
+//  }
+//
+//  /*--- Recompute the unsteady time step for the dual time stratey
+//   if the unsteady CFL is diferent from 0 ---*/
+//  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+//    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+//
+//#ifdef HAVE_MPI
+//    su2double rbuf_time, sbuf_time;
+//    sbuf_time = Global_Delta_UnstTimeND;
+//    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+//    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//    Global_Delta_UnstTimeND = rbuf_time;
+//#endif
+//    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+//  }
+//  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+//  if (dual_time)
+//    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//      if (!implicit) {
+//        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+//        /*--- Check if there is any element with only one neighbor...
+//         a CV that is inside another CV ---*/
+//        if (geometry->node[iPoint]->GetnPoint() == 1) Local_Delta_Time = 0.0;
+//        nodes->SetDelta_Time(iPoint, Local_Delta_Time);
+//      }
+//    }
+//  delete [] X;
+//}
 
 void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CSolver **solution_container,
@@ -2853,7 +2855,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
 
 
-      cout << "cat: Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << endl;
+    /*  cout << "cat: Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << endl;
 
       cout << "cat: Res_Visc[nSpecies+nDim+1]=" << Res_Visc[nSpecies+nDim+1] << endl;
 
@@ -2863,7 +2865,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       cout << "cat: Tvej=" << Tvej << endl;
       cout << "cat: ktr=" << ktr << endl;
       cout << "cat: kve=" << kve << endl;
-      cout << "cat: Twall=" << Twall << endl;
+      cout << "cat: Twall=" << Twall << endl;*/
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 

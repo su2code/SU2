@@ -901,6 +901,9 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
       Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
+  su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, cv, Lambda_1, Lambda_2, K_v, Local_Delta_Time_Visc;
+
+  const bool viscous       = config->GetViscous();
 
   bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -908,11 +911,18 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
 
-  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  Min_Delta_Time = 1.E6;
+  Max_Delta_Time = 0.0;
+  K_v    = 0.5;
 
+  
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     nodes->SetMax_Lambda_Inv(iPoint, 0.0);
+
+    if (viscous)
+      nodes->SetMax_Lambda_Visc(iPoint,0.0);
+  }    
 
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -945,11 +955,37 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
     if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
     if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
 
+    /*--- Viscous contribution ---*/
+
+    if (!viscous) continue;
+
+    /*--- Calculate mean viscous quantities ---*/
+    Mean_LaminarVisc    = 0.5*(nodes->GetLaminarViscosity(iPoint) +
+                               nodes->GetLaminarViscosity(jPoint)  );
+    Mean_ThermalCond    = 0.5*(nodes->GetThermalConductivity(iPoint) +
+                               nodes->GetThermalConductivity(jPoint)  );
+    Mean_ThermalCond_ve = 0.5*(nodes->GetThermalConductivity_ve(iPoint) +
+                               nodes->GetThermalConductivity_ve(jPoint)  );
+    Mean_Density        = 0.5*(nodes->GetDensity(iPoint) +
+                               nodes->GetDensity(jPoint)  );
+    cv = 0.5*(nodes->GetRhoCv_tr(iPoint) + nodes->GetRhoCv_ve(iPoint) +
+              nodes->GetRhoCv_tr(jPoint) + nodes->GetRhoCv_ve(jPoint)  )/ Mean_Density;
+
+    /*--- Determine the viscous spectral radius and apply it to the control volume ---*/
+    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
+    Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
+    Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+
+    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
+
+
+
   }
 
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY){
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
@@ -977,7 +1013,27 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
           nodes->AddMax_Lambda_Inv(iPoint,Lambda);
         }
 
-      }
+        /*--- Viscous contribution ---*/
+
+        if (!viscous) continue;
+
+        /*--- Calculate viscous mean quantities ---*/
+        Mean_LaminarVisc    = nodes->GetLaminarViscosity(iPoint);
+        Mean_ThermalCond    = nodes->GetThermalConductivity(iPoint);
+        Mean_ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
+        Mean_Density        = nodes->GetDensity(iPoint);
+        cv = (nodes->GetRhoCv_tr(iPoint) +
+              nodes->GetRhoCv_ve(iPoint)  ) / Mean_Density;
+  
+        Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
+        Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
+        Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+  
+        if (geometry->node[iPoint]->GetDomain())
+          nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+  
+        }
+    }  
   }
 
   /*--- Each element uses their own speed, steady state simulation ---*/
@@ -986,9 +1042,16 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+
+      if(viscous) {
+        Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+        Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+      }
+
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
       nodes->SetDelta_Time(iPoint,Local_Delta_Time);
@@ -2825,11 +2888,15 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
             viscosity, depending on the input option.---*/
 
       // THIS NEEDS TO BE REVISITED
-      Viscosity_FreeStream = 1.93378e-05; //1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
       Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
+       cout << "cat: Density_FreeStream= " << Density_FreeStream << endl;
+      cout << "cat: Gas_Constant= " << GasConstant_Inf << endl;
+      cout << "cat: Temperature_FreeStream= " << Temperature_FreeStream << endl;
       Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
       Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
 
+     
 
       cout << "cat: visc= " << Viscosity_FreeStream << endl;
       cout << "cat: rho= " << Density_FreeStream << endl;
@@ -3069,9 +3136,14 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
 
-    cout << "Free-stream temperature: " << config->GetTemperature_FreeStream();
+    cout << "Free-stream translational temperature: " << config->GetTemperature_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+
+    cout << "Free-stream vibrational temperature: " << config->GetTemperature_ve_FreeStream();
+    if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+
 
     cout << "Free-stream density: " << config->GetDensity_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
