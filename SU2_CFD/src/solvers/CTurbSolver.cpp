@@ -504,6 +504,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system ---*/
 
+  if (config->GetInnerIter() > 0 || config->GetRestart_Flow() || config->GetRestart()) {
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   SU2_OMP_MASTER
   {
@@ -511,6 +512,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     SetResLinSolver(System.GetResidual());
   }
   SU2_OMP_BARRIER
+  }
 
 
   ComputeUnderRelaxationFactor(solver_container, config);
@@ -537,9 +539,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-            if (config->GetInnerIter() > 0 || config->GetRestart_Flow() || config->GetRestart())
-              nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
-                                        lowerlimit[iVar], upperlimit[iVar]);
+            nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
+                                      lowerlimit[iVar], upperlimit[iVar]);
         }
         break;
 
