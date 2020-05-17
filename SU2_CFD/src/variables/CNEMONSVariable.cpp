@@ -69,7 +69,13 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure, su2double *val_massfrac
   LaminarViscosity.resize(nPoint)  = su2double(0.0);
   ThermalCond.resize(nPoint)  = su2double(0.0);  
   ThermalCond_ve.resize(nPoint)  = su2double(0.0);
-  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
+
+  cout << endl << "cat: CNEMONSVariable::CNEMONSVariable Tve=" << val_temperature_ve << endl << endl;
+
+
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0); //Cat this should only exist in NSNEMO variable
+  
+  //Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
   
 }
 
@@ -540,7 +546,7 @@ bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *con
   bool nonPhys, bkup;
   unsigned short iVar;
 
-//  cout << "cat: CNEMONSVariable::SetPrimVar_Compressible" << endl << endl;
+  cout << "cat: CNEMONSVariable::SetPrimVar_Compressible" << endl << endl;
 
 //  for (int iVar = 0; iVar < nVar; iVar++) cout << "Solution[" << iPoint << "," << iVar << "]=" << Solution(iPoint,iVar) << endl;
 

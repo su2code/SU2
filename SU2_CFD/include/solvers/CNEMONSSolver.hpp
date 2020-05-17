@@ -140,8 +140,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  //void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  //                  unsigned short iMesh, unsigned long Iteration);
 
   /*!
    * \brief Restart residual and compute gradients.
