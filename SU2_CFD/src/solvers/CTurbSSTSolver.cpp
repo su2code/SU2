@@ -404,6 +404,9 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double muT   = max(rho*kine/zeta,0.0);
 
     nodes->SetmuT(iPoint,muT);
+    
+    const su2double eps = numeric_limits<passivedouble>::epsilon();
+    if (muT < eps) cout << "k = " << kine << ", rho = " << rho << ", omega = " << omega << ", zeta = " << zeta << endl;
 
   }
 
