@@ -921,20 +921,6 @@ def main():
     ddes_flatplate.new_output = True
     test_list.append(ddes_flatplate)
 
-    # WMLES Channel Flow
-    wmles_channel        = TestCase('wmles_channel')
-    wmles_channel.cfg_dir   = "wmles/channel"
-    wmles_channel.cfg_file  = "wmles_channel.cfg"
-    wmles_channel.test_iter = 10
-    wmles_channel.test_vals = [ -8.164737,-8.595764,-8.114846,-7.649493] #last 4 columns
-    wmles_channel.su2_exec  = "python wmles.py -f wmles_channel.cfg -n 1"
-    wmles_channel.timeout   = 1600
-    wmles_channel.tol       = 0.00001
-    wmles_channel.unsteady  = True
-    wmles_channel.new_output = True
-    test_list.append(wmles_channel)
-
-
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
