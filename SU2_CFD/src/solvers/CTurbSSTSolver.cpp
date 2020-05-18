@@ -528,7 +528,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
     /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-//    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
 
   }
   
@@ -701,8 +701,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-//      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-      V_domain = nodes->GetFlowPrimitive(iPoint);
+      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+//      V_domain = nodes->GetFlowPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
