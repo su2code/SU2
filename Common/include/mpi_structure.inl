@@ -286,7 +286,7 @@ inline passivedouble CBaseMPIWrapper::Wtime(void) {
 
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
-  MediTool::init();
+  mediTypes = new MediTypes();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
@@ -298,7 +298,7 @@ inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
 
 inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
   AMPI_Init_thread(argc,argv,required,provided);
-  MediTool::init();
+  mediTypes = new MediTypes();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
@@ -310,7 +310,7 @@ inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, 
 
 inline void CMediMPIWrapper::Init_AMPI(void) {
   AMPI_Init_common();
-  MediTool::init();
+  mediTypes = new MediTypes();
 }
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
@@ -391,6 +391,8 @@ inline void CMediMPIWrapper::Comm_size(Comm comm, int *size){
 
 inline void CMediMPIWrapper::Finalize(){
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
+
+  delete mediTypes;
   AMPI_Finalize();
 }
 
