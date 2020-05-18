@@ -847,7 +847,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
     }
     InverseDiagonalBlock_ILUMatrix(end-1, &invM[(end-1)*nVar*nVar]);
 
-  } // end parallel
+  }
 
 }
 
@@ -900,7 +900,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 
       MatrixVectorProduct(&invM[iPoint*nVar*nVar], aux_vec, &prod[iPoint*nVar]);
     }
-  } // end parallel
+  }
 
   /*--- MPI Parallelization ---*/
 
@@ -941,7 +941,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
       VectorSubtraction(&vec[idx], low_prod, &prod[idx]); // Compute y = b - L.x*
       Gauss_Elimination(iPoint, &prod[idx]);              // Solve D.x* = y
     }
-  } // end parallel
+  }
 
   /*--- MPI Parallelization ---*/
   SU2_OMP_MASTER
@@ -973,7 +973,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
       VectorSubtraction(dia_prod, up_prod, &prod[idx]); // Compute y = D.x*-U.x_(n+1)
       Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x* = y
     }
-  } // end parallel
+  }
 
   /*--- MPI Parallelization ---*/
   SU2_OMP_MASTER
