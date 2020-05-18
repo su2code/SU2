@@ -3,7 +3,7 @@
  * \brief Headers of the main functions for the FEM standard elements.
  *        The functions are in the <i>fem_standard_element.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,7 @@ using namespace std;
  * \class CFEMStandardElementBase
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEMStandardElementBase {
 protected:
@@ -781,7 +781,7 @@ private:
  * \class CFEMStandardElement
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEMStandardElement : public CFEMStandardElementBase {
 private:
@@ -850,7 +850,7 @@ public:
   /*!
   * \brief Destructor. Only the allocated pointers must be deleted explicitly.
   */
-  ~CFEMStandardElement();
+  ~CFEMStandardElement() override;
 
   /*!
   * \brief Alternative constructor.
@@ -873,9 +873,9 @@ public:
                       bool                    val_constJac,
                       CConfig                 *config,
                       unsigned short          val_orderExact = 0,
-                      const vector<su2double> *rLocSolDOFs = NULL,
-                      const vector<su2double> *sLocSolDOFs = NULL,
-                      const vector<su2double> *tLocSolDOFs = NULL);
+                      const vector<su2double> *rLocSolDOFs = nullptr,
+                      const vector<su2double> *sLocSolDOFs = nullptr,
+                      const vector<su2double> *tLocSolDOFs = nullptr);
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
@@ -1230,7 +1230,7 @@ private:
  * \class CFEMStandardInternalFace
  * \brief Class to define a FEM standard internal face.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEMStandardInternalFace : public CFEMStandardElementBase {
 private:
@@ -1311,7 +1311,7 @@ public:
   /*!
   * \brief Destructor.
   */
-  ~CFEMStandardInternalFace();
+  ~CFEMStandardInternalFace() override;
 
   /*!
   * \brief Alternative constructor.
@@ -1566,7 +1566,7 @@ private:
  * \class CFEMStandardBoundaryFace
  * \brief Class to define a FEM standard boundary face.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
 private:
@@ -1621,7 +1621,7 @@ public:
   /*!
   * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
   */
-  ~CFEMStandardBoundaryFace();
+  ~CFEMStandardBoundaryFace() override;
 
   /*!
   * \brief Alternative constructor.

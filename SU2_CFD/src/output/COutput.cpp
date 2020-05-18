@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -174,23 +174,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 }
 
 COutput::~COutput(void) {
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
 
-  if (volumeDataSorter != nullptr)
-    delete volumeDataSorter;
-
+  delete volumeDataSorter;
   volumeDataSorter = nullptr;
 
-  if (surfaceDataSorter != nullptr)
-    delete surfaceDataSorter;
-
+  delete surfaceDataSorter;
   surfaceDataSorter = nullptr;
-
-
 }
 
 
@@ -341,7 +334,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
-  CFileWriter *fileWriter = NULL;
+  CFileWriter *fileWriter = nullptr;
 
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
@@ -715,11 +708,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       break;
 
     default:
-      fileWriter = NULL;
+      fileWriter = nullptr;
       break;
   }
 
-  if (fileWriter != NULL){
+  if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
 
@@ -1611,7 +1604,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->node[iPoint]->GetDomain()){
+          if(geometry->nodes->GetDomain(iPoint)){
 
             buildFieldIndexCache = fieldIndexCache.empty();
 
@@ -2038,13 +2031,10 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
   su2double StopTime, UsedTime;
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
 
-  UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
+  StopTime = SU2_MPI::Wtime();
+
+  UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
   SetHistoryOutputValue("WALL_TIME", UsedTime);
 

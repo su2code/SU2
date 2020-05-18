@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -792,6 +792,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(Vorticity_i, 3);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;

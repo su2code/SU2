@@ -3,7 +3,7 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -123,6 +123,7 @@ def discrete_adjoint( filename           ,
         restart_sol_activated = False
         if konfig.get('TIME_DOMAIN','NO') == 'YES' and konfig.get('RESTART_SOL','NO') == 'YES':
             restart_sol_activated = True
+            original_time_iter = konfig['TIME_ITER']
             konfig['TIME_ITER'] = konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
             konfig.RESTART_SOL = 'NO'
         info = SU2.run.adjoint(konfig)
@@ -130,11 +131,9 @@ def discrete_adjoint( filename           ,
 
         # Workaround, since expandTime relies on UNST_ADJOINT_ITER to determine number of solution files.
         if restart_sol_activated:
-            unst_adj_iter = konfig['UNST_ADJOINT_ITER']
-            konfig['UNST_ADJOINT_ITER'] =  konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
+            konfig['UNST_ADJOINT_ITER'] =  original_time_iter - int(konfig['RESTART_ITER'])
         SU2.io.restart2solution(konfig,state)
-        if restart_sol_activated:
-            konfig['UNST_ADJOINT_ITER'] = unst_adj_iter
+        # reset changed time-iter values for the remaining program to original values
     # Gradient Projection
     info = SU2.run.projection(konfig,step)
     state.update(info)
@@ -144,7 +143,7 @@ def discrete_adjoint( filename           ,
 #: continuous_adjoint()
 
 # -------------------------------------------------------------------
-#  Alternate Forumulation
+#  Alternate Formulation
 # -------------------------------------------------------------------
 
 def discrete_design( filename           ,

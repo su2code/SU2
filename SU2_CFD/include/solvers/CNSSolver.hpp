@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -97,7 +97,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void);
+  ~CNSSolver(void) override;
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,9 +50,9 @@ int main(int argc, char *argv[]) {
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-  CConfig **config_container          = NULL;
-  CGeometry **geometry_container      = NULL;
-  CGeometryEvaluation *geo_eval       = NULL;
+  CConfig **config_container          = nullptr;
+  CGeometry **geometry_container      = nullptr;
+  CGeometryEvaluation *geo_eval       = nullptr;
   
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation)  ---*/
 
-  CConfig *config = NULL;
+  CConfig *config = nullptr;
   config = new CConfig(config_file_name, SU2_GEO);
 
   nZone    = config->GetnZone();
@@ -75,8 +75,8 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]       = NULL;
-    geometry_container[iZone]     = NULL;
+    config_container[iZone]       = nullptr;
+    geometry_container[iZone]     = nullptr;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
-    CGeometry *geometry_aux = NULL;
+    CGeometry *geometry_aux = nullptr;
     
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
     
@@ -123,13 +123,9 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
-  
-#ifdef HAVE_MPI
-  StartTime = MPI_Wtime();
-#else
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
-  
+
+  StartTime = SU2_MPI::Wtime();
+
   /*--- Evaluation of the objective function ---*/
   
   if (rank == MASTER_NODE)
@@ -189,14 +185,14 @@ int main(int argc, char *argv[]) {
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
 
   delete geo_eval;
-  geo_eval = NULL;
+  geo_eval = nullptr;
 
   delete config;
-  config = NULL;
+  config = nullptr;
 
-  if (geometry_container != NULL) {
+  if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != NULL) {
+      if (geometry_container[iZone] != nullptr) {
         delete geometry_container[iZone];
       }
     }
@@ -204,9 +200,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-  if (config_container != NULL) {
+  if (config_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
+      if (config_container[iZone] != nullptr) {
         delete config_container[iZone];
       }
     }
@@ -216,13 +212,9 @@ int main(int argc, char *argv[]) {
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
-  
-#ifdef HAVE_MPI
-  StopTime = MPI_Wtime();
-#else
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
-  
+
+  StopTime = SU2_MPI::Wtime();
+
   /*--- Compute/print the total time for performance benchmarking. ---*/
   
   UsedTime = StopTime-StartTime;

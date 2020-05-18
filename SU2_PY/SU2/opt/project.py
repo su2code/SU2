@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -197,7 +197,11 @@ class Project(object):
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print(os.path.join(self.folder,design.folder))
             timestamp = design.state.tic()
-            
+
+            # set right option in design config.
+            if konfig.get('TIME_DOMAIN', 'NO') == 'YES' and konfig.get('RESTART_SOL', 'NO') == 'YES':
+                design.config['RESTART_SOL'] = 'YES'
+
             # run design+
             vals = design._eval(func,*args)
 
@@ -292,8 +296,7 @@ class Project(object):
         # start new design
         else:
             design = self.init_design(konfig,closest)
-        #: if new design    
-        
+        #: if new design
         return design
     
     def get_design(self,config):

@@ -145,12 +145,12 @@ CGeometryEvaluation::~CGeometryEvaluation(){
 
   if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
 
-  if (surface_movement != NULL) delete surface_movement;
+  if (surface_movement != nullptr) delete surface_movement;
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
-  if (FFDBox != NULL) {
+  if (FFDBox != nullptr) {
     for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
-      if (FFDBox[iFFDBox] != NULL) {
+      if (FFDBox[iFFDBox] != nullptr) {
         delete FFDBox[iFFDBox];
       }
     }
@@ -288,7 +288,7 @@ void CGeometryEvaluation::ComputeGeometry(){
   
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     
-    geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL,
+    geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
                                                        Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                                                        Variable_Airfoil[iPlane], true, config);
   }
@@ -513,7 +513,7 @@ void CGeometryEvaluation::EverythingGradient(){
     
     /*--- Definition of the FFD deformation class ---*/
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
-    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = nullptr;
     
     if (rank == MASTER_NODE)
       cout << endl << endl << "------------- Gradient evaluation using finite differences --------------" << endl;
@@ -763,7 +763,7 @@ void CGeometryEvaluation::EverythingGradient(){
         /*--- Create airfoil structure ---*/
         
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
-          geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL,
+          geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
                                                              Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                                                              Variable_Airfoil[iPlane], false, config);
         }

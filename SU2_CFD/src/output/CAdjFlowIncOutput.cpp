@@ -2,7 +2,7 @@
  * \file output_adj_flow_inc.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,6 +66,11 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("SENSITIVITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
+  }
+
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields ++;
   }
 
   stringstream ss;
@@ -406,10 +411,10 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjHeat = NULL;
-  CVariable* Node_AdjTurb = NULL;
-  CVariable* Node_AdjRad  = NULL;
-  CPoint*    Node_Geo     = geometry->node[iPoint];
+  CVariable* Node_AdjHeat = nullptr;
+  CVariable* Node_AdjTurb = nullptr;
+  CVariable* Node_AdjRad  = nullptr;
+  CPoint*    Node_Geo     = geometry->nodes;
 
   if (config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()){
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
@@ -421,10 +426,10 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     Node_AdjRad = solver[ADJRAD_SOL]->GetNodes();
   }
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("ADJ_PRESSURE",   iPoint, Node_AdjFlow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("ADJ_VELOCITY-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1));

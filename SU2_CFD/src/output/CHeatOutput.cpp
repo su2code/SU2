@@ -2,7 +2,7 @@
  * \file output_heat.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,7 +82,7 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
 
   CSolver* heat_solver = solver[HEAT_SOL];
 
-  SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
+  SetHistoryOutputValue("TOTAL_HEATFLUX",     heat_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
   SetHistoryOutputValue("AVG_TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
   SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
@@ -104,7 +104,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
   AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("HEATFLUX_MAX", "MaxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
@@ -135,13 +135,13 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
   // Grid coordinates
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   // SOLUTION
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));

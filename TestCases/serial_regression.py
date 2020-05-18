@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -933,6 +933,18 @@ def main():
     unst_inc_turb_naca0015_sa.unsteady  = True
     test_list.append(unst_inc_turb_naca0015_sa)
 
+    # unsteady pitching NACA0012, Euler, Deforming
+    unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
+    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
+    unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
+    unst_deforming_naca0012.test_iter = 5
+    unst_deforming_naca0012.test_vals = [ -3.669625, -3.818858, -3.729946, -3.155637] #last 4 columns
+    unst_deforming_naca0012.su2_exec  = "SU2_CFD"
+    unst_deforming_naca0012.timeout   = 1600
+    unst_deforming_naca0012.tol       = 0.00001
+    unst_deforming_naca0012.unsteady  = True
+    test_list.append(unst_deforming_naca0012)
+
     ######################################
     ### NICFD                          ###
     ######################################
@@ -983,7 +995,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.300315, 0.365965, 44.731520, 2.271338] #last 4 columns
+    Jones_tc.test_vals = [-5.280323, 0.379653, 44.725410, 2.271564] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -995,11 +1007,11 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.626481, -1.570875, 34.015260, 10.187090] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.625262, -1.569571, 34.014130, 10.187670] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
-    Jones_tc_rst.tol       = 0.00001
+    Jones_tc_rst.tol       = 0.0001
     test_list.append(Jones_tc_rst)
 
     # 2D axial stage
@@ -1007,7 +1019,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933218, 5.381191, 73.357940, 1.780224] #last 4 columns
+    axial_stage2D.test_vals = [-1.933218, 5.381198, 73.357940, 1.780408] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -1134,7 +1146,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.619179, -1.879082] #last 3 columns
+    bars_SST_2D.test_vals = [13.000000, -0.619179, -1.564701] #last 3 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1194,7 +1206,7 @@ def main():
     knowlesbeam.cfg_dir   = "fea_fsi/MixElemsKnowles"
     knowlesbeam.cfg_file  = "config.cfg"
     knowlesbeam.test_iter = 0
-    knowlesbeam.test_vals = [-14.51360, -13.57735, -28.12642, 9.7306] #last 4 columns
+    knowlesbeam.test_vals = [-14.51360, -13.57735, -28.12642, 0.44503, 9.7306] #last 5 columns
     knowlesbeam.su2_exec  = "SU2_CFD"
     knowlesbeam.timeout   = 1600
     knowlesbeam.tol       = 0.0001
@@ -1218,7 +1230,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123970] #last 4 columns
+    fsi2d.test_vals = [4, 0, -3.764077, -4.081143] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.multizone = True
@@ -1231,7 +1243,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.323551, -4.982863, 0.000000, 47.000000] #last 5 columns
+    stat_fsi.test_vals = [-3.326934, -4.981505, 0.000000, 7.000000] #last 5 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.multizone = True
@@ -1243,7 +1255,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-3.407098, -4.248366, 0.000000, 47.000000] #last 5 columns
+    stat_fsi_restart.test_vals = [-3.407486, -4.339837, 0.000000, 27.000000] #last 5 columns
     stat_fsi_restart.multizone = True
     stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
@@ -1255,7 +1267,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.389732, -4.060110, 0.000000, 59.000000] #last 5 columns
+    dyn_fsi.test_vals = [-4.379829, -4.005994, 0.000000, 0.000000] #last 5 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "SU2_CFD"
@@ -1268,7 +1280,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
-    airfoilRBF.test_vals = [1.000000, -2.980686, -4.866015]
+    airfoilRBF.test_vals = [1.000000, -2.791154, -4.961536]
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
     airfoilRBF.multizone = True
@@ -1680,7 +1692,7 @@ def main():
     opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
     opt_multiobj1surf_py.test_iter  = 1
     opt_multiobj1surf_py.test_vals = [1.000000, 1.000000, 30.428280, 2.039416] #last 4 columns
-    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
+    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f "
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
     pass_list.append(opt_multiobj1surf_py.run_opt())
@@ -1760,7 +1772,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123970] #last 4 columns
+    pywrapper_fsi2d.test_vals = [4, 0, -3.764077, -4.081143] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.new_output  = True
     pywrapper_fsi2d.unsteady  = True

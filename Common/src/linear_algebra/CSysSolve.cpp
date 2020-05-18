@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -241,7 +241,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Set the norm to the initial initial residual value ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -400,7 +401,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Set the norm to the initial residual value ---*/
 
-  norm0 = beta;
+  if (tol_type == LinearToleranceType::RELATIVE)
+    norm0 = beta;
 
   /*--- Output header information including initial residual ---*/
 
@@ -534,7 +536,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Set the norm to the initial initial residual value ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -695,7 +698,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
     /*--- Set the norm to the initial initial residual value. ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual. ---*/
 
@@ -1063,7 +1067,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
-        if ( Residual < SolverTol*Norm0 ) break;
+        if ( Residual <= SolverTol*Norm0 ) break;
       }
       break;
     case PASTIX_LDLT : case PASTIX_LU:

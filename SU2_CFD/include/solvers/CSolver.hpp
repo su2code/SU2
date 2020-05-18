@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -164,7 +164,6 @@ public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysVector<su2double> LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
 #ifndef CODI_FORWARD_TYPE
   CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
@@ -172,8 +171,6 @@ public:
   CSysMatrix<su2double> Jacobian;
   CSysSolve<su2double>  System;
 #endif
-
-  CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
@@ -272,17 +269,12 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Move the mesh in time
    */
   inline virtual void SetDualTime_Mesh(void){ }
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -301,7 +293,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline virtual CFluidModel* GetFluidModel(void) const { return NULL;}
+  inline virtual CFluidModel* GetFluidModel(void) const { return nullptr;}
 
   /*!
    * \brief Get number of linear solver iterations.
@@ -627,16 +619,14 @@ public:
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
-            It is a virtual function, because for the DG-FEM solver a different version is needed.
-   * \param[in] geometry - Geometrical definition of the problem.
+   *        It is a virtual function, because for the DG-FEM solver a different version is needed.
    */
-  inline virtual void Set_OldSolution(CGeometry *geometry) { base_nodes->Set_OldSolution(); }
+  inline virtual void Set_OldSolution() { base_nodes->Set_OldSolution(); }
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline virtual void Set_NewSolution(CGeometry *geometry) { }
+  inline virtual void Set_NewSolution() { }
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
@@ -865,23 +855,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Clamped(CGeometry *geometry,
                                  CNumerics *numerics,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Clamped_Post(CGeometry *geometry,
                                       CNumerics *numerics,
-                                      CConfig *config,
+                                      const CConfig *config,
                                       unsigned short val_marker) { }
 
   /*!
@@ -891,10 +879,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
+  inline virtual void BC_Sym_Plane(CGeometry *geometry,
+                                   CNumerics *numerics,
+                                   const CConfig *config,
+                                   unsigned short val_marker) { }
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   inline virtual void BC_DispDir(CGeometry *geometry,
                                  CNumerics *numerics,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  unsigned short val_marker) { }
 
   /*!
@@ -904,12 +903,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Normal_Displacement(CGeometry *geometry,
                                              CNumerics *numerics,
-                                             CConfig *config,
+                                             const CConfig *config,
                                              unsigned short val_marker) { }
-
 
   /*!
    * \brief A virtual member.
@@ -920,7 +917,7 @@ public:
    */
   inline virtual void BC_Normal_Load(CGeometry *geometry,
                                      CNumerics *numerics,
-                                     CConfig *config,
+                                     const CConfig *config,
                                      unsigned short val_marker) { }
 
   /*!
@@ -930,10 +927,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Dir_Load(CGeometry *geometry,
                                   CNumerics *numerics,
-                                  CConfig *config,
+                                  const CConfig *config,
                                   unsigned short val_marker) { }
 
   /*!
@@ -946,7 +942,7 @@ public:
 
   inline virtual void BC_Sine_Load(CGeometry *geometry,
                                    CNumerics *numerics,
-                                   CConfig *config,
+                                   const CConfig *config,
                                    unsigned short val_marker) { }
 
   /*!
@@ -958,7 +954,7 @@ public:
    */
   inline virtual void BC_Damper(CGeometry *geometry,
                                 CNumerics *numerics,
-                                CConfig *config,
+                                const CConfig *config,
                                 unsigned short val_marker) { }
 
   /*!
@@ -968,10 +964,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Deforming(CGeometry *geometry,
                                    CNumerics *numerics,
-                                   CConfig *config,
+                                   const CConfig *config,
                                    unsigned short val_marker) { }
 
   /*!
@@ -1527,12 +1522,12 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ImplicitNewmark_Iteration(CGeometry *geometry,
-                                                CSolver **solver_container,
-                                                CConfig *config) { }
+                                                CNumerics **numerics,
+                                                const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1541,7 +1536,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ImplicitNewmark_Update(CGeometry *geometry,
-                                             CSolver **solver_container,
                                              CConfig *config) { }
 
   /*!
@@ -1551,18 +1545,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ImplicitNewmark_Relaxation(CGeometry *geometry,
-                                                 CSolver **solver_container,
                                                  CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_Iteration(CGeometry *geometry,
-                                                 CSolver **solver_container,
-                                                 CConfig *config) { }
+                                                 CNumerics **numerics,
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1571,7 +1564,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_UpdateDisp(CGeometry *geometry,
-                                                  CSolver **solver_container,
                                                   CConfig *config) { }
 
   /*!
@@ -1581,7 +1573,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
-                                                      CSolver **solver_container,
                                                       CConfig *config) { }
 
   /*!
@@ -1591,8 +1582,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry,
-                                                   CSolver **solver_container,
-                                                   CConfig *config) { }
+                                                   const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -2948,7 +2938,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -3035,7 +3025,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
-                                             unsigned long val_vertex) const { return 0; }
+                                             unsigned long val_vertex) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -3364,7 +3354,7 @@ public:
    * \brief A virtual member.
    * \return Value of the velocity at the infinity.
    */
-  inline virtual su2double *GetVelocity_Inf(void) { return 0; }
+  inline virtual su2double *GetVelocity_Inf(void) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -3585,56 +3575,28 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
+   * \param[in] config - Definition of the problem.
    */
-  inline virtual void ResetInitialCondition(CGeometry **geometry,
-                                            CSolver ***solver_container,
-                                            CConfig *config,
-                                            unsigned long TimeIter) { }
+  inline virtual void PredictStruct_Displacement(CGeometry *geometry,
+                                                 CConfig *config) { }
 
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the problem.
+   * \param[in] iOuterIter - Current outer iteration.
    */
-  inline virtual void PredictStruct_Displacement(CGeometry **fea_geometry,
-                                                 CConfig *fea_config,
-                                                 CSolver ***fea_solution) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
-   */
-  inline virtual void ComputeAitken_Coefficient(CGeometry **fea_geometry,
-                                                CConfig *fea_config,
-                                                CSolver ***fea_solution,
+  inline virtual void ComputeAitken_Coefficient(CGeometry *geometry,
+                                                CConfig *config,
                                                 unsigned long iOuterIter) { }
 
-
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetAitken_Relaxation(CGeometry **fea_geometry,
-                                           CConfig *fea_config,
-                                           CSolver ***fea_solution) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
-   */
-  inline virtual void Update_StructSolution(CGeometry **fea_geometry,
-                                            CConfig *fea_config,
-                                            CSolver ***fea_solution) { }
+  inline virtual void SetAitken_Relaxation(CGeometry *geometry,
+                                           CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3701,54 +3663,34 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFRefGeom(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config) { }
+                                        const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFRefNode(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config) { }
+                                        const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFVolFrac(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config) { }
+                                        const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFCompliance(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Stiffness_Penalty(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CNumerics **numerics_container,
-                                        CConfig *config) { }
+                                           const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3908,30 +3850,6 @@ public:
   inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config) {}
-
-  /*!
    * \brief A virtual member
    * \param[in] geometry - The geometrical definition of the problem.
    */
@@ -3980,79 +3898,67 @@ public:
    */
   inline virtual su2double Compute_LoadCoefficient(su2double CurrentTime,
                                                    su2double RampTime,
-                                                   CConfig *config) { return 0.0; }
+                                                   const CConfig *config) { return 0.0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_StiffMatrix(CGeometry *geometry,
                                           CNumerics **numerics,
-                                          CConfig *config) { }
+                                          const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry,
                                                          CNumerics **numerics,
-                                                         CConfig *config) { }
+                                                         const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_MassMatrix(CGeometry *geometry,
                                          CNumerics **numerics,
-                                         CConfig *config) { }
+                                         const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_MassRes(CGeometry *geometry,
                                       CNumerics **numerics,
-                                      CConfig *config) { }
+                                      const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_NodalStressRes(CGeometry *geometry,
                                              CNumerics **numerics,
-                                             CConfig *config) { }
+                                             const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-
-  inline virtual void Compute_NodalStress(CGeometry *geometry,
-                                          CNumerics **numerics,
-                                          CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_DeadLoad(CGeometry *geometry,
                                        CNumerics **numerics,
-                                       CConfig *config) { }
+                                       const CConfig *config) { }
 
   /*!
    * \brief A virtual member. Set the volumetric heat source
@@ -4096,15 +4002,16 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] Value of the load increment for nonlinear structural analysis
+   * \param[in] Index of the increment.
+   * \param[in] Value of the load increment for nonlinear structural analysis.
    */
-  inline virtual void SetLoad_Increment(su2double val_loadIncrement) {  }
+  inline virtual void SetLoad_Increment(unsigned long iInc, su2double loadInc) {  }
 
   /*!
    * \brief A virtual member.
    * \param[in] Value of the load increment for nonlinear structural analysis
    */
-  inline virtual su2double GetLoad_Increment() const { return 0; }
+  inline virtual su2double GetLoad_Increment() const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -4171,7 +4078,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double* GetVecSolDOFs(void) { return NULL; }
+  inline virtual su2double* GetVecSolDOFs(void) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4376,7 +4283,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return NULL;}
+  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4397,7 +4304,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return NULL;}
+  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.

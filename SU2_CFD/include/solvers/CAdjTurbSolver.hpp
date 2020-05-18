@@ -2,7 +2,7 @@
  * \file CAdjTurbSolver.hpp
  * \brief Headers of the CAdjTurbSolver class
  * \author F. Palacios, A. Bueno.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,9 +38,8 @@
  */
 class CAdjTurbSolver final : public CSolver {
 private:
-  su2double PsiNu_Inf,  /*!< \brief PsiNu variable at the infinity. */
-  *FlowSolution_i,      /*!< \brief Store the flow solution at point i. */
-  *FlowSolution_j;      /*!< \brief Store the flow solution at point j. */
+  su2double *FlowSolution_i;      /*!< \brief Store the flow solution at point i. */
+  su2double *FlowSolution_j;      /*!< \brief Store the flow solution at point j. */
 
   su2double Gamma;              /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;    /*!< \brief Fluids's Gamma - 1.0  . */
@@ -69,7 +68,7 @@ public:
   /*!
    * \brief Default destructor of the class.
    */
-  virtual ~CAdjTurbSolver(void);
+  ~CAdjTurbSolver(void) override;
 
   /*!
    * \brief Impose the Navier-Stokes turbulent adjoint boundary condition.
