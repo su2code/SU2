@@ -64,6 +64,11 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields ++;
+  }
+
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
   multiZoneHeaderString = ss.str();
