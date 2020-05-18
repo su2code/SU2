@@ -963,6 +963,11 @@ def geometry( func_name, config, state=None ):
         name = su2io.expand_part(name,config)
         link.extend(name)
 
+        # files: thickness constraint
+        if "THICKNESS_FILENAME" in files:
+            name = files["THICKNESS_FILENAME"]
+        link.extend(name)
+
         # update function name
         ## TODO
 

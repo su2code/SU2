@@ -1676,10 +1676,18 @@ public:
   inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
 
   /*!
+   * \brief Read csv file
+   * \param[in] filename: name of csv file to read 
+   * \param[in] labels: vector containing labels of csv file
+   * \param[in] vals: 2D vector containing all the values in the csv file
+   */
+  void ReadCSVFile(string filename, vector<string>& labels, vector<vector<string>>& vals);
+
+  /*!
    * \brief Read thickness constraint definition in csv file
    * \return 2D vector containing locations and values of thickness constraints
    */
-  vector<vector<su2double>> ReadThicknessConstraints(string filename);
+  vector<vector<su2double>> ReadThicknessConstraints(string filename, string& dir);
 
   /*!
    * \brief Get thickness of 

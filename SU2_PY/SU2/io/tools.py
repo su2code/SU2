@@ -178,14 +178,37 @@ def get_headerMap(nZones = 1):
 
 def getTurboPerfIndex(nZones = 1):
 
-  if int(nZones) > 1:
-    index = int(nZones) + int(int(nZones)/2.0) + 1
-  else: 
-    index = 1
-  return index
+    if int(nZones) > 1:
+        index = int(nZones) + int(int(nZones)/2.0) + 1
+    else: 
+        index = 1
+    return index
 
 
 #: def get_headerMap()
+
+def read_thickness_file( thickness_filename , scale = 1.0):
+    """ reads the raw gradients from the gradient file
+        returns a list of floats
+    """
+        
+    # open file and skip first line
+    thickness_file = open(thickness_filename)
+    thickness_file.readline()
+    # read values
+    constraint_vals = []
+    for line in thickness_file:
+        line = line.strip()
+        if len(line) == 0:
+            break
+        vals = [i.strip() for i in line.split(",")]
+        constraint_vals.append(float(vals[1]) * scale)
+    #: for each line
+    # print(constraint_vals)
+    return constraint_vals
+
+#: def read_gradients()
+
 
 
 # -------------------------------------------------------------------
@@ -256,7 +279,7 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  "NACELLE_MAX_TWIST"         ]
                  
 PerStation = []
-for i in range(20):
+for i in range(100):
     PerStation.append("STATION" + str(i) + "_AREA")
     PerStation.append("STATION" + str(i) + "_LENGTH")
     PerStation.append("STATION" + str(i) + "_WIDTH")
@@ -267,6 +290,7 @@ for i in range(20):
     PerStation.append("STATION" + str(i) + "_LE_RADIUS")
     PerStation.append("STATION" + str(i) + "_TOC")
     PerStation.append("STATION" + str(i) + "_TWIST")
+    PerStation.append("THICKNESS_LOCATION_" + str(i))
 
 optnames_geo.extend(PerStation)
                  

@@ -592,7 +592,13 @@ def read_config(filename):
                     this_con = this_con.strip('()').split(this_sgn)
                     assert len(this_con) == 2 , 'incorrect constraint definition'
                     this_obj = this_con[0]
-                    this_val = float( this_con[1] )
+                    if "THICKNESS_FILE" in this_obj:
+                        if this_con[1] == "RELATIVE":
+                            this_val = -1.0
+                        else:
+                            this_val = 0.0
+                    else:
+                        this_val = float( this_con[1] )
                     # store in dictionary
                     this_def[this_obj] = { 'SIGN'  : this_sgn ,
                                            'VALUE' : this_val ,
@@ -622,10 +628,46 @@ def read_config(filename):
         #: for case
         
     #: for line
+    if "THICKNESS_CONSTRAINT" in data_dict:
+        thickness_constraint = data_dict["THICKNESS_CONSTRAINT"]
+        thickness_constraint = [val.strip(" ( ) ") for val in thickness_constraint.split(";")]
+        filenames = [val.split(",")[0].strip() for val in thickness_constraint]
+        data_dict["THICKNESS_FILENAME"] = filenames
+        all_thick_const = []
+        nLocs = []
+        vals = []
+        for fn in filenames:
+            vals = read_thickness_file(fn)
+            nLocs.append(len(vals))
+            all_thick_const.extend(vals)
 
     if 'OPT_CONSTRAINT' in data_dict: 
         if 'BUFFET' in data_dict['OPT_CONSTRAINT']['EQUALITY'] or 'BUFFET' in data_dict['OPT_CONSTRAINT']['INEQUALITY']:
             data_dict['BUFFET_MONITORING'] = "YES"
+        thickness_index = 0
+        for name,sort in data_dict['OPT_CONSTRAINT'].items():
+            for key in sort.keys():
+                if "THICKNESS_FILE" in key:
+                    this_key = key.split("THICKNESS_FILE")
+                    file_number = int(this_key[1]) - 1
+                    for i in range(file_number):
+                        thickness_index = thickness_index + nLocs[i]
+                    for i in range(nLocs[file_number]):
+                        obj = "THICKNESS_LOCATION_" + str(int(thickness_index)+1)
+                        this_def = OrderedDict()
+                        this_sgn = sort[key]['SIGN']
+                        this_scl = sort[key]['SCALE']
+                        if sort[key]['VALUE'] == 0.0:
+                            this_val = all_thick_const[thickness_index]
+                        else:
+                            this_val = sort[key]['VALUE']
+                        this_def = { 'SIGN'  : this_sgn ,
+                                     'VALUE' : this_val ,
+                                     'SCALE' : this_scl  }
+                        sort[obj] = this_def
+                        thickness_index += 1
+                    sort.pop(key)
+
 
     if 'OPT_OBJECTIVE' in data_dict:
         if 'BUFFET' in data_dict['OPT_OBJECTIVE']:

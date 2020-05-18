@@ -2710,6 +2710,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
 
+  /* DESCRIPTION: Multipoint mesh filenames, if using different meshes for each point */
+  addPythonOption("THICKNESS_FILENAME");
+
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
 

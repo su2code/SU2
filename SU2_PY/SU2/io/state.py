@@ -197,7 +197,7 @@ class State(ordered_bunch):
                 value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
-            elif 'MULTIPOINT' in key:
+            elif 'MULTIPOINT' in key or "THICKNESS" in key:
                 # multipoint files
                 if key != 'MULTIPOINT_MESH_FILENAME':
                     # DIRECT and ADJOINT files
@@ -269,7 +269,7 @@ class State(ordered_bunch):
             multipoint = any(elem in optnames_multi for elem in objectives)
         else:
             multipoint = False
-        
+
         def register_file(label,filename):
             if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
@@ -286,7 +286,7 @@ class State(ordered_bunch):
                         files[label] = filename
                         print('Found: %s' % filename)
 
-                elif label.split('_')[0] in ['MULTIPOINT']:
+                elif label.split('_')[0] in ['MULTIPOINT'] or label.split('_')[0] in ['THICKNESS']:
                     # if multipoint, list of files needs to be added
                     file_list= [];
                     for name in filename:
@@ -307,7 +307,7 @@ class State(ordered_bunch):
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
                         assert os.path.exists(name), 'state expected file: %s' % filename
-                elif label.split('_')[0] in ['MULTIPOINT']:
+                elif label.split('_')[0] in ['MULTIPOINT'] or label.split('_')[0] in ['THICKNESS']:
                     for name in expand_zones(files[label], config):
                         if name:
                             if not os.path.exists(name):
@@ -363,6 +363,9 @@ class State(ordered_bunch):
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
             register_file('TARGET_HEATFLUX',targetheatflux_name)
+
+        if "THICKNESS_FILENAME" in config:
+            register_file('THICKNESS_FILENAME', config["THICKNESS_FILENAME"])
 
         return
     

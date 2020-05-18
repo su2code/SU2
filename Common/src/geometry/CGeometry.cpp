@@ -4150,23 +4150,89 @@ void CGeometry::SetNaturalElementColoring()
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
 
-vector<vector<su2double>> CGeometry::ReadThicknessConstraints(string filename){
-  vector<vector<su2double>> vals;
-  ifstream thicc(filename);
+void CGeometry::ReadCSVFile(string filename, vector<string>& labels, vector<vector<string>>& vals){
+  string line;
+  ifstream file(filename);
   int i = 0;
-  if(thicc){
-    string line;
-    while (getline(thicc, line)){
+  if(file){
+
+    /* --- Read the labels in the csv file --- */
+
+    getline(file, line);
+    stringstream sep(line);
+    string field;
+    while (getline(sep,field,',')){
+      labels.push_back(field);
+    }
+
+    /* --- Read the values in the csv file --- */
+
+    while (getline(file, line)){
       stringstream sep(line);
       string field;
       vals.push_back({});
       while (getline(sep,field,',')){
-        vals[i].push_back(stod(field));
+        vals[i].push_back(field);
       }
       i++;
     }
   }
-  else SU2_MPI::Error("Could not find thickness constraint file: " + filename, CURRENT_FUNCTION);
+
+  else SU2_MPI::Error("Could not find csv file: " + filename, CURRENT_FUNCTION);
+}
+
+vector<vector<su2double>> CGeometry::ReadThicknessConstraints(string filename, string& dir){
+  vector<string> labels;
+  vector<vector<string>> vals_string;
+  vector<vector<su2double>> vals;
+  ReadCSVFile(filename, labels, vals_string);
+
+  /* --- Check the number of fields in the csv file. There should be <= nDim fields --- */
+
+  if (labels.size() > nDim){
+    SU2_MPI::Error("Thickness constraint file, " + filename + ", has too many fields.", CURRENT_FUNCTION);
+  }
+
+  if (nDim == 2) {
+    if (labels[0].compare("x") == 0){
+      dir = "y";
+    }
+    else if(labels[0].compare("y") == 0){
+      dir = "x";
+    }
+    else {
+      SU2_MPI::Error("Invalid direction definition in thickness file, " + filename + 
+                     ". For 2D simulation, first field must be either x or y", CURRENT_FUNCTION);
+    }
+  }
+
+  if (nDim == 3) {
+    if ((labels[0].compare("x") == 0 && labels[1].compare("y") == 0) ||
+        (labels[1].compare("x") == 0 && labels[0].compare("y") == 0)){
+      dir = "z";
+    }
+    else if((labels[0].compare("x") == 0 && labels[1].compare("z") == 0) ||
+            (labels[1].compare("x") == 0 && labels[0].compare("z") == 0)){
+      dir = "y";
+    }
+    else if((labels[0].compare("y") == 0 && labels[1].compare("z") == 0) ||
+            (labels[1].compare("y") == 0 && labels[0].compare("z") == 0)){
+      dir = "x";
+    }
+    else {
+      SU2_MPI::Error("Invalid direction definition in thickness file, " + filename + 
+                     ". For 3D simulation, first two fields must be a pair of x, y, or z", CURRENT_FUNCTION);
+    }
+  }
+
+  vals.resize(vals_string.size(), {});
+  for (unsigned long iLine = 0; iLine < vals_string.size(); iLine++){
+    vals[iLine].resize(vals_string[iLine].size(), 0.0);
+    for (unsigned short iVal = 0; iVal < vals_string[iLine].size(); iVal++){
+      vals[iLine][iVal] = stod(vals_string[iLine][iVal]);
+    }
+  }
+  
   return vals;
 
 }
@@ -4174,7 +4240,7 @@ vector<vector<su2double>> CGeometry::ReadThicknessConstraints(string filename){
 vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool original_surface){
   unsigned short iFile, iLoc, iM, dim, dir, iDim;
   short iMarker;
-  unsigned long iElem, iPoint, jPoint, totalLocs = 0, iInt, iVertex;
+  unsigned long iElem, iPoint, jPoint, totalLocs = 0, iInt, iVertex, nSingle_Cuts = 0;
   su2double loc_val, iPoint_Coord_dim, iPoint_Coord_dir, jPoint_Coord_dim, jPoint_Coord_dir;
   vector<string> filenames = config->GetThickness_Constraint_FileNames();
   vector<string> directions = config->GetThickness_Constraint_Directions();
@@ -4215,7 +4281,7 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool 
 
     /* --- Read thickness file --- */
     
-    locs[iFile] = ReadThicknessConstraints(filenames[iFile]);
+    locs[iFile] = ReadThicknessConstraints(filenames[iFile], directions[iFile]);
     nLocs[iFile] = locs[iFile].size();
     totalLocs += nLocs[iFile];
 
@@ -4409,6 +4475,7 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool 
     for (iFile = 0; iFile < filenames.size(); iFile++){
       totalLocs += nLocs[iFile];
       thickness[iFile].resize(nLocs[iFile],0.0);
+      nSingle_Cuts = 0;
       for (iLoc = 0; iLoc < nLocs[iFile]; iLoc++){
 
         /* --- Each location should have 2 intersection points to calculate thickness
@@ -4416,8 +4483,8 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool 
 
         unsigned long ind = totalLocs - nLocs[iFile] + iLoc;
         if (points[ind].size() == 1) {
-          SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
-                         string(", geometry is only intersected once"), CURRENT_FUNCTION);
+          nSingle_Cuts++;
+          thickness[iFile][iLoc] = abs(points[ind][0]);
         }
         else if (points[ind].size() == 2){
           thickness[iFile][iLoc] = abs(points[ind][0]-points[ind][1]);
@@ -4426,6 +4493,15 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool 
           SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
                          string(", geometry is intersected more than twice"), CURRENT_FUNCTION);
         }
+      }
+      if (nSingle_Cuts == nLocs[iFile]){
+        cout << "For file " << to_string(iFile) << 
+                " geometry is only intersected once for all locations.\n" <<
+                "Assuming symmetry plane is located at " << directions[iFile] << "= 0" << endl;
+      }
+      else {
+        SU2_MPI::Error("For file " + to_string(iFile) + ", at some locations the " +
+                       "geometry is only intersected once", CURRENT_FUNCTION);
       }
     }
 
@@ -4437,36 +4513,20 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool 
         if (original_surface) fn = "thickness_" + to_string(iFile) + ".csv";
         else fn = "thickness_fd_" + to_string(iFile) + ".csv";
         thickness_file.open(fn, ios::out);
-        if (config->GetSystemMeasurements() == US){
-          if (directions[iFile].compare("x") == 0)
-            thickness_file << "\"y (in)\",\"Thickness (in)\"" << endl;
-          else
-            thickness_file << "\"x (in)\",\"Thickness (in)\"" << endl;
-        }
-        else{
-          if (directions[iFile].compare("x") == 0)
-            thickness_file << "\"y (m)\",\"Thickness (m)\"" << endl;
-          else
-            thickness_file << "\"x (m)\",\"Thickness (m)\"" << endl;
-        }
+
+        if (directions[iFile].compare("x") == 0)
+          thickness_file << "y,Thickness" << endl;
+        else
+          thickness_file << "x,Thickness" << endl;
       }
       else {
         string fn = "thickness_" + to_string(iFile) + ".dat";
         thickness_file.open(fn, ios::out);
         thickness_file << "TITLE = \"Thickness values\"" << endl;
-
-        if (config->GetSystemMeasurements() == US){
-          if (directions[iFile].compare("x") == 0)
-            thickness_file << "VARIABLES = \"y (in)\",\"Thickness (in)\"" << endl;
-          else
-            thickness_file << "VARIABLES = \"x (in)\",\"Thickness (in)\"" << endl;
-        }
-        else{
-          if (directions[iFile].compare("x") == 0)
-            thickness_file << "VARIABLES = \"y (m)\",\"Thickness (m)\"" << endl;
-          else
-            thickness_file << "VARIABLES = \"x (m)\",\"Thickness (m)\"" << endl;
-        }
+        if (directions[iFile].compare("x") == 0)
+          thickness_file << "VARIABLES = \"y\",\"Thickness\"" << endl;
+        else
+          thickness_file << "VARIABLES = \"x\",\"Thickness\"" << endl;
         thickness_file << "ZONE T= \"Thicknesses\"" << endl;
       }
       for (iLoc = 0; iLoc < nLocs[iFile]; iLoc++){

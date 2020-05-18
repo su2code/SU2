@@ -164,7 +164,7 @@ void CGeometryEvaluation::ComputeGeometry(){
 
   /* --- Evaluation 2D constraint locations --- */
   if (thickness && geometry->GetnDim() == 2) {
-    cout << "Computing thickness at given locations." << endl;
+    if (rank == MASTER_NODE) cout << "Computing thickness at given locations." << endl;
     thicc = geometry->CalculateThickness2D(config, true);
   }
 
@@ -404,7 +404,7 @@ void CGeometryEvaluation::OutputFunctionFile(){
         unsigned long thicc_index = 0;
         for (iFile = 0; iFile < thicc.size(); iFile++){
           for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
-            ObjFunc_file << "\"THICKNESS_LOCATION_" << thicc_index << "\"";
+            ObjFunc_file << "\"THICKNESS_LOCATION_" << thicc_index+1 << "\"";
             thicc_index++;
             if (!(iFile == thicc.size()-1 && iLoc == thicc[iFile].size()-1)){
               ObjFunc_file << ",";
@@ -1083,7 +1083,7 @@ void CGeometryEvaluation::EverythingGradient(){
               unsigned long thicc_index = 0;
               for (iFile = 0; iFile < thicc.size(); iFile++){
                 for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
-                  Gradient_file << "\"THICKNESS_LOCATION_" << thicc_index << "\"";
+                  Gradient_file << "\"THICKNESS_LOCATION_" << thicc_index+1 << "\"";
                   thicc_index++;
                   if (!(iFile == thicc.size()-1 && iLoc == thicc[iFile].size()-1)){
                     Gradient_file << ",";

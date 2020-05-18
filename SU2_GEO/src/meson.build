@@ -1,4 +1,5 @@
-su2_geo_src = ['SU2_GEO.cpp']
+su2_geo_src = ['CGeometryEvaluation.cpp',
+			   'SU2_GEO.cpp']
 
 if get_option('enable-normal')
   su2_geo = executable('SU2_GEO',
