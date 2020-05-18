@@ -34,36 +34,31 @@
 
 template<class ScalarType>
 FORCEINLINE ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
-
-  for (auto index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++)
+  /*--- The position of the diagonal block is known which allows halving the search space. ---*/
+  const auto end = (block_j<block_i)? dia_ptr_ilu[block_i] : row_ptr_ilu[block_i+1];
+  for (auto index = (block_j<block_i)? row_ptr_ilu[block_i] : dia_ptr_ilu[block_i]; index < end; ++index)
     if (col_ind_ilu[index] == block_j)
-      return &ILU_matrix[index*nVar*nEqn];
+      return &ILU_matrix[index*nVar*nVar];
   return nullptr;
 }
 
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
 
-  for (auto index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
-    if (col_ind_ilu[index] == block_j) {
-      for (auto iVar = 0ul; iVar < nVar*nEqn; iVar++)
-        ILU_matrix[index*nVar*nEqn+iVar] = val_block[iVar];
-      break;
-    }
-  }
+  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
+  if (!ilu_ij) return;
+  for (auto iVar = 0ul; iVar < nVar*nVar; ++iVar)
+    ilu_ij[iVar] = val_block[iVar];
 }
 
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
 
-  for (auto index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
-    if (col_ind_ilu[index] == block_j) {
-      for (auto iVar = 0ul; iVar < nVar; iVar++)
-        for (auto jVar = 0ul; jVar < nEqn; jVar++)
-          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[jVar*nVar+iVar];
-      break;
-    }
-  }
+  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
+  if (!ilu_ij) return;
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++)
+      ilu_ij[iVar*nVar+jVar] = val_block[jVar*nVar+iVar];
 }
 
 template<class T, bool alpha, bool beta, bool transp>

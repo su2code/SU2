@@ -401,23 +401,21 @@ public:
    * \param[in] block_j - Column index.
    * \return Pointer to location in memory where the block starts.
    */
-  inline ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) {
-
-    for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
+  FORCEINLINE const ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) const {
+    /*--- The position of the diagonal block is known which allows halving the search space. ---*/
+    const auto end = (block_j<block_i)? dia_ptr[block_i] : row_ptr[block_i+1];
+    for (auto index = (block_j<block_i)? row_ptr[block_i] : dia_ptr[block_i]; index < end; ++index)
       if (col_ind[index] == block_j)
         return &(matrix[index*nVar*nEqn]);
     return nullptr;
   }
 
   /*!
-   * \brief Get a pointer to the start of block "ij", const version
+   * \brief Get a pointer to the start of block "ij", non-const version
    */
-  inline const ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) const {
-
-    for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
-      if (col_ind[index] == block_j)
-        return &(matrix[index*nVar*nEqn]);
-    return nullptr;
+  FORCEINLINE ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) {
+    const CSysMatrix& const_this = *this;
+    return const_cast<ScalarType*>( const_this.GetBlock(block_i, block_j) );
   }
 
   /*!
@@ -428,13 +426,11 @@ public:
    * \param[in] jVar - Column of the block.
    * \return Value of the block entry.
    */
-  inline ScalarType GetBlock(unsigned long block_i, unsigned long block_j,
-                             unsigned short iVar, unsigned short jVar) const {
-
-    for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
-      if (col_ind[index] == block_j)
-        return matrix[index*nVar*nEqn+iVar*nEqn+jVar];
-    return 0.0;
+  FORCEINLINE ScalarType GetBlock(unsigned long block_i, unsigned long block_j,
+                                  unsigned short iVar, unsigned short jVar) const {
+    auto mat_ij = GetBlock(block_i, block_j);
+    if (!mat_ij) return 0.0;
+    return mat_ij[iVar*nEqn+jVar];
   }
 
   /*!
@@ -449,16 +445,11 @@ public:
   inline void SetBlock(unsigned long block_i, unsigned long block_j,
                        const OtherType *val_block, OtherType alpha = 1.0) {
 
-    unsigned long iVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_j) {
-        index *= nVar*nEqn;
-        for (iVar = 0; iVar < nVar*nEqn; iVar++)
-          matrix[index+iVar] = (Overwrite? ScalarType(0) : matrix[index+iVar]) +
-                               PassiveAssign<ScalarType,OtherType>(alpha * val_block[iVar]);
-        break;
-      }
+    auto mat_ij = GetBlock(block_i, block_j);
+    if (!mat_ij) return;
+    for (auto iVar = 0ul; iVar < nVar*nEqn; ++iVar) {
+      mat_ij[iVar] = (Overwrite? ScalarType(0) : mat_ij[iVar]) +
+                     PassiveAssign<ScalarType,OtherType>(alpha * val_block[iVar]);
     }
   }
 
@@ -485,18 +476,13 @@ public:
   template<class OtherType, int Sign = 1, bool Overwrite = true>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
-    unsigned long iVar, jVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_j) {
-        index *= nVar*nEqn;
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nEqn; jVar++) {
-            matrix[index] = (Overwrite? ScalarType(0) : matrix[index]) +
-              Sign * PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-            ++index;
-          }
-        break;
+    auto mat_ij = GetBlock(block_i, block_j);
+    if (!mat_ij) return;
+    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+      for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
+        *mat_ij = (Overwrite? ScalarType(0) : *mat_ij) +
+                  Sign * PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+        ++mat_ij;
       }
     }
   }
