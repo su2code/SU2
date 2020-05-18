@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -357,13 +357,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFluidIteration(void);
+  ~CFluidIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  virtual void Preprocess(COutput *output,
+  void Preprocess(COutput *output,
                   CIntegration ****integration,
                   CGeometry ****geometry,
                   CSolver *****solver,
@@ -373,7 +373,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Perform a single iteration of the fluid system.
@@ -387,7 +387,7 @@ public:
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-  virtual void Iterate(COutput *output,
+  void Iterate(COutput *output,
                CIntegration ****integration,
                CGeometry ****geometry,
                CSolver *****solver,
@@ -397,7 +397,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Iterate the fluid system for a number of Inner_Iter iterations.
@@ -411,7 +411,7 @@ public:
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-   virtual void Solve(COutput *output,
+   void Solve(COutput *output,
                CIntegration ****integration,
                CGeometry ****geometry,
                CSolver *****solver,
@@ -421,13 +421,13 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the fluid system.
    * \param[in] ??? - Description here.
    */
-  virtual void Update(COutput *output,
+  void Update(COutput *output,
               CIntegration ****integration,
               CGeometry ****geometry,
               CSolver *****solver,
@@ -437,13 +437,13 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
    */
-  virtual bool Monitor(COutput *output,
+  bool Monitor(COutput *output,
       CIntegration ****integration,
       CGeometry ****geometry,
       CSolver *****solver,
@@ -453,7 +453,7 @@ public:
       CVolumetricMovement ***grid_movement,
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
-      unsigned short val_iInst);
+      unsigned short val_iInst) override;
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
@@ -461,7 +461,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-   virtual void Postprocess(COutput *output,
+   void Postprocess(COutput *output,
                    CIntegration ****integration,
                    CGeometry ****geometry,
                    CSolver *****solver,
@@ -471,7 +471,7 @@ public:
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
-                   unsigned short val_iInst);
+                   unsigned short val_iInst) override;
 
   /*!
    * \brief Imposes a gust via the grid velocities.
@@ -525,7 +525,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurboIteration(void);
+  ~CTurboIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -541,7 +541,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
@@ -559,7 +559,7 @@ public:
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
-                   unsigned short val_iInst);
+                   unsigned short val_iInst) override;
 
 
 };
@@ -568,7 +568,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEMFluidIteration : public CFluidIteration {
 public:
@@ -582,7 +582,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEMFluidIteration(void);
+  ~CFEMFluidIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -606,7 +606,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
   /*!
    * \brief Perform a single iteration of the finite element flow system.
    * \param[in] output - Pointer to the COutput class.
@@ -629,7 +629,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the finite element flow system.
@@ -645,7 +645,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Postprocess routine for the finite element flow system.
@@ -663,7 +663,7 @@ public:
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
-                   unsigned short val_iInst);
+                   unsigned short val_iInst) override;
 };
 
 /*!
@@ -684,7 +684,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CHeatIteration(void);
+  ~CHeatIteration(void) override;
 
   /*!
    * \brief Perform a single iteration of the heat system.
@@ -708,7 +708,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Iterate the heat system for a number of Inner_Iter iterations.
@@ -732,7 +732,7 @@ public:
              CVolumetricMovement ***grid_movement,
              CFreeFormDefBox*** FFDBox,
              unsigned short val_iZone,
-             unsigned short val_iInst);
+             unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the heat system.
@@ -748,14 +748,14 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 };
 
 /*!
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEAIteration : public CIteration {
 public:
@@ -769,7 +769,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEAIteration(void);
+  ~CFEAIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -802,7 +802,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Iterate the structural system for a number of Inner_Iter iterations.
@@ -827,7 +827,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the FEM system.
@@ -843,7 +843,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Predictor.
@@ -867,7 +867,7 @@ public:
                  CVolumetricMovement ***grid_movement,
                  CFreeFormDefBox*** FFDBox,
                  unsigned short val_iZone,
-                 unsigned short val_iInst);
+                 unsigned short val_iInst) override;
 
   /*!
    * \brief Relaxation.
@@ -891,7 +891,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the FEM system.
@@ -907,7 +907,7 @@ public:
       CVolumetricMovement ***grid_movement,
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
-      unsigned short val_iInst);
+      unsigned short val_iInst) override;
 
   /*!
    * \brief Postprocess ???.
@@ -925,7 +925,7 @@ public:
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
-                   unsigned short val_iInst);
+                   unsigned short val_iInst) override;
 
 };
 
@@ -946,7 +946,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjFluidIteration(void);
+  ~CAdjFluidIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -962,7 +962,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -986,7 +986,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the adjoint fluid system.
@@ -1002,7 +1002,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
 
 
@@ -1032,7 +1032,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFluidIteration(void);
+  ~CDiscAdjFluidIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -1059,7 +1059,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -1085,7 +1085,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
 
   /*!
@@ -1112,7 +1112,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
@@ -1138,7 +1138,7 @@ public:
       CVolumetricMovement ***grid_movement,
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
-      unsigned short val_iInst);
+      unsigned short val_iInst) override;
 
   /*!
    * \brief Postprocess the discrete adjoint fluid iteration.
@@ -1164,7 +1164,7 @@ public:
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
-                   unsigned short val_iInst);
+                   unsigned short val_iInst) override;
 
   /*!
    * \brief Registers all input variables of the fluid iteration.
@@ -1178,7 +1178,7 @@ public:
                          CGeometry ****geometry,
                          CConfig** config,
                          unsigned short iZone,
-                         unsigned short iInst);
+                         unsigned short iInst) override;
 
   /*!
    * \brief Registers all output variables of the fluid iteration.
@@ -1194,7 +1194,7 @@ public:
                      CConfig** config,
                      unsigned short iZone,
                      unsigned short iInst,
-                     unsigned short kind_recording);
+                     unsigned short kind_recording) override;
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -1209,7 +1209,7 @@ public:
                       CConfig** config,
                       COutput* output,
                       unsigned short iZone,
-                      unsigned short iInst);
+                      unsigned short iInst) override;
 
   /*!
    * \brief Record a single iteration of the direct mean flow system.
@@ -1254,7 +1254,7 @@ public:
                     CConfig **config,
                     unsigned short val_iZone,
                     unsigned short val_iInst,
-                    unsigned short kind_recording);
+                    unsigned short kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
@@ -1272,7 +1272,7 @@ public:
                        CConfig **config,
                        unsigned short iZone,
                        unsigned short iInst,
-                       unsigned short kind_recording);
+                       unsigned short kind_recording) override;
 
   /*!
    * \brief load unsteady solution for unsteady problems
@@ -1288,7 +1288,7 @@ public:
                       CConfig **config,
                       unsigned short val_iZone,
                       unsigned short val_iInst,
-                      int val_DirectIter);
+                      int val_DirectIter) override;
 
 
 
@@ -1318,7 +1318,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEAIteration(void);
+  ~CDiscAdjFEAIteration(void) override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -1344,7 +1344,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint mean flow system.
@@ -1370,7 +1370,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the discrete adjoint mean flow system.
@@ -1396,7 +1396,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint mean flow system.
@@ -1422,7 +1422,7 @@ public:
       CVolumetricMovement ***grid_movement,
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
-      unsigned short val_iInst);
+      unsigned short val_iInst) override;
 
   /*!
    * \brief Postprocesses the discrete adjoint mean flow system before heading to another physics system or the next iteration.
@@ -1448,7 +1448,7 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst) override;
 
   /*!
    * \brief Registers all input variables of the FEM iteration.
@@ -1458,7 +1458,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - Kind of recording, either FEM_VARIABLES or MESH_COORDS
    */
-  void RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording);
+  void RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
 
   /*!
    * \brief Registers all output variables of the FEM iteration.
@@ -1479,7 +1479,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the zone.
    */
-  void InitializeAdjoint(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst);
+  void InitializeAdjoint(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst) override;
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
@@ -1524,7 +1524,7 @@ public:
                     CConfig **config,
                     unsigned short val_iZone,
                     unsigned short val_iInst,
-                    unsigned short kind_recording);
+                    unsigned short kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the variables in the numerics (E, Nu...)
@@ -1542,7 +1542,7 @@ public:
                        CConfig **config,
                        unsigned short iZone,
                        unsigned short iInst,
-                       unsigned short kind_recording);
+                       unsigned short kind_recording) override;
 
   /*!
    * \brief load solution for dynamic problems
@@ -1558,7 +1558,7 @@ public:
                       CConfig **config,
                       unsigned short val_iZone,
                       unsigned short val_iInst,
-                      int val_DirectIter);
+                      int val_DirectIter) override;
 
 };
 
@@ -1585,7 +1585,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjHeatIteration(void);
+  ~CDiscAdjHeatIteration(void) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -1611,7 +1611,7 @@ public:
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
-                  unsigned short val_iInst);
+                  unsigned short val_iInst) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -1637,7 +1637,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -1662,7 +1662,7 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone, unsigned short val_iInst);
+              unsigned short val_iZone, unsigned short val_iInst) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
@@ -1677,7 +1677,7 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Outputs desired files and quantities for the discrete adjoint fluid system.
@@ -1715,7 +1715,7 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone, unsigned short val_iInst);
+                   unsigned short val_iZone, unsigned short val_iInst) override;
 
   /*!
    * \brief Registers all input variables of the fluid iteration.
@@ -1728,7 +1728,7 @@ public:
   void InitializeAdjoint(CSolver *****solver,
                          CGeometry ****geometry,
                          CConfig** config,
-                         unsigned short iZone, unsigned short iInst);
+                         unsigned short iZone, unsigned short iInst) override;
 
   /*!
    * \brief Registers all output variables of the fluid iteration.
@@ -1743,7 +1743,7 @@ public:
                      CGeometry ****geometry,
                      CConfig** config,
                      unsigned short iZone, unsigned short iInst,
-                     unsigned short kind_recording);
+                     unsigned short kind_recording) override;
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -1757,7 +1757,7 @@ public:
                       CGeometry ****geometry,
                       CConfig** config,
                       COutput* output,
-                      unsigned short iZone, unsigned short iInst);
+                      unsigned short iZone, unsigned short iInst) override;
 
   /*!
    * \brief Record a single iteration of the direct heat system.
@@ -1800,7 +1800,7 @@ public:
                     CConfig **config,
                     unsigned short val_iZone,
                     unsigned short val_iInst,
-                    unsigned short kind_recording) { }
+                    unsigned short kind_recording) override { }
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
@@ -1817,7 +1817,7 @@ public:
                        CNumerics ******numerics,
                        CConfig **config,
                        unsigned short iZone, unsigned short iInst,
-                       unsigned short kind_recording);
+                       unsigned short kind_recording) override;
 
   /*!
    * \brief load unsteady solution for unsteady problems
@@ -1833,5 +1833,5 @@ public:
                       CConfig **config,
                       unsigned short val_iZone,
                       unsigned short val_iInst,
-                      int val_DirectIter);
+                      int val_DirectIter) override;
 };

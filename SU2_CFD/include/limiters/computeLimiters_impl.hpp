@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -136,8 +136,8 @@ void computeLimiters_impl(CSolver* solver,
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
-    auto node = geometry.node[iPoint];
-    const su2double* coord_i = node->GetCoord();
+    auto nodes = geometry.nodes;
+    const su2double* coord_i = nodes->GetCoord(iPoint);
 
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
@@ -170,11 +170,11 @@ void computeLimiters_impl(CSolver* solver,
 
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
-    for(size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
+    for(size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      size_t jPoint = node->GetPoint(iNeigh);
+      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
 
-      const su2double* coord_j = geometry.node[jPoint]->GetCoord();
+      const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
       /*--- Distance vector from iPoint to face (middle of the edge). ---*/

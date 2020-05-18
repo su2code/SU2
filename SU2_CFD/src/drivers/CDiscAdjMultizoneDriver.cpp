@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -178,7 +178,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
-  SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(NONE, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   SetRecording(SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   RecordingState = NONE;
 
@@ -232,6 +232,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
+      config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
+
       if (retape) {
         SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
         SetRecording(SOLUTION_VARIABLES, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
@@ -256,7 +258,7 @@ void CDiscAdjMultizoneDriver::Run() {
           Add_External_To_Solution(iZone);
         }
         else {
-          /*--- If we restarted, Solution already has all contribution,
+          /*--- If we restarted, Solution already has all contributions,
            *    we run only one inner iter to compute the cross terms. ---*/
           eval_transfer = true;
         }
@@ -274,7 +276,12 @@ void CDiscAdjMultizoneDriver::Run() {
                                                     solver_container, numerics_container, config_container,
                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-        /*--- Print out the convergence data to screen and history file ---*/
+        /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
+         *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
+
+        Set_SolutionOld_To_Solution(iZone);
+
+        /*--- Print out the convergence data to screen and history file. ---*/
 
         bool converged = iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container,
                                                     geometry_container, solver_container, numerics_container,
@@ -293,6 +300,7 @@ void CDiscAdjMultizoneDriver::Run() {
           /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
            *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
 
+          config_container[jZone]->SetInnerIter(0);
           iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
                                                       solver_container, numerics_container, config_container,
                                                       surface_movement, grid_movement, FFDBox, jZone, INST_0);
@@ -420,8 +428,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   for(iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && solver->GetAdjoint())
-        solver->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      if (solver && solver->GetAdjoint()) {
+        for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+          solver->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
+        }
+      }
     }
   }
 
@@ -473,7 +484,9 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
    *    It is necessary to include data transfer and mesh updates in this section as some functions
    *    computed in one zone depend explicitly on the variables of others through that path. --- */
 
-  HandleDataTransfer();
+  if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == MESH_COORDS)) {
+    HandleDataTransfer();
+  }
 
   SetObjFunction(kind_recording);
 
@@ -481,9 +494,13 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if (tape_type != Kind_Tape::OBJECTIVE_FUNCTION_TAPE) {
 
-    /*--- We do the communication here to not differentiate wrt updated boundary data. ---*/
+    /*--- We do the communication here to not differentiate wrt updated boundary data.
+     *    For recording w.r.t. mesh coordinates the transfer was included before the
+     *    objective function, so we do not repeat it here. ---*/
 
-    HandleDataTransfer();
+    if (kind_recording != MESH_COORDS) {
+      HandleDataTransfer();
+    }
 
     AD::Push_TapePosition(); /// TRANSFER
 
@@ -895,6 +912,15 @@ void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
       solver->Add_External_To_Solution();
+  }
+}
+
+void CDiscAdjMultizoneDriver::Set_SolutionOld_To_Solution(unsigned short iZone) {
+
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+    if (solver && solver->GetAdjoint())
+      solver->Set_OldSolution();
   }
 }
 

@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -185,8 +185,9 @@ protected:
   unsigned short
   Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
+  const su2double
+  *Normal;       /*!< \brief Normal vector, its norm is the area of the face. */
   su2double
-  *Normal,       /*!< \brief Normal vector, its norm is the area of the face. */
   *UnitNormal,   /*!< \brief Unitary normal vector. */
   *UnitNormald;  /*!< \brief Derivative of unitary normal vector. */
   su2double
@@ -712,7 +713,7 @@ public:
    * \brief Set the value of the normal vector to the face between two points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
-  inline void SetNormal(su2double *val_normal) { Normal = val_normal; }
+  inline void SetNormal(const su2double *val_normal) { Normal = val_normal; }
 
   /*!
    * \brief Set the value of the volume of the control volume.
@@ -753,9 +754,9 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Flux - Pointer to the projected flux.
    */
-  void GetInviscidProjFlux(su2double *val_density, su2double *val_velocity,
-                           su2double *val_pressure, su2double *val_enthalpy,
-                           su2double *val_normal, su2double *val_Proj_Flux);
+  void GetInviscidProjFlux(const su2double *val_density, const su2double *val_velocity,
+                           const su2double *val_pressure, const su2double *val_enthalpy,
+                           const su2double *val_normal, su2double *val_Proj_Flux);
 
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
@@ -766,10 +767,10 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Flux - Pointer to the projected flux.
    */
-  void GetInviscidIncProjFlux(su2double *val_density, su2double *val_velocity,
-                                  su2double *val_pressure, su2double *val_betainc2,
-                                  su2double *val_enthalpy,
-                                  su2double *val_normal, su2double *val_Proj_Flux);
+  void GetInviscidIncProjFlux(const su2double *val_density, const su2double *val_velocity,
+                              const su2double *val_pressure, const su2double *val_betainc2,
+                              const su2double *val_enthalpy, const su2double *val_normal,
+                              su2double *val_Proj_Flux);
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -779,8 +780,8 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
-                          su2double *val_normal, su2double val_scale,
+  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
+                          const su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor);
 
   /*!
@@ -792,8 +793,8 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity,
-                             su2double *val_betainc2, su2double *val_normal,
+  void GetInviscidIncProjJac(const su2double *val_density, const su2double *val_velocity,
+                             const su2double *val_betainc2, const su2double *val_normal,
                              su2double val_scale,
                              su2double **val_Proj_Jac_tensor);
 
@@ -809,13 +810,13 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidIncProjJac(su2double *val_density,
-                             su2double *val_velocity,
-                             su2double *val_betainc2,
-                             su2double *val_cp,
-                             su2double *val_temperature,
-                             su2double *val_dRhodT,
-                             su2double *val_normal,
+  void GetInviscidIncProjJac(const su2double *val_density,
+                             const su2double *val_velocity,
+                             const su2double *val_betainc2,
+                             const su2double *val_cp,
+                             const su2double *val_temperature,
+                             const su2double *val_dRhodT,
+                             const su2double *val_normal,
                              su2double val_scale,
                              su2double **val_Proj_Jac_Tensor);
 
@@ -829,12 +830,12 @@ public:
    * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
    * \param[out] val_Precon - Pointer to the preconditioning matrix.
    */
-  void GetPreconditioner(su2double *val_density,
-                         su2double *val_velocity,
-                         su2double *val_betainc2,
-                         su2double *val_cp,
-                         su2double *val_temperature,
-                         su2double *val_drhodt,
+  void GetPreconditioner(const su2double *val_density,
+                         const su2double *val_velocity,
+                         const su2double *val_betainc2,
+                         const su2double *val_cp,
+                         const su2double *val_temperature,
+                         const su2double *val_drhodt,
                          su2double **val_Precon);
 
   /*!
@@ -845,10 +846,10 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetPreconditionedProjJac(su2double *val_density,
-                                su2double *val_velocity,
-                                su2double *val_betainc2,
-                                su2double *val_normal,
+  void GetPreconditionedProjJac(const su2double *val_density,
+                                const su2double *val_velocity,
+                                const su2double *val_betainc2,
+                                const su2double *val_normal,
                                 su2double **val_Proj_Jac_Tensor);
 
   /*!
@@ -859,9 +860,9 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(su2double *val_velocity, su2double *val_enthalphy,
-                          su2double *val_chi, su2double *val_kappa,
-                          su2double *val_normal, su2double val_scale,
+  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalphy,
+                          const su2double *val_chi, const su2double *val_kappa,
+                          const su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor);
 
   /*!
@@ -870,8 +871,8 @@ public:
    * \param[in] val_Mean_PrimVar - Mean Value of the secondary variables.
    * \param[out] val_Jac_PC - Pointer to the Jacobian dPdC.
    */
-  void GetPrimitive2Conservative (su2double *val_Mean_PrimVar,
-                                  su2double *val_Mean_SecVar,
+  void GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
+                                  const su2double *val_Mean_SecVar,
                                   su2double **val_Jac_PC);
 
   /*!
@@ -886,10 +887,10 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_p_tensor - Pointer to the P matrix.
    */
-  void GetPMatrix(su2double *val_density, su2double *val_velocity,
-                  su2double *val_soundspeed, su2double *val_enthalpy,
-                  su2double *val_chi, su2double *val_kappa,
-                  su2double *val_normal, su2double **val_p_tensor);
+  void GetPMatrix(const su2double *val_density, const su2double *val_velocity,
+                  const su2double *val_soundspeed, const su2double *val_enthalpy,
+                  const su2double *val_chi, const su2double *val_kappa,
+                  const su2double *val_normal, su2double **val_p_tensor);
 
   /*!
    * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
@@ -900,8 +901,8 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_p_tensor - Pointer to the P matrix.
    */
-  void GetPMatrix(su2double *val_density, su2double *val_velocity,
-                  su2double *val_soundspeed, su2double *val_normal,
+  void GetPMatrix(const su2double *val_density, const su2double *val_velocity,
+                  const su2double *val_soundspeed, const su2double *val_normal,
                   su2double **val_p_tensor);
 
   /*!
@@ -914,7 +915,7 @@ public:
    * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
    */
   void GetinvRinvPe(su2double Beta2, su2double val_enthalpy, su2double val_soundspeed,
-                    su2double val_density, su2double* val_velocity,
+                    su2double val_density, const su2double* val_velocity,
                     su2double** val_invR_invPe);
 
   /*!
@@ -926,7 +927,7 @@ public:
    * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
    */
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
-                  su2double val_density, su2double* val_velocity,
+                  su2double val_density, const su2double* val_velocity,
                   su2double** val_invR_invPe);
   /*!
    * \brief Computation of the matrix R.
@@ -1015,8 +1016,8 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
-                      su2double *val_soundspeed, su2double *val_normal,
+  void GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
+                      const su2double *val_soundspeed, const su2double *val_normal,
                       su2double **val_invp_tensor);
 
   /*!
@@ -1026,10 +1027,10 @@ public:
                              su2double ViscDens_i, su2double ViscDens_j, su2double *Velocity_i, su2double *Velocity_j,
                              su2double sq_vel_i, su2double sq_vel_j,
                              su2double XiDens_i, su2double XiDens_j, su2double **Mean_GradPhi, su2double *Mean_GradPsiE,
-                             su2double dPhiE_dn, su2double *Normal, su2double *Edge_Vector, su2double dist_ij_2, su2double *val_residual_i,
-                             su2double *val_residual_j,
-                             su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji,
-                             su2double **val_Jacobian_jj, bool implicit);
+                             su2double dPhiE_dn, const su2double *Normal, su2double *Edge_Vector, su2double dist_ij_2,
+                             su2double *val_residual_i, su2double *val_residual_j,
+                             su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+                             su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, bool implicit);
 
   /*!
    * \brief Computation of the projected inviscid lambda (eingenvalues).
@@ -1038,8 +1039,8 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_Lambda_Vector - Pointer to Lambda matrix.
    */
-  void GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val_soundspeed,
-                                 su2double *val_normal, su2double *val_Lambda_Vector);
+  void GetJacInviscidLambda_fabs(const su2double *val_velocity, su2double val_soundspeed,
+                                 const su2double *val_normal, su2double *val_Lambda_Vector);
 
   /*!
    * \brief Compute the numerical residual.

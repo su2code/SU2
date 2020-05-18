@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.hpp
  * \brief Headers of the CDiscAdjFEASolver class
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,7 +50,6 @@ private:
 
   su2double ObjFunc_Value = 0.0;        /*!< \brief Value of the objective function. */
   su2double *normalLoads = nullptr;     /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker_nL = 0;         /*!< \brief Total number of markers that have a normal load applied. */
 
   unsigned short nMPROP = 0;            /*!< \brief Number of material properties */
 
@@ -126,7 +125,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEASolver(void);
+  ~CDiscAdjFEASolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

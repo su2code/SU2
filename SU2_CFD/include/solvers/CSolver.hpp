@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -293,7 +293,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline virtual CFluidModel* GetFluidModel(void) const { return NULL;}
+  inline virtual CFluidModel* GetFluidModel(void) const { return nullptr;}
 
   /*!
    * \brief Get number of linear solver iterations.
@@ -619,16 +619,14 @@ public:
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
-            It is a virtual function, because for the DG-FEM solver a different version is needed.
-   * \param[in] geometry - Geometrical definition of the problem.
+   *        It is a virtual function, because for the DG-FEM solver a different version is needed.
    */
-  inline virtual void Set_OldSolution(CGeometry *geometry) { base_nodes->Set_OldSolution(); }
+  inline virtual void Set_OldSolution() { base_nodes->Set_OldSolution(); }
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline virtual void Set_NewSolution(CGeometry *geometry) { }
+  inline virtual void Set_NewSolution() { }
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
@@ -2940,7 +2938,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -3027,7 +3025,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
-                                             unsigned long val_vertex) const { return 0; }
+                                             unsigned long val_vertex) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -3356,7 +3354,7 @@ public:
    * \brief A virtual member.
    * \return Value of the velocity at the infinity.
    */
-  inline virtual su2double *GetVelocity_Inf(void) { return 0; }
+  inline virtual su2double *GetVelocity_Inf(void) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4080,7 +4078,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double* GetVecSolDOFs(void) { return NULL; }
+  inline virtual su2double* GetVecSolDOFs(void) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4285,7 +4283,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return NULL;}
+  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4306,7 +4304,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return NULL;}
+  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.

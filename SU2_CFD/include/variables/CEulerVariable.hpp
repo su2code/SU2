@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,9 +44,9 @@ protected:
 
   /*--- Primitive variable definition ---*/
   MatrixType Primitive;                    /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  VectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
@@ -71,7 +71,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerVariable() = default;
+  ~CEulerVariable() override = default;
 
   /*!
    * \brief Get the new solution of the problem (Classical RK4).
@@ -150,13 +150,13 @@ public:
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline VectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -245,7 +245,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
+  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
   /*!
    * \brief Get the primitive variables for all points.

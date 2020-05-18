@@ -13,7 +13,7 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -156,7 +156,7 @@ inline size_t computeStaticChunkSize(size_t totalWork,
 template<class T, class U>
 void parallelCopy(size_t size, const T* src, U* dst)
 {
-  SU2_OMP_FOR_STAT(4196)
+  SU2_OMP_FOR_STAT(4096)
   for(size_t i=0; i<size; ++i) dst[i] = src[i];
 }
 
@@ -169,7 +169,7 @@ void parallelCopy(size_t size, const T* src, U* dst)
 template<class T, class U>
 void parallelSet(size_t size, T val, U* dst)
 {
-  SU2_OMP_FOR_STAT(4196)
+  SU2_OMP_FOR_STAT(4096)
   for(size_t i=0; i<size; ++i) dst[i] = val;
 }
 

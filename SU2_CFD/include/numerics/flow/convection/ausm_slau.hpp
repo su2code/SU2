@@ -3,7 +3,7 @@
  * \brief Declaration of numerics classes for the AUSM family of schemes,
  *        including SLAU. The implementation is in ausm.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,7 +93,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
+  ~CUpwAUSMPLUS_SLAU_Base_Flow(void) override;
 
   /*!
    * \brief Compute the AUSM+ and SLAU family of schemes.
@@ -225,7 +225,7 @@ private:
   su2double *Diff_U;
   su2double Velocity_i[MAXNDIM], Velocity_j[MAXNDIM], RoeVelocity[MAXNDIM];
   su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, delta_vel[MAXNDIM];
+  su2double *delta_wave;
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
@@ -250,7 +250,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwAUSM_Flow(void);
+  ~CUpwAUSM_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.

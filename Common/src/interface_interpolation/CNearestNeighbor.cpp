@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,13 +71,13 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
   AvgDistance = MaxDistance = 0.0;
   unsigned long totalTargetPoints = 0;
 
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
@@ -116,10 +116,10 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
       const auto Point_Target = target_vertex->GetNode();
 
-      if (!target_geometry->node[Point_Target]->GetDomain()) continue;
+      if (!target_geometry->nodes->GetDomain(Point_Target)) continue;
 
       /*--- Coordinates of the target point. ---*/
-      const su2double* Coord_i = target_geometry->node[Point_Target]->GetCoord();
+      const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);
 
       /*--- Compute all distances. ---*/
       for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {

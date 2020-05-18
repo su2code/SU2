@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,7 +72,7 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
 template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
-  if (omp_partitions != nullptr) delete [] omp_partitions;
+  delete [] omp_partitions;
   if (ILU_matrix != nullptr) MemoryAllocation::aligned_free(ILU_matrix);
   if (matrix != nullptr) MemoryAllocation::aligned_free(matrix);
   if (invM != nullptr) MemoryAllocation::aligned_free(invM);
@@ -984,7 +984,8 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
   bool add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
   unsigned short iMarker, iNode;
-  su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+  su2double alpha = 0.9, weight, max_weight, area, volume_iPoint, volume_jPoint;
+  const su2double* normal;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
 
   /*--- Memory allocation --*/
@@ -1045,15 +1046,15 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
         iPoint = LineletPoint[iLinelet][index_Point];
         max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
+        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+          if ((check_Point[jPoint]) && geometry->nodes->GetDomain(jPoint)) {
             iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edge[iEdge]->GetNormal();
+            normal = geometry->edges->GetNormal(iEdge);
             if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
             else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->node[iPoint]->GetVolume();
-            volume_jPoint = geometry->node[jPoint]->GetVolume();
+            volume_iPoint = geometry->nodes->GetVolume(iPoint);
+            volume_jPoint = geometry->nodes->GetVolume(jPoint);
             weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
             max_weight = max(max_weight, weight);
           }
@@ -1063,17 +1064,17 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
         add_point = false;
         counter = 0;
-        next_Point = geometry->node[iPoint]->GetPoint(0);
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+        next_Point = geometry->nodes->GetPoint(iPoint, 0);
+        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edge[iEdge]->GetNormal();
+          normal = geometry->edges->GetNormal(iEdge);
           if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
           else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->node[iPoint]->GetVolume();
-          volume_jPoint = geometry->node[jPoint]->GetVolume();
+          volume_iPoint = geometry->nodes->GetVolume(iPoint);
+          volume_jPoint = geometry->nodes->GetVolume(jPoint);
           weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
+          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->nodes->GetDomain(jPoint))) &&
               ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
             add_point = true;
             next_Point = jPoint;

@@ -2,7 +2,7 @@
  * \file CPrimalGrid.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,28 +32,28 @@ unsigned short CPrimalGrid::nDim;
 CPrimalGrid::CPrimalGrid(void) {
 
   /*--- Set the default values for the pointers ---*/
-  Nodes = NULL;
-  Neighbor_Elements = NULL;
-  ElementOwnsFace = NULL;
-  PeriodIndexNeighbors = NULL;
-  Coord_CG = NULL;
-  Coord_FaceElems_CG = NULL;
-  JacobianFaceIsConstant = NULL;
+  Nodes = nullptr;
+  Neighbor_Elements = nullptr;
+  ElementOwnsFace = nullptr;
+  PeriodIndexNeighbors = nullptr;
+  Coord_CG = nullptr;
+  Coord_FaceElems_CG = nullptr;
+  JacobianFaceIsConstant = nullptr;
   GlobalIndex = 0;
 
 }
 
 CPrimalGrid::~CPrimalGrid() {
 
- if (Nodes != NULL) delete[] Nodes;
- if (Coord_CG != NULL) delete[] Coord_CG;
- if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
- if (ElementOwnsFace != NULL) delete[] ElementOwnsFace;
- if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
- if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
+ delete[] Nodes;
+ delete[] Coord_CG;
+ delete[] Neighbor_Elements;
+ delete[] ElementOwnsFace;
+ delete[] PeriodIndexNeighbors;
+ delete[] JacobianFaceIsConstant;
 }
 
-void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(const su2double* const* val_coord) {
   unsigned short iDim, iNode, NodeFace, iFace;
 
   AD::StartPreacc();

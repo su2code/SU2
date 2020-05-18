@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,6 +49,7 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 #include <memory>
+#include <unordered_map>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -190,8 +191,8 @@ public:
   CPrimalGrid** elem;                    /*!< \brief Element vector (primal grid information). */
   CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
-  CPoint** node;                         /*!< \brief Node vector (dual grid information). */
-  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
+  CPoint* nodes;                         /*!< \brief Node vector (dual grid information). */
+  CEdge* edges;                          /*!< \brief Edge vector (dual grid information). */
   CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */
@@ -201,7 +202,7 @@ public:
 
   /*--- Partitioning-specific variables ---*/
 
-  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unordered_map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
   unsigned long *beg_node;           /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
   unsigned long *end_node;           /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
   unsigned long *nPointLinear;       /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
@@ -584,9 +585,9 @@ public:
   inline virtual void SetPositive_ZArea(CConfig *config) {}
 
   /*!
-   * \brief Setas connectivity between points.
+   * \brief Set connectivity between points.
    */
-  inline virtual void SetPoint_Connectivity(void) {}
+  inline virtual void SetPoint_Connectivity() {}
 
   /*!
    * \brief Orders the RCM.

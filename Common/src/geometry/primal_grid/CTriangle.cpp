@@ -2,7 +2,7 @@
  * \file CTriangle.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -79,7 +79,7 @@ CTriangle::~CTriangle() {
   unsigned short iFaces;
 
   for (iFaces = 0; iFaces < nFaces; iFaces++)
-    if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
-  if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
+    if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
+  delete[] Coord_FaceElems_CG;
 
 }

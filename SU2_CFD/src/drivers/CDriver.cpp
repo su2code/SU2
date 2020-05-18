@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -145,11 +145,11 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
       config_container[iZone]->SetiInst(iInst);
 
-      geometry_container[iZone][iInst]    = NULL;
-      iteration_container[iZone][iInst]   = NULL;
-      solver_container[iZone][iInst]      = NULL;
-      integration_container[iZone][iInst] = NULL;
-      grid_movement[iZone][iInst]         = NULL;
+      geometry_container[iZone][iInst]    = nullptr;
+      iteration_container[iZone][iInst]   = nullptr;
+      solver_container[iZone][iInst]      = nullptr;
+      integration_container[iZone][iInst] = nullptr;
+      grid_movement[iZone][iInst]         = nullptr;
 
       /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
        based data structure is constructed, i.e. node and cell neighbors are
@@ -304,21 +304,21 @@ void CDriver::SetContainers_Null(){
    hierarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
 
-  ConvHist_file                  = NULL;
-  iteration_container            = NULL;
-  output_container               = NULL;
-  integration_container          = NULL;
-  geometry_container             = NULL;
-  solver_container               = NULL;
-  numerics_container             = NULL;
-  config_container               = NULL;
-  surface_movement               = NULL;
-  grid_movement                  = NULL;
-  FFDBox                         = NULL;
-  interpolator_container         = NULL;
-  interface_container            = NULL;
-  interface_types                = NULL;
-  nInst                          = NULL;
+  ConvHist_file                  = nullptr;
+  iteration_container            = nullptr;
+  output_container               = nullptr;
+  integration_container          = nullptr;
+  geometry_container             = nullptr;
+  solver_container               = nullptr;
+  numerics_container             = nullptr;
+  config_container               = nullptr;
+  surface_movement               = nullptr;
+  grid_movement                  = nullptr;
+  FFDBox                         = nullptr;
+  interpolator_container         = nullptr;
+  interface_container            = nullptr;
+  interface_types                = nullptr;
+  nInst                          = nullptr;
 
 
   /*--- Definition and of the containers for all possible zones. ---*/
@@ -337,23 +337,23 @@ void CDriver::SetContainers_Null(){
   interface_types                = new unsigned short*[nZone];
   output_container               = new COutput*[nZone];
   nInst                          = new unsigned short[nZone];
-  driver_config                  = NULL;
-  driver_output                  = NULL;
+  driver_config                  = nullptr;
+  driver_output                  = nullptr;
 
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone]               = NULL;
-    integration_container[iZone]          = NULL;
-    numerics_container[iZone]             = NULL;
-    config_container[iZone]               = NULL;
-    geometry_container[iZone]             = NULL;
-    surface_movement[iZone]               = NULL;
-    grid_movement[iZone]                  = NULL;
-    FFDBox[iZone]                         = NULL;
-    interpolator_container[iZone]         = NULL;
-    interface_container[iZone]            = NULL;
+    solver_container[iZone]               = nullptr;
+    integration_container[iZone]          = nullptr;
+    numerics_container[iZone]             = nullptr;
+    config_container[iZone]               = nullptr;
+    geometry_container[iZone]             = nullptr;
+    surface_movement[iZone]               = nullptr;
+    grid_movement[iZone]                  = nullptr;
+    FFDBox[iZone]                         = nullptr;
+    interpolator_container[iZone]         = nullptr;
+    interface_container[iZone]            = nullptr;
     interface_types[iZone]                = new unsigned short[nZone];
-    output_container[iZone]               = NULL;
+    output_container[iZone]               = nullptr;
     nInst[iZone]                          = 1;
   }
 
@@ -424,11 +424,11 @@ void CDriver::Postprocessing() {
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
 
-  if (interpolator_container != NULL) {
+  if (interpolator_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (interpolator_container[iZone] != NULL) {
+      if (interpolator_container[iZone] != nullptr) {
         for (unsigned short jZone = 0; jZone < nZone; jZone++)
-          if (interpolator_container[iZone][jZone] != NULL)
+          if (interpolator_container[iZone][jZone] != nullptr)
             delete interpolator_container[iZone][jZone];
         delete [] interpolator_container[iZone];
       }
@@ -437,11 +437,11 @@ void CDriver::Postprocessing() {
     if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
   }
 
-  if (interface_container != NULL) {
+  if (interface_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (interface_container[iZone] != NULL) {
+      if (interface_container[iZone] != nullptr) {
         for (unsigned short jZone = 0; jZone < nZone; jZone++)
-          if (interface_container[iZone][jZone] != NULL)
+          if (interface_container[iZone][jZone] != nullptr)
             delete interface_container[iZone][jZone];
         delete [] interface_container[iZone];
       }
@@ -450,21 +450,21 @@ void CDriver::Postprocessing() {
     if (rank == MASTER_NODE) cout << "Deleted CInterface container." << endl;
   }
 
-  if (interface_types != NULL) {
+  if (interface_types != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (interface_types[iZone] != NULL)
+      if (interface_types[iZone] != nullptr)
       delete [] interface_types[iZone];
     }
     delete [] interface_types;
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (geometry_container[iZone] != NULL) {
+    if (geometry_container[iZone] != nullptr) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
         for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
-          if (geometry_container[iZone][iInst][iMGlevel] != NULL) delete geometry_container[iZone][iInst][iMGlevel];
+          if (geometry_container[iZone][iInst][iMGlevel] != nullptr) delete geometry_container[iZone][iInst][iMGlevel];
         }
-        if (geometry_container[iZone][iInst] != NULL) delete [] geometry_container[iZone][iInst];
+        if (geometry_container[iZone][iInst] != nullptr) delete [] geometry_container[iZone][iInst];
       }
       delete [] geometry_container[iZone];
     }
@@ -486,9 +486,9 @@ void CDriver::Postprocessing() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
-      if (grid_movement[iZone][iInst] != NULL) delete grid_movement[iZone][iInst];
+      if (grid_movement[iZone][iInst] != nullptr) delete grid_movement[iZone][iInst];
     }
-    if (grid_movement[iZone] != NULL) delete [] grid_movement[iZone];
+    if (grid_movement[iZone] != nullptr) delete [] grid_movement[iZone];
   }
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
@@ -501,34 +501,34 @@ void CDriver::Postprocessing() {
   config_container[ZONE_0]->GEMMProfilingCSV();
 
   /*--- Deallocate config container ---*/
-  if (config_container!= NULL) {
+  if (config_container!= nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
+      if (config_container[iZone] != nullptr) {
         delete config_container[iZone];
       }
     }
     delete [] config_container;
   }
-  if (driver_config != NULL) delete driver_config;
+  delete driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
-  if (nInst != NULL) delete [] nInst;
+  delete [] nInst;
   if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
 
   /*--- Deallocate output container ---*/
 
-  if (output_container!= NULL) {
+  if (output_container!= nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (output_container[iZone] != NULL) {
+      if (output_container[iZone] != nullptr) {
         delete output_container[iZone];
       }
     }
     delete [] output_container;
   }
 
-  if(driver_output != NULL){
-    delete driver_output;
-  }
+
+  delete driver_output;
+
 
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
@@ -739,17 +739,12 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   unsigned short iZone = config->GetiZone(), iMGlevel;
   unsigned short requestedMGlevels = config->GetnMGLevels();
-  unsigned long iPoint;
-  bool fea = false;
+  const bool fea = config->GetStructuralProblem();
 
-  /*--- Definition of the geometry class to store the primal grid in the
-     partitioning process. ---*/
+  /*--- Definition of the geometry class to store the primal grid in the partitioning process.
+   *    All ranks process the grid and call ParMETIS for partitioning ---*/
 
-  CGeometry *geometry_aux = NULL;
-
-  /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-
-  geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
+  CGeometry *geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
 
   /*--- Set the dimension --- */
 
@@ -762,7 +757,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-  geometry = NULL;
   geometry = new CGeometry *[config->GetnMGLevels()+1];
 
   /*--- Build the grid data structures using the ParMETIS coloring. ---*/
@@ -778,9 +772,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetBoundaries(config);
-
-  fea = ((config->GetKind_Solver() == FEM_ELASTICITY) ||
-         (config->GetKind_Solver() == DISC_ADJ_FEM));
 
   /*--- Compute elements surrounding points, points surrounding points ---*/
 
@@ -914,18 +905,14 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   if (config->GetTime_Marching() && config->GetGrid_Movement()) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
 
-        /*--- Update cell volume ---*/
+      /*--- Update cell volume ---*/
+      geometry[iMGlevel]->nodes->SetVolume_n();
+      geometry[iMGlevel]->nodes->SetVolume_nM1();
 
-        geometry[iMGlevel]->node[iPoint]->SetVolume_n();
-        geometry[iMGlevel]->node[iPoint]->SetVolume_nM1();
-
-        /*--- Update point coordinates ---*/
-        geometry[iMGlevel]->node[iPoint]->SetCoord_n();
-        geometry[iMGlevel]->node[iPoint]->SetCoord_n1();
-
-      }
+      /*--- Update point coordinates ---*/
+      geometry[iMGlevel]->nodes->SetCoord_n();
+      geometry[iMGlevel]->nodes->SetCoord_n1();
     }
   }
 
@@ -957,14 +944,10 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
 void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geometry) {
 
-  /*--- Definition of the geometry class to store the primal grid in the
-     partitioning process. ---*/
-
-  CGeometry *geometry_aux = NULL;
-
+  /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
   /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-  geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
+  CGeometry *geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
 
   /*--- Set the dimension --- */
 
@@ -973,8 +956,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- For the FEM solver with time-accurate local time-stepping, use
        a dummy solver class to retrieve the initial flow state. ---*/
 
-  CSolver *solver_aux = NULL;
-  solver_aux = new CFEM_DG_EulerSolver(config, nDim, MESH_0);
+  CSolver *solver_aux = new CFEM_DG_EulerSolver(config, nDim, MESH_0);
 
   /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
@@ -983,7 +965,6 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-  geometry = NULL;
   geometry = new CGeometry *[config->GetnMGLevels()+1];
 
   geometry[MESH_0] = new CMeshFEM_DG(geometry_aux, config);
@@ -991,7 +972,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
   delete geometry_aux;
-  if (solver_aux != NULL) delete solver_aux;
+  delete solver_aux;
 
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetSendReceive(config);
@@ -2526,9 +2507,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           }
           if (rank == MASTER_NODE) cout << "fluid " << (conservative? "forces." : "tractions.") << endl;
         }
-        else if (structural_donor && fluid_target) {
+        else if (structural_donor && (fluid_target || heat_target)) {
           if (solver_container[target][INST_0][MESH_0][MESH_SOL] == nullptr) {
-            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.\n"
+            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid/heat zone.\n"
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
@@ -2558,6 +2539,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0, config[donor]);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
+          }
+          else {
+            if (rank == MASTER_NODE) cout << "NO heat variables." << endl;
           }
         }
         else {
@@ -2649,7 +2633,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
       if (rank == MASTER_NODE)
         cout << endl << " Setting the moving wall velocities." << endl;
 
-      assert(surface_movement != NULL && "A surface_movement was not instantiated.");
+      assert(surface_movement != nullptr && "A surface_movement was not instantiated.");
       surface_movement->Moving_Walls(geometry[MESH_0], config, iZone, 0);
 
       /*--- Update the grid velocities on the coarser multigrid levels after
@@ -2992,7 +2976,7 @@ void CFluidDriver::Run() {
   if ( unsteady ) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (jZone = 0; jZone < nZone; jZone++)
-        if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
+        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr)
         interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
     }
   }
@@ -3009,7 +2993,7 @@ void CFluidDriver::Run() {
     /*--- At each pseudo time-step updates transfer data ---*/
     for (iZone = 0; iZone < nZone; iZone++)
       for (jZone = 0; jZone < nZone; jZone++)
-        if(jZone != iZone && interface_container[iZone][jZone] != NULL)
+        if(jZone != iZone && interface_container[iZone][jZone] != nullptr)
           Transfer_Data(iZone, jZone);
 
     /*--- For each zone runs one single iteration ---*/
@@ -3077,7 +3061,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
   /*--- Check if there is any change in the runtime parameters ---*/
 
-  CConfig *runtime = NULL;
+  CConfig *runtime = nullptr;
   strcpy(runtime_file_name, "runtime.dat");
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetTimeIter(ExtIter);
@@ -3136,10 +3120,10 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
   /*--- LEGACY OUTPUT (going to be removed soon) --- */
 
   /*--- Open the convergence history file ---*/
-  ConvHist_file = NULL;
+  ConvHist_file = nullptr;
   ConvHist_file = new ofstream*[nZone];
   for (iZone = 0; iZone < nZone; iZone++) {
-    ConvHist_file[iZone] = NULL;
+    ConvHist_file[iZone] = nullptr;
     if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
@@ -3256,7 +3240,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 
   /*--- Check if there is any change in the runtime parameters ---*/
-  CConfig *runtime = NULL;
+  CConfig *runtime = nullptr;
   strcpy(runtime_file_name, "runtime.dat");
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetInnerIter(ExtIter);
@@ -3373,17 +3357,17 @@ CHBDriver::CHBDriver(char* confFile,
 
   nInstHB = nInst[ZONE_0];
 
-  D = NULL;
+  D = nullptr;
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
   D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 
   output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
 
   /*--- Open the convergence history file ---*/
-  ConvHist_file = NULL;
+  ConvHist_file = nullptr;
   ConvHist_file = new ofstream*[nZone];
   for (iZone = 0; iZone < nZone; iZone++) {
-    ConvHist_file[iZone] = NULL;
+    ConvHist_file[iZone] = nullptr;
     if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
@@ -3401,8 +3385,8 @@ CHBDriver::~CHBDriver(void) {
   unsigned short kInst;
 
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
-  for (kInst = 0; kInst < nInstHB; kInst++) if (D[kInst] != NULL) delete [] D[kInst];
-  if (D[kInst] != NULL) delete [] D;
+  for (kInst = 0; kInst < nInstHB; kInst++) delete [] D[kInst];
+  delete [] D;
 
   if (rank == MASTER_NODE){
   /*--- Close the convergence history file. ---*/
