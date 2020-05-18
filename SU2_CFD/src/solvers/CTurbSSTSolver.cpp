@@ -528,7 +528,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
     /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+//    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
 
   }
   
@@ -546,9 +546,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-//    if ((geometry->node[iPoint]->GetWall_Distance() > 1e-10) &&
-//        (nodes->GetCrossDiff(iPoint) > eps)) {
-    if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
+    if ((geometry->node[iPoint]->GetWall_Distance() > 1e-10) &&
+        (nodes->GetCrossDiff(iPoint) > eps)) {
+//    if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
 //      const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 //      const su2double r_i      = nodes->GetFlowPrimitive(iPoint, nDim+2);
