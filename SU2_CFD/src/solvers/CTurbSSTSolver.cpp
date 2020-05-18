@@ -319,7 +319,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-    
+  
   SetPrimitive_Variables(solver_container);
   
   /*--- Compute mean flow and turbulence gradients ---*/
@@ -329,6 +329,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
+  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
   SetEddyViscosity(geometry, solver_container);
   
   /*--- Store variables from the mean flow solver ---*/
