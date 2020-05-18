@@ -94,6 +94,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
 
+  if(npoint == 0) return;
+
   if(matrix != nullptr) {
     SU2_OMP_MASTER
     SU2_MPI::Error("CSysMatrix can only be initialized once.", CURRENT_FUNCTION);
