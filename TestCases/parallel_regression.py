@@ -797,7 +797,6 @@ def main():
     wmles_channel.timeout   = 1600
     wmles_channel.tol       = 0.00001
     wmles_channel.unsteady  = True
-    wmles_channel.new_output = True
     test_list.append(wmles_channel)
 
     # unsteady pitching NACA0015, SA
