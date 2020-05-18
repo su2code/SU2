@@ -792,8 +792,8 @@ def main():
     wmles_channel.cfg_dir   = "wmles/channel"
     wmles_channel.cfg_file  = "wmles_channel.cfg"
     wmles_channel.test_iter = 10
-    wmles_channel.test_vals = [ -3.572762,-4.017350,-3.784522,-3.063919] #last 4 columns
-    wmles_channel.su2_exec  = "python wmles.py -f wmles_channel.cfg -n 2"
+    wmles_channel.test_vals = [ -3.827375,-4.108851,-3.888086,-3.316770] #last 4 columns
+    ddes_flatplate.su2_exec  = "parallel_computation.py -f"
     wmles_channel.timeout   = 1600
     wmles_channel.tol       = 0.00001
     wmles_channel.unsteady  = True
