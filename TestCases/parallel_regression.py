@@ -792,7 +792,7 @@ def main():
     wmles_channel.cfg_dir   = "wmles/channel"
     wmles_channel.cfg_file  = "wmles_channel.cfg"
     wmles_channel.test_iter = 10
-    wmles_channel.test_vals = [ -8.164737,-8.595764,-8.114846,-7.649493] #last 4 columns
+    wmles_channel.test_vals = [ -3.572762,-4.017350,-3.784522,-3.063919] #last 4 columns
     wmles_channel.su2_exec  = "python wmles.py -f wmles_channel.cfg -n 2"
     wmles_channel.timeout   = 1600
     wmles_channel.tol       = 0.00001
