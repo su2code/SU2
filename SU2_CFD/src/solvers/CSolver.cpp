@@ -2127,6 +2127,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
                            CURRENT_FUNCTION);
             break;
         }
+
+        /*--- Reset the remainder of the buffer.
+         This is required for AD since old values might be send to
+         the other processor. ---*/
+        for (iVar = COUNT_PER_POINT; iVar < geometry->countPerPoint; iVar++)
+          bufDSend[buf_offset+iVar] = 0.0;
       }
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
@@ -2137,6 +2143,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
   }
 
 }
+
 void CSolver::CompleteComms(CGeometry *geometry,
                             CConfig *config,
                             unsigned short commType) {

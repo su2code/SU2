@@ -306,6 +306,12 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
 
+            /*--- Reset the remainder of the buffer.
+             This is required for AD since old values might be send to
+             the other processor. ---*/
+            for (iVar = nVar; iVar < geometry->countPerPoint; iVar++)
+              bufDSend[buf_offset+iVar] = 0.0;
+
           }
 
           break;
@@ -344,6 +350,11 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
 
+            /*--- Reset the remainder of the buffer.
+             This is required for AD since old values might be send to
+             the other processor. ---*/
+            for (iVar = nVar; iVar < geometry->countPerPoint; iVar++)
+              bufDSend[buf_offset+iVar] = 0.0;
           }
 
           break;
