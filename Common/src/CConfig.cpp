@@ -777,258 +777,258 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
 void CConfig::SetPointersNull(void) {
 
-  Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;
-  Marker_CfgFile_Monitoring   = NULL;   Marker_All_Monitoring    = NULL;
-  Marker_CfgFile_Designing    = NULL;   Marker_All_Designing     = NULL;
-  Marker_CfgFile_Plotting     = NULL;   Marker_All_Plotting      = NULL;
-  Marker_CfgFile_Analyze      = NULL;   Marker_All_Analyze       = NULL;
-  Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
-  Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
-  Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
-  Marker_CfgFile_Turbomachinery = NULL; Marker_All_Turbomachinery = NULL;
-  Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
-  Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
-  Marker_CfgFile_ZoneInterface = NULL;
-  Marker_CfgFile_Deform_Mesh   = NULL;  Marker_All_Deform_Mesh   = NULL;
-  Marker_CfgFile_Fluid_Load    = NULL;  Marker_All_Fluid_Load    = NULL;
+  Marker_CfgFile_GeoEval      = nullptr;   Marker_All_GeoEval       = nullptr;
+  Marker_CfgFile_Monitoring   = nullptr;   Marker_All_Monitoring    = nullptr;
+  Marker_CfgFile_Designing    = nullptr;   Marker_All_Designing     = nullptr;
+  Marker_CfgFile_Plotting     = nullptr;   Marker_All_Plotting      = nullptr;
+  Marker_CfgFile_Analyze      = nullptr;   Marker_All_Analyze       = nullptr;
+  Marker_CfgFile_DV           = nullptr;   Marker_All_DV            = nullptr;
+  Marker_CfgFile_Moving       = nullptr;   Marker_All_Moving        = nullptr;
+  Marker_CfgFile_PerBound     = nullptr;   Marker_All_PerBound      = nullptr;    Marker_PerBound   = nullptr;
+  Marker_CfgFile_Turbomachinery = nullptr; Marker_All_Turbomachinery = nullptr;
+  Marker_CfgFile_TurbomachineryFlag = nullptr; Marker_All_TurbomachineryFlag = nullptr;
+  Marker_CfgFile_MixingPlaneInterface = nullptr; Marker_All_MixingPlaneInterface = nullptr;
+  Marker_CfgFile_ZoneInterface = nullptr;
+  Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
+  Marker_CfgFile_Fluid_Load    = nullptr;  Marker_All_Fluid_Load    = nullptr;
 
-  Marker_CfgFile_Turbomachinery       = NULL; Marker_All_Turbomachinery       = NULL;
-  Marker_CfgFile_TurbomachineryFlag   = NULL; Marker_All_TurbomachineryFlag   = NULL;
-  Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
+  Marker_CfgFile_Turbomachinery       = nullptr; Marker_All_Turbomachinery       = nullptr;
+  Marker_CfgFile_TurbomachineryFlag   = nullptr; Marker_All_TurbomachineryFlag   = nullptr;
+  Marker_CfgFile_MixingPlaneInterface = nullptr; Marker_All_MixingPlaneInterface = nullptr;
 
-  Marker_CfgFile_PyCustom     = NULL;   Marker_All_PyCustom      = NULL;
+  Marker_CfgFile_PyCustom     = nullptr;   Marker_All_PyCustom      = nullptr;
 
-  Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
-  Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
-  Marker_Analyze              = NULL;   Marker_PyCustom          = NULL;    Marker_WallFunctions        = NULL;
-  Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
+  Marker_DV                   = nullptr;   Marker_Moving            = nullptr;    Marker_Monitoring = nullptr;
+  Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
+  Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;
 
-  Kind_WallFunctions       = NULL;
-  IntInfo_WallFunctions    = NULL;
-  DoubleInfo_WallFunctions = NULL;
+  Kind_WallFunctions       = nullptr;
+  IntInfo_WallFunctions    = nullptr;
+  DoubleInfo_WallFunctions = nullptr;
 
-  Config_Filenames = NULL;
+  Config_Filenames = nullptr;
 
   /*--- Marker Pointers ---*/
 
-  Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
-  Marker_SymWall              = NULL;    Marker_PerBound         = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;
-  Marker_Deform_Mesh          = NULL;    Marker_Fluid_Load       = NULL;
-  Marker_Inlet                = NULL;    Marker_Outlet           = NULL;
-  Marker_Supersonic_Inlet     = NULL;    Marker_Supersonic_Outlet= NULL;
-  Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
-  Marker_Load                 = NULL;    Marker_Disp_Dir         = NULL;
-  Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
-  Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
-  Marker_FlowLoad             = NULL;    Marker_Internal         = NULL;
-  Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
-  Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
-  Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
-  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper         = NULL;
-  Marker_Emissivity           = NULL;
+  Marker_Euler                = nullptr;    Marker_FarField         = nullptr;    Marker_Custom         = nullptr;
+  Marker_SymWall              = nullptr;    Marker_PerBound         = nullptr;
+  Marker_PerDonor             = nullptr;    Marker_NearFieldBound   = nullptr;
+  Marker_Deform_Mesh          = nullptr;    Marker_Fluid_Load       = nullptr;
+  Marker_Inlet                = nullptr;    Marker_Outlet           = nullptr;
+  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;
+  Marker_Isothermal           = nullptr;    Marker_HeatFlux         = nullptr;    Marker_EngineInflow   = nullptr;
+  Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;
+  Marker_EngineExhaust        = nullptr;    Marker_Displacement     = nullptr;    Marker_Load           = nullptr;
+  Marker_Load_Dir             = nullptr;    Marker_Load_Sine        = nullptr;    Marker_Clamped        = nullptr;
+  Marker_FlowLoad             = nullptr;    Marker_Internal         = nullptr;
+  Marker_All_TagBound         = nullptr;    Marker_CfgFile_TagBound = nullptr;    Marker_All_KindBC     = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv     = nullptr;    Marker_All_PerBound   = nullptr;
+  Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface= nullptr;    Marker_Riemann        = nullptr;
+  Marker_Fluid_InterfaceBound = nullptr;    Marker_CHTInterface     = nullptr;    Marker_Damper         = nullptr;
+  Marker_Emissivity           = nullptr;
 
     /*--- Boundary Condition settings ---*/
 
-  Isothermal_Temperature = NULL;
-  Heat_Flux              = NULL;    Displ_Value            = NULL;    Load_Value      = NULL;
-  FlowLoad_Value         = NULL;    Damper_Constant        = NULL;    Wall_Emissivity = NULL;
+  Isothermal_Temperature = nullptr;
+  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value      = nullptr;
+  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity = nullptr;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
-  Inlet_Ttotal    = NULL;    Inlet_Ptotal      = NULL;
-  Inlet_FlowDir   = NULL;    Inlet_Temperature = NULL;    Inlet_Pressure = NULL;
-  Inlet_Velocity  = NULL;
-  Outlet_Pressure = NULL;
+  Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
+  Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
+  Inlet_Velocity  = nullptr;
+  Outlet_Pressure = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
-  Inflow_Pressure      = NULL;    Inflow_MassFlow    = NULL;    Inflow_ReverseMassFlow  = NULL;
-  Inflow_TotalPressure = NULL;    Inflow_Temperature = NULL;    Inflow_TotalTemperature = NULL;
-  Inflow_RamDrag       = NULL;    Inflow_Force       = NULL;    Inflow_Power            = NULL;
-  Inflow_Mach          = NULL;
+  Inflow_Pressure      = nullptr;    Inflow_MassFlow    = nullptr;    Inflow_ReverseMassFlow  = nullptr;
+  Inflow_TotalPressure = nullptr;    Inflow_Temperature = nullptr;    Inflow_TotalTemperature = nullptr;
+  Inflow_RamDrag       = nullptr;    Inflow_Force       = nullptr;    Inflow_Power            = nullptr;
+  Inflow_Mach          = nullptr;
 
-  Exhaust_Pressure        = NULL;   Exhaust_Temperature        = NULL;    Exhaust_MassFlow = NULL;
-  Exhaust_TotalPressure   = NULL;   Exhaust_TotalTemperature   = NULL;
-  Exhaust_GrossThrust     = NULL;   Exhaust_Force              = NULL;
-  Exhaust_Power           = NULL;   Exhaust_Temperature_Target = NULL;
-  Exhaust_Pressure_Target = NULL;
+  Exhaust_Pressure        = nullptr;   Exhaust_Temperature        = nullptr;    Exhaust_MassFlow = nullptr;
+  Exhaust_TotalPressure   = nullptr;   Exhaust_TotalTemperature   = nullptr;
+  Exhaust_GrossThrust     = nullptr;   Exhaust_Force              = nullptr;
+  Exhaust_Power           = nullptr;   Exhaust_Temperature_Target = nullptr;
+  Exhaust_Pressure_Target = nullptr;
 
-  Engine_Mach  = NULL;    Engine_Force        = NULL;
-  Engine_Power = NULL;    Engine_NetThrust    = NULL;    Engine_GrossThrust = NULL;
-  Engine_Area  = NULL;    EngineInflow_Target = NULL;
+  Engine_Mach  = nullptr;    Engine_Force        = nullptr;
+  Engine_Power = nullptr;    Engine_NetThrust    = nullptr;    Engine_GrossThrust = nullptr;
+  Engine_Area  = nullptr;    EngineInflow_Target = nullptr;
 
-  Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
-  Exhaust_Pressure_Target   = NULL;     Inlet_Ttotal                = NULL;     Inlet_Ptotal          = NULL;
-  Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
-  Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
-  Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
-  Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
-  FlowLoad_Value            = NULL;
+  Exhaust_Temperature_Target  = nullptr;     Exhaust_Temperature   = nullptr;
+  Exhaust_Pressure_Target   = nullptr;     Inlet_Ttotal                = nullptr;     Inlet_Ptotal          = nullptr;
+  Inlet_FlowDir             = nullptr;     Inlet_Temperature           = nullptr;     Inlet_Pressure        = nullptr;
+  Inlet_Velocity            = nullptr;     Inflow_Mach                 = nullptr;     Inflow_Pressure       = nullptr;
+  Exhaust_Pressure          = nullptr;     Outlet_Pressure             = nullptr;     Isothermal_Temperature= nullptr;
+  Heat_Flux                 = nullptr;     Displ_Value                 = nullptr;     Load_Value            = nullptr;
+  FlowLoad_Value            = nullptr;
 
-  ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
+  ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
-  Load_Dir = NULL;            Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
-  Disp_Dir = NULL;            Disp_Dir_Value = NULL;          Disp_Dir_Multiplier = NULL;
-  Load_Sine_Dir = NULL;       Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
-  Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      RefNode_Displacement = NULL;
+  Load_Dir = nullptr;            Load_Dir_Value = nullptr;          Load_Dir_Multiplier = nullptr;
+  Disp_Dir = nullptr;            Disp_Dir_Value = nullptr;          Disp_Dir_Multiplier = nullptr;
+  Load_Sine_Dir = nullptr;       Load_Sine_Amplitude = nullptr;     Load_Sine_Frequency = nullptr;
+  Electric_Field_Mod = nullptr;  Electric_Field_Dir = nullptr;      RefNode_Displacement = nullptr;
 
-  Electric_Constant = NULL;
+  Electric_Constant = nullptr;
 
   /*--- Actuator Disk Boundary Condition settings ---*/
 
-  ActDiskInlet_Pressure         = NULL;    ActDiskInlet_TotalPressure = NULL;    ActDiskInlet_Temperature = NULL;
-  ActDiskInlet_TotalTemperature = NULL;    ActDiskInlet_MassFlow      = NULL;    ActDiskInlet_RamDrag     = NULL;
-  ActDiskInlet_Force            = NULL;    ActDiskInlet_Power         = NULL;
+  ActDiskInlet_Pressure         = nullptr;    ActDiskInlet_TotalPressure = nullptr;    ActDiskInlet_Temperature = nullptr;
+  ActDiskInlet_TotalTemperature = nullptr;    ActDiskInlet_MassFlow      = nullptr;    ActDiskInlet_RamDrag     = nullptr;
+  ActDiskInlet_Force            = nullptr;    ActDiskInlet_Power         = nullptr;
 
-  ActDiskOutlet_Pressure      = NULL;
-  ActDiskOutlet_TotalPressure = NULL;   ActDiskOutlet_GrossThrust = NULL;  ActDiskOutlet_Force            = NULL;
-  ActDiskOutlet_Power         = NULL;   ActDiskOutlet_Temperature = NULL;  ActDiskOutlet_TotalTemperature = NULL;
-  ActDiskOutlet_MassFlow      = NULL;
+  ActDiskOutlet_Pressure      = nullptr;
+  ActDiskOutlet_TotalPressure = nullptr;   ActDiskOutlet_GrossThrust = nullptr;  ActDiskOutlet_Force            = nullptr;
+  ActDiskOutlet_Power         = nullptr;   ActDiskOutlet_Temperature = nullptr;  ActDiskOutlet_TotalTemperature = nullptr;
+  ActDiskOutlet_MassFlow      = nullptr;
 
-  ActDisk_DeltaPress      = NULL;    ActDisk_DeltaTemp      = NULL;
-  ActDisk_TotalPressRatio = NULL;    ActDisk_TotalTempRatio = NULL;    ActDisk_StaticPressRatio = NULL;
-  ActDisk_StaticTempRatio = NULL;    ActDisk_NetThrust      = NULL;    ActDisk_GrossThrust      = NULL;
-  ActDisk_Power           = NULL;    ActDisk_MassFlow       = NULL;    ActDisk_Area             = NULL;
-  ActDisk_ReverseMassFlow = NULL;    Surface_MassFlow        = NULL;   Surface_Mach             = NULL;
-  Surface_Temperature      = NULL;   Surface_Pressure         = NULL;  Surface_Density          = NULL;   Surface_Enthalpy          = NULL;
-  Surface_NormalVelocity   = NULL;   Surface_TotalTemperature = NULL;  Surface_TotalPressure    = NULL;   Surface_PressureDrop    = NULL;
-  Surface_DC60             = NULL;    Surface_IDC = NULL;
+  ActDisk_DeltaPress      = nullptr;    ActDisk_DeltaTemp      = nullptr;
+  ActDisk_TotalPressRatio = nullptr;    ActDisk_TotalTempRatio = nullptr;    ActDisk_StaticPressRatio = nullptr;
+  ActDisk_StaticTempRatio = nullptr;    ActDisk_NetThrust      = nullptr;    ActDisk_GrossThrust      = nullptr;
+  ActDisk_Power           = nullptr;    ActDisk_MassFlow       = nullptr;    ActDisk_Area             = nullptr;
+  ActDisk_ReverseMassFlow = nullptr;    Surface_MassFlow        = nullptr;   Surface_Mach             = nullptr;
+  Surface_Temperature      = nullptr;   Surface_Pressure         = nullptr;  Surface_Density          = nullptr;   Surface_Enthalpy          = nullptr;
+  Surface_NormalVelocity   = nullptr;   Surface_TotalTemperature = nullptr;  Surface_TotalPressure    = nullptr;   Surface_PressureDrop    = nullptr;
+  Surface_DC60             = nullptr;    Surface_IDC = nullptr;
 
-  Outlet_MassFlow      = NULL;       Outlet_Density      = NULL;      Outlet_Area     = NULL;
+  Outlet_MassFlow      = nullptr;       Outlet_Density      = nullptr;      Outlet_Area     = nullptr;
 
-  Surface_Uniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondOverUniform = NULL;
-  Surface_MomentumDistortion = NULL;
+  Surface_Uniformity = nullptr; Surface_SecondaryStrength = nullptr; Surface_SecondOverUniform = nullptr;
+  Surface_MomentumDistortion = nullptr;
 
-  Surface_IDC_Mach        = NULL;    Surface_IDR            = NULL;    ActDisk_Mach             = NULL;
-  ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
+  Surface_IDC_Mach        = nullptr;    Surface_IDR            = nullptr;    ActDisk_Mach             = nullptr;
+  ActDisk_Force           = nullptr;    ActDisk_BCThrust       = nullptr;    ActDisk_BCThrust_Old     = nullptr;
 
   /*--- Miscellaneous/unsorted ---*/
 
-  Aeroelastic_plunge  = NULL;
-  Aeroelastic_pitch   = NULL;
-  MassFrac_FreeStream = NULL;
-  Velocity_FreeStream = NULL;
-  Inc_Velocity_Init   = NULL;
+  Aeroelastic_plunge  = nullptr;
+  Aeroelastic_pitch   = nullptr;
+  MassFrac_FreeStream = nullptr;
+  Velocity_FreeStream = nullptr;
+  Inc_Velocity_Init   = nullptr;
 
-  RefOriginMoment     = NULL;
-  CFL_AdaptParam      = NULL;
-  CFL                 = NULL;
-  HTP_Axis = NULL;
-  PlaneTag            = NULL;
-  Kappa_Flow          = NULL;
-  Kappa_AdjFlow       = NULL;
-  Kappa_Heat          = NULL;
-  Stations_Bounds     = NULL;
-  ParamDV             = NULL;
-  DV_Value            = NULL;
-  Design_Variable     = NULL;
+  RefOriginMoment     = nullptr;
+  CFL_AdaptParam      = nullptr;
+  CFL                 = nullptr;
+  HTP_Axis = nullptr;
+  PlaneTag            = nullptr;
+  Kappa_Flow          = nullptr;
+  Kappa_AdjFlow       = nullptr;
+  Kappa_Heat          = nullptr;
+  Stations_Bounds     = nullptr;
+  ParamDV             = nullptr;
+  DV_Value            = nullptr;
+  Design_Variable     = nullptr;
 
-  Hold_GridFixed_Coord      = NULL;
-  SubsonicEngine_Cyl        = NULL;
-  EA_IntLimit               = NULL;
-  TimeDOFsADER_DG           = NULL;
-  TimeIntegrationADER_DG    = NULL;
-  WeightsIntegrationADER_DG = NULL;
-  RK_Alpha_Step             = NULL;
-  MG_CorrecSmooth           = NULL;
-  MG_PreSmooth              = NULL;
-  MG_PostSmooth             = NULL;
-  Int_Coeffs                = NULL;
+  Hold_GridFixed_Coord      = nullptr;
+  SubsonicEngine_Cyl        = nullptr;
+  EA_IntLimit               = nullptr;
+  TimeDOFsADER_DG           = nullptr;
+  TimeIntegrationADER_DG    = nullptr;
+  WeightsIntegrationADER_DG = nullptr;
+  RK_Alpha_Step             = nullptr;
+  MG_CorrecSmooth           = nullptr;
+  MG_PreSmooth              = nullptr;
+  MG_PostSmooth             = nullptr;
+  Int_Coeffs                = nullptr;
 
-  Kind_Inc_Inlet = NULL;
-  Kind_Inc_Outlet = NULL;
+  Kind_Inc_Inlet = nullptr;
+  Kind_Inc_Outlet = nullptr;
 
-  Kind_ObjFunc   = NULL;
+  Kind_ObjFunc   = nullptr;
 
-  Weight_ObjFunc = NULL;
+  Weight_ObjFunc = nullptr;
 
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
-  Kind_SurfaceMovement = NULL;
-  LocationStations   = NULL;
-  Motion_Origin     = NULL;
-  Translation_Rate  = NULL;
-  Rotation_Rate     = NULL;
-  Pitching_Omega    = NULL;
-  Pitching_Ampl     = NULL;
-  Pitching_Phase    = NULL;
-  Plunging_Omega    = NULL;
-  Plunging_Ampl     = NULL;
-  MarkerMotion_Origin     = NULL;
-  MarkerTranslation_Rate  = NULL;
-  MarkerRotation_Rate     = NULL;
-  MarkerPitching_Omega    = NULL;
-  MarkerPitching_Ampl     = NULL;
-  MarkerPitching_Phase    = NULL;
-  MarkerPlunging_Omega    = NULL;
-  MarkerPlunging_Ampl     = NULL;
-  RefOriginMoment_X   = NULL;    RefOriginMoment_Y   = NULL;    RefOriginMoment_Z   = NULL;
-  MoveMotion_Origin   = NULL;
+  Kind_SurfaceMovement = nullptr;
+  LocationStations   = nullptr;
+  Motion_Origin     = nullptr;
+  Translation_Rate  = nullptr;
+  Rotation_Rate     = nullptr;
+  Pitching_Omega    = nullptr;
+  Pitching_Ampl     = nullptr;
+  Pitching_Phase    = nullptr;
+  Plunging_Omega    = nullptr;
+  Plunging_Ampl     = nullptr;
+  MarkerMotion_Origin     = nullptr;
+  MarkerTranslation_Rate  = nullptr;
+  MarkerRotation_Rate     = nullptr;
+  MarkerPitching_Omega    = nullptr;
+  MarkerPitching_Ampl     = nullptr;
+  MarkerPitching_Phase    = nullptr;
+  MarkerPlunging_Omega    = nullptr;
+  MarkerPlunging_Ampl     = nullptr;
+  RefOriginMoment_X   = nullptr;    RefOriginMoment_Y   = nullptr;    RefOriginMoment_Z   = nullptr;
+  MoveMotion_Origin   = nullptr;
 
   /*--- Periodic BC pointers. ---*/
 
-  Periodic_Translate  = NULL;    Periodic_Rotation   = NULL;    Periodic_Center     = NULL;
-  Periodic_Translation= NULL;    Periodic_RotAngles  = NULL;    Periodic_RotCenter  = NULL;
+  Periodic_Translate  = nullptr;    Periodic_Rotation   = nullptr;    Periodic_Center     = nullptr;
+  Periodic_Translation= nullptr;    Periodic_RotAngles  = nullptr;    Periodic_RotCenter  = nullptr;
 
   /* Harmonic Balance Frequency pointer */
 
-  Omega_HB = NULL;
+  Omega_HB = nullptr;
 
   /*--- Initialize some default arrays to NULL. ---*/
 
-  default_cp_polycoeffs = NULL;
-  default_mu_polycoeffs = NULL;
-  default_kt_polycoeffs = NULL;
-  CpPolyCoefficientsND  = NULL;
-  MuPolyCoefficientsND  = NULL;
-  KtPolyCoefficientsND  = NULL;
+  default_cp_polycoeffs = nullptr;
+  default_mu_polycoeffs = nullptr;
+  default_kt_polycoeffs = nullptr;
+  CpPolyCoefficientsND  = nullptr;
+  MuPolyCoefficientsND  = nullptr;
+  KtPolyCoefficientsND  = nullptr;
 
-  Riemann_FlowDir       = NULL;
-  Giles_FlowDir         = NULL;
-  CoordFFDBox           = NULL;
-  DegreeFFDBox          = NULL;
-  FFDTag                = NULL;
-  nDV_Value             = NULL;
-  TagFFDBox             = NULL;
+  Riemann_FlowDir       = nullptr;
+  Giles_FlowDir         = nullptr;
+  CoordFFDBox           = nullptr;
+  DegreeFFDBox          = nullptr;
+  FFDTag                = nullptr;
+  nDV_Value             = nullptr;
+  TagFFDBox             = nullptr;
 
-  Kind_Data_Riemann        = NULL;
-  Riemann_Var1             = NULL;
-  Riemann_Var2             = NULL;
-  Kind_Data_Giles          = NULL;
-  Giles_Var1               = NULL;
-  Giles_Var2               = NULL;
-  RelaxFactorAverage       = NULL;
-  RelaxFactorFourier       = NULL;
-  nSpan_iZones             = NULL;
-  ExtraRelFacGiles         = NULL;
-  Mixedout_Coeff           = NULL;
-  RampRotatingFrame_Coeff  = NULL;
-  RampOutletPressure_Coeff = NULL;
-  Kind_TurboMachinery      = NULL;
-  SineLoad_Coeff           = NULL;
+  Kind_Data_Riemann        = nullptr;
+  Riemann_Var1             = nullptr;
+  Riemann_Var2             = nullptr;
+  Kind_Data_Giles          = nullptr;
+  Giles_Var1               = nullptr;
+  Giles_Var2               = nullptr;
+  RelaxFactorAverage       = nullptr;
+  RelaxFactorFourier       = nullptr;
+  nSpan_iZones             = nullptr;
+  ExtraRelFacGiles         = nullptr;
+  Mixedout_Coeff           = nullptr;
+  RampRotatingFrame_Coeff  = nullptr;
+  RampOutletPressure_Coeff = nullptr;
+  Kind_TurboMachinery      = nullptr;
+  SineLoad_Coeff           = nullptr;
 
-  Marker_MixingPlaneInterface  = NULL;
-  Marker_TurboBoundIn          = NULL;
-  Marker_TurboBoundOut         = NULL;
-  Marker_Giles                 = NULL;
-  Marker_Shroud                = NULL;
+  Marker_MixingPlaneInterface  = nullptr;
+  Marker_TurboBoundIn          = nullptr;
+  Marker_TurboBoundOut         = nullptr;
+  Marker_Giles                 = nullptr;
+  Marker_Shroud                = nullptr;
 
-  nBlades                      = NULL;
-  FreeStreamTurboNormal        = NULL;
+  nBlades                      = nullptr;
+  FreeStreamTurboNormal        = nullptr;
 
-  ConvHistFile                 = NULL;
+  ConvHistFile                 = nullptr;
 
-  top_optim_kernels       = NULL;
-  top_optim_kernel_params = NULL;
-  top_optim_filter_radius = NULL;
+  top_optim_kernels       = nullptr;
+  top_optim_kernel_params = nullptr;
+  top_optim_filter_radius = nullptr;
 
-  ScreenOutput = NULL;
-  HistoryOutput = NULL;
-  VolumeOutput = NULL;
-  VolumeOutputFiles = NULL;
-  ConvField = NULL;
+  ScreenOutput = nullptr;
+  HistoryOutput = nullptr;
+  VolumeOutput = nullptr;
+  VolumeOutputFiles = nullptr;
+  ConvField = nullptr;
 
   /*--- Variable initialization ---*/
 
@@ -1049,7 +1049,7 @@ void CConfig::SetPointersNull(void) {
 
   Restart_Bandwidth_Agg = 0.0;
 
-  Mesh_Box_Size = NULL;
+  Mesh_Box_Size = nullptr;
 
   Time_Ref = 1.0;
 
@@ -3275,7 +3275,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
-  if (Weight_ObjFunc == NULL && Kind_ObjFunc == NULL) {
+  if (Weight_ObjFunc == nullptr && Kind_ObjFunc == nullptr) {
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
@@ -3287,7 +3287,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
-    if (nMarker_Monitoring!=nObj && Marker_Monitoring!= NULL) {
+    if (nMarker_Monitoring!=nObj && Marker_Monitoring!= nullptr) {
       if (nMarker_Monitoring==1) {
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
@@ -3302,7 +3302,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         unsigned int obj = Kind_ObjFunc[0];
         su2double wt=1.0;
         delete[] Kind_ObjFunc;
-        if (Weight_ObjFunc!=NULL){
+        if (Weight_ObjFunc!=nullptr){
          wt = Weight_ObjFunc[0];
          delete[] Weight_ObjFunc;
         }
@@ -3327,7 +3327,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
 
   if (nObjW<nObj) {
-    if (Weight_ObjFunc!= NULL && nObjW>1) {
+    if (Weight_ObjFunc!= nullptr && nObjW>1) {
       SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
                      string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
     }
@@ -3777,7 +3777,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Not a valid value for time period!!", CURRENT_FUNCTION);
     }
     /* Initialize the Harmonic balance Frequency pointer */
-    if (Omega_HB == NULL) {
+    if (Omega_HB == nullptr) {
       Omega_HB = new su2double[nOmega_HB];
       for (unsigned short iZone = 0; iZone < nOmega_HB; iZone++ )
         Omega_HB[iZone] = 0.0;
@@ -3907,7 +3907,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!", CURRENT_FUNCTION);
   }
 
-  if (RefOriginMoment_X == NULL) {
+  if (RefOriginMoment_X == nullptr) {
     RefOriginMoment_X = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
       RefOriginMoment_X[iMarker] = 0.0;
@@ -3927,7 +3927,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if (RefOriginMoment_Y == NULL) {
+  if (RefOriginMoment_Y == nullptr) {
     RefOriginMoment_Y = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
       RefOriginMoment_Y[iMarker] = 0.0;
@@ -3947,7 +3947,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if (RefOriginMoment_Z == NULL) {
+  if (RefOriginMoment_Z == nullptr) {
     RefOriginMoment_Z = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
       RefOriginMoment_Z[iMarker] = 0.0;
@@ -4043,7 +4043,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
       delete [] MG_PreSmooth;
-      MG_PreSmooth=NULL;
+      MG_PreSmooth=nullptr;
     }
     else {
 
@@ -4054,7 +4054,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
       delete [] MG_PreSmooth;
-      MG_PreSmooth=NULL;
+      MG_PreSmooth=nullptr;
     }
 
     nMG_PreSmooth = nMGLevels+1;
@@ -4078,7 +4078,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       delete [] MG_PostSmooth;
-      MG_PostSmooth=NULL;
+      MG_PostSmooth=nullptr;
     }
     else {
 
@@ -4089,7 +4089,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
       delete [] MG_PostSmooth;
-      MG_PostSmooth=NULL;
+      MG_PostSmooth=nullptr;
     }
 
     nMG_PostSmooth = nMGLevels+1;
@@ -4115,7 +4115,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
       delete [] MG_CorrecSmooth;
-      MG_CorrecSmooth = NULL;
+      MG_CorrecSmooth = nullptr;
     }
     else {
 
@@ -4126,7 +4126,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
       delete [] MG_CorrecSmooth;
-      MG_CorrecSmooth = NULL;
+      MG_CorrecSmooth = nullptr;
     }
     nMG_CorrecSmooth = nMGLevels+1;
     MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
@@ -7260,432 +7260,432 @@ CConfig::~CConfig(void) {
     delete itr->second;
   }
 
-  if (TimeDOFsADER_DG           != NULL) delete [] TimeDOFsADER_DG;
-  if (TimeIntegrationADER_DG    != NULL) delete [] TimeIntegrationADER_DG;
-  if (WeightsIntegrationADER_DG != NULL) delete [] WeightsIntegrationADER_DG;
-  if (RK_Alpha_Step             != NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth              != NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth             != NULL) delete [] MG_PostSmooth;
+  delete [] TimeDOFsADER_DG;
+  delete [] TimeIntegrationADER_DG;
+  delete [] WeightsIntegrationADER_DG;
+  delete [] RK_Alpha_Step;
+  delete [] MG_PreSmooth;
+  delete [] MG_PostSmooth;
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
-  if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
-  if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
+  delete[] Aeroelastic_pitch;
+  delete[] Aeroelastic_plunge;
 
  /*--- Free memory for airfoil sections ---*/
 
- if (LocationStations   != NULL) delete [] LocationStations;
+ delete [] LocationStations;
 
   /*--- motion origin: ---*/
 
-  if (MarkerMotion_Origin   != NULL) delete [] MarkerMotion_Origin;
+  delete [] MarkerMotion_Origin;
 
-  if (MoveMotion_Origin != NULL) delete [] MoveMotion_Origin;
+  delete [] MoveMotion_Origin;
 
   /*--- translation: ---*/
 
-  if (MarkerTranslation_Rate != NULL) delete [] MarkerTranslation_Rate;
+  delete [] MarkerTranslation_Rate;
 
   /*--- rotation: ---*/
 
-  if (MarkerRotation_Rate != NULL) delete [] MarkerRotation_Rate;
+  delete [] MarkerRotation_Rate;
 
   /*--- pitching: ---*/
 
-  if (MarkerPitching_Omega != NULL) delete [] MarkerPitching_Omega;
+  delete [] MarkerPitching_Omega;
 
   /*--- pitching amplitude: ---*/
 
-  if (MarkerPitching_Ampl != NULL) delete [] MarkerPitching_Ampl;
+  delete [] MarkerPitching_Ampl;
 
   /*--- pitching phase: ---*/
 
-  if (MarkerPitching_Phase != NULL) delete [] MarkerPitching_Phase;
+  delete [] MarkerPitching_Phase;
 
   /*--- plunging: ---*/
 
-  if (MarkerPlunging_Omega != NULL) delete [] MarkerPlunging_Omega;
+  delete [] MarkerPlunging_Omega;
 
   /*--- plunging amplitude: ---*/
-  if (MarkerPlunging_Ampl != NULL) delete [] MarkerPlunging_Ampl;
+  delete [] MarkerPlunging_Ampl;
 
   /*--- reference origin for moments ---*/
 
-  if (RefOriginMoment   != NULL) delete [] RefOriginMoment;
-  if (RefOriginMoment_X != NULL) delete [] RefOriginMoment_X;
-  if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
-  if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
+  delete [] RefOriginMoment;
+  delete [] RefOriginMoment_X;
+  delete [] RefOriginMoment_Y;
+  delete [] RefOriginMoment_Z;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
 
-  if (Omega_HB != NULL) delete [] Omega_HB;
+  delete [] Omega_HB;
 
   /*--- Marker pointers ---*/
 
-  if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
-  if (Marker_All_GeoEval     != NULL) delete[] Marker_All_GeoEval;
+  delete[] Marker_CfgFile_GeoEval;
+  delete[] Marker_All_GeoEval;
 
-  if (Marker_CfgFile_TagBound != NULL) delete[] Marker_CfgFile_TagBound;
-  if (Marker_All_TagBound     != NULL) delete[] Marker_All_TagBound;
+  delete[] Marker_CfgFile_TagBound;
+  delete[] Marker_All_TagBound;
 
-  if (Marker_CfgFile_KindBC != NULL) delete[] Marker_CfgFile_KindBC;
-  if (Marker_All_KindBC     != NULL) delete[] Marker_All_KindBC;
+  delete[] Marker_CfgFile_KindBC;
+  delete[] Marker_All_KindBC;
 
-  if (Marker_CfgFile_Monitoring != NULL) delete[] Marker_CfgFile_Monitoring;
-  if (Marker_All_Monitoring     != NULL) delete[] Marker_All_Monitoring;
+  delete[] Marker_CfgFile_Monitoring;
+  delete[] Marker_All_Monitoring;
 
-  if (Marker_CfgFile_Designing != NULL) delete[] Marker_CfgFile_Designing;
-  if (Marker_All_Designing     != NULL) delete[] Marker_All_Designing;
+  delete[] Marker_CfgFile_Designing;
+  delete[] Marker_All_Designing;
 
-  if (Marker_CfgFile_Plotting != NULL) delete[] Marker_CfgFile_Plotting;
-  if (Marker_All_Plotting     != NULL) delete[] Marker_All_Plotting;
+  delete[] Marker_CfgFile_Plotting;
+  delete[] Marker_All_Plotting;
 
-  if (Marker_CfgFile_Analyze != NULL) delete[] Marker_CfgFile_Analyze;
-  if (Marker_All_Analyze  != NULL) delete[] Marker_All_Analyze;
+  delete[] Marker_CfgFile_Analyze;
+  delete[] Marker_All_Analyze;
 
-  if (Marker_CfgFile_ZoneInterface != NULL) delete[] Marker_CfgFile_ZoneInterface;
-  if (Marker_All_ZoneInterface     != NULL) delete[] Marker_All_ZoneInterface;
+  delete[] Marker_CfgFile_ZoneInterface;
+  delete[] Marker_All_ZoneInterface;
 
-  if (Marker_CfgFile_DV != NULL) delete[] Marker_CfgFile_DV;
-  if (Marker_All_DV     != NULL) delete[] Marker_All_DV;
+  delete[] Marker_CfgFile_DV;
+  delete[] Marker_All_DV;
 
-  if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
-  if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+  delete[] Marker_CfgFile_Moving;
+  delete[] Marker_All_Moving;
 
-  if (Marker_CfgFile_Deform_Mesh != NULL) delete[] Marker_CfgFile_Deform_Mesh;
-  if (Marker_All_Deform_Mesh     != NULL) delete[] Marker_All_Deform_Mesh;
+  delete[] Marker_CfgFile_Deform_Mesh;
+  delete[] Marker_All_Deform_Mesh;
 
-  if (Marker_CfgFile_Fluid_Load != NULL) delete[] Marker_CfgFile_Fluid_Load;
-  if (Marker_All_Fluid_Load     != NULL) delete[] Marker_All_Fluid_Load;
+  delete[] Marker_CfgFile_Fluid_Load;
+  delete[] Marker_All_Fluid_Load;
 
-  if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
-  if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
+  delete[] Marker_CfgFile_PyCustom;
+  delete[] Marker_All_PyCustom;
 
-  if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
-  if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
+  delete[] Marker_CfgFile_PerBound;
+  delete[] Marker_All_PerBound;
 
-  if (Marker_CfgFile_Turbomachinery != NULL) delete [] Marker_CfgFile_Turbomachinery;
-  if (Marker_All_Turbomachinery     != NULL) delete [] Marker_All_Turbomachinery;
+  delete [] Marker_CfgFile_Turbomachinery;
+  delete [] Marker_All_Turbomachinery;
 
-  if (Marker_CfgFile_TurbomachineryFlag != NULL) delete [] Marker_CfgFile_TurbomachineryFlag;
-  if (Marker_All_TurbomachineryFlag     != NULL) delete [] Marker_All_TurbomachineryFlag;
+  delete [] Marker_CfgFile_TurbomachineryFlag;
+  delete [] Marker_All_TurbomachineryFlag;
 
-  if (Marker_CfgFile_MixingPlaneInterface != NULL) delete [] Marker_CfgFile_MixingPlaneInterface;
-  if (Marker_All_MixingPlaneInterface     != NULL) delete [] Marker_All_MixingPlaneInterface;
+  delete [] Marker_CfgFile_MixingPlaneInterface;
+  delete [] Marker_All_MixingPlaneInterface;
 
-  if (Marker_DV!= NULL)               delete[] Marker_DV;
-  if (Marker_Moving != NULL)           delete[] Marker_Moving;
-  if (Marker_Monitoring != NULL)      delete[] Marker_Monitoring;
-  if (Marker_Designing != NULL)       delete[] Marker_Designing;
-  if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
-  if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
-  if (Marker_Analyze != NULL)        delete[] Marker_Analyze;
-  if (Marker_WallFunctions != NULL)  delete[] Marker_WallFunctions;
-  if (Marker_ZoneInterface != NULL)        delete[] Marker_ZoneInterface;
-  if (Marker_PyCustom != NULL)             delete [] Marker_PyCustom;
-  if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
+                delete[] Marker_DV;
+            delete[] Marker_Moving;
+       delete[] Marker_Monitoring;
+        delete[] Marker_Designing;
+          delete[] Marker_GeoEval;
+         delete[] Marker_Plotting;
+         delete[] Marker_Analyze;
+   delete[] Marker_WallFunctions;
+         delete[] Marker_ZoneInterface;
+              delete [] Marker_PyCustom;
+     delete[] Marker_All_SendRecv;
 
-  if (Kind_Inc_Inlet != NULL)      delete[] Kind_Inc_Inlet;
-  if (Kind_Inc_Outlet != NULL)      delete[] Kind_Inc_Outlet;
+       delete[] Kind_Inc_Inlet;
+       delete[] Kind_Inc_Outlet;
 
-  if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
+  delete[] Kind_WallFunctions;
 
-  if (Config_Filenames != NULL) delete[] Config_Filenames;
+  delete[] Config_Filenames;
 
-  if (IntInfo_WallFunctions != NULL) {
+  if (IntInfo_WallFunctions != nullptr) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (IntInfo_WallFunctions[iMarker] != NULL)
+      if (IntInfo_WallFunctions[iMarker] != nullptr)
         delete[] IntInfo_WallFunctions[iMarker];
     }
     delete[] IntInfo_WallFunctions;
   }
 
-  if (DoubleInfo_WallFunctions != NULL) {
+  if (DoubleInfo_WallFunctions != nullptr) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (DoubleInfo_WallFunctions[iMarker] != NULL)
+      if (DoubleInfo_WallFunctions[iMarker] != nullptr)
         delete[] DoubleInfo_WallFunctions[iMarker];
     }
     delete[] DoubleInfo_WallFunctions;
   }
 
-  if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
-  if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
+       delete[] Kind_ObjFunc;
+       delete[] Weight_ObjFunc;
 
-  if (DV_Value != NULL) {
+  if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
     delete [] DV_Value;
   }
 
-  if (ParamDV != NULL) {
+  if (ParamDV != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] ParamDV[iDV];
     delete [] ParamDV;
   }
 
-  if (CoordFFDBox != NULL) {
+  if (CoordFFDBox != nullptr) {
     for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] CoordFFDBox[iFFD];
     delete [] CoordFFDBox;
   }
 
-  if (DegreeFFDBox != NULL) {
+  if (DegreeFFDBox != nullptr) {
     for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
     delete [] DegreeFFDBox;
   }
 
-  if (Design_Variable != NULL)    delete[] Design_Variable;
+     delete[] Design_Variable;
 
-  if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
-  if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
-  if (Exhaust_Pressure != NULL)    delete[] Exhaust_Pressure;
-  if (Exhaust_Temperature != NULL)    delete[] Exhaust_Temperature;
-  if (Exhaust_MassFlow != NULL)    delete[] Exhaust_MassFlow;
-  if (Exhaust_TotalPressure != NULL)    delete[] Exhaust_TotalPressure;
-  if (Exhaust_TotalTemperature != NULL)    delete[] Exhaust_TotalTemperature;
-  if (Exhaust_GrossThrust != NULL)    delete[] Exhaust_GrossThrust;
-  if (Exhaust_Force != NULL)    delete[] Exhaust_Force;
-  if (Exhaust_Power != NULL)    delete[] Exhaust_Power;
+     delete[]  Exhaust_Temperature_Target;
+     delete[]  Exhaust_Pressure_Target;
+     delete[] Exhaust_Pressure;
+     delete[] Exhaust_Temperature;
+     delete[] Exhaust_MassFlow;
+     delete[] Exhaust_TotalPressure;
+     delete[] Exhaust_TotalTemperature;
+     delete[] Exhaust_GrossThrust;
+     delete[] Exhaust_Force;
+     delete[] Exhaust_Power;
 
-  if (Inflow_Mach != NULL)    delete[]  Inflow_Mach;
-  if (Inflow_Pressure != NULL)    delete[] Inflow_Pressure;
-  if (Inflow_MassFlow != NULL)    delete[] Inflow_MassFlow;
-  if (Inflow_ReverseMassFlow != NULL)    delete[] Inflow_ReverseMassFlow;
-  if (Inflow_TotalPressure != NULL)    delete[] Inflow_TotalPressure;
-  if (Inflow_Temperature != NULL)    delete[] Inflow_Temperature;
-  if (Inflow_TotalTemperature != NULL)    delete[] Inflow_TotalTemperature;
-  if (Inflow_RamDrag != NULL)    delete[] Inflow_RamDrag;
-  if (Inflow_Force != NULL)    delete[]  Inflow_Force;
-  if (Inflow_Power != NULL)    delete[] Inflow_Power;
+     delete[]  Inflow_Mach;
+     delete[] Inflow_Pressure;
+     delete[] Inflow_MassFlow;
+     delete[] Inflow_ReverseMassFlow;
+     delete[] Inflow_TotalPressure;
+     delete[] Inflow_Temperature;
+     delete[] Inflow_TotalTemperature;
+     delete[] Inflow_RamDrag;
+     delete[]  Inflow_Force;
+     delete[] Inflow_Power;
 
-  if (Engine_Power != NULL)    delete[]  Engine_Power;
-  if (Engine_Mach != NULL)    delete[]  Engine_Mach;
-  if (Engine_Force != NULL)    delete[]  Engine_Force;
-  if (Engine_NetThrust != NULL)    delete[]  Engine_NetThrust;
-  if (Engine_GrossThrust != NULL)    delete[]  Engine_GrossThrust;
-  if (Engine_Area != NULL)    delete[]  Engine_Area;
-  if (EngineInflow_Target != NULL)    delete[] EngineInflow_Target;
+     delete[]  Engine_Power;
+     delete[]  Engine_Mach;
+     delete[]  Engine_Force;
+     delete[]  Engine_NetThrust;
+     delete[]  Engine_GrossThrust;
+     delete[]  Engine_Area;
+     delete[] EngineInflow_Target;
 
-  if (ActDiskInlet_MassFlow != NULL)    delete[]  ActDiskInlet_MassFlow;
-  if (ActDiskInlet_Temperature != NULL)    delete[]  ActDiskInlet_Temperature;
-  if (ActDiskInlet_TotalTemperature != NULL)    delete[]  ActDiskInlet_TotalTemperature;
-  if (ActDiskInlet_Pressure != NULL)    delete[]  ActDiskInlet_Pressure;
-  if (ActDiskInlet_TotalPressure != NULL)    delete[]  ActDiskInlet_TotalPressure;
-  if (ActDiskInlet_RamDrag != NULL)    delete[]  ActDiskInlet_RamDrag;
-  if (ActDiskInlet_Force != NULL)    delete[]  ActDiskInlet_Force;
-  if (ActDiskInlet_Power != NULL)    delete[]  ActDiskInlet_Power;
+     delete[]  ActDiskInlet_MassFlow;
+     delete[]  ActDiskInlet_Temperature;
+     delete[]  ActDiskInlet_TotalTemperature;
+     delete[]  ActDiskInlet_Pressure;
+     delete[]  ActDiskInlet_TotalPressure;
+     delete[]  ActDiskInlet_RamDrag;
+     delete[]  ActDiskInlet_Force;
+     delete[]  ActDiskInlet_Power;
 
-  if (ActDiskOutlet_MassFlow != NULL)    delete[]  ActDiskOutlet_MassFlow;
-  if (ActDiskOutlet_Temperature != NULL)    delete[]  ActDiskOutlet_Temperature;
-  if (ActDiskOutlet_TotalTemperature != NULL)    delete[]  ActDiskOutlet_TotalTemperature;
-  if (ActDiskOutlet_Pressure != NULL)    delete[]  ActDiskOutlet_Pressure;
-  if (ActDiskOutlet_TotalPressure != NULL)    delete[]  ActDiskOutlet_TotalPressure;
-  if (ActDiskOutlet_GrossThrust != NULL)    delete[]  ActDiskOutlet_GrossThrust;
-  if (ActDiskOutlet_Force != NULL)    delete[]  ActDiskOutlet_Force;
-  if (ActDiskOutlet_Power != NULL)    delete[]  ActDiskOutlet_Power;
+     delete[]  ActDiskOutlet_MassFlow;
+     delete[]  ActDiskOutlet_Temperature;
+     delete[]  ActDiskOutlet_TotalTemperature;
+     delete[]  ActDiskOutlet_Pressure;
+     delete[]  ActDiskOutlet_TotalPressure;
+     delete[]  ActDiskOutlet_GrossThrust;
+     delete[]  ActDiskOutlet_Force;
+     delete[]  ActDiskOutlet_Power;
 
-  if (Outlet_MassFlow != NULL)    delete[]  Outlet_MassFlow;
-  if (Outlet_Density != NULL)    delete[]  Outlet_Density;
-  if (Outlet_Area != NULL)    delete[]  Outlet_Area;
+     delete[]  Outlet_MassFlow;
+     delete[]  Outlet_Density;
+     delete[]  Outlet_Area;
 
-  if (ActDisk_DeltaPress != NULL)    delete[]  ActDisk_DeltaPress;
-  if (ActDisk_DeltaTemp != NULL)    delete[]  ActDisk_DeltaTemp;
-  if (ActDisk_TotalPressRatio != NULL)    delete[]  ActDisk_TotalPressRatio;
-  if (ActDisk_TotalTempRatio != NULL)    delete[]  ActDisk_TotalTempRatio;
-  if (ActDisk_StaticPressRatio != NULL)    delete[]  ActDisk_StaticPressRatio;
-  if (ActDisk_StaticTempRatio != NULL)    delete[]  ActDisk_StaticTempRatio;
-  if (ActDisk_Power != NULL)    delete[]  ActDisk_Power;
-  if (ActDisk_MassFlow != NULL)    delete[]  ActDisk_MassFlow;
-  if (ActDisk_Mach != NULL)    delete[]  ActDisk_Mach;
-  if (ActDisk_Force != NULL)    delete[]  ActDisk_Force;
-  if (ActDisk_NetThrust != NULL)    delete[]  ActDisk_NetThrust;
-  if (ActDisk_BCThrust != NULL)    delete[]  ActDisk_BCThrust;
-  if (ActDisk_BCThrust_Old != NULL)    delete[]  ActDisk_BCThrust_Old;
-  if (ActDisk_GrossThrust != NULL)    delete[]  ActDisk_GrossThrust;
-  if (ActDisk_Area != NULL)    delete[]  ActDisk_Area;
-  if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
+     delete[]  ActDisk_DeltaPress;
+     delete[]  ActDisk_DeltaTemp;
+     delete[]  ActDisk_TotalPressRatio;
+     delete[]  ActDisk_TotalTempRatio;
+     delete[]  ActDisk_StaticPressRatio;
+     delete[]  ActDisk_StaticTempRatio;
+     delete[]  ActDisk_Power;
+     delete[]  ActDisk_MassFlow;
+     delete[]  ActDisk_Mach;
+     delete[]  ActDisk_Force;
+     delete[]  ActDisk_NetThrust;
+     delete[]  ActDisk_BCThrust;
+     delete[]  ActDisk_BCThrust_Old;
+     delete[]  ActDisk_GrossThrust;
+     delete[]  ActDisk_Area;
+     delete[]  ActDisk_ReverseMassFlow;
 
-  if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
-  if (Surface_Mach != NULL)    delete[]  Surface_Mach;
-  if (Surface_Temperature != NULL)    delete[]  Surface_Temperature;
-  if (Surface_Pressure != NULL)    delete[]  Surface_Pressure;
-  if (Surface_Density != NULL)    delete[]  Surface_Density;
-  if (Surface_Enthalpy != NULL)    delete[]  Surface_Enthalpy;
-  if (Surface_NormalVelocity != NULL)    delete[]  Surface_NormalVelocity;
-  if (Surface_Uniformity != NULL)    delete[]  Surface_Uniformity;
-  if (Surface_SecondaryStrength != NULL)    delete[]  Surface_SecondaryStrength;
-  if (Surface_SecondOverUniform != NULL)    delete[]  Surface_SecondOverUniform;
-  if (Surface_MomentumDistortion != NULL)    delete[]  Surface_MomentumDistortion;
-  if (Surface_TotalTemperature != NULL)    delete[]  Surface_TotalTemperature;
-  if (Surface_TotalPressure!= NULL)    delete[]  Surface_TotalPressure;
-  if (Surface_PressureDrop!= NULL)    delete[]  Surface_PressureDrop;
-  if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
-  if (Surface_IDC != NULL)    delete[]  Surface_IDC;
-  if (Surface_IDC_Mach != NULL)    delete[]  Surface_IDC_Mach;
-  if (Surface_IDR != NULL)    delete[]  Surface_IDR;
+     delete[]  Surface_MassFlow;
+     delete[]  Surface_Mach;
+     delete[]  Surface_Temperature;
+     delete[]  Surface_Pressure;
+     delete[]  Surface_Density;
+     delete[]  Surface_Enthalpy;
+     delete[]  Surface_NormalVelocity;
+     delete[]  Surface_Uniformity;
+     delete[]  Surface_SecondaryStrength;
+     delete[]  Surface_SecondOverUniform;
+     delete[]  Surface_MomentumDistortion;
+     delete[]  Surface_TotalTemperature;
+     delete[]  Surface_TotalPressure;
+     delete[]  Surface_PressureDrop;
+     delete[]  Surface_DC60;
+     delete[]  Surface_IDC;
+     delete[]  Surface_IDC_Mach;
+     delete[]  Surface_IDR;
 
-  if (Inlet_Ttotal != NULL) delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal != NULL) delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir != NULL) {
+  delete[]  Inlet_Ttotal;
+  delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
       delete [] Inlet_FlowDir[iMarker];
     delete [] Inlet_FlowDir;
   }
 
-  if (Inlet_Velocity != NULL) {
+  if (Inlet_Velocity != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
       delete [] Inlet_Velocity[iMarker];
     delete [] Inlet_Velocity;
   }
 
-  if (Riemann_FlowDir != NULL) {
+  if (Riemann_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
       delete [] Riemann_FlowDir[iMarker];
     delete [] Riemann_FlowDir;
   }
 
-  if (Giles_FlowDir != NULL) {
+  if (Giles_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++)
       delete [] Giles_FlowDir[iMarker];
     delete [] Giles_FlowDir;
   }
 
-  if (Load_Sine_Dir != NULL) {
+  if (Load_Sine_Dir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
       delete [] Load_Sine_Dir[iMarker];
     delete [] Load_Sine_Dir;
   }
 
-  if (Load_Dir != NULL) {
+  if (Load_Dir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Load_Dir; iMarker++)
       delete [] Load_Dir[iMarker];
     delete [] Load_Dir;
   }
 
-  if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
-  if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
-  if (Outlet_Pressure != NULL)    delete[] Outlet_Pressure;
-  if (Isothermal_Temperature != NULL)    delete[] Isothermal_Temperature;
-  if (Heat_Flux != NULL)    delete[] Heat_Flux;
-  if (Displ_Value != NULL)    delete[] Displ_Value;
-  if (Load_Value != NULL)    delete[] Load_Value;
-  if (Damper_Constant != NULL)    delete[] Damper_Constant;
-  if (Load_Dir_Multiplier != NULL)    delete[] Load_Dir_Multiplier;
-  if (Load_Dir_Value != NULL)    delete[] Load_Dir_Value;
-  if (Disp_Dir != NULL)    delete[] Disp_Dir;
-  if (Disp_Dir_Multiplier != NULL)    delete[] Disp_Dir_Multiplier;
-  if (Disp_Dir_Value != NULL)    delete[] Disp_Dir_Value;
-  if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
-  if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
-  if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
-  if (Wall_Emissivity != NULL)    delete[] Wall_Emissivity;
+     delete[] Inlet_Temperature;
+     delete[] Inlet_Pressure;
+     delete[] Outlet_Pressure;
+     delete[] Isothermal_Temperature;
+     delete[] Heat_Flux;
+     delete[] Displ_Value;
+     delete[] Load_Value;
+     delete[] Damper_Constant;
+     delete[] Load_Dir_Multiplier;
+     delete[] Load_Dir_Value;
+     delete[] Disp_Dir;
+     delete[] Disp_Dir_Multiplier;
+     delete[] Disp_Dir_Value;
+     delete[] Load_Sine_Amplitude;
+     delete[] Load_Sine_Frequency;
+     delete[] FlowLoad_Value;
+     delete[] Wall_Emissivity;
 
   /*--- related to periodic boundary conditions ---*/
 
   for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
-    if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker];
-    if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker];
-    if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker];
+    if (Periodic_RotCenter   != nullptr) delete [] Periodic_RotCenter[iMarker];
+    if (Periodic_RotAngles   != nullptr) delete [] Periodic_RotAngles[iMarker];
+    if (Periodic_Translation != nullptr) delete [] Periodic_Translation[iMarker];
   }
-  if (Periodic_RotCenter   != NULL) delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles   != NULL) delete[] Periodic_RotAngles;
-  if (Periodic_Translation != NULL) delete[] Periodic_Translation;
+  delete[] Periodic_RotCenter;
+  delete[] Periodic_RotAngles;
+  delete[] Periodic_Translation;
 
   for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    if (Periodic_Center    != NULL) delete [] Periodic_Center[iPeriodic];
-    if (Periodic_Rotation  != NULL) delete [] Periodic_Rotation[iPeriodic];
-    if (Periodic_Translate != NULL) delete [] Periodic_Translate[iPeriodic];
+    if (Periodic_Center    != nullptr) delete [] Periodic_Center[iPeriodic];
+    if (Periodic_Rotation  != nullptr) delete [] Periodic_Rotation[iPeriodic];
+    if (Periodic_Translate != nullptr) delete [] Periodic_Translate[iPeriodic];
   }
-  if (Periodic_Center      != NULL) delete[] Periodic_Center;
-  if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
-  if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
+  delete[] Periodic_Center;
+  delete[] Periodic_Rotation;
+  delete[] Periodic_Translate;
 
-  if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
-  if (PlaneTag != NULL)        delete[] PlaneTag;
-  if (CFL != NULL)             delete[] CFL;
+  delete[] MG_CorrecSmooth;
+         delete[] PlaneTag;
+              delete[] CFL;
 
   /*--- String markers ---*/
 
-  if (Marker_Euler != NULL )              delete[] Marker_Euler;
-  if (Marker_FarField != NULL )           delete[] Marker_FarField;
-  if (Marker_Custom != NULL )             delete[] Marker_Custom;
-  if (Marker_SymWall != NULL )            delete[] Marker_SymWall;
-  if (Marker_PerBound != NULL )           delete[] Marker_PerBound;
-  if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
-  if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
-  if (Marker_Deform_Mesh != NULL )        delete[] Marker_Deform_Mesh;
-  if (Marker_Fluid_Load != NULL )         delete[] Marker_Fluid_Load;
-  if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
-  if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
-  if (Marker_Supersonic_Inlet != NULL )   delete[] Marker_Supersonic_Inlet;
-  if (Marker_Supersonic_Outlet != NULL )   delete[] Marker_Supersonic_Outlet;
-  if (Marker_Outlet != NULL )             delete[] Marker_Outlet;
-  if (Marker_Isothermal != NULL )         delete[] Marker_Isothermal;
-  if (Marker_EngineInflow != NULL )      delete[] Marker_EngineInflow;
-  if (Marker_EngineExhaust != NULL )     delete[] Marker_EngineExhaust;
-  if (Marker_Displacement != NULL )       delete[] Marker_Displacement;
-  if (Marker_Load != NULL )               delete[] Marker_Load;
-  if (Marker_Damper != NULL )               delete[] Marker_Damper;
-  if (Marker_Load_Dir != NULL )               delete[] Marker_Load_Dir;
-  if (Marker_Disp_Dir != NULL )               delete[] Marker_Disp_Dir;
-  if (Marker_Load_Sine != NULL )               delete[] Marker_Load_Sine;
-  if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
-  if (Marker_Internal != NULL )            delete[] Marker_Internal;
-  if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
-  if (Marker_Emissivity != NULL )         delete[] Marker_Emissivity;
+               delete[] Marker_Euler;
+            delete[] Marker_FarField;
+              delete[] Marker_Custom;
+             delete[] Marker_SymWall;
+            delete[] Marker_PerBound;
+            delete[] Marker_PerDonor;
+      delete[] Marker_NearFieldBound;
+         delete[] Marker_Deform_Mesh;
+          delete[] Marker_Fluid_Load;
+      delete[] Marker_Fluid_InterfaceBound;
+               delete[] Marker_Inlet;
+    delete[] Marker_Supersonic_Inlet;
+    delete[] Marker_Supersonic_Outlet;
+              delete[] Marker_Outlet;
+          delete[] Marker_Isothermal;
+       delete[] Marker_EngineInflow;
+      delete[] Marker_EngineExhaust;
+        delete[] Marker_Displacement;
+                delete[] Marker_Load;
+                delete[] Marker_Damper;
+                delete[] Marker_Load_Dir;
+                delete[] Marker_Disp_Dir;
+                delete[] Marker_Load_Sine;
+            delete[] Marker_FlowLoad;
+             delete[] Marker_Internal;
+                delete[] Marker_HeatFlux;
+          delete[] Marker_Emissivity;
 
-  if (Int_Coeffs != NULL) delete [] Int_Coeffs;
+  delete [] Int_Coeffs;
 
-  if (ElasticityMod        != NULL) delete [] ElasticityMod;
-  if (PoissonRatio         != NULL) delete [] PoissonRatio;
-  if (MaterialDensity      != NULL) delete [] MaterialDensity;
-  if (Electric_Constant    != NULL) delete [] Electric_Constant;
-  if (Electric_Field_Mod   != NULL) delete [] Electric_Field_Mod;
-  if (RefNode_Displacement != NULL) delete [] RefNode_Displacement;
-  if (Electric_Field_Dir   != NULL) delete [] Electric_Field_Dir;
+  delete [] ElasticityMod;
+  delete [] PoissonRatio;
+  delete [] MaterialDensity;
+  delete [] Electric_Constant;
+  delete [] Electric_Field_Mod;
+  delete [] RefNode_Displacement;
+  delete [] Electric_Field_Dir;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
 
-  if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
-  if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;
-  if (default_kt_polycoeffs != NULL) delete [] default_kt_polycoeffs;
-  if (CpPolyCoefficientsND  != NULL) delete [] CpPolyCoefficientsND;
-  if (MuPolyCoefficientsND  != NULL) delete [] MuPolyCoefficientsND;
-  if (KtPolyCoefficientsND  != NULL) delete [] KtPolyCoefficientsND;
+  delete [] default_cp_polycoeffs;
+  delete [] default_mu_polycoeffs;
+  delete [] default_kt_polycoeffs;
+  delete [] CpPolyCoefficientsND;
+  delete [] MuPolyCoefficientsND;
+  delete [] KtPolyCoefficientsND;
 
-  if (FFDTag != NULL) delete [] FFDTag;
-  if (nDV_Value != NULL) delete [] nDV_Value;
-  if (TagFFDBox != NULL) delete [] TagFFDBox;
+  delete [] FFDTag;
+  delete [] nDV_Value;
+  delete [] TagFFDBox;
 
-  if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
-  if (Riemann_Var1 != NULL) delete [] Riemann_Var1;
-  if (Riemann_Var2 != NULL) delete [] Riemann_Var2;
-  if (Kind_Data_Giles != NULL) delete [] Kind_Data_Giles;
-  if (Giles_Var1 != NULL) delete [] Giles_Var1;
-  if (Giles_Var2 != NULL) delete [] Giles_Var2;
-  if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
-  if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
-  if (nSpan_iZones != NULL) delete [] nSpan_iZones;
-  if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
+  delete [] Kind_Data_Riemann;
+  delete [] Riemann_Var1;
+  delete [] Riemann_Var2;
+  delete [] Kind_Data_Giles;
+  delete [] Giles_Var1;
+  delete [] Giles_Var2;
+  delete [] RelaxFactorAverage;
+  delete [] RelaxFactorFourier;
+  delete [] nSpan_iZones;
+  delete [] Kind_TurboMachinery;
 
-  if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
-  if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
-  if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
-  if (Marker_Riemann != NULL) delete [] Marker_Riemann;
-  if (Marker_Giles != NULL) delete [] Marker_Giles;
-  if (Marker_Shroud != NULL) delete [] Marker_Shroud;
+  delete [] Marker_MixingPlaneInterface;
+  delete [] Marker_TurboBoundIn;
+  delete [] Marker_TurboBoundOut;
+  delete [] Marker_Riemann;
+  delete [] Marker_Giles;
+  delete [] Marker_Shroud;
 
-  if (nBlades != NULL) delete [] nBlades;
-  if (FreeStreamTurboNormal != NULL) delete [] FreeStreamTurboNormal;
+  delete [] nBlades;
+  delete [] FreeStreamTurboNormal;
 
-  if (top_optim_kernels != NULL) delete [] top_optim_kernels;
-  if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
-  if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
+  delete [] top_optim_kernels;
+  delete [] top_optim_kernel_params;
+  delete [] top_optim_filter_radius;
 
-  if (ScreenOutput != NULL) delete [] ScreenOutput;
-  if (HistoryOutput != NULL) delete [] HistoryOutput;
-  if (VolumeOutput != NULL) delete [] VolumeOutput;
-  if (Mesh_Box_Size != NULL) delete [] Mesh_Box_Size;
-  if (VolumeOutputFiles != NULL) delete [] VolumeOutputFiles;
+  delete [] ScreenOutput;
+  delete [] HistoryOutput;
+  delete [] VolumeOutput;
+  delete [] Mesh_Box_Size;
+  delete [] VolumeOutputFiles;
 
-  if (ConvField != NULL) delete [] ConvField;
+  delete [] ConvField;
 
 }
 
@@ -8708,7 +8708,7 @@ unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
 }
 
 unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
-  unsigned short *intInfo = NULL;
+  unsigned short *intInfo = nullptr;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
     if(Marker_WallFunctions[iMarker] == val_marker) {
@@ -8721,7 +8721,7 @@ unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
 }
 
 su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
-  su2double *doubleInfo = NULL;
+  su2double *doubleInfo = nullptr;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
     if(Marker_WallFunctions[iMarker] == val_marker) {

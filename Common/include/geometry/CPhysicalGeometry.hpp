@@ -391,7 +391,7 @@ public:
   /*!
    * \brief Set points which surround a point.
    */
-  void SetPoint_Connectivity(void) override;
+  void SetPoint_Connectivity() override;
 
   /*!
    * \brief Set a renumbering using a Reverse Cuthill-McKee Algorithm
@@ -800,7 +800,7 @@ public:
    */
   void SetWallDistance(su2double val) override {
     for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
-      node[iPoint]->SetWall_Distance(val);
+      nodes->SetWall_Distance(iPoint, val);
     }
   }
 

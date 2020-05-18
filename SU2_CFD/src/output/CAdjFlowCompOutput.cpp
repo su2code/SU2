@@ -64,6 +64,11 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields ++;
+  }
+
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
   multiZoneHeaderString = ss.str();
@@ -358,8 +363,8 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjTurb = NULL;
-  CPoint*    Node_Geo     = geometry->node[iPoint];
+  CVariable* Node_AdjTurb = nullptr;
+  CPoint*    Node_Geo     = geometry->nodes;
 
   if (config->GetKind_Turb_Model() != NONE &&
       ((!config->GetFrozen_Visc_Disc() && !cont_adj) ||
@@ -367,10 +372,10 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
   }
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1));
