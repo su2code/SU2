@@ -292,6 +292,19 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
   
+  /*--- Store the value of the donor primitive variables at the act disk boundaries ---*/
+
+  DonorResInfo = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorResInfo[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorResInfo[iMarker][iVertex] = new su2double [nVar*nVar+nVar+2];
+      for (iVar = 0; iVar < nVar*nVar+nVar+2; iVar++) {
+        DonorResInfo[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
   DonorGlobalIndex = new unsigned long* [nMarker];
@@ -800,7 +813,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   }
 
   if (actuator_disk) {
-      Set_MPI_ActDisk(solver_container, geometry, config);
+      //Set_MPI_ActDisk(solver_container, geometry, config);
       //GetPower_Properties(geometry, config, iMesh, Output);
       SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
@@ -910,6 +923,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool energy = config->GetEnergy_Equation();
+  bool interior_face;
 
   Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
 
@@ -979,8 +993,14 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    interior_face = false;
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) 
+        interior_face = true;
+    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+       (config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET)) 
+       interior_face = true;
+    if (!interior_face) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
@@ -1028,7 +1048,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
 
-    }
+      }
     }
   }
 
@@ -1052,7 +1072,6 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     else {
       nodes->SetDelta_Time(iPoint,0.0);
     }
-
   }
 
   /*--- Compute the max and the min dt (in parallel) ---*/

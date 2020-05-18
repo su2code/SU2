@@ -116,7 +116,8 @@ protected:
   **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
   **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
   ***Inlet_FlowDir,  /*!< \brief Value of the Flow Direction. */
-  ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
+  ***DonorPrimVar = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
+  ***DonorResInfo = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
   unsigned long
   **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
 
@@ -689,6 +690,14 @@ public:
   
 
   /*!
+   * \brief Compute the Fan face Mach number.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  void GetPower_Properties(CGeometry *geometry, CConfig *config,
+                           unsigned short iMesh, bool Output);
+  
+  /*!
    * \brief Impose the engine inflow boundary condition.
     * \param[in] geometry - Geometrical definition of the problem.
     * \param[in] solver_container - Container vector with all the solutions.
@@ -790,6 +799,16 @@ public:
   inline su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const final{
     return DonorPrimVar[val_marker][val_vertex];
   }
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double *GetDonorResInfo(unsigned short val_marker, unsigned long val_vertex) const final{
+    return DonorResInfo[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -802,6 +821,19 @@ public:
                               unsigned short val_var,
                               su2double val_value) final {
     DonorPrimVar[val_marker][val_vertex][val_var] = val_value;
+  }
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetDonorResInfo(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              unsigned short val_var,
+                              su2double val_value) final {
+    DonorResInfo[val_marker][val_vertex][val_var] = val_value;
   }
 
   /*!
@@ -838,6 +870,7 @@ public:
                                   unsigned long val_index) final {
     DonorGlobalIndex[val_marker][val_vertex] = val_index;
   }
+  
 //---------------------------------------- Actdisk --------------------------------------------------------//
 
   /*!

@@ -40,6 +40,7 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
                      ((config->GetKind_SU2() == SU2_DEF) &&
                       (config->GetActDisk_SU2_DEF()))));
   if (config->GetActDisk_DoubleSurface()) actuator_disk = false;
+  if (config->GetActDisk_WindTurbine()) actuator_disk = false;
   ActDiskNewPoints = 0;
   Xloc = 0.0; Yloc = 0.0; Zloc = 0.0;
   

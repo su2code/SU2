@@ -1518,6 +1518,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
+  /* DESCRIPTION: Actuator disk for a wind turbine */
+  addBoolOption("ACTDISK_WIND_TURBINE", ActDisk_WindTurbine, false);
   /* DESCRIPTION: Only half engine is in the computational grid */
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   /* DESCRIPTION: Actuator disk double surface */

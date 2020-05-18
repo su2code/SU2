@@ -2764,5 +2764,9 @@ public:
    * \return value of the source term
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  
+  inline virtual void SetDonorVolume(unsigned long iPoint, su2double val_Volume)  {  }
+  
+  inline virtual su2double GetDonorVolume(unsigned long iPoint) const {return 0.0; }
 
 };

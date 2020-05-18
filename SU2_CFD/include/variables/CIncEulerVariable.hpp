@@ -44,6 +44,7 @@ protected:
   VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
   VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
+  VectorType DonorVolume;                  /*!< \brief Old density for variable density turbulent flows (SST). */
 
 public:
   /*!
@@ -352,5 +353,9 @@ public:
    * \return Value of the specific heat at constant V of the flow.
    */
   inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, nDim+8); }
+  
+  inline void SetDonorVolume(unsigned long iPoint, su2double val_Volume) final { DonorVolume(iPoint) = val_Volume; }
+  
+  inline su2double GetDonorVolume(unsigned long iPoint) const final {return DonorVolume(iPoint); }
 
 };

@@ -352,6 +352,19 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     }
   }
   
+  /*--- Store the value of the donor primitive variables at the act disk boundaries ---*/
+
+  DonorResInfo = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorResInfo[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorResInfo[iMarker][iVertex] = new su2double [nVar*nVar+nVar+2];
+      for (iVar = 0; iVar < nVar*nVar+nVar+2; iVar++) {
+        DonorResInfo[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
   DonorGlobalIndex = new unsigned long* [nMarker];
@@ -762,6 +775,15 @@ CIncEulerSolver::~CIncEulerSolver(void) {
       delete [] DonorPrimVar[iMarker];
     }
     delete [] DonorPrimVar;
+  }
+  
+  if (DonorResInfo != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex<nVertex[iMarker]; iVertex++)
+        delete [] DonorResInfo[iMarker][iVertex];
+      delete [] DonorResInfo[iMarker];
+    }
+    delete [] DonorResInfo;
   }
 
   if (SlidingState != NULL) {
@@ -1616,7 +1638,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   }
   
   if (actuator_disk) {
-      Set_MPI_ActDisk(solver_container, geometry, config);
+      //Set_MPI_ActDisk(solver_container, geometry, config);
       //GetPower_Properties(geometry, config, iMesh, Output);
       SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
@@ -1943,7 +1965,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL,x,y,z,normal[3];
 
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
@@ -2077,6 +2099,18 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.SubtractBlock(jPoint, residual);
 
     /*--- Set implicit Jacobians ---*/
+    /*geometry->edge[iEdge]->GetNormal(normal);
+    x = geometry->node[iPoint]->GetCoord(0);
+    y = geometry->node[iPoint]->GetCoord(1);
+    z = geometry->node[iPoint]->GetCoord(2);
+    if (((x > -0.7) && (x < -0.6)) && ((z > 0.45) && (z < 1.55)) && ((y > -0.3) && (y < 0.55))  )
+    cout<<"i\t"<<iPoint<<"\t"<<x<<"\t"<<y<<"\t"<<z<<"\t"<<jPoint<<"\t"<<normal[0]<<"\t"<<normal[1]<<"\t"<<normal[2]<<endl;
+    
+    x = geometry->node[jPoint]->GetCoord(0);
+    y = geometry->node[jPoint]->GetCoord(1);
+    z = geometry->node[jPoint]->GetCoord(2);
+    if (((x > -0.7) && (x < -0.6)) && ((z > 0.45) && (z < 1.55)) && ((y > -0.3) && (y < 0.55))  )
+    cout<<"j\t"<<jPoint<<"\t"<<x<<"\t"<<y<<"\t"<<z<<"\t"<<iPoint<<"\t"<<normal[0]<<"\t"<<normal[1]<<"\t"<<normal[2]<<endl;*/
 
     if (implicit) {
       Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
@@ -3519,6 +3553,8 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  
+  if (config->GetActDisk_WindTurbine()) Set_MPI_ActDisk(solver_container, geometry, config);
 
   /*--- Build implicit system ---*/
 
@@ -3531,8 +3567,18 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     /*--- Read the volume ---*/
 
     Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+           geometry->node[iPoint]->GetPeriodicVolume() +
+           nodes->GetDonorVolume(iPoint));
 
+    if (iPoint == 304){
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        cout<<LinSysRes[total_index]<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,iVar,iVar)<<endl;
+      }
+      cout<<iPoint<<"\t"<<nodes->GetDelta_Time(iPoint)<<"\t"<<Vol<<endl;
+    }
+    
+    
     /*--- Apply the preconditioner and add to the diagonal. ---*/
 
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
@@ -3562,7 +3608,6 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
-
   }
 
   /*--- Initialize residual and solution at the ghost points ---*/
@@ -3594,8 +3639,11 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       for (iVar = 0; iVar < nVar; iVar++) {
         nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
       }
+      if (iPoint == 304) cout<<iPoint<<"\t"<<nodes->GetSolution(iPoint,0)<<"\t"<<nodes->GetSolution(iPoint,1)<<endl;
     }
   }
+  
+  
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
@@ -6121,14 +6169,15 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
 
 void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
 
-  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
+  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal, total_index,
   Buffer_Send_nPointTotal = 0;
   long iGlobalIndex, iGlobal;
-  unsigned short iVar, iMarker, jMarker;
+  unsigned short iVar, iMarker, jMarker, jVar, kVar;
   long nDomain = 0, iDomain, jDomain;
   //bool ActDisk_Perimeter;
   bool rans = (config->GetKind_Turb_Model() != NONE) && (solver_container[TURB_SOL] != nullptr);
 
+  unsigned short nRes = nVar + nVar*nVar + 2;
   unsigned short nPrimVar_ = nPrimVar;
   if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
 
@@ -6143,13 +6192,22 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   /*--- Define buffer vector interior domain ---*/
 
   su2double *Buffer_Send_PrimVar = NULL;
+  su2double *Buffer_Send_Res     = NULL;
   long      *Buffer_Send_Data    = NULL;
 
   unsigned long *nPointTotal_s = new unsigned long[size];
   unsigned long *nPointTotal_r = new unsigned long[size];
   su2double *iPrimVar = new su2double [nPrimVar_];
+  // Combination gives nVar + nVar*nVar
+  su2double *iRes = new su2double [nVar];  
+  //su2double *iResInfo = new su2double [nRes];  
+  su2double *iResInfo ;  
+  su2double **iJac = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    iJac[iVar] = new su2double [nVar];
 
   unsigned long Buffer_Size_PrimVar = 0;
+  unsigned long Buffer_Size_Res     = 0;
   unsigned long Buffer_Size_Data    = 0;
 
   unsigned long PointTotal_Counter = 0;
@@ -6157,6 +6215,7 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   /*--- Allocate the memory that we only need if we have MPI support ---*/
 
   su2double *Buffer_Receive_PrimVar = NULL;
+  su2double *Buffer_Receive_Res     = NULL;
   long      *Buffer_Receive_Data    = NULL;
 
   /*--- Basic dimensionalization ---*/
@@ -6198,6 +6257,7 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
     /*--- Total counts for allocating send buffers below ---*/
 
     Buffer_Size_PrimVar += nPointTotal_s[iDomain]*(nPrimVar_);
+    Buffer_Size_Res += nPointTotal_s[iDomain]*(nRes); 
     Buffer_Size_Data += nPointTotal_s[iDomain]*(3);
 
   }
@@ -6205,6 +6265,7 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
 
   Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
+  Buffer_Send_Res = new su2double[Buffer_Size_Res];
   Buffer_Send_Data    = new long[Buffer_Size_Data];
 
   /*--- Now that we know the sizes of the point, we can
@@ -6307,7 +6368,18 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
             Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(0)]  = iGlobalIndex;
             Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(1)] = jVertex;
             Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(2)]  = jMarker;
-
+            
+            for (iVar = 0; iVar < nVar; iVar++) 
+              Buffer_Send_Res[(nRes)*(PointTotal_Counter+iPointTotal)+iVar] = LinSysRes(iPoint, iVar);
+            
+            kVar = 0;
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (jVar = 0; jVar < nVar; jVar++) {
+                Buffer_Send_Res[(nRes)*(PointTotal_Counter+iPointTotal)+nVar+kVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,jVar);
+                kVar++;
+              }
+            Buffer_Send_Res[(nRes)*(PointTotal_Counter+iPointTotal)+nRes-2] = nodes->GetDelta_Time(iPoint);
+            Buffer_Send_Res[(nRes)*(PointTotal_Counter+iPointTotal)+nRes-1] = geometry->node[iPoint]->GetVolume();
             iPointTotal++;
 
           }
@@ -6330,6 +6402,10 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       SU2_MPI::Bsend(&Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar_)],
                      nPointTotal_s[iDomain]*(nPrimVar_), MPI_DOUBLE, iDomain,
                      iDomain,  MPI_COMM_WORLD);
+      
+      SU2_MPI::Bsend(&Buffer_Send_Res[PointTotal_Counter*(nRes)],
+                     nPointTotal_s[iDomain]*(nVar + nVar*nVar), MPI_DOUBLE, iDomain,
+                     iDomain,  MPI_COMM_WORLD);
 
       SU2_MPI::Bsend(&Buffer_Send_Data[PointTotal_Counter*(3)],
                      nPointTotal_s[iDomain]*(3), MPI_LONG, iDomain,
@@ -6344,10 +6420,14 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       /*--- Allocate local memory for the local recv of the elements ---*/
 
       Buffer_Receive_PrimVar            = new su2double[nPointTotal_s[iDomain]*(nPrimVar_)];
+      Buffer_Receive_Res                = new su2double[nPointTotal_s[iDomain]*(nRes)];
       Buffer_Receive_Data               = new long[nPointTotal_s[iDomain]*(3)];
 
       for (iter = 0; iter < nPointTotal_s[iDomain]*(nPrimVar_); iter++)
         Buffer_Receive_PrimVar[iter] = Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar_)+iter];
+      
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(nRes); iter++)
+        Buffer_Receive_Res[iter] = Buffer_Send_Res[PointTotal_Counter*(nRes)+iter];
 
       for (iter = 0; iter < nPointTotal_s[iDomain]*(3); iter++)
         Buffer_Receive_Data[iter] = Buffer_Send_Data[PointTotal_Counter*(3)+iter];
@@ -6368,12 +6448,17 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
           SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
 
         SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
-
+        
+        
+        /*---- Do something with the residuals here ---*/
+        for (iVar = 0; iVar < nRes; iVar++)
+          SetDonorResInfo(iMarker, iVertex, iVar, Buffer_Receive_Res[iPoint*(nRes)+iVar]);
       }
 
       /*--- Delete memory for recv the point stuff ---*/
 
       delete [] Buffer_Receive_PrimVar;
+      delete [] Buffer_Receive_Res;
       delete [] Buffer_Receive_Data;
 
     }
@@ -6406,11 +6491,15 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
        know whether what we recv is an owned or halo node. ---*/
 
       Buffer_Receive_PrimVar            = new su2double [nPointTotal_r[iDomain]*(nPrimVar_)];
+      Buffer_Receive_Res                = new su2double [nPointTotal_r[iDomain]*(nRes)];
       Buffer_Receive_Data               = new long [nPointTotal_r[iDomain]*(3)];
 
       /*--- Receive the buffers with the coords, global index, and colors ---*/
 
       SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar_) , MPI_DOUBLE,
+                    iDomain, rank, MPI_COMM_WORLD, &status);
+      
+      SU2_MPI::Recv(Buffer_Receive_Res, nPointTotal_r[iDomain]*(nRes) , MPI_DOUBLE,
                     iDomain, rank, MPI_COMM_WORLD, &status);
 
       SU2_MPI::Recv(Buffer_Receive_Data, nPointTotal_r[iDomain]*(3) , MPI_LONG,
@@ -6433,12 +6522,17 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
         }
 
         SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
-
+        
+        
+        /*---- Do something with the residuals here. ---*/
+        for (iVar = 0; iVar < nRes; iVar++)
+          SetDonorResInfo(iMarker, iVertex, iVar, Buffer_Receive_Res[iPoint*(nRes)+iVar]);
       }
 
       /*--- Delete memory for recv the point stuff ---*/
 
       delete [] Buffer_Receive_PrimVar;
+      delete [] Buffer_Receive_Res;
       delete [] Buffer_Receive_Data;
 
 #endif
@@ -6455,9 +6549,63 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
 #endif
 
+for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
+  /*--- Set the value of the interior geometry. Initialize counters. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if ((geometry->node[iPoint]->GetDomain())  &&
+             (GetDonorGlobalIndex(iMarker,iVertex) != geometry->node[iPoint]->GetGlobalIndex()) ) {
+          
+          for (iVar = 0; iVar < nVar; iVar++) {
+            LinSysRes.SetBlock_Zero(iPoint, iVar);
+            total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        }
+	  }
+    }
+
+    if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if ((geometry->node[iPoint]->GetDomain())  &&
+             (GetDonorGlobalIndex(iMarker,iVertex) != geometry->node[iPoint]->GetGlobalIndex()) ) {
+          
+          iResInfo = GetDonorResInfo(iMarker,iVertex);
+          
+          for (iVar = 0; iVar < nVar; iVar++)
+            iRes[iVar] = iResInfo[iVar];
+          LinSysRes.AddBlock(iPoint,iRes);
+          
+          kVar = 0;
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++) {
+              iJac[iVar][jVar] = iResInfo[nVar+kVar];
+              kVar++;
+            }
+          
+          Jacobian.AddBlock2Diag(iPoint, iJac);
+          su2double dT = nodes->GetDelta_Time(iPoint);
+          dT = min(dT,iResInfo[nRes-2]);
+          nodes->SetDelta_Time(iPoint, dT);
+          nodes->SetDonorVolume(iPoint, iResInfo[nRes-1]);          
+        }
+	  }
+    }
+  }
+}
   /*--- Free all of the memory used for communicating points and elements ---*/
 
   delete[] Buffer_Send_PrimVar;
+  delete[] Buffer_Send_Res;
   delete[] Buffer_Send_Data;
 
   /*--- Release all of the temporary memory ---*/
@@ -6465,6 +6613,7 @@ void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   delete [] nPointTotal_s;
   delete [] nPointTotal_r;
   delete [] iPrimVar;
+  delete [] iRes;
 
 	
 }
@@ -6478,44 +6627,53 @@ void CIncEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   string Marker_Tag;
-  su2double DeltaP, DeltaT;
+  su2double DeltaP, DeltaT, VelAvg, TotalArea;
+  su2double VelTemp, Area;
+  su2double *Normal = new su2double[nDim];
   
-  /* For now only variable jump is present, need to find the 
-   * inputs and then compute deltaP and deltaT accordingly. ---*/
-  
-  /*--- Delta P and delta T are inputs ---*/
-
-  if (Kind_ActDisk == VARIABLES_JUMP) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
 
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-
-        if (ratio) {
-            DeltaP       = config->GetActDisk_PressJump(Marker_Tag, 0);
-            DeltaT       = config->GetActDisk_TempJump(Marker_Tag, 0);
+      VelAvg = 0.0; TotalArea = 0.0;
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+        if ((geometry->node[iPoint]->GetDomain())) {
           
-        }  
-        else {
-            DeltaP       = max(0.0, config->GetActDisk_PressJump(Marker_Tag, 0) / config->GetPressure_Ref());
-            DeltaT       = max(0.0, config->GetActDisk_TempJump(Marker_Tag, 0) / config->GetTemperature_Ref());
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+          Area = 0.0; VelTemp = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += Normal[iDim]*Normal[iDim];
+            VelTemp += pow(nodes->GetVelocity(iPoint,iDim),2.0);
+          }
+          Area = sqrt (Area);
+          VelTemp = sqrt (VelTemp);
+          
+          VelAvg += VelTemp*Area;
+          TotalArea += Area;
         }
-
-        /*--- Set the Delta P, Delta T values at each discrete point (uniform distribution)  ---*/
-
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          SetActDisk_DeltaP(iMarker, iVertex, DeltaP);
-          SetActDisk_DeltaT(iMarker, iVertex, DeltaT);
-        }
-
+      }
+      VelAvg = VelAvg/TotalArea;
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        SetActDisk_DeltaP(iMarker, iVertex, VelAvg);
       }
     }
   }
+  /*--- Free locally allocated memory ---*/
+
+  delete [] Normal;
 }
 
+
+void CIncEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+	
+}
 
 void CIncEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry,
                         CSolver **solver_container,
@@ -6547,13 +6705,12 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
                   bool val_inlet_surface) {
 
 
-  unsigned short iDim;
+  unsigned short iDim, iVar, jVar;
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
   su2double Pressure, Velocity[3], Target_Press_Jump, Target_Temp_Jump,
   Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet, Mach_Outlet,
-  Area, UnitNormal[3], *V_outlet, *V_domain, *V_inlet, P_Total, T_Total, H_Total, Temperature,
-  Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd;
-  su2double Factor, P_static, T_static, SoS_outlet, Rho_outlet, Rho_inlet;
+  Area, UnitNormal[3], *V_outlet, *V_domain, *V_inlet, Force[3], CT, Vol;
+  su2double Factor, V_ref,aa, V_local;
   su2double Vel_normal_inlet[3], Vel_tangent_inlet[3], Vel_inlet[3];
   su2double Vel_normal_outlet[3], Vel_tangent_outlet[3], Vel_outlet[3];
   su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
@@ -6562,6 +6719,7 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
   su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
   Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
   Mach_in, PressureAdj, TemperatureAdj;
+  su2double Force_Ref    = config->GetForce_Ref();
 
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   su2double Gas_Constant  = config->GetGas_ConstantND();
@@ -6577,13 +6735,10 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
-    GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if ((geometry->node[iPoint]->GetDomain()) &&
-        (GlobalIndex != GlobalIndex_donor)) {
+    if ((geometry->node[iPoint]->GetDomain())) {
 
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
 
@@ -6598,214 +6753,64 @@ void CIncEulerSolver::BC_ActDisk(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
-      /*--- Current solution at this boundary node and jumps values ---*/
-
+      
       V_domain = nodes->GetPrimitive(iPoint);
-      Target_Press_Jump = GetActDisk_DeltaP(val_marker, iVertex);
+      
+      //if (val_inlet_surface)
+      
+      CT = 0.8;
+      aa = 0.35;
+      Factor = 0.5*V_domain[nDim+1]*Area*CT/pow((1-aa),2.0);
+      Velocity2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity2 += V_domain[iDim+1]*V_domain[iDim+1];
+      
+      V_local = GetActDisk_DeltaP(val_marker, iVertex);
+      V_ref = sqrt(Velocity2);
 
-      if (val_inlet_surface) {
-        V_inlet  = nodes->GetPrimitive(iPoint);
-        V_outlet = GetDonorPrimVar(val_marker, iVertex);
-
-        Pressure_out    = V_outlet[0];
-        Density_out     = V_outlet[nDim+1];
-
-        Pressure_in    = V_inlet[0];
-        Density_in     = V_inlet[nDim+1];
-
-        Velocity2_out = 0.0; Velocity2_in = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity2_out += V_outlet[iDim+1]*V_outlet[iDim+1];
-          Velocity2_in  += V_inlet[iDim+1]*V_inlet[iDim+1];
-        }
-
-        PressureAdj = 1.0; 
-        /*if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
-
-          Pstag_out = Pressure_out + 0.5*Density_out*Velocity2_out;
-          Pstag_in = Pressure_in + 0.5*Density_in*Velocity2_in;
-          PressureAdj    = Pstag_out/Pstag_in;
-        }*/
-
-        if (ratio) {
-          //P_static = V_outlet[0] / (Target_Press_Jump/PressureAdj);
-          P_static = Pressure_out * (Target_Press_Jump/PressureAdj);
-        }
-        else { 
-          //P_static = V_outlet[0] + Target_Press_Jump;
-          P_static = Pressure_out + Target_Press_Jump;
-        }
+      Vol = geometry->node[iPoint]->GetVolume();
+      
+      /*--- Compute the residual ---*/
+      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Force[iDim] = Factor*V_local*V_local*UnitNormal[iDim];
+        //Residual[iDim+1] = Force[iDim]*Vol/Force_Ref;
       }
-      else {
-        V_outlet = nodes->GetPrimitive(iPoint);
-        V_inlet  = GetDonorPrimVar(val_marker, iVertex);
-
-        Pressure_out    = V_outlet[0];
-        Density_out     = V_outlet[nDim+1];
-
-        Pressure_in    = V_inlet[0];
-        Density_in     = V_inlet[nDim+1];
-
-        Velocity2_out = 0.0; Velocity2_in = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity2_out += V_outlet[iDim+1]*V_outlet[iDim+1];
-          Velocity2_in  += V_inlet[iDim+1]*V_inlet[iDim+1];
-        }
-
-        PressureAdj = 1.0; 
-        /*if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
-
-          Pstag_out = Pressure_out + 0.5*Density_out*Velocity2_out;
-          Pstag_in = Pressure_in + 0.5*Density_in*Velocity2_in;
-          PressureAdj    = Pstag_out/Pstag_in;
-        }*/
-
-        if (ratio) {
-          P_static = V_inlet[0] / (Target_Press_Jump/PressureAdj);
-        }
-        else  { 
-          P_static = V_inlet[0] - Target_Press_Jump;
-        }
-      }
-
-      /*--- Subsonic inlet ---*/
-
-      if (val_inlet_surface) {
-
-        /*--- Build the fictitious intlet state based on characteristics.
-         Retrieve the specified back pressure for this inlet ---*/
-
-        Density = V_domain[nDim+1];
-        Velocity2 = 0.0; Vn = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = V_domain[iDim+1];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-          Vn += Velocity[iDim]*UnitNormal[iDim];
-        }
-        Pressure   = V_domain[0];
-        Pstag_in = Pressure + 0.5*Density*Vn*Vn;
-
-        /*--- Compute the new fictious state at the outlet ---*/
-
-        Pressure   = P_static;
-        Density    = V_domain[nDim+1];
-        Vn_Face    = sqrt((Pstag_in - Pressure)/(0.5*Density));
-
-        Velocity2  = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Face-Vn)*UnitNormal[iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
-
-        /*--- Conservative variables, using the derived quantities ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = 0.5*(V_domain[iDim+1] + V_outlet[iDim+1]);
-        V_inlet[0] = Pressure;
-        V_inlet[nDim+1] = Density;
-        conv_numerics->SetPrimitive(V_domain, V_inlet);
-      }
-
-      /*--- Subsonic outlet ---*/
-
-      else {
-
-        Density = V_domain[nDim+1];
-        Velocity2 = 0.0; Vn = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = V_domain[iDim+1];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-          Vn += Velocity[iDim]*UnitNormal[iDim];
-        }
-        Pressure   = V_domain[0];
-        Pstag_out = Pressure + 0.5*Density*Vn*Vn;
-
-        /*--- Compute the new fictious state at the outlet ---*/
-
-        Pressure   = P_static;
-        Density    = V_domain[nDim+1];
-        Vn_Face    = sqrt((Pstag_out - Pressure)/(0.5*Density));
-
-        Velocity2  = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] - (Vn_Face-Vn)*UnitNormal[iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = 0.5*(V_domain[iDim+1] + V_inlet[iDim+1]);
-        V_outlet[0] = Pressure;
-        V_outlet[nDim+1] = Density;
-        conv_numerics->SetPrimitive(V_domain, V_outlet);
-
-      }
-
-      /*--- Grid Movement ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
+      //cout<<iPoint<<"\t"<<Area<<"\t"<<geometry->node[iPoint]->GetVolume()<<"\t"<<Normal[0]<<"\t"<<Normal[1]<<"\t"<<Normal[2]<<endl;
+      /*cout<<iPoint<<"\t"<<Force[0]<<"\t"<<Force[1]<<"\t"<<Force[2]<<"\t"<<V_local<<"\t"<<V_ref<<endl;*/
+      
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
+      
+      for(iVar = 0; iVar < nVar; iVar++)
+        for(jVar = 0; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
+      
+      /*for (iDim = 0; iDim < nDim; iDim++)
+        Jacobian_i[iDim+1][iDim+1] =  2.0*Factor*V_ref*UnitNormal[iDim]*Vol/Force_Ref;*/
 
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      if (viscous) {
-//
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//
-//        if (val_inlet_surface) {
-//          V_inlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//          V_inlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-//        }
-//        else {
-//          V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//          V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-//        }
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//
-//        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
-//
-//        /*--- Primitive variables, and gradient ---*/
-//
-//        if (val_inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
-//        else visc_numerics->SetPrimitive(V_domain, V_outlet);
-//
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
-//
-//        /*--- Turbulent kinetic energy ---*/
-//
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
-//
-//        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-//
-//        visc_numerics->SetTauWall(-1.0, -1.0);
-//
-//        /*--- Compute and update residual ---*/
-//
-//        auto residual = visc_numerics->ComputeResidual(config);
-//        LinSysRes.SubtractBlock(iPoint, residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//
-//        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-//
-//      }
-
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      
+      if ((!val_inlet_surface) &&
+           (GetDonorGlobalIndex(val_marker,iVertex) != geometry->node[iPoint]->GetGlobalIndex())){
+        V_inlet = GetDonorPrimVar(val_marker, iVertex);
+        nodes->SetSolution(iPoint, 0, V_inlet[0]);
+        nodes->SetSolution_Old(iPoint, 0, V_inlet[0]);
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          nodes->SetSolution(iPoint, iDim+1, V_inlet[iDim+1]);
+          nodes->SetSolution_Old(iPoint, iDim+1, V_inlet[iDim+1]);
+        }
+        nodes->SetSolution(iPoint, nDim+1, V_inlet[nDim+1]);
+        nodes->SetSolution_Old(iPoint, nDim+1, V_inlet[nDim+1]);
+          
+	  }
+      
     }
 
   }
