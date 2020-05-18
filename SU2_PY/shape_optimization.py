@@ -129,8 +129,25 @@ def shape_optimization( filename                           ,
     # State
     state = SU2.io.State()
     state.find_files(config)
-    
+
+    # add restart files to state.FILES
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES' and gradient != 'CONTINUOUS_ADJOINT':
+        restart_name = config['RESTART_FILENAME'].split('.')[0]
+        restart_filename = restart_name + '_' + str(int(config['RESTART_ITER'])-1).zfill(5) + '.dat'
+        if not os.path.isfile(restart_filename): # throw, if restart files does not exist
+            sys.exit("Error: Restart file <" + restart_filename + "> not found.")
+        state['FILES']['RESTART_FILE_1'] = restart_filename
+
+        # use only, if time integration is second order
+        if config.get('TIME_MARCHING', 'NO') == 'DUAL_TIME_STEPPING-2ND_ORDER':
+            restart_filename = restart_name + '_' + str(int(config['RESTART_ITER'])-2).zfill(5) + '.dat'
+            if not os.path.isfile(restart_filename): # throw, if restart files does not exist
+                sys.exit("Error: Restart file <" + restart_filename + "> not found.")
+            state['FILES']['RESTART_FILE_2'] =restart_filename
+
+
     # Project
+
     if os.path.exists(projectname):
         project = SU2.io.load_data(projectname)
         project.config = config
