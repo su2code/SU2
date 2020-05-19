@@ -5100,10 +5100,25 @@ public:
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
 
-  /*--- New roughness mpi comm stuff akshay ----*/
+  /*!
+   * \brief Get roughness height of a marker.
+   * \param [in] rankID rank where the marker is located.
+   * \param [in] ID of the marker on rank
+   */
   su2double GetLocalRoughness(int rankID, unsigned short markerID) const;
-  
+
+  /*!
+   * \brief Set the displacements for each rank in global array.
+   * \param [in] global displacemts in order of rank.
+   * \param [in] total number of ranks
+   */
   void SetGlobalMarkerArray(int *global_displ, int size) ;
+
+  /*!
+   * \brief Set the roughness for each marker in global array.
+   * \param [in] global list of roughness for every marker.
+   * \param [in] total number of marker including send recieves.
+   */
   void SetGlobalRoughnessArray(su2double *global_rough, int sizeGlobal) ;
   
   /*!

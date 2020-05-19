@@ -295,7 +295,6 @@ private:
 #else
   array<vector<CBBoxTargetClass>,1> BBoxTargets;
 #endif
-
 public:
   /*!
    * \brief Constructor of the class.
