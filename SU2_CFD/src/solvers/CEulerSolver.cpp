@@ -7256,7 +7256,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Primitive variables, and gradient ---*/
 
-        visc_numerics->SetPrimitive(V_domain, V_domain);
+//        visc_numerics->SetPrimitive(V_domain, V_domain);
+        visc_numerics->SetPrimitive(V_domain, V_infty);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
 
@@ -7295,11 +7296,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         if (implicit){
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
+//          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
           CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
+//          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
         }
         
       }
