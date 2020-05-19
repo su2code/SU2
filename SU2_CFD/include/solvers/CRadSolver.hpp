@@ -53,7 +53,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadSolver(void) = default;
+  ~CRadSolver(void) override = default;
 
   /*!
    * \brief Constructor of the class.

@@ -121,10 +121,10 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; ++iMarkerInt) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt+1);
+    const auto markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt+1);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- If the zone does not contain the interface continue to the next pair of markers. ---*/
     if (!CheckInterfaceBoundary(markDonor,markTarget)) continue;
@@ -230,7 +230,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
     if (iProcessor < 0) continue;
 
     /*--- Setup target information. ---*/
-    const int markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt+1);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
     unsigned long nVertexTarget = 0;
     if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
 

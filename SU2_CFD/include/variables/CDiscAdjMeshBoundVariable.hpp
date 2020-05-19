@@ -52,7 +52,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshBoundVariable() = default;
+  ~CDiscAdjMeshBoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").

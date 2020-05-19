@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncEulerVariable() = default;
+  ~CIncEulerVariable() override = default;
 
   /*!
    * \brief Get the primitive variable gradients for all points.

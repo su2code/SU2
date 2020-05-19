@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -130,7 +130,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWallModel1DEQ(void);
+  ~CWallModel1DEQ(void) override;
 
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -162,13 +162,13 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall);
+                                  su2double       &kOverCvWall) override;
 
  /*!
   * \brief Updates the wall model exchange location.
   * \param[in]  h_wm_new              - Updated exchanged location
   */
-  void UpdateExchangeLocation(const su2double h_wm_new);
+  void UpdateExchangeLocation(const su2double h_wm_new) override;
 
 private:
 
@@ -186,9 +186,9 @@ private:
 };
 
 class CWallModelLogLaw : public CWallModel {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class, which initializes the object.
    * \param[in] config     - Definition of the particular problem.
@@ -197,12 +197,12 @@ public:
    */
   CWallModelLogLaw(CConfig      *config,
                    const string &Marker_Tag);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  ~CWallModelLogLaw(void);
-  
+  ~CWallModelLogLaw(void) override;
+
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
    from the data at the exchange location.
@@ -233,13 +233,13 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall);
+                                  su2double       &kOverCvWall) override;
 
  /*!
   * \brief Updates the wall model exchange location.
   * \param[in]  h_wm_new              - Updated exchanged location
   */
-  void UpdateExchangeLocation(const su2double h_wm_new);
+  void UpdateExchangeLocation(const su2double h_wm_new) override;
 
 private:
 

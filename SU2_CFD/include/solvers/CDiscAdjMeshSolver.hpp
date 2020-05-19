@@ -76,7 +76,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshSolver(void);
+  ~CDiscAdjMeshSolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the AD-based mesh adjoint solver.

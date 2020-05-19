@@ -92,7 +92,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMultizoneDriver(void);
+  ~CDiscAdjMultizoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
@@ -179,6 +179,12 @@ protected:
    * \param[in] iZone - Zone index.
    */
   void Add_External_To_Solution(unsigned short iZone);
+
+  /*!
+   * \brief Puts Solution into SolutionOld.
+   * \param[in] iZone - Zone index.
+   */
+  void Set_SolutionOld_To_Solution(unsigned short iZone);
 
   /*!
    * \brief Extract contribution of iZone to jZone with BGS relaxation.

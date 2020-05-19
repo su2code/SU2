@@ -73,7 +73,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwRoeBase_Flow(void);
+  ~CUpwRoeBase_Flow(void) override;
 
   /*!
    * \brief Compute the flux from node i to node j, part common to most Roe schemes.
@@ -213,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwTurkel_Flow(void);
+  ~CUpwTurkel_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -266,7 +266,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwGeneralRoe_Flow(void);
+  ~CUpwGeneralRoe_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
