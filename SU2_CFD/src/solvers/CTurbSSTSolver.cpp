@@ -542,13 +542,12 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
   
   AD_BEGIN_PASSIVE
   
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    if ((geometry->node[iPoint]->GetWall_Distance() > 1e-10) &&
-        (nodes->GetCrossDiff(iPoint) > eps)) {
+    if ((geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) &&
+        (nodes->GetCrossDiff(iPoint) > 1.0e-20)) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = flowNodes->GetPrimitive(iPoint, nDim+2);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
@@ -672,7 +671,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
   unsigned long iPoint, iVertex, Point_Normal;
   su2double *Normal, *V_infty, *V_domain;
-  su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
   su2double Kine_Infty, Omega_Infty;
   unsigned short iVar, iDim;
@@ -1915,7 +1913,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   const su2double F1   = varTur->GetF1blending(iPoint);
   const su2double CDkw = varTur->GetCrossDiff(iPoint);
-  const su2double eps  = numeric_limits<passivedouble>::epsilon();
 
   const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
   const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
@@ -1959,7 +1956,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 //    factor += sigmak*gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
 //                                 +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
 //            + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    if (CDkw > eps) {
+    if (CDkw > 1.0e-20) {
       factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
               + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
