@@ -31,7 +31,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config))) {
+  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
 
   multiZone = config->GetMultizone_Problem();
 

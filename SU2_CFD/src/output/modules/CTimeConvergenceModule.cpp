@@ -3,7 +3,7 @@
 
 constexpr static char avgPrefix[] = "TAVG_";
 
-CTimeConvergenceModule::CTimeConvergenceModule(CConfig* config) : CSolverOutputModule(config->GetTime_Domain()){
+CTimeConvergenceModule::CTimeConvergenceModule(CConfig* config, int nDim) : CSolverOutputModule(nDim, config->GetTime_Domain()){
   /*--- Initialize time convergence monitoring structure ---*/
 
   nWndCauchy_Elems = config->GetWnd_Cauchy_Elems();

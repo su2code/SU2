@@ -32,7 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config))) {
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

@@ -1,7 +1,7 @@
 #include "../../../include/output/modules/CConvergenceModule.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 
-CConvergenceModule::CConvergenceModule(CConfig* config){
+CConvergenceModule::CConvergenceModule(CConfig* config, int nDim) : CSolverOutputModule(nDim){
 
   /*--- Initialize convergence monitoring structure ---*/
 

@@ -6,7 +6,7 @@
 class CFlowCoefficientModule : public CSolverOutputModule {
 
 public:
-  explicit CFlowCoefficientModule(CConfig *config);
+  explicit CFlowCoefficientModule(CConfig *config, int nDim);
 
   void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 

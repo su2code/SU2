@@ -7,7 +7,7 @@ class CResidualModule : public CSolverOutputModule {
   const std::map<std::string, std::string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
 
 public:
-  explicit CResidualModule(CConfig *config);
+  explicit CResidualModule(CConfig *config, int nDim);
 
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 

@@ -3,7 +3,7 @@
 
 constexpr static char prefix[] = "D_";
 
-CDirectDiffModule::CDirectDiffModule(CConfig* config) : CSolverOutputModule(config->GetDirectDiff()){}
+CDirectDiffModule::CDirectDiffModule(CConfig* config, int nDim) : CSolverOutputModule(nDim, config->GetDirectDiff()){}
 
 void CDirectDiffModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 

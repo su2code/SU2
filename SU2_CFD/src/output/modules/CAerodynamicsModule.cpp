@@ -5,7 +5,7 @@
 
 #include "../../../include/solvers/CSolver.hpp"
 
-CAerodynamicsModule::CAerodynamicsModule(CConfig *config):
+CAerodynamicsModule::CAerodynamicsModule(CConfig *config, int nDim): CSolverOutputModule(nDim),
   Alpha(config->GetAoA()*PI_NUMBER/180.0),
   Beta(config->GetAoS()*PI_NUMBER/180.0),
   RefArea(config->GetRefArea()),

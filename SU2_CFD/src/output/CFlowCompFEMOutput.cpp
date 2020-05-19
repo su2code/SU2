@@ -32,7 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) :
-  CFlowOutput(config, nDim, true, true, moduleManagerPtr(new CModuleManager<Modules>(config))) {
+  CFlowOutput(config, nDim, true, true, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
 
   turb_model = config->GetKind_Turb_Model();
 

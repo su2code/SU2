@@ -11,7 +11,7 @@ protected:
 
 public:
 
-  explicit CAerodynamicsModule(CConfig *config);
+  explicit CAerodynamicsModule(CConfig *config, int nDim);
 
   void LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields) override;
 

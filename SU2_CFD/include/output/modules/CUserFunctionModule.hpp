@@ -23,7 +23,7 @@ class CUserFunctionModule final : public CSolverOutputModule {
   std::vector<FieldRefFuncPair>  funcVolFieldRefs;
 
 public:
-  explicit CUserFunctionModule(CConfig *config);
+  explicit CUserFunctionModule(CConfig *config, int nDim);
 
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 

@@ -7,7 +7,7 @@ class CTurbOutputModule final : public CSolverOutputModule {
   int turb_model;
 
 public:
-  explicit CTurbOutputModule(CConfig *config) : CSolverOutputModule(config->GetKind_Turb_Model()),
+  explicit CTurbOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim, config->GetKind_Turb_Model()),
     turb_model(config->GetKind_Turb_Model()) {}
 
   void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;

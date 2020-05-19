@@ -19,7 +19,7 @@ class CConvergenceModule : public CSolverOutputModule {
   std::vector<std::string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
 public:
 
-  CConvergenceModule(CConfig* config);
+  CConvergenceModule(CConfig* config, int nDim);
 
   void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 

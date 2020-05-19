@@ -6,7 +6,7 @@
 class CCommonModule : public CSolverOutputModule{
 
 public:
-  CCommonModule(CConfig* config) {};
+  CCommonModule(CConfig* config, int nDim) : CSolverOutputModule(nDim) {};
 
   void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 

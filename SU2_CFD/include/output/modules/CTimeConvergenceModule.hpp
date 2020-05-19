@@ -22,7 +22,7 @@ class CTimeConvergenceModule : public CSolverOutputModule {
 
 public:
 
-  CTimeConvergenceModule(CConfig* config);
+  CTimeConvergenceModule(CConfig* config, int nDim);
 
   void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 

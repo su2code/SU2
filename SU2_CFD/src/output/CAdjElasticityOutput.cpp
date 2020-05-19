@@ -32,7 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config))) {
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
 
   /*--- Initialize number of variables ---*/
   nVar_FEM = nDim;

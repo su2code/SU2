@@ -34,7 +34,7 @@ class CHeatOutputModule final : public CSolverOutputModule {
 
 public:
 
-  explicit CHeatOutputModule(CConfig* config) {}
+  explicit CHeatOutputModule(CConfig* config, int nDim) : CSolverOutputModule(nDim) {}
 
   void DefineHistoryFields(CHistoryOutFieldManager &historyFields) override;
 

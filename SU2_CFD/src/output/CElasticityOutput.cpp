@@ -32,7 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config))) {
+  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.

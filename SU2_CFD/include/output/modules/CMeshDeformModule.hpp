@@ -4,7 +4,7 @@
 class CMeshDeformModule final : public CSolverOutputModule {
 
 public:
-  explicit CMeshDeformModule(CConfig* config) : CSolverOutputModule(config->GetDeform_Mesh()){}
+  explicit CMeshDeformModule(CConfig* config, int nDim) : CSolverOutputModule(nDim, config->GetDeform_Mesh()){}
 
   void LoadHistoryData(CHistoryOutFieldManager& historyFields);
 

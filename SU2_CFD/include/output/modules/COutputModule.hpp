@@ -48,9 +48,10 @@ class CSolverOutputModule : public COutputModule<CSolverOutputModule>{
 
 protected:
   SolverDataContainer solverData;
+  int nDim;
 
 public:
-  CSolverOutputModule(bool enabled_ = true) : COutputModule(enabled_) {};
+  CSolverOutputModule(int nDim, bool enabled_ = true) : COutputModule(enabled_), nDim(nDim) {};
 
   void UpdateData(const OutputData *data) override {
     solverData = *dynamic_cast<const SolverDataContainer*>(data);
