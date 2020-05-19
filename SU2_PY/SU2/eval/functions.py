@@ -224,7 +224,18 @@ def aerodynamics( config, state=None ):
     link.extend(name)
 
     pull.extend(config.get('CONFIG_LIST',[]))
-    
+
+    # files: restarts
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') =='YES':
+        if  'RESTART_FILE_1' in files: # not the case for directdiff restart
+            name = files['RESTART_FILE_1']
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+        if 'RESTART_FILE_2' in files:  # not the case for 1st order time stepping
+            name = files['RESTART_FILE_2']
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
 
@@ -236,7 +247,8 @@ def aerodynamics( config, state=None ):
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
-        config['RESTART_SOL'] = 'NO'
+        if config.get('TIME_DOMAIN', 'NO') != 'YES': #rules out steady state optimization special cases.
+            config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
         
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 
@@ -886,6 +898,7 @@ def update_mesh(config,state=None):
         log_decomp = None
         log_deform = None
     
+        
     # ----------------------------------------------------
     #  Deformation
     # ----------------------------------------------------
