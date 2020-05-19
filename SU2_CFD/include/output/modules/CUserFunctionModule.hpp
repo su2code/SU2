@@ -13,6 +13,8 @@ class CUserFunctionModule final : public CSolverOutputModule {
 
   std::vector<interpreter::UserFunction*> historyUserFunctions;
   std::vector<interpreter::UserFunction*> volumeUserFunctions;
+  std::vector<string> inlineHistoryUserFunctions;
+  std::vector<string> inlineVolumeUserFunctions;
 
   std::vector<FieldRefTokenPair> histFieldTokenRefs;
   std::vector<FieldRefTokenPair> volFieldTokenRefs;
@@ -23,17 +25,17 @@ class CUserFunctionModule final : public CSolverOutputModule {
 public:
   explicit CUserFunctionModule(CConfig *config);
 
-  void DefineHistoryFieldModifier(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineVolumeFields(COutFieldCollection& fieldCollection) override;
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadSurfaceData(COutFieldCollection& fieldCollection) override;
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadVolumeData(COutFieldCollection& fieldCollection) override;
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
 
   std::string GetName(const std::string& baseName);
 

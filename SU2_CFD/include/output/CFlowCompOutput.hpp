@@ -34,15 +34,16 @@ class CVariable;
 
 class CFlowCompOutputModule final : public CSolverOutputModule {
 
-  int turb_model;
-
 public:
-  explicit CFlowCompOutputModule(CConfig *config) : turb_model(config->GetKind_Turb_Model()) {}
+  explicit CFlowCompOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim) {}
 
-  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
+
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
 };
 
 /*! \class CFlowCompOutput

@@ -17,65 +17,65 @@ CAerodynamicsModule::CAerodynamicsModule(CConfig *config):
 
 }
 
-void CAerodynamicsModule::LoadHistoryDataPerSurface(COutFieldCollection &fieldCollection){
+void CAerodynamicsModule::LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields){
 
   const int nDim = solverData.geometry->GetnDim();
-  const su2double Force[3] = {fieldCollection.GetValueByKey("FORCE_X"),
-                              fieldCollection.GetValueByKey("FORCE_Y"),
-                              fieldCollection.GetValueByKey("FORCE_Z")};
+  const su2double Force[3] = {historyFields.GetFieldValue("FORCE_X"),
+                              historyFields.GetFieldValue("FORCE_Y"),
+                              historyFields.GetFieldValue("FORCE_Z")};
 
   const su2double alpha = solverData.config->GetAoA()*PI_NUMBER/180.0;
   if (nDim == 2){
     const su2double Drag = Force[0]*cos(alpha) + Force[1]*sin(alpha);
     const su2double Lift = -Force[0]*sin(alpha) + Force[1]*cos(alpha);
-    fieldCollection.SetValueByKey("DRAG", Drag);
-    fieldCollection.SetValueByKey("LIFT", Lift);
+    historyFields.SetFieldValue("DRAG", Drag);
+    historyFields.SetFieldValue("LIFT", Lift);
   } else {
     const su2double beta = solverData.config->GetAoS()*PI_NUMBER/180.0;
     const su2double Drag = Force[0]*cos(alpha)*cos(beta)  + Force[1]*sin(beta) + Force[2]*sin(alpha)*cos(beta);
     const su2double Lift = -Force[0]*sin(alpha)*cos(beta) + Force[2]*cos(alpha);
     const su2double Sideforce = Force[0]*sin(beta)*cos(alpha) + Force[1]*cos(beta) - Force[2]*sin(beta)*sin(alpha);
-    fieldCollection.SetValueByKey("DRAG", Drag);
-    fieldCollection.SetValueByKey("LIFT", Lift);
-    fieldCollection.SetValueByKey("SIDEFORCE", Sideforce);
+    historyFields.SetFieldValue("DRAG", Drag);
+    historyFields.SetFieldValue("LIFT", Lift);
+    historyFields.SetFieldValue("SIDEFORCE", Sideforce);
   }
 }
 
-void CAerodynamicsModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+void CAerodynamicsModule::DefineHistoryFields(CHistoryOutFieldManager& historyFields){
 
   const std::string aeroGroupName = "AERO_COEFF";
 
-  fieldCollection.AddItem("LIFT",      COutputField("CL", ScreenOutputFormat::FIXED, aeroGroupName,
-                                                     "Lift Coefficient", FieldType::COEFFICIENT));
-  fieldCollection.AddItem("DRAG",      COutputField("CL", ScreenOutputFormat::FIXED, aeroGroupName,
-                                                     "Drag Coefficient", FieldType::COEFFICIENT));
-  fieldCollection.AddItem("SIDEFORCE", COutputField("CL", ScreenOutputFormat::FIXED, aeroGroupName,
-                                                    "Sideforce Coefficient", FieldType::COEFFICIENT));
+  historyFields.AddField("LIFT",  "CL", ScreenOutputFormat::FIXED, aeroGroupName,
+                         "Lift Coefficient", FieldType::COEFFICIENT);
+  historyFields.AddField("DRAG", "CD", ScreenOutputFormat::FIXED, aeroGroupName,
+                         "Drag Coefficient", FieldType::COEFFICIENT);
+  historyFields.AddField("SIDEFORCE", "CSF", ScreenOutputFormat::FIXED, aeroGroupName,
+                         "Sideforce Coefficient", FieldType::COEFFICIENT);
 
 }
 
 
-void CAerodynamicsModule::DefineVolumeFields(COutFieldCollection &fieldCollection){
+void CAerodynamicsModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFields){
 
   std::string aeroGroupName = "AERO_COEFF";
 
-  fieldCollection.AddItem("MOMENT_X", COutputField("CMx", aeroGroupName, "Moment around the x-axis", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("MOMENT_Y", COutputField("CMy", aeroGroupName, "Moment around the y-axis", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("MOMENT_Z", COutputField("CMz", aeroGroupName, "Moment around the z-axis", FieldType::SURFACE_INTEGRATE));
+  volumeFields.AddField("MOMENT_X", "CMx", aeroGroupName, "Moment around the x-axis", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("MOMENT_Y", "CMy", aeroGroupName, "Moment around the y-axis", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("MOMENT_Z", "CMz", aeroGroupName, "Moment around the z-axis", FieldType::SURFACE_INTEGRATE);
 
-  fieldCollection.AddItem("FORCE_X", COutputField("Fx", aeroGroupName, "Force in x-direction", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("FORCE_Y", COutputField("Fy", aeroGroupName, "Force in y-direction", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("FORCE_Z", COutputField("Fz", aeroGroupName, "Force in z-direction", FieldType::SURFACE_INTEGRATE));
+  volumeFields.AddField("FORCE_X", "Fx", aeroGroupName, "Force in x-direction", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("FORCE_Y", "Fy", aeroGroupName, "Force in y-direction", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("FORCE_Z", "Fz", aeroGroupName, "Force in z-direction", FieldType::SURFACE_INTEGRATE);
 
-  fieldCollection.AddItem("SKIN_FRICTION_X", COutputField("Skin_Friction_Coefficient_x",  aeroGroupName, "Skin friction coefficient x-component", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("SKIN_FRICTION_Y", COutputField("Skin_Friction_Coefficient_y",  aeroGroupName, "Skin friction coefficient y-component", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("SKIN_FRICTION_Z", COutputField("Skin_Friction_Coefficient_z",  aeroGroupName, "Skin friction coefficient z-component", FieldType::SURFACE_INTEGRATE));
+  volumeFields.AddField("SKIN_FRICTION_X", "Skin_Friction_Coefficient_x",  aeroGroupName, "Skin friction coefficient x-component", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("SKIN_FRICTION_Y", "Skin_Friction_Coefficient_y",  aeroGroupName, "Skin friction coefficient y-component", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("SKIN_FRICTION_Z", "Skin_Friction_Coefficient_z",  aeroGroupName, "Skin friction coefficient z-component", FieldType::SURFACE_INTEGRATE);
 
-  fieldCollection.AddItem("HEATFLUX", COutputField("Heatflux", aeroGroupName, "Heatflux", FieldType::SURFACE_INTEGRATE));
-  fieldCollection.AddItem("Y_PLUS", COutputField("Y_Plus", aeroGroupName, "Non-dim. wall distance (Y-Plus)", FieldType::DEFAULT));
+  volumeFields.AddField("HEATFLUX", "Heatflux", aeroGroupName, "Heatflux", FieldType::SURFACE_INTEGRATE);
+  volumeFields.AddField("Y_PLUS", "Y_Plus", aeroGroupName, "Non-dim. wall distance (Y-Plus)", FieldType::DEFAULT);
 }
 
-void CAerodynamicsModule::LoadSurfaceData(COutFieldCollection& fieldCollection){
+void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
 
   std::fill(std::begin(Moment), std::end(Moment), 0.0);
   std::fill(std::begin(Force), std::end(Force), 0.0);
@@ -220,17 +220,17 @@ void CAerodynamicsModule::LoadSurfaceData(COutFieldCollection& fieldCollection){
   }
   Moment[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
 
-  fieldCollection.SetValueByKey("MOMENT_X", Moment[0]);
-  fieldCollection.SetValueByKey("MOMENT_Y", Moment[1]);
-  fieldCollection.SetValueByKey("MOMENT_Z", Moment[2]);
-  fieldCollection.SetValueByKey("FORCE_X", Force[0]);
-  fieldCollection.SetValueByKey("FORCE_Y", Force[1]);
-  fieldCollection.SetValueByKey("FORCE_Z", Force[2]);
-  fieldCollection.SetValueByKey("HEATFLUX", Heatflux);
-  fieldCollection.SetValueByKey("SKIN_FRICTION_X", SkinFriction[0]);
-  fieldCollection.SetValueByKey("SKIN_FRICTION_Y", SkinFriction[1]);
-  fieldCollection.SetValueByKey("SKIN_FRICTION_Z", SkinFriction[2]);
-  fieldCollection.SetValueByKey("Y_PLUS", Y_Plus);
+  volumeFields.SetFieldValue("MOMENT_X", Moment[0]);
+  volumeFields.SetFieldValue("MOMENT_Y", Moment[1]);
+  volumeFields.SetFieldValue("MOMENT_Z", Moment[2]);
+  volumeFields.SetFieldValue("FORCE_X", Force[0]);
+  volumeFields.SetFieldValue("FORCE_Y", Force[1]);
+  volumeFields.SetFieldValue("FORCE_Z", Force[2]);
+  volumeFields.SetFieldValue("HEATFLUX", Heatflux);
+  volumeFields.SetFieldValue("SKIN_FRICTION_X", SkinFriction[0]);
+  volumeFields.SetFieldValue("SKIN_FRICTION_Y", SkinFriction[1]);
+  volumeFields.SetFieldValue("SKIN_FRICTION_Z", SkinFriction[2]);
+  volumeFields.SetFieldValue("Y_PLUS", Y_Plus);
 }
 
 

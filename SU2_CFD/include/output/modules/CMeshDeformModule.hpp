@@ -6,8 +6,8 @@ class CMeshDeformModule final : public CSolverOutputModule {
 public:
   explicit CMeshDeformModule(CConfig* config) : CSolverOutputModule(config->GetDeform_Mesh()){}
 
-  void LoadHistoryData(COutFieldCollection& fieldCollection);
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields);
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection);
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields);
 
 };

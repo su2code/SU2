@@ -25,26 +25,26 @@ CConvergenceModule::CConvergenceModule(CConfig* config){
 }
 
 
-void CConvergenceModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+void CConvergenceModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
 
-  fieldCollection.AddItem("CONVERGENCE", COutputField("Convergence", ScreenOutputFormat::INTEGER,
-                                                      "CONVERGENCE", "Convergence indicator", FieldType::DEFAULT));
+  historyFields.AddField("CONVERGENCE", "Convergence", ScreenOutputFormat::INTEGER,
+                         "CONVERGENCE", "Convergence indicator", FieldType::DEFAULT);
 }
 
-void CConvergenceModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCollection){
+void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
   /*--- Filter convergence fields which are coefficients ---*/
 
   const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT},
-                                                                       fieldCollection.GetFieldsByKey(convFields));
+                                                                       historyFields.GetCollection().GetFieldsByKey(convFields));
   for (const auto& field : convergenceFields){
-    const auto histField =  COutputField("Cauchy["  + field->second.fieldName + "]",
-                                         ScreenOutputFormat::SCIENTIFIC,
-                                         "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.", FieldType::DEFAULT);
-    fieldCollection.AddItem("CAUCHY_" + field->first, histField);
+
+    historyFields.AddField("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
+                           ScreenOutputFormat::SCIENTIFIC,
+                           "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.", FieldType::DEFAULT);
   }
 }
 
-void CConvergenceModule::LoadHistoryDataModifier(COutFieldCollection &fieldCollection){
+void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
 
   const unsigned long Iter = solverData.Iter;
   unsigned short iCounter;
@@ -56,11 +56,11 @@ void CConvergenceModule::LoadHistoryDataModifier(COutFieldCollection &fieldColle
 
     const auto &convField = convFields[iField_Conv];
 
-    if (fieldCollection.CheckKey(convField)){
+    if (historyFields.GetCollection().CheckKey(convField)){
 
       bool fieldConverged = false;
 
-      const auto& outField = fieldCollection[convField];
+      const auto& outField = historyFields.GetCollection()[convField];
 
       su2double monitor = outField.value;
 
@@ -97,10 +97,10 @@ void CConvergenceModule::LoadHistoryDataModifier(COutFieldCollection &fieldColle
           fieldConverged = false;
         }
 
-        fieldCollection.SetValueByKey("CAUCHY_" + convField, cauchyValue);
+        historyFields.SetFieldValue("CAUCHY_" + convField, cauchyValue);
 
         if(Iter == 0){
-          fieldCollection.SetValueByKey("CAUCHY_" + convField, 1.0);
+          historyFields.SetFieldValue("CAUCHY_" + convField, 1.0);
         }
       }
 
@@ -152,6 +152,6 @@ void CConvergenceModule::LoadHistoryDataModifier(COutFieldCollection &fieldColle
   if (sbuf_conv == 1) { convergence = true; }
   else { convergence = false;  }
 
-  fieldCollection.SetValueByKey("CONVERGENCE", convergence);
+  historyFields.SetFieldValue("CONVERGENCE", convergence);
 
 }

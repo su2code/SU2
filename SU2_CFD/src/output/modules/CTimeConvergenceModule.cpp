@@ -28,48 +28,48 @@ CTimeConvergenceModule::CTimeConvergenceModule(CConfig* config) : CSolverOutputM
 
 }
 
-void CTimeConvergenceModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+void CTimeConvergenceModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
 
-  fieldCollection.AddItem("TIME_CONVERGENCE", COutputField("Time Convergence", ScreenOutputFormat::INTEGER,
-                                                            "CONVERGENCE", "Time Convergence indicator", FieldType::DEFAULT));
+  historyFields.AddField("TIME_CONVERGENCE", "Time Convergence", ScreenOutputFormat::INTEGER,
+                         "CONVERGENCE", "Time Convergence indicator", FieldType::DEFAULT);
 }
 
-void CTimeConvergenceModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCollection){
+void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 
-  const auto& coefficentFields = fieldCollection.GetFieldsByType({FieldType::COEFFICIENT});
+  const auto& coefficentFields = historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT});
 
   for (auto field : coefficentFields){
-    fieldCollection.AddItem(avgPrefix + field->first, COutputField("tavg["  + field->second.fieldName + "]",
-                            field->second.screenFormat, avgPrefix   + field->second.outputGroup, "Time averaged values.", FieldType::AUTO_COEFFICIENT));
+    historyFields.AddField(avgPrefix + field->first, "tavg["  + field->second.fieldName + "]",
+                           field->second.screenFormat, avgPrefix   + field->second.outputGroup, "Time averaged values.", FieldType::AUTO_COEFFICIENT);
   }
 
-  const auto& wndConvergenceFields = fieldCollection.GetFieldsByKey(wndConvFields);
+  const auto& wndConvergenceFields = historyFields.GetCollection().GetFieldsByKey(wndConvFields);
 
   for (const auto& field : wndConvergenceFields){
-    fieldCollection.AddItem("CAUCHY_" + field->first, COutputField("Cauchy["  + field->second.fieldName + "]",
-                                                                   ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
-                                                                   "Cauchy residual value of field set with WND_CONV_FIELD." ,
-                                                                   FieldType::DEFAULT));
+    historyFields.AddField("CAUCHY_" + field->first,"Cauchy["  + field->second.fieldName + "]",
+                           ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
+                           "Cauchy residual value of field set with WND_CONV_FIELD." ,
+                           FieldType::DEFAULT);
   }
 }
 
-void CTimeConvergenceModule::LoadHistoryData(COutFieldCollection &fieldCollection){
+void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFields){
 
-  bool Inner_IterConv = fieldCollection.GetValueByKey("CONVERGENCE") ||
+  bool Inner_IterConv = historyFields.GetCollection().GetValueByKey("CONVERGENCE") ||
      solverData.config->GetnInner_Iter()-1 <=  solverData.Iter; //Check, if Inner_Iter is converged
 
   if (Inner_IterConv){
-    for (const auto& field : fieldCollection.GetFieldsByType({FieldType::COEFFICIENT})){
+    for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT})){
       windowedTimeAverages[field->first].addValue(field->second.value, solverData.TimeIter,  solverData.config->GetStartWindowIteration());
-      fieldCollection.SetValueByKey(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(solverData.config->GetKindWindow()));
+      historyFields.SetFieldValue(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(solverData.config->GetKindWindow()));
     }
   }
 
   if(solverData.TimeIter == 0){
     for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
       const string WndConv_Field= wndConvFields[iField_Conv];
-      if (fieldCollection.CheckKey(WndConv_Field)){
-        fieldCollection.SetValueByKey("CAUCHY_"+ WndConv_Field, 1.0);
+      if (historyFields.GetCollection().CheckKey(WndConv_Field)){
+        historyFields.SetFieldValue("CAUCHY_"+ WndConv_Field, 1.0);
       }
     }
   }
@@ -81,22 +81,22 @@ void CTimeConvergenceModule::LoadHistoryData(COutFieldCollection &fieldCollectio
     for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
       const string WndConv_Field= wndConvFields[iField_Conv];
 
-      if (fieldCollection.CheckKey(WndConv_Field)){
+      if (historyFields.GetCollection().CheckKey(WndConv_Field)){
         bool fieldConverged = false;
 
-        su2double monitor = fieldCollection.GetValueByKey(WndConv_Field);
+        const auto& monitor = historyFields.GetCollection().GetItemByKey(WndConv_Field);
 
         /*--- Cauchy based convergence criteria ---*/
 
-        if (fieldCollection.GetItemByKey(WndConv_Field).fieldType == FieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
+        if (monitor.fieldType == FieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
           if (solverData.TimeIter == solverData.config->GetStartWindowIteration()){
             for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
               WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
             }
-            WndNew_Func[iField_Conv] = monitor;
+            WndNew_Func[iField_Conv] = monitor.value;
           }
           WndOld_Func[iField_Conv] = WndNew_Func[iField_Conv];
-          WndNew_Func[iField_Conv] = monitor;
+          WndNew_Func[iField_Conv] = monitor.value;
           WndCauchy_Func = fabs(WndNew_Func[iField_Conv] - WndOld_Func[iField_Conv]);
           WndCauchy_Serie[iField_Conv][solverData.TimeIter % nWndCauchy_Elems] = WndCauchy_Func;
           WndCauchy_Value = 1.0;
@@ -117,13 +117,13 @@ void CTimeConvergenceModule::LoadHistoryData(COutFieldCollection &fieldCollectio
           if (solverData.TimeIter <  solverData.config->GetStartWindowIteration() + max(solverData.config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
             fieldConverged = false;
           }
-          fieldCollection.SetValueByKey("CAUCHY_" + WndConv_Field, WndCauchy_Value);
+          historyFields.SetFieldValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
         }
         TimeConvergence = fieldConverged && TimeConvergence;
 
         /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
 
-        if (monitor != monitor){
+        if (monitor.value != monitor.value){
           SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
       }
     }
@@ -132,6 +132,6 @@ void CTimeConvergenceModule::LoadHistoryData(COutFieldCollection &fieldCollectio
     if(!solverData.config->GetWnd_Cauchy_Crit()){TimeConvergence = false;}
     if(wndConvFields.empty()){TimeConvergence = false;}
   }
-  fieldCollection.SetValueByKey("TIME_CONVERGENCE", TimeConvergence);
+  historyFields.SetFieldValue("TIME_CONVERGENCE", TimeConvergence);
 
 }

@@ -5,13 +5,13 @@
 class CDirectDiffModule : public CSolverOutputModule {
 
 
-  COutFieldCollection::InsertionVector modifiedFields, baseFields;
+  COutFieldManager::FieldRefVector modifiedFields, baseFields;
 
 public:
   explicit CDirectDiffModule(CConfig *config);
 
-  void DefineHistoryFieldModifier(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) override;
 
 };

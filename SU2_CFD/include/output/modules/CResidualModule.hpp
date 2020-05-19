@@ -9,8 +9,8 @@ class CResidualModule : public CSolverOutputModule {
 public:
   explicit CResidualModule(CConfig *config);
 
-  void DefineHistoryFieldModifier(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) override;
 
 };

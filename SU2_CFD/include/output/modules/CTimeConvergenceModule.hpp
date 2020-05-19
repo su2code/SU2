@@ -24,11 +24,11 @@ public:
 
   CTimeConvergenceModule(CConfig* config);
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineHistoryFieldModifier(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
 
 };
 #endif // CTIMECONVERGENCEMODULE_HPP

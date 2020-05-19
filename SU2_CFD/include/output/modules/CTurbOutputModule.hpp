@@ -10,12 +10,12 @@ public:
   explicit CTurbOutputModule(CConfig *config) : CSolverOutputModule(config->GetKind_Turb_Model()),
     turb_model(config->GetKind_Turb_Model()) {}
 
-  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadVolumeData(COutFieldCollection& fieldCollection) override;
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
 
-  void DefineVolumeFields(COutFieldCollection& fieldCollection) override;
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 };
 

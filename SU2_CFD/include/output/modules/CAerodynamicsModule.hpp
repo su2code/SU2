@@ -13,13 +13,13 @@ public:
 
   explicit CAerodynamicsModule(CConfig *config);
 
-  void LoadHistoryDataPerSurface(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineVolumeFields(COutFieldCollection& fieldCollection) override;
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadSurfaceData(COutFieldCollection& fieldCollection) override;
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields) override;
 
 };
 

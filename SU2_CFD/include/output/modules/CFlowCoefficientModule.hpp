@@ -8,9 +8,9 @@ class CFlowCoefficientModule : public CSolverOutputModule {
 public:
   explicit CFlowCoefficientModule(CConfig *config);
 
-  void DefineVolumeFields(COutFieldCollection& fieldCollection) override;
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadSurfaceData(COutFieldCollection& fieldCollection) override;
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields) override;
 
 };
 

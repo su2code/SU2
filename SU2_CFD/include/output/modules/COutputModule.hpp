@@ -3,7 +3,7 @@
 #include <utility>
 #pragma once
 #include "SolverDataContainer.hpp"
-
+#include "COutFieldManager.hpp"
 
 #define CREATE_ACTION(name, func_args...) \
   static struct Action##name {} Action##name; \
@@ -57,22 +57,22 @@ public:
   }
   CREATE_ACTION(UpdateData, const OutputData *data);
 
-  virtual void DefineHistoryFields(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(DefineHistoryFields, COutFieldCollection& fieldCollection);
-  virtual void DefineHistoryFieldModifier(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(DefineHistoryFieldModifier, COutFieldCollection& fieldCollection);
-  virtual void DefineVolumeFields(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(DefineVolumeFields, COutFieldCollection& fieldCollection);
-  virtual void LoadHistoryData(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(LoadHistoryData, COutFieldCollection& fieldCollection);
-  virtual void LoadHistoryDataModifier(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(LoadHistoryDataModifier, COutFieldCollection& fieldCollection);
-  virtual void LoadHistoryDataPerSurface(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(LoadHistoryDataPerSurface, COutFieldCollection& fieldCollection);
-  virtual void LoadVolumeData(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(LoadVolumeData, COutFieldCollection& fieldCollection);
-  virtual void LoadSurfaceData(COutFieldCollection& fieldCollection) {};
-  CREATE_ACTION(LoadSurfaceData, COutFieldCollection& fieldCollection);
+  virtual void DefineHistoryFields(CHistoryOutFieldManager& historyFields) {};
+  CREATE_ACTION(DefineHistoryFields, CHistoryOutFieldManager& historyFields);
+  virtual void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) {};
+  CREATE_ACTION(DefineHistoryFieldModifier, CHistoryOutFieldManager& historyFields);
+  virtual void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) {};
+  CREATE_ACTION(DefineVolumeFields, CVolumeOutFieldManager& volumeFields);
+  virtual void LoadHistoryData(CHistoryOutFieldManager& historyFields) {};
+  CREATE_ACTION(LoadHistoryData, CHistoryOutFieldManager& historyFields);
+  virtual void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) {};
+  CREATE_ACTION(LoadHistoryDataModifier, CHistoryOutFieldManager& historyFields);
+  virtual void LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields) {};
+  CREATE_ACTION(LoadHistoryDataPerSurface, CHistoryOutFieldManager& historyFields);
+  virtual void LoadVolumeData(CVolumeOutFieldManager& volumeFields) {};
+  CREATE_ACTION(LoadVolumeData, CVolumeOutFieldManager& volumeFields);
+  virtual void LoadSurfaceData(CVolumeOutFieldManager& volumeFields) {};
+  CREATE_ACTION(LoadSurfaceData, CVolumeOutFieldManager& volumeFields);
 
 
 };

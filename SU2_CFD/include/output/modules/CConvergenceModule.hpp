@@ -21,11 +21,11 @@ public:
 
   CConvergenceModule(CConfig* config);
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void DefineHistoryFieldModifier(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) override;
 
 };
 

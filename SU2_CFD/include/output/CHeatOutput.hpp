@@ -36,9 +36,9 @@ public:
 
   explicit CHeatOutputModule(CConfig* config) {}
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager &historyFields) override;
 
-  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryData(CHistoryOutFieldManager &historyFields) override;
 };
 
 /*! \class CHeatOutput

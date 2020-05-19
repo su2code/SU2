@@ -5,24 +5,24 @@ constexpr static char prefix[] = "D_";
 
 CDirectDiffModule::CDirectDiffModule(CConfig* config) : CSolverOutputModule(config->GetDirectDiff()){}
 
-void CDirectDiffModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCollection){
+void CDirectDiffModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 
   modifiedFields.clear();
-  baseFields = fieldCollection.GetFieldsByType({FieldType::COEFFICIENT, FieldType::PER_SURFACE_COEFFICIENT});
+  baseFields = historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT, FieldType::PER_SURFACE_COEFFICIENT});
 
   for (const auto& field : baseFields){
-    auto newField = fieldCollection.AddItem(prefix + field->first, COutputField("d[" + field->second.fieldName + "]",
-                                                                      field->second.screenFormat,
-                                                                      prefix + field->second.outputGroup,
-                                                                      "Derivative value (DIRECT_DIFF=YES)",
-                                                                      FieldType::AUTO_COEFFICIENT ));
+    auto newField = historyFields.AddField(prefix + field->first, "d[" + field->second.fieldName + "]",
+                                           field->second.screenFormat,
+                                           prefix + field->second.outputGroup,
+                                           "Derivative value (DIRECT_DIFF=YES)",
+                                           FieldType::AUTO_COEFFICIENT );
     modifiedFields.push_back(newField);
   }
 
 }
 
-void CDirectDiffModule::LoadHistoryDataModifier(COutFieldCollection &fieldCollection){
+void CDirectDiffModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
   for (unsigned int iField = 0; iField < baseFields.size(); iField++){
-    fieldCollection.SetValueByKey(modifiedFields[iField]->first, SU2_TYPE::GetDerivative(baseFields[iField]->second.value));
+    historyFields.SetFieldValue(modifiedFields[iField]->first, SU2_TYPE::GetDerivative(baseFields[iField]->second.value));
   }
 }

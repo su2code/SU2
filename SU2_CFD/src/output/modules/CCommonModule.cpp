@@ -1,45 +1,44 @@
 #include "../../../include/output/modules/CCommonModule.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 
-void CCommonModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+void CCommonModule::DefineHistoryFields(CHistoryOutFieldManager& historyFields){
 
+  historyFields.AddField("TIME_ITER", "Time iter", ScreenOutputFormat::INTEGER,
+                         "ITER", "Time iteration index", FieldType::DEFAULT);
+  historyFields.AddField("OUTER_ITER", "Outer iter", ScreenOutputFormat::INTEGER,
+                         "ITER", "Outer iteration index", FieldType::DEFAULT);
+  historyFields.AddField("INNER_ITER", "Inner iter", ScreenOutputFormat::INTEGER,
+                         "ITER", "Inner iteration index", FieldType::DEFAULT);
 
-  fieldCollection.AddItem("TIME_ITER", COutputField("Time iter", ScreenOutputFormat::INTEGER,
-                                                          "ITER", "Time iteration index", FieldType::DEFAULT));
-  fieldCollection.AddItem("OUTER_ITER", COutputField("Outer iter", ScreenOutputFormat::INTEGER,
-                                                           "ITER", "Outer iteration index", FieldType::DEFAULT));
-  fieldCollection.AddItem("INNER_ITER", COutputField("Inner iter", ScreenOutputFormat::INTEGER,
-                                                           "ITER", "Inner iteration index", FieldType::DEFAULT));
+  historyFields.AddField("CUR_TIME", "Cur_time", ScreenOutputFormat::SCIENTIFIC,
+                         "TIME_DOMAIN", "Current physical time (s)", FieldType::DEFAULT);
+  historyFields.AddField("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC,
+                         "TIME_DOMAIN", "Current time step (s)", FieldType::DEFAULT);
 
-  fieldCollection.AddItem("CUR_TIME", COutputField("Cur_time", ScreenOutputFormat::SCIENTIFIC,
-                                                           "TIME_DOMAIN", "Current physical time (s)", FieldType::DEFAULT));
-  fieldCollection.AddItem("TIME_STEP", COutputField("Time_Step", ScreenOutputFormat::SCIENTIFIC,
-                                                           "TIME_DOMAIN", "Current time step (s)", FieldType::DEFAULT));
+  historyFields.AddField("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC,
+                         "WALL_TIME", "Average wall-clock time", FieldType::DEFAULT);
 
-  fieldCollection.AddItem("WALL_TIME", COutputField("Time(sec)", ScreenOutputFormat::SCIENTIFIC,
-                                                          "WALL_TIME", "Average wall-clock time", FieldType::DEFAULT));
-
-  fieldCollection.AddItem("NONPHYSICAL_POINTS", COutputField("Time(sec)", ScreenOutputFormat::INTEGER,
-                                                             "NONPHYSICAL_POINTS", "The number of non-physical points in the solution", FieldType::DEFAULT));
+  historyFields.AddField("NONPHYSICAL_POINTS", "Time(sec)", ScreenOutputFormat::INTEGER,
+                         "NONPHYSICAL_POINTS", "The number of non-physical points in the solution", FieldType::DEFAULT);
 
 }
 
-void CCommonModule::LoadHistoryData(COutFieldCollection &fieldCollection){
+void CCommonModule::LoadHistoryData(CHistoryOutFieldManager &historyFields){
 
   unsigned long curOuterIter = solverData.config->GetOuterIter();
   unsigned long curInnerIter = solverData.config->GetInnerIter();
   su2double TimeStep = solverData.config->GetDelta_UnstTimeND()*solverData.config->GetTime_Ref();
-  su2double curTime = fieldCollection.GetValueByKey("CUR_TIME");
+  su2double curTime = historyFields.GetFieldValue("CUR_TIME");
 
-  fieldCollection.SetValueByKey("TIME_STEP", TimeStep);
+  historyFields.SetFieldValue("TIME_STEP", TimeStep);
 
    if (SU2_TYPE::Int(TimeStep) != static_cast<int>(solverData.config->GetTimeIter())) {
-     fieldCollection.SetValueByKey("CUR_TIME", curTime*TimeStep);
+     historyFields.SetFieldValue("CUR_TIME", curTime*TimeStep);
    }
 
-   fieldCollection.SetValueByKey("TIME_ITER", solverData.config->GetTimeIter());
-   fieldCollection.SetValueByKey("OUTER_ITER", curOuterIter);
-   fieldCollection.SetValueByKey("INNER_ITER", curInnerIter);
+   historyFields.SetFieldValue("TIME_ITER", solverData.config->GetTimeIter());
+   historyFields.SetFieldValue("OUTER_ITER", curOuterIter);
+   historyFields.SetFieldValue("INNER_ITER", curInnerIter);
 
    su2double StopTime, UsedTime;
 
@@ -47,6 +46,6 @@ void CCommonModule::LoadHistoryData(COutFieldCollection &fieldCollection){
 
    UsedTime = (StopTime - solverData.config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
 
-   fieldCollection.SetValueByKey("WALL_TIME", UsedTime);
-   fieldCollection.SetValueByKey("NONPHYSICAL_POINTS", solverData.config->GetNonphysical_Points());
+   historyFields.SetFieldValue("WALL_TIME", UsedTime);
+   historyFields.SetFieldValue("NONPHYSICAL_POINTS", solverData.config->GetNonphysical_Points());
 }

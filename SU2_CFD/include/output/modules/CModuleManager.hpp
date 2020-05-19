@@ -9,6 +9,11 @@
 #include "CDirectDiffModule.hpp"
 #include "CUserFunctionModule.hpp"
 #include "CTurbOutputModule.hpp"
+#include "CFVMBaseModule.hpp"
+
+#include "COutFieldManager.hpp"
+
+#include "../filewriter/CParallelDataSorter.hpp"
 
 #include "../../../include/solvers/CSolver.hpp"
 
@@ -20,22 +25,22 @@ class CSolver;
 class CModuleManagerBase {
 
 protected:
-  COutFieldCollection historyFieldsAll;
-  COutFieldCollection volumeFieldsAll;
+  CHistoryOutFieldManager historyFieldsAll;
+  CVolumeOutFieldManager volumeFieldsAll;
 
 public:
   virtual void LoadData(OutputData* data) = 0;
 
-  virtual void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint) = 0;
+  virtual void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint, CParallelDataSorter* sorter) = 0;
 
-  COutFieldCollection& GetHistoryFields()  {return historyFieldsAll;}
-  COutFieldCollection& GetVolumeFields() {return volumeFieldsAll;}
+  COutFieldCollection& GetHistoryFields()  {return historyFieldsAll.GetCollection();}
+  COutFieldCollection& GetVolumeFields()   {return volumeFieldsAll.GetCollection();}
 };
 
 template<typename... Modules>
 class ModuleList : public std::tuple<Modules...>{
 public:
-  explicit ModuleList(CConfig* config): std::tuple<Modules...>(Modules(config)...){}
+  explicit ModuleList(CConfig* config, int nDim): std::tuple<Modules...>(Modules(config, nDim)...){}
 };
 
 template<typename ModuleList>
@@ -47,7 +52,7 @@ class CModuleManager : public CModuleManagerBase {
   COutFieldCollection::InsertionVector surfaceIntegralVolume;
 
 public:
-  explicit CModuleManager(CConfig* config);
+  explicit CModuleManager(CConfig* config, int nDim);
 
   void SetHistoryFields(CConfig* config);
 
@@ -59,12 +64,15 @@ public:
 
   void CommunicateIntegrals(const string& markerName);
 
-  void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint) override;
+  void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint, CParallelDataSorter* sorter) override;
 
+  std::string GetPerSurfaceName(const std::string& fieldName, const std::string& markerName){
+    return fieldName + "@" + markerName;
+  }
 };
 
 template<typename ModuleList>
-CModuleManager<ModuleList>::CModuleManager(CConfig* config) : modules(config) {
+CModuleManager<ModuleList>::CModuleManager(CConfig* config, int nDim) : modules(config, nDim) {
 
   /*--- Set the history output fields for all modules ---*/
 
@@ -86,14 +94,14 @@ void CModuleManager<ModuleList>::SetHistoryFields(CConfig *config){
   /*--- Loop through all volume output fields which are surface integrals
    * and add them to the history field collection ---*/
 
-  surfaceIntegralVolume = volumeFieldsAll.GetFieldsByType({FieldType::SURFACE_INTEGRATE});
+  surfaceIntegralVolume = volumeFieldsAll.GetCollection().GetFieldsByType({FieldType::SURFACE_INTEGRATE});
   surfaceIntegralHistory.clear();
 
   for (const auto& field : surfaceIntegralVolume){
-    auto newField = historyFieldsAll.AddItem(field->first, COutputField(field->second.fieldName,
-                                                                        ScreenOutputFormat::SCIENTIFIC,
-                                                                        field->second.outputGroup,
-                                                                        "", FieldType::COEFFICIENT));
+    auto newField = historyFieldsAll.AddField(field->first, field->second.fieldName,
+                                              ScreenOutputFormat::SCIENTIFIC,
+                                              field->second.outputGroup,
+                                              "", FieldType::COEFFICIENT);
     surfaceIntegralHistory.push_back(newField);
   }
 
@@ -101,23 +109,20 @@ void CModuleManager<ModuleList>::SetHistoryFields(CConfig *config){
   for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
 
     const std::string markerName = config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
-    /*--- Make marker names available as string variables ---*/
-
-    historyFieldsAll.GetScope()[markerName] = markerName;
 
     markerNames.push_back(markerName);
   }
   /*--- Loop through all coefficients and add a field for each marker ---*/
 
-  const auto& coefficients = historyFieldsAll.GetFieldsByType({FieldType::COEFFICIENT});
+  const auto& coefficients = historyFieldsAll.GetCollection().GetFieldsByType({FieldType::COEFFICIENT});
 
   for (const auto& field : coefficients){
     for (const auto& marker : markerNames){
-      historyFieldsAll.AddItem(field->first + "@" + marker, COutputField(field->second.fieldName,
-                                                                         ScreenOutputFormat::SCIENTIFIC,
-                                                                         field->second.outputGroup,
-                                                                         "",
-                                                                         FieldType::PER_SURFACE_COEFFICIENT));
+      historyFieldsAll.AddField(GetPerSurfaceName(field->first, marker), GetPerSurfaceName(field->second.fieldName, marker),
+                                ScreenOutputFormat::SCIENTIFIC,
+                                GetPerSurfaceName(field->second.outputGroup, marker),
+                                "",
+                                FieldType::PER_SURFACE_COEFFICIENT);
     }
   }
 }
@@ -127,7 +132,7 @@ void CModuleManager<ModuleList>::LoadData(OutputData* data){
 
   SolverDataContainer* solverData = dynamic_cast<SolverDataContainer*>(data);
 
-  const auto& coefficients      = historyFieldsAll.GetFieldsByType({FieldType::COEFFICIENT});
+  const auto& coefficients      = historyFieldsAll.GetCollection().GetFieldsByType({FieldType::COEFFICIENT});
 
   CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionUpdateData, solverData);
 
@@ -144,7 +149,7 @@ void CModuleManager<ModuleList>::LoadData(OutputData* data){
         CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadHistoryDataPerSurface, historyFieldsAll);
 
         for (const auto& field : coefficients){
-          historyFieldsAll.GetItemByKey(field->first + "@" + markerName).value = field->second.value;
+          historyFieldsAll.GetCollection().GetItemByKey(GetPerSurfaceName(field->first, markerName)).value = field->second.value;
         }
       }
     }
@@ -155,7 +160,7 @@ void CModuleManager<ModuleList>::LoadData(OutputData* data){
     field->second.value = 0.0;
     for (int iMarker_CfgFile = 0; iMarker_CfgFile <  solverData->config->GetnMarker_CfgFile(); iMarker_CfgFile++){
       const string markerNameCfg = solverData->config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
-      field->second.value += historyFieldsAll.GetValueByKey(field->first + "@" + markerNameCfg);
+      field->second.value += historyFieldsAll.GetCollection().GetValueByKey(GetPerSurfaceName(field->first, markerNameCfg));
     }
   }
 
@@ -165,7 +170,7 @@ void CModuleManager<ModuleList>::LoadData(OutputData* data){
 
 
 template<typename ModuleList>
-void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(OutputData *data, unsigned long iPoint){
+void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(OutputData *data, unsigned long iPoint, CParallelDataSorter *sorter){
 
   SolverDataContainer *solverData = dynamic_cast<SolverDataContainer*>(data);
 
@@ -175,21 +180,30 @@ void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(OutputData *data, unsigne
 
   CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll);
 
+  if (sorter != nullptr){
+    for (const auto& field : volumeFieldsAll.GetCollection().GetReferencesAll()){
+      if (field->second.offset != -1){
+        sorter->SetUnsorted_Data(iPoint, field->second.offset, field->second.value);
+      }
+    }
+  }
 }
 
 template<typename ModuleList>
 void CModuleManager<ModuleList>::IntegrateCoefficients(SolverDataContainer* solverData, unsigned short iMarker, const string& markerName){
 
   for (const auto& field : surfaceIntegralHistory){ field->second.value = 0.0; }
-  volumeFieldsAll.SetCaching(true);
-  historyFieldsAll.SetCaching(true);
+  volumeFieldsAll.GetCollection().SetCaching(true);
+  historyFieldsAll.GetCollection().SetCaching(true);
   for (auto iVertex = 0ul; iVertex < solverData->geometry->GetnVertex(iMarker); iVertex++){
-    volumeFieldsAll.StartCaching();
-    historyFieldsAll.StartCaching();
+    volumeFieldsAll.GetCollection().StartCaching();
+    historyFieldsAll.GetCollection().StartCaching();
     solverData->iPoint = solverData->geometry->vertex[iMarker][iVertex]->GetNode();
     solverData->vertex = solverData->geometry->vertex[iMarker][iVertex];
 
     CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionUpdateData, solverData);
+
+    CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll);
 
     /*--- Fill all volume fields with the values at the current surface point --- */
 
@@ -198,15 +212,15 @@ void CModuleManager<ModuleList>::IntegrateCoefficients(SolverDataContainer* solv
     /*--- For all volume fields marked as integral, add the contribution to the corresponding history field ---*/
 
     for (const auto& field : surfaceIntegralVolume){
-      historyFieldsAll.GetItemByKey(field->first).value += field->second.value;
+      historyFieldsAll.GetCollection().GetItemByKey(field->first).value += field->second.value;
     }
 
   }
-  volumeFieldsAll.SetCaching(false);
-  historyFieldsAll.SetCaching(false);
+  volumeFieldsAll.GetCollection().SetCaching(false);
+  historyFieldsAll.GetCollection().SetCaching(false);
 
   for (const auto& field : surfaceIntegralHistory){
-    historyFieldsAll.GetItemByKey(field->first + "@" + markerName).value = field->second.value;
+    historyFieldsAll.GetCollection().GetItemByKey(GetPerSurfaceName(field->first, markerName)).value = field->second.value;
   }
 
 }
@@ -227,6 +241,6 @@ void CModuleManager<ModuleList>::CommunicateIntegrals(const string& markerName){
   }
 
   for (const auto& field : surfaceIntegralHistory){
-    historyFieldsAll.SetValueByKey(field->first + "@" + markerName, field->second.value);
+    historyFieldsAll.GetCollection().SetValueByKey(GetPerSurfaceName(field->first, markerName), field->second.value);
   }
 }

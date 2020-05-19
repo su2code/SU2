@@ -1,69 +1,99 @@
 #include "../../../include/output/modules/CUserFunctionModule.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 
+CUserFunctionModule::CUserFunctionModule(CConfig *config, int nDim) :
+  CSolverOutputModule(nDim),
+  historyScope(interpreter::globalScope.getChild()),
+  volumeScope(interpreter::globalScope.getChild()),
+  historyUserFunctions(interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::HISTFIELD})),
+  volumeUserFunctions(interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::VOLUMEFIELD,
+                                                                               interpreter::FunctionType::VOLUMEINTEGRAL,
+                                                                               interpreter::FunctionType::SURFACEINTEGRAL}))
+{
 
-CUserFunctionModule::CUserFunctionModule(CConfig *config){
+  auto addInlineUserFunction = [&](std::string field,
+                                   std::vector<string>& userFuncsVector){
+    if (*field.begin() == '{' && *(field.end()-1) == '}'){
+      userFuncsVector.push_back(field);
+    }
+  };
 
-  historyScope = interpreter::globalScope.getChild();
-  volumeScope  = interpreter::globalScope.getChild();
-
-  historyUserFunctions = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::HISTFIELD});
-  volumeUserFunctions  = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::VOLUMEFIELD,
-                                                                                  interpreter::FunctionType::VOLUMEINTEGRAL,
-                                                                                  interpreter::FunctionType::SURFACEINTEGRAL});
+  for (int iField = 0; iField < config->GetnHistoryOutput(); iField++){
+    addInlineUserFunction(config->GetHistoryOutput_Field(iField), inlineHistoryUserFunctions);
+  }
+  for (int iField = 0; iField < config->GetnScreenOutput(); iField++){
+    addInlineUserFunction(config->GetScreenOutput_Field(iField), inlineHistoryUserFunctions);
+  }
+  for (int iField = 0; iField < config->GetnVolumeOutput(); iField++){
+    addInlineUserFunction(config->GetVolumeOutput_Field(iField), inlineVolumeUserFunctions);
+  }
+  for (int iMarker_CfgFile = 0; iMarker_CfgFile <  config->GetnMarker_CfgFile(); iMarker_CfgFile++){
+    const string markerNameCfg = config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
+    historyScope[markerNameCfg] = markerNameCfg;
+  }
 
 }
 
-void CUserFunctionModule::DefineVolumeFields(COutFieldCollection &fieldCollection){
+void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFields){
 
   funcVolFieldRefs.clear();
 
   for (const auto function : volumeUserFunctions){
     if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
       const std::string funcName = function->name();
-      auto newField = fieldCollection.AddItem(funcName, COutputField(funcName, "CUSTOM", "User-defined field", FieldType::SURFACE_INTEGRATE));
-      funcVolFieldRefs.push_back({newField, function});
+      auto newField = volumeFields.AddField(funcName, funcName, "CUSTOM", "User-defined field", FieldType::SURFACE_INTEGRATE);
+      funcVolFieldRefs.emplace_back(newField, function);
     }
+  }
+
+  for (const auto& inlineFunction : inlineVolumeUserFunctions){
+    auto newField = volumeFields.AddField(inlineFunction, inlineFunction, "CUSTOM", "User-defined field", FieldType::DEFAULT);
+    funcVolFieldRefs.emplace_back(newField, CreateInlineUserFunction(inlineFunction, interpreter::FunctionType::VOLUMEFIELD));
   }
 
   volFieldTokenRefs.clear();
 
-  for (const auto& field : fieldCollection.GetReferencesAll()){
+  for (const auto& field : volumeFields.GetCollection().GetReferencesAll()){
     packToken* ref = &volumeScope[field->first];
-    volFieldTokenRefs.push_back({field, ref});
+    volFieldTokenRefs.emplace_back(field, ref);
   }
 }
 
-void CUserFunctionModule::LoadSurfaceData(COutFieldCollection &fieldCollection){
+void CUserFunctionModule::LoadSurfaceData(CVolumeOutFieldManager &volumeFields){
   EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope);
 }
 
-void CUserFunctionModule::LoadVolumeData(COutFieldCollection &fieldCollection){
+void CUserFunctionModule::LoadVolumeData(CVolumeOutFieldManager &volumeFields){
   EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope);
 }
 
-void CUserFunctionModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+void CUserFunctionModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
 
   funcHistFieldRefs.clear();
 
   for (const auto function : historyUserFunctions){
     const std::string funcName = function->name();
-    auto newField = fieldCollection.AddItem(funcName, COutputField(funcName, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", FieldType::DEFAULT));
-    funcHistFieldRefs.push_back({newField, function});
+    auto newField = historyFields.AddField(funcName, funcName, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", FieldType::DEFAULT);
+    funcHistFieldRefs.emplace_back(newField, function);
+  }
+
+  for (const auto& inlineFunction : inlineHistoryUserFunctions){
+    auto newField = historyFields.AddField(inlineFunction, inlineFunction, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", FieldType::DEFAULT);
+    funcHistFieldRefs.emplace_back(newField, CreateInlineUserFunction(inlineFunction, interpreter::FunctionType::HISTFIELD));
   }
 }
 
-void CUserFunctionModule::DefineHistoryFieldModifier(COutFieldCollection &fieldCollection){
+void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 
   histFieldTokenRefs.clear();
 
-  for (const auto& field : fieldCollection.GetReferencesAll()){
+  for (const auto& field : historyFields.GetCollection().GetReferencesAll()){
     packToken* ref = &historyScope[field->first];
     histFieldTokenRefs.push_back({field,ref});
   }
 }
 
-void CUserFunctionModule::LoadHistoryDataModifier(COutFieldCollection &fieldCollection){
+void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
   EvalUserFunctions(histFieldTokenRefs, funcHistFieldRefs, historyScope);
 }
 

@@ -77,23 +77,23 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) :
 
 }
 
-void CHeatOutputModule::DefineHistoryFields(COutFieldCollection &fieldCollection){
+void CHeatOutputModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
 
-  fieldCollection.AddItem("RMS_TEMPERATURE", COutputField("rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", FieldType::RESIDUAL));
-  fieldCollection.AddItem("MAX_TEMPERATURE", COutputField("max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", FieldType::RESIDUAL));
-  fieldCollection.AddItem("BGS_TEMPERATURE", COutputField("bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", FieldType::RESIDUAL));
+  historyFields.AddField("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", FieldType::RESIDUAL);
+  historyFields.AddField("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", FieldType::RESIDUAL);
+  historyFields.AddField("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", FieldType::RESIDUAL);
 
 }
 
-void CHeatOutputModule::LoadHistoryData(COutFieldCollection &fieldCollection){
+void CHeatOutputModule::LoadHistoryData(CHistoryOutFieldManager &historyFields){
 
   CSolver* heat_solver =  solverData.solver[HEAT_SOL];
 
-  fieldCollection.SetValueByKey("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
-  fieldCollection.SetValueByKey("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
-  fieldCollection.SetValueByKey("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
+  historyFields.SetFieldValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
+  historyFields.SetFieldValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
+  historyFields.SetFieldValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
   if (solverData.config->GetMultizone_Problem())
-    fieldCollection.SetValueByKey("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
+    historyFields.SetFieldValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
 
 }
 

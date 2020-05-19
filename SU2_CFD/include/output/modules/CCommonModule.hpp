@@ -8,9 +8,9 @@ class CCommonModule : public CSolverOutputModule{
 public:
   CCommonModule(CConfig* config) {};
 
-  void DefineHistoryFields(COutFieldCollection& fieldCollection) override;
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryData(COutFieldCollection& fieldCollection) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
 };
 
 #endif // CCOMMONMODULE_HPP
