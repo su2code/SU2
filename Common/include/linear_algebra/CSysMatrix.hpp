@@ -118,21 +118,21 @@ private:
 #ifdef USE_MKL
 #ifndef USE_MIXED_PRECISION
   /*--- Double precision kernels. ---*/
-  using GEMM_T = dgemm_jit_kernel_t;
+  using gemm_t = dgemm_jit_kernel_t;
 #else
   /*--- Single precision kernels. ---*/
-  using GEMM_T = sgemm_jit_kernel_t;
+  using gemm_t = sgemm_jit_kernel_t;
 #endif
   void * MatrixMatrixProductJitter;              /*!< \brief Jitter handle for MKL JIT based GEMM. */
-  GEMM_T MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
+  gemm_t MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
   void * MatrixVectorProductJitterBetaZero;      /*!< \brief Jitter handle for MKL JIT based GEMV. */
-  GEMM_T MatrixVectorProductKernelBetaZero;      /*!< \brief MKL JIT based GEMV kernel. */
+  gemm_t MatrixVectorProductKernelBetaZero;      /*!< \brief MKL JIT based GEMV kernel. */
   void * MatrixVectorProductJitterBetaOne;       /*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
-  GEMM_T MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
+  gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
   void * MatrixVectorProductJitterAlphaMinusOne; /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and BETA=1.0. */
-  GEMM_T MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
+  gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
   void * MatrixVectorProductTranspJitterBetaOne; /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
-  GEMM_T MatrixVectorProductTranspKernelBetaOne; /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
+  gemm_t MatrixVectorProductTranspKernelBetaOne; /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
 #endif
 
 #ifdef HAVE_PASTIX
@@ -155,16 +155,16 @@ private:
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
-   * \note See specializations for discrete adjoint right outside this class's declaration.
+   * \note See specialization for discrete adjoint right outside this class's declaration.
    */
   template<class DstType, class SrcType>
-  inline DstType ActiveAssign(const SrcType & val) const { return val; }
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return val; }
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
    */
-  template<class DstType, class SrcType>
-  inline DstType PassiveAssign(const SrcType & val) const { return SU2_TYPE::GetValue(val); }
+  template<class SrcType>
+  FORCEINLINE static ScalarType PassiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
 
   /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
@@ -448,8 +448,7 @@ public:
     auto mat_ij = GetBlock(block_i, block_j);
     if (!mat_ij) return;
     for (auto iVar = 0ul; iVar < nVar*nEqn; ++iVar) {
-      mat_ij[iVar] = (Overwrite? ScalarType(0) : mat_ij[iVar]) +
-                     PassiveAssign<ScalarType,OtherType>(alpha * val_block[iVar]);
+      mat_ij[iVar] = (Overwrite? ScalarType(0) : mat_ij[iVar]) + PassiveAssign(alpha * val_block[iVar]);
     }
   }
 
@@ -480,8 +479,7 @@ public:
     if (!mat_ij) return;
     for (auto iVar = 0ul; iVar < nVar; ++iVar) {
       for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
-        *mat_ij = (Overwrite? ScalarType(0) : *mat_ij) +
-                  Sign * PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+        *mat_ij = (Overwrite? ScalarType(0) : *mat_ij) + Sign * PassiveAssign(val_block[iVar][jVar]);
         ++mat_ij;
       }
     }
@@ -532,10 +530,10 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bii[offset] += PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
-        bij[offset] += PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
-        bji[offset] -= PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
-        bjj[offset] -= PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        bii[offset] += PassiveAssign(block_i[iVar][jVar]) * Sign;
+        bij[offset] += PassiveAssign(block_j[iVar][jVar]) * Sign;
+        bji[offset] -= PassiveAssign(block_i[iVar][jVar]) * Sign;
+        bjj[offset] -= PassiveAssign(block_j[iVar][jVar]) * Sign;
         ++offset;
       }
     }
@@ -570,8 +568,8 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
-        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar]) * Sign;
+        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar]) * Sign;
         ++offset;
       }
     }
@@ -607,7 +605,7 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nEqn; jVar++)
-        bii[offset++] += Sign * PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+        bii[offset++] += Sign * PassiveAssign(val_block[iVar][jVar]);
   }
 
   /*!
@@ -629,7 +627,7 @@ public:
   template<class OtherType>
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
     for (auto iVar = 0ul; iVar < nVar; iVar++)
-      matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign<ScalarType,OtherType>(val_matrix);
+      matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val_matrix);
   }
 
   /*!
@@ -648,7 +646,7 @@ public:
       matrix[index+iVar] = 0.0;
 
     for (iVar = 0; iVar < nVar; iVar++)
-      matrix[index+iVar*(nVar+1)] = PassiveAssign<ScalarType,OtherType>(val_matrix);
+      matrix[index+iVar*(nVar+1)] = PassiveAssign(val_matrix);
   }
 
   /*!
@@ -792,5 +790,5 @@ public:
 
 #ifdef CODI_REVERSE_TYPE
 template<> template<>
-inline su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
+FORCEINLINE su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
 #endif
