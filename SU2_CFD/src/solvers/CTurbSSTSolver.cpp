@@ -1915,6 +1915,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   const su2double F1   = varTur->GetF1blending(iPoint);
   const su2double CDkw = varTur->GetCrossDiff(iPoint);
+  const su2double eps  = numeric_limits<passivedouble>::epsilon();
 
   const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
   const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
@@ -1958,7 +1959,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 //    factor += sigmak*gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
 //                                 +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
 //            + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    if (CDkw > 1.0e-20) {
+    if (CDkw > eps) {
       factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
               + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
