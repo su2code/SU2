@@ -509,7 +509,9 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        const CConfig *config) {
   
   const su2double Density = val_Mean_PrimVar[nDim+2];
-  const su2double factor = 0.5/Density;
+//  const su2double factor = 0.5/Density;
+  const su2double factor_i = 0.5/V_i[nDim+2];
+  const su2double factor_j = 0.5/V_j[nDim+2];
 
   if (nDim == 2) {
 
@@ -540,12 +542,12 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
-    val_Proj_Jac_Tensor_i[3][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[3][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_i[3][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
-    val_Proj_Jac_Tensor_j[3][2] += factor*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_i[3][0] -= factor_i*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[3][0] -= factor_j*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[3][1] += factor_i*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_j[3][1] += factor_j*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_i[3][2] += factor_i*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_j[3][2] += factor_j*val_Proj_Visc_Flux[2];
 
 
   } else {
@@ -588,14 +590,14 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
                                           val_Proj_Visc_Flux[3]*val_Mean_PrimVar[3];
-    val_Proj_Jac_Tensor_i[4][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[4][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_i[4][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_j[4][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_i[4][2] += factor*val_Proj_Visc_Flux[2];
-    val_Proj_Jac_Tensor_j[4][2] += factor*val_Proj_Visc_Flux[2];
-    val_Proj_Jac_Tensor_i[4][3] += factor*val_Proj_Visc_Flux[3];
-    val_Proj_Jac_Tensor_j[4][3] += factor*val_Proj_Visc_Flux[3];
+    val_Proj_Jac_Tensor_i[4][0] -= factor_i*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[4][0] -= factor_j*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[4][1] += factor_i*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_j[4][1] += factor_j*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_i[4][2] += factor_i*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_j[4][2] += factor_j*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_i[4][3] += factor_i*val_Proj_Visc_Flux[3];
+    val_Proj_Jac_Tensor_j[4][3] += factor_j*val_Proj_Visc_Flux[3];
 
   }
   
