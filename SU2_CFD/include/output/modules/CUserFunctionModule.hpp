@@ -37,10 +37,12 @@ public:
 
   void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
 
-  std::string GetName(const std::string& baseName);
-
-  void EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,
+  static void EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,
                          const std::vector<FieldRefFuncPair> &funcFieldRef, TokenMap &scope);
+
+  static interpreter::UserFunction* CreateInlineUserFunction(string name, interpreter::FunctionType type);
+
+  static packToken getSurfaceValue(TokenMap scope, const std::string &name);
 };
 
 

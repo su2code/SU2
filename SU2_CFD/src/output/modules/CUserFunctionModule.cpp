@@ -89,8 +89,13 @@ void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &hi
 
   for (const auto& field : historyFields.GetCollection().GetReferencesAll()){
     packToken* ref = &historyScope[field->first];
-    histFieldTokenRefs.push_back({field,ref});
+    histFieldTokenRefs.emplace_back(field,ref);
   }
+
+  for (const auto field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT})){
+    historyScope[field->first + "@"] = CppFunction(&CUserFunctionModule::getSurfaceValue, {}, field->first);
+  }
+
 }
 
 void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
@@ -121,9 +126,48 @@ void CUserFunctionModule::EvalUserFunctions(const std::vector<FieldRefTokenPair>
   }
 }
 
-std::string CUserFunctionModule::GetName(const std::string& baseName){
-  std::string newName{baseName};
-  replace_if(newName.begin(),newName.end(),::ispunct,'_');
-  replace_if(newName.begin(),newName.end(),::isblank,'_');
-  return newName;
+interpreter::UserFunction* CUserFunctionModule::CreateInlineUserFunction(string name, interpreter::FunctionType type){
+  interpreter::BlockStatement body;
+  string rawName = name;
+  rawName.pop_back();
+  rawName.erase(0,1);
+
+  string funcName = rawName;
+  replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+  replace_if(funcName.begin(),funcName.end(),::isblank,'_');
+  std::string func = "{"
+                     " var = " + rawName + ";"
+                     " return var; }";
+
+  body.compile(func.c_str());
+
+  return new interpreter::UserFunction({},body, funcName, type);
+
+}
+
+packToken CUserFunctionModule::getSurfaceValue(TokenMap scope, const std::string &name){
+
+  vector<std::string> markerName;
+  TokenList extraArgs = scope["args"].asList();
+
+  if (extraArgs.list().empty()){
+    throw(msg_exception("Expecting a marker name."));
+  }
+
+  for (const auto& item : extraArgs.list()){
+    markerName.push_back(item.asString());
+  }
+
+  su2double val = 0.0;
+  for (const auto& marker : markerName){
+    packToken* token = scope.find(name + "@" + marker);
+    if (token != nullptr){
+      val += token->asDouble();
+    } else {
+      throw(msg_exception(string("Unkown marker ") + "\"" + marker + "\""));
+    }
+  }
+
+  return val;
+
 }

@@ -290,7 +290,7 @@ public:
   }
 
   const COutFieldCollection& GetHistoryFieldsAll(){
-    return historyFieldsAll;
+    return modules->GetHistoryFields();
   }
 
   /*!
