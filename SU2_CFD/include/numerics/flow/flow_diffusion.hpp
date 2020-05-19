@@ -49,6 +49,7 @@ protected:
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
   *heat_flux_jac_i = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
+  *heat_flux_jac_j = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
   **tau_jacobian_i = nullptr;             /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
   su2double *Mean_PrimVar = nullptr;      /*!< \brief Mean primitive variables. */
   const su2double

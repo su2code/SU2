@@ -63,6 +63,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   }
 
   heat_flux_jac_i = new su2double[nVar];
+  heat_flux_jac_j = new su2double[nVar];
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
@@ -533,8 +534,13 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     val_Proj_Jac_Tensor_i[3][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
     val_Proj_Jac_Tensor_i[3][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
     val_Proj_Jac_Tensor_i[3][3] = -val_dS*heat_flux_jac_i[3];
+    
+    val_Proj_Jac_Tensor_j[3][0] = -val_dS*(contraction - heat_flux_jac_j[0]);
+    val_Proj_Jac_Tensor_j[3][1] = val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_j[1]);
+    val_Proj_Jac_Tensor_j[3][2] = val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_j[2]);
+    val_Proj_Jac_Tensor_j[3][3] = val_dS*heat_flux_jac_j[3];
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
@@ -580,8 +586,14 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     val_Proj_Jac_Tensor_i[4][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
     val_Proj_Jac_Tensor_i[4][3] = -val_dS*(tau_jacobian_i[2][0] + heat_flux_jac_i[3]);
     val_Proj_Jac_Tensor_i[4][4] = -val_dS*heat_flux_jac_i[4];
+    
+    val_Proj_Jac_Tensor_j[4][0] = -val_dS*(contraction - heat_flux_jac_j[0]);
+    val_Proj_Jac_Tensor_j[4][1] = val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_j[1]);
+    val_Proj_Jac_Tensor_j[4][2] = val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_j[2]);
+    val_Proj_Jac_Tensor_j[4][3] = val_dS*(tau_jacobian_i[2][0] + heat_flux_jac_j[3]);
+    val_Proj_Jac_Tensor_j[4][4] = val_dS*heat_flux_jac_j[4];
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
@@ -807,22 +819,22 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   su2double sqvel = 0.0;
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
+    sqvel += V_i[iDim+1]*V_i[iDim+1];
   }
 
-  const su2double Density = val_Mean_PrimVar[nDim+2];
-  const su2double Pressure = val_Mean_PrimVar[nDim+1];
-  const su2double phi = Gamma_Minus_One/Density;
+  su2double Density = V_i[nDim+2];
+  su2double Pressure = V_i[nDim+1];
+  su2double phi = Gamma_Minus_One/Density;
 
   /*--- R times partial derivatives of temp. ---*/
 
-  const su2double R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
-  const su2double R_dTdu1 = -phi*val_Mean_PrimVar[1];
-  const su2double R_dTdu2 = -phi*val_Mean_PrimVar[2];
+  su2double R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
+  su2double R_dTdu1 = -phi*V_i[1];
+  su2double R_dTdu2 = -phi*V_i[2];
 
-  const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
-  const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
-  const su2double conductivity_over_Rd = cpoR*heat_flux_factor*val_area/val_proj_vector;
+  su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
+  su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
+  su2double conductivity_over_Rd = cpoR*heat_flux_factor*val_area/val_proj_vector;
 
   heat_flux_jac_i[0] = conductivity_over_Rd * R_dTdu0;
   heat_flux_jac_i[1] = conductivity_over_Rd * R_dTdu1;
@@ -835,10 +847,48 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   } else {
 
-    const su2double R_dTdu3 = -phi*val_Mean_PrimVar[3];
+    const su2double R_dTdu3 = -phi*V_i[3];
     const su2double R_dTdu4 = phi;
     heat_flux_jac_i[3] = conductivity_over_Rd * R_dTdu3;
     heat_flux_jac_i[4] = conductivity_over_Rd * R_dTdu4;
+
+  }
+  
+  sqvel = 0.0;
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    sqvel += V_j[iDim+1]*V_j[iDim+1];
+  }
+
+  Density = V_j[nDim+2];
+  Pressure = V_j[nDim+1];
+  phi = Gamma_Minus_One/Density;
+
+  /*--- R times partial derivatives of temp. ---*/
+
+  R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
+  R_dTdu1 = -phi*V_j[1];
+  R_dTdu2 = -phi*V_j[2];
+
+  heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
+  cpoR = Gamma/Gamma_Minus_One; // cp over R
+  conductivity_over_Rd = cpoR*heat_flux_factor*val_area/val_proj_vector;
+
+  heat_flux_jac_j[0] = conductivity_over_Rd * R_dTdu0;
+  heat_flux_jac_j[1] = conductivity_over_Rd * R_dTdu1;
+  heat_flux_jac_j[2] = conductivity_over_Rd * R_dTdu2;
+
+  if (nDim == 2) {
+
+    const su2double R_dTdu3 = phi;
+    heat_flux_jac_j[3] = conductivity_over_Rd * R_dTdu3;
+
+  } else {
+
+    const su2double R_dTdu3 = -phi*V_j[3];
+    const su2double R_dTdu4 = phi;
+    heat_flux_jac_j[3] = conductivity_over_Rd * R_dTdu3;
+    heat_flux_jac_j[4] = conductivity_over_Rd * R_dTdu4;
 
   }
 }
