@@ -43,13 +43,13 @@ inline CReorderElements::CReorderElements(const CReorderElements &other) { Copy(
 
 inline CReorderElements& CReorderElements::operator=(const CReorderElements &other) { Copy(other); return (*this); }
 
-inline bool CReorderElements::GetCommSolution(void) { return commSolution; }
+inline bool CReorderElements::GetCommSolution(void) const { return commSolution; }
 
-inline unsigned short CReorderElements::GetElemType(void) { return elemType; }
+inline unsigned short CReorderElements::GetElemType(void) const { return elemType; }
 
-inline unsigned long CReorderElements::GetGlobalElemID(void) { return globalElemID; }
+inline unsigned long CReorderElements::GetGlobalElemID(void) const { return globalElemID; }
 
-inline unsigned short CReorderElements::GetTimeLevel(void) { return timeLevel; }
+inline unsigned short CReorderElements::GetTimeLevel(void) const { return timeLevel; }
 
 inline void CReorderElements::SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
 
@@ -108,9 +108,9 @@ inline CPointFEM* CMeshFEM::GetMeshPoints(void) {return meshPoints.data();}
 
 inline unsigned long CMeshFEM::GetNMeshPoints(void) {return meshPoints.size();}
 
-inline unsigned long CMeshFEM::GetNVolElemOwned(void) {return nVolElemOwned;}
+inline unsigned long CMeshFEM::GetNVolElemOwned(void) const {return nVolElemOwned;}
 
-inline unsigned long CMeshFEM::GetNVolElemTot(void) {return nVolElemTot;}
+inline unsigned long CMeshFEM::GetNVolElemTot(void) const {return nVolElemTot;}
 
 inline CVolumeElementFEM* CMeshFEM::GetVolElem(void) {return volElem.data();}
 

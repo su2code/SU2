@@ -295,7 +295,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse);
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse) const;
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation.
@@ -306,7 +306,7 @@ public:
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse);
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse) const;
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.
@@ -338,7 +338,7 @@ public:
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage) const;
 
   /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to
@@ -347,7 +347,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data into the geometry class.
@@ -473,7 +473,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point);
+  long FindEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
@@ -481,7 +481,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  bool CheckEdge(unsigned long first_point, unsigned long second_point);
+  bool CheckEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the distance between a plane (defined by three point) and a point.
@@ -491,12 +491,12 @@ public:
    * \param[in] kCoord - Coordinates of the third point that defines the plane.
    * \return Signed distance.
    */
-  su2double Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord);
+  su2double Point2Plane_Distance(const su2double *Coord, const su2double *iCoord, const su2double *jCoord, const su2double *kCoord);
 
   /*!
    * \brief Create a file for testing the geometry.
    */
-  void TestGeometry(void);
+  void TestGeometry(void) const;
 
   /*!
    * \brief A virtual member.
@@ -522,14 +522,14 @@ public:
    * \param[in] val_marker - Marker of the boundary.
    * \param[in] val_index - Index of the marker.
    */
-  inline void SetMarker_Tag(unsigned short val_marker, string val_index) { Tag_to_Marker[val_marker] = std::move(val_index); }
+  inline void SetMarker_Tag(unsigned short val_marker, string val_index) const { Tag_to_Marker[val_marker] = std::move(val_index); }
 
   /*!
    * \brief Set the number of boundary elements.
    * \param[in] val_marker - Marker of the boundary.
    * \param[in] val_nelem_bound - Number of boundary elements.
    */
-  inline void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound) {
+  inline void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound) const {
     nElem_Bound[val_marker]= val_nelem_bound;
   }
 
@@ -867,27 +867,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetRotationalVelocity(CConfig *config, bool print = false);
+  void SetRotationalVelocity(CConfig *config, bool print = false) const;
 
   /*!
    * \brief Set the rotational velocity of the points on the shroud markers to 0.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetShroudVelocity(CConfig *config);
+  void SetShroudVelocity(CConfig *config) const;
 
   /*!
    * \brief Set the translational velocity at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetTranslationalVelocity(CConfig *config, bool print = false);
+  void SetTranslationalVelocity(CConfig *config, bool print = false) const;
 
   /*!
    * \brief Set the grid velocity via finite differencing at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iter - Current physical time step.
    */
-  void SetGridVelocity(CConfig *config, unsigned long iter);
+  void SetGridVelocity(CConfig *config, unsigned long iter) const;
 
   /*!
    * \brief A virtual member.
@@ -919,7 +919,7 @@ public:
                               su2double MinXCoord, su2double MaxXCoord,
                               su2double MinYCoord, su2double MaxYCoord,
                               su2double MinZCoord, su2double MaxZCoord,
-                              su2double *FlowVariable,
+                              const su2double *FlowVariable,
                               vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                               vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                               bool original_surface, CConfig *config);
@@ -1219,38 +1219,38 @@ public:
    * \param[in] Intersection - Definition of the particular problem.
    * \return If the intersection has has been successful.
    */
-  bool SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                              su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
+  bool SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
+                              const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
 
   /*!
    * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
    */
-  bool RayIntersectsTriangle(su2double orig[3], su2double dir[3],
-  su2double vert0[3], su2double vert1[3], su2double vert2[3],
+  bool RayIntersectsTriangle(const su2double orig[3], const su2double dir[3],
+  const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
   su2double *intersect);
 
   /*!
    * \brief Segment Intersects Triangle
    */
-  bool SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
+  bool SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3],
   su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
   /*!
    * \brief Segment Intersects Line (for 2D FFD Intersection)
    */
-  bool SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
+  bool SegmentIntersectsLine(const su2double point0[2], const su2double point1[2], const su2double vert0[2], const su2double vert1[2]);
 
   /*!
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config);
+  void RegisterCoordinates(CConfig *config) const;
 
   /*!
    * \brief Register the coordinates of the mesh nodes as output.
    * \param[in] config
    */
-  void RegisterOutput_Coordinates(CConfig *config);
+  void RegisterOutput_Coordinates(CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
@@ -1585,7 +1585,7 @@ public:
    * \brief Compute and store the volume of the elements.
    * \param[in] config - Problem configuration.
    */
-  void SetElemVolume(CConfig *config);
+  void SetElemVolume(CConfig *config) const;
 
   /*!
    * \brief Set the multigrid index for the current geometry object.

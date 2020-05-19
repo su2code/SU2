@@ -269,7 +269,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Writes inverse design.
@@ -298,7 +298,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Writes one dimensional output.
@@ -308,7 +308,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -319,7 +319,7 @@ public:
    * \param[in] val_iZone - Current zone number in the grid file.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Create and write the file with the FSI convergence history.
@@ -732,7 +732,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const;
 
   /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
@@ -797,7 +797,7 @@ public:
    * \param[in] val_iZone - Zone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
+  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) const;
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.

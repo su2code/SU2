@@ -291,7 +291,7 @@ unsigned long CDriver::GetnTimeIter() {
     return config_container[ZONE_0]->GetnTime_Iter();
 }
 
-unsigned long CDriver::GetTime_Iter(){
+unsigned long CDriver::GetTime_Iter() const{
 
   return TimeIter;
 }
