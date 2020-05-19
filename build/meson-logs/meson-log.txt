@@ -1,4 +1,4 @@
-Build started at 2020-05-07T13:28:35.781134
+Build started at 2020-05-18T22:48:56.233645
 Main binary: /usr/bin/python3
 Build Options: -Denable-pythonwrapper=true -Denable-pywrapper=true -Denable-tecio=false -Dprefix=/home/wallymaier/SU2 -Dbackend=ninja
 Python system: Linux
@@ -72,8 +72,8 @@ Build targets in project: 12
 
 Found ninja-1.9.0.git at /home/wallymaier/SU2/ninja
 Running compile:
-Working directory:  /tmp/tmpnkat2m06
-Command line:  c++ /tmp/tmpnkat2m06/testfile.cpp -o /tmp/tmpnkat2m06/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
+Working directory:  /tmp/tmpw_488ygq
+Command line:  c++ /tmp/tmpw_488ygq/testfile.cpp -o /tmp/tmpw_488ygq/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
 
 Code:
  int i = static_cast<int>(0);
@@ -83,8 +83,8 @@ Compiler stderr:
  
 Compiler accepts -std=c++11: YES
 Running compile:
-Working directory:  /home/wallymaier/SU2/build/meson-private/tmpw0so437h
-Command line:  c++ /home/wallymaier/SU2/build/meson-private/tmpw0so437h/testfile.cpp -o /home/wallymaier/SU2/build/meson-private/tmpw0so437h/output.obj -pipe -c -O3 -Wall -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+Working directory:  /home/wallymaier/SU2/build/meson-private/tmpv00am1x8
+Command line:  c++ /home/wallymaier/SU2/build/meson-private/tmpv00am1x8/testfile.cpp -o /home/wallymaier/SU2/build/meson-private/tmpv00am1x8/output.obj -pipe -c -O3 -Wall -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
 
 Code:
  

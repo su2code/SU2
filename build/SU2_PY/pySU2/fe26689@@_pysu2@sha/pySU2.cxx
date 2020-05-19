@@ -9099,6 +9099,41 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_CDriver_GetAIP(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  CDriver *arg1 = (CDriver *) 0 ;
+  unsigned short arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  unsigned short val2 ;
+  int ecode2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  std::vector< passivedouble > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:CDriver_GetAIP",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_CDriver, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "CDriver_GetAIP" "', argument " "1"" of type '" "CDriver *""'"); 
+  }
+  arg1 = reinterpret_cast< CDriver * >(argp1);
+  ecode2 = SWIG_AsVal_unsigned_SS_short(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "CDriver_GetAIP" "', argument " "2"" of type '" "unsigned short""'");
+  } 
+  arg2 = static_cast< unsigned short >(val2);
+  {
+    SWIG_PYTHON_THREAD_BEGIN_ALLOW;
+    result = (arg1)->GetAIP(arg2);
+    SWIG_PYTHON_THREAD_END_ALLOW;
+  }
+  resultobj = swig::from(static_cast< std::vector< double,std::allocator< double > > >(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_CDriver_GetAllBoundaryMarkersTag(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   CDriver *arg1 = (CDriver *) 0 ;
@@ -12523,6 +12558,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"CDriver_Inlet_Preprocessing", _wrap_CDriver_Inlet_Preprocessing, METH_VARARGS, (char *)"CDriver_Inlet_Preprocessing(CDriver self, CSolver *** solver, CGeometry ** geometry, CConfig * config)"},
 	 { (char *)"CDriver_GetVertexUnitNormal", _wrap_CDriver_GetVertexUnitNormal, METH_VARARGS, (char *)"CDriver_GetVertexUnitNormal(CDriver self, unsigned short iMarker, unsigned long iVertex) -> std::vector< passivedouble >"},
 	 { (char *)"CDriver_GetStates", _wrap_CDriver_GetStates, METH_VARARGS, (char *)"CDriver_GetStates(CDriver self, unsigned short iMarker) -> std::vector< passivedouble >"},
+	 { (char *)"CDriver_GetAIP", _wrap_CDriver_GetAIP, METH_VARARGS, (char *)"CDriver_GetAIP(CDriver self, unsigned short iMarker) -> std::vector< passivedouble >"},
 	 { (char *)"CDriver_GetAllBoundaryMarkersTag", _wrap_CDriver_GetAllBoundaryMarkersTag, METH_VARARGS, (char *)"CDriver_GetAllBoundaryMarkersTag(CDriver self) -> std::vector< std::string >"},
 	 { (char *)"CDriver_GetAllMovingMarkersTag", _wrap_CDriver_GetAllMovingMarkersTag, METH_VARARGS, (char *)"CDriver_GetAllMovingMarkersTag(CDriver self) -> std::vector< std::string >"},
 	 { (char *)"CDriver_GetAllDeformMeshMarkersTag", _wrap_CDriver_GetAllDeformMeshMarkersTag, METH_VARARGS, (char *)"CDriver_GetAllDeformMeshMarkersTag(CDriver self) -> std::vector< std::string >"},

@@ -500,6 +500,11 @@ class CDriver(_object):
         return _pysu2.CDriver_GetStates(self, iMarker)
 
 
+    def GetAIP(self, iMarker):
+        """GetAIP(CDriver self, unsigned short iMarker) -> std::vector< passivedouble >"""
+        return _pysu2.CDriver_GetAIP(self, iMarker)
+
+
     def GetAllBoundaryMarkersTag(self):
         """GetAllBoundaryMarkersTag(CDriver self) -> std::vector< std::string >"""
         return _pysu2.CDriver_GetAllBoundaryMarkersTag(self)

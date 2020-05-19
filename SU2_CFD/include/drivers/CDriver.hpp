@@ -679,6 +679,13 @@ public:
   vector<passivedouble> GetStates(unsigned short iMarker);
 
   /*!
+   * \brief Get the AIP parameters at the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return AIP (vector) at the marker.
+   */
+  vector<passivedouble> GetAIP(unsigned short iMarker);
+
+  /*!
    * \brief Get all the boundary markers tags.
    * \return List of boundary markers tags.
    */
