@@ -182,6 +182,17 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output, bool cus
 
   headerNeeded = false;
 
+  std::vector<string> notFound;
+  const auto& screenFields = modules->GetHistoryFields().GetFieldsByKey(requestedScreenFields, notFound);
+
+  if (!notFound.empty()){
+    for (const auto& field : notFound)
+      SU2_MPI::Error("History field " + field + " not found.", CURRENT_FUNCTION);
+  }
+  for (const auto& field : screenFields){
+    convergenceTable->AddColumn(field->second.fieldName, fieldWidth);
+  }
+
 
 }
 
@@ -221,19 +232,29 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   bool write_header, write_history, write_screen;
 
-  LoadSurfaceData(config, geometry, solver_container);
+//  LoadSurfaceData(config, geometry, solver_container);
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
-  LoadCommonHistoryData(config);
+//  LoadCommonHistoryData(config);
 
-  LoadHistoryData(config, geometry, solver_container);
+//  LoadHistoryData(config, geometry, solver_container);
 
-  Convergence_Monitoring(config, curInnerIter);
+//  Convergence_Monitoring(config, curInnerIter);
 
-  Postprocess_HistoryData(config);
+//  Postprocess_HistoryData(config);
 
-  MonitorTimeConvergence(config, curTimeIter);
+//  MonitorTimeConvergence(config, curTimeIter);
+
+  SolverDataContainer data;
+  data.solver = solver_container;
+  data.geometry = geometry;
+  data.config = config;
+
+  modules->LoadData(&data);
+
+  convergence = modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value;
+
 
   /*--- Output using only the master node ---*/
 
@@ -1043,10 +1064,17 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   stringstream out;
   int width = 20;
 
-  const auto& histFieldsWithName  = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields);
-  const auto& histFieldsWithGroup = GetHistoryFieldsAll().GetFieldsByGroup(requestedHistoryFields);
+  vector<string> notFound, nameNotFound;
+
+  const auto& histFieldsWithName  = modules->GetHistoryFields().GetFieldsByKey(requestedHistoryFields, nameNotFound);
+  const auto& histFieldsWithGroup = modules->GetHistoryFields().GetFieldsByGroup(nameNotFound, notFound);
   const auto& histFields          = COutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName);
 
+  if (!notFound.empty()){
+    for (const auto &field : notFound){
+      SU2_MPI::Error("History output field/group " + field + " not found.", CURRENT_FUNCTION);
+    }
+  }
   for (const auto& field : histFields){
     if (field->second.screenFormat == ScreenOutputFormat::INTEGER){
       width = std::max((int)field->second.fieldName.size()+2, 10);
@@ -1068,10 +1096,17 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 
   stringstream out;
 
-  const auto& histFieldsWithName  = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields);
-  const auto& histFieldsWithGroup = GetHistoryFieldsAll().GetFieldsByGroup(requestedHistoryFields);
+  vector<string> notFound, nameNotFound;
+
+  const auto& histFieldsWithName  = modules->GetHistoryFields().GetFieldsByKey(requestedHistoryFields, nameNotFound);
+  const auto& histFieldsWithGroup = modules->GetHistoryFields().GetFieldsByGroup(nameNotFound, notFound);
   const auto& histFields          = COutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName);
 
+  if (!notFound.empty()){
+    for (const auto &field : notFound){
+      SU2_MPI::Error("History output field/group " + field + " not found.", CURRENT_FUNCTION);
+    }
+  }
   for (const auto& field : histFields){
     (*historyFileTable) << field->second.value;
   }
@@ -1091,9 +1126,14 @@ void COutput::SetScreen_Header(CConfig *config) {
 void COutput::SetScreen_Output(CConfig *config) {
 
   string RequestedField;
+  vector<string> notFound;
 
-  const auto& histFieldsWithName  = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields);
-
+  const auto& histFieldsWithName  = modules->GetHistoryFields().GetFieldsByKey(requestedScreenFields, notFound);
+  if (!notFound.empty()){
+    for (const auto &field : notFound){
+      SU2_MPI::Error("History output field/group " + field + " not found.", CURRENT_FUNCTION);
+    }
+  }
   for (const auto& field : histFieldsWithName) {
     stringstream out;
     switch (field->second.screenFormat) {
@@ -1122,19 +1162,19 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
     /*--- Set the common output fields ---*/
 
-    SetCommonHistoryFields(config);
+//    SetCommonHistoryFields(config);
 
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
-    SetHistoryOutputFields(config);
+//    SetHistoryOutputFields(config);
 
     /*--- Set any user defined output fields --- */
 
-    SetUserDefinedHistoryFields(config);
+//    SetUserDefinedHistoryFields(config);
 
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
-    Postprocess_HistoryFields(config);
+//    Postprocess_HistoryFields(config);
 
     /*--- We use a fixed size of the file output summary table ---*/
 
@@ -1147,7 +1187,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
       /*--- Check for consistency and remove fields that are requested but not available --- */
 
-      CheckHistoryOutput(config);
+//      CheckHistoryOutput(config);
 
       /*--- Open history file and print the header ---*/
       if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
@@ -1198,7 +1238,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
     /*--- Check for consistency and remove fields that are requested but not available --- */
 
-    CheckHistoryOutput(driver_config);
+//    CheckHistoryOutput(driver_config);
 
     /*--- Open history file and print the header ---*/
 
@@ -1385,28 +1425,28 @@ void COutput::PreprocessVolumeOutput(CConfig *config, bool wrt){
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
 
-  regex exp("\\{\\S*\\}");
-  regex integrateExp("integrate\\{\\S*\\}");
+//  regex exp("\\{\\S*\\}");
+//  regex integrateExp("integrate\\{\\S*\\}");
 
-  /*--- Add inline defined output fields ---*/
+//  /*--- Add inline defined output fields ---*/
 
-  for (const auto& reqField : requestedVolumeFields){
-    if (regex_match(reqField, exp)){
-      AddCustomVolumeOutput(reqField, CreateInlineUserFunction(reqField), FieldType::CUSTOM_EVAL);
-    }
-  }
+//  for (const auto& reqField : requestedVolumeFields){
+//    if (regex_match(reqField, exp)){
+//      AddCustomVolumeOutput(reqField, CreateInlineUserFunction(reqField), FieldType::CUSTOM_EVAL);
+//    }
+//  }
 
-  /*--- Add output fields defined in function file ---*/
+//  /*--- Add output fields defined in function file ---*/
 
-  for (const auto function : volumeUserFunctions){
-    if (function->getType() == interpreter::FunctionType::VOLUMEFIELD){
-      AddCustomVolumeOutput(function->name(), function, FieldType::CUSTOM_EVAL);
+//  for (const auto function : volumeUserFunctions){
+//    if (function->getType() == interpreter::FunctionType::VOLUMEFIELD){
+//      AddCustomVolumeOutput(function->name(), function, FieldType::CUSTOM_EVAL);
 
-    }
-    if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
-      AddCustomVolumeOutput(function->name(), function, FieldType::CUSTOM_SURFACE_INTEGRATE);
-    }
-  }
+//    }
+//    if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
+//      AddCustomVolumeOutput(function->name(), function, FieldType::CUSTOM_SURFACE_INTEGRATE);
+//    }
+//  }
 
   if (wrt){
 
@@ -1415,7 +1455,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config, bool wrt){
  * object gets an offset so that we know where to find the data in the Local_Data() array.
  *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-    for (const auto& field : volumeFieldsAll.GetReferencesAll()){
+    for (const auto& field : modules->GetVolumeFields().GetReferencesAll()){
       for (unsigned int iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
         const string& RequestedField = requestedVolumeFields[iReqField];
         if (((RequestedField == field->second.outputGroup) || (RequestedField == field->first))
@@ -1467,8 +1507,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config, bool wrt){
     }
   }
 
-  volumeFieldsAll.UpdateTokens();
-  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL, FieldType::CUSTOM_SURFACE_INTEGRATE}));
+//  volumeFieldsAll.UpdateTokens();
+//  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL, FieldType::CUSTOM_SURFACE_INTEGRATE}));
 
 }
 
@@ -1478,7 +1518,7 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
 
   /*--- Reset the offset cache and index --- */
 
-  volumeFieldsAll.SetCaching(true);
+//  volumeFieldsAll.SetCaching(true);
 
   const auto& userDefinedFields      = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL});
 
@@ -1528,27 +1568,27 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
 
-      modules->LoadVolumeDataAtPoint(&data, iPoint);
+      modules->LoadVolumeDataAtPoint(&data, iPoint, volumeDataSorter);
 
-      /*--- Load the volume data into the data sorter. --- */
+//      /*--- Load the volume data into the data sorter. --- */
 
-      volumeFieldsAll.StartCaching();
+//      volumeFieldsAll.StartCaching();
 
-      LoadVolumeData(config, geometry, solver, iPoint);
+//      LoadVolumeData(config, geometry, solver, iPoint);
 
-      if (!userDefinedFields.empty()){
+//      if (!userDefinedFields.empty()){
 
-        volumeFieldsAll.UpdateTokens();
+//        volumeFieldsAll.UpdateTokens();
 
-        volumeFieldsAll.EvalCustomFields(userDefinedFields);
+//        volumeFieldsAll.EvalCustomFields(userDefinedFields);
 
-      }
+//      }
 
-      WriteToDataSorter(iPoint);
+//      WriteToDataSorter(iPoint);
 
     }
   }
-  volumeFieldsAll.SetCaching(false);
+//  volumeFieldsAll.SetCaching(false);
 }
 
 void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver){
