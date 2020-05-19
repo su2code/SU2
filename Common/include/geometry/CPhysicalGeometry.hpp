@@ -803,5 +803,7 @@ public:
       nodes->SetWall_Distance(iPoint, val);
     }
   }
+  
+  void SetGlobalMarkerRoughness(CConfig *config) override;
 
 };

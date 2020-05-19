@@ -308,7 +308,8 @@ private:
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
-  su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker. */
+  su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
+  su2double *GlobalRoughness_Height;         /*!< \brief Equivalent sand grain roughness for markers globally including S-R. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
   su2double *Load_Value;                     /*!< \brief Specified force for load boundaries. */
   su2double *Damper_Constant;                /*!< \brief Specified constant for damper boundaries. */
@@ -389,6 +390,7 @@ private:
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
   short *Marker_All_SendRecv;                /*!< \brief Information about if the boundary is sended (+), received (-). */
   short *Marker_All_PerBound;                /*!< \brief Global index for periodic bc using the grid information. */
+  int *GlobalMarkerStorageDispl;             /*!< \brief storage of markers globally. */
 
   unsigned long nExtIter;           /*!< \brief Number of external iterations. */
   unsigned long ExtIter;            /*!< \brief Current external iteration number. */
@@ -2932,6 +2934,12 @@ public:
   unsigned short GetnMarker_HeatFlux(void) const { return nMarker_HeatFlux; }
 
   /*!
+   * \brief Get the total number of rough markers.
+   * \return Total number of heat flux markers.
+   */
+  unsigned short GetnRoughWall(void) const { return nRoughWall; }
+
+  /*!
    * \brief Get the total number of objectives in kind_objective list
    * \return Total number of objectives in kind_objective list
    */
@@ -5092,6 +5100,12 @@ public:
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
 
+  /*--- New roughness mpi comm stuff akshay ----*/
+  su2double GetLocalRoughness(int rankID, unsigned short markerID) const;
+  
+  void SetGlobalMarkerArray(int *global_displ, int size) ;
+  void SetGlobalRoughnessArray(su2double *global_rough, int sizeGlobal) ;
+  
   /*!
    * \author H. Kline
    * \brief Get the flag indicating whether to comput a combined objective.

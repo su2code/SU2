@@ -3391,7 +3391,6 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   vector<unsigned short> subElementIDInParent;
   vector<unsigned short> VTK_TypeElem;
   vector<unsigned long>  elemConn;
-  vector<su2double>      dummyRough;
 
   /* Loop over the local volume elements to create the connectivity of
      the linear sub-elements. */
@@ -3443,7 +3442,6 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
         parentElement.push_back(elem[l]->GetGlobalElemID());
         subElementIDInParent.push_back(jj);
         VTK_TypeElem.push_back(VTK_Type[i]);
-        dummyRough.push_back(0.0);
 
         for(unsigned short k=0; k<nDOFsPerSubElem[i]; ++k, ++kk) {
           unsigned long nodeID = elem[l]->GetNode(connSubElems[i][kk]);
@@ -3468,7 +3466,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
   /* Build the local ADT. */
   CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                               subElementIDInParent, parentElement, dummyRough, false);
+                               subElementIDInParent, parentElement, false);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */
@@ -3477,7 +3475,6 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   vector<unsigned long>().swap(parentElement);
   vector<unsigned long>().swap(elemConn);
   vector<su2double>().swap(volCoor);
-  vector<su2double>().swap(dummyRough);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3. Search for donor elements at the exchange locations in     ---*/

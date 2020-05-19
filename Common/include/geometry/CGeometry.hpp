@@ -1692,6 +1692,8 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
   static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
+  
+  inline virtual void SetGlobalMarkerRoughness(CConfig *config) { }
 
 };
 

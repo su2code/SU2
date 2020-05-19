@@ -832,8 +832,9 @@ void CConfig::SetPointersNull(void) {
     /*--- Boundary Condition settings ---*/
 
   Isothermal_Temperature = nullptr;
-  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value      = nullptr;
-  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity = nullptr;
+  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
+  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
+  Roughness_Height       = nullptr;    GlobalMarkerStorageDispl = nullptr;  GlobalRoughness_Height = nullptr;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
@@ -864,9 +865,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_FlowDir             = nullptr;     Inlet_Temperature           = nullptr;     Inlet_Pressure        = nullptr;
   Inlet_Velocity            = nullptr;     Inflow_Mach                 = nullptr;     Inflow_Pressure       = nullptr;
   Exhaust_Pressure          = nullptr;     Outlet_Pressure             = nullptr;     Isothermal_Temperature= nullptr;
-  Heat_Flux                 = nullptr;     Displ_Value                 = nullptr;     Load_Value            = nullptr;
-  FlowLoad_Value            = nullptr;     Roughness_Height            = nullptr;
-
+  
   ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
   Load_Dir = nullptr;            Load_Dir_Value = nullptr;          Load_Dir_Multiplier = nullptr;
@@ -5448,6 +5447,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PyCustom[iMarker_PyCustom])
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
+  
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -7624,6 +7624,8 @@ CConfig::~CConfig(void) {
      delete[] FlowLoad_Value;
      delete[] Roughness_Height;
      delete[] Wall_Emissivity;
+     delete[] GlobalMarkerStorageDispl;
+     delete[] GlobalRoughness_Height;
   /*--- related to periodic boundary conditions ---*/
 
   for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
@@ -9765,5 +9767,33 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   FSI_Problem = fluid_zone && structural_zone;
 
   Multizone_Residual = true;
+
+}
+
+su2double CConfig::GetLocalRoughness(int rankID, unsigned short markerID) const {
+
+  su2double localRoughness = 0.0;
+  int index;
+
+  index = GlobalMarkerStorageDispl[rankID]+ markerID;
+  localRoughness = GlobalRoughness_Height[index];
+
+return localRoughness;
+}
+
+void CConfig::SetGlobalMarkerArray(int* global_displ, int size) {
+
+  if (GlobalMarkerStorageDispl == nullptr) GlobalMarkerStorageDispl = new int [size];
+  GlobalMarkerStorageDispl[0] = 0;
+  for (int iRank = 0; iRank < size; iRank++) 
+    GlobalMarkerStorageDispl[iRank] = global_displ[iRank];
+
+}
+
+void CConfig::SetGlobalRoughnessArray(su2double *global_rough, int sizeGlobal) {
+
+ if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [sizeGlobal];
+  for (int iMarker = 0; iMarker < sizeGlobal; iMarker++) 
+    GlobalRoughness_Height[iMarker] = global_rough[iMarker];
 
 }

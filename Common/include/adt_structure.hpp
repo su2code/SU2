@@ -289,8 +289,6 @@ private:
                                                    of the elements in the ADT. */
   vector<int>           ranksOfElems;  /*!< \brief Vector, which contains the ranks
                                                     of the elements in the ADT. */
-  vector<su2double>       markerRoughness;
-
 #ifdef HAVE_OMP
   vector<vector<CBBoxTargetClass> >BBoxTargets; /*!< \brief Vector, used to store possible bounding box
                                                             candidates during the nearest element search. */
@@ -318,7 +316,6 @@ public:
                 vector<unsigned short> &val_VTKElem,
                 vector<unsigned short> &val_markerID,
                 vector<unsigned long>  &val_elemID,
-                vector<su2double>      &val_roughheight,
                 const bool             globalTree);
 
   /*!
@@ -360,11 +357,10 @@ public:
                                       su2double       &dist,
                                       unsigned short  &markerID,
                                       unsigned long   &elemID,
-                                      int             &rankID,
-                                      su2double       &localRoughness) {
+                                      int             &rankID) {
     const auto iThread = omp_get_thread_num();
     DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread],
-              FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID,localRoughness);
+              FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
   }
 
 private:
@@ -392,8 +388,7 @@ private:
                                     su2double       &dist,
                                     unsigned short  &markerID,
                                     unsigned long   &elemID,
-                                    int             &rankID,
-                                    su2double       &localRoughness) const;
+                                    int             &rankID) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
