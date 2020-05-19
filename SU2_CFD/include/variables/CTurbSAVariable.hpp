@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSAVariable() = default;
+  ~CTurbSAVariable() override = default;
 
   /*!
    * \brief Set the harmonic balance source term.

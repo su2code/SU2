@@ -41,15 +41,6 @@ CInterpolator::CInterpolator(CGeometry ****geometry_container, const CConfig* co
   target_geometry(geometry_container[jZone][INST_0][MESH_0]) {
 }
 
-int CInterpolator::FindInterfaceMarker(const CConfig *config, unsigned short val_marker_interface) {
-
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the interface we are looking for. ---*/
-    if (config->GetMarker_All_ZoneInterface(iMarker) == val_marker_interface) return iMarker;
-  }
-  return -1;
-}
-
 bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {
 
   /*--- Determine whether the boundary is not on the rank because of
@@ -63,8 +54,8 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {
 bool CInterpolator::CheckZonesInterface(const CConfig* donor, const CConfig* target) {
 
   /*--- Loop over all interface markers to find if the 2 zones share any interface boundary. ---*/
-  for (auto iInter = 1u; iInter <= (donor->GetMarker_n_ZoneInterface()/2); iInter++) {
-    if (CheckInterfaceBoundary(FindInterfaceMarker(donor, iInter), FindInterfaceMarker(target, iInter)))
+  for (auto iInter = 0; iInter < (donor->GetMarker_n_ZoneInterface()/2); iInter++) {
+    if (CheckInterfaceBoundary(donor->FindInterfaceMarker(iInter), target->FindInterfaceMarker(iInter)))
       return true;
   }
   return false;

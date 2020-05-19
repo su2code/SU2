@@ -418,7 +418,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerSolver(void);
+  ~CEulerSolver(void) override;
 
   /*!
    * \brief Set the solver nondimensionalization.

@@ -136,7 +136,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CElementProperty(void) {}
+  ~CElementProperty(void) override {}
 
   /*!
    * \brief Get the material model to use for the element.

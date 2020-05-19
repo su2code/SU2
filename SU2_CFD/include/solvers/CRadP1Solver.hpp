@@ -63,7 +63,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadP1Solver(void);
+  ~CRadP1Solver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

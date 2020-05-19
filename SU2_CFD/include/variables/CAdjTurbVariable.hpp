@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjTurbVariable() = default;
+  ~CAdjTurbVariable() override = default;
 
   /*!
    * \brief Set the Eddy Viscosity Sensitivity of the problem.

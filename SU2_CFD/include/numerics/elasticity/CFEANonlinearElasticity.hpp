@@ -97,7 +97,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEANonlinearElasticity(void);
+  ~CFEANonlinearElasticity(void) override;
 
   /*!
    * \brief Set element electric field.

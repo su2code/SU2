@@ -113,7 +113,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CIncNSSolver(void);
+  ~CIncNSSolver(void) override;
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

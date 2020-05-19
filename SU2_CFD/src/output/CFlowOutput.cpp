@@ -791,6 +791,13 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   SetHistoryOutputValue("AOA", config->GetAoA());
 }
 
+void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {
+
+  SetHistoryOutputValue("CT", flow_solver->GetTotal_CT());
+  SetHistoryOutputValue("CQ", flow_solver->GetTotal_CQ());
+  SetHistoryOutputValue("MERIT", flow_solver->GetTotal_CMerit());
+}
+
 
 void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
 

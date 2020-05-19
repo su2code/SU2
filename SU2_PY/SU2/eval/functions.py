@@ -165,6 +165,11 @@ def aerodynamics( config, state=None ):
     
     # initialize
     state = su2io.State(state)
+
+    # Make sure to output aerodynamic coeff.
+    if not 'AERO_COEFF' in config['HISTORY_OUTPUT']:
+        config['HISTORY_OUTPUT'].append('AERO_COEFF')
+
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)

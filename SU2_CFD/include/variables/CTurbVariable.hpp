@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbVariable() = default;
+  ~CTurbVariable() override = default;
 
   /*!
    * \brief Get the value of the eddy viscosity.
@@ -114,7 +114,7 @@ public:
    * \param[in] iPoint - Point index.
    */
   void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
-                         const su2double* Vorticity, su2double LaminarViscosity);
+                         const su2double* Vorticity, su2double LaminarViscosity) override;
 
   /*!
    * \brief Get the vortex tilting measure for computation of the SA and SST EDDES length scale
