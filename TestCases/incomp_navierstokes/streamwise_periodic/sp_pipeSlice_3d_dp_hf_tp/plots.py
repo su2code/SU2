@@ -1,3 +1,4 @@
+#! /usr/bin/python3.5
 # --------------------------------------------------------------------------- #
 # Kattmann, 16.07.2019
 # This python script provides some plots to test the match between analytical
