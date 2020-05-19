@@ -540,7 +540,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned long iPoint) {
   
-//  AD_BEGIN_PASSIVE
+  AD_BEGIN_PASSIVE
   
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
@@ -604,7 +604,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     }
   }
   
-//  AD_END_PASSIVE
+  AD_END_PASSIVE
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

@@ -5100,7 +5100,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
                               const su2double *const *const *const Jacobian_ic,
                               const su2double *const *const *const Jacobian_jc) {
   
-//  AD_BEGIN_PASSIVE
+  AD_BEGIN_PASSIVE
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
@@ -5223,7 +5223,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     }
   }
   
-//  AD_END_PASSIVE
+  AD_END_PASSIVE
   
 }
 
