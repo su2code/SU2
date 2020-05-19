@@ -293,6 +293,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SetValZero();
   }
   
+  /*--- Set flow solver primitives to values stored in turb solver ---*/
+  
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -301,10 +303,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     }
   }
   
-  /*--- Compute primitives and gradients in postprocessing ---*/
-  
-//  Postprocessing(geometry, solver_container, config, iMesh);
-  
+  /*--- Compute gradients ---*/
+    
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
       SetPrimitive_Gradient_GG(geometry, config, true);
