@@ -3182,8 +3182,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nVolumeOutputFiles = 3;
     VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
     VolumeOutputFiles[0] = RESTART_BINARY;
-    VolumeOutputFiles[1] = PARAVIEW_BINARY;
-    VolumeOutputFiles[2] = SURFACE_PARAVIEW_BINARY;
+    VolumeOutputFiles[1] = PARAVIEW_XML;
+    VolumeOutputFiles[2] = SURFACE_PARAVIEW_XML;
   }
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
