@@ -40,6 +40,7 @@ class CVariable;
 class CFlowIncOutput final: public CFlowOutput {
 
   using Modules = ModuleList<CCommonModule,
+                             CFVMBaseModule,
                              CTurbOutputModule,
                              CAerodynamicsModule,
                              CFlowCoefficientModule,

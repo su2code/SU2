@@ -57,6 +57,7 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/modules/CUserFunctionModule.cpp',
                       'output/modules/CTurbOutputModule.cpp',
                       'output/modules/CMeshDeformModule.cpp',
+                      'output/modules/CFVMBaseModule.cpp',
                       'output/tools/CWindowingTools.cpp'])
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',

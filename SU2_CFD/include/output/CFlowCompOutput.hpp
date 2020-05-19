@@ -58,6 +58,7 @@ private:
   unsigned long lastInnerIter;
 
   using Modules = ModuleList<CCommonModule,
+                             CFVMBaseModule,
                              CFlowCompOutputModule,
                              CTurbOutputModule,
                              CAerodynamicsModule,
