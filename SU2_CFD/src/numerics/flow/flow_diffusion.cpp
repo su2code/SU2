@@ -106,6 +106,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
   }
 
   delete [] heat_flux_jac_i;
+  delete [] heat_flux_jac_j;
 
   if (Jacobian_i != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
