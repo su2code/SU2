@@ -559,37 +559,13 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
       Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
       Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
       
-      /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
-      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-        const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-        const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
-        const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-        const su2double r_j  = flowNodes->GetPrimitive(jPoint, nDim+2);
-        const su2double om_j = nodes->GetPrimitive(jPoint,1);
-        const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
-        
-        Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
-        Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
-        
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_i[1][0] += sign*(1. - F1_i)*constants[3]
-                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-          Jacobian_i[1][1] += -sign*(1. - F1_i)*constants[3]*om_j
-                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(pow(om_i,2.));
-          Jacobian_j[1][0] += sign*(1. - F1_i)*constants[3]*r_i
-                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
-          Jacobian_j[1][1] += sign*(1. - F1_i)*constants[3]*r_i
-                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
-        }
-        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      }
 //      /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
 //      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 //        const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 //        const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
 //        const su2double *Normal = geometry->edge[iEdge]->GetNormal();
 //        const su2double r_j  = flowNodes->GetPrimitive(jPoint, nDim+2);
+//        const su2double om_j = nodes->GetPrimitive(jPoint,1);
 //        const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
 //
 //        Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -598,8 +574,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
 //        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 //          Jacobian_i[1][0] += sign*(1. - F1_i)*constants[3]
 //                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-//          Jacobian_i[1][1] += sign*(1. - F1_i)*constants[3]
-//                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
+//          Jacobian_i[1][1] += -sign*(1. - F1_i)*constants[3]*om_j
+//                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(pow(om_i,2.));
 //          Jacobian_j[1][0] += sign*(1. - F1_i)*constants[3]*r_i
 //                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
 //          Jacobian_j[1][1] += sign*(1. - F1_i)*constants[3]*r_i
@@ -609,23 +585,48 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
 //        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
 //      }
       
-//      /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
-//      if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-//        Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
-//        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//          const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-//          if (iVertex > -1) {
-//            const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-//            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-//              Jacobian_i[1][0] -= 2.*(1. - F1_i)*constants[3]
-//                                * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-//              Jacobian_i[1][1] -= 2.*(1. - F1_i)*constants[3]
-//                                * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
-//            }
-//          }
-//        }
-//        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-//      }
+      /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
+      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+        const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+        const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
+        const su2double *Normal = geometry->edge[iEdge]->GetNormal();
+        const su2double r_j  = flowNodes->GetPrimitive(jPoint, nDim+2);
+        const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
+
+        Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
+        Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Jacobian_i[1][0] += sign*(1. - F1_i)*constants[3]
+                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
+          Jacobian_i[1][1] += sign*(1. - F1_i)*constants[3]
+                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
+          Jacobian_j[1][0] += sign*(1. - F1_i)*constants[3]*r_i
+                            * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
+          Jacobian_j[1][1] += sign*(1. - F1_i)*constants[3]*r_i
+                            * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
+        }
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      }
+      
+      /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
+      if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+        Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (iVertex > -1) {
+            const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              Jacobian_i[1][0] -= 2.*(1. - F1_i)*constants[3]
+                                * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
+              Jacobian_i[1][1] -= 2.*(1. - F1_i)*constants[3]
+                                * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
+            }
+          }
+        }
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+      }
     }
   }
   
