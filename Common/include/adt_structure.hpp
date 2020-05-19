@@ -288,7 +288,7 @@ private:
   vector<unsigned long> localElemIDs;  /*!< \brief Vector, which contains the local element ID's
                                                    of the elements in the ADT. */
   vector<int>           ranksOfElems;  /*!< \brief Vector, which contains the ranks
-                                                    of the elements in the ADT. */
+                                                   of the elements in the ADT. */
 #ifdef HAVE_OMP
   vector<vector<CBBoxTargetClass> >BBoxTargets; /*!< \brief Vector, used to store possible bounding box
                                                             candidates during the nearest element search. */

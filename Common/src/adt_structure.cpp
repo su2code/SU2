@@ -590,11 +590,11 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
     int rank;
     SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
-    coorPoints      = val_coor;
-    elemConns       = val_connElem;
-    elemVTK_Type    = val_VTKElem;
-    localMarkers    = val_markerID;
-    localElemIDs    = val_elemID;
+    coorPoints   = val_coor;
+    elemConns    = val_connElem;
+    elemVTK_Type = val_VTKElem;
+    localMarkers = val_markerID;
+    localElemIDs = val_elemID;
 
     ranksOfElems.assign(elemVTK_Type.size(), rank);
   }
@@ -602,11 +602,11 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
 
   /*--- Sequential mode. Copy the data from the arguments into the member
         variables and set the ranks to MASTER_NODE. ---*/
-  coorPoints      = val_coor;
-  elemConns       = val_connElem;
-  elemVTK_Type    = val_VTKElem;
-  localMarkers    = val_markerID;
-  localElemIDs    = val_elemID;
+  coorPoints   = val_coor;
+  elemConns    = val_connElem;
+  elemVTK_Type = val_VTKElem;
+  localMarkers = val_markerID;
+  localElemIDs = val_elemID;
 
   ranksOfElems.assign(elemVTK_Type.size(), MASTER_NODE);
 

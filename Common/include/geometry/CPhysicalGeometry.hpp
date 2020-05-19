@@ -803,7 +803,10 @@ public:
       nodes->SetWall_Distance(iPoint, val);
     }
   }
-  
+
+  /*!
+   * \brief Set roughness values for markers in a global array.
+   */
   void SetGlobalMarkerRoughness(CConfig *config) override;
 
 };

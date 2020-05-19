@@ -1693,6 +1693,9 @@ public:
    */
   static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
   
+  /*!
+   * \brief Set roughness values for markers in a global array.
+   */
   inline virtual void SetGlobalMarkerRoughness(CConfig *config) { }
 
 };

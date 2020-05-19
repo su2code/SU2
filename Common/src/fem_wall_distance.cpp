@@ -174,7 +174,6 @@ void CMeshFEM_DG::SetWallDistance(su2double val){
 
 void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
 
-
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the wall distance of the integration points of   ---*/
   /*---         locally owned volume elements.                             ---*/
@@ -202,7 +201,6 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-
         WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         volElem[l].wallDistance[i] = dist;
@@ -236,7 +234,6 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-
         WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         volElem[l].wallDistanceSolDOFs[i] = dist;
@@ -270,7 +267,6 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        
         WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         matchingFaces[l].wallDistance[i] = dist;
@@ -323,7 +319,6 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
             unsigned long  elemID;
             int            rankID;
             su2double      dist;
-
             WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
             surfElem[l].wallDistance[i] = dist;

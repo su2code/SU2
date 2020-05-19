@@ -11612,7 +11612,7 @@ unsigned short iMarker;
   int size = 1;
   unsigned short nMarker_All = config->GetnMarker_All();
   local_displ[0] = 0;
-  config->SetGlobalMarkerArray(local_displ,size)
+  config->SetGlobalMarkerArray(local_displ,size);
   
   su2double *localRough = new su2double [nMarker_All];
 
