@@ -2849,16 +2849,18 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       throw(1);
     }
 
-    PrintingToolbox::trim(text_line);
+     PrintingToolbox::trim(text_line);
 
-
-    /*--- Check if there is a line continuation character at the end of the current line.
-     * If yes, read until there is a line without one or a comment. If there is a statement after a cont. char
+    /*--- Check if there is a line continuation character at the
+     * end of the current line or somewhere in between (the rest is ignored then).
+     * If yes, read until there is a line without one or an empty line.
+     * If there is a statement after a cont. char
      * throw an error. ---*/
 
-    while (text_line.back() == '\\'){
+    while (text_line.back() == '\\' ||
+           (PrintingToolbox::split(text_line, '\\').size() > 1)){
       string tmp;
-      getline (case_file, tmp);
+      getline (config_buffer, tmp);
       line_count++;
       if (tmp.find_first_of('=') != string::npos){
         errorString.append("Line " + to_string(line_count)  + ": Statement found after continuation character.\n");
