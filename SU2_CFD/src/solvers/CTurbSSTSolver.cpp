@@ -755,6 +755,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       LinSysRes.AddBlock(iPoint, residual);
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (Vn_Infty > 0.0) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_j);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
@@ -763,11 +764,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_domain);
-//      visc_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
-//      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                         nodes->GetGradient(iPoint));
 
