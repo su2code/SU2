@@ -1960,7 +1960,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 //    factor += sigmak*gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
 //                                 +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
 //            + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    if (CDkw > 0.0) {
+    if (CDkw > 1.0e-10) {
       factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
               + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
