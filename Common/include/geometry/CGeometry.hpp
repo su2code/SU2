@@ -1013,11 +1013,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_Wing(CConfig *config, bool original_surface,
-                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
-                            su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                            su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
-                            su2double &Wing_MaxDihedral) {}
+  virtual void Compute_Wing(CConfig *config, bool original_surface, map<string,su2double> &Wing_ObjectiveFuncs) {}
 
   /*!
    * \brief A virtual member.

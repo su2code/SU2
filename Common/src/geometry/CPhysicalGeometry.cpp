@@ -10601,11 +10601,12 @@ su2double CPhysicalGeometry::Compute_Length(su2double *Plane_P0, su2double *Plan
 
 }
 
-void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
-                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                                     su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
-                                     su2double &Wing_MaxDihedral) {
+void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface, map<string,su2double> &Wing_ObjectiveFuncs) {
+
+  su2double Wing_Volume = 0.0, Wing_MinMaxThickness = 0.0, Wing_MaxMaxThickness = 0.0, Wing_MinChord = 0.0,
+            Wing_MaxChord = 0.0, Wing_MinLERadius = 0.0, Wing_MaxLERadius = 0.0, Wing_MinToC = 0.0,
+            Wing_MaxToC = 0.0, Wing_ObjFun_MinToC, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0,
+            Wing_MaxDihedral = 0.0;
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
@@ -10869,7 +10870,19 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       Wing_MaxCurvature = max(Wing_MaxCurvature, Curvature[iPlane]);
       Wing_MaxDihedral = max(Wing_MaxDihedral, fabs(Dihedral[iPlane]));
     }
-
+    Wing_ObjectiveFuncs["WING_VOLUME"] = Wing_Volume;
+    Wing_ObjectiveFuncs["WING_MIN_THICKNESS"] = Wing_MinMaxThickness;
+    Wing_ObjectiveFuncs["WING_MAX_THICKNESS"] = Wing_MaxMaxThickness;
+    Wing_ObjectiveFuncs["WING_MIN_CHORD"] = Wing_MinChord;
+    Wing_ObjectiveFuncs["WING_MAX_CHORD"] = Wing_MaxChord;
+    Wing_ObjectiveFuncs["WING_MIN_LE_RADIUS"] = Wing_MinLERadius;
+    Wing_ObjectiveFuncs["WING_MAX_LE_RADIUS"] = Wing_MaxLERadius;
+    Wing_ObjectiveFuncs["WING_MIN_TOC"] = Wing_MinToC;
+    Wing_ObjectiveFuncs["WING_MAX_TOC"] = Wing_MaxToC;
+    Wing_ObjectiveFuncs["WING_OBJFUN_MIN_TOC"] = Wing_ObjFun_MinToC;
+    Wing_ObjectiveFuncs["WING_MAX_TWIST"] = Wing_MaxTwist;
+    Wing_ObjectiveFuncs["WING_MAX_CURVATURE"] = Wing_MaxCurvature;
+    Wing_ObjectiveFuncs["WING_MAX_DIHEDRAL"] = Wing_MaxDihedral;
   }
 
   /*--- Free memory for the section cuts ---*/
@@ -10906,18 +10919,17 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
 }
 
-void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
-                                         su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
-                                         su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
-                                         su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
-                                         su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
-                                         su2double &Fuselage_MaxCurvature) {
+void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface, map<string,su2double> &Fuselage_ObjectiveFuncs) {
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
   su2double MinPlane, MaxPlane, dPlane, *Area, *Length, *Width, *WaterLineWidth, *Height, *Curvature;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Fuselage_File, Section_File;
+
+  su2double Fuselage_Volume = 0.0, Fuselage_WettedArea = 0.0, Fuselage_MinWidth = 0.0, Fuselage_MaxWidth = 0.0,
+            Fuselage_MinWaterLineWidth = 0.0, Fuselage_MaxWaterLineWidth = 0.0, Fuselage_MinHeight = 0.0,
+            Fuselage_MaxHeight 0.0, Fuselage_MaxCurvature = 0.0;
 
   /*--- Make a large number of section cuts for approximating volume ---*/
 
@@ -11146,6 +11158,8 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
       Fuselage_MaxHeight = max(Fuselage_MaxHeight, Height[iPlane]);
       Fuselage_MaxCurvature = max(Fuselage_MaxCurvature, Curvature[iPlane]);
     }
+
+    
 
   }
 

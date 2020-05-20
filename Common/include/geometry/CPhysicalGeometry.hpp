@@ -720,23 +720,12 @@ public:
   /*!
    * \brief Evaluate geometrical parameters of a wing.
    */
-  void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness,
-                    su2double &Wing_MinChord, su2double &Wing_MaxChord,
-                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                    su2double &Wing_MinToC, su2double &Wing_MaxToC,
-                    su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist,
-                    su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral) override;
+  void Compute_Wing(CConfig *config, bool original_surface, map<string,su2double> &Wing_ObjectiveFuncs) override;
 
   /*!
    * \brief Evaluate geometrical parameters of a wing.
    */
-  void Compute_Fuselage(CConfig *config, bool original_surface,
-                        su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
-                        su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
-                        su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
-                        su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
-                        su2double &Fuselage_MaxCurvature) override;
+  void Compute_Fuselage(CConfig *config, bool original_surface, map<string,su2double> &Fuselage_ObjectiveFuncs) override;
 
   /*!
    * \brief Evaluate geometrical parameters of a wing.

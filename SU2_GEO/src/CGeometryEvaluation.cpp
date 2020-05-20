@@ -32,6 +32,13 @@ CGeometryEvaluation::CGeometryEvaluation(CGeometry* geo_val, CConfig* config_val
                                          SU2_Comm val_MPICommunicator) : geometry(geo_val), 
                                          config(config_val), MPICommunicator(val_MPICommunicator) {
   
+  map<string, su2double> Wing_ObjectiveFuncs_FD (Wing_ObjectiveFuncs);
+  map<string, su2double> Wing_ObjectiveFuncs_Grad(Wing_ObjectiveFuncs);
+  map<string, su2double> Fuselage_ObjectiveFuncs_FD(Fuselage_ObjectiveFuncs);
+  map<string, su2double> Fuselage_ObjectiveFuncs_Grad(Fuselage_ObjectiveFuncs);
+  map<string, su2double> Nacelle_ObjectiveFuncs_FD(Nacelle_ObjectiveFuncs);
+  map<string, su2double> Nacelle_ObjectiveFuncs_Grad(Nacelle_ObjectiveFuncs);
+
   /*--- MPI initialization ---*/
   SU2_MPI::SetComm(MPICommunicator);
   rank = SU2_MPI::GetRank();
@@ -251,35 +258,49 @@ void CGeometryEvaluation::ComputeGeometry(){
         cout << "Computing the wing continuous description." << endl << endl;
       }
       
-      geometry->Compute_Wing(config, true,
-                                               Wing_Volume, Wing_MinThickness, Wing_MaxThickness, Wing_MinChord, Wing_MaxChord,
-                                               Wing_MinLERadius, Wing_MaxLERadius, Wing_MinToC, Wing_MaxToC, Wing_ObjFun_MinToC,
-                                               Wing_MaxTwist, Wing_MaxCurvature, Wing_MaxDihedral);
+      geometry->Compute_Wing(config, true, Wing_ObjectiveFuncs);
       
       /*--- Screen output for the wing definition ---*/
       
       if (rank == MASTER_NODE) {
-        if (config->GetSystemMeasurements() == US) cout << "Wing volume: "    << Wing_Volume << " in^3. ";
-        else cout << "Wing volume: "    << Wing_Volume << " m^3. ";
-        if (config->GetSystemMeasurements() == US) cout << "Wing min. thickness: "  << Wing_MinThickness << " in. ";
-        else cout << "Wing min. thickness: "  << Wing_MinThickness << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Wing max. thickness: "  << Wing_MaxThickness << " in. " << endl;
-        else cout << "Wing max. thickness: "  << Wing_MaxThickness << " m. " << endl;
-        if (config->GetSystemMeasurements() == US) cout << "Wing min. chord: "  << Wing_MinChord << " in. ";
-        else cout << "Wing min. chord: "  << Wing_MinChord << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Wing max. chord: "  << Wing_MaxChord << " in. ";
-        else cout << "Wing max. chord: "  << Wing_MaxChord << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Wing min. LE radius: "  << Wing_MinLERadius << " 1/in. ";
-        else cout << "Wing min. LE radius: "  << Wing_MinLERadius << " 1/m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Wing max. LE radius: "  << Wing_MaxLERadius << " 1/in. " << endl;
-        else cout << "Wing max. LE radius: "  << Wing_MaxLERadius << " 1/m. " << endl;
-        cout << "Wing min. ToC: "  << Wing_MinToC << ". ";
-        cout << "Wing max. ToC: "  << Wing_MaxToC << ". ";
-        cout << "Wing delta ToC: "  << Wing_ObjFun_MinToC << ". ";
-        cout << "Wing max. twist: "  << Wing_MaxTwist << " deg. "<< endl;
-        if (config->GetSystemMeasurements() == US) cout << "Wing max. curvature: "  << Wing_MaxCurvature << " 1/in. ";
-        else cout << "Wing max. curvature: "  << Wing_MaxCurvature << " 1/m. ";
-        cout << "Wing max. dihedral: "  << Wing_MaxDihedral << " deg." << endl;
+        if (config->GetSystemMeasurements() == US) {
+          cout << "Wing volume: "           << Wing_ObjectiveFuncs["WING_VOLUME"] << " in^3. ";
+          cout << "Wing min. thickness: "   << Wing_ObjectiveFuncs["WING_MIN_THICKNESS"] << " in. ";
+          cout << "Wing max. thickness: "   << Wing_ObjectiveFuncs["WING_MAX_THICKNESS"] << " in. " << endl;
+          cout << "Wing min. chord: "       << Wing_ObjectiveFuncs["WING_MIN_CHORD"] << " in. ";
+          cout << "Wing max. chord: "       << Wing_ObjectiveFuncs["WING_MAX_CHORD"] << " in. ";
+          cout << "Wing min. LE radius: "   << Wing_ObjectiveFuncs["WING_MIN_LE_RADIUS"] << " 1/in. ";
+          cout << "Wing max. LE radius: "   << Wing_ObjectiveFuncs["WING_MAX_LE_RADIUS"] << " 1/in. " << endl;
+        }
+        else {
+          cout << "Wing volume: "           << Wing_ObjectiveFuncs["WING_VOLUME"] << " m^3. ";
+          cout << "Wing min. thickness: "   << Wing_ObjectiveFuncs["WING_MIN_THICKNESS"] << " m. ";
+          cout << "Wing max. thickness: "   << Wing_ObjectiveFuncs["WING_MAX_THICKNESS"] << " m. " << endl;
+          cout << "Wing min. chord: "       << Wing_ObjectiveFuncs["WING_MIN_CHORD"] << " m. ";
+          cout << "Wing max. chord: "       << Wing_ObjectiveFuncs["WING_MAX_CHORD"] << " m. ";
+          cout << "Wing min. LE radius: "   << Wing_ObjectiveFuncs["WING_MIN_LE_RADIUS"] << " 1/m. ";
+          cout << "Wing max. LE radius: "   << Wing_ObjectiveFuncs["WING_MAX_LE_RADIUS"] << " 1/m. " << endl;
+        }
+        // else cout << "Wing volume: "    << Wing_Volume << " m^3. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Wing min. thickness: "  << Wing_MinThickness << " m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Wing max. thickness: "  << Wing_MaxThickness << " m. " << endl;
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Wing min. chord: "  << Wing_MinChord << " m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Wing max. chord: "  << Wing_MaxChord << " m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Wing min. LE radius: "  << Wing_MinLERadius << " 1/m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Wing max. LE radius: "  << Wing_MaxLERadius << " 1/m. " << endl;
+        cout << "Wing min. ToC: "  << Wing_ObjectiveFuncs["WING_MIN_TOC"] << ". ";
+        cout << "Wing max. ToC: "  << Wing_ObjectiveFuncs["WING_MAX_TOC"] << ". ";
+        cout << "Wing delta ToC: "  << Wing_ObjectiveFuncs["WING_OBJFUN_MIN_TOC"] << ". ";
+        cout << "Wing max. twist: "  << Wing_ObjectiveFuncs["WING_MAX_TWIST"] << " deg. "<< endl;
+        if (config->GetSystemMeasurements() == US) cout << "Wing max. curvature: "  << Wing_ObjectiveFuncs["WING_MAX_CURVATURE"] << " 1/in. ";
+        else cout << "Wing max. curvature: "  << Wing_ObjectiveFuncs["WING_MAX_CURVATURE"] << " 1/m. ";
+        cout << "Wing max. dihedral: "  << Wing_ObjectiveFuncs["WING_MAX_DIHEDRAL"] << " deg." << endl;
       }
       
     }
@@ -441,7 +462,13 @@ void CGeometryEvaluation::OutputFunctionFile(){
         }
       }
       else {
-        ObjFunc_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
+        auto it = Wing_ObjectiveFuncs.begin();
+        while (it != Wing_ObjectiveFuncs.end()){
+          auto key = it->first;
+          ObjFunc_file <<  "\"" << key << "\",";
+          it++;
+        }
+        // ObjFunc_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
@@ -478,7 +505,13 @@ void CGeometryEvaluation::OutputFunctionFile(){
     }
     else {
       if (geometry->GetnDim() == 3) {
-        ObjFunc_file << Wing_Volume <<", "<< Wing_MinThickness <<", "<< Wing_MaxThickness <<", "<< Wing_MinChord <<", "<< Wing_MaxChord <<", "<< Wing_MinLERadius <<", "<< Wing_MaxLERadius<<", "<< Wing_MinToC <<", "<< Wing_MaxToC <<", "<< Wing_ObjFun_MinToC <<", "<< Wing_MaxTwist <<", "<< Wing_MaxCurvature <<", "<< Wing_MaxDihedral <<", ";
+        // Print wing function values 
+        auto it = Wing_ObjectiveFuncs.begin();
+        while (it != Wing_ObjectiveFuncs.end()){
+          auto val = it->second;
+          ObjFunc_file << val << ", ";
+          it++;
+        }
       }
       for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
         ObjFunc_file << ObjectiveFunc[iPlane];
@@ -752,10 +785,7 @@ void CGeometryEvaluation::EverythingGradient(){
                                                         Nacelle_MaxToC_New, Nacelle_ObjFun_MinToC_New, Nacelle_MaxTwist_New);
           }
           else {
-            geometry->Compute_Wing(config, false,
-                                                     Wing_Volume_New, Wing_MinThickness_New, Wing_MaxThickness_New, Wing_MinChord_New,
-                                                     Wing_MaxChord_New, Wing_MinLERadius_New, Wing_MaxLERadius_New, Wing_MinToC_New, Wing_MaxToC_New,
-                                                     Wing_ObjFun_MinToC_New, Wing_MaxTwist_New, Wing_MaxCurvature_New, Wing_MaxDihedral_New);
+            geometry->Compute_Wing(config, false, Wing_ObjectiveFuncs_FD);
           }
           
         }
@@ -819,19 +849,25 @@ void CGeometryEvaluation::EverythingGradient(){
             Nacelle_MaxTwist_Grad = (Nacelle_MaxTwist_New - Nacelle_MaxTwist) / delta_eps;
           }
           else {
-            Wing_Volume_Grad = (Wing_Volume_New - Wing_Volume) / delta_eps;
-            Wing_MinThickness_Grad = (Wing_MinThickness_New - Wing_MinThickness) / delta_eps;
-            Wing_MaxThickness_Grad = (Wing_MaxThickness_New - Wing_MaxThickness) / delta_eps;
-            Wing_MinChord_Grad = (Wing_MinChord_New - Wing_MinChord) / delta_eps;
-            Wing_MaxChord_Grad = (Wing_MaxChord_New - Wing_MaxChord) / delta_eps;
-            Wing_MinLERadius_Grad = (Wing_MinLERadius_New - Wing_MinLERadius) / delta_eps;
-            Wing_MaxLERadius_Grad = (Wing_MaxLERadius_New - Wing_MaxLERadius) / delta_eps;
-            Wing_MinToC_Grad = (Wing_MinToC_New - Wing_MinToC) / delta_eps;
-            Wing_MaxToC_Grad = (Wing_MaxToC_New - Wing_MaxToC) / delta_eps;
-            Wing_ObjFun_MinToC_Grad = (Wing_ObjFun_MinToC_New - Wing_ObjFun_MinToC) / delta_eps;
-            Wing_MaxTwist_Grad = (Wing_MaxTwist_New - Wing_MaxTwist) / delta_eps;
-            Wing_MaxCurvature_Grad = (Wing_MaxCurvature_New - Wing_MaxCurvature) / delta_eps;
-            Wing_MaxDihedral_Grad = (Wing_MaxDihedral_New - Wing_MaxDihedral) / delta_eps;
+            auto it = Wing_ObjectiveFuncs.begin();
+            while (it != Wing_ObjectiveFuncs.end()){
+              auto key = it->first;
+              Wing_ObjectiveFuncs_Grad[key] = (Wing_ObjectiveFuncs_FD[key] - Wing_ObjectiveFuncs[key]) / delta_eps;
+              it++;
+            }
+            // Wing_Volume_Grad = (Wing_Volume_New - Wing_Volume) / delta_eps;
+            // Wing_MinThickness_Grad = (Wing_MinThickness_New - Wing_MinThickness) / delta_eps;
+            // Wing_MaxThickness_Grad = (Wing_MaxThickness_New - Wing_MaxThickness) / delta_eps;
+            // Wing_MinChord_Grad = (Wing_MinChord_New - Wing_MinChord) / delta_eps;
+            // Wing_MaxChord_Grad = (Wing_MaxChord_New - Wing_MaxChord) / delta_eps;
+            // Wing_MinLERadius_Grad = (Wing_MinLERadius_New - Wing_MinLERadius) / delta_eps;
+            // Wing_MaxLERadius_Grad = (Wing_MaxLERadius_New - Wing_MaxLERadius) / delta_eps;
+            // Wing_MinToC_Grad = (Wing_MinToC_New - Wing_MinToC) / delta_eps;
+            // Wing_MaxToC_Grad = (Wing_MaxToC_New - Wing_MaxToC) / delta_eps;
+            // Wing_ObjFun_MinToC_Grad = (Wing_ObjFun_MinToC_New - Wing_ObjFun_MinToC) / delta_eps;
+            // Wing_MaxTwist_Grad = (Wing_MaxTwist_New - Wing_MaxTwist) / delta_eps;
+            // Wing_MaxCurvature_Grad = (Wing_MaxCurvature_New - Wing_MaxCurvature) / delta_eps;
+            // Wing_MaxDihedral_Grad = (Wing_MaxDihedral_New - Wing_MaxDihedral) / delta_eps;
           }
           
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -1041,19 +1077,19 @@ void CGeometryEvaluation::EverythingGradient(){
         }
         else {
           if (geometry->GetnDim() == 3) {
-            cout << "\nWing volume grad.: "             << Wing_Volume_Grad << ". ";
-            cout << "Wing min. thickness grad.: "  << Wing_MinThickness_Grad << ". ";
-            cout << "Wing max. thickness grad.: "  << Wing_MaxThickness_Grad << ". ";
-            cout << "Wing min. chord grad.: "           << Wing_MinChord_Grad << ". ";
-            cout << "Wing max. chord grad.: "           << Wing_MaxChord_Grad << "." << endl;
-            cout << "Wing min. LE radius grad.: "       << Wing_MinChord_Grad << ". ";
-            cout << "Wing max. LE radius grad.: "       << Wing_MaxChord_Grad << ". ";
-            cout << "Wing min. ToC grad.: "             << Wing_MinToC_Grad << ". ";
-            cout << "Wing max. ToC grad.: "             << Wing_MaxToC_Grad << ". ";
-            cout << "Wing delta ToC grad.: "            << Wing_ObjFun_MinToC_Grad << "." << endl;
-            cout << "Wing max. twist grad.: "           << Wing_MaxTwist_Grad << ". ";
-            cout << "Wing max. curv. grad.: "           << Wing_MaxCurvature_Grad << ". ";
-            cout << "Wing max. dihedral grad.: "        << Wing_MaxDihedral_Grad << "." << endl;
+            cout << "\nWing volume grad.: "             << Wing_ObjectiveFuncs_Grad["WING_VOLUME"] << ". ";
+            cout << "Wing min. thickness grad.: "       << Wing_ObjectiveFuncs_Grad["WING_MIN_THICKNESS"] << ". ";
+            cout << "Wing max. thickness grad.: "       << Wing_ObjectiveFuncs_Grad["WING_MAX_THICKNESS"] << ". ";
+            cout << "Wing min. chord grad.: "           << Wing_ObjectiveFuncs_Grad["WING_MIN_CHORD"] << ". ";
+            cout << "Wing max. chord grad.: "           << Wing_ObjectiveFuncs_Grad["WING_MAX_CHORD"] << "." << endl;
+            cout << "Wing min. LE radius grad.: "       << Wing_ObjectiveFuncs_Grad["WING_MIN_LE_RADIUS"] << ". ";
+            cout << "Wing max. LE radius grad.: "       << Wing_ObjectiveFuncs_Grad["WING_MAX_LE_RADIUS"] << ". ";
+            cout << "Wing min. ToC grad.: "             << Wing_ObjectiveFuncs_Grad["WING_MIN_TOC"] << ". ";
+            cout << "Wing max. ToC grad.: "             << Wing_ObjectiveFuncs_Grad["WING_MAX_TOC"] << ". ";
+            cout << "Wing delta ToC grad.: "            << Wing_ObjectiveFuncs_Grad["WING_OBJFUN_MIN_TOC"] << "." << endl;
+            cout << "Wing max. twist grad.: "           << Wing_ObjectiveFuncs_Grad["WING_MAX_TWIST"] << ". ";
+            cout << "Wing max. curv. grad.: "           << Wing_ObjectiveFuncs_Grad["WING_MAX_CURVATURE"] << ". ";
+            cout << "Wing max. dihedral grad.: "        << Wing_ObjectiveFuncs_Grad["WING_MAX_DIHEDRAL"] << "." << endl;
           }
           
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -1161,7 +1197,12 @@ void CGeometryEvaluation::EverythingGradient(){
         }
         else {
           if (geometry->GetnDim() == 3) {
-            Gradient_file << Wing_Volume_Grad <<","<< Wing_MinThickness_Grad <<","<< Wing_MaxThickness_Grad <<","<< Wing_MinChord_Grad <<","<< Wing_MaxChord_Grad <<","<< Wing_MinLERadius_Grad <<","<< Wing_MaxLERadius_Grad<<","<< Wing_MinToC_Grad <<","<< Wing_MaxToC_Grad <<","<< Wing_ObjFun_MinToC_Grad <<","<< Wing_MaxTwist_Grad <<","<< Wing_MaxCurvature_Grad <<","<< Wing_MaxDihedral_Grad <<",";
+            Gradient_file << Wing_ObjectiveFuncs_Grad["WING_VOLUME"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_THICKNESS"] <<", "<< 
+        Wing_ObjectiveFuncs_Grad["WING_MAX_THICKNESS"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_CHORD"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_CHORD"]
+        <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_LE_RADIUS"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_LE_RADIUS"] <<", "<< 
+        Wing_ObjectiveFuncs_Grad["WING_MIN_TOC"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_TOC"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_OBJFUN_MIN_TOC"]
+        <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_TWIST"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_CURVATURE"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_DIHEDRAL"] <<", ";
+            // Gradient_file << Wing_Volume_Grad <<","<< Wing_MinThickness_Grad <<","<< Wing_MaxThickness_Grad <<","<< Wing_MinChord_Grad <<","<< Wing_MaxChord_Grad <<","<< Wing_MinLERadius_Grad <<","<< Wing_MaxLERadius_Grad<<","<< Wing_MinToC_Grad <<","<< Wing_MaxToC_Grad <<","<< Wing_ObjFun_MinToC_Grad <<","<< Wing_MaxTwist_Grad <<","<< Wing_MaxCurvature_Grad <<","<< Wing_MaxDihedral_Grad <<",";
           }
           for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
             Gradient_file << Gradient[iPlane];

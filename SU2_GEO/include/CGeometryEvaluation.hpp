@@ -35,6 +35,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <map>
 
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
@@ -78,6 +79,58 @@ private:
   vector<vector<su2double>> thicc, thicc_New, thicc_Grad;
 
   SU2_Comm MPICommunicator;
+
+  map<string, su2double> Wing_ObjectiveFuncs = 
+  {
+    {"WING_VOLUME", 0.0},
+    {"WING_MIN_THICKNESS", 0.0},
+    {"WING_MAX_THICKNESS", 0.0},
+    {"WING_MIN_CHORD", 0.0},
+    {"WING_MAX_CHORD", 0.0},
+    {"WING_MIN_LE_RADIUS", 0.0},
+    {"WING_MAX_LE_RADIUS", 0.0},
+    {"WING_MIN_TOC", 0.0},
+    {"WING_MAX_TOC", 0.0},
+    {"WING_OBJFUN_MIN_TOC", 0.0},
+    {"WING_MAX_TWIST", 0.0},
+    {"WING_MAX_CURVATURE", 0.0},
+    {"WING_MAX_DIHEDRAL", 0.0}
+  };
+  map<string, su2double> Wing_ObjectiveFuncs_FD;
+  map<string, su2double> Wing_ObjectiveFuncs_Grad;
+
+
+  map<string, su2double> Fuselage_ObjectiveFuncs = 
+  {
+    {"FUSELAGE_VOLUME", 0.0},
+    {"FUSELAGE_WETTED_AREA", 0.0},
+    {"FUSELAGE_MIN_WIDTH", 0.0},
+    {"FUSELAGE_MAX_WIDTH", 0.0},
+    {"FUSELAGE_MIN_WATERLINE_WIDTH", 0.0},
+    {"FUSELAGE_MAX_WATERLINE_WIDTH", 0.0},
+    {"FUSELAGE_MIN_HEIGHT", 0.0},
+    {"FUSELAGE_MAX_HEIGHT", 0.0},
+    {"FUSELAGE_MAX_CURVATURE", 0.0},
+  };
+  map<string, su2double> Fuselage_ObjectiveFuncs_FD;
+  map<string, su2double> Fuselage_ObjectiveFuncs_Grad;
+
+  map<string, su2double> Nacelle_ObjectiveFuncs =
+  {
+    {"NACELLE_VOLUME", 0.0},
+    {"NACELLE_MIN_THICKNESS", 0.0},
+    {"NACELLE_MAX_THICKNESS", 0.0},
+    {"NACELLE_MIN_CHORD", 0.0},
+    {"NACELLE_MAX_CHORD", 0.0},
+    {"NACELLE_MIN_LE_RADIUS", 0.0},
+    {"NACELLE_MAX_LE_RADIUS", 0.0},
+    {"NACELLE_MIN_TOC", 0.0},
+    {"NACELLE_MAX_TOC", 0.0},
+    {"NACELLE_OBJFUN_MIN_TOC", 0.0},
+    {"NACELLE_MAX_TWIST", 0.0},
+  };
+  map<string, su2double> Nacelle_ObjectiveFuncs_FD;
+  map<string, su2double> Nacelle_ObjectiveFuncs_Grad;
 
 
 public:
