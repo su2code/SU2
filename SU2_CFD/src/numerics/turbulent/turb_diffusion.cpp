@@ -341,10 +341,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     const su2double factor_j = dmudT_j/(r_j*Cv);
     
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
-        Jacobian_j[iVar][jVar] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
-      }
+      Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
+      Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
     }
   }
 
