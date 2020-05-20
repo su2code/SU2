@@ -54,17 +54,26 @@ void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager &volumeField
   volFieldTokenRefs.clear();
 
   for (const auto& field : volumeFields.GetCollection().GetReferencesAll()){
-    packToken* ref = &volumeScope[field->first];
+
+    /*--- Create a packToken that contains a double value and store in our scope using the field name ---*/
+
+    volumeScope[field->first] = packToken(0.0);
+
+    /*--- Since we explicitely created a packToken with double values, we know the underlying type.
+     * To avoid expensive new/delete operations and to have direct access to the underlying double variable
+     * we store a reference to the true type here ---*/
+
+    auto *ref = static_cast<Token<su2double>*>(volumeScope[field->first].token());
     volFieldTokenRefs.emplace_back(field, ref);
   }
 }
 
 void CUserFunctionModule::LoadSurfaceData(CVolumeOutFieldManager &volumeFields){
-  EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope);
+  EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope, interpreter::FunctionType::SURFACEINTEGRAL);
 }
 
 void CUserFunctionModule::LoadVolumeData(CVolumeOutFieldManager &volumeFields){
-  EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope);
+  EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope, interpreter::FunctionType::VOLUMEFIELD);
 }
 
 void CUserFunctionModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
@@ -88,8 +97,17 @@ void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &hi
   histFieldTokenRefs.clear();
 
   for (const auto& field : historyFields.GetCollection().GetReferencesAll()){
-    packToken* ref = &historyScope[field->first];
-    histFieldTokenRefs.emplace_back(field,ref);
+
+    /*--- Create a packToken that contains a double value and store in our scope using the field name ---*/
+
+    historyScope[field->first] = packToken(0.0);
+
+    /*--- Since we explicitely created a packToken with double values, we know the underlying type.
+     * To avoid expensive new/delete operations and to have direct access to the underlying double variable
+     * we store a reference to the true type here ---*/
+
+    auto* ref = static_cast<Token<su2double>*>(historyScope[field->first].token());
+    histFieldTokenRefs.emplace_back(field, ref);
   }
 
   for (const auto field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT})){
@@ -99,29 +117,31 @@ void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &hi
 }
 
 void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
-  EvalUserFunctions(histFieldTokenRefs, funcHistFieldRefs, historyScope);
+  EvalUserFunctions(histFieldTokenRefs, funcHistFieldRefs, historyScope, interpreter::FunctionType::HISTFIELD);
 }
 
 
 void CUserFunctionModule::EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,
-                                            const std::vector<FieldRefFuncPair> &funcFieldRef, TokenMap &scope){
+                                            const std::vector<FieldRefFuncPair> &funcFieldRef, TokenMap &scope, interpreter::FunctionType type){
   for (const auto& fieldToken : fieldTokenRef){
     decltype (fieldToken.second) token;
     decltype (fieldToken.first) field;
     std::tie(field, token) = fieldToken;
     if (token != nullptr){
-      (*token) = field->second.value;
+      token->val = field->second.value;
     }
   }
   for (const auto& funcField : funcFieldRef){
     decltype (funcField.second) func;
     decltype (funcField.first) field;
     std::tie(field, func) = funcField;
-    try {
-      field->second.value = func->exec(scope).asDouble();
-    }  catch (msg_exception &err) {
-      SU2_MPI::Error(std::string("In expression ") + field->first
-                     + std::string(": ") + std::string(err.what()), CURRENT_FUNCTION);
+    if (func->getType() == type){
+      try {
+        field->second.value = func->exec(scope).asDouble();
+      }  catch (msg_exception &err) {
+        SU2_MPI::Error(std::string("In expression ") + field->first
+                       + std::string(": ") + std::string(err.what()), CURRENT_FUNCTION);
+      }
     }
   }
 }

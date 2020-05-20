@@ -35,7 +35,7 @@ void CFVMBaseModule::LoadSurfaceData(CVolumeOutFieldManager &volumeFields){
 
 void CFVMBaseModule::LoadVolumeData(CVolumeOutFieldManager &volumeFields){
 
-  const auto* coord = solverData.geometry->node[solverData.iPoint]->GetCoord();
+  const auto* coord = solverData.geometry->nodes->GetCoord(solverData.iPoint);
 
   volumeFields.SetFieldValue("COORD_X", coord[0]);
   volumeFields.SetFieldValue("COORD_Y", coord[1]);

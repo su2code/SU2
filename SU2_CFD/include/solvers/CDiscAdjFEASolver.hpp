@@ -50,7 +50,6 @@ private:
 
   su2double ObjFunc_Value = 0.0;        /*!< \brief Value of the objective function. */
   su2double *normalLoads = nullptr;     /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker_nL = 0;         /*!< \brief Total number of markers that have a normal load applied. */
 
   unsigned short nMPROP = 0;            /*!< \brief Number of material properties */
 

@@ -197,23 +197,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output, bool cus
 }
 
 COutput::~COutput(void) {
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
 
-  if (volumeDataSorter != nullptr)
-    delete volumeDataSorter;
-
+  delete volumeDataSorter;
   volumeDataSorter = nullptr;
 
-  if (surfaceDataSorter != nullptr)
-    delete surfaceDataSorter;
-
+  delete surfaceDataSorter;
   surfaceDataSorter = nullptr;
-
-
 }
 
 
@@ -378,7 +371,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
-  CFileWriter *fileWriter = NULL;
+  CFileWriter *fileWriter = nullptr;
 
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
@@ -752,11 +745,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       break;
 
     default:
-      fileWriter = NULL;
+      fileWriter = nullptr;
       break;
   }
 
-  if (fileWriter != NULL){
+  if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
 
@@ -1565,30 +1558,11 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
     data.geometry = geometry;
     data.config = config;
 
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    modules->LoadVolumeDataAtPoint(&data, volumeDataSorter);
 
+    modules->LoadSurfaceDataAtVertex(&data, volumeDataSorter);
 
-      modules->LoadVolumeDataAtPoint(&data, iPoint, volumeDataSorter);
-
-//      /*--- Load the volume data into the data sorter. --- */
-
-//      volumeFieldsAll.StartCaching();
-
-//      LoadVolumeData(config, geometry, solver, iPoint);
-
-//      if (!userDefinedFields.empty()){
-
-//        volumeFieldsAll.UpdateTokens();
-
-//        volumeFieldsAll.EvalCustomFields(userDefinedFields);
-
-//      }
-
-//      WriteToDataSorter(iPoint);
-
-    }
   }
-//  volumeFieldsAll.SetCaching(false);
 }
 
 void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver){
@@ -1627,7 +1601,7 @@ void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **so
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->node[iPoint]->GetDomain()){
+          if(geometry->nodes->GetDomain(iPoint)){
 
             volumeFieldsAll.StartCaching();
 

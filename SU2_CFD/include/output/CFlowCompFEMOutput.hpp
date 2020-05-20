@@ -42,7 +42,6 @@ class CFlowCompFEMOutput final: public CFlowOutput {
 
 private:
 
-  unsigned short nVar; //!< Number of variables
   unsigned short turb_model; //!< Kind of turbulence model
 
 public:

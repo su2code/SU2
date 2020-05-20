@@ -517,18 +517,18 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   CFlowOutput::LoadVolumeData(config, geometry, solver, iPoint);
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb = NULL;
+  CVariable* Node_Turb = nullptr;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
 
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("MOMENTUM_X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -555,10 +555,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetGrid_Movement()){
-    SetVolumeOutputValue("GRID_VELOCITY_X", iPoint, Node_Geo->GetGridVel()[0]);
-    SetVolumeOutputValue("GRID_VELOCITY_Y", iPoint, Node_Geo->GetGridVel()[1]);
+    SetVolumeOutputValue("GRID_VELOCITY_X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
+    SetVolumeOutputValue("GRID_VELOCITY_Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
-      SetVolumeOutputValue("GRID_VELOCITY_Z", iPoint, Node_Geo->GetGridVel()[2]);
+      SetVolumeOutputValue("GRID_VELOCITY_Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
@@ -642,7 +642,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
-    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance());
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){

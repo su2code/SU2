@@ -58,6 +58,11 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) :
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields ++;
+  }
+
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Heat)";
   multiZoneHeaderString = ss.str();
@@ -162,13 +167,13 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
-  CPoint*    Node_Geo     = geometry->node[iPoint];
+  CPoint*    Node_Geo     = geometry->nodes;
 
 
-  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
 

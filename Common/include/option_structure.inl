@@ -348,14 +348,14 @@ public:
     this->default_value = new su2double[size];
     for (int i = 0; i < size; i++){ this->default_value[i] = default_value[i]; }
 
-    def  = NULL;
-    vals = NULL;
+    def  = nullptr;
+    vals = nullptr;
   }
 
   ~COptionDoubleArray() override {
-     if(def  != NULL) delete [] def;
-     if(vals != NULL) delete [] vals;
-     if(default_value != NULL) delete [] default_value;
+     delete [] def;
+     delete [] vals;
+     delete [] default_value;
   };
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
@@ -743,7 +743,7 @@ public:
     // One more design variable than semicolon
     this->nDV++;
 
-    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+    if ( (this->nDV > 0) && (this->design_variable == nullptr) ) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
@@ -858,8 +858,8 @@ public:
 
   void SetDefault() override {
     this->nDV = 0;
-    this->paramDV = NULL;
-    this->FFDTag = NULL;
+    this->paramDV = nullptr;
+    this->FFDTag = nullptr;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
@@ -882,17 +882,17 @@ public:
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->nDV_Value = NULL;
+      this->nDV_Value = nullptr;
       return "";
     }
 
-    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+    if ( (this->nDV > 0) && (this->design_variable == nullptr) ) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_VALUE in configuration file.");
       return newstring;
     }
-    if ( (this->nDV > 0) && (this->paramDV == NULL) ) {
+    if ( (this->nDV > 0) && (this->paramDV == nullptr) ) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": Design_Parameter array has not been allocated. Check that DV_PARAM appears before DV_VALUE in configuration file.");
@@ -966,8 +966,8 @@ public:
   }
 
   void SetDefault() override {
-    this->nDV_Value = 0;
-    this->valueDV = NULL;
+    this->nDV_Value = nullptr;
+    this->valueDV = nullptr;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
@@ -1062,8 +1062,8 @@ public:
 
   void SetDefault() override {
     this->nFFD = 0;
-    this->CoordFFD = NULL;
-    this->FFDTag = NULL;
+    this->CoordFFD = nullptr;
+    this->FFDTag = nullptr;
   }
 
 };
@@ -1151,7 +1151,7 @@ public:
 
   void SetDefault() override {
     this->nFFD = 0;
-    this->DegreeFFD = NULL;
+    this->DegreeFFD = nullptr;
   }
 
 };
@@ -1227,10 +1227,10 @@ public:
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker = NULL;
-      this->ttotal = NULL;
-      this->ptotal = NULL;
-      this->flowdir = NULL;
+      this->marker = nullptr;
+      this->ttotal = nullptr;
+      this->ptotal = nullptr;
+      this->flowdir = nullptr;
       return "";
     }
 
@@ -1239,10 +1239,10 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 6");
       this->size = 0;
-      this->marker = NULL;
-      this->ttotal = NULL;
-      this->ptotal = NULL;
-      this->flowdir = NULL;
+      this->marker = nullptr;
+      this->ttotal = nullptr;
+      this->ptotal = nullptr;
+      this->flowdir = nullptr;
       return newstring;
     }
 
@@ -1284,10 +1284,10 @@ public:
   }
 
   void SetDefault() override {
-    this->marker = NULL;
-    this->ttotal = NULL;
-    this->ptotal = NULL;
-    this->flowdir = NULL;
+    this->marker = nullptr;
+    this->ttotal = nullptr;
+    this->ptotal = nullptr;
+    this->flowdir = nullptr;
     this->size = 0; // There is no default value for list
   }
 };
@@ -1318,11 +1318,11 @@ public:
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker = NULL;
-      this->field = 0;
-      this->var1 = NULL;
-      this->var2 = NULL;
-      this->flowdir = NULL;
+      this->marker = nullptr;
+      this->field = nullptr;
+      this->var1 = nullptr;
+      this->var2 = nullptr;
+      this->flowdir = nullptr;
       return "";
     }
 
@@ -1331,11 +1331,11 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 7");
       this->size = 0;
-      this->marker = NULL;
-      this->var1 = NULL;
-      this->var2 = NULL;
-      this->flowdir = NULL;
-      this->field = NULL;
+      this->marker = nullptr;
+      this->var1 = nullptr;
+      this->var2 = nullptr;
+      this->flowdir = nullptr;
+      this->field = nullptr;
       return newstring;
     }
 
@@ -1391,10 +1391,10 @@ public:
   }
 
   void SetDefault() override {
-    this->marker = NULL;
-    this->var1 = NULL;
-    this->var2 = NULL;
-    this->flowdir = NULL;
+    this->marker = nullptr;
+    this->var1 = nullptr;
+    this->var2 = nullptr;
+    this->flowdir = nullptr;
     this->size = 0; // There is no default value for list
   }
 };
@@ -1426,13 +1426,13 @@ public:
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker = NULL;
-      this->field = 0;
-      this->var1 = NULL;
-      this->var2 = NULL;
-      this->flowdir = NULL;
-      this->relfac1 = NULL;
-      this->relfac2 = NULL;
+      this->marker = nullptr;
+      this->field = nullptr;
+      this->var1 = nullptr;
+      this->var2 = nullptr;
+      this->flowdir = nullptr;
+      this->relfac1 = nullptr;
+      this->relfac2 = nullptr;
       return "";
     }
 
@@ -1441,13 +1441,13 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 9");
       this->size = 0;
-      this->marker = NULL;
-      this->var1 = NULL;
-      this->var2 = NULL;
-      this->flowdir = NULL;
-      this->field = NULL;
-      this->relfac1 = NULL;
-      this->relfac2 = NULL;
+      this->marker = nullptr;
+      this->var1 = nullptr;
+      this->var2 = nullptr;
+      this->flowdir = nullptr;
+      this->field = nullptr;
+      this->relfac1 = nullptr;
+      this->relfac2 = nullptr;
       return newstring;
     }
 
@@ -1513,12 +1513,12 @@ public:
   }
 
   void SetDefault() override {
-    this->marker = NULL;
-    this->var1 = NULL;
-    this->var2 = NULL;
-    this->relfac1 = NULL;
-    this->relfac2 = NULL;
-    this->flowdir = NULL;
+    this->marker = nullptr;
+    this->var1 = nullptr;
+    this->var2 = nullptr;
+    this->relfac1 = nullptr;
+    this->relfac2 = nullptr;
+    this->flowdir = nullptr;
     this->size = 0; // There is no default value for list
   }
 };
@@ -1543,9 +1543,9 @@ public:
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker = NULL;
-      this->ttotal = NULL;
-      this->ptotal = NULL;
+      this->marker = nullptr;
+      this->ttotal = nullptr;
+      this->ptotal = nullptr;
       return "";
     }
 
@@ -1554,9 +1554,9 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 3");
       this->size = 0;
-      this->marker = NULL;
-      this->ttotal = NULL;
-      this->ptotal = NULL;
+      this->marker = nullptr;
+      this->ttotal = nullptr;
+      this->ptotal = nullptr;
       return newstring;
     }
 
@@ -1580,9 +1580,9 @@ public:
   }
 
   void SetDefault() override {
-    this->marker = NULL;
-    this->ttotal = NULL;
-    this->ptotal = NULL;
+    this->marker = nullptr;
+    this->ttotal = nullptr;
+    this->ptotal = nullptr;
     this->size = 0; // There is no default value for list
   }
 
@@ -1612,11 +1612,11 @@ public:
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker_bound = NULL;
-      this->marker_donor = NULL;
-      this->rot_center = NULL;
-      this->rot_angles = NULL;
-      this->translation = NULL;
+      this->marker_bound = nullptr;
+      this->marker_donor = nullptr;
+      this->rot_center = nullptr;
+      this->rot_angles = nullptr;
+      this->translation = nullptr;
       return "";
     }
 
@@ -1625,11 +1625,11 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 11");
       this->size = 0;
-      this->marker_bound = NULL;
-      this->marker_donor = NULL;
-      this->rot_center = NULL;
-      this->rot_angles = NULL;
-      this->translation = NULL;
+      this->marker_bound = nullptr;
+      this->marker_donor = nullptr;
+      this->rot_center = nullptr;
+      this->rot_angles = nullptr;
+      this->translation = nullptr;
       return newstring;
     }
 
@@ -1749,11 +1749,11 @@ public:
 
   void SetDefault() override {
     this->size = 0;
-    this->marker_bound = NULL;
-    this->marker_donor = NULL;
-    this->rot_center = NULL;
-    this->rot_angles = NULL;
-    this->translation = NULL;
+    this->marker_bound = nullptr;
+    this->marker_donor = nullptr;
+    this->rot_center = nullptr;
+    this->rot_angles = nullptr;
+    this->translation = nullptr;
   }
 };
 
@@ -1777,8 +1777,8 @@ public:
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker_turboIn= NULL;
-      this->marker_turboOut = NULL;
+      this->marker_turboIn= nullptr;
+      this->marker_turboOut = nullptr;
       return "";
     }
 
@@ -1787,8 +1787,8 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries divisible by 2");
       this->size = 0;
-      this->marker_turboIn= NULL;
-      this->marker_turboOut = NULL;;
+      this->marker_turboIn= nullptr;
+      this->marker_turboOut = nullptr;;
       return newstring;
     }
 
@@ -1807,8 +1807,8 @@ public:
 
   void SetDefault() override {
     this->size = 0;
-    this->marker_turboIn= NULL;
-    this->marker_turboOut = NULL;
+    this->marker_turboIn= nullptr;
+    this->marker_turboOut = nullptr;
   }
 };
 
@@ -1917,11 +1917,11 @@ public:
   void SetDefault() override {
     this->inlet_size = 0;
     this->outlet_size = 0;
-    this->marker_inlet = NULL;
-    this->marker_outlet = NULL;
-    this->press_jump = NULL;
-    this->temp_jump = NULL;
-    this->omega = NULL;
+    this->marker_inlet = nullptr;
+    this->marker_outlet = nullptr;
+    this->press_jump = nullptr;
+    this->temp_jump = nullptr;
+    this->omega = nullptr;
   }
 };
 
@@ -2022,8 +2022,8 @@ public:
     this->doubleInfo = new su2double*[nVals];
 
     for (unsigned short i=0; i<nVals; i++) {
-      this->intInfo[i]    = NULL;
-      this->doubleInfo[i] = NULL;
+      this->intInfo[i]    = nullptr;
+      this->doubleInfo[i] = nullptr;
     }
 
     /*--- Loop over the wall markers and store the info in the
@@ -2139,9 +2139,9 @@ public:
 
   void SetDefault() override {
     this->nMarkers   = 0;
-    this->markers    = NULL;
-    this->walltype   = NULL;
-    this->intInfo    = NULL;
-    this->doubleInfo = NULL;
+    this->markers    = nullptr;
+    this->walltype   = nullptr;
+    this->intInfo    = nullptr;
+    this->doubleInfo = nullptr;
   }
 };

@@ -8,7 +8,6 @@
 CAerodynamicsModule::CAerodynamicsModule(CConfig *config, int nDim): CSolverOutputModule(nDim),
   Alpha(config->GetAoA()*PI_NUMBER/180.0),
   Beta(config->GetAoS()*PI_NUMBER/180.0),
-  RefArea(config->GetRefArea()),
   RefLength(config->GetRefLength()),
   Gas_Constant(config->GetGas_Constant()),
   Gamma(config->GetGamma()),
@@ -86,7 +85,8 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
   const su2double RefTemperature = solverData.config->GetTemperature_FreeStreamND();
   const su2double* RefVelocity   = solverData.config->GetVelocity_FreeStreamND();
   const su2double RefHeatFlux    = solverData.config->GetHeat_Flux_Ref();
-  const int nDim = solverData.geometry->GetnDim();
+  const su2double RefArea        = solverData.config->GetRefArea();
+
   su2double RefVel2;
   if (solverData.config->GetDynamic_Grid()) {
     const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemperature);
@@ -103,8 +103,8 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
   const unsigned long iPointNormal = solverData.vertex->GetNormal_Neighbor();
 
   const su2double* Normal = solverData.vertex->GetNormal();
-  const su2double* Coord = solverData.geometry->node[iPoint]->GetCoord();
-  const su2double* Coord_Normal = solverData.geometry->node[iPointNormal]->GetCoord();
+  const su2double* Coord = solverData.geometry->nodes->GetCoord(iPoint);
+  const su2double* Coord_Normal = solverData.geometry->nodes->GetCoord(iPointNormal);
   const su2double Pressure_Inf = solverData.solver[FLOW_SOL]->GetPressure_Inf();
 
   // TODO: Get ref origin from config

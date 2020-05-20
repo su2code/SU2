@@ -4,7 +4,7 @@
 class CAerodynamicsModule : public CSolverOutputModule{
 
 protected:
-  su2double factor, Alpha, Beta, RefArea, RefLength, Gas_Constant, Gamma, Prandtl_Lam;
+  su2double factor, Alpha, Beta, RefLength, Gas_Constant, Gamma, Prandtl_Lam;
   bool axisymmetric;
 
   su2double Force[3], Moment[3], SkinFriction[3], Heatflux, Y_Plus;

@@ -31,7 +31,8 @@ protected:
 public:
   virtual void LoadData(OutputData* data) = 0;
 
-  virtual void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint, CParallelDataSorter* sorter) = 0;
+  virtual void LoadVolumeDataAtPoint(OutputData* data, CParallelDataSorter* sorter) = 0;
+  virtual void LoadSurfaceDataAtVertex(OutputData* data, CParallelDataSorter* sorter) = 0;
 
   COutFieldCollection& GetHistoryFields()  {return historyFieldsAll.GetCollection();}
   COutFieldCollection& GetVolumeFields()   {return volumeFieldsAll.GetCollection();}
@@ -64,7 +65,9 @@ public:
 
   void CommunicateIntegrals(const string& markerName);
 
-  void LoadVolumeDataAtPoint(OutputData* data, unsigned long iPoint, CParallelDataSorter* sorter) override;
+  void LoadVolumeDataAtPoint(OutputData* data, CParallelDataSorter* sorter) override;
+
+  void LoadSurfaceDataAtVertex(OutputData* data, CParallelDataSorter* sorter) override;
 
   std::string GetPerSurfaceName(const std::string& fieldName, const std::string& markerName){
     return fieldName + "@" + markerName;
@@ -170,25 +173,65 @@ void CModuleManager<ModuleList>::LoadData(OutputData* data){
 
 
 template<typename ModuleList>
-void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(OutputData *data, unsigned long iPoint, CParallelDataSorter *sorter){
+void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(OutputData *data, CParallelDataSorter *sorter){
 
   SolverDataContainer *solverData = dynamic_cast<SolverDataContainer*>(data);
+  volumeFieldsAll.GetCollection().SetCaching(true);
 
-  solverData->iPoint = iPoint;
+  for (auto iPoint = 0ul; iPoint < solverData->geometry->GetnPoint(); iPoint++){
 
-  CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionUpdateData, solverData);
+    volumeFieldsAll.GetCollection().StartCaching();
 
-  CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll);
+    solverData->iPoint = iPoint;
 
-  if (sorter != nullptr){
-    for (const auto& field : volumeFieldsAll.GetCollection().GetReferencesAll()){
-      if (field->second.offset != -1){
-        sorter->SetUnsorted_Data(iPoint, field->second.offset, field->second.value);
+    CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionUpdateData, solverData);
+
+    CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll);
+
+    if (sorter != nullptr){
+      for (const auto& field : volumeFieldsAll.GetCollection().GetReferencesAll()){
+        if (field->second.offset != -1){
+          sorter->SetUnsorted_Data(solverData->iPoint, field->second.offset, field->second.value);
+        }
       }
     }
   }
+  volumeFieldsAll.GetCollection().SetCaching(false);
+
 }
 
+template<typename ModuleList>
+void CModuleManager<ModuleList>::LoadSurfaceDataAtVertex(OutputData *data, CParallelDataSorter *sorter){
+
+  volumeFieldsAll.GetCollection().SetCaching(true);
+
+  SolverDataContainer *solverData = dynamic_cast<SolverDataContainer*>(data);
+  for (int iMarker = 0; iMarker <  solverData->config->GetnMarker_All(); iMarker++) {
+    for (auto iVertex = 0ul; iVertex < solverData->geometry->GetnVertex(iMarker); iVertex++){
+
+      solverData->iPoint = solverData->geometry->vertex[iMarker][iVertex]->GetNode();
+      solverData->vertex = solverData->geometry->vertex[iMarker][iVertex];
+
+      volumeFieldsAll.GetCollection().StartCaching();
+
+      CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionUpdateData, solverData);
+
+      CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll);
+
+      CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadSurfaceData, volumeFieldsAll);
+
+      if (sorter != nullptr){
+        for (const auto& field : volumeFieldsAll.GetCollection().GetReferencesAll()){
+          if (field->second.offset != -1){
+            sorter->SetUnsorted_Data(solverData->iPoint, field->second.offset, field->second.value);
+          }
+        }
+      }
+    }
+  }
+  volumeFieldsAll.GetCollection().SetCaching(false);
+
+}
 template<typename ModuleList>
 void CModuleManager<ModuleList>::IntegrateCoefficients(SolverDataContainer* solverData, unsigned short iMarker, const string& markerName){
 

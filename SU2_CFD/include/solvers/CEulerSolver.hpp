@@ -2142,7 +2142,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ttotal == NULL || Inlet_Ttotal[val_marker] == NULL)
+    else if (Inlet_Ttotal == nullptr || Inlet_Ttotal[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2164,7 +2164,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ptotal == NULL || Inlet_Ptotal[val_marker] == NULL)
+    else if (Inlet_Ptotal == nullptr || Inlet_Ptotal[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2188,7 +2188,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
         SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2280,7 +2280,7 @@ public:
     int iVar;
 
     for( iVar = 0; iVar < nPrimVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
         delete [] SlidingState[val_marker][val_vertex][iVar];
     }
 
