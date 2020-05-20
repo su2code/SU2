@@ -299,7 +299,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Set flow solver primitives to values stored in turb solver ---*/
   
-  Postprocessing(geometry, solver_container, config, iMesh);
+//  Postprocessing(geometry, solver_container, config, iMesh);
   
 //  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
