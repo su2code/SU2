@@ -7265,10 +7265,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                               solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
           visc_numerics->SetTurbSpecificDissipation(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
                                                     solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-//                                              Kine_Infty);
-//          visc_numerics->SetTurbSpecificDissipation(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
-//                                                    Omega_Infty);
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
@@ -7297,11 +7293,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         if (implicit){
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-//          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
+          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
           CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-//          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
+          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
         }
         
       }
