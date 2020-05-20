@@ -2857,20 +2857,22 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
      * If there is a statement after a cont. char
      * throw an error. ---*/
 
-    while (text_line.back() == '\\' ||
-           (PrintingToolbox::split(text_line, '\\').size() > 1)){
-      string tmp;
-      getline (config_buffer, tmp);
-      line_count++;
-      if (tmp.find_first_of('=') != string::npos){
-        errorString.append("Line " + to_string(line_count)  + ": Statement found after continuation character.\n");
-      }
-      PrintingToolbox::trim(tmp);
-      if (tmp.front() != '%'){
-        text_line = PrintingToolbox::split(text_line, '\\')[0];
-        text_line += " " + tmp;
-      }
-    }
+     if (text_line.front() != '%'){
+       while (text_line.back() == '\\' ||
+              (PrintingToolbox::split(text_line, '\\').size() > 1)){
+         string tmp;
+         getline (config_buffer, tmp);
+         line_count++;
+         if (tmp.find_first_of('=') != string::npos){
+           errorString.append("Line " + to_string(line_count)  + ": Statement found after continuation character.\n");
+         }
+         PrintingToolbox::trim(tmp);
+         if (tmp.front() != '%'){
+           text_line = PrintingToolbox::split(text_line, '\\')[0];
+           text_line += " " + tmp;
+         }
+       }
+     }
 
     if (TokenizeString(text_line, option_name, option_value)) {
 
