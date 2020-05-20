@@ -66,7 +66,7 @@ AS_IF([test -z "$PYTHON_INCLUDE"], [
   ])
   AC_MSG_CHECKING([python include flags])
   PYTHON_INCLUDE=`$PYTHON_CONFIG --includes`
-  PYTHON_LIB=`$PYTHON_CONFIG --libs`
+  PYTHON_LIB=`$PYTHON_CONFIG --libs --embed`
   PYTHON_EXEC_PREFIX=`$PYTHON_CONFIG --exec-prefix`
   AC_MSG_RESULT([$PYTHON_INCLUDE])
 ])

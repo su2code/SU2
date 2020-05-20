@@ -8,6 +8,7 @@ project('SU2', 'c', 'cpp',
 
 pymod = import('python')
 python = pymod.find_installation()
+py_dep = python.dependency(embed: true)
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
@@ -172,6 +173,7 @@ subdir('SU2_PY')
 subdir('UnitTests')
 
 if get_option('enable-pywrapper')
+  su2_deps += py_dep
   subdir('SU2_PY/pySU2')
 endif
 
