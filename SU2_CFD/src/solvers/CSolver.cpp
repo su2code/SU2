@@ -5436,6 +5436,16 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
           weights[1][3]            += - val*adjz;
         }
       }
+      //--- Dependence of pressure on TKE
+      for (iVar = 1; iVar < nDim+1; iVar++) {
+        const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
+                        adjy = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 1);
+        weights[1][nVarFlo+0] += (g-1.)*(adjx+adjy);
+        if (nDim == 3) {
+          const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 2);
+          weights[1][nVarFlo+0] += (g-1.)*adjz;
+        }
+      }
     }
     else {
       //--- TODO: Code SA
