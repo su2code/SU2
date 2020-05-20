@@ -299,13 +299,15 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Set flow solver primitives to values stored in turb solver ---*/
   
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  Postprocessing(geometry, solver_container, config, iMesh);
+  
+//  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
-    }
-  }
+//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+//    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
+//      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
+//    }
+//  }
   
   /*--- Compute gradients ---*/
     
@@ -333,13 +335,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
-  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
+//  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
   SetEddyViscosity(geometry, solver_container);
   
-  /*--- Store variables from the mean flow solver ---*/
-  
-  SetFlowPrimitive(solver_container);
-  SetFlowGradient(solver_container);
+//  /*--- Store variables from the mean flow solver ---*/
+//
+//  SetFlowPrimitive(solver_container);
+//  SetFlowGradient(solver_container);
 
 }
 
@@ -487,8 +489,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
-//    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
-    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
+    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+//    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
