@@ -6,7 +6,7 @@ class CUserFunctionModule final : public CSolverOutputModule {
 
   using FieldRef = typename COutFieldCollection::Map::iterator;
   using FieldRefFuncPair  = std::pair<FieldRef, interpreter::UserFunction*>;
-  using FieldRefTokenPair = std::pair<FieldRef, packToken*>;
+  using FieldRefTokenPair = std::pair<FieldRef, Token<su2double>*>;
 
   TokenMap historyScope;
   TokenMap volumeScope;
@@ -38,7 +38,8 @@ public:
   void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
 
   static void EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,
-                         const std::vector<FieldRefFuncPair> &funcFieldRef, TokenMap &scope);
+                                const std::vector<FieldRefFuncPair> &funcFieldRef,
+                                TokenMap &scope, interpreter::FunctionType type);
 
   static interpreter::UserFunction* CreateInlineUserFunction(string name, interpreter::FunctionType type);
 
