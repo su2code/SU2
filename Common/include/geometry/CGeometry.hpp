@@ -1018,22 +1018,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_Fuselage(CConfig *config, bool original_surface,
-                                su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
-                                su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
-                                su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
-                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
-                                su2double &Fuselage_MaxCurvature) {}
+  virtual void Compute_Fuselage(CConfig *config, bool original_surface, map<string,su2double> &Fuselage_ObjectiveFuncs) {}
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_Nacelle(CConfig *config, bool original_surface,
-                               su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
-                               su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
-                               su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
-                               su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
-                               su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) {}
+  virtual void Compute_Nacelle(CConfig *config, bool original_surface, map<string,su2double> &Nacelle_ObjectiveFuncs) {}
 
   /*!
    * \brief A virtual member.

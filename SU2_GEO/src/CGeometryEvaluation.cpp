@@ -185,33 +185,53 @@ void CGeometryEvaluation::ComputeGeometry(){
         cout << "Computing the fuselage continuous description." << endl << endl;
       }
       
-      geometry->Compute_Fuselage(config, true,
-                                                   Fuselage_Volume, Fuselage_WettedArea, Fuselage_MinWidth, Fuselage_MaxWidth,
-                                                   Fuselage_MinWaterLineWidth, Fuselage_MaxWaterLineWidth,
-                                                   Fuselage_MinHeight, Fuselage_MaxHeight,
-                                                   Fuselage_MaxCurvature);
+      geometry->Compute_Fuselage(config, true, Fuselage_ObjectiveFuncs);
       
       /*--- Screen output for the wing definition ---*/
       
       if (rank == MASTER_NODE) {
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage volume: "    << Fuselage_Volume << " in^3. ";
-        else cout << "Fuselage volume: "    << Fuselage_Volume << " m^3. ";
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage wetted area: "    << Fuselage_WettedArea << " in^2. " << endl;
-        else cout << "Fuselage wetted area: "    << Fuselage_WettedArea << " m^2. " << endl;
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage min. width: "  << Fuselage_MinWidth << " in. ";
-        else cout << "Fuselage min. width: "  << Fuselage_MinWidth << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage max. width: "  << Fuselage_MaxWidth << " in. " << endl;
-        else cout << "Fuselage max. width: "  << Fuselage_MaxWidth << " m. " << endl;
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage min. waterline width: "  << Fuselage_MinWaterLineWidth << " in. ";
-        else cout << "Fuselage min. waterline width: "  << Fuselage_MinWaterLineWidth << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage max. waterline width: "  << Fuselage_MaxWaterLineWidth << " in. " << endl;
-        else cout << "Fuselage max. waterline width: "  << Fuselage_MaxWaterLineWidth << " m. " << endl;
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage min. height: "  << Fuselage_MinHeight << " in. ";
-        else cout << "Fuselage min. height: "  << Fuselage_MinHeight << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage max. height: "  << Fuselage_MaxHeight << " in. " << endl;
-        else cout << "Fuselage max. height: "  << Fuselage_MaxHeight << " m. " << endl;
-        if (config->GetSystemMeasurements() == US) cout << "Fuselage max. curvature: "  << Fuselage_MaxCurvature << " 1/in. " << endl;
-        else cout << "Fuselage max. curvature: "  << Fuselage_MaxCurvature << " 1/m. " << endl;
+
+        if (config->GetSystemMeasurements() == US) {
+          cout << "Fuselage volume: "                 << Fuselage_ObjectiveFuncs["FUSELAGE_VOLUME"] << " in^3. ";
+          cout << "Fuselage wetted area: "            << Fuselage_ObjectiveFuncs["FUSELAGE_WETTED_AREA"] << " in^2. " << endl;
+          cout << "Fuselage min. width: "             << Fuselage_ObjectiveFuncs["FUSELAGE_MIN_WIDTH"] << " in. ";
+          cout << "Fuselage max. width: "             << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_WIDTH"] << " in. " << endl;
+          cout << "Fuselage min. waterline width: "   << Fuselage_ObjectiveFuncs["FUSELAGE_MIN_WATERLINE_WIDTH"] << " in. ";
+          cout << "Fuselage max. waterline width: "   << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_WATERLINE_WIDTH"] << " in. " << endl;
+          cout << "Fuselage min. height: "            << Fuselage_ObjectiveFuncs["FUSELAGE_MIN_HEIGHT"] << " in. ";
+          cout << "Fuselage max. height: "            << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_HEIGHT"] << " in. " << endl;
+          cout << "Fuselage max. curvature: "         << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_CURVATURE"] << " 1/in. " << endl;
+        }
+        else {
+          cout << "Fuselage volume: "                 << Fuselage_ObjectiveFuncs["FUSELAGE_VOLUME"] << " m^3. ";
+          cout << "Fuselage wetted area: "            << Fuselage_ObjectiveFuncs["FUSELAGE_WETTED_AREA"] << " m^2. " << endl;
+          cout << "Fuselage min. width: "             << Fuselage_ObjectiveFuncs["FUSELAGE_MIN_WIDTH"] << " m. ";
+          cout << "Fuselage max. width: "             << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_WIDTH"] << " m. " << endl;
+          cout << "Fuselage min. waterline width: "   << Fuselage_ObjectiveFuncs["FUSELAGE_MIN_WATERLINE_WIDTH"] << " m. ";
+          cout << "Fuselage max. waterline width: "   << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_WATERLINE_WIDTH"] << " m. " << endl;
+          cout << "Fuselage min. height: "            << Fuselage_ObjectiveFuncs["FUSELAGE_MIN_HEIGHT"] << " m. ";
+          cout << "Fuselage max. height: "            << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_HEIGHT"] << " m. " << endl;
+          cout << "Fuselage max. curvature: "         << Fuselage_ObjectiveFuncs["FUSELAGE_MAX_CURVATURE"] << " 1/m. " << endl;
+        }
+
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage volume: "    << Fuselage_Volume << " m^3. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage wetted area: "    << Fuselage_WettedArea << " m^2. " << endl;
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage min. width: "  << Fuselage_MinWidth << " m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage max. width: "  << Fuselage_MaxWidth << " m. " << endl;
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage min. waterline width: "  << Fuselage_MinWaterLineWidth << " m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage max. waterline width: "  << Fuselage_MaxWaterLineWidth << " m. " << endl;
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage min. height: "  << Fuselage_MinHeight << " m. ";
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage max. height: "  << Fuselage_MaxHeight << " m. " << endl;
+        // if (config->GetSystemMeasurements() == US) 
+        // else cout << "Fuselage max. curvature: "  << Fuselage_MaxCurvature << " 1/m. " << endl;
       }
       
     }
@@ -222,28 +242,30 @@ void CGeometryEvaluation::ComputeGeometry(){
         cout << "Computing the nacelle continuous description." << endl << endl;
       }
       
-      geometry->Compute_Nacelle(config, true,
-                                               Nacelle_Volume, Nacelle_MinThickness, Nacelle_MaxThickness, Nacelle_MinChord, Nacelle_MaxChord,
-                                               Nacelle_MinLERadius, Nacelle_MaxLERadius, Nacelle_MinToC, Nacelle_MaxToC, Nacelle_ObjFun_MinToC,
-                                               Nacelle_MaxTwist);
+      geometry->Compute_Nacelle(config, true, Nacelle_ObjectiveFuncs);
 
       /*--- Screen output for the wing definition ---*/
       
       if (rank == MASTER_NODE) {
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle volume: "    << Nacelle_Volume << " in^3. ";
-        else cout << "Nacelle volume: "    << Nacelle_Volume << " m^3. ";
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle min. thickness: "  << Nacelle_MinThickness << " in. ";
-        else cout << "Nacelle min. thickness: "  << Nacelle_MinThickness << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle max. thickness: "  << Nacelle_MaxThickness << " in. " << endl;
-        else cout << "Nacelle max. thickness: "  << Nacelle_MaxThickness << " m. " << endl;
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle min. chord: "  << Nacelle_MinChord << " in. ";
-        else cout << "Nacelle min. chord: "  << Nacelle_MinChord << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle max. chord: "  << Nacelle_MaxChord << " in. ";
-        else cout << "Nacelle max. chord: "  << Nacelle_MaxChord << " m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle min. LE radius: "  << Nacelle_MinLERadius << " 1/in. ";
-        else cout << "Nacelle min. LE radius: "  << Nacelle_MinLERadius << " 1/m. ";
-        if (config->GetSystemMeasurements() == US) cout << "Nacelle max. LE radius: "  << Nacelle_MaxLERadius << " 1/in. " << endl;
-        else cout << "Nacelle max. LE radius: "  << Nacelle_MaxLERadius << " 1/m. " << endl;
+        if (config->GetSystemMeasurements() == US) {
+          cout << "Nacelle volume: "           << Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] << " in^3. ";
+          cout << "Nacelle min. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] << " in. ";
+          cout << "Nacelle max. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] << " in. " << endl;
+          cout << "Nacelle min. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] << " in. ";
+          cout << "Nacelle max. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] << " in. ";
+          cout << "Nacelle min. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] << " 1/in. ";
+          cout << "Nacelle max. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] << " 1/in. " << endl;
+        }
+        else {
+          cout << "Nacelle volume: "           << Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] << " m^3. ";
+          cout << "Nacelle min. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] << " m. ";
+          cout << "Nacelle max. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] << " m. " << endl;
+          cout << "Nacelle min. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] << " m. ";
+          cout << "Nacelle max. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] << " m. ";
+          cout << "Nacelle min. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] << " 1/m. ";
+          cout << "Nacelle max. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] << " 1/m. " << endl;
+        }
+        
         cout << "Nacelle min. ToC: "  << Nacelle_MinToC << ". ";
         cout << "Nacelle max. ToC: "  << Nacelle_MaxToC << ". ";
         cout << "Nacelle delta ToC: "  << Nacelle_ObjFun_MinToC << ". ";
@@ -281,19 +303,6 @@ void CGeometryEvaluation::ComputeGeometry(){
           cout << "Wing min. LE radius: "   << Wing_ObjectiveFuncs["WING_MIN_LE_RADIUS"] << " 1/m. ";
           cout << "Wing max. LE radius: "   << Wing_ObjectiveFuncs["WING_MAX_LE_RADIUS"] << " 1/m. " << endl;
         }
-        // else cout << "Wing volume: "    << Wing_Volume << " m^3. ";
-        // if (config->GetSystemMeasurements() == US) 
-        // else cout << "Wing min. thickness: "  << Wing_MinThickness << " m. ";
-        // if (config->GetSystemMeasurements() == US) 
-        // else cout << "Wing max. thickness: "  << Wing_MaxThickness << " m. " << endl;
-        // if (config->GetSystemMeasurements() == US) 
-        // else cout << "Wing min. chord: "  << Wing_MinChord << " m. ";
-        // if (config->GetSystemMeasurements() == US) 
-        // else cout << "Wing max. chord: "  << Wing_MaxChord << " m. ";
-        // if (config->GetSystemMeasurements() == US) 
-        // else cout << "Wing min. LE radius: "  << Wing_MinLERadius << " 1/m. ";
-        // if (config->GetSystemMeasurements() == US) 
-        // else cout << "Wing max. LE radius: "  << Wing_MaxLERadius << " 1/m. " << endl;
         cout << "Wing min. ToC: "  << Wing_ObjectiveFuncs["WING_MIN_TOC"] << ". ";
         cout << "Wing max. ToC: "  << Wing_ObjectiveFuncs["WING_MAX_TOC"] << ". ";
         cout << "Wing delta ToC: "  << Wing_ObjectiveFuncs["WING_OBJFUN_MIN_TOC"] << ". ";
@@ -439,7 +448,13 @@ void CGeometryEvaluation::OutputFunctionFile(){
       if (tabTecplot) ObjFunc_file << "VARIABLES = //" << endl;
       
       if (fuselage) {
-        ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
+        auto it = Fuselage_ObjectiveFuncs.begin();
+        while (it != Fuselage_ObjectiveFuncs.end()){
+          auto key = it->first;
+          ObjFunc_file <<  "\"" << key << "\",";
+          it++;
+        }
+        // ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_WIDTH\",";
@@ -450,7 +465,13 @@ void CGeometryEvaluation::OutputFunctionFile(){
         }
       }
       else if (nacelle) {
-        ObjFunc_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
+        auto it = Nacelle_ObjectiveFuncs.begin();
+        while (it != Nacelle_ObjectiveFuncs.end()){
+          auto key = it->first;
+          ObjFunc_file <<  "\"" << key << "\",";
+          it++;
+        }
+        // ObjFunc_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
@@ -487,7 +508,14 @@ void CGeometryEvaluation::OutputFunctionFile(){
     
     if (fuselage) {
       if (geometry->GetnDim() == 3) {
-        ObjFunc_file << Fuselage_Volume <<", "<< Fuselage_WettedArea <<", "<< Fuselage_MinWidth <<", "<< Fuselage_MaxWidth <<", "<< Fuselage_MinWaterLineWidth <<", "<< Fuselage_MaxWaterLineWidth<<", "<< Fuselage_MinHeight <<", "<< Fuselage_MaxHeight <<", "<< Fuselage_MaxCurvature <<", ";
+        // Print wing function values 
+        auto it = Fuselage_ObjectiveFuncs.begin();
+        while (it != Fuselage_ObjectiveFuncs.end()){
+          auto val = it->second;
+          ObjFunc_file << val << ", ";
+          it++;
+        }
+        // ObjFunc_file << Fuselage_Volume <<", "<< Fuselage_WettedArea <<", "<< Fuselage_MinWidth <<", "<< Fuselage_MaxWidth <<", "<< Fuselage_MinWaterLineWidth <<", "<< Fuselage_MaxWaterLineWidth<<", "<< Fuselage_MinHeight <<", "<< Fuselage_MaxHeight <<", "<< Fuselage_MaxCurvature <<", ";
       }
       for (iPlane = 0; iPlane < nPlane*5; iPlane++) {
         ObjFunc_file << ObjectiveFunc[iPlane];
@@ -496,7 +524,13 @@ void CGeometryEvaluation::OutputFunctionFile(){
     }
     else if (nacelle) {
       if (geometry->GetnDim() == 3) {
-        ObjFunc_file << Nacelle_Volume <<", "<< Nacelle_MinThickness <<", "<< Nacelle_MaxThickness <<", "<< Nacelle_MinChord <<", "<< Nacelle_MaxChord <<", "<< Nacelle_MinLERadius <<", "<< Nacelle_MaxLERadius<<", "<< Nacelle_MinToC <<", "<< Nacelle_MaxToC <<", "<< Nacelle_ObjFun_MinToC <<", "<< Nacelle_MaxTwist <<", ";
+        auto it = Nacelle_ObjectiveFuncs.begin();
+        while (it != Nacelle_ObjectiveFuncs.end()){
+          auto val = it->second;
+          ObjFunc_file << val << ", ";
+          it++;
+        }
+        // ObjFunc_file << Nacelle_Volume <<", "<< Nacelle_MinThickness <<", "<< Nacelle_MaxThickness <<", "<< Nacelle_MinChord <<", "<< Nacelle_MaxChord <<", "<< Nacelle_MinLERadius <<", "<< Nacelle_MaxLERadius<<", "<< Nacelle_MinToC <<", "<< Nacelle_MaxToC <<", "<< Nacelle_ObjFun_MinToC <<", "<< Nacelle_MaxTwist <<", ";
       }
       for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
         ObjFunc_file << ObjectiveFunc[iPlane];
@@ -772,17 +806,10 @@ void CGeometryEvaluation::EverythingGradient(){
         if (geometry->GetnDim() == 3) {
           
           if (fuselage) {
-            geometry->Compute_Fuselage(config, false,
-                                                         Fuselage_Volume_New, Fuselage_WettedArea_New, Fuselage_MinWidth_New, Fuselage_MaxWidth_New,
-                                                         Fuselage_MinWaterLineWidth_New, Fuselage_MaxWaterLineWidth_New,
-                                                         Fuselage_MinHeight_New, Fuselage_MaxHeight_New,
-                                                         Fuselage_MaxCurvature_New);
+            geometry->Compute_Fuselage(config, false, Fuselage_ObjectiveFuncs_FD);
           }
           else if (nacelle) {
-            geometry->Compute_Nacelle(config, false,
-                                                        Nacelle_Volume_New, Nacelle_MinThickness_New, Nacelle_MaxThickness_New, Nacelle_MinChord_New,
-                                                        Nacelle_MaxChord_New, Nacelle_MinLERadius_New, Nacelle_MaxLERadius_New, Nacelle_MinToC_New,
-                                                        Nacelle_MaxToC_New, Nacelle_ObjFun_MinToC_New, Nacelle_MaxTwist_New);
+            geometry->Compute_Nacelle(config, false, Nacelle_ObjectiveFuncs_FD);
           }
           else {
             geometry->Compute_Wing(config, false, Wing_ObjectiveFuncs_FD);
@@ -807,7 +834,7 @@ void CGeometryEvaluation::EverythingGradient(){
         delta_eps = config->GetDV_Value(iDV);
         
         if (delta_eps == 0) {
-          SU2_MPI::Error("The finite difference steps is zero!!", CURRENT_FUNCTION);
+          SU2_MPI::Error("The finite difference step is zero!!", CURRENT_FUNCTION);
         }
         
         if (MoveSurface) {
@@ -824,29 +851,41 @@ void CGeometryEvaluation::EverythingGradient(){
           }
           
           if (fuselage) {
-            Fuselage_Volume_Grad = (Fuselage_Volume_New - Fuselage_Volume) / delta_eps;
-            Fuselage_WettedArea_Grad = (Fuselage_WettedArea_New - Fuselage_WettedArea) / delta_eps;
-            Fuselage_MinWidth_Grad = (Fuselage_MinWidth_New - Fuselage_MinWidth) / delta_eps;
-            Fuselage_MaxWidth_Grad = (Fuselage_MaxWidth_New - Fuselage_MaxWidth) / delta_eps;
-            Fuselage_MinWaterLineWidth_Grad = (Fuselage_MinWaterLineWidth_New - Fuselage_MinWaterLineWidth) / delta_eps;
-            Fuselage_MaxWaterLineWidth_Grad = (Fuselage_MaxWaterLineWidth_New - Fuselage_MaxWaterLineWidth) / delta_eps;
-            Fuselage_MinHeight_Grad = (Fuselage_MinHeight_New - Fuselage_MinHeight) / delta_eps;
-            Fuselage_MaxHeight_Grad = (Fuselage_MaxHeight_New - Fuselage_MaxHeight) / delta_eps;
-            Fuselage_MaxCurvature_Grad = (Fuselage_MaxCurvature_New - Fuselage_MaxCurvature) / delta_eps;
+            auto it = Fuselage_ObjectiveFuncs.begin();
+            while (it != Fuselage_ObjectiveFuncs.end()){
+              auto key = it->first;
+              Fuselage_ObjectiveFuncs_Grad[key] = (Fuselage_ObjectiveFuncs_FD[key] - Fuselage_ObjectiveFuncs[key]) / delta_eps;
+              it++;
+            }
+            // Fuselage_Volume_Grad = (Fuselage_Volume_New - Fuselage_Volume) / delta_eps;
+            // Fuselage_WettedArea_Grad = (Fuselage_WettedArea_New - Fuselage_WettedArea) / delta_eps;
+            // Fuselage_MinWidth_Grad = (Fuselage_MinWidth_New - Fuselage_MinWidth) / delta_eps;
+            // Fuselage_MaxWidth_Grad = (Fuselage_MaxWidth_New - Fuselage_MaxWidth) / delta_eps;
+            // Fuselage_MinWaterLineWidth_Grad = (Fuselage_MinWaterLineWidth_New - Fuselage_MinWaterLineWidth) / delta_eps;
+            // Fuselage_MaxWaterLineWidth_Grad = (Fuselage_MaxWaterLineWidth_New - Fuselage_MaxWaterLineWidth) / delta_eps;
+            // Fuselage_MinHeight_Grad = (Fuselage_MinHeight_New - Fuselage_MinHeight) / delta_eps;
+            // Fuselage_MaxHeight_Grad = (Fuselage_MaxHeight_New - Fuselage_MaxHeight) / delta_eps;
+            // Fuselage_MaxCurvature_Grad = (Fuselage_MaxCurvature_New - Fuselage_MaxCurvature) / delta_eps;
             
           }
           else if (nacelle) {
-            Nacelle_Volume_Grad = (Nacelle_Volume_New - Nacelle_Volume) / delta_eps;
-            Nacelle_MinThickness_Grad = (Nacelle_MinThickness_New - Nacelle_MinThickness) / delta_eps;
-            Nacelle_MaxThickness_Grad = (Nacelle_MaxThickness_New - Nacelle_MaxThickness) / delta_eps;
-            Nacelle_MinChord_Grad = (Nacelle_MinChord_New - Nacelle_MinChord) / delta_eps;
-            Nacelle_MaxChord_Grad = (Nacelle_MaxChord_New - Nacelle_MaxChord) / delta_eps;
-            Nacelle_MinLERadius_Grad = (Nacelle_MinLERadius_New - Nacelle_MinLERadius) / delta_eps;
-            Nacelle_MaxLERadius_Grad = (Nacelle_MaxLERadius_New - Nacelle_MaxLERadius) / delta_eps;
-            Nacelle_MinToC_Grad = (Nacelle_MinToC_New - Nacelle_MinToC) / delta_eps;
-            Nacelle_MaxToC_Grad = (Nacelle_MaxToC_New - Nacelle_MaxToC) / delta_eps;
-            Nacelle_ObjFun_MinToC_Grad = (Nacelle_ObjFun_MinToC_New - Nacelle_ObjFun_MinToC) / delta_eps;
-            Nacelle_MaxTwist_Grad = (Nacelle_MaxTwist_New - Nacelle_MaxTwist) / delta_eps;
+            auto it = Nacelle_ObjectiveFuncs.begin();
+            while (it != Nacelle_ObjectiveFuncs.end()){
+              auto key = it->first;
+              Nacelle_ObjectiveFuncs_Grad[key] = (Nacelle_ObjectiveFuncs_FD[key] - Nacelle_ObjectiveFuncs[key]) / delta_eps;
+              it++;
+            }
+            // Nacelle_Volume_Grad = (Nacelle_Volume_New - Nacelle_Volume) / delta_eps;
+            // Nacelle_MinThickness_Grad = (Nacelle_MinThickness_New - Nacelle_MinThickness) / delta_eps;
+            // Nacelle_MaxThickness_Grad = (Nacelle_MaxThickness_New - Nacelle_MaxThickness) / delta_eps;
+            // Nacelle_MinChord_Grad = (Nacelle_MinChord_New - Nacelle_MinChord) / delta_eps;
+            // Nacelle_MaxChord_Grad = (Nacelle_MaxChord_New - Nacelle_MaxChord) / delta_eps;
+            // Nacelle_MinLERadius_Grad = (Nacelle_MinLERadius_New - Nacelle_MinLERadius) / delta_eps;
+            // Nacelle_MaxLERadius_Grad = (Nacelle_MaxLERadius_New - Nacelle_MaxLERadius) / delta_eps;
+            // Nacelle_MinToC_Grad = (Nacelle_MinToC_New - Nacelle_MinToC) / delta_eps;
+            // Nacelle_MaxToC_Grad = (Nacelle_MaxToC_New - Nacelle_MaxToC) / delta_eps;
+            // Nacelle_ObjFun_MinToC_Grad = (Nacelle_ObjFun_MinToC_New - Nacelle_ObjFun_MinToC) / delta_eps;
+            // Nacelle_MaxTwist_Grad = (Nacelle_MaxTwist_New - Nacelle_MaxTwist) / delta_eps;
           }
           else {
             auto it = Wing_ObjectiveFuncs.begin();
@@ -954,15 +993,16 @@ void CGeometryEvaluation::EverythingGradient(){
           }
           
           if (fuselage) {
-            Fuselage_Volume_Grad            = 0.0;
-            Fuselage_WettedArea_Grad        = 0.0;
-            Fuselage_MinWidth_Grad          = 0.0;
-            Fuselage_MaxWidth_Grad          = 0.0;
-            Fuselage_MinWaterLineWidth_Grad = 0.0;
-            Fuselage_MaxWaterLineWidth_Grad = 0.0;
-            Fuselage_MinHeight_Grad         = 0.0;
-            Fuselage_MaxHeight_Grad         = 0.0;
-            Fuselage_MaxCurvature_Grad      = 0.0;
+            SetMapToZero(Fuselage_ObjectiveFuncs_Grad);
+            // Fuselage_Volume_Grad            = 0.0;
+            // Fuselage_WettedArea_Grad        = 0.0;
+            // Fuselage_MinWidth_Grad          = 0.0;
+            // Fuselage_MaxWidth_Grad          = 0.0;
+            // Fuselage_MinWaterLineWidth_Grad = 0.0;
+            // Fuselage_MaxWaterLineWidth_Grad = 0.0;
+            // Fuselage_MinHeight_Grad         = 0.0;
+            // Fuselage_MaxHeight_Grad         = 0.0;
+            // Fuselage_MaxCurvature_Grad      = 0.0;
             
             for (iPlane = 0; iPlane < nPlane; iPlane++) {
               Gradient[0*nPlane + iPlane] = 0.0;
@@ -974,17 +1014,18 @@ void CGeometryEvaluation::EverythingGradient(){
             
           }
           else if (nacelle) {
-            Nacelle_Volume_Grad          = 0.0;
-            Nacelle_MinThickness_Grad    = 0.0;
-            Nacelle_MaxThickness_Grad    = 0.0;
-            Nacelle_MinChord_Grad        = 0.0;
-            Nacelle_MaxChord_Grad        = 0.0;
-            Nacelle_MinLERadius_Grad     = 0.0;
-            Nacelle_MaxLERadius_Grad     = 0.0;
-            Nacelle_MinToC_Grad          = 0.0;
-            Nacelle_MaxToC_Grad          = 0.0;
-            Nacelle_ObjFun_MinToC_Grad   = 0.0;
-            Nacelle_MaxTwist_Grad        = 0.0;
+            SetMapToZero(Nacelle_ObjectiveFuncs_Grad);
+            // Nacelle_Volume_Grad          = 0.0;
+            // Nacelle_MinThickness_Grad    = 0.0;
+            // Nacelle_MaxThickness_Grad    = 0.0;
+            // Nacelle_MinChord_Grad        = 0.0;
+            // Nacelle_MaxChord_Grad        = 0.0;
+            // Nacelle_MinLERadius_Grad     = 0.0;
+            // Nacelle_MaxLERadius_Grad     = 0.0;
+            // Nacelle_MinToC_Grad          = 0.0;
+            // Nacelle_MaxToC_Grad          = 0.0;
+            // Nacelle_ObjFun_MinToC_Grad   = 0.0;
+            // Nacelle_MaxTwist_Grad        = 0.0;
             
             for (iPlane = 0; iPlane < nPlane; iPlane++) {
               Gradient[0*nPlane + iPlane] = 0.0;
@@ -996,19 +1037,20 @@ void CGeometryEvaluation::EverythingGradient(){
             }
           }
           else  {
-            Wing_Volume_Grad          = 0.0;
-            Wing_MinThickness_Grad    = 0.0;
-            Wing_MaxThickness_Grad    = 0.0;
-            Wing_MinChord_Grad        = 0.0;
-            Wing_MaxChord_Grad        = 0.0;
-            Wing_MinLERadius_Grad     = 0.0;
-            Wing_MaxLERadius_Grad     = 0.0;
-            Wing_MinToC_Grad          = 0.0;
-            Wing_MaxToC_Grad          = 0.0;
-            Wing_ObjFun_MinToC_Grad   = 0.0;
-            Wing_MaxTwist_Grad        = 0.0;
-            Wing_MaxCurvature_Grad    = 0.0;
-            Wing_MaxDihedral_Grad     = 0.0;
+            SetMapToZero(Wing_ObjectiveFuncs_Grad);
+            // Wing_Volume_Grad          = 0.0;
+            // Wing_MinThickness_Grad    = 0.0;
+            // Wing_MaxThickness_Grad    = 0.0;
+            // Wing_MinChord_Grad        = 0.0;
+            // Wing_MaxChord_Grad        = 0.0;
+            // Wing_MinLERadius_Grad     = 0.0;
+            // Wing_MaxLERadius_Grad     = 0.0;
+            // Wing_MinToC_Grad          = 0.0;
+            // Wing_MaxToC_Grad          = 0.0;
+            // Wing_ObjFun_MinToC_Grad   = 0.0;
+            // Wing_MaxTwist_Grad        = 0.0;
+            // Wing_MaxCurvature_Grad    = 0.0;
+            // Wing_MaxDihedral_Grad     = 0.0;
             
             for (iPlane = 0; iPlane < nPlane; iPlane++) {
               Gradient[0*nPlane + iPlane] = 0.0;
@@ -1026,15 +1068,15 @@ void CGeometryEvaluation::EverythingGradient(){
         
         if (fuselage) {
           if (geometry->GetnDim() == 3) {
-            cout << "\nFuselage volume grad.: "    << Fuselage_Volume_Grad << ". ";
-            cout << "Fuselage wetted area grad.: "    << Fuselage_WettedArea_Grad << ". ";
-            cout << "Fuselage min. width grad.: "  << Fuselage_MinWidth_Grad << ". ";
-            cout << "Fuselage max. width grad.: "  << Fuselage_MaxWidth_Grad << "."  << endl;
-            cout << "Fuselage min. waterline width grad.: "  << Fuselage_MinWaterLineWidth_Grad << ". ";
-            cout << "Fuselage max. waterline width grad.: "  << Fuselage_MaxWaterLineWidth_Grad << "."  << endl;
-            cout << "Fuselage min. height grad.: " << Fuselage_MinHeight_Grad << ". ";
-            cout << "Fuselage max. height grad.: " << Fuselage_MaxHeight_Grad << ". ";
-            cout << "Fuselage max. curv. grad.: "  << Fuselage_MaxCurvature_Grad << ".";
+            cout << "\nFuselage volume grad.: "               << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_VOLUME"] << ". ";
+            cout << "Fuselage wetted area grad.: "            << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_WETTED_AREA"] << ". ";
+            cout << "Fuselage min. width grad.: "             << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MIN_WIDTH"] << ". ";
+            cout << "Fuselage max. width grad.: "             << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MAX_WIDTH"] << "."  << endl;
+            cout << "Fuselage min. waterline width grad.: "   << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MIN_WATERLINE_WIDTH"] << ". ";
+            cout << "Fuselage max. waterline width grad.: "   << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MAX_WATERLINE_WIDTH"] << "."  << endl;
+            cout << "Fuselage min. height grad.: "            << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MIN_HEIGHT"] << ". ";
+            cout << "Fuselage max. height grad.: "            << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MAX_HEIGHT"] << ". ";
+            cout << "Fuselage max. curv. grad.: "             << Fuselage_ObjectiveFuncs_Grad["FUSELAGE_MAX_CURVATURE"] << ".";
           }
           
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -1050,17 +1092,17 @@ void CGeometryEvaluation::EverythingGradient(){
         }
         else if (nacelle) {
           if (geometry->GetnDim() == 3) {
-            cout << "\nNacelle volume grad.: "             << Nacelle_Volume_Grad << ". ";
-            cout << "Nacelle min. thickness grad.: "  << Nacelle_MinThickness_Grad << ". ";
-            cout << "Nacelle max. thickness grad.: "  << Nacelle_MaxThickness_Grad << ". ";
-            cout << "Nacelle min. chord grad.: "           << Nacelle_MinChord_Grad << ". ";
-            cout << "Nacelle max. chord grad.: "           << Nacelle_MaxChord_Grad << "." << endl;
-            cout << "Nacelle min. LE radius grad.: "       << Nacelle_MinChord_Grad << ". ";
-            cout << "Nacelle max. LE radius grad.: "       << Nacelle_MaxChord_Grad << ". ";
-            cout << "Nacelle min. ToC grad.: "             << Nacelle_MinToC_Grad << ". ";
-            cout << "Nacelle max. ToC grad.: "             << Nacelle_MaxToC_Grad << ". ";
-            cout << "Nacelle delta ToC grad.: "            << Nacelle_ObjFun_MinToC_Grad << "." << endl;
-            cout << "Nacelle max. twist grad.: "           << Nacelle_MaxTwist_Grad << ". ";
+            cout << "\nNacelle volume grad.: "             << Nacelle_ObjectiveFuncs_Grad["NACELLE_VOLUME"] << ". ";
+            cout << "Nacelle min. thickness grad.: "       << Nacelle_ObjectiveFuncs_Grad["NACELLE_MIN_THICKNESS"] << ". ";
+            cout << "Nacelle max. thickness grad.: "       << Nacelle_ObjectiveFuncs_Grad["NACELLE_MAX_THICKNESS"] << ". ";
+            cout << "Nacelle min. chord grad.: "           << Nacelle_ObjectiveFuncs_Grad["NACELLE_MIN_CHORD"] << ". ";
+            cout << "Nacelle max. chord grad.: "           << Nacelle_ObjectiveFuncs_Grad["NACELLE_MAX_CHORD"] << "." << endl;
+            cout << "Nacelle min. LE radius grad.: "       << Nacelle_ObjectiveFuncs_Grad["NACELLE_MIN_LE_RADIUS"] << ". ";
+            cout << "Nacelle max. LE radius grad.: "       << Nacelle_ObjectiveFuncs_Grad["NACELLE_MAX_LE_RADIUS"] << ". ";
+            cout << "Nacelle min. ToC grad.: "             << Nacelle_ObjectiveFuncs_Grad["NACELLE_MIN_TOC"] << ". ";
+            cout << "Nacelle max. ToC grad.: "             << Nacelle_ObjectiveFuncs_Grad["NACELLE_MAX_TOC"] << ". ";
+            cout << "Nacelle delta ToC grad.: "            << Nacelle_ObjectiveFuncs_Grad["NACELLE_OBJFUN_MIN_TOC"] << "." << endl;
+            cout << "Nacelle max. twist grad.: "           << Nacelle_ObjectiveFuncs_Grad["NACELLE_MAX_TWIST"] << ". ";
           }
           
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -1132,7 +1174,13 @@ void CGeometryEvaluation::EverythingGradient(){
             
             if (fuselage) {
               Gradient_file << "\"DESIGN_VARIABLE\",";
-              Gradient_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
+              auto it = Fuselage_ObjectiveFuncs_Grad.begin();
+              while (it != Fuselage_ObjectiveFuncs_Grad.end()){
+                auto key = it->first;
+                Gradient_file <<  "\"" << key << "\",";
+                it++;
+              }
+              // Gradient_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_WIDTH\",";
@@ -1144,7 +1192,13 @@ void CGeometryEvaluation::EverythingGradient(){
             }
             else if (nacelle) {
               Gradient_file << "\"DESIGN_VARIABLE\",";
-              Gradient_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
+              auto it = Nacelle_ObjectiveFuncs_Grad.begin();
+              while (it != Nacelle_ObjectiveFuncs_Grad.end()){
+                auto key = it->first;
+                Gradient_file <<  "\"" << key << "\",";
+                it++;
+              }
+              // Gradient_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
@@ -1157,7 +1211,13 @@ void CGeometryEvaluation::EverythingGradient(){
             }
             else {
               Gradient_file << "\"DESIGN_VARIABLE\",";
-              Gradient_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
+              auto it = Wing_ObjectiveFuncs_Grad.begin();
+              while (it != Wing_ObjectiveFuncs_Grad.end()){
+                auto key = it->first;
+                Gradient_file <<  "\"" << key << "\",";
+                it++;
+              }
+              // Gradient_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
@@ -1179,7 +1239,13 @@ void CGeometryEvaluation::EverythingGradient(){
         
         if (fuselage) {
           if (geometry->GetnDim() == 3) {
-            Gradient_file << Fuselage_Volume_Grad <<","<< Fuselage_WettedArea_Grad <<","<< Fuselage_MinWidth_Grad <<","<< Fuselage_MaxWidth_Grad <<","<< Fuselage_MinWaterLineWidth_Grad <<","<< Fuselage_MaxWaterLineWidth_Grad <<","<< Fuselage_MinHeight_Grad <<","<< Fuselage_MaxHeight_Grad <<","<< Fuselage_MaxCurvature_Grad <<",";
+            auto it = Fuselage_ObjectiveFuncs_Grad.begin();
+            while (it != Fuselage_ObjectiveFuncs_Grad.end()){
+              auto val = it->second;
+              Gradient_file << val << ", ";
+              it++;
+            }
+            // Gradient_file << Fuselage_Volume_Grad <<","<< Fuselage_WettedArea_Grad <<","<< Fuselage_MinWidth_Grad <<","<< Fuselage_MaxWidth_Grad <<","<< Fuselage_MinWaterLineWidth_Grad <<","<< Fuselage_MaxWaterLineWidth_Grad <<","<< Fuselage_MinHeight_Grad <<","<< Fuselage_MaxHeight_Grad <<","<< Fuselage_MaxCurvature_Grad <<",";
           }
           for (iPlane = 0; iPlane < nPlane*5; iPlane++) {
             Gradient_file << Gradient[iPlane];
@@ -1188,7 +1254,13 @@ void CGeometryEvaluation::EverythingGradient(){
         }
         else if (nacelle) {
           if (geometry->GetnDim() == 3) {
-            Gradient_file << Nacelle_Volume_Grad <<","<< Nacelle_MinThickness_Grad <<","<< Nacelle_MaxThickness_Grad <<","<< Nacelle_MinChord_Grad <<","<< Nacelle_MaxChord_Grad <<","<< Nacelle_MinLERadius_Grad <<","<< Nacelle_MaxLERadius_Grad<<","<< Nacelle_MinToC_Grad <<","<< Nacelle_MaxToC_Grad <<","<< Nacelle_ObjFun_MinToC_Grad <<","<< Nacelle_MaxTwist_Grad <<",";
+            auto it = Nacelle_ObjectiveFuncs_Grad.begin();
+            while (it != Nacelle_ObjectiveFuncs_Grad.end()){
+              auto val = it->second;
+              Gradient_file << val << ", ";
+              it++;
+            }
+            // Gradient_file << Nacelle_Volume_Grad <<","<< Nacelle_MinThickness_Grad <<","<< Nacelle_MaxThickness_Grad <<","<< Nacelle_MinChord_Grad <<","<< Nacelle_MaxChord_Grad <<","<< Nacelle_MinLERadius_Grad <<","<< Nacelle_MaxLERadius_Grad<<","<< Nacelle_MinToC_Grad <<","<< Nacelle_MaxToC_Grad <<","<< Nacelle_ObjFun_MinToC_Grad <<","<< Nacelle_MaxTwist_Grad <<",";
           }
           for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
             Gradient_file << Gradient[iPlane];
@@ -1197,11 +1269,18 @@ void CGeometryEvaluation::EverythingGradient(){
         }
         else {
           if (geometry->GetnDim() == 3) {
-            Gradient_file << Wing_ObjectiveFuncs_Grad["WING_VOLUME"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_THICKNESS"] <<", "<< 
-        Wing_ObjectiveFuncs_Grad["WING_MAX_THICKNESS"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_CHORD"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_CHORD"]
-        <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_LE_RADIUS"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_LE_RADIUS"] <<", "<< 
-        Wing_ObjectiveFuncs_Grad["WING_MIN_TOC"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_TOC"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_OBJFUN_MIN_TOC"]
-        <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_TWIST"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_CURVATURE"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_DIHEDRAL"] <<", ";
+            // Print wing function values 
+            auto it = Wing_ObjectiveFuncs_Grad.begin();
+            while (it != Wing_ObjectiveFuncs_Grad.end()){
+              auto val = it->second;
+              Gradient_file << val << ", ";
+              it++;
+            }
+        //     Gradient_file << Wing_ObjectiveFuncs_Grad["WING_VOLUME"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_THICKNESS"] <<", "<< 
+        // Wing_ObjectiveFuncs_Grad["WING_MAX_THICKNESS"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_CHORD"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_CHORD"]
+        // <<", "<< Wing_ObjectiveFuncs_Grad["WING_MIN_LE_RADIUS"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_LE_RADIUS"] <<", "<< 
+        // Wing_ObjectiveFuncs_Grad["WING_MIN_TOC"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_TOC"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_OBJFUN_MIN_TOC"]
+        // <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_TWIST"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_CURVATURE"] <<", "<< Wing_ObjectiveFuncs_Grad["WING_MAX_DIHEDRAL"] <<", ";
             // Gradient_file << Wing_Volume_Grad <<","<< Wing_MinThickness_Grad <<","<< Wing_MaxThickness_Grad <<","<< Wing_MinChord_Grad <<","<< Wing_MaxChord_Grad <<","<< Wing_MinLERadius_Grad <<","<< Wing_MaxLERadius_Grad<<","<< Wing_MinToC_Grad <<","<< Wing_MaxToC_Grad <<","<< Wing_ObjFun_MinToC_Grad <<","<< Wing_MaxTwist_Grad <<","<< Wing_MaxCurvature_Grad <<","<< Wing_MaxDihedral_Grad <<",";
           }
           for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
@@ -1232,5 +1311,13 @@ void CGeometryEvaluation::EverythingGradient(){
     if (rank == MASTER_NODE)
       Gradient_file.close();
     
+  }
+}
+
+void CGeometryEvaluation::SetMapToZero (map<string,su2double> &Function_Map){
+  auto it = Function_Map.begin();
+  while (it != Function_Map.end()){
+    Function_Map[it->first] = 0.0;
+    it++;
   }
 }

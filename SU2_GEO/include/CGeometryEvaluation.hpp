@@ -139,6 +139,7 @@ public:
 
   ~CGeometryEvaluation(void);
 
+  void SetMapToZero(map<string,su2double> &Function_Map);
 	// void SetPlaneStructure(void);
 
 	void ComputeGeometry(void);

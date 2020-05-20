@@ -10929,7 +10929,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
   su2double Fuselage_Volume = 0.0, Fuselage_WettedArea = 0.0, Fuselage_MinWidth = 0.0, Fuselage_MaxWidth = 0.0,
             Fuselage_MinWaterLineWidth = 0.0, Fuselage_MaxWaterLineWidth = 0.0, Fuselage_MinHeight = 0.0,
-            Fuselage_MaxHeight 0.0, Fuselage_MaxCurvature = 0.0;
+            Fuselage_MaxHeight = 0.0, Fuselage_MaxCurvature = 0.0;
 
   /*--- Make a large number of section cuts for approximating volume ---*/
 
@@ -11159,7 +11159,15 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
       Fuselage_MaxCurvature = max(Fuselage_MaxCurvature, Curvature[iPlane]);
     }
 
-    
+    Fuselage_ObjectiveFuncs["FUSELAGE_VOLUME"] = Fuselage_Volume;
+    Fuselage_ObjectiveFuncs["FUSELAGE_WETTED_AREA"] = Fuselage_WettedArea;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MIN_WIDTH"] = Fuselage_MinWidth;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MAX_WIDTH"] = Fuselage_MaxWidth;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MIN_WATERLINE_WIDTH"] = Fuselage_MinWaterLineWidth;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MAX_WATERLINE_WIDTH"] = Fuselage_MaxWaterLineWidth;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MIN_HEIGHT"] = Fuselage_MinHeight;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MAX_HEIGHT"] = Fuselage_MaxHeight;
+    Fuselage_ObjectiveFuncs["FUSELAGE_MAX_CURVATURE"] = Fuselage_MaxCurvature;
 
   }
 
@@ -11195,18 +11203,17 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
 }
 
-void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
-                                        su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness,
-                                        su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
-                                        su2double &Nacelle_MaxMaxThickness, su2double &Nacelle_MinLERadius,
-                                        su2double &Nacelle_MaxLERadius, su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
-                                        su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) {
+void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface, map<string,su2double> &Nacelle_ObjectiveFuncs) {
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
   su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Nacelle_File, Section_File;
+
+  su2double Nacelle_Volume= 0.0, Nacelle_MinMaxThickness= 0.0, Nacelle_MinChord= 0.0, Nacelle_MaxChord= 0.0,
+            Nacelle_MaxMaxThickness= 0.0, Nacelle_MinLERadius= 0.0, Nacelle_MaxLERadius= 0.0, Nacelle_MinToC= 0.0,
+            Nacelle_MaxToC= 0.0, Nacelle_ObjFun_MinToC= 0.0, Nacelle_MaxTwist = 0.0;
 
 
   /*--- Make a large number of section cuts for approximating volume ---*/
@@ -11463,6 +11470,18 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
       Nacelle_ObjFun_MinToC = sqrt((Nacelle_MinToC - 0.07)*(Nacelle_MinToC - 0.07));
       Nacelle_MaxTwist = max(Nacelle_MaxTwist, fabs(Twist[iPlane]));
     }
+
+    Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] = Nacelle_Volume;
+    Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] = Nacelle_MinMaxThickness;
+    Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] = Nacelle_MaxMaxThickness;
+    Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] = Nacelle_MinChord;
+    Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] = Nacelle_MaxChord;
+    Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] = Nacelle_MinLERadius;
+    Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] = Nacelle_MaxLERadius;
+    Nacelle_ObjectiveFuncs["NACELLE_MIN_TOC"] = Nacelle_MinToC;
+    Nacelle_ObjectiveFuncs["NACELLE_MAX_TOC"] = Nacelle_MaxToC;
+    Nacelle_ObjectiveFuncs["NACELLE_OBJFUN_MIN_TOC"] = Nacelle_ObjFun_MinToC;
+    Nacelle_ObjectiveFuncs["NACELLE_MAX_TWIST"] = Nacelle_MaxTwist;
 
   }
 

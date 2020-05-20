@@ -730,12 +730,7 @@ public:
   /*!
    * \brief Evaluate geometrical parameters of a wing.
    */
-  void Compute_Nacelle(CConfig *config, bool original_surface,
-                       su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
-                       su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
-                       su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
-                       su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
-                       su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) override;
+  void Compute_Nacelle(CConfig *config, bool original_surface, map<string,su2double> &Nacelle_ObjectiveFuncs) override;
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.
