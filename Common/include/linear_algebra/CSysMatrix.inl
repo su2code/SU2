@@ -62,7 +62,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned l
 }
 
 template<class T, bool alpha, bool beta, bool transp>
-FORCEINLINE void gemv_impl(const unsigned long n, const T *a, const T *b, T *c) {
+FORCEINLINE void gemv_impl(unsigned long n, unsigned long m, const T *a, const T *b, T *c) {
   /*---
    This is a templated version of GEMV with the constants as boolean
    template parameters so that they can be optimized away at compilation.
@@ -71,19 +71,19 @@ FORCEINLINE void gemv_impl(const unsigned long n, const T *a, const T *b, T *c) 
   if (!transp) {
     for (auto i = 0ul; i < n; i++) {
       if (!beta) c[i] = 0.0;
-      for (auto j = 0ul; j < n; j++)
-        c[i] += (alpha? 1 : -1) * a[i*n+j] * b[j];
+      for (auto j = 0ul; j < m; j++)
+        c[i] += (alpha? 1 : -1) * a[i*m+j] * b[j];
     }
   } else {
-    if (!beta) for (auto j = 0ul; j < n; j++) c[j] = 0.0;
+    if (!beta) for (auto j = 0ul; j < m; j++) c[j] = 0.0;
     for (auto i = 0ul; i < n; i++)
-      for (auto j = 0ul; j < n; j++)
+      for (auto j = 0ul; j < m; j++)
         c[j] += (alpha? 1 : -1) * a[i*n+j] * b[i];
   }
 }
 
 template<class T>
-FORCEINLINE void gemm_impl(const unsigned long n, const T *a, const T *b, T *c) {
+FORCEINLINE void gemm_impl(unsigned long n, const T *a, const T *b, T *c) {
   /*--- Same deal as for GEMV but here only the type is templated. ---*/
   unsigned long i, j, k;
   for (i = 0; i < n; i++) {
@@ -106,19 +106,19 @@ MATVECPROD_SIGNATURE( MatrixVectorProduct ) {
    Without MKL (default) picture copying the body of gemv_impl
    here and resolving the conditionals at compilation.
   ---*/
-  gemv_impl<ScalarType,true,false,false>(nVar, matrix, vector, product);
+  gemv_impl<ScalarType,true,false,false>(nVar, nEqn, matrix, vector, product);
 }
 
 MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
-  gemv_impl<ScalarType,true,true,false>(nVar, matrix, vector, product);
+  gemv_impl<ScalarType,true,true,false>(nVar, nEqn, matrix, vector, product);
 }
 
 MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
-  gemv_impl<ScalarType,false,true,false>(nVar, matrix, vector, product);
+  gemv_impl<ScalarType,false,true,false>(nVar, nEqn, matrix, vector, product);
 }
 
 MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
-  gemv_impl<ScalarType,true,true,true>(nVar, matrix, vector, product);
+  gemv_impl<ScalarType,true,true,true>(nVar, nEqn, matrix, vector, product);
 }
 
 template<class ScalarType>

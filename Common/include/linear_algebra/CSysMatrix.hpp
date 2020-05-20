@@ -69,9 +69,6 @@ class CGeometry;
 template<class ScalarType>
 class CSysMatrix {
 private:
-  /*--- We are friends with all other possible CSysMatrices. ---*/
-  template<class T> friend class CSysMatrix;
-
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
 
@@ -87,8 +84,8 @@ private:
 
   unsigned long nPoint;             /*!< \brief Number of points in the grid. */
   unsigned long nPointDomain;       /*!< \brief Number of points in the grid (excluding halos). */
-  unsigned long nVar;               /*!< \brief Number of variables. */
-  unsigned long nEqn;               /*!< \brief Number of equations. */
+  unsigned long nVar;               /*!< \brief Number of variables (and rows of the blocks). */
+  unsigned long nEqn;               /*!< \brief Number of equations (and columns of the blocks). */
 
   ScalarType *matrix;               /*!< \brief Entries of the sparse matrix. */
   unsigned long nnz;                /*!< \brief Number of possible nonzero entries in the matrix. */
@@ -224,7 +221,7 @@ private:
    */
   inline void MatrixCopy(const ScalarType *src, ScalarType *dst, bool transposed = false) const {
     if (!transposed) {
-      for(auto iVar = 0ul; iVar < nVar*nVar; ++iVar)
+      for(auto iVar = 0ul; iVar < nVar*nEqn; ++iVar)
         dst[iVar] = src[iVar];
     }
     else {
@@ -343,14 +340,15 @@ public:
   ~CSysMatrix(void);
 
   /*!
-   * \brief Initializes sparse matrix system.
+   * \brief Initializes the sparse matrix.
+   * \note The preconditioners require nVar == nEqn (square blocks).
    * \param[in] npoint - Number of points including halos.
    * \param[in] npointdomain - Number of points excluding halos.
-   * \param[in] nvar - Number of variables.
-   * \param[in] neqn - Number of equations.
+   * \param[in] nvar - Number of variables (and rows of the blocks).
+   * \param[in] neqn - Number of equations (and columns of the blocks).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] needTranspPtr - If "col_ptr" should be created.
+   * \param[in] needTranspPtr - If "col_ptr" should be created, used for "SetDiagonalAsColumnSum".
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
@@ -406,7 +404,7 @@ public:
     const auto end = (block_j<block_i)? dia_ptr[block_i] : row_ptr[block_i+1];
     for (auto index = (block_j<block_i)? row_ptr[block_i] : dia_ptr[block_i]; index < end; ++index)
       if (col_ind[index] == block_j)
-        return &(matrix[index*nVar*nEqn]);
+        return &matrix[index*nVar*nEqn];
     return nullptr;
   }
 

@@ -206,19 +206,24 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   #define CREATE_GEMM mkl_jit_create_sgemm
   #define GET_GEMM_PTR mkl_jit_get_sgemm_ptr
 #endif
-  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar);
+  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
   MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1);
+  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
   MatrixVectorProductKernelBetaZero = GET_GEMM_PTR(MatrixVectorProductJitterBetaZero);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1);
+  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
   MatrixVectorProductKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductJitterBetaOne);
 
-  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar, -1.0, 1, nVar, 1.0, 1);
+  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
   MatrixVectorProductKernelAlphaMinusOne = GET_GEMM_PTR(MatrixVectorProductJitterAlphaMinusOne);
 
-  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar);
+  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
   MatrixVectorProductTranspKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductTranspJitterBetaOne);
 #endif
 
@@ -640,11 +645,11 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
-  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
+  if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
-  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
+  if (nPoint != prod.GetNBlk()) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
@@ -662,8 +667,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
     for(auto iVar = 0ul; iVar < nVar; iVar++)
       prod[prod_begin+iVar] = 0.0;
     for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      auto vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
-      auto mat_begin = index*nVar*nVar; // offset to beginning of matrix block[row_i][col_ind[indx]]
+      auto vec_begin = col_ind[index]*nEqn; // offset to beginning of block col_ind[index]
+      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
       MatrixVectorProductAdd(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
@@ -682,27 +687,28 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                                            CGeometry *geometry, CConfig *config) const {
 
-  unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
+  /// TODO: The transpose product requires a different thread-parallel strategy.
+  SU2_OMP_MASTER
+  {
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
-  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
+  if ((nVar != vec.GetNVar()) || (nEqn != prod.GetNVar())) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
-  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
+  if (nPoint != vec.GetNBlk()) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
 #endif
 
-  /// TODO: The transpose product requires a different thread-parallel strategy.
   prod = ScalarType(0.0); // set all entries of prod to zero
-  for (row_i = 0; row_i < nPointDomain; row_i++) {
-    vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
-    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      prod_begin = col_ind[index]*nVar; // offset to beginning of block row_i
-      mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+  for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
+    auto vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
+    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+      auto prod_begin = col_ind[index]*nEqn; // offset to beginning of block row_i
+      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
       MatrixVectorProductTransp(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
@@ -712,6 +718,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
   InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
 
+  }
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
@@ -1317,7 +1325,7 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
   /*--- Set the diagonal block to the identity. ---*/
   SetVal2Diag(node_i, 1.0);
 
-  /*--- Set know solution in rhs vector. ---*/
+  /*--- Set known solution in rhs vector. ---*/
   b.SetBlock(node_i, x_i);
 
 }
@@ -1356,7 +1364,7 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtDOF(unsigned long node_i, unsigned
       bij[iVar*(nVar+1)] = 1.0;
   }
 
-  /*--- Set know solution in rhs vector. ---*/
+  /*--- Set known solution in rhs vector. ---*/
   b(node_i, iVar) = x_i;
 
 }
