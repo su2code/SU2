@@ -933,8 +933,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       for (unsigned short kDim = 0; kDim < nDim; kDim++) {
-        Jacobian_i[iDim+1][jDim+1] += -0.5*factor*V_i[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
-        Jacobian_i[nDim+1][jDim+1] += -0.5*factor*V_i[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+        Jacobian_i[iDim+1][kDim+1] += -0.5*factor*V_i[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
+        Jacobian_i[nDim+1][kDim+1] += -0.5*factor*V_i[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
       }
       Jacobian_i[iDim+1][0]      += 0.5*factor*(v2/2 - Cv*T)*stress_tensor[iDim][jDim]*Normal[jDim];
       Jacobian_i[nDim+1][nDim+1] += 0.5*factor*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
@@ -954,8 +954,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       for (unsigned short kDim = 0; kDim < nDim; kDim++) {
-        Jacobian_j[iDim+1][jDim+1] += -0.5*factor*V_j[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
-        Jacobian_j[nDim+1][jDim+1] += -0.5*factor*V_j[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+        Jacobian_j[iDim+1][kDim+1] += -0.5*factor*V_j[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
+        Jacobian_j[nDim+1][kDim+1] += -0.5*factor*V_j[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
       }
       Jacobian_j[iDim+1][0]      += 0.5*factor*(v2/2 - Cv*T)*stress_tensor[iDim][jDim]*Normal[jDim];
       Jacobian_j[nDim+1][nDim+1] += 0.5*factor*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
