@@ -340,10 +340,22 @@ def read_config(filename):
             break
         
         # remove line returns
-        line = line.strip('\r\n')
-        # make sure it has useful data
-        if (not "=" in line) or (line[0] == '%'):
+        line = line.strip('\r\n').strip()
+
+        if (len(line) == 0):
             continue
+        # make sure it has useful data
+        if (line[0] == '%'):
+            continue
+
+        while(line[0].endswith('\\') or len(line.split('\\')) > 1):
+            tmp_line = input_file.readline()
+            tmp_line = tmp_line.strip()
+            assert len(tmp_line.split('=')) <= 1, ('Statement after line continuation parameter in config file %s' % tmp_line)
+            if (not tmp_line.startswith('%')):
+                line = line.split('\\')[0]
+                line += ' ' + tmp_line
+
         # split across equals sign
         line = line.split("=",1)
         this_param = line[0].strip()
