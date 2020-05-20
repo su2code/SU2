@@ -301,7 +301,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
 //  Postprocessing(geometry, solver_container, config, iMesh);
   
-//  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
