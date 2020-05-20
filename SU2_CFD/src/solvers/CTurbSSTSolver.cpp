@@ -191,10 +191,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize lower and upper limits---*/
   const su2double kine_Inf_Dim = config->GetTke_FreeStream();
   const su2double omega_Inf_Dim = config->GetOmega_FreeStream();
-  lowerlimit[0] = 1.0e-12*kine_Inf/kine_Inf_Dim;
+  lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
   upperlimit[0] = 1.0e15*kine_Inf/kine_Inf_Dim;
 
-  lowerlimit[1] = 1.0e-12*omega_Inf/omega_Inf_Dim;
+  lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
   upperlimit[1] = 1.0e15*omega_Inf/omega_Inf_Dim;
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
