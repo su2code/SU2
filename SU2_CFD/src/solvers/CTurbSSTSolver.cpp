@@ -547,6 +547,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
   AD_BEGIN_PASSIVE
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const su2double sigma_om2 = constants[3];
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
@@ -573,13 +574,13 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_i[1][0] += sign*(1. - F1_i)*constants[3]
+          Jacobian_i[1][0] += sign*(1. - F1_i)*sigma_om2
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-          Jacobian_i[1][1] += sign*(1. - F1_i)*constants[3]
+          Jacobian_i[1][1] += sign*(1. - F1_i)*sigma_om2
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
-          Jacobian_j[1][0] += sign*(1. - F1_i)*constants[3]*r_i
+          Jacobian_j[1][0] += sign*(1. - F1_i)*sigma_om2*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
-          Jacobian_j[1][1] += sign*(1. - F1_i)*constants[3]*r_i
+          Jacobian_j[1][1] += sign*(1. - F1_i)*sigma_om2*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
         }
         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
@@ -594,9 +595,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
           if (iVertex > -1) {
             const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-              Jacobian_i[1][0] -= 2.*(1. - F1_i)*constants[3]
+              Jacobian_i[1][0] -= 2.*(1. - F1_i)*sigma_om2
                                 * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-              Jacobian_i[1][1] -= 2.*(1. - F1_i)*constants[3]
+              Jacobian_i[1][1] -= 2.*(1. - F1_i)*sigma_om2
                                 * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
             }
           }
