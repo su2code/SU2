@@ -718,16 +718,16 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Set primitive state based on flow direction ---*/
       
-      Vn_Infty = 0;
-      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
-      
-      if (Vn_Infty > 0.0) {
-        /*--- Outflow conditions ---*/
-        Primitive_j[0] = Primitive_i[0];
-        Primitive_j[1] = Primitive_i[1];
-      }
-      else {
-        /*--- Inflow conditions ---*/
+//      Vn_Infty = 0;
+//      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
+//
+//      if (Vn_Infty > 0.0) {
+//        /*--- Outflow conditions ---*/
+//        Primitive_j[0] = Primitive_i[0];
+//        Primitive_j[1] = Primitive_i[1];
+//      }
+//      else {
+//        /*--- Inflow conditions ---*/
         Velocity2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
         const su2double Rho_Infty = V_infty[nDim+2];
@@ -737,7 +737,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
         
         Primitive_j[0] = Kine_Infty;
         Primitive_j[1] = Omega_Infty;
-      }
+//      }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
@@ -755,7 +755,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       LinSysRes.AddBlock(iPoint, residual);
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      if (Vn_Infty > 0.0) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_j);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
