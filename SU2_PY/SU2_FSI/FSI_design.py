@@ -43,6 +43,21 @@ Deform needs only to be done every design (every interation iter)
 Usually Primal is done first but at iteration 0 there is a geo extra run (this complicates things)
 '''
 
+'''
+Design for every iteration needs to memorize
+   config         - optimization config file
+   config_primal  - Primal config file
+   config_adjoint - adjoint config file
+   x              - DV_value
+   x_old          - DV_Value old (previous design)
+   obj_func       - Value of objective function
+   gradient       - value of the gradient to pass to potimizator
+   constraints    - value of constraints
+   constr_grad    - value of constraints gradient
+   deform         - booleian for deformation
+'''
+
+
 # ----------------------------------------------------------------------
 #  Imports
 # ----------------------------------------------------------------------
@@ -50,6 +65,7 @@ Usually Primal is done first but at iteration 0 there is a geo extra run (this c
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
+from SU2_FSI.FSI_tools import run_command, UpdateConfig, DeformMesh, Geometry
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------
@@ -68,73 +84,70 @@ class Design(object):
 
     """
 
-    def __init__( self, config,configFSIPrimal,configFSIAdjoint,  folder, nbr ,x, x_old ):
+    def __init__( self, config, configFSIPrimal,configFSIAdjoint,  folder, nbr ,x, x_old ):
 
-        
+        # Attributes:
         self.config  = config      # base config
         self.folder  = folder      # design folder
         self.design_nbr = nbr      # current design number
         self.x = x              # collection of dv_variables of the current design
         self.x_old = x_old          # collection of dv_variable of the previous design
         self.configFSIPrimal = configFSIPrimal
-        self.configFSIAdjoint = configFSIAdjoint        
+        self.configFSIAdjoint = configFSIAdjoint   
+        # booleians for every analysis
+        self.deformation = False
+        self.geo = False
+        self.primal = False
+        self.Adjoint = False
+        self.c_eq
+        self.c_ieq
 
-    def create_design_folders(self):
-
-        # I create design folders
-        command_list = []
-        command_list.append('mkdir ' + self.folder + '/DESIGNS/DSN_' + str(self.iter) )
-        command_list.append('mkdir ' + self.folder + '/DESIGNS/DSN_' + str(self.iter) + '/Primal'  )
-        command_list.append('mkdir ' + self.folder + '/DESIGNS/DSN_' + str(self.iter) + '/Adjoint' )
-        command_list.append('mkdir ' + self.folder + '/DESIGNS/DSN_' + str(self.iter) + '/GEO'     )
-        command_list.append('mkdir ' + self.folder + '/DESIGNS/DSN_' + str(self.iter) + '/DEFORM')
-
-        for command in command_list:
-           try:
-               os.system(command)
-           except TypeWarning as exception:
-               print('Creating new design folder failed with the following warning: {}'.format(TypeWarning))
-
-        return
-
-    def update_iter(self):
-
-        self.iter = self.iter + 1
-
-        return
+    def SU2_DEF(self,deform_folder):    
+        
+        # booleian for deformation
+        self.deformation = True
+        # before running the command the new DV_VALUE needs to be specified inside the deformation config
+        ConfigFileName = deform_folder + '/' + self.config['CONFIG_DEF']
+        UpdateConfig(ConfigFileName, 'DV_VALUE', self.x)
+        
+        # performing SU2_DEF
+        DeformMesh(deform_folder,ConfigFileName)
 
 
-    def copy_files(self ,analysis):
-        '''
-        Copy in the dedicated folder input files to perform primal or Adjoint (everything but
-        mesh file which is updated in deform)
-        analysis = Primal/Adjoint
-        '''
-        if (analysis == 'Primal'):
-            config = self.configFSIPrimal
-        elif (analysis == 'Adjoint'):
-            config = self.configFSIAdjoint
-
-        command_list = []
-        #config
-        command_list.append('cp ' + self.config['CONFIG_PRIMAL'] + ' ' + folder + '/DESIGNS/DSN_' + str(self.iter) + '/' + analysis + '/' )
-        # Flow file
-        command_list.append('cp ' + config['SU2_CONFIG'] + ' ' + folder + '/DESIGNS/DSN_' + str(self.iter) + '/' + analysis + '/' )
-        # structural
-        command_list.append('cp ' + config['PYBEAM_CONFIG'] + ' ' + folder + '/DESIGNS/DSN_' + str(self.iter) + '/' + analysis + '/' )
-        # Spline
-        command_list.append('cp ' + config['MLS_CONFIG_FILE_NAME'] + ' ' + folder + '/DESIGNS/DSN_' + str(self.iter) + '/' + analysis + '/' )
-        # structural mesh (let's assume this name doesn't change for now)
-        command_list.append('cp ' + 'mesh.pyBeam' + ' ' + folder + '/DESIGNS/DSN_' + str(self.iter) + '/' + analysis + '/' )
-        # structural properties (let's assume this name doesn't change for now)
-        command_list.append('cp ' + 'property.pyBeam' + ' ' + folder + '/DESIGNS/DSN_' + str(self.iter) + '/' + analysis + '/' )
 
 
-    def SU2_GEO(self):
-         '''
-         Copy in the dedicated folder input files to perform primal or Adjoint (everything but
-         mesh file which is updated in deform)
-         analysis = Primal/Adjoint
-         '''
 
-         return
+    def SU2_GEO(self,geo_folder):
+
+        # booleian for deformation
+        self.geo = True
+        # Set up current mesh file name
+        mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
+        ConfigFileName = geo_folder + '/' + self.config['CONFIG_GEO']
+        UpdateConfig(ConfigFileName, 'DV_VALUE', mesh_filename)
+        
+        # Performing SU2_GEO
+        Geometry(geo_folder,ConfigFileName)
+        
+    
+    def pull_c_eq(self,geo_folder):
+     """ 
+     Fuction that returns the numpy list of c_eq
+     """
+     c_eq = ReadGeoConstraints(geo_folder,self.config['OPT_CONSTRAINT'], '=')
+     
+     return c_eq
+ 
+    def pull_c_ieq(self,geo_folder):
+     """ 
+     Fuction that returns the numpy list of c_ieq
+     """
+     # First > constraints
+     c_ieq_plus = ReadGeoConstraints(geo_folder,self.config['OPT_CONSTRAINT'], '>')
+     
+     # After < constraints
+     c_ieq_minus = ReadGeoConstraints(geo_folder,self.config['OPT_CONSTRAINT'], '<')     
+     
+     return np.concatenate((c_ieq_plus, - c_ieq_minus), axis = 0)
+     
+        

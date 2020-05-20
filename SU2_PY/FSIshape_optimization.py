@@ -220,15 +220,10 @@ def con_ceq(x,project):
     """ cons = con_ceq(x,project)
         
         Equality Constraint Functions
-        SU2 Project interface to scipy.fmin_slsqp
-        
-        scipy_slsqp: ceq(x) = 0.0, ndarray[nceq]
     """
     
     cons = project.con_ceq(x)
     
-    if cons: cons = array(cons)
-    else:    cons = zeros([0])
         
     return cons
 
@@ -253,17 +248,11 @@ def con_cieq(x,project):
     """ cons = con_cieq(x,project)
         
         Inequality Constraints
-        SU2 Project interface to scipy.fmin_slsqp
-        
-        scipy_slsqp: cieq(x) > 0.0, ndarray[ncieq]
-    """
-    
+
+    """    
     cons = project.con_cieq(x)
+    return cons
     
-    if cons: cons = array(cons)
-    else:    cons = zeros([0])
-    
-    return -cons
     
 def con_dcieq(x,project):
     """ dcons = con_dcieq(x,project)

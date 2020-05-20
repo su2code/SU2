@@ -53,7 +53,9 @@ class Project(object):
         
         folder = self.config['FOLDER']  # root folder where optimization is done
         folder = folder.rstrip('/') + '/'
-        self.folder  = folder      
+        self.folder  = folder  
+        self.deform_folder = ''
+        self.geo_folder = ''
         
         self.design_toll = 10**8  # allowable difference into design variable vector to consider the same design
         
@@ -69,11 +71,11 @@ class Project(object):
         
         self.n_dv = 0 # number of design variables
         
-        # cleqn previous designs
+        # clean previous designs
         self.clean_previous_designs()
 
         # Creating design folder
-        self.create_design_folder(self)
+        self.create_design_folder()
         
         # project memorizes config of both adjoin and primal solvers (top level config)
         self.setup_configs()
@@ -92,7 +94,7 @@ class Project(object):
         
         # Check if new design is needed
         # In case start new design and deform
-        self.check_new_design(x_new)
+        self.CheckNewDesign(x_new)
         
         
         #Primal
@@ -104,7 +106,7 @@ class Project(object):
         
         # Check if new design is needed (it won't as Adjoin is performed after primal)        
         # In case start new design and deform
-        self.check_new_design(x_new)
+        self.CheckNewDesign(x_new)
         #Adjoint
         
         # return d function
@@ -114,19 +116,22 @@ class Project(object):
         
         # Check if new design is needed        
         # In case start new design and deform
-        self.check_new_design(x_new)
+        self.CheckNewDesign(x_new)
         
-        #If Geo hasn't been executed execute Geo
+        #Check if Geo has been executed, if it hasn't execute Geo
+        self.CheckGeo()
         
-        # pull constraint equality
-        
+        # pulls constraint equality
+        c_eq = self.design[self.design_iter].pull_c_eq(self.geo_folder)
         # return ceq
-        return
+        
+        return c_eq
     
     def con_dceq(self,x_new):
+        
         # Check if new design is needed (it won't as geo gradient is calculated after ge       
         # In case start new design and deform
-        self.check_new_design(x_new)
+        self.CheckNewDesign(x_new)
         #If Geo hasn't been executed execute Geo
         
         # pull gradient of constraint equality
@@ -138,19 +143,22 @@ class Project(object):
         
         # Check if new design is needed        
         # In case start new design and deform
-        self.check_new_design(x_new)
-        #If Geo hasn't been executed execute Geo
+        self.CheckNewDesign(x_new)
+        
+        #Check if Geo has been executed, if it hasn't execute Geo
+        self.CheckGeo()
         
         # pull constraint inequality
+        c_ieq = self.design[self.design_iter].pull_c_ieq(self.geo_folder)
         
         # return cieq
-        return
+        return c_ieq
     
     def con_dcieq(self,x_new):
         
         # Check if new design is needed (it won't as geo gradient is calculated after ge       
         # In case start new design and deform
-        self.check_new_design(x_new)
+        self.CheckNewDesign(x_new)
         #If Geo hasn't been executed execute Geo
         
         # pull gradient of constraint inequality
@@ -177,13 +185,13 @@ class Project(object):
         run_command(command, 'Create design folder', False)  
             
             
-    def check_new_design(self, x_in):
+    def CheckNewDesign(self, x_in):
         
        if self.design_iter == -1:
            print('Starting new design')
            self.design_iter += 1
            # starting new design
-           self.initialize_new_design(x_in)
+           self.InitializeNewDesign(x_in)
        else:    
           delta = self.design[self.design_iter].x - x_in
           module = np.linalg.norm(delta)
@@ -191,12 +199,14 @@ class Project(object):
              print('Starting new design')
              self.design_iter += 1
              # starting new design
-             self.initialize_new_design(x_in)
+             self.InitializeNewDesign(x_in)
+             # performing mesh deform
+             self.DeformMesh()
           else:
              continue
             
     
-    def initialize_new_design(self,x_in):  
+    def InitializeNewDesign(self,x_in):  
         
         # old design
         x_old = self.design[self.design_iter-1].x
@@ -212,15 +222,75 @@ class Project(object):
         self.design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, design_folder, self.design_iter ,x_in, x_old ))    
         
 
-    def deform_mesh(self):    
+    def DeformMesh(self):    
         
+        # old design
+        #x = self.design[self.design_iter].x
         
-        # remember to check if there is the need to deform the mesh
-        all_zeros = not np.any(a)
+        # Check if there is the need to deform the mesh
+        # It is FALSE if any x of the current design is different than 0
+        #all_zeros = not np.any( x )
         
+        #if all_zeros == False:
+            
         # create folder for analysis
-        deform_folder = self.folder + '/DESIGNS' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design) + '/DEFORM'
-        command = 'mkdir ' + deform_folder
-        
+        self.deform_folder = self.folder + '/DESIGNS' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design) + '/DEFORM'
+        command = 'mkdir ' + self.deform_folder        
         # Executes shell command
-        run_command(command, 'Creating deform directory for design ' + str(int(self.design_iter)).zfill(self.magnord_design), False)        
+        run_command(command, 'Creating deform directory for design ' + str(int(self.design_iter)).zfill(self.magnord_design), False)   
+           
+        # pull config deformation file
+        config_deform = self.config['FOLDER'] + '/' + self.config['CONFIG_DEF'] 
+        command = 'cp ' + config_deform + ' ' + self.deform_folder + '/'
+        run_command(command, 'Pulling deformation config', False)
+        
+        # pull mesh file       
+        mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
+        command = 'cp ' + mesh_filename + ' ' + self.deform_folder + '/'
+        run_command(command, 'Pulling mesh config for deformation', False)
+        
+        # Performing mesh deformation
+        self.design[self.design_iter].SU2_DEF(self.deform_folder)
+        
+        
+    def CheckGeo(self):    
+       """
+       If Geo sensitivities (constraints and gradients). are required, checks if GEO run has been done. If not sets up the folder and performs it.
+       """ 
+       
+       if self.design[self.design_iter].geo == False:
+            
+           # create folder for analysis
+           self.geo_folder = self.folder + '/DESIGNS' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design) + '/GEO'
+           command = 'mkdir ' + self.geo_folder        
+           # Executes shell command
+           run_command(command, 'Creating GEO directory for design ' + str(int(self.design_iter)).zfill(self.magnord_design), False)      
+           
+           # pull geo deformation file
+           config_geo = self.config['FOLDER'] + '/' + self.config['CONFIG_GEO'] 
+           command = 'cp ' + config_geo + ' ' + self.geo_folder + '/'
+           run_command(command, 'Pulling geo config', False)     
+           # pull mesh file 
+           self.SetMesh(self.geo_folder)
+           
+           # Runs SU2_GEO
+           self.design[self.design_iter].SU2_GEO(self.geo_folder)
+           
+           
+    def SetMesh(self, destination_folder):
+       """
+       Pulls mesh file. If optimization iter is 1, pulling is from project folder. If a deformation occurred, pulling is done from DEFORM folder
+       """ 
+       
+       if self.design[self.design_iter].deformation == False:
+          # In case deformation hasn't occurred (first iteration) we need the original mesh file
+          mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
+          command = 'cp ' + mesh_filename + ' ' + destination_folder + '/'
+          run_command(command, 'Pulling mesh config for deformation', False)
+          
+       else:
+          # in case deform has occurred mesh file is named as output of SU2_DEF and needs to be pulled from the dedicated folder
+          mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
+          command = 'cp ' + self.deform_folder + '/' + mesh_filename + ' ' + destination_folder + '/'
+          
+           

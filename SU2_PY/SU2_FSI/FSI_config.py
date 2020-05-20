@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
@@ -155,6 +155,7 @@ class OptConfig:
                     break
 
                 # float values
+                if case("OPT_CONSTRAINT_SCALE"): pass
                 if case("OPT_GRADIENT_FACTOR"): pass
                 if case("OPT_RELAX_FACTOR"): pass
                 if case("OPT_ACCURACY"): pass
@@ -177,25 +178,36 @@ class OptConfig:
                    x = len(constraints_str)
                    constraint = []
                    for i in range(x):
-                      value = constraints_str[i].strip(') (')
-                      if value.find('>'):
-                         value = value.split('>')
-                         constraint_value = [None] * 2
-                         constraint_value[0] = '>'
-                         constraint_value[1] = value[1]    
-                      if value.find('<'):
-                         value = value.split('<')
-                         constraint_value = [None] * 2
-                         constraint_value[0] = '<'
-                         constraint_value[1] = value[1]  
-                      if value.find('='):
-                         value = value.split('=')
-                         constraint_value = [None] * 2
-                         constraint_value[0] = '='
-                         constraint_value[1] = value[1]                          
-                      constraint.append(constraint_value)    
-                    self._ConfigContent[this_param] = constraint
-                    break
+                      constraint_value = [None] * 4
+                      if constraints_str[i].find('*') != -1:
+                         string = constraints_str[i].split('*')
+                         scale = float(string[1].strip())
+                         value = string[0].strip(') (')
+                      else:
+                         scale = None   
+                         value = constraints_str[i].strip(') (')
+                      if value.find('>') != -1:
+                         value_s = value.split('>')
+                         constraint_value[0] = value_s[0].strip()
+                         constraint_value[1] = '>'
+                         constraint_value[2] = float(value_s[1].strip()) 
+                      elif value.find('<') != -1:
+                         value_s = value.split('<')
+                         constraint_value[0] = value_s[0].strip()         
+                         constraint_value[1] = '<'
+                         constraint_value[2] = float(value_s[1].strip())  
+                      elif value.find('=') != -1:
+                         value_s = value.split('=')
+                         constraint_value[0] = value_s[0].strip()
+                         constraint_value[1] = '='
+                         constraint_value[2] = float(value_s[1].strip()) 
+                      else:
+                         raise SystemExit(constraint_value[1] + '  is an constraint option') 
+                      constraint_value[3] = scale                  
+                      constraint.append(constraint_value)   
+                      
+                   self._ConfigContent[this_param] = constraint
+                   break
                     
                     
                 if case():
