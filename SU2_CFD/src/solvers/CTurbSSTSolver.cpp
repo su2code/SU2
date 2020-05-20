@@ -1875,8 +1875,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], k, omega,
-            mu, mut,
-            R, cp, g, Pr, Prt;
+            mu, mut, lam, lamt,
+            R, cv, cp, g, Pr, Prt;
 
   r = varFlo->GetDensity(iPoint);
   u[0] = varFlo->GetVelocity(iPoint, 0);
@@ -1891,8 +1891,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
   cp   = (g/(g-1.))*R;
+  cv   = cp/g;
   Pr   = config->GetPrandtl_Lam();
   Prt  = config->GetPrandtl_Turb();
+  lam  = cp*mu/Pr;
+  lamt = cp*mut/Prt;
 
   su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
@@ -1979,7 +1982,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] += -k*TmpWeights[nVarFlo+0] - omega*TmpWeights[nVarFlo+1]
-                 + k/omega*factor;
+                 + lim*k/omega*factor;
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[1][iVar] += TmpWeights[iVar];
@@ -1993,7 +1996,10 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                                 +varAdjTur->GetHessian(iPoint, rki, zzi)
                                                 +varAdjFlo->GetHessian(iPoint, rei, xxi)
                                                 +varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                                +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
+                                                +varAdjFlo->GetHessian(iPoint, rei, zzi))
+                                                +(lam+sigmak*lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                                                          +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                                                          +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, yyi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
@@ -2004,7 +2010,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
                                                 +varAdjTur->GetHessian(iPoint, rki, yyi)
                                                 +varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                                +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
+                                                +varAdjFlo->GetHessian(iPoint, rei, yyi))
+                             +(lam+sigmak*lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
   }
