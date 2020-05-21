@@ -924,46 +924,42 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
 
   /*--- Jacobian wrt laminar viscosity ---*/
   
-  su2double v2 = 0.;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) v2 += V_i[iDim+1]*V_i[iDim+1];
-  su2double T = V_i[0];
-  su2double r = V_i[nDim+2];
-  su2double dmudT = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T) + pow(T,1.5))/(2.*pow((T+Sref),2.));
-  su2double factor = dmudT/(r*Cv);
+  su2double v2_i = 0., v2_j = 0.;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-      for (unsigned short kDim = 0; kDim < nDim; kDim++) {
-        Jacobian_i[iDim+1][kDim+1] += -0.5*factor*V_i[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
-        Jacobian_i[nDim+1][kDim+1] += -0.5*factor*V_i[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
-      }
-      Jacobian_i[iDim+1][0]      += 0.5*factor*(v2/2 - Cv*T)*stress_tensor[iDim][jDim]*Normal[jDim];
-      Jacobian_i[nDim+1][nDim+1] += 0.5*factor*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
-      
-      Jacobian_i[nDim+1][iDim+1] += -0.5*factor*V_i[iDim+1]*heat_flux_vec[jDim]*Normal[jDim];
-    }
-    Jacobian_i[nDim+1][0]      += 0.5*factor*(v2/2 - Cv*T)*heat_flux_vec[iDim]*Normal[iDim];
-    Jacobian_i[nDim+1][nDim+1] += 0.5*factor*heat_flux_vec[iDim]*Normal[iDim];
+    v2_i += V_i[iDim+1]*V_i[iDim+1];
+    v2_j += V_j[iDim+1]*V_j[iDim+1];
   }
+  su2double T_i = V_i[0],
+            T_j = V_j[0],
+            r_i = V_i[nDim+2],
+            r_j = V_j[nDim+2];
   
-  v2 = 0.;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) v2 += V_j[iDim+1]*V_j[iDim+1];
-  T = V_j[0];
-  r = V_j[nDim+2];
-  dmudT = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T) + pow(T,1.5))/(2.*pow((T+Sref),2.));
-  factor = dmudT/(r*Cv);
+  su2double dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),
+            dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.)),
+            factor_i = dmudT_i/(r_i*Cv),
+            factor_j = dmudT_j/(r_j*Cv);
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       for (unsigned short kDim = 0; kDim < nDim; kDim++) {
-        Jacobian_j[iDim+1][kDim+1] += -0.5*factor*V_j[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
-        Jacobian_j[nDim+1][kDim+1] += -0.5*factor*V_j[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+        Jacobian_i[iDim+1][kDim+1] += -0.5*factor_i*V_i[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
+        Jacobian_i[nDim+1][kDim+1] += -0.5*factor_i*V_i[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+        
+        Jacobian_j[iDim+1][kDim+1] += -0.5*factor_j*V_j[kDim+1]*stress_tensor[iDim][jDim]*Normal[jDim];
+        Jacobian_j[nDim+1][kDim+1] += -0.5*factor_j*V_j[kDim+1]*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
       }
-      Jacobian_j[iDim+1][0]      += 0.5*factor*(v2/2 - Cv*T)*stress_tensor[iDim][jDim]*Normal[jDim];
-      Jacobian_j[nDim+1][nDim+1] += 0.5*factor*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+      Jacobian_i[iDim+1][0]      += 0.5*factor_i*(v2_i/2 - Cv*T_i)*stress_tensor[iDim][jDim]*Normal[jDim];
+      Jacobian_i[nDim+1][nDim+1] += 0.5*factor_i*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+      Jacobian_i[nDim+1][iDim+1] += -0.5*factor_i*V_i[iDim+1]*heat_flux_vec[jDim]*Normal[jDim];
       
-      Jacobian_j[nDim+1][iDim+1] += -0.5*factor*V_j[iDim+1]*heat_flux_vec[jDim]*Normal[jDim];
+      Jacobian_j[iDim+1][0]      += 0.5*factor_j*(v2_j/2 - Cv*T_j)*stress_tensor[iDim][jDim]*Normal[jDim];
+      Jacobian_j[nDim+1][nDim+1] += 0.5*factor_j*stress_tensor[iDim][jDim]*val_Mean_PrimVar[iDim+1]*Normal[jDim];
+      Jacobian_j[nDim+1][iDim+1] += -0.5*factor_j*V_j[iDim+1]*heat_flux_vec[jDim]*Normal[jDim];
     }
-    Jacobian_j[nDim+1][0]      += 0.5*factor*(v2/2 - Cv*T)*heat_flux_vec[iDim]*Normal[iDim];
-    Jacobian_j[nDim+1][nDim+1] += 0.5*factor*heat_flux_vec[iDim]*Normal[iDim];
+    Jacobian_i[nDim+1][0]      += 0.5*factor_i*(v2_i/2 - Cv*T_i)*heat_flux_vec[iDim]*Normal[iDim];
+    Jacobian_i[nDim+1][nDim+1] += 0.5*factor_i*heat_flux_vec[iDim]*Normal[iDim];
+    
+    Jacobian_j[nDim+1][0]      += 0.5*factor_j*(v2_j/2 - Cv*T_j)*heat_flux_vec[iDim]*Normal[iDim];
+    Jacobian_j[nDim+1][nDim+1] += 0.5*factor_j*heat_flux_vec[iDim]*Normal[iDim];
   }
 }
 
