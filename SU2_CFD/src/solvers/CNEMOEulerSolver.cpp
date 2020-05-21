@@ -1277,6 +1277,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
 
+
   double lim_i, lim_j, lim_ij;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -1308,26 +1309,10 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   Cvve_i      = new su2double[nSpecies];
   Cvve_j      = new su2double[nSpecies];
   
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-//  numerics->SetPIndex      ( nodes->GetPIndex()       );
-//  numerics->SetTIndex      ( nodes->GetTIndex()       );
-//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-//  numerics->SetHIndex      ( nodes->GetHIndex()       );
-//  numerics->SetAIndex      ( nodes->GetAIndex()       );
-//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-  
-//  RHO_INDEX  = nodes->GetRhoIndex();
-//  RHOS_INDEX = nodes->GetRhosIndex();
-//  P_INDEX    = nodes->GetPIndex();
-//  TVE_INDEX  = nodes->GetTveIndex();
-
   
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
     
     /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
     iPoint = geometry->edges->GetNode(iEdge, 0);
@@ -1470,6 +1455,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Compute the upwind residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+   // exit(0);
 
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
@@ -1526,6 +1512,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   bool err = false;
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
 
   /*--- Initialize the error counter ---*/
   eAxi_local = 0;
@@ -2402,12 +2389,8 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     SetRes_Max(iVar, 0.0, 0);
   }
 
-  //std::ofstream outfile;
-
-  //outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
-
+ 
   /*--- Update the solution ---*/
-
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
  
@@ -2419,17 +2402,10 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
 
-      
-
-  
-
-    
-
-  
 
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
-       // outfile << "local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl; 
+         
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         nodes->AddSolution(iPoint, iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
@@ -2439,6 +2415,8 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
     }
   }
+
+
 
   /*--- MPI solution ---*/
   InitiateComms(geometry, config, SOLUTION);
@@ -2890,18 +2868,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       // THIS NEEDS TO BE REVISITED
       Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
       Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
-       cout << "cat: Density_FreeStream= " << Density_FreeStream << endl;
-      cout << "cat: Gas_Constant= " << GasConstant_Inf << endl;
-      cout << "cat: Temperature_FreeStream= " << Temperature_FreeStream << endl;
       Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
       Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
-
-     
-
-      cout << "cat: visc= " << Viscosity_FreeStream << endl;
-      cout << "cat: rho= " << Density_FreeStream << endl;
-      cout << "cat: p= " << Pressure_FreeStream << endl;
-      cout << "cat: e= " << Energy_FreeStream << endl;
 
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
       config->SetPressure_FreeStream(Pressure_FreeStream);

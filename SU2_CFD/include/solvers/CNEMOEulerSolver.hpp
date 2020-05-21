@@ -289,6 +289,8 @@ protected:
 
   CFluidModel  *FluidModel;         /*!< \brief fluid model used in the solver */
 
+  
+
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
             ***SpanTotalFlux,

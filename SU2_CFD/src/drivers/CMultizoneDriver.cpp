@@ -164,8 +164,9 @@ void CMultizoneDriver::StartSolver() {
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  }
 
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;

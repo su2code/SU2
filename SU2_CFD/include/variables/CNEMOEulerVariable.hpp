@@ -48,6 +48,7 @@
  */
 class CNEMOEulerVariable : public CVariable {
 protected:
+
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
   unsigned long nSpecies;   /*!< \brief Number of species in the gas mixture. */
   VectorType Velocity2;		/*!< \brief Square of the velocity vector. */
@@ -480,8 +481,9 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Solution_Old(iPoint,VEL_INDEX+iDim) = val_velocity[iDim]*Primitive(iPoint,RHO_INDEX);
+    for (unsigned long iDim = 0; iDim < nDim; iDim++){
+      Solution_Old(iPoint,nSpecies+iDim) = val_velocity[iDim]*Primitive(iPoint,RHO_INDEX);
+     }
   }
 
   /*!

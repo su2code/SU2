@@ -3001,8 +3001,9 @@ void CFluidDriver::StartSolver(){
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  }
 
   unsigned long Iter = 0;
   while ( Iter < Max_Iter ) {

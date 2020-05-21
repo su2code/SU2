@@ -57,6 +57,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
+
 }
 
 CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {

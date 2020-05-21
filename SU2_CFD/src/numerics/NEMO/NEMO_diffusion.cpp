@@ -169,15 +169,11 @@ void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
                      Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
-
-  ofstream avggrad; //cat:
-  avggrad.open ("avggrad.txt", std::ios_base::app);
   
 
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++){
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
-    avggrad << "val_residual[" << iVar << "]="  << val_residual[iVar] << "\n";
   }
 
   /*--- Compute the implicit part ---*/
