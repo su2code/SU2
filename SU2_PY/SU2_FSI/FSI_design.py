@@ -205,7 +205,7 @@ class Design:
         input_file = open(primal_folder + '/' + 'Objectives.dat')
         # go to line 2
         line = input_file.readline();line = input_file.readline();
-        line = line.split(' ')
+        line = line.split()
         cd = float(line[0])
         cl = float(line[1])
         
