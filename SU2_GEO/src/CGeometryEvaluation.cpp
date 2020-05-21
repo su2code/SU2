@@ -54,10 +54,41 @@ CGeometryEvaluation::CGeometryEvaluation(CGeometry* geo_val, CConfig* config_val
 
   tabTecplot = config->GetTabular_FileFormat() == TAB_TECPLOT;
 
-    /*--- Set the number of sections, and allocate the memory ---*/
+}
 
-  if (geometry->GetnDim() == 2) nPlane = 1;
-  else nPlane = config->GetnLocationStations();
+CGeometryEvaluation::~CGeometryEvaluation(){
+
+  delete [] Xcoord_Airfoil; delete [] Ycoord_Airfoil; delete [] Zcoord_Airfoil;
+  
+  delete [] ObjectiveFunc; delete [] ObjectiveFunc_New; delete [] Gradient;
+  
+  for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
+    delete [] Plane_P0[iPlane];
+    delete [] Plane_Normal[iPlane];
+  }
+  delete [] Plane_P0;
+  delete [] Plane_Normal;
+
+  if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
+
+  if (surface_movement != nullptr) delete surface_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  if (FFDBox != nullptr) {
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
+      if (FFDBox[iFFDBox] != nullptr) {
+        delete FFDBox[iFFDBox];
+      }
+    }
+    delete [] FFDBox;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+
+}
+
+void CGeometryEvaluation::SetSectioningVariables(unsigned short nPlane_val){
+
+  nPlane = nPlane_val;
 
   Xcoord_Airfoil = new vector<su2double>[nPlane];
   Ycoord_Airfoil = new vector<su2double>[nPlane];
@@ -135,36 +166,6 @@ CGeometryEvaluation::CGeometryEvaluation(CGeometry* geo_val, CConfig* config_val
       }
     }
   }
-}
-
-CGeometryEvaluation::~CGeometryEvaluation(){
-
-  delete [] Xcoord_Airfoil; delete [] Ycoord_Airfoil; delete [] Zcoord_Airfoil;
-  
-  delete [] ObjectiveFunc; delete [] ObjectiveFunc_New; delete [] Gradient;
-  
-  for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
-    delete [] Plane_P0[iPlane];
-    delete [] Plane_Normal[iPlane];
-  }
-  delete [] Plane_P0;
-  delete [] Plane_Normal;
-
-  if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
-
-  if (surface_movement != nullptr) delete surface_movement;
-  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
-  
-  if (FFDBox != nullptr) {
-    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
-      if (FFDBox[iFFDBox] != nullptr) {
-        delete FFDBox[iFFDBox];
-      }
-    }
-    delete [] FFDBox;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
-
 }
 
 void CGeometryEvaluation::ComputeGeometry(){

@@ -173,6 +173,13 @@ int main(int argc, char *argv[]) {
 
   geo_eval = new CGeometryEvaluation(geometry_container[ZONE_0], config_container[ZONE_0], MPICommunicator);
 
+  /*--- Set the number of sections, and allocate the memory ---*/
+
+  if (geometry->GetnDim() == 2) nPlane = 1;
+  else nPlane = config->GetnLocationStations();
+
+  geo_eval->SetSectioningVariables(nPlane);
+
   geo_eval->ComputeGeometry();
 
   geo_eval->EvaluateObjectiveFunction();

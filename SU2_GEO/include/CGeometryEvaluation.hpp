@@ -99,6 +99,15 @@ private:
   map<string, su2double> Wing_ObjectiveFuncs_FD;
   map<string, su2double> Wing_ObjectiveFuncs_Grad;
 
+  set<string> WingSection_Funcs = 
+  {
+    "AREA",
+    "THICKNESS",
+    "CHORD",
+    "LE_RADIUS",
+    "THICKNESS_OVER_CHORD",
+    "AOA"
+  };
 
   map<string, su2double> Fuselage_ObjectiveFuncs = 
   {
@@ -114,6 +123,15 @@ private:
   };
   map<string, su2double> Fuselage_ObjectiveFuncs_FD;
   map<string, su2double> Fuselage_ObjectiveFuncs_Grad;
+
+  set<string> FuselageSection_Funcs = 
+  {
+    "AREA",
+    "LENGTH",
+    "WIDTH",
+    "WATERLINE_WIDTH",
+    "HEIGHT"
+  };
 
   map<string, su2double> Nacelle_ObjectiveFuncs =
   {
@@ -132,6 +150,16 @@ private:
   map<string, su2double> Nacelle_ObjectiveFuncs_FD;
   map<string, su2double> Nacelle_ObjectiveFuncs_Grad;
 
+  set<string> NacelleSection_Funcs = 
+  {
+    "AREA",
+    "THICKNESS",
+    "CHORD",
+    "LE_RADIUS",
+    "THICKNESS_OVER_CHORD",
+    "AOA"
+  };
+
 
 public:
 
@@ -140,7 +168,8 @@ public:
   ~CGeometryEvaluation(void);
 
   void SetMapToZero(map<string,su2double> &Function_Map);
-	// void SetPlaneStructure(void);
+	
+  void SetSectioningVariables(unsigned short nPlane_val);
 
 	void ComputeGeometry(void);
 
