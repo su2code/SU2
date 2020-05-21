@@ -317,6 +317,7 @@ class Project:
        command.append('cp ' + config + ' ' + self.primal_folder + '/')
        # 3
        config = self.config['FOLDER'] + '/' + self.configFSIPrimal['MLS_CONFIG_FILE_NAME']
+       command.append('cp ' + config + ' ' + self.primal_folder + '/')
        # 4
        spline = self.config['FOLDER'] + '/' + 'Spline.npy'
        command.append('cp ' + spline + ' ' + self.primal_folder + '/')      
