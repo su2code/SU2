@@ -631,6 +631,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -647,14 +648,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       density_s = flowNodes->GetDensity(iPoint);
       density_v = flowNodes->GetDensity(jPoint);
       
-      energy_v = nodes->GetEnergy(jPoint);
+      energy_v = flowNodes->GetEnergy(jPoint);
       vel2_v = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
       k_v = nodes->GetSolution(jPoint,0)/density_v;
       staticenergy_v = energy_v - 0.5*vel2_v - k_v;
 
-      solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(density_v, staticenergy_v);
-      laminar_viscosity_v = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
+      fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
+      laminar_viscosity_v = fluidModel->GetLaminarViscosity();
 //      laminar_viscosity_v = flowNodes->GetLaminarViscosity(jPoint);
 //      density_s = nodes->GetFlowPrimitive(iPoint,nDim+2);
 //      density_v = nodes->GetFlowPrimitive(jPoint,nDim+2);
