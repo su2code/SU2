@@ -83,11 +83,12 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double d = max(val_dist, eps);
+  const su2double CDkwmin = 1.0e-10;
 
   arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*d);
   arg2B = 500.0*val_viscosity / (val_density*d*d*Primitive(iPoint,1));
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),1.0e-10)*d*d));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),CDkwmin)*d*d));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
