@@ -738,7 +738,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set primitive state based on flow direction ---*/
       
       Vn_Infty = 0;
-      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += V_infty[iDim+1]*Normal[iDim];
 
       if (Vn_Infty > 0.0) {
         /*--- Outflow conditions ---*/
@@ -776,6 +776,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       LinSysRes.AddBlock(iPoint, residual);
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (Vn_Infty > 0.0) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_j);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
