@@ -176,7 +176,7 @@ def FSIPrimal(primal_folder, config):
     
     # going to ./GEO folder
     os.chdir(primal_folder)    
-    command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' pyBeamFSI.py -f ' + config['CONFIG_PRIMAL']
+    command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' pyBeamFSI_opt.py -f ' + config['CONFIG_PRIMAL']
     print (command)
     # Compose local output file
     Output_file =  'Output_primal.out'
