@@ -626,8 +626,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iVar;
+  unsigned short iVar, iDim;
   su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
+  su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -643,15 +644,24 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set wall values ---*/
 
-//      density_s = flowNodes->GetDensity(iPoint);
-//      density_v = flowNodes->GetDensity(jPoint);
+      density_s = flowNodes->GetDensity(iPoint);
+      density_v = flowNodes->GetDensity(jPoint);
+      
+      energy_v = nodes->GetEnergy(jPoint);
+      vel2_v = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
+      k_v = nodes->GetSolution(jPoint,0)/density_v;
+      staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+
+      solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(density_v, staticenergy_v);
+      laminar_viscosity_v = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
 //      laminar_viscosity_v = flowNodes->GetLaminarViscosity(jPoint);
 //      density_s = nodes->GetFlowPrimitive(iPoint,nDim+2);
 //      density_v = nodes->GetFlowPrimitive(jPoint,nDim+2);
 //      laminar_viscosity_v = nodes->GetFlowPrimitive(jPoint,nDim+5);
-      density_s = flowNodes->GetPrimitive(iPoint,nDim+2);
-      density_v = flowNodes->GetPrimitive(jPoint,nDim+2);
-      laminar_viscosity_v = flowNodes->GetPrimitive(jPoint,nDim+5);
+//      density_s = flowNodes->GetPrimitive(iPoint,nDim+2);
+//      density_v = flowNodes->GetPrimitive(jPoint,nDim+2);
+//      laminar_viscosity_v = flowNodes->GetPrimitive(jPoint,nDim+5);
       
 
       Solution[0] = 0.0;
