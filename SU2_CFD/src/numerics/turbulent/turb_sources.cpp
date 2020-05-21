@@ -872,7 +872,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 //         Jacobian_i[1][1] = 20.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
 //       }
      }
-     if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
+     if (TurbVar_i[1] > VorticityMag_i*F2_i/a1 && pw > 0.0) {
        Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
      }
    }
@@ -887,9 +887,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
      pw = alfa_blended*Density_i*max(pw,0.0);
    }
-//   else {
+   else {
 //    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
-//   }
+     pw = max(pw, 0.0);
+   }
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
