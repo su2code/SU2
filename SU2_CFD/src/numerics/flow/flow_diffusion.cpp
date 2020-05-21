@@ -907,7 +907,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double Cv = Cp/Gamma;
-  const su2double heat_flux_factor = Cp/Prandtl_Turb;
+  const su2double heat_flux_factor = Cp/Prandtl_Lam;
   const su2double muref = config->GetMu_RefND();
   const su2double Tref = config->GetMu_Temperature_RefND();
   const su2double Sref = config->GetMu_SND();
