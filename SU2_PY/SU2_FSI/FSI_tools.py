@@ -31,6 +31,7 @@
 
 import os, sys, shutil
 import subprocess
+import numpy as np
 
 def SaveSplineMatrix(config):
     """
@@ -78,13 +79,13 @@ def run_command(Command, Tool, Output, Output_file = '' ):
     """
 
     sys.stdout.flush()
-    file = open(Output_file, "w")
+    if Output == True:
+       file = open(Output_file, "w")
     with subprocess.Popen(Command, shell=True, universal_newlines=True,
                             stdout=subprocess.PIPE) as proc:
-        if Output == True:
            while True:
                string = proc.stdout.read(1)
-               if string:
+               if string and Output_file != '':
                    file.write(string)
                    # logfile.flush()
                else:
@@ -112,32 +113,34 @@ def UpdateConfig(ConfigFileName, param, value):
     configfile2 = open(ConfigFileName + '_temp',"w")
     with open(ConfigFileName, 'r') as configfile:
       while 1:          
-	line = configfile.readline()
+        line = configfile.readline()
         string = line
-	if not line:
-	  break
+        if not line:
+           break
 
         # remove line returns
         line = line.strip('\r\n')
         # make sure it has useful data
         if (not "=" in line) or (line[0] == '%'):  
-         configfile2.write(string)
+           configfile2.write(string)
         else: 
-         # split across equal sign
-         line = line.split("=",1)
-         this_param = line[0].strip()
-         this_value = line[1].strip()
+           # split across equal sign
+           line = line.split("=",1)
+           this_param = line[0].strip()
+           this_value = line[1].strip()
 
-         #float values
-         if this_param == param:
-            if this_param == "DV_VALUE":            
+           #float values
+           if this_param == param:
+              if this_param == "DV_VALUE":            
                     dv_string = ('%s' % ', '.join(map(str, value)))
                     stringalt = 'DV_VALUE = '+ dv_string + '   \r\n'
                     configfile2.write(stringalt)    
                     
-            else:
+              else:
                     stringalt = this_param + ' = ' + value + '   \r\n'
                     configfile2.write(stringalt) 
+           else:
+              configfile2.write(string)
                 
                     
     configfile.close()    
@@ -156,13 +159,13 @@ def DeformMesh(deform_folder, ConfigFileName):
     os.chdir(deform_folder)
     
     command = 'SU2_DEF ' + ConfigFileName
-    Output_file = deform_folder + '/Output_SU2_DEF.out'
+    Output_file =  'Output_SU2_DEF.out'
     run_command(command, 'SU2_DEF', True, Output_file)
     
-    # go back to project folder (two levels up)
-    os.chdir(deform_folder + '/../..')
+    # go back to project folder (3 levels up)
+    os.chdir( '../../..')
 
-return 
+    return 
 
 
 def Primal():
@@ -188,14 +191,14 @@ def Geometry(geo_folder, ConfigFileName):
     os.chdir(geo_folder)
     
     command = 'SU2_GEO ' + ConfigFileName
-    Output_file = geo_folder + '/Output_SU2_GEO.out'
+    Output_file =  'Output_SU2_GEO.out'
     run_command(command, 'SU2_DEF', True, Output_file)
     
     # go back to project folder (two levels up)
-    os.chdir(geo_folder + '/../..')
+    os.chdir( '../../..')
 
     
-def ReadGeoConstraints(self, geo_folder,ConsList, sign ):
+def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
     """ 
     Fuction that returns the numpy list of geometrical constraints for the given sign
     """
@@ -218,6 +221,11 @@ def ReadGeoConstraints(self, geo_folder,ConsList, sign ):
     # Initialization of c_eq list
     c_eq_list = []
         
+    # printing options
+    constraint_list = []
+    value_list = []
+    target_list = []
+        
     # quick loop over the constraints
     for i in range(len(ConsList)):
             # Looking for the given constraints
@@ -232,7 +240,38 @@ def ReadGeoConstraints(self, geo_folder,ConsList, sign ):
                             a = a * ConsList[i][3]
                         # adding to list     
                         c_eq_list.append(a)
-            
+                        print(c_eq_list)
+                        #appending values for printing options
+                        constraint_list.append(ConsList[i][0])
+                        value_list.append(value[j])
+                        target_list.append(ConsList[i][2])
+                        
+    # log file printing
+    if sign == '=':
+        logfile = 'Equality_constr.dat'
+    elif sign =='<':
+        logfile = 'Inequality_constr_minus.dat'
+    else:
+        logfile = 'Inequality_constr_plus.dat'
+        
+        
+    if iter ==0:
+       log = open(geo_folder + '/../../' + logfile,"w") 
+       for i in range(len(constraint_list)):
+           log.write('%25s \t' % str(constraint_list[i]) )
+       log.write("\n")
+       log.write("\n")
+       for i in range(len(target_list)):
+           log.write('%25s \t' % str(target_list[i]) )
+              
+       log.write("\n")     
+    else:
+       log = open(geo_folder + '/../../' + logfile,"a") 
+    
+    for i in range(len(target_list)):
+       log.write('%25s \t' % str(value_list[i]) )
+    log.write("\n")        
              
     # returning list as numpy list
-    return np.append(c_eq_list)  
+
+    return np.array(c_eq_list)  

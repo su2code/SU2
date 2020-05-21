@@ -65,12 +65,12 @@ Design for every iteration needs to memorize
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
-from SU2_FSI.FSI_tools import run_command, UpdateConfig, DeformMesh, Geometry
+from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------
 
-class Design(object):
+class Design:
     """
 
         Starts a design class to manage multiple designs
@@ -92,6 +92,7 @@ class Design(object):
         self.design_nbr = nbr      # current design number
         self.x = x              # collection of dv_variables of the current design
         self.x_old = x_old          # collection of dv_variable of the previous design
+        self.n_dv = len(self.x)
         self.configFSIPrimal = configFSIPrimal
         self.configFSIAdjoint = configFSIAdjoint   
         # booleians for every analysis
@@ -99,8 +100,8 @@ class Design(object):
         self.geo = False
         self.primal = False
         self.Adjoint = False
-        self.c_eq
-        self.c_ieq
+        self.c_eq = None
+        self.c_ieq = None
 
     def SU2_DEF(self,deform_folder):    
         
@@ -108,46 +109,51 @@ class Design(object):
         self.deformation = True
         # before running the command the new DV_VALUE needs to be specified inside the deformation config
         ConfigFileName = deform_folder + '/' + self.config['CONFIG_DEF']
-        UpdateConfig(ConfigFileName, 'DV_VALUE', self.x)
+        # It includes the relaxation prameter as done in SU2
+        UpdateConfig(ConfigFileName, 'DV_VALUE', self.x/float ( self.config['OPT_RELAX_FACTOR'] ))
         
         # performing SU2_DEF
-        DeformMesh(deform_folder,ConfigFileName)
+        DeformMesh(deform_folder,self.config['CONFIG_DEF'])
 
 
 
 
 
-    def SU2_GEO(self,geo_folder):
+    def SU2_GEO(self, geo_folder):
 
         # booleian for deformation
         self.geo = True
         # Set up current mesh file name
-        mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
-        ConfigFileName = geo_folder + '/' + self.config['CONFIG_GEO']
-        UpdateConfig(ConfigFileName, 'DV_VALUE', mesh_filename)
+        if self.design_nbr == 0:
+           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
+        else:   
+           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
+        ConfigFileName =  geo_folder + '/' + self.config['CONFIG_GEO']
+        UpdateConfig(ConfigFileName, 'MESH_FILENAME', mesh_filename)
         
         # Performing SU2_GEO
-        Geometry(geo_folder,ConfigFileName)
+        Geometry(geo_folder, self.config['CONFIG_GEO'])
         
     
-    def pull_c_eq(self,geo_folder):
-     """ 
-     Fuction that returns the numpy list of c_eq
-     """
-     c_eq = ReadGeoConstraints(geo_folder,self.config['OPT_CONSTRAINT'], '=')
-     
-     return c_eq
+    def pull_c_eq(self, geo_folder):
+        """ 
+        Fuction that returns the numpy list of c_eq
+        """
+        c_eq = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '=', self.design_nbr)
+
+        return c_eq
  
-    def pull_c_ieq(self,geo_folder):
-     """ 
-     Fuction that returns the numpy list of c_ieq
-     """
-     # First > constraints
-     c_ieq_plus = ReadGeoConstraints(geo_folder,self.config['OPT_CONSTRAINT'], '>')
-     
-     # After < constraints
-     c_ieq_minus = ReadGeoConstraints(geo_folder,self.config['OPT_CONSTRAINT'], '<')     
-     
-     return np.concatenate((c_ieq_plus, - c_ieq_minus), axis = 0)
-     
+    def pull_c_ieq(self, geo_folder):
+        """ 
+        Fuction that returns the numpy list of c_ieq
+        """
+        # First > constraints
+        c_ieq_plus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '>', self.design_nbr)
+
+        # After < constraints
+        c_ieq_minus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '<', self.design_nbr)     
+
+
+        return np.concatenate((c_ieq_plus, - c_ieq_minus), axis=0) 
+                            
         

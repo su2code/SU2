@@ -34,11 +34,13 @@ from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
 from SU2_FSI import FSI_design
 from SU2_FSI.FSI_tools import run_command
+from SU2_FSI.FSI_design import Design
+from SU2_FSI.FSI_tools import  readConfig
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------
 
-class Project(object):
+class Project:
     
     """ 
     Project interface class that handles FSI shape optimization
@@ -52,8 +54,9 @@ class Project(object):
         self.config = config  # FSI optimization config object
         
         folder = self.config['FOLDER']  # root folder where optimization is done
-        folder = folder.rstrip('/') + '/'
+        folder = folder.rstrip('/')
         self.folder  = folder  
+        self.design_folder = ''
         self.deform_folder = ''
         self.geo_folder = ''
         
@@ -188,7 +191,7 @@ class Project(object):
     def CheckNewDesign(self, x_in):
         
        if self.design_iter == -1:
-           print('Starting new design')
+           print('Starting initial design')
            self.design_iter += 1
            # starting new design
            self.InitializeNewDesign(x_in)
@@ -203,23 +206,26 @@ class Project(object):
              # performing mesh deform
              self.DeformMesh()
           else:
-             continue
+             print('Using old new design')
             
     
     def InitializeNewDesign(self,x_in):  
         
         # old design
-        x_old = self.design[self.design_iter-1].x
+        if self.design_iter == 0:
+           x_old = x_in
+        else:   
+           x_old = self.design[self.design_iter-1].x
         
         # create design folder
-        design_folder = self.folder + '/DESIGNS' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design)
-        command = 'mkdir ' + design_folder
+        self.design_folder = self.folder + '/DESIGNS/' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design)
+        command = 'mkdir ' + self.design_folder
 
         # Executes shell command
         run_command(command, 'Creating design ' + str(int(self.design_iter)).zfill(self.magnord_design) + ' directory', False)  
             
         # initialize and append new design object    
-        self.design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, design_folder, self.design_iter ,x_in, x_old ))    
+        self.design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, self.design_folder, self.design_iter ,x_in, x_old ))    
         
 
     def DeformMesh(self):    
@@ -234,7 +240,7 @@ class Project(object):
         #if all_zeros == False:
             
         # create folder for analysis
-        self.deform_folder = self.folder + '/DESIGNS' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design) + '/DEFORM'
+        self.deform_folder = self.design_folder + '/DEFORM'
         command = 'mkdir ' + self.deform_folder        
         # Executes shell command
         run_command(command, 'Creating deform directory for design ' + str(int(self.design_iter)).zfill(self.magnord_design), False)   
@@ -261,7 +267,7 @@ class Project(object):
        if self.design[self.design_iter].geo == False:
             
            # create folder for analysis
-           self.geo_folder = self.folder + '/DESIGNS' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design) + '/GEO'
+           self.geo_folder = self.design_folder + '/GEO'
            command = 'mkdir ' + self.geo_folder        
            # Executes shell command
            run_command(command, 'Creating GEO directory for design ' + str(int(self.design_iter)).zfill(self.magnord_design), False)      

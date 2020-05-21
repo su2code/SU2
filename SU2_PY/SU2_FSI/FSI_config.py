@@ -102,7 +102,7 @@ class FSIConfig:
                 if case():
                     print(this_param + " is an invalid option !")
             # end for
-
+           
     # def dump()
 
 # ----------------------------------------------------------------------

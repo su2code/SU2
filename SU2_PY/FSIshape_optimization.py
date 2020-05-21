@@ -27,8 +27,8 @@
 
 import os, sys, shutil
 from SU2_FSI.FSI_config import OptConfig as OptConfig
-from SU2_FSI.FSI_tools import SaveSplineMatrix
-from SU2_FSI import FSI_project
+from SU2_FSI.FSI_tools import SaveSplineMatrix, readConfig
+from SU2_FSI.FSI_project import Project
 from optparse import OptionParser  # use a parser for configuration
 from scipy.optimize import fmin_slsqp
 
@@ -75,12 +75,9 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     """
 
     # Performing spline
-    SaveSplineMatrix(config)
-    
-    # handle input cases
-    if x0 is None: x0 = []
-    if xb is None: xb = []
-    
+    print('Splining commented')
+    #SaveSplineMatrix(project.config)
+     
     # function handles
     func           = obj_f
     f_eqcons       = con_ceq
@@ -91,38 +88,46 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     fprime_eqcons  = con_dceq
     fprime_ieqcons = con_dcieq        
     
-    # number of design variables  (this needs to be updated from SU2 input file)
-    dv_size = project.config['DEFINITION_DV']['SIZE']
-    n_dv = sum( dv_size)
-    project.n_dv = n_dv
-    
-    # Initial guess
-    if not x0: x0 = [0.0]*n_dv
-    
-    # prescale x0
-    dv_scales = project.config['DEFINITION_DV']['SCALE']
-    k = 0
-    for i, dv_scl in enumerate(dv_scales):
-        for j in range(dv_size[i]):
-            x0[k] =x0[k]/dv_scl;
-            k = k + 1
+    # number of design variables  (this is read from the DEF input file)
+    n_dv = len(x0)
+    project.n_dv
+     
+    # prescale x0 # Not interested at the moment
+    #dv_scales = project.config['DEFINITION_DV']['SCALE']
+    #k = 0
+    #for i, dv_scl in enumerate(dv_scales):
+    #    for j in range(dv_size[i]):
+    #        x0[k] =x0[k]/dv_scl;
+    #        k = k + 1
 
-    # scale accuracy
-    obj = project.config['OPT_OBJECTIVE']
-    obj_scale = []
-    for this_obj in obj.keys():
-        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
-    
+    # scale accuracy # further scaling of the accuracy (not interested now)
+    #obj = project.config['OPT_OBJECTIVE']
+    #obj_scale = []
+    #for this_obj in obj.keys():
+    #    obj_scale = obj_scale + [obj[this_obj]['SCALE']]
+    # 
     # Only scale the accuracy for single-objective problems: 
-    if len(obj.keys())==1:
-        accu = accu*obj_scale[0]
+    #if len(obj.keys())==1:
+    #    accu = accu*obj_scale[0]
+       
+    # obj scale
+    # I need to look into the Adjoint flow file
+    # Adjoint config
+    print(project.configFSIAdjoint['SU2_CONFIG'])
+    adjointflow_config = project.configFSIAdjoint['SU2_CONFIG']
+    line = readConfig(adjointflow_config, 'OBJECTIVE_FUNCTION')
+    if line.find('*') != -1:
+       line = line.split("*", 1)
+       obj_scale = line[1].strip()
+    else:
+       obj_scale = float(1) 
        
     # scale accuracy
     eps = 1.0e-04
 
     # optimizer summary
     sys.stdout.write('Sequential Least SQuares Programming (SLSQP) parameters:\n')
-    sys.stdout.write('Number of design variables: ' + str(len(dv_size)) + ' ( ' + str(n_dv) + ' ) \n' )
+    sys.stdout.write('Number of design variables: ' + ' ( ' + str(n_dv) + ' ) \n' )
     sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
@@ -161,13 +166,21 @@ def FSIshape_optimization( filename                           ,
     config['NUMBER_PART'] = partitions
     config['FOLDER'] = '.'
 
-    iterations        = int ( config['OPT_ITERATIONS'] )                      # number of opt iterations
+    its               = int ( config['OPT_ITERATIONS'] )                      # number of opt iterations
     bound_upper       = float ( config['OPT_BOUND_UPPER'] )                   # variable bound to be scaled by the line search
     bound_lower       = float ( config['OPT_BOUND_LOWER'] )                   # variable bound to be scaled by the line search
     relax_factor      = float ( config['OPT_RELAX_FACTOR'] )                  # line search scale
     gradient_factor   = float ( config['OPT_GRADIENT_FACTOR'] )               # objective function and gradient scale
     opt_constraint    = config['OPT_CONSTRAINT']
     folder = config['FOLDER']
+    accu              = float ( config['OPT_ACCURACY'] ) * gradient_factor    # optimizer accuracy
+    # n_dv
+    dv_kind_str = readConfig(config['CONFIG_DEF'], 'DV_KIND')
+    n_dv = int(len(dv_kind_str.split(',')))
+    x0                = [0.0]*n_dv # initial design
+    xb_low            = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
+    xb_up             = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
+    xb                = list(zip(xb_low, xb_up)) # design bounds
 
     # Instantiate project object
     project = Project(config)
@@ -188,11 +201,7 @@ def obj_f(x,project):
         scipy_slsqp: minimize f(x), float
     """
         
-    obj_list = project.obj_f(x)
-    obj = 0
-    for this_obj in obj_list:
-        obj = obj+this_obj
-    
+    obj = project.obj_f(x)   
     return obj
 
 def obj_df(x,project):
@@ -205,16 +214,9 @@ def obj_df(x,project):
     """    
     
     dobj_list = project.obj_df(x)
-    dobj=[0.0]*len(dobj_list[0])
+
     
-    for this_dobj in dobj_list:
-        idv=0
-        for this_dv_dobj in this_dobj:
-            dobj[idv] = dobj[idv]+this_dv_dobj;
-            idv+=1
-    dobj = array( dobj )
-    
-    return dobj
+    return dobj_list
 
 def con_ceq(x,project):
     """ cons = con_ceq(x,project)
@@ -237,10 +239,6 @@ def con_dceq(x,project):
     """
     
     dcons = project.con_dceq(x)
-
-    dim = project.n_dv
-    if dcons: dcons = array(dcons)
-    else:     dcons = zeros([0,dim])
     
     return dcons
 
@@ -264,12 +262,8 @@ def con_dcieq(x,project):
     """
     
     dcons = project.con_dcieq(x)
-    
-    dim = project.n_dv
-    if dcons: dcons = array(dcons)
-    else:     dcons = zeros([0,dim])
-    
-    return -dcons
+        
+    return dcons
 
 
 
