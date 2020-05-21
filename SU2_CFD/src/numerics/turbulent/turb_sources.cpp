@@ -794,7 +794,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(Vorticity_i, 3);
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
 //  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
@@ -833,8 +833,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    for (iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-   su2double delta[3][3] = {{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}};
-
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
