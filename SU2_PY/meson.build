@@ -15,9 +15,9 @@ install_data(['continuous_adjoint.py',
 	     'direct_differentiation.py',
 	     'fsi_computation.py',
 	     'pyBeamFSI.py',
-             'pyBeamFSI_opt.py'
+             'pyBeamFSI_opt.py',
 	     'pyBeamFSI_AD.py',
-	     'pyBeamFSI_AD_opt.py'
+	     'pyBeamFSI_AD_opt.py',
              'pyBeamFSI_MLSGen.py',
              'FSIshape_optimization.py',
 	     'SU2_CFD.py'], 
