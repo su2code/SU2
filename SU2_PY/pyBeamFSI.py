@@ -3,20 +3,14 @@
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling pyBeam and SU2.
 #  \author David Thomas, Rocco Bombardieri, Ruben Sanchez
-#  \version 7.0.0
+#  \version 7.0.2 "Blackbird"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# SU2 Project Website: https://su2code.github.io
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The SU2 Project is maintained by the SU2 Foundation
+# (http://su2foundation.org)
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -42,7 +36,7 @@ import numpy as np
 
 from optparse import OptionParser  # use a parser for configuration
 
-from SU2_FSI import FSI_config as io       # imports FSI config tools
+from SU2_FSI.FSI_config import FSIConfig as io       # imports FSI config tools
 from SU2_FSI import PrimalInterface as FSI # imports FSI python tools
 import pyBeamInterface as pyBeamInterface
 import pyMLSInterface as Spline_Module
@@ -93,7 +87,7 @@ def main():
 
     confFile = str(options.filename)
 
-    FSI_config = io.FSIConfig(confFile)  # FSI configuration file
+    FSI_config = io(confFile)  # FSI configuration file
     CFD_ConFile = FSI_config['SU2_CONFIG']  # CFD configuration file
     CSD_ConFile = FSI_config['PYBEAM_CONFIG']  # CSD configuration file
     MLS_confFile = FSI_config['MLS_CONFIG_FILE_NAME']  # MLS configuration file
@@ -187,7 +181,15 @@ def main():
     
     if myid == rootProcess:    
        print('DRAG COEFFICIENT: ', cd)
-
+       print('LIFT COEFFICIENT: ', cl)
+       self.obj_file = open("Objectives.dat", "w")
+       self.obj_file.write('%20s \t' % 'DRAG COEFFICIENT' )
+       self.obj_file.write('%20s \n' % 'LIFT COEFFICIENT' )
+    
+       self.obj_file.write('%20s \t' % str(cd)            )
+       self.obj_file.write('%20s \n' % str(cl)            )    
+       self.obj_file.close()
+       
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
 

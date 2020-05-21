@@ -15,7 +15,11 @@ install_data(['continuous_adjoint.py',
 	     'direct_differentiation.py',
 	     'fsi_computation.py',
 	     'pyBeamFSI.py',
+             'pyBeamFSI_opt.py'
 	     'pyBeamFSI_AD.py',
+	     'pyBeamFSI_AD_opt.py'
+             'pyBeamFSI_MLSGen.py',
+             'FSIshape_optimization.py',
 	     'SU2_CFD.py'], 
 	     install_dir: join_paths(get_option('bindir')))
 
@@ -76,6 +80,9 @@ install_data(['SU2/util/bunch.py',
 install_data(['SU2_FSI/PrimalInterface.py',
               'SU2_FSI/AdjointInterface.py',
               'SU2_FSI/FSI_config.py',
+              'SU2_FSI/FSI_tools.py',
+              'SU2_FSI/FSI_design.py',
+              'SU2_FSI/FSI_project.py',
               'SU2_FSI/switch.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2_FSI'))
 

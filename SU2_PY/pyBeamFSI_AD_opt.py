@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 ## \file fsi_computation.py
-#  \brief Python wrapper code for adjoint computation by coupling pyBeam and SU2.
-#  \author Ruben Sanchez based on work by David Thomas and Rocco Bombardieri
+#  \brief Python wrapper code for adjoint computation by coupling pyBeam and SU2 within the FSIshape_optimization framework
+#  \author Rocco Bombardieri Ruben Sanchez based on work by David Thomas
 #  \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
@@ -148,7 +148,16 @@ def main():
         print('\n***************************** Initializing MLS Interpolation *************************')
         try:
             MLS = Spline_Module.pyMLSInterface(MLS_confFile, FSIInterface.globalFluidCoordinates, 
-                                               FSIInterface.globalSolidCoordinates)
+                                               FSIInterface.globalSolidCoordinates)                                               
+            # Save spline matrix
+            #print('Saving spline matrix')
+            #scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
+            #np.save('./Spline.npy', MLS.interpolation_matrix)
+            #Load spline matrix
+            print('Loading spline matrix')
+            MLS.interpolation_matrix = None
+            MLS.interpolation_matrix = np.load('./Spline.npy')         
+            
         except TypeError as exception:
             print('ERROR building the MLS Interpolation: ', exception)
 

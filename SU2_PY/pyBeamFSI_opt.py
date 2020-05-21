@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 ## \file fsi_computation.py
-#  \brief Python wrapper code for adjoint computation by coupling pyBeam and SU2.
-#  \author Ruben Sanchez based on work by David Thomas and Rocco Bombardieri
+#  \brief Python wrapper code for FSI computation by coupling pyBeam and SU2 within the FSIshape_optimization framework
+#  \author Rocco Bombardieri, Ruben Sanchez, David Thomas
 #  \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
@@ -31,16 +31,18 @@
 
 import os, sys, shutil, copy
 import time as timer
+import scipy.io
+import numpy as np
 
 from optparse import OptionParser  # use a parser for configuration
 
 from SU2_FSI.FSI_config import FSIConfig as io       # imports FSI config tools
-from SU2_FSI import AdjointInterface as FSI # imports FSI python tools
+from SU2_FSI import PrimalInterface as FSI # imports FSI python tools
 import pyBeamInterface as pyBeamInterface
 import pyMLSInterface as Spline_Module
 
 # imports the CFD (SU2) module for FSI computation
-import pysu2ad as pysu2
+import pysu2
 import pyBeam
 
 
@@ -97,7 +99,7 @@ def main():
     if myid == rootProcess:
         print('\n***************************** Initializing SU2 **************************************')
     try:
-        FluidSolver = pysu2.CDiscAdjSinglezoneDriver(CFD_ConFile, 1, comm)
+        FluidSolver = pysu2.CSinglezoneDriver(CFD_ConFile, 1, comm)
     except TypeError as exception:
         print('A TypeError occured in pysu2.CSingleZoneDriver : ', exception)
         if serial:
@@ -113,7 +115,7 @@ def main():
     if myid == rootProcess:
         print('\n***************************** Initializing pyBeam ************************************')
         try:
-            SolidSolver = pyBeamInterface.pyBeamADSolver(CSD_ConFile)
+            SolidSolver = pyBeamInterface.pyBeamSolver(CSD_ConFile)
         except TypeError as exception:
             print('ERROR building the Solid Solver: ', exception)
     else:
@@ -126,7 +128,7 @@ def main():
     if myid == rootProcess:
         print('\n***************************** Initializing FSI interface *****************************')
     try:
-        FSIInterface = FSI.AdjointInterface(FSI_config, FluidSolver, SolidSolver, None, have_MPI)
+        FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, None, have_MPI)
     except TypeError as exception:
         print('ERROR building the FSI Interface: ', exception)
 
@@ -149,6 +151,16 @@ def main():
         try:
             MLS = Spline_Module.pyMLSInterface(MLS_confFile, FSIInterface.globalFluidCoordinates, 
                                                FSIInterface.globalSolidCoordinates)
+            # Save spline matrix
+            #print('Saving spline matrix')
+            #scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
+            #np.save('./Spline.npy', MLS.interpolation_matrix)
+            #Load spline matrix
+            print('Loading spline matrix')
+            MLS.interpolation_matrix = None
+            MLS.interpolation_matrix = np.load('./Spline.npy')
+           
+           
         except TypeError as exception:
             print('ERROR building the MLS Interpolation: ', exception)
 
@@ -165,8 +177,19 @@ def main():
     if have_MPI:
         comm.Barrier()
 
-    FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS)
-
+    cl, cd = FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS)
+    
+    if myid == rootProcess:    
+       print('DRAG COEFFICIENT: ', cd)
+       print('LIFT COEFFICIENT: ', cl)
+       self.obj_file = open("Objectives.dat", "w")
+       self.obj_file.write('%20s \t' % 'DRAG COEFFICIENT' )
+       self.obj_file.write('%20s \n' % 'LIFT COEFFICIENT' )
+    
+       self.obj_file.write('%20s \t' % str(cd)            )
+       self.obj_file.write('%20s \n' % str(cl)            )    
+       self.obj_file.close()
+       
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
 
