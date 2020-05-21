@@ -65,7 +65,6 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
                                        su2double val_dist, su2double val_density) {
   su2double arg2, arg2A, arg2B, arg1;
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   AD::StartPreacc();
   AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
@@ -81,11 +80,14 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
 
   /*--- F1 ---*/
+  
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+  const su2double d = max(val_dist, eps);
 
-  arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*val_dist+eps*eps);
-  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Primitive(iPoint,1)+eps*eps);
+  arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*d);
+  arg2B = 500.0*val_viscosity / (val_density*d*d*Primitive(iPoint,1));
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),1.0e-10)*val_dist*val_dist+eps*eps));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),1.0e-10)*d*d));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
