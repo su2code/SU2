@@ -198,7 +198,7 @@ class Design:
            obj = string[0]
            scale = float(string[1])
         else:   
-           obj = string[0]
+           obj = obj_scale
            scale = float(1)
            
         # Now read file
