@@ -117,11 +117,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   su2double rhoE, rhoEve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr, rhos;
   su2double RuSI, Ru, sqvel, num, denom, conc, soundspeed;
 
-  cout << endl << "cat: CNEMOEulerVariable::CNEMOEulerVariable Tve=" << val_temperature_ve << endl << endl;
-
-
-  
-
   /*--- Setting variable amounts ---*/
   nSpecies     = config->GetnSpecies();
   nDim         = ndim;
@@ -324,8 +319,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     /*--- Assign primitive variables ---*/
     Primitive(iPoint,T_INDEX)   = val_temperature;
     Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
-    cout << endl << "cat: CNEMOEulerVariable::CNEMOEulerVariable Primitive(iPoint,TVE_INDEX)=" << Primitive(iPoint,TVE_INDEX) << endl << endl;
-
     Primitive(iPoint,P_INDEX)   = val_pressure;
 
   }
@@ -947,15 +940,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   su2double radical2;
   su2double *xi, *Ms, *hf, *Tref;
 
-    //cout << endl << "cat: CNEMOEulerVariable::Cons2PrimVar" << endl << endl;
-    //cout << endl << "cat: T=" << V[T_INDEX] << " Tve=" << V[TVE_INDEX] << endl << endl;
-
-
-//  for (int iVar = 0; iVar < nVar; iVar++) cout << "U[" << iVar << "]=" << U[iVar] << endl;
-
   /*--- Conserved & primitive vector layout ---*/
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
   // V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+
 
   /*--- Set booleans ---*/
   errT    = false;
@@ -968,7 +956,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-6;    // Tolerance for the Newton-Raphson method
-  Btol     = 1.0E-8;    // Tolerance for the Bisection method
+  Btol     = 1.0E-4;    // Tolerance for the Bisection method
   maxNIter = 18;        // Maximum Newton-Raphson iterations
   maxBIter = 32;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
@@ -1063,15 +1051,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemin;
-  //  std::cout << "rhoEve_min" << std::endl << std::endl;
   } else if (rhoEve > rhoEve_max) {
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemax;
-  //  std::cout << "rhoEve_max" << std::endl << std::endl;
   } else {
 
-    //cout << endl << "cat: Tve iterative process" << endl << endl;
 
     /*--- Execute a Newton-Raphson root-finding method to find Tve ---*/
     // Initialize to the translational-rotational temperature
@@ -1128,19 +1113,13 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
         rhoEve_t = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           val_eves[iSpecies] = CalcEve(config, Tve, iSpecies);
-          //cout << endl << "cat: iter=" << iIter  << " Tve=" << Tve  << " val_eves[" << iSpecies << "]=" << val_eves[iSpecies] << endl << endl;
-
           rhoEve_t          += U[iSpecies] * val_eves[iSpecies];
         }
-        //cout << endl << "cat: rhoEve_t=" << rhoEve_t << endl << endl;
-        //cout << endl << "cat: U[nSpecies+nDim+1]=" << U[nSpecies+nDim+1] << endl << endl;
-
+        
         if (fabs(rhoEve_t - U[nSpecies+nDim+1]) < Btol) {
           V[TVE_INDEX] = Tve;
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
             val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
-            //cout << endl << "cat: Tve=" << Tve  << "val_Cvves[" << iSpecies << "]=" << val_Cvves[iSpecies] << endl << endl;
-
           }
           Bconvg = true;
           break;
@@ -1161,10 +1140,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     }
   }
 
-  cout << endl << "cat: T=" << V[T_INDEX] << " Tve=" << V[TVE_INDEX] << endl << endl;
-
-  //exit(0);
-
+  
   /*--- Set mixture rhoCvve ---*/
   rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

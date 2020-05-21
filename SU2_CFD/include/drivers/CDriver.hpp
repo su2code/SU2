@@ -1141,8 +1141,11 @@ public:
   inline void StartSolver(){
 
       /*--- Run the solver. ---*/
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE){
         cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+        }
+
+
       Run();
   }
 

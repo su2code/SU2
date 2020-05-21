@@ -1223,7 +1223,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 //  if (Wall_Function != NO_WALL_FUNCTION) {
 //    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
 //  }
-
   /*--- Loop over boundary points ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

@@ -71,9 +71,11 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   A_INDEX       = variable->GetAIndex()       ;
   RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
   RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
+
 }
 
 CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
+  
   delete [] FcL;
   delete [] FcR;
   delete [] dmLP;
@@ -98,6 +100,7 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
+ 
   /*--- Compute geometric quantities ---*/
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -152,21 +155,6 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-  cout << "cat:P_i="  << P_i << "\n";
-  cout << "cat:P_j="  << P_j << "\n";
-  cout << "cat:h_i="  << h_i << "\n";
-  cout << "cat:h_j="  << h_j << "\n";
-  cout << "cat:a_i="  << a_i << "\n";
-  cout << "cat:a_j="  << a_j << "\n";
-  cout << "cat:rho_i="  << rho_i << "\n";
-  cout << "cat:rho_j="  << rho_j << "\n";
-  cout << "cat:e_ve_i="  << e_ve_i << "\n";
-  cout << "cat:e_ve_j="  << e_ve_j << "\n";
-  cout << "cat:rhoCvtr_i="  << rhoCvtr_i << "\n";
-  cout << "cat:rhoCvtr_j="  << rhoCvtr_j << "\n";
-  cout << "cat:rhoCvve_i="  << rhoCvve_i << "\n";
-  cout << "cat:rhoCvve_j="  << rhoCvve_j << "\n";
-
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -218,18 +206,6 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
-
-  ofstream ausm;//cat:
-  ausm.open ("ausm.txt", std::ios_base::app);
-  
-
-  /*--- Update viscous residual ---*/
-  for (iVar = 0; iVar < nVar; iVar++){
-    
-    ausm << "val_residual[" << iVar << "]="  << val_residual[iVar] << "\n";
-  }
-
-  cout << "cat:ausm val_residual[0]="  << val_residual[0] << "\n";
 
   if (implicit) {
 

@@ -155,7 +155,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        exit(0);
+        //exit(0);
         break;
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);

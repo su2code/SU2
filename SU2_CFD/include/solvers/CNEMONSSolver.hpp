@@ -44,6 +44,7 @@
  */
 class CNEMONSSolver : public CNEMOEulerSolver {
 private:
+
   su2double Viscosity_Inf; /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at infinity. */
   su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
@@ -140,8 +141,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  //void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-  //                  unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration);
 
   /*!
    * \brief Restart residual and compute gradients.

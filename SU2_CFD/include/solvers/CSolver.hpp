@@ -631,7 +631,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   inline virtual void Set_OldSolution(CGeometry *geometry) { base_nodes->Set_OldSolution(); }
-
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
