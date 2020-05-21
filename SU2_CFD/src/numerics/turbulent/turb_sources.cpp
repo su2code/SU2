@@ -845,24 +845,16 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
    else {
-     pk = -2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     su2double factor = 0.;
-     for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0; jDim < nDim; jDim++) {
-         factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
-                  - 2.0/3.0*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
-       }
-     }
-     pk += Eddy_Viscosity_i*factor;
+     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
      pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
      if ((pk > 0) && (pk < 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-         Jacobian_i[0][0] = (factor/TurbVar_i[1]-2./3.*diverg)*Volume;
-         Jacobian_i[0][1] = -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+         Jacobian_i[0][0] = (StrainMag_i*StrainMag_i/TurbVar_i[1]-2./3.*diverg)*Volume;
+         Jacobian_i[0][1] = -StrainMag_i*StrainMag_i*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
 //         Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
        }
        else {
-         Jacobian_i[0][0] = (factor*a1/(VorticityMag_i*F2_i)-2./3.*diverg)*Volume;
+         Jacobian_i[0][0] = (StrainMag_i*StrainMag_i*a1/(VorticityMag_i*F2_i)-2./3.*diverg)*Volume;
        }
      }
      else if (pk > 0) {
