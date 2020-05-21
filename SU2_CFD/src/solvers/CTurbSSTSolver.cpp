@@ -777,49 +777,49 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       LinSysRes.AddBlock(iPoint, residual);
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                              geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_domain);
-
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
-                                        nodes->GetGradient(iPoint));
-
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
-                                   nodes->GetF1blending(iPoint));
-      
-      /*--- Menter's second blending function ---*/
-      visc_numerics->SetF2blending(nodes->GetF2blending(iPoint),
-                                   nodes->GetF2blending(iPoint));
-      
-      /*--- Vorticity ---*/
-      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
-                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
-      
-      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-                                     nodes->GetVorticityMag(iPoint));
-
-      /*--- Set values for gradient Jacobian ---*/
-      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-                               geometry->node[iPoint]->GetVolume());
-
-      /*--- Compute residual, and Jacobians ---*/
-      auto visc_residual = visc_numerics->ComputeResidual(config);
-
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, visc_residual);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
-      
-      /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
+//      /*--- Viscous contribution ---*/
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                              geometry->node[iPoint]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//      visc_numerics->SetPrimitive(V_domain, V_domain);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//      visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
+//      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+//                                        nodes->GetGradient(iPoint));
+//
+//      /*--- Menter's first blending function ---*/
+//      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
+//                                   nodes->GetF1blending(iPoint));
+//
+//      /*--- Menter's second blending function ---*/
+//      visc_numerics->SetF2blending(nodes->GetF2blending(iPoint),
+//                                   nodes->GetF2blending(iPoint));
+//
+//      /*--- Vorticity ---*/
+//      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
+//                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+//
+//      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+//                                     nodes->GetVorticityMag(iPoint));
+//
+//      /*--- Set values for gradient Jacobian ---*/
+//      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+//                               geometry->node[iPoint]->GetVolume());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//      auto visc_residual = visc_numerics->ComputeResidual(config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//      LinSysRes.SubtractBlock(iPoint, visc_residual);
+//      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
+//      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
+//
+//      /*--- Compute Jacobian correction for influence from all neighbors ---*/
+//      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+//      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
 
     }
   }
