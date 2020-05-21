@@ -62,10 +62,11 @@ Design for every iteration needs to memorize
 #  Imports
 # ----------------------------------------------------------------------
 
+import sys
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
-from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints
+from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------
@@ -84,11 +85,12 @@ class Design:
 
     """
 
-    def __init__( self, config, configFSIPrimal,configFSIAdjoint,  folder, nbr ,x, x_old ):
+    def __init__( self, config, configFSIPrimal,configFSIAdjoint, folder, design_folder, nbr ,x, x_old ):
 
         # Attributes:
         self.config  = config      # base config
-        self.folder  = folder      # design folder
+        self.design_folder  = design_folder      # design folder
+        self.folder =  folder            # run folder 
         self.design_nbr = nbr      # current design number
         self.x = x              # collection of dv_variables of the current design
         self.x_old = x_old          # collection of dv_variable of the previous design
@@ -100,8 +102,12 @@ class Design:
         self.geo = False
         self.primal = False
         self.Adjoint = False
+        
+        
         self.c_eq = None
-        self.c_ieq = None
+        self.c_ieq_plus = None
+        self.c_ieq_minus = None
+        self.obj_f = None
 
     def SU2_DEF(self,deform_folder):    
         
@@ -116,7 +122,20 @@ class Design:
         DeformMesh(deform_folder,self.config['CONFIG_DEF'])
 
 
+    def FSIPrimal(self,primal_folder):
+        
+        # booleian for primal
+        self.primal = True        
 
+        # Set up current mesh file name
+        self.UpdateMeshFilename( primal_folder, self.configFSIPrimal['SU2_CONFIG'])
+        
+        # perform primal
+        FSIPrimal(primal_folder, self.config)
+        
+    def FSIAdjoint(self,adj_folder):   
+        
+        self.Adjoint = True
 
 
     def SU2_GEO(self, geo_folder):
@@ -124,13 +143,8 @@ class Design:
         # booleian for deformation
         self.geo = True
         # Set up current mesh file name
-        if self.design_nbr == 0:
-           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
-        else:   
-           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
-        ConfigFileName =  geo_folder + '/' + self.config['CONFIG_GEO']
-        UpdateConfig(ConfigFileName, 'MESH_FILENAME', mesh_filename)
-        
+        self.UpdateMeshFilename( geo_folder, self.config['CONFIG_GEO'])
+                
         # Performing SU2_GEO
         Geometry(geo_folder, self.config['CONFIG_GEO'])
         
@@ -139,21 +153,86 @@ class Design:
         """ 
         Fuction that returns the numpy list of c_eq
         """
-        c_eq = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '=', self.design_nbr)
+        self.c_eq = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '=', self.design_nbr)
 
-        return c_eq
+        return self.c_eq
  
     def pull_c_ieq(self, geo_folder):
         """ 
         Fuction that returns the numpy list of c_ieq
         """
         # First > constraints
-        c_ieq_plus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '>', self.design_nbr)
+        self.c_ieq_plus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '>', self.design_nbr)
 
         # After < constraints
-        c_ieq_minus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '<', self.design_nbr)     
+        self.c_ieq_minus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '<', self.design_nbr)     
 
 
-        return np.concatenate((c_ieq_plus, - c_ieq_minus), axis=0) 
+        return np.concatenate((self.c_ieq_plus, - self.c_ieq_minus), axis=0) 
                             
+
+    def UpdateMeshFilename(self, folder, SU2configFile):
+        """ 
+        Fuction that updates the name of the mesh file input from the config file of GEO, SU2_primal and SU2_Adjoint
+        according to possible deformations
+        """
+        # Set up current mesh file name
+        if self.design_nbr == 0:
+           mesh_filename = readConfig(self.folder + '/' + self.config['CONFIG_DEF'], 'MESH_FILENAME')
+        else:   
+           mesh_filename = readConfig(self.folder + '/' + self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
+           
+        ConfigFileName =  folder + '/' + SU2configFile
+        UpdateConfig(ConfigFileName, 'MESH_FILENAME', mesh_filename)
+        
+    def pull_obj_f(self, primal_folder):    
+        """ 
+        Fuction that returns the numpy list of obj_func multiplied by the scale term
+        """           
+        
+        # check which is the objective function (and scale)
+        ConfigFileName =  self.folder + '/' + self.configFSIPrimal['SU2_CONFIG']
+        obj_scale = readConfig(ConfigFileName, 'OBJECTIVE_FUNCTION')
+        if obj_scale.find('*') != -1:
+           string = obj_scale.split('*')
+           obj = string[0]
+           scale = float(string[1])
+        else:   
+           obj = string[0]
+           scale = float(1)
+           
+        # Now read file
+        input_file = open(primal_folder + '/' + 'Objectives.dat')
+        # go to line 2
+        line = input_file.readline();line = input_file.readline();
+        line = line.split(' ')
+        cd = float(line[0])
+        cl = float(line[1])
+        
+        # writing history
+        logfileCD = 'HistoryCD.dat'
+        logfileCL = 'HistoryCL.dat'
+        if iter ==0:
+          logCD = open(primal_folder + '/../../' + logfileCD,"w") 
+          logCL = open(primal_folder + '/../../' + logfileCL,"w") 
+        else:
+          logCD = open(primal_folder + '/../../' + logfileCD,"a")  
+          logCL = open(primal_folder + '/../../' + logfileCL,"a")
+          
+        logCD.write('%25s \n' % str(cd) )
+        logCL.write('%25s \n' % str(cl) )        
+          
+        logCD.close()
+        logCL.close()
+        
+        
+        if obj =='DRAG':
+           return cd, scale
+        elif obj =='LIFT':
+           return cl, scale
+        else:
+            print('Not implemented objective function.[pull_obj_f in FSI_design.py]')
+            sys.exit()
+            
+        
         

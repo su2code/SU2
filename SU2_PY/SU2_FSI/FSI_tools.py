@@ -155,7 +155,7 @@ def DeformMesh(deform_folder, ConfigFileName):
             Executes in:
              ./DEFORM
     '''  
-    # go to ./DEFORM folder
+    # going to ./DEFORM folder
     os.chdir(deform_folder)
     
     command = 'SU2_DEF ' + ConfigFileName
@@ -168,11 +168,22 @@ def DeformMesh(deform_folder, ConfigFileName):
     return 
 
 
-def Primal():
+def FSIPrimal(primal_folder, config):
     '''
             Executes in:
              ./Primal
-    '''      
+    '''   
+    
+    # going to ./GEO folder
+    os.chdir(primal_folder)    
+    command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' pyBeamFSI.py -f ' + config['CONFIG_PRIMAL']
+    print (command)
+    # Compose local output file
+    Output_file =  'Output_primal.out'
+
+    # Launching shell command
+    run_command(command, 'Primal', True,  Output_file)
+    
     return
 
 def Adjoint():
@@ -187,7 +198,7 @@ def Geometry(geo_folder, ConfigFileName):
             Executes in:
              ./GEO
     '''    
-        # go to ./DEFORM folder
+    # going to ./GEO folder
     os.chdir(geo_folder)
     
     command = 'SU2_GEO ' + ConfigFileName
@@ -240,7 +251,6 @@ def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
                             a = a * ConsList[i][3]
                         # adding to list     
                         c_eq_list.append(a)
-                        print(c_eq_list)
                         #appending values for printing options
                         constraint_list.append(ConsList[i][0])
                         value_list.append(value[j])
@@ -271,7 +281,8 @@ def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
     for i in range(len(target_list)):
        log.write('%25s \t' % str(value_list[i]) )
     log.write("\n")        
-             
+    
+    log.close()         
     # returning list as numpy list
 
     return np.array(c_eq_list)  

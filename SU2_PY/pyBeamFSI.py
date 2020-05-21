@@ -181,7 +181,15 @@ def main():
     
     if myid == rootProcess:    
        print('DRAG COEFFICIENT: ', cd)
-
+       print('LIFT COEFFICIENT: ', cl)
+       self.obj_file = open("Objectives.dat", "w")
+       self.obj_file.write('%20s \t' % 'DRAG COEFFICIENT' )
+       self.obj_file.write('%20s \n' % 'LIFT COEFFICIENT' )
+    
+       self.obj_file.write('%20s \t' % str(cd)            )
+       self.obj_file.write('%20s \n' % str(cl)            )    
+       self.obj_file.close()
+       
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
 
