@@ -631,7 +631,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  const CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+  CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
