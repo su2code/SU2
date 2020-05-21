@@ -184,6 +184,9 @@ def FSIPrimal(primal_folder, config):
     # Launching shell command
     run_command(command, 'Primal', True,  Output_file)
     
+    # go back to project folder (3 levels up)
+    os.chdir( '../../..')    
+    
     return
 
 def Adjoint():
