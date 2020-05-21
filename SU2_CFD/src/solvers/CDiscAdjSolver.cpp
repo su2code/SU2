@@ -168,7 +168,6 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->GetNodes()->SetSolution(iPoint, nodes->GetSolution_Direct(iPoint));
-    direct_solver->GetNodes()->SetSolution_Old(iPoint, nodes->GetSolution_Direct(iPoint));
   }
 
   if (time_n_needed) {
