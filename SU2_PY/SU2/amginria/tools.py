@@ -109,11 +109,11 @@ def set_cfl(config, cfl_iSiz):
             config['CFL_ADAPT_PARAM'] = '('
             for i in range(3):
                 config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
-                                          + cfl_params[i] \
-                                          + ","
+                                            + ","
+                                        + str(cfl_params[i]) \
 
             config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
-                                          + cfl_params[3] \
+                                          + str(cfl_params[3]) \
                                           + ")"
 
     
