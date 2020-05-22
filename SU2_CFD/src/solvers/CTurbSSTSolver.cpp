@@ -794,7 +794,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
         const su2double muT_Infty = V_infty[nDim+6];
         Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
         Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
-        
+
         Primitive_j[0] = Kine_Infty;
         Primitive_j[1] = Omega_Infty;
 //        Primitive_j[0] = kine_Inf;
