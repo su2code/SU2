@@ -211,7 +211,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
         break;
       }
     }
-    if (iVertex = -1) {
+    if (iVertex == -1) {
       const su2double distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double k       = kine_Inf;
       const su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
