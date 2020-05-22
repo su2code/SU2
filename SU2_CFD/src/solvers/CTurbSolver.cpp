@@ -605,19 +605,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
 
       }
     }
-    
-    else {
-      /* We impose a limit on the maximum percentage that the
-       specific dissipation can change over a nonlinear iteration. */
-
-      const unsigned long index = iPoint*nVar + 1;
-      su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, 1)+EPS);
-      if (ratio > allowableIncrease) {
-        localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-      } else if (ratio < allowableDecrease) {
-        localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
-      }
-    }
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
