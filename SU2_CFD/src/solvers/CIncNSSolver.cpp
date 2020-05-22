@@ -298,11 +298,31 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     DonorResInfo[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorResInfo[iMarker][iVertex] = new su2double [nVar*nVar+nVar+2];
-      for (iVar = 0; iVar < nVar*nVar+nVar+2; iVar++) {
+      DonorResInfo[iMarker][iVertex] = new su2double [nVar*nVar+nVar+1];
+      for (iVar = 0; iVar < nVar*nVar+nVar+1; iVar++) {
         DonorResInfo[iMarker][iVertex][iVar] = 0.0;
       }
     }
+  }
+  
+  /*--- Store the value of the donor primitive variables at the act disk boundaries ---*/
+
+  DonorADSol = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorADSol[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorADSol[iMarker][iVertex] = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        DonorADSol[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
+
+  DonorADVol = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorADVol[iMarker] = new su2double [nVertex[iMarker]];
   }
   
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
@@ -813,7 +833,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   }
 
   if (actuator_disk) {
-      //Set_MPI_ActDisk(solver_container, geometry, config);
+      Set_MPI_ActDisk(solver_container, geometry, config,AD_VOLUME);
       //GetPower_Properties(geometry, config, iMesh, Output);
       SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }

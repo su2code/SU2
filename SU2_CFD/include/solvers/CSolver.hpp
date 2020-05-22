@@ -2973,6 +2973,26 @@ public:
                                       unsigned long val_vertex,
                                       unsigned short val_var,
                                       su2double val_value) { }
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual su2double *GetDonorADSol(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual void SetDonorADSol(unsigned short val_marker,
+                                      unsigned long val_vertex,
+                                      unsigned short val_var,
+                                      su2double val_value) { }
 
   /*!
    * \brief A virtual member.
@@ -3040,6 +3060,27 @@ public:
   inline virtual void SetDonorGlobalIndex(unsigned short val_marker,
                                           unsigned long val_vertex,
                                           unsigned long val_index) { }
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual su2double GetDonorADVol(unsigned short val_marker,
+                                                   unsigned long val_vertex) const {
+    return 0.0;
+  }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual void SetDonorADVol(unsigned short val_marker,
+                                          unsigned long val_vertex,
+                                          su2double val_ADVol) { }
 
   /*!
    * \brief A virtual member.

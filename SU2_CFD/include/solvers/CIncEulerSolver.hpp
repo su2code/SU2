@@ -117,7 +117,9 @@ protected:
   **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
   ***Inlet_FlowDir,  /*!< \brief Value of the Flow Direction. */
   ***DonorPrimVar = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
-  ***DonorResInfo = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
+  ***DonorResInfo = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
+  **DonorADVol = nullptr,        /*!< \brief Value of the donor variables at each boundary. */
+  ***DonorADSol = nullptr;       /*!< \brief Value of the donor variables at each boundary. */
   unsigned long
   **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
 
@@ -675,7 +677,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config, unsigned short Kind_Comm);
 
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -809,6 +811,16 @@ public:
   inline su2double *GetDonorResInfo(unsigned short val_marker, unsigned long val_vertex) const final{
     return DonorResInfo[val_marker][val_vertex];
   }
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double *GetDonorADSol(unsigned short val_marker, unsigned long val_vertex) const final{
+    return DonorADSol[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -834,6 +846,19 @@ public:
                               unsigned short val_var,
                               su2double val_value) final {
     DonorResInfo[val_marker][val_vertex][val_var] = val_value;
+  }
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetDonorADSol(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              unsigned short val_var,
+                              su2double val_value) final {
+    DonorADSol[val_marker][val_vertex][val_var] = val_value;
   }
 
   /*!
@@ -869,6 +894,29 @@ public:
                                   unsigned long val_vertex,
                                   unsigned long val_index) final {
     DonorGlobalIndex[val_marker][val_vertex] = val_index;
+  }
+  
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline su2double GetDonorADVol(unsigned short val_marker,
+                                           unsigned long val_vertex) const final {
+    return DonorADVol[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetDonorADVol(unsigned short val_marker,
+                                  unsigned long val_vertex,
+                                  su2double val_ADVol) final {
+    DonorADVol[val_marker][val_vertex] = val_ADVol;
   }
   
 //---------------------------------------- Actdisk --------------------------------------------------------//

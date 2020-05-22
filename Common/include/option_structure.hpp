@@ -2123,6 +2123,13 @@ static const MapType<string, COMM_LEVEL> Comm_Map = {
   MakePair("FULL",    COMM_FULL)
 };
 
+enum ACTDISK_COMM {
+  AD_VOLUME       = 0,
+  AD_PRIMITIVES   = 1,
+  AD_RESIDUALS    = 2,
+  AD_SOLUTION     = 3
+};
+
 /*
  * \brief Types of filter kernels, initially intended for structural topology optimization applications
  */
