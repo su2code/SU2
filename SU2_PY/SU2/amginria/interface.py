@@ -40,57 +40,6 @@ import numpy as np
 
 import _amgio as amgio
 import pyamg
-    
-def prepro_back_mesh_2d(config_cfd, config_amg):
-    #--- Read initial and background meshes
-    sys.stdout.write("Reading initial and background mesh.\n")
-    sys.stdout.flush()
-
-    mesh_ini = read_mesh(config_cfd['MESH_FILENAME'])
-
-    Tri_Ini = [mesh_ini['Triangles'][0][i] for i in range(3)]
-    Ver_Ini = [mesh_ini['xyz'][i][:2] for i in Tri_Ini]
-
-    V_Ini = [Ver_Ini[1][i] - Ver_Ini[0][i] for i in range(2)]
-    W_Ini = [Ver_Ini[2][i] - Ver_Ini[0][i] for i in range(2)]
-
-    N_Ini = V_Ini[0]*W_Ini[1]-V_Ini[1]*W_Ini[0]
-
-    del mesh_ini
-
-    sys.stdout.write("Reading background surface mesh.\n")
-    sys.stdout.flush()
-    mesh_bak = read_mesh(config_amg['adap_back'])
-
-    Tri_Bak = [mesh_bak['Triangles'][0][i] for i in range(3)]
-    Ver_Bak = [mesh_bak['xyz'][i][:2] for i in Tri_Bak]
-
-    V_Bak = [Ver_Bak[1][i] - Ver_Bak[0][i] for i in range(2)]
-    W_Bak = [Ver_Bak[2][i] - Ver_Bak[0][i] for i in range(2)]
-
-    N_Bak = V_Bak[0]*W_Bak[1]-V_Bak[1]*W_Bak[0]
-
-    #--- Check orientation
-    sys.stdout.write("Checking orientation.\n")
-    if (N_Ini*N_Bak < 0.0):
-        #--- Flip all triangles if normals are opposite
-        sys.stdout.write("Flipping triangles in background surface mesh.\n")
-        sys.stdout.flush()
-
-        NbrTri = len(mesh_bak['Triangles'])
-        Tri = np.reshape(mesh_bak['Triangles'],(NbrTri, 4)).astype(int)
-        for i in range(NbrTri):
-            tmp = Tri[i][1]
-            Tri[i][1] = Tri[i][2]
-            Tri[i][2] = tmp
-
-        mesh_bak['Triangles'] = Tri.tolist()
-        Ver = mesh_bak['xyz']
-        mesh_bak['xy'] = np.stack((Ver[:,0],Ver[:,1]), axis=1).tolist()
-        del mesh_bak['xyz']
-        write_mesh(config_amg['adap_back'], mesh_bak)
-
-    del mesh_bak
 
 def call_pyamg(mesh, config):
 

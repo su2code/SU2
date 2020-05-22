@@ -215,26 +215,29 @@ def amg ( config , kind='' ):
             config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
             config_cfd.COMPUTE_METRIC   = 'NO'
             config_cfd.MATH_PROBLEM     = 'DIRECT'
-            # config_cfd.CFL_NUMBER       = float(adap_flow_cfl[0])
             
             SU2_CFD(config_cfd)
+
+            #--- Set RESTART_SOL=YES for runs after adaptation
+            config_cfd.RESTART_SOL = 'YES'
                         
             if adap_sensor == 'GOAL':
+                config_cfd_ad = copy.deepcopy(config)
+
                 cur_solfil_adj = "restart_adj" + sol_ext
 
-                config_cfd.CONV_FILENAME        = "history_adj"
-                config_cfd.RESTART_ADJ_FILENAME = cur_solfil_adj
-                config_cfd.SOLUTION_FILENAME    = cur_solfil
-                config_cfd.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
-                config_cfd.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
-                config_cfd.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
-                config_cfd.COMPUTE_METRIC       = 'YES'
-                config_cfd.ADAP_HMAX            = config.PYADAP_HMAX
-                config_cfd.ADAP_HMIN            = config.PYADAP_HMIN
-                config_cfd.ADAP_ARMAX           = config.PYADAP_ARMAX
-                config_cfd.ADAP_COMPLEXITY      = int(mesh_sizes[0])
-                # config_cfd.CFL_NUMBER           = float(adap_adj_cfl[0])
-                SU2_CFD(config_cfd)
+                config_cfd_ad.CONV_FILENAME        = "history_adj"
+                config_cfd_ad.RESTART_ADJ_FILENAME = cur_solfil_adj
+                config_cfd_ad.SOLUTION_FILENAME    = cur_solfil
+                config_cfd_ad.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
+                config_cfd_ad.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+                config_cfd_ad.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
+                config_cfd_ad.COMPUTE_METRIC       = 'YES'
+                config_cfd_ad.ADAP_HMAX            = config.PYADAP_HMAX
+                config_cfd_ad.ADAP_HMIN            = config.PYADAP_HMIN
+                config_cfd_ad.ADAP_ARMAX           = config.PYADAP_ARMAX
+                config_cfd_ad.ADAP_COMPLEXITY      = int(mesh_sizes[0])
+                SU2_CFD(config_cfd_ad)
 
                 func_name      = config.OBJECTIVE_FUNCTION
                 suffix         = su2io.get_adjointSuffix(func_name)
@@ -282,43 +285,42 @@ def amg ( config , kind='' ):
         config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
         config_cfd.COMPUTE_METRIC   = 'NO'
         config_cfd.MATH_PROBLEM     = 'DIRECT'
-        # config_cfd.CFL_NUMBER       = float(adap_flow_cfl[0])
         SU2_CFD(config_cfd)
 
         if adap_sensor == 'GOAL':
+            config_cfd_ad = copy.deepcopy(config)
 
-            config_cfd.CONV_FILENAME         = "history_adj"
-            config_cfd.RESTART_FILENAME      = cur_solfil
-            config_cfd.RESTART_ADJ_FILENAME  = cur_solfil_adj
-            config_cfd.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
-            config_cfd.SOLUTION_ADJ_FILENAME = config['SOLUTION_ADJ_FILENAME']
-            config_cfd.VOLUME_OUTPUT         = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
-            config_cfd.HISTORY_OUTPUT         = ['ITER', 'RMS_RES', 'SENSITIVITY']
-            config_cfd.COMPUTE_METRIC        = 'YES'
-            config_cfd.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
-            config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
-            config_cfd.ADAP_HMIN             = config.PYADAP_HMIN
-            config_cfd.ADAP_ARMAX           = config.PYADAP_ARMAX
-            config_cfd.ADAP_COMPLEXITY       = int(mesh_sizes[0])
-            # config_cfd.CFL_NUMBER            = float(adap_adj_cfl[0])
+            config_cfd_ad.CONV_FILENAME         = "history_adj"
+            config_cfd_ad.RESTART_FILENAME      = cur_solfil
+            config_cfd_ad.RESTART_ADJ_FILENAME  = cur_solfil_adj
+            config_cfd_ad.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
+            config_cfd_ad.SOLUTION_ADJ_FILENAME = config['SOLUTION_ADJ_FILENAME']
+            config_cfd_ad.VOLUME_OUTPUT         = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+            config_cfd_ad.HISTORY_OUTPUT        = ['ITER', 'RMS_RES', 'SENSITIVITY']
+            config_cfd_ad.COMPUTE_METRIC        = 'YES'
+            config_cfd_ad.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
+            config_cfd_ad.ADAP_HMAX             = config.PYADAP_HMAX
+            config_cfd_ad.ADAP_HMIN             = config.PYADAP_HMIN
+            config_cfd_ad.ADAP_ARMAX            = config.PYADAP_ARMAX
+            config_cfd_ad.ADAP_COMPLEXITY       = int(mesh_sizes[0])
 
             #--- Run an adjoint if the adjoint solution file doesn't exist
-            cur_solfil_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME    
+            cur_solfil_adj_ini = config_cfd_ad.SOLUTION_ADJ_FILENAME    
             func_name          = config.OBJECTIVE_FUNCTION
             suffix             = su2io.get_adjointSuffix(func_name)
             cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
             if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
-                config_cfd.ITER        = config.ITER
-                config_cfd.RESTART_SOL = 'NO'
-                SU2_CFD(config_cfd)
+                config_cfd_ad.ITER        = config.ITER
+                config_cfd_ad.RESTART_SOL = 'NO'
+                SU2_CFD(config_cfd_ad)
 
                 cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
             #--- Otherwise just compute the metric
             else:
                 os.symlink(os.path.join(cwd, cur_solfil_adj_ini), cur_solfil_adj_ini)
-                config_cfd.ITER = 1
-                SU2_CFD(config_cfd)
+                config_cfd_ad.ITER = 1
+                SU2_CFD(config_cfd_ad)
                 sav_stdout.write('Initial adjoint CFD solution is provided.\n')
                 sav_stdout.flush()
 
@@ -472,18 +474,10 @@ def amg ( config , kind='' ):
                     cur_solfil_adj_ini = "adj_ini" + sol_ext
                 
                 config_cfd.MESH_FILENAME     = cur_meshfil
-                config_cfd.CONV_FILENAME     = "history"
                 config_cfd.SOLUTION_FILENAME = cur_solfil_ini
                 config_cfd.RESTART_FILENAME  = cur_solfil
-                config_cfd.VOLUME_OUTPUT     = "COORDINATES, SOLUTION, PRIMITIVE"
-                config_cfd.HISTORY_OUTPUT    = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
-                config_cfd.COMPUTE_METRIC    = 'NO'
-                config_cfd.MATH_PROBLEM      = 'DIRECT'
-                config_cfd.RESTART_SOL       = 'YES'
- 
-                # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
-                config_cfd.ITER               = int(adap_flow_iter[iSiz])
-                config_cfd.CFL_NUMBER         = float(adap_flow_cfl[iSiz])
+                config_cfd.ITER              = int(adap_flow_iter[iSiz])
+                config_cfd.CFL_NUMBER        = float(adap_flow_cfl[iSiz])
                 
                 SU2_CFD(config_cfd)
                 
@@ -492,28 +486,18 @@ def amg ( config , kind='' ):
                     
                 if adap_sensor == 'GOAL':
 
-                    config_cfd.CONV_FILENAME          = "history_adj"
-                    config_cfd.RESTART_ADJ_FILENAME   = cur_solfil_adj
-                    config_cfd.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
-                    config_cfd.SOLUTION_FILENAME      = cur_solfil
-                    config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-                    config_cfd.ITER                   = int(adap_adj_iter[iSiz])
-                    config_cfd.VOLUME_OUTPUT          = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
-                    config_cfd.HISTORY_OUTPUT         = ['ITER', 'RMS_RES', 'SENSITIVITY']
-                    config_cfd.COMPUTE_METRIC         = 'YES'
-                    config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
-                    config_cfd.CFL_NUMBER             = float(adap_adj_cfl[iSiz])
-                    SU2_CFD(config_cfd)
+                    config_cfd_ad.RESTART_ADJ_FILENAME   = cur_solfil_adj
+                    config_cfd_ad.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
+                    config_cfd_ad.SOLUTION_FILENAME      = cur_solfil
+                    config_cfd_ad.ITER                   = int(adap_adj_iter[iSiz])
+                    config_cfd_ad.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
+                    config_cfd_ad.CFL_NUMBER             = float(adap_adj_cfl[iSiz])
+                    SU2_CFD(config_cfd_ad)
 
                     cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
-                    #--- If SU2_CFD_AD fails on interpolated restart
                     if not os.path.exists(cur_solfil_adj) :
-                        config_cfd.RESTART_SOL = 'NO'
-                        SU2_CFD(config_cfd)
-
-                        if not os.path.exists(cur_solfil_adj) :
-                            raise Exception("\n##ERROR : SU2_CFD_AD Failed.\n")
+                        raise Exception("\n##ERROR : SU2_CFD_AD Failed.\n")
             
             except:
                 sys.stdout = sav_stdout
