@@ -98,6 +98,24 @@ def get_adj_cfl(config):
         for i in range(ncfl):
             cfl.append(config['CFL_NUMBER'])        
         return cfl
+
+def set_cfl(config, cfl_iSiz):
+    config.CFL_NUMBER = float(cfl_iSiz)
+    if 'CFL_ADAPT' in config:
+        if config['CFL_ADAPT'] == 'YES':
+            cfl_params = config['CFL_ADAPT_PARAM'].strip('()').split(",")
+            cfl_params[2] = cfl_iSiz
+
+            config['CFL_ADAPT_PARAM'] = '('
+            for i in range(3):
+                config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
+                                          + cfl_params[i] \
+                                          + ","
+
+            config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
+                                          + cfl_params[3] \
+                                          + ")"
+
     
 def print_adap_options(config, kwds):
     prt = '\nMesh adaptation options:\n'
