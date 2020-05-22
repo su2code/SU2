@@ -487,6 +487,7 @@ def amg ( config , kind='' ):
                     
                 if adap_sensor == 'GOAL':
 
+                    config_cfd_ad.MESH_FILENAME          = cur_meshfil
                     config_cfd_ad.RESTART_ADJ_FILENAME   = cur_solfil_adj
                     config_cfd_ad.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
                     config_cfd_ad.SOLUTION_FILENAME      = cur_solfil
