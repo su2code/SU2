@@ -491,6 +491,7 @@ def amg ( config , kind='' ):
                     config_cfd_ad.RESTART_ADJ_FILENAME   = cur_solfil_adj
                     config_cfd_ad.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
                     config_cfd_ad.SOLUTION_FILENAME      = cur_solfil
+                    config_cfd_ad.RESTART_FILENAME       = cur_solfil
                     config_cfd_ad.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd_ad.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
 
