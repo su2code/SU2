@@ -196,19 +196,21 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     su2double omega_init = omega_Inf;
     long iVertex = -1;
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      if (iVertex > -1) {
-        /*--- distance to closest neighbor ---*/
-        unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        const su2double distance = geometry->node[jPoint]->GetWall_Distance();
+      if (config->GetSolid_Wall(iMarker)) {
+        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex > -1) {
+          /*--- distance to closest neighbor ---*/
+          unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          const su2double distance = geometry->node[jPoint]->GetWall_Distance();
 
-        /*--- Set wall values ---*/
+          /*--- Set wall values ---*/
 
-        const su2double density_v = rhoInf;
-        const su2double laminar_viscosity_v = muLamInf;
-        
-        omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
-        break;
+          const su2double density_v = rhoInf;
+          const su2double laminar_viscosity_v = muLamInf;
+          
+          omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+          break;
+        }
       }
     }
     if (iVertex == -1) {
