@@ -478,7 +478,7 @@ def amg ( config , kind='' ):
                 config_cfd.RESTART_FILENAME  = cur_solfil
                 config_cfd.ITER              = int(adap_flow_iter[iSiz])
 
-                set_cfl(config_cfd, float(adap_flow_cfl[iSiz]))
+                su2amg.set_cfl(config_cfd, adap_flow_cfl[iSiz])
                 
                 SU2_CFD(config_cfd)
                 
@@ -493,8 +493,8 @@ def amg ( config , kind='' ):
                     config_cfd_ad.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd_ad.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
 
-                    set_cfl(config_cfd_ad, float(adap_adj_cfl[iSiz]))
-                    
+                    su2amg.set_cfl(config_cfd_ad, adap_adj_cfl[iSiz])
+
                     SU2_CFD(config_cfd_ad)
 
                     cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
