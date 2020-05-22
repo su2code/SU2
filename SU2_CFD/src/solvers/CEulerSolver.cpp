@@ -7200,9 +7200,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           Kine_Infty = solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
         }
         else {
-          const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-          Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
-//          Kine_Infty = GetTke_Inf();
+//          const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
+//          Kine_Infty = 3.0/2.0*(Velocity2*Intensity*Intensity);
+          Kine_Infty = GetTke_Inf();
         }
         Energy += Kine_Infty;
       }
