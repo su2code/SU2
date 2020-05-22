@@ -103,7 +103,7 @@ def set_cfl(config, cfl_iSiz):
     config.CFL_NUMBER = float(cfl_iSiz)
     if 'CFL_ADAPT' in config:
         if config['CFL_ADAPT'] == 'YES':
-            cfl_params = config['CFL_ADAPT_PARAM'].strip('()').split(", ")
+            cfl_params = config['CFL_ADAPT_PARAM'].strip('()').split(",")
             cfl_params[2] = cfl_iSiz
 
             config['CFL_ADAPT_PARAM'] = '('
