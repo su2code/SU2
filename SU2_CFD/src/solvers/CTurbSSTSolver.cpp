@@ -817,7 +817,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       LinSysRes.AddBlock(iPoint, residual);
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      if (Vn_Infty > 0.0) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_j);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
@@ -857,11 +856,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
 
     }
   }
