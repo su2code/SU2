@@ -76,9 +76,9 @@ jobs:
       - name: Move Binaries
         run: |
           mkdir -p install/bin
-          if [ -d ${{format('Base{0}', matrix.tag)}} ];    then cp -r ${{format('Base{0}', matrix.tag)}}/.    install/bin/ fi
-          if [ -d ${{format('Reverse{0}', matrix.tag)}} ]; then cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/ fi
-          if [ -d ${{format('Forward{0}', matrix.tag)}} ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/ fi
+          if [ -d "${{format('Base{0}', matrix.tag)}}" ];    then cp -r ${{format('Base{0}', matrix.tag)}}/.    install/bin/; fi
+          if [ -d "${{format('Reverse{0}', matrix.tag)}}" ]; then cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/; fi
+          if [ -d "${{format('Forward{0}', matrix.tag)}}" ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/; fi
           chmod a+x install/bin/*
       - name: Run Tests in Container
         uses: docker://su2code/test-su2:20200303
