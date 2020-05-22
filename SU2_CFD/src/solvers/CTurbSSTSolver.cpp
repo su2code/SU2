@@ -198,21 +198,20 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       const su2double distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double k       = kine_Inf;
       const su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
-      omega_init = 0.0;
         
       const su2double DensityWall = rhoInf;
       const su2double LamViscWall = muLamInf;
       
       const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
       
-      omega_init += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      omega_init = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
     }
     else {
-      for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-        const long jVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (jVertex > -1) {
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex > -1) {
           /*--- distance to closest neighbor ---*/
-          unsigned long jPoint = geometry->vertex[iMarker][jVertex]->GetNormal_Neighbor();
+          unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
           const su2double distance = geometry->node[jPoint]->GetWall_Distance();
 
           /*--- Set wall values ---*/
