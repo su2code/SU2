@@ -194,7 +194,24 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double beta_1 = constants[4];
     su2double omega_init = omega_Inf;
-    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
+    long iVertex = -1;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex > -1) {
+        /*--- distance to closest neighbor ---*/
+        unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        const su2double distance = geometry->node[jPoint]->GetWall_Distance();
+
+        /*--- Set wall values ---*/
+
+        const su2double density_v = rhoInf;
+        const su2double laminar_viscosity_v = muLamInf;
+        
+        omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+        break;
+      }
+    }
+    if (iVertex = -1) {
       const su2double distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double k       = kine_Inf;
       const su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
@@ -205,23 +222,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
       
       omega_init = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-    }
-    else {
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex > -1) {
-          /*--- distance to closest neighbor ---*/
-          unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-          const su2double distance = geometry->node[jPoint]->GetWall_Distance();
-
-          /*--- Set wall values ---*/
-
-          const su2double density_v = rhoInf;
-          const su2double laminar_viscosity_v = muLamInf;
-          
-          omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
-        }
-      }
     }
     
     nodes->SetSolution(iPoint,1,rhoInf*omega_init);
