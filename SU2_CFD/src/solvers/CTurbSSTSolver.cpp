@@ -191,7 +191,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   SetBaseClassPointerToNodes();
       
   /*--- BCM: test initializing omega based on wall distance ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double beta_1 = constants[4];
     su2double omega_init = omega_Inf;
     long iVertex = -1;
