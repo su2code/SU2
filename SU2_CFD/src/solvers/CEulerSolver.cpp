@@ -2683,7 +2683,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const su2double K_v = 0.25;
+//  const su2double K_v = 0.25;
+  const su2double K_v = 1.0;
 
   /*--- Init thread-shared variables to compute min/max values.
    *    Critical sections are used for this instead of reduction
