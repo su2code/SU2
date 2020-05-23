@@ -787,17 +787,17 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       }
       else {
         /*--- Inflow conditions ---*/
-//        Velocity2 = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-//        const su2double Rho_Infty = V_infty[nDim+2];
-//        const su2double muT_Infty = V_infty[nDim+6];
-//        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-//        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
-//
-//        Primitive_j[0] = Kine_Infty;
-//        Primitive_j[1] = Omega_Infty;
-        Primitive_j[0] = kine_Inf;
-        Primitive_j[1] = omega_Inf;
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+        const su2double Rho_Infty = V_infty[nDim+2];
+        const su2double muT_Infty = V_infty[nDim+6];
+        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
+
+        Primitive_j[0] = Kine_Infty;
+        Primitive_j[1] = Omega_Infty;
+//        Primitive_j[0] = kine_Inf;
+//        Primitive_j[1] = omega_Inf;
       }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
