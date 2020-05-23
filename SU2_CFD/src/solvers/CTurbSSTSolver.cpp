@@ -207,7 +207,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 //
 //          const su2double density_v = rhoInf;
 //          const su2double laminar_viscosity_v = muLamInf;
-//          
+//
 //          omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
 //          break;
 //        }
@@ -217,18 +217,18 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 //      const su2double distance = geometry->node[iPoint]->GetWall_Distance();
 //      const su2double k       = kine_Inf;
 //      const su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
-//        
+//
 //      const su2double DensityWall = rhoInf;
 //      const su2double LamViscWall = muLamInf;
-//      
+//
 //      const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
-//      
+//
 //      omega_init = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
 //    }
-//    
+//
 //    nodes->SetSolution(iPoint,1,rhoInf*omega_init);
 //    nodes->SetPrimitive(iPoint,1,omega_init);
-//      
+//
 //  }
 
   /*--- MPI solution ---*/
@@ -778,7 +778,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set primitive state based on flow direction ---*/
       
       Vn_Infty = 0;
-      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += V_infty[iDim+1]*Normal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim+1]*Normal[iDim];
 
       if (Vn_Infty > 0.0) {
         /*--- Outflow conditions ---*/

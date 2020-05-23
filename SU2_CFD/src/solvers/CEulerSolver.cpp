@@ -7120,8 +7120,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Adjust the normal freestream velocity for grid movement ---*/
 
-//      Qn_Infty = Vn_Infty;
-      Qn_Infty = Vn_Bound;
+      Qn_Infty = Vn_Infty;
       if (dynamic_grid) {
         GridVel = geometry->node[iPoint]->GetGridVel();
         for (iDim = 0; iDim < nDim; iDim++)
