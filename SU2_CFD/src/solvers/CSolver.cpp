@@ -5233,7 +5233,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
 
 void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
   
-  unsigned short iDim, iVar;
+  unsigned short iDim, jDim, iVar;
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim],
             *EigVal  = new su2double[nDim];
@@ -5245,33 +5245,54 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, u
 
   for(iVar = 0; iVar < nVar; iVar++){
     if (nDim == 2) {
+      //--- Get upper triangle
       const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
       const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
       const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
       
-      if (fabs(a*c - b*b) < 1.0E-16) {
-        A[0][0] = a+1.0E-16; A[0][1] = b;
-        A[1][0] = b;         A[1][1] = c+1.0E-16;
-      }
-      else {
-        A[0][0] = a; A[0][1] = b;
-        A[1][0] = b; A[1][1] = c;
-      }
+//      if (fabs(a*c - b*b) < 1.0E-16) {
+//        A[0][0] = a+1.0E-16; A[0][1] = b;
+//        A[1][0] = b;         A[1][1] = c+1.0E-16;
+//      }
+//      else {
+//        A[0][0] = a; A[0][1] = b;
+//        A[1][0] = b; A[1][1] = c;
+//      }
       
-//      A[0][0] = a; A[0][1] = b;
-//      A[1][0] = b; A[1][1] = c;
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
 
+      //--- Compute eigenvalues and eigenvectors, then recombine
       CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
       for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
 
       CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-      base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
+      //--- If NaN detected, set values to zero.
+      //--- Otherwise, recombined matrix.
+      bool check_hess = true;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          if (A[iDim][jDim] != A[iDim][jDim]) {
+            check_hess = false;
+            break;
+          }
+        }
+      }
+
+      if (check_hess){
+        base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+        base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+        base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
+      }
+      else {
+        for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+          base_nodes->SetHessian(iPoint, iVar, iDim, 0.);
+      }
     }
     else {
+      //--- Get upper triangle
       const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
       const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
       const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
@@ -5279,33 +5300,52 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, u
       const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
       const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
       
-      if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
-        A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
-        A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
-        A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
-      }
-      else {
-        A[0][0] = a; A[0][1] = b; A[0][2] = c;
-        A[1][0] = b; A[1][1] = d; A[1][2] = e;
-        A[2][0] = c; A[2][1] = e; A[2][2] = f;
-      }
+//      if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
+//        A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
+//        A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
+//        A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
+//      }
+//      else {
+//        A[0][0] = a; A[0][1] = b; A[0][2] = c;
+//        A[1][0] = b; A[1][1] = d; A[1][2] = e;
+//        A[2][0] = c; A[2][1] = e; A[2][2] = f;
+//      }
 
-//      A[0][0] = a; A[0][1] = b; A[0][2] = c;
-//      A[1][0] = b; A[1][1] = d; A[1][2] = e;
-//      A[2][0] = c; A[2][1] = e; A[2][2] = f;
+      A[0][0] = a; A[0][1] = b; A[0][2] = c;
+      A[1][0] = b; A[1][1] = d; A[1][2] = e;
+      A[2][0] = c; A[2][1] = e; A[2][2] = f;
 
+      //--- Compute eigenvalues and eigenvectors, then recombine
       CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
       for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
 
       CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+      
+      //--- If NaN detected, set values to zero.
+      //--- Otherwise, recombined matrix.
+      bool check_hess = true;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          if (A[iDim][jDim] != A[iDim][jDim]) {
+            check_hess = false;
+            break;
+          }
+        }
+      }
 
-      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-      base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
-      base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
-      base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
-      base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
+      if (check_hess){
+        base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+        base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+        base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
+        base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
+        base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
+        base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
+      }
+      else {
+        for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+          base_nodes->SetHessian(iPoint, iVar, iDim, 0.);
+      }
     }
   }
 
