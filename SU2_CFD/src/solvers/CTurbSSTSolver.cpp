@@ -191,45 +191,45 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   SetBaseClassPointerToNodes();
       
   /*--- BCM: test initializing omega based on wall distance ---*/
-//  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-//    const su2double beta_1 = constants[4];
-//    su2double omega_init = omega_Inf;
-//    long iVertex = -1;
-//    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//      if (config->GetSolid_Wall(iMarker)) {
-//        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-//        if (iVertex > -1) {
-//          /*--- distance to closest neighbor ---*/
-//          unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-//          const su2double distance = geometry->node[jPoint]->GetWall_Distance();
-//
-//          /*--- Set wall values ---*/
-//
-//          const su2double density_v = rhoInf;
-//          const su2double laminar_viscosity_v = muLamInf;
-//
-//          omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
-//          break;
-//        }
-//      }
-//    }
-//    if (iVertex == -1) {
-//      const su2double distance = geometry->node[iPoint]->GetWall_Distance();
-//      const su2double k       = kine_Inf;
-//      const su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
-//
-//      const su2double DensityWall = rhoInf;
-//      const su2double LamViscWall = muLamInf;
-//
-//      const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
-//
-//      omega_init = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-//    }
-//
-//    nodes->SetSolution(iPoint,1,rhoInf*omega_init);
-//    nodes->SetPrimitive(iPoint,1,omega_init);
-//
-//  }
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double beta_1 = constants[4];
+    su2double omega_init = omega_Inf;
+    long iVertex = -1;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetSolid_Wall(iMarker)) {
+        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex > -1) {
+          /*--- distance to closest neighbor ---*/
+          unsigned long jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          const su2double distance = geometry->node[jPoint]->GetWall_Distance();
+
+          /*--- Set wall values ---*/
+
+          const su2double density_v = rhoInf;
+          const su2double laminar_viscosity_v = muLamInf;
+
+          omega_init = 60.0*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+          break;
+        }
+      }
+    }
+    if (iVertex == -1) {
+      const su2double distance = geometry->node[iPoint]->GetWall_Distance();
+      const su2double k       = kine_Inf;
+      const su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
+
+      const su2double DensityWall = rhoInf;
+      const su2double LamViscWall = muLamInf;
+
+      const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
+
+      omega_init = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+    }
+
+    nodes->SetSolution(iPoint,1,rhoInf*omega_init);
+    nodes->SetPrimitive(iPoint,1,omega_init);
+
+  }
 
   /*--- MPI solution ---*/
 
@@ -788,16 +788,16 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       else {
         /*--- Inflow conditions ---*/
         Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-        const su2double Rho_Infty = V_infty[nDim+2];
-        const su2double muT_Infty = V_infty[nDim+6];
-        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
-
-        Primitive_j[0] = Kine_Infty;
-        Primitive_j[1] = Omega_Infty;
-//        Primitive_j[0] = kine_Inf;
-//        Primitive_j[1] = omega_Inf;
+//        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+//        const su2double Rho_Infty = V_infty[nDim+2];
+//        const su2double muT_Infty = V_infty[nDim+6];
+//        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+//        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
+//
+//        Primitive_j[0] = Kine_Infty;
+//        Primitive_j[1] = Omega_Infty;
+        Primitive_j[0] = kine_Inf;
+        Primitive_j[1] = omega_Inf;
       }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
