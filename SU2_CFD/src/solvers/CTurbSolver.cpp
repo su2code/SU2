@@ -539,8 +539,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-//            nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
-//                                      lowerlimit[iVar], upperlimit[iVar]);
             nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         }
         break;
