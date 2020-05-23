@@ -28,9 +28,16 @@
 
 #include "../include/CGeometryEvaluation.hpp"
 
-CGeometryEvaluation::CGeometryEvaluation(CGeometry* geo_val, CConfig* config_val, 
-                                         SU2_Comm val_MPICommunicator) : geometry(geo_val), 
-                                         config(config_val), MPICommunicator(val_MPICommunicator) {
+CGeometryEvaluation::CGeometryEvaluation(char* confFile,
+                                         unsigned short val_nZone,
+                                         SU2_Comm val_MPICommunicator) : 
+                                         config_file_name(confFile), 
+                                         nZone(val_nZone),
+                                         MPICommunicator(val_MPICommunicator) {
+
+  Config_Preprocessing();
+
+  Geometry_Preprocessing();
   
   map<string, su2double> Wing_ObjectiveFuncs_FD (Wing_ObjectiveFuncs);
   map<string, su2double> Wing_ObjectiveFuncs_Grad(Wing_ObjectiveFuncs);
@@ -58,6 +65,9 @@ CGeometryEvaluation::CGeometryEvaluation(CGeometry* geo_val, CConfig* config_val
 
 CGeometryEvaluation::~CGeometryEvaluation(){
 
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+
   delete [] Xcoord_Airfoil; delete [] Ycoord_Airfoil; delete [] Zcoord_Airfoil;
   
   delete [] ObjectiveFunc; delete [] ObjectiveFunc_New; delete [] Gradient;
@@ -71,6 +81,17 @@ CGeometryEvaluation::~CGeometryEvaluation(){
 
   if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
 
+  if (geometry_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != nullptr) {
+        delete geometry_container[iZone];
+      }
+    }
+    delete [] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+
+
   if (surface_movement != nullptr) delete surface_movement;
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
@@ -83,6 +104,139 @@ CGeometryEvaluation::~CGeometryEvaluation(){
     delete [] FFDBox;
   }
   if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+
+  if (config_container != nullptr) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != nullptr) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+
+}
+
+void CGeometryEvaluation::Config_Preprocessing(){
+
+  /*--- Definition of the containers per zones ---*/
+  
+  config_container = new CConfig*[nZone];
+  
+  for (iZone = 0; iZone < nZone; iZone++)
+    config_container[iZone]       = nullptr;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    /*--- Definition of the configuration option class for all zones. In this
+     constructor, the input configuration file is parsed and all options are
+     read and stored. ---*/
+    
+    config_container[iZone] = new CConfig(config_file_name, SU2_GEO, true);
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+  }
+
+  config = config_container[ZONE_0];
+
+}
+
+void CGeometryEvaluation::Geometry_Preprocessing(){
+
+  /*--- Definition of the containers per zones ---*/
+  
+  geometry_container = new CGeometry*[nZone];
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone]     = nullptr;
+  }
+  
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+    
+    CGeometry *geometry_aux = nullptr;
+    
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    
+    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    
+    /*--- Deallocate the memory of geometry_aux ---*/
+    
+    delete geometry_aux;
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+    
+  }
+
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+
+  // StartTime = SU2_MPI::Wtime();
+
+  /*--- Evaluation of the objective function ---*/
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+  
+  /*--- Compute elements surrounding points, points surrounding points ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+  geometry_container[ZONE_0]->SetPoint_Connectivity();
+  
+  /*--- Check the orientation before computing geometrical quantities ---*/
+  
+  if (config_container[ZONE_0]->GetReorientElements()) {
+    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+    geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+  }
+  
+  /*--- Create the edge structure ---*/
+  
+  if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+  geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
+  
+  /*--- Compute center of gravity ---*/
+  
+  if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+  geometry_container[ZONE_0]->SetCoord_CG();
+  
+  /*--- Create the dual control volume structures ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+  geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+  
+  /*--- Compute the surface curvature ---*/
+  
+  if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+  geometry_container[ZONE_0]->ComputeSurf_Curvature(config_container[ZONE_0]);
+  
+  /*--- Computation of positive surface area in the z-plane ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting reference area and span." << endl;
+  geometry_container[ZONE_0]->SetPositive_ZArea(config_container[ZONE_0]);
+  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+  geometry_container[ZONE_0]->PreprocessP2PComms(geometry_container[ZONE_0], config_container[ZONE_0]);
+
+  /* --- Perform geometry evaluations on ZONE_0 --- */
+  geometry = geometry_container[ZONE_0];
 
 }
 
@@ -249,28 +403,28 @@ void CGeometryEvaluation::ComputeGeometry(){
       
       if (rank == MASTER_NODE) {
         if (config->GetSystemMeasurements() == US) {
-          cout << "Nacelle volume: "           << Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] << " in^3. ";
-          cout << "Nacelle min. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] << " in. ";
-          cout << "Nacelle max. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] << " in. " << endl;
-          cout << "Nacelle min. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] << " in. ";
-          cout << "Nacelle max. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] << " in. ";
-          cout << "Nacelle min. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] << " 1/in. ";
-          cout << "Nacelle max. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] << " 1/in. " << endl;
+          cout << "Nacelle volume: "            << Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] << " in^3. ";
+          cout << "Nacelle min. thickness: "    << Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] << " in. ";
+          cout << "Nacelle max. thickness: "    << Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] << " in. " << endl;
+          cout << "Nacelle min. chord: "        << Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] << " in. ";
+          cout << "Nacelle max. chord: "        << Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] << " in. ";
+          cout << "Nacelle min. LE radius: "    << Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] << " 1/in. ";
+          cout << "Nacelle max. LE radius: "    << Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] << " 1/in. " << endl;
         }
         else {
-          cout << "Nacelle volume: "           << Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] << " m^3. ";
-          cout << "Nacelle min. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] << " m. ";
-          cout << "Nacelle max. thickness: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] << " m. " << endl;
-          cout << "Nacelle min. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] << " m. ";
-          cout << "Nacelle max. chord: "       << Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] << " m. ";
-          cout << "Nacelle min. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] << " 1/m. ";
-          cout << "Nacelle max. LE radius: "   << Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] << " 1/m. " << endl;
+          cout << "Nacelle volume: "            << Nacelle_ObjectiveFuncs["NACELLE_VOLUME"] << " m^3. ";
+          cout << "Nacelle min. thickness: "    << Nacelle_ObjectiveFuncs["NACELLE_MIN_THICKNESS"] << " m. ";
+          cout << "Nacelle max. thickness: "    << Nacelle_ObjectiveFuncs["NACELLE_MAX_THICKNESS"] << " m. " << endl;
+          cout << "Nacelle min. chord: "        << Nacelle_ObjectiveFuncs["NACELLE_MIN_CHORD"] << " m. ";
+          cout << "Nacelle max. chord: "        << Nacelle_ObjectiveFuncs["NACELLE_MAX_CHORD"] << " m. ";
+          cout << "Nacelle min. LE radius: "    << Nacelle_ObjectiveFuncs["NACELLE_MIN_LE_RADIUS"] << " 1/m. ";
+          cout << "Nacelle max. LE radius: "    << Nacelle_ObjectiveFuncs["NACELLE_MAX_LE_RADIUS"] << " 1/m. " << endl;
         }
         
-        cout << "Nacelle min. ToC: "  << Nacelle_MinToC << ". ";
-        cout << "Nacelle max. ToC: "  << Nacelle_MaxToC << ". ";
-        cout << "Nacelle delta ToC: "  << Nacelle_ObjFun_MinToC << ". ";
-        cout << "Nacelle max. twist: "  << Nacelle_MaxTwist << " deg. "<< endl;
+        cout << "Nacelle min. ToC: "            << Nacelle_ObjectiveFuncs["NACELLE_MIN_TOC"] << ". ";
+        cout << "Nacelle max. ToC: "            << Nacelle_ObjectiveFuncs["NACELLE_MAX_TOC"] << ". ";
+        cout << "Nacelle delta ToC: "           << Nacelle_ObjectiveFuncs["NACELLE_OBJFUN_MIN_TOC"] << ". ";
+        cout << "Nacelle max. twist: "          << Nacelle_ObjectiveFuncs["NACELLE_MAX_TWIST"] << " deg. "<< endl;
       }
       
     }
@@ -326,6 +480,10 @@ void CGeometryEvaluation::ComputeGeometry(){
 }
 
 void CGeometryEvaluation::EvaluateObjectiveFunction(){
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
+  
   if (rank == MASTER_NODE) {
     
     /*--- Evaluate objective function ---*/
