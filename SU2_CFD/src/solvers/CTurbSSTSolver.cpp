@@ -415,7 +415,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
     const su2double zeta  = max(omega, VorticityMag*F2/a1);
-    const su2double muT   = max(rho*kine/zeta,0.0);
+    const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
         
