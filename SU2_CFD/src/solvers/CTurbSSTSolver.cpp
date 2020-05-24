@@ -739,17 +739,17 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       }
       else {
         /*--- Inflow conditions ---*/
-        Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-        const su2double Rho_Infty = V_infty[nDim+2];
-        const su2double muT_Infty = V_infty[nDim+6];
-        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
-        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
+//        Velocity2 = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+//        const su2double Rho_Infty = V_infty[nDim+2];
+//        const su2double muT_Infty = V_infty[nDim+6];
+//        Kine_Infty  = 3.0/2.0*(Velocity2*Intensity*Intensity);
+//        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
 
-        Primitive_j[0] = Kine_Infty;
-        Primitive_j[1] = Omega_Infty;
-//        Primitive_j[0] = kine_Inf;
-//        Primitive_j[1] = omega_Inf;
+//        Primitive_j[0] = Kine_Infty;
+//        Primitive_j[1] = Omega_Infty;
+        Primitive_j[0] = kine_Inf;
+        Primitive_j[1] = omega_Inf;
       }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
@@ -775,10 +775,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_domain);
+      visc_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
+      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                         nodes->GetGradient(iPoint));
 
@@ -807,11 +807,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
 
     }
   }
