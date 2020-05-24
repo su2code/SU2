@@ -838,11 +838,24 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     if (Unst_RestartIter < 0) {
 
-      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting known solution" << endl;
+      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting zero displacement" << endl;
 
-      /*--- Set loaded solution into correct previous time containers. ---*/
-      if(iStep==1) nodes->Set_Solution_time_n();
-      else nodes->Set_Solution_time_n1();
+      unsigned long iPoint_Global;
+
+      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+        auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+        if (iPoint_Local >= 0) {
+
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            if(iStep==1)
+              nodes->Set_Solution_time_n(iPoint_Local, iDim, 0.0);
+            else
+              nodes->Set_Solution_time_n1(iPoint_Local, iDim, 0.0);
+          }
+        }
+      }
     }
     else {
       string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
