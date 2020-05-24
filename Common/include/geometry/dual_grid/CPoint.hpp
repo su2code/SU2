@@ -43,6 +43,9 @@ private:
   vector<unsigned long> Point;        /*!< \brief Points surrounding the central node of the control volume. */
   vector<long> Edge;                  /*!< \brief Edges that set up a control volume. */
   su2double *Volume;                  /*!< \brief Volume or Area of the control volume in 3D and 2D. */
+  su2double Volume_Old;               /*!< \brief Old containers for Volume. */
+  su2double Volume_n_Old;             /*!< \brief Old containers for Volume at time n. */
+  su2double Volume_nM1_Old;           /*!< \brief Old containers for Volume at time n-1. */
   su2double Periodic_Volume;          /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
   bool Domain,                        /*!< \brief Indicates if a point must be computed or belong to another boundary */
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
@@ -457,8 +460,8 @@ public:
   inline su2double GetVolume_n(void) const { return Volume[1]; }
 
   /*!
-   * \brief Get the volume of the control volume at time n+1.
-   * \return Volume of the control volume at time n+1
+   * \brief Get the volume of the control volume at time n-1.
+   * \return Volume of the control volume at time n-1
    */
   inline su2double GetVolume_nM1(void) const { return Volume[2]; }
 
@@ -468,9 +471,34 @@ public:
   inline void SetVolume_n(void) { Volume[1] = Volume[0]; }
 
   /*!
-   * \brief Set the volume of the control volume at time n+1.
+   * \brief Set the volume of the control volume at time n-1.
    */
   inline void SetVolume_nM1(void) { Volume[2] = Volume[1]; }
+
+  /*!
+   * \brief Set the volume of the control volume at time n using n-1.
+   */
+  inline void SetVolume_n_from_OldnM1(void) { Volume[1] = Volume_nM1_Old; }
+
+  /*!
+   * \brief Set the volume of the control volume at current time using time n.
+   */
+  inline void SetVolume_from_Oldn(void) { Volume[0] = Volume_n_Old; }
+
+  /*!
+   * \brief Set the Volume to Volume_Old.
+   */
+  inline void SetVolume_Old(void) {Volume_Old = Volume[0];}
+
+  /*!
+   * \brief Set the Volume_n to Volume_n_Old.
+   */
+  inline void SetVolume_n_Old(void) {Volume_n_Old = Volume[1];}
+
+  /*!
+   * \brief Set the Volume_nM1 to Volume_nM1_Old.
+   */
+  inline void SetVolume_nM1_Old(void) {Volume_nM1_Old = Volume[2];}
 
   /*!
    * \brief Get the coordinates of the control volume at time n.
