@@ -602,9 +602,11 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     precond(r, z);
     mat_vec(z, A_x);
 
-    /*--- Calculate step-length omega ---*/
+    /*--- Calculate step-length omega, avoid division by 0. ---*/
 
-    omega = A_x.dot(r) / A_x.squaredNorm();
+    omega = A_x.squaredNorm();
+    if (omega == ScalarType(0)) break;
+    omega = A_x.dot(r) / omega;
 
     /*--- Update solution and residual: ---*/
 
