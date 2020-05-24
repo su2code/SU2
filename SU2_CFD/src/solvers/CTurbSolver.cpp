@@ -267,12 +267,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Conservative variables w/o reconstruction ---*/
 
-//  if (sst)
-//    numerics->SetPrimitive(nodes->GetFlowPrimitive(iPoint),
-//                           nodes->GetFlowPrimitive(jPoint));
-//  else
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
-                           flowNodes->GetPrimitive(jPoint));
+  numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
+                         flowNodes->GetPrimitive(jPoint));
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
@@ -293,8 +289,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                             nodes->GetF2blending(jPoint));
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
                            flowNodes->GetVorticity(jPoint));
-//    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-//                              nodes->GetVorticityMag(jPoint));
+    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                              nodes->GetVorticityMag(jPoint));
   }
 
   /*--- Set values for gradient Jacobian ---*/

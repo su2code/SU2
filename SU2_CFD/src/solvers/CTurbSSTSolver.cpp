@@ -297,13 +297,13 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Set flow solver primitives to values stored in turb solver ---*/
     
-//  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-//
-//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-//    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-//      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
-//    }
-//  }
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
+      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
+    }
+  }
   
   /*--- Compute gradients ---*/
     
@@ -331,13 +331,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
-//  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
+  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
   SetEddyViscosity(geometry, solver_container);
   
   /*--- Store variables from the mean flow solver ---*/
 
-//  SetFlowPrimitive(solver_container);
-//  SetFlowGradient(solver_container);
+  SetFlowPrimitive(solver_container);
+  SetFlowGradient(solver_container);
 
 }
 
@@ -402,7 +402,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
                                         Vorticity[1]*Vorticity[1] +
                                         Vorticity[2]*Vorticity[2]);
     
-//    nodes->SetVorticityMag(iPoint, VorticityMag);
+    nodes->SetVorticityMag(iPoint, VorticityMag);
     
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -484,8 +484,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
-    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
-//    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
+//    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -512,7 +512,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
     
-//    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
+    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
@@ -792,8 +792,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
       
-//      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-//                                     nodes->GetVorticityMag(iPoint));
+      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                     nodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
