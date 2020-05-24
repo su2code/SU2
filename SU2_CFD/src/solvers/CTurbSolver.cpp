@@ -587,7 +587,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     localUnderRelaxation = 1.0;
-    if (sa_model) {
+    if (sa_model || sst_model) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
         /* We impose a limit on the maximum percentage that the
@@ -604,20 +604,20 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
       }
     }
     
-    else if (sst_model) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-        /* We impose a limit on the maximum percentage that the
-         turbulence variables can decrease over a nonlinear iteration. */
-
-        const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
-        if (ratio < allowableDecrease) {
-          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
-        }
-        
-      }
-    }
+//    else if (sst_model) {
+//      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+//
+//        /* We impose a limit on the maximum percentage that the
+//         turbulence variables can decrease over a nonlinear iteration. */
+//
+//        const unsigned long index = iPoint*nVar + iVar;
+//        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
+//        if (ratio < allowableDecrease) {
+//          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+//        }
+//
+//      }
+//    }
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
