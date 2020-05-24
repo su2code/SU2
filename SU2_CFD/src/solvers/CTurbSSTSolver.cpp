@@ -477,60 +477,64 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Conservative variables w/o reconstruction ---*/
-
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
-
-    /*--- Gradient of the primitive and conservative variables ---*/
-
-//    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
-    numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
-
-    /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
-
-    numerics->SetTurbVar(nodes->GetPrimitive(iPoint), nullptr);
-    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
-
-    /*--- Set volume ---*/
-
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
-    /*--- Set distance to the surface ---*/
-
-    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
-
-    /*--- Menter's first blending function ---*/
-
-    numerics->SetF1blending(nodes->GetF1blending(iPoint),0.0);
-
-    /*--- Menter's second blending function ---*/
-
-    numerics->SetF2blending(nodes->GetF2blending(iPoint),0.0);
-
-    /*--- Set vorticity and strain rate magnitude ---*/
-
-    numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
     
-    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
+    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
 
-    numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
+      /*--- Conservative variables w/o reconstruction ---*/
 
-    /*--- Cross diffusion ---*/
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
 
-    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+      /*--- Gradient of the primitive and conservative variables ---*/
 
-    /*--- Compute the source term ---*/
+  //    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+      numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
 
-    auto residual = numerics->ComputeResidual(config);
+      /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    /*--- Subtract residual and the Jacobian ---*/
+      numerics->SetTurbVar(nodes->GetPrimitive(iPoint), nullptr);
+      numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
 
-    LinSysRes.SubtractBlock(iPoint, residual);
-    Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-    
-    /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-    Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+      /*--- Set volume ---*/
+
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Set distance to the surface ---*/
+
+      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+
+      /*--- Menter's first blending function ---*/
+
+      numerics->SetF1blending(nodes->GetF1blending(iPoint),0.0);
+
+      /*--- Menter's second blending function ---*/
+
+      numerics->SetF2blending(nodes->GetF2blending(iPoint),0.0);
+
+      /*--- Set vorticity and strain rate magnitude ---*/
+
+      numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
+      
+      numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
+
+      numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
+
+      /*--- Cross diffusion ---*/
+
+      numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+
+      /*--- Compute the source term ---*/
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Subtract residual and the Jacobian ---*/
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+      
+      /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
+      Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+      
+    }
 
   }
   
