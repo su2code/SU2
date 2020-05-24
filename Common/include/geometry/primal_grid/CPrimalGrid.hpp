@@ -438,7 +438,7 @@ public:
             for the wall function treatment.
    * \return The pointer to the data of donorElementsWallFunctions.
    */
-  inline virtual unsigned long *GetDonorsWallFunctions(void) {return NULL;}
+  inline virtual unsigned long *GetDonorsWallFunctions(void) {return nullptr;}
 
   /*!
    * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.

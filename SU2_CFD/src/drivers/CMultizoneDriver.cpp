@@ -48,7 +48,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     nVarZone[iZone] = 0;
     /*--- Account for all the solvers ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr)
         nVarZone[iZone] += solver_container[iZone][INST_0][MESH_0][iSol]->GetnVar();
     }
     init_res[iZone]     = new su2double[nVarZone[iZone]];
@@ -278,7 +278,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   if ( unsteady ) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
-        if(jZone != iZone && interpolator_container[iZone][jZone] != NULL && prefixed_motion[iZone])
+        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && prefixed_motion[iZone])
           interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
       }
     }
@@ -364,7 +364,7 @@ void CMultizoneDriver::Run_Jacobi() {
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
-        if (jZone != iZone && interface_container[iZone][jZone] != NULL){
+        if (jZone != iZone && interface_container[iZone][jZone] != nullptr){
           DeformMesh = Transfer_Data(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
@@ -462,7 +462,7 @@ void CMultizoneDriver::Update() {
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
-      if (integration_container[iZone][INST_0][iSol] != NULL){
+      if (integration_container[iZone][INST_0][iSol] != nullptr){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
       }
     }

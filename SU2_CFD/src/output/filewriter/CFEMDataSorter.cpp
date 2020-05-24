@@ -76,9 +76,9 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
 CFEMDataSorter::~CFEMDataSorter(){
 
-  if (Index != NULL)       delete [] Index;
-  if (idSend != NULL)      delete [] idSend;
-  if (linearPartitioner != NULL) delete linearPartitioner;
+        delete [] Index;
+       delete [] idSend;
+  delete linearPartitioner;
 
 }
 
@@ -161,7 +161,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
 
   /* Allocate the memory to store the connectivity if the size is
      larger than zero. */
-  int *Conn_SubElem = NULL;
+  int *Conn_SubElem = nullptr;
   if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Loop again over the local volume elements and store the global
@@ -211,27 +211,27 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
         and set the class data pointer to the connectivity array. ---*/
   switch (Elem_Type) {
     case TRIANGLE:
-      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
-      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+      delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
-      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+      delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
-      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+      delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
-      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+      delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_SubElem;
       break;
     default:

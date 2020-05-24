@@ -937,13 +937,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
   }
 
   SU2_OMP_MASTER
-  Residual = residual;
+  {
+    Residual = residual;
+    Iterations = IterLinSol;
+  }
 
   HandleTemporariesOut(LinSysSol);
 
@@ -1074,6 +1078,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      Residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -1084,8 +1089,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
+  Iterations = IterLinSol;
   return IterLinSol;
 #else
+  Iterations = 0;
   return 0;
 #endif
 }

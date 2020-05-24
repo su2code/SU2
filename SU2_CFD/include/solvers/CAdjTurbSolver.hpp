@@ -38,9 +38,8 @@
  */
 class CAdjTurbSolver final : public CSolver {
 private:
-  su2double PsiNu_Inf,  /*!< \brief PsiNu variable at the infinity. */
-  *FlowSolution_i,      /*!< \brief Store the flow solution at point i. */
-  *FlowSolution_j;      /*!< \brief Store the flow solution at point j. */
+  su2double *FlowSolution_i;      /*!< \brief Store the flow solution at point i. */
+  su2double *FlowSolution_j;      /*!< \brief Store the flow solution at point j. */
 
   su2double Gamma;              /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;    /*!< \brief Fluids's Gamma - 1.0  . */

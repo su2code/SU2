@@ -99,7 +99,7 @@ public:
   bool Monitor(unsigned long TimeIter) override;
 
   /*!
-     * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged
+     * \brief  Returns whether all specified windowed-time-averaged ouputs have been converged
      * \return Boolean indicating whether the problem is converged.
      */
   inline virtual bool GetTimeConvergence() const{

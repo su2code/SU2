@@ -62,6 +62,11 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields ++;
+  }
+
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Structure)";
   multiZoneHeaderString = ss.str();
@@ -103,6 +108,9 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
   AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
 
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -131,17 +139,20 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
 
   SetHistoryOutputValue("COMBO", solver[FEA_SOL]->GetTotal_ComboObj());
 
+  SetHistoryOutputValue("LINSOL_ITER", solver[ADJFEA_SOL]->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(solver[ADJFEA_SOL]->GetResLinSolver()));
+
 }
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Struc = solver[ADJFEA_SOL]->GetNodes();
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("ADJOINT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
   SetVolumeOutputValue("ADJOINT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));

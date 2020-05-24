@@ -80,10 +80,10 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     for (iDim = 0; iDim < nDim; ++iDim)
-      nodes->SetMesh_Coord(iPoint, iDim, geometry->node[iPoint]->GetCoord(iDim));
+      nodes->SetMesh_Coord(iPoint, iDim, geometry->nodes->GetCoord(iPoint, iDim));
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
@@ -535,7 +535,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
       su2double val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
       /*--- Update the geometry container ---*/
-      geometry->node[iPoint]->SetCoord(iDim, val_coord);
+      geometry->nodes->SetCoord(iPoint, iDim, val_coord);
     }
   }
 
@@ -592,7 +592,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
       /*--- Store grid velocity for this point ---*/
 
-      geometry->node[iPoint]->SetGridVel(iDim, GridVel);
+      geometry->nodes->SetGridVel(iPoint, iDim, GridVel);
 
     }
   }
@@ -731,7 +731,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         su2double curr_coord = Restart_Data[index+iDim];
         /// TODO: "Double deformation" in multizone adjoint if this is set here?
         ///       In any case it should not be needed as deformation is called before other solvers
-        ///geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+        ///geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, curr_coord);
 
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
@@ -1011,7 +1011,7 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
         /*--- Index and coordinates of the current point ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->node[iPoint]->GetCoord();
+        Coord  = geometry->nodes->GetCoord(iPoint);
 
         /*--- Calculate non-dim. position from rotation center ---*/
 
@@ -1117,7 +1117,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
         /*--- Index and coordinates of the current point ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->node[iPoint]->GetCoord();
+        Coord  = geometry->nodes->GetCoord(iPoint);
 
         /*--- Calculate non-dim. position from rotation center ---*/
 
