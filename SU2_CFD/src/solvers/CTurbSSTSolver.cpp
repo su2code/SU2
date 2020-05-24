@@ -553,9 +553,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-//    if ((geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) &&
-//        (nodes->GetCrossDiff(iPoint) > 0.)) {
-    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
+    if ((geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) &&
+        (nodes->GetCrossDiff(iPoint) > 0.)) {
+//    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = flowNodes->GetPrimitive(iPoint, nDim+2);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
@@ -1997,8 +1997,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
     factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-//    if (CDkw > 0.) {
-    if (walldist > 1.0e-10) {
+    if ((walldist > 1.0e-10) && (CDkw > 0.)) {
+//    if (walldist > 1.0e-10) {
       factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
               + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
@@ -2006,8 +2006,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   TmpWeights[nVarFlo+0] += omegalim*factor;
   TmpWeights[nVarFlo+1] += -lim*k/pow(omega,2.)*factor;
-//  if (CDkw > 0.) {
-  if (walldist > 1.0e-10) {
+  if ((walldist > 1.0e-10) && (CDkw > 0.)) {
+//  if (walldist > 1.0e-10) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
       TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
@@ -2085,8 +2085,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                            + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
     
     //--- Zeroth-order terms due to cross-diffusion
-  //  if (CDkw > 0.) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
-    weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+    if (CDkw > 0.) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+//    weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
   }
 
 }
