@@ -610,7 +610,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
         /* We impose a limit on the maximum percentage that the
          turbulence variables can change over a nonlinear iteration. */
         
-        if (iVar == 0) {
+        if (iVar == 1) {
 
           const unsigned long index = iPoint*nVar + iVar;
           su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
