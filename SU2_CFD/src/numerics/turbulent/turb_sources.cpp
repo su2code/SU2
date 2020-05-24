@@ -871,6 +871,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
        if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
          Jacobian_i[1][1] = 20.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
        }
+       else {
+         Jacobian_i[1][1] = 10.0*alfa_blended*beta_star*VorticityMag_i*F2_i/a1*Volume;
+       }
      }
 //     if (TurbVar_i[1] > VorticityMag_i*F2_i/a1 && pw > 0.0) {
 //       Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
