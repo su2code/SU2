@@ -4708,8 +4708,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   SU2_OMP_BARRIER
 
-
-//  ComputeUnderRelaxationFactor(solver_container, config);
+  ComputeUnderRelaxationFactor(solver_container, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
