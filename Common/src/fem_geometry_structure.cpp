@@ -44,12 +44,6 @@ bool CLong3T::operator<(const CLong3T &other) const {
   return false;
 }
 
-void CLong3T::Copy(const CLong3T &other) {
-  long0 = other.long0;
-  long1 = other.long1;
-  long2 = other.long2;
-}
-
 CReorderElements::CReorderElements(const unsigned long  val_GlobalElemID,
                                    const unsigned short val_TimeLevel,
                                    const bool           val_CommSolution,
@@ -89,13 +83,6 @@ bool CReorderElements::operator< (const CReorderElements &other) const {
 
   /* The final comparison is based on the global element ID. */
   return globalElemID < other.globalElemID;
-}
-
-void CReorderElements::Copy(const CReorderElements &other) {
-  globalElemID = other.globalElemID;
-  timeLevel    = other.timeLevel;
-  commSolution = other.commSolution;
-  elemType     = other.elemType;
 }
 
 bool CSortFaces::operator()(const CFaceOfElement &f0,
@@ -207,14 +194,6 @@ bool CSortBoundaryFaces::operator()(const CSurfaceElementFEM &f0,
   return f0.volElemID < f1.volElemID;
 }
 
-void CPointFEM::Copy(const CPointFEM &other) {
-  globalID           = other.globalID;
-  periodIndexToDonor = other.periodIndexToDonor;
-  coor[0]            = other.coor[0];
-  coor[1]            = other.coor[1];
-  coor[2]            = other.coor[2];
-}
-
 bool CPointFEM::operator< (const CPointFEM &other) const {
   if(periodIndexToDonor != other.periodIndexToDonor)
     return periodIndexToDonor < other.periodIndexToDonor;
@@ -257,33 +236,6 @@ bool CInternalFaceElementFEM::operator<(const CInternalFaceElementFEM &other) co
   return elemID1 < other.elemID1;
 }
 
-void CInternalFaceElementFEM::Copy(const CInternalFaceElementFEM &other) {
-
-  VTK_Type           = other.VTK_Type;
-  indStandardElement = other.indStandardElement;
-
-  elemID0 = other.elemID0;
-  elemID1 = other.elemID1;
-
-  DOFsGridFaceSide0 = other.DOFsGridFaceSide0;
-  DOFsGridFaceSide1 = other.DOFsGridFaceSide1;
-  DOFsSolFaceSide0  = other.DOFsSolFaceSide0;
-  DOFsSolFaceSide1  = other.DOFsSolFaceSide1;
-
-  DOFsGridElementSide0 = other.DOFsGridElementSide0;
-  DOFsGridElementSide1 = other.DOFsGridElementSide1;
-  DOFsSolElementSide0  = other.DOFsSolElementSide0;
-  DOFsSolElementSide1  = other.DOFsSolElementSide1;
-
-  metricNormalsFace    = other.metricNormalsFace;
-  metricCoorDerivFace0 = other.metricCoorDerivFace0;
-  metricCoorDerivFace1 = other.metricCoorDerivFace1;
-
-  coorIntegrationPoints = other.coorIntegrationPoints;
-  gridVelocities        = other.gridVelocities;
-  wallDistance          = other.wallDistance;
-}
-
 void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
                                              unsigned long  faceConn[]) {
 
@@ -296,32 +248,6 @@ void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
     unsigned long nn = faceConn[j];
     faceConn[j] = nodeIDsGrid[nn];
   }
-}
-
-void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
-  VTK_Type           = other.VTK_Type;
-  nPolyGrid          = other.nPolyGrid;
-  nDOFsGrid          = other.nDOFsGrid;
-  indStandardElement = other.indStandardElement;
-  volElemID          = other.volElemID;
-  boundElemIDGlobal  = other.boundElemIDGlobal;
-  nodeIDsGrid        = other.nodeIDsGrid;
-
-  DOFsGridFace    = other.DOFsGridFace;
-  DOFsSolFace     = other.DOFsSolFace;
-  DOFsGridElement = other.DOFsGridElement;
-  DOFsSolElement  = other.DOFsSolElement;
-
-  metricNormalsFace     = other.metricNormalsFace;
-  metricCoorDerivFace   = other.metricCoorDerivFace;
-  coorIntegrationPoints = other.coorIntegrationPoints;
-  gridVelocities        = other.gridVelocities;
-  wallDistance          = other.wallDistance;
-
-  donorsWallFunction       = other.donorsWallFunction;
-  nIntPerWallFunctionDonor = other.nIntPerWallFunctionDonor;
-  intPerWallFunctionDonor  = other.intPerWallFunctionDonor;
-  matWallFunctionDonor     = other.matWallFunctionDonor;
 }
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
@@ -2512,6 +2438,16 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 
 CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
   : CMeshFEM(geometry, config) {
+}
+
+void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
+  Global_to_Local_Point.clear();
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
+      Global_to_Local_Point[volElem[i].offsetDOFsSolGlobal+j] = ii;
+    }
+  }
 }
 
 void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
