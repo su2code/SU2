@@ -6874,6 +6874,12 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
             velocity in normal direction: v_r = v - 2 (v*n)n ---*/
       ProjVelocity_i = nodes->GetProjVel(iPoint,UnitNormal);
 
+      /*--- Adjustment to v.n due to grid movement. ---*/
+      if (dynamic_grid) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjVelocity_i -= geometry->nodes->GetGridVel(iPoint)[iDim]*UnitNormal[iDim];
+      }
+  
       for (iDim = 0; iDim < nDim; iDim++)
         V_reflected[iDim+1] = nodes->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
 
