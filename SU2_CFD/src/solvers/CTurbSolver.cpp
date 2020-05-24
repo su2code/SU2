@@ -615,6 +615,9 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
         if (ratio < allowableDecrease) {
           localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
         }
+        else if (ratio > allowableIncrease && iVar == 0) {
+          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+        }
 
       }
     }
