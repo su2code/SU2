@@ -59,7 +59,7 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../geometry_structure_fem_part.hpp"
+#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt_structure.hpp"
 

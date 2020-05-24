@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "datatype_structure.hpp"
+#include "../datatype_structure.hpp"
 
 #include <vector>
 #include <algorithm>

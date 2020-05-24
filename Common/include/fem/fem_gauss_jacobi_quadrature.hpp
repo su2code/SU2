@@ -86,7 +86,7 @@ Tom
 #include <cstdlib>
 #include <vector>
 
-#include "CConfig.hpp"
+#include "../CConfig.hpp"
 
 using namespace std;
 

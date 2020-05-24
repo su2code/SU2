@@ -32,7 +32,7 @@
 #include <vector>
 #include <cstdlib>
 
-#include "CConfig.hpp"
+#include "../CConfig.hpp"
 
 using namespace std;
 

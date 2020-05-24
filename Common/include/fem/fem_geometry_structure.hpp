@@ -28,13 +28,13 @@
 
 #pragma once
 
-#include "geometry/CGeometry.hpp"
+#include "../geometry/CGeometry.hpp"
 #include "fem_standard_element.hpp"
 #ifdef HAVE_CGNS
 #include "fem_cgns_elements.hpp"
 #endif
-#include "wall_model.hpp"
-#include "blas_structure.hpp"
+#include "../wall_model.hpp"
+#include "../blas_structure.hpp"
 
 using namespace std;
 

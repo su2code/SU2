@@ -25,10 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/fem_geometry_structure.hpp"
-#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
-#include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
-#include "../include/adt_structure.hpp"
+#include "../../include/fem/fem_geometry_structure.hpp"
+#include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
+#include "../../include/adt_structure.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined (HAVE_MKL) || defined(HAVE_LAPACK)
