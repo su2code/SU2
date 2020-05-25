@@ -202,7 +202,7 @@ def obj_f(x,project):
     """
     print('x = {}'.format(x))    
     obj = project.obj_f(x)   
-    print('obj = {}'.format(obj)) 
+
     return obj
 
 def obj_df(x,project):
