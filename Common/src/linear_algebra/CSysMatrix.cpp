@@ -1281,6 +1281,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f,
                                              CSysVector<ScalarType> & res) const {
+  SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     ScalarType aux_vec[MAXNVAR];
