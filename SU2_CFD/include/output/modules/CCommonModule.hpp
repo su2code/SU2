@@ -10,7 +10,8 @@ public:
 
   void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
 };
 
 #endif // CCOMMONMODULE_HPP

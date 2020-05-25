@@ -23,29 +23,31 @@ void CCommonModule::DefineHistoryFields(CHistoryOutFieldManager& historyFields){
 
 }
 
-void CCommonModule::LoadHistoryData(CHistoryOutFieldManager &historyFields){
+void CCommonModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                    const IterationInfo& iterationInfo){
 
-  unsigned long curOuterIter = solverData.config->GetOuterIter();
-  unsigned long curInnerIter = solverData.config->GetInnerIter();
-  su2double TimeStep = solverData.config->GetDelta_UnstTimeND()*solverData.config->GetTime_Ref();
+  const auto* config = get<0>(solverData);
+  auto curInnerIter = get<0>(iterationInfo);
+  auto curTimeIter  = get<1>(iterationInfo);
+
+  su2double TimeStep = config->GetDelta_UnstTimeND()*config->GetTime_Ref();
   su2double curTime = historyFields.GetFieldValue("CUR_TIME");
 
   historyFields.SetFieldValue("TIME_STEP", TimeStep);
 
-   if (SU2_TYPE::Int(TimeStep) != static_cast<int>(solverData.config->GetTimeIter())) {
-     historyFields.SetFieldValue("CUR_TIME", curTime*TimeStep);
+   if (SU2_TYPE::Int(historyFields.GetFieldValue("TIME_ITER")) != static_cast<int>(curTimeIter)) {
+     historyFields.SetFieldValue("CUR_TIME", curTime + TimeStep);
    }
 
-   historyFields.SetFieldValue("TIME_ITER", solverData.config->GetTimeIter());
-   historyFields.SetFieldValue("OUTER_ITER", curOuterIter);
+   historyFields.SetFieldValue("TIME_ITER", curTimeIter);
    historyFields.SetFieldValue("INNER_ITER", curInnerIter);
 
    su2double StopTime, UsedTime;
 
    StopTime = SU2_MPI::Wtime();
 
-   UsedTime = (StopTime - solverData.config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
+   UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
    historyFields.SetFieldValue("WALL_TIME", UsedTime);
-   historyFields.SetFieldValue("NONPHYSICAL_POINTS", solverData.config->GetNonphysical_Points());
+   historyFields.SetFieldValue("NONPHYSICAL_POINTS", config->GetNonphysical_Points());
 }

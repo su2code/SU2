@@ -34,16 +34,23 @@ class CVariable;
 
 class CFlowCompOutputModule final : public CSolverOutputModule {
 
+  bool viscous;
 public:
-  explicit CFlowCompOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim) {}
+  explicit CFlowCompOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim),
+    viscous(config->GetViscous()) {}
 
-  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
 
   void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
   void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
 };
 
 /*! \class CFlowCompOutput

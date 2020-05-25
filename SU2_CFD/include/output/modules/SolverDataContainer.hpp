@@ -30,3 +30,8 @@ public:
   inline ~SolverDataContainer(){}
 
 };
+
+
+typedef std::tuple<unsigned long, unsigned long> IterationInfo;
+typedef std::tuple<CConfig*, CGeometry*, CSolver**> SolverData;
+typedef std::tuple<unsigned long, unsigned long, unsigned short> PointInfo;

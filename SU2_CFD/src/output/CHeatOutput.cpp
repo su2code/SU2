@@ -85,16 +85,68 @@ void CHeatOutputModule::DefineHistoryFields(CHistoryOutFieldManager &historyFiel
 
 }
 
-void CHeatOutputModule::LoadHistoryData(CHistoryOutFieldManager &historyFields){
+void CHeatOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                        const IterationInfo&){
 
-  CSolver* heat_solver =  solverData.solver[HEAT_SOL];
+  const auto* config = get<0>(solverData);
+  const auto* heat_solver = get<2>(solverData)[HEAT_SOL];
 
   historyFields.SetFieldValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
   historyFields.SetFieldValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
   historyFields.SetFieldValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
-  if (solverData.config->GetMultizone_Problem())
+  if (config->GetMultizone_Problem())
     historyFields.SetFieldValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
 
+}
+
+void CHeatOutputModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFields){
+
+  // SOLUTION
+  volumeFields.AddField("TEMPERATURE", "Temperature", "SOLUTION", "Temperature", FieldType::DEFAULT);
+
+  // Primitives
+  volumeFields.AddField("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heatflux", FieldType::DEFAULT);
+
+}
+
+void CHeatOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                       const IterationInfo&, const PointInfo& pointInfo){
+
+  auto* heat_solver = get<2>(solverData)[HEAT_SOL];
+  auto iPoint = get<0>(pointInfo);
+
+  volumeFields.SetFieldValue("TEMPERATURE", heat_solver->GetNodes()->GetSolution(iPoint,0));
+
+}
+
+void CHeatOutputModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                        const IterationInfo&, const PointInfo& pointInfo){
+
+  const auto iPoint  = get<0>(pointInfo);
+  const auto iVertex = get<1>(pointInfo);
+  const auto iMarker = get<2>(pointInfo);
+
+  const auto* config = get<0>(solverData);
+  const auto* geometry = get<1>(solverData);
+  auto* heat_solver = get<2>(solverData)[HEAT_SOL];
+
+  const auto& Grad_Sol = heat_solver->GetNodes()->GetGradient(iPoint);
+  const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+  su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+  su2double UnitNormal[3];
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    UnitNormal[iDim] = Normal[iDim]/Area;
+  }
+
+  su2double GradTemperature = 0.0;
+  for (int iDim = 0; iDim < nDim; iDim++)
+    GradTemperature += Grad_Sol[0][iDim]*UnitNormal[iDim];
+
+  const auto thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+  const auto RefHeatFlux = config->GetHeat_Flux_Ref();
+  const auto Heatflux = thermal_diffusivity*GradTemperature*RefHeatFlux;
+
+  volumeFields.SetFieldValue("HEAT_FLUX", Heatflux);
 }
 
 CHeatOutput::~CHeatOutput(void) {}

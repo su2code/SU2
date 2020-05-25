@@ -74,7 +74,7 @@ COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
       break;
     default:
       output = new COutput(config, nDim, false, false,
-                           std::unique_ptr<CModuleManagerBase>(new CModuleManager<ModuleList<>>(config, nDim)));
+                           std::unique_ptr<CModuleManagerBase<SolverData, IterationInfo>>(new CModuleManager<ModuleList<>>(config, nDim)));
       break;
   }
 

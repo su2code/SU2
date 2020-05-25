@@ -32,6 +32,28 @@
 
 class CVariable;
 
+class CFlowIncOutputModule final : public CSolverOutputModule {
+
+  bool heat = false;
+  bool viscous = false;
+public:
+  explicit CFlowIncOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim),
+  heat(config->GetEnergy_Equation()), viscous(config->GetViscous()){}
+
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
+
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
+
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
+
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+};
+
 /*! \class CFlowIncOutput
  *  \brief Output class for incompressible flow problems.
  *  \author R. Sanchez, T. Albring.

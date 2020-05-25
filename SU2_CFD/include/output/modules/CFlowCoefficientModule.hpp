@@ -10,7 +10,11 @@ public:
 
   void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields) override;
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
 
 };
 

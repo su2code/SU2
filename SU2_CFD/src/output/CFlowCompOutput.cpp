@@ -101,9 +101,11 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) :
 
 CFlowCompOutput::~CFlowCompOutput(void) {}
 
-void CFlowCompOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields){
+void CFlowCompOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                            const IterationInfo&){
 
-  CSolver* flow_solver = solverData.solver[FLOW_SOL];
+  const auto* config      = get<0>(solverData);
+  const auto* flow_solver = get<2>(solverData)[FLOW_SOL];
 
   historyFields.SetFieldValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   historyFields.SetFieldValue("RMS_MOMENTUM_X", log10(flow_solver->GetRes_RMS(1)));
@@ -123,7 +125,7 @@ void CFlowCompOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFiel
     historyFields.SetFieldValue("MAX_MOMENTUM_Z", log10(flow_solver->GetRes_Max(3)));
     historyFields.SetFieldValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
   }
-  if (solverData.config->GetMultizone_Problem()){
+  if (config->GetMultizone_Problem()){
     historyFields.SetFieldValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
     historyFields.SetFieldValue("BGS_MOMENTUM_X", log10(flow_solver->GetRes_BGS(1)));
     historyFields.SetFieldValue("BGS_MOMENTUM_Y", log10(flow_solver->GetRes_BGS(2)));
@@ -171,16 +173,28 @@ void CFlowCompOutputModule::DefineVolumeFields(CVolumeOutFieldManager& volumeFie
     volumeFields.AddField("MOMENTUM_Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector", FieldType::DEFAULT);
   volumeFields.AddField("ENERGY",     "Energy",     "SOLUTION", "Energy", FieldType::DEFAULT);
 
-  volumeFields.AddField("TOTAL_PRESSURE",    "Total Pressure", "TOTAL_QUANTITIES", "Total pressure", FieldType::DEFAULT);
-  volumeFields.AddField("TOTAL_TEMPERATURE", "Total Temperature", "TOTAL_QUANTITIES", "Total temperature", FieldType::DEFAULT);
+  volumeFields.AddField("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure", FieldType::DEFAULT);
+  volumeFields.AddField("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature", FieldType::DEFAULT);
+  volumeFields.AddField("MACH",        "Mach",                    "PRIMITIVE", "Mach number", FieldType::DEFAULT);
+  volumeFields.AddField("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient", FieldType::DEFAULT);
+  if (viscous){
+    volumeFields.AddField("LAMINAR_VISC", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity", FieldType::DEFAULT);
+    volumeFields.AddField("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heatflux", FieldType::DEFAULT);
+  }
+  volumeFields.AddField("TOTAL_PRESS",    "Total Pressure", "TOTAL_QUANTITIES", "Total pressure", FieldType::DEFAULT);
+  volumeFields.AddField("TOTAL_TEMP", "Total Temperature", "TOTAL_QUANTITIES", "Total temperature", FieldType::DEFAULT);
+
+
 
 }
 
-void CFlowCompOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields) {
+void CFlowCompOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                           const IterationInfo&, const PointInfo& pointInfo) {
 
-  const auto iPoint = solverData.iPoint;
-  const auto *Node_Flow = solverData.solver[FLOW_SOL]->GetNodes();
-  const auto *config = solverData.config;
+  const auto iPoint  = get<0>(pointInfo);
+  const auto* config = get<0>(solverData);
+  auto* flow_solver  = get<2>(solverData)[FLOW_SOL];
+  const auto* Node_Flow = flow_solver->GetNodes();
 
   const su2double momentumRef = config->GetDensity_Ref()*config->GetVelocity_Ref();
 
@@ -196,14 +210,66 @@ void CFlowCompOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields)
 
   const su2double Gamma = config->GetGamma();
   su2double Mach = sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint);
-  volumeFields.SetFieldValue("TOTAL_PRESSURE", (Node_Flow->GetPressure(iPoint) *
+
+  su2double VelMag = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    VelMag += pow(flow_solver->GetVelocity_Inf(iDim),2.0);
+  }
+  const su2double factor = 1.0/(0.5*flow_solver->GetDensity_Inf()*VelMag);
+
+  volumeFields.SetFieldValue("PRESSURE_COEFF",
+                             (Node_Flow->GetPressure(iPoint) - flow_solver->GetPressure_Inf())*factor);
+  volumeFields.SetFieldValue("MACH", Mach);
+  volumeFields.SetFieldValue("PRESSURE", Node_Flow->GetPressure(iPoint)*config->GetPressure_Ref());
+  volumeFields.SetFieldValue("TEMPERATURE", Node_Flow->GetTemperature(iPoint)*config->GetTemperature_Ref());
+  if (viscous)
+    volumeFields.SetFieldValue("LAMINAR_VISC", Node_Flow->GetLaminarViscosity(iPoint)*config->GetViscosity_Ref());
+
+  volumeFields.SetFieldValue("TOTAL_PRESS", (Node_Flow->GetPressure(iPoint) *
                                           pow( 1.0 + Mach * Mach * 0.5 *
                                                (Gamma - 1.0), Gamma / (Gamma - 1.0)))*config->GetPressure_Ref());
 
-  volumeFields.SetFieldValue("TOTAL_TEMPERATURE", (Node_Flow->GetTemperature(iPoint) *
+  volumeFields.SetFieldValue("TOTAL_TEMP", (Node_Flow->GetTemperature(iPoint) *
                                                   (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0)))*config->GetTemperature_Ref());
+}
+
+void CFlowCompOutputModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                            const IterationInfo&, const PointInfo& pointInfo){
+  const auto iPoint  = get<0>(pointInfo);
+  const auto iVertex = get<1>(pointInfo);
+  const auto iMarker = get<2>(pointInfo);
+
+  const auto* config = get<0>(solverData);
+  const auto* geometry = get<1>(solverData);
+  auto* flow_solver = get<2>(solverData)[FLOW_SOL];
+
+  if (viscous){
+    const auto& Grad_Primitive = flow_solver->GetNodes()->GetGradient_Primitive(iPoint);
+    const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+    const auto Gamma = config->GetGamma();
+    const auto Gas_Constant = config->GetGas_Constant();
+    const su2double Viscosity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint);
+    const auto Prandtl_Lam = config->GetPrandtl_Lam();
+    const auto RefHeatFlux = config->GetHeat_Flux_Ref();
+    su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    su2double UnitNormal[3];
+    for (int iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim]/Area;
+    }
+    su2double GradTemperature = 0.0;
+    for (int iDim = 0; iDim < nDim; iDim++)
+      GradTemperature -= Grad_Primitive[0][iDim]*UnitNormal[iDim];
+
+    const su2double Cp = Gamma / (Gamma - 1) * Gas_Constant;
+    const su2double thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
+    const auto Heatflux = -thermal_conductivity*GradTemperature*RefHeatFlux;
+
+    volumeFields.SetFieldValue("HEAT_FLUX", Heatflux);
+  }
+
 
 }
+
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
 

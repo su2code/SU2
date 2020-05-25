@@ -53,19 +53,24 @@ void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager 
   }
 }
 
-void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFields){
+void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                             const IterationInfo& iterationInfo){
+
+  const auto* config  = get<0>(solverData);
+  const auto Iter     = get<0>(iterationInfo);
+  const auto TimeIter = get<1>(iterationInfo);
 
   bool Inner_IterConv = historyFields.GetCollection().GetValueByKey("CONVERGENCE") ||
-     solverData.config->GetnInner_Iter()-1 <=  solverData.Iter; //Check, if Inner_Iter is converged
+     config->GetnInner_Iter()-1 <=  Iter; //Check, if Inner_Iter is converged
 
   if (Inner_IterConv){
     for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT})){
-      windowedTimeAverages[field->first].addValue(field->second.value, solverData.TimeIter,  solverData.config->GetStartWindowIteration());
-      historyFields.SetFieldValue(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(solverData.config->GetKindWindow()));
+      windowedTimeAverages[field->first].addValue(field->second.value, TimeIter,  config->GetStartWindowIteration());
+      historyFields.SetFieldValue(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(config->GetKindWindow()));
     }
   }
 
-  if(solverData.TimeIter == 0){
+  if(TimeIter == 0){
     for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
       const string WndConv_Field= wndConvFields[iField_Conv];
       if (historyFields.GetCollection().CheckKey(WndConv_Field)){
@@ -74,7 +79,7 @@ void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFie
     }
   }
 
-  if(Inner_IterConv && solverData.TimeIter >= solverData.config->GetStartWindowIteration()){
+  if(Inner_IterConv && TimeIter >= config->GetStartWindowIteration()){
     TimeConvergence = true;
     unsigned short iCounter;
 
@@ -89,7 +94,7 @@ void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFie
         /*--- Cauchy based convergence criteria ---*/
 
         if (monitor.fieldType == FieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
-          if (solverData.TimeIter == solverData.config->GetStartWindowIteration()){
+          if (TimeIter == config->GetStartWindowIteration()){
             for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
               WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
             }
@@ -98,10 +103,10 @@ void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFie
           WndOld_Func[iField_Conv] = WndNew_Func[iField_Conv];
           WndNew_Func[iField_Conv] = monitor.value;
           WndCauchy_Func = fabs(WndNew_Func[iField_Conv] - WndOld_Func[iField_Conv]);
-          WndCauchy_Serie[iField_Conv][solverData.TimeIter % nWndCauchy_Elems] = WndCauchy_Func;
+          WndCauchy_Serie[iField_Conv][TimeIter % nWndCauchy_Elems] = WndCauchy_Func;
           WndCauchy_Value = 1.0;
 
-          if (solverData.TimeIter >= nWndCauchy_Elems+solverData.config->GetStartWindowIteration()){
+          if (TimeIter >= nWndCauchy_Elems + config->GetStartWindowIteration()){
             WndCauchy_Value = 0.0;
             for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
               WndCauchy_Value += WndCauchy_Serie[iField_Conv][iCounter];
@@ -114,7 +119,7 @@ void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFie
           /*--- Start monitoring only if the current iteration is larger than the
            *  number of cauchy elements and the number of start-up iterations ---*/
 
-          if (solverData.TimeIter <  solverData.config->GetStartWindowIteration() + max(solverData.config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
+          if (TimeIter <  config->GetStartWindowIteration() + max(config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
             fieldConverged = false;
           }
           historyFields.SetFieldValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
@@ -129,7 +134,7 @@ void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager &historyFie
     }
 
     /*--- Do not apply any convergence criterion if the option is disabled. */
-    if(!solverData.config->GetWnd_Cauchy_Crit()){TimeConvergence = false;}
+    if(!config->GetWnd_Cauchy_Crit()){TimeConvergence = false;}
     if(wndConvFields.empty()){TimeConvergence = false;}
   }
   historyFields.SetFieldValue("TIME_CONVERGENCE", TimeConvergence);

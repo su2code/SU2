@@ -44,9 +44,11 @@ void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &his
   }
 }
 
-void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
+void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                                 const IterationInfo& iterationInfo){
 
-  const unsigned long Iter = solverData.Iter;
+  const auto* config = get<0>(solverData);
+  const auto Iter = get<0>(iterationInfo);
   unsigned short iCounter;
 
   convergence = true;
@@ -93,7 +95,7 @@ void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager &histor
          *  is larger than the number of cauchy elements and
          * the number of start-up iterations --- */
 
-        if (Iter < max(solverData.config->GetStartConv_Iter(), nCauchy_Elems)){
+        if (Iter < max(config->GetStartConv_Iter(), nCauchy_Elems)){
           fieldConverged = false;
         }
 
@@ -120,7 +122,7 @@ void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager &histor
       /*--- Do not apply any convergence criteria of the number
      of iterations is less than a particular value ---*/
 
-      if (Iter < solverData.config->GetStartConv_Iter()) {
+      if (Iter < config->GetStartConv_Iter()) {
         fieldConverged = false;
       }
 

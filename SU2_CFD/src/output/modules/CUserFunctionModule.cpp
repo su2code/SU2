@@ -42,13 +42,15 @@ void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager &volumeField
     if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
       const std::string funcName = function->name();
       auto newField = volumeFields.AddField(funcName, funcName, "CUSTOM", "User-defined field", FieldType::SURFACE_INTEGRATE);
+
       funcVolFieldRefs.emplace_back(newField, function);
     }
   }
 
   for (const auto& inlineFunction : inlineVolumeUserFunctions){
     auto newField = volumeFields.AddField(inlineFunction, inlineFunction, "CUSTOM", "User-defined field", FieldType::DEFAULT);
-    funcVolFieldRefs.emplace_back(newField, CreateInlineUserFunction(inlineFunction, interpreter::FunctionType::VOLUMEFIELD));
+    auto function = CreateInlineUserFunction(inlineFunction, interpreter::FunctionType::VOLUMEFIELD);
+    funcVolFieldRefs.emplace_back(newField, function);
   }
 
   volFieldTokenRefs.clear();
@@ -65,14 +67,17 @@ void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager &volumeField
 
     auto *ref = static_cast<Token<su2double>*>(volumeScope[field->first].token());
     volFieldTokenRefs.emplace_back(field, ref);
+
   }
 }
 
-void CUserFunctionModule::LoadSurfaceData(CVolumeOutFieldManager &volumeFields){
+void CUserFunctionModule::LoadSurfaceData(CVolumeOutFieldManager&, const SolverData&,
+                                          const IterationInfo&, const PointInfo&){
   EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope, interpreter::FunctionType::SURFACEINTEGRAL);
 }
 
-void CUserFunctionModule::LoadVolumeData(CVolumeOutFieldManager &volumeFields){
+void CUserFunctionModule::LoadVolumeData(CVolumeOutFieldManager&, const SolverData&,
+                                         const IterationInfo&, const PointInfo&){
   EvalUserFunctions(volFieldTokenRefs, funcVolFieldRefs, volumeScope, interpreter::FunctionType::VOLUMEFIELD);
 }
 
@@ -116,7 +121,8 @@ void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &hi
 
 }
 
-void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields){
+void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager&, const SolverData&,
+                                                  const IterationInfo&){
   EvalUserFunctions(histFieldTokenRefs, funcHistFieldRefs, historyScope, interpreter::FunctionType::HISTFIELD);
 }
 

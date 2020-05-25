@@ -28,7 +28,8 @@ public:
 
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryData(CHistoryOutFieldManager& historyFields) override;
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
 
 };
 #endif // CTIMECONVERGENCEMODULE_HPP

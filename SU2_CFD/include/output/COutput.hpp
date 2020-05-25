@@ -164,7 +164,7 @@ protected:
 
   bool customOutput = true;
 
-  typedef std::unique_ptr<CModuleManagerBase> moduleManagerPtr;
+  typedef std::unique_ptr<CModuleManagerBase<SolverData, IterationInfo>> moduleManagerPtr;
   moduleManagerPtr modules;
 
 public:

@@ -11,6 +11,7 @@ public:
 
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) override;
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                               const IterationInfo& iterationInfo) override;
 
 };

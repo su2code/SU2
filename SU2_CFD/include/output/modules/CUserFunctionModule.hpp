@@ -27,15 +27,18 @@ public:
 
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields) override;
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                               const IterationInfo& iterationInfo) override;
 
   void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
 
   void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
 
-  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields) override;
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
 
-  void LoadVolumeData(CVolumeOutFieldManager& volumeFields) override;
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
 
   static void EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,
                                 const std::vector<FieldRefFuncPair> &funcFieldRef,

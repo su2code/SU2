@@ -239,14 +239,10 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
 //  MonitorTimeConvergence(config, curTimeIter);
 
-  SolverDataContainer data;
-  data.solver = solver_container;
-  data.geometry = geometry;
-  data.config = config;
+  modules->LoadData({config, geometry, solver_container}, {curInnerIter, TimeIter});
 
-  modules->LoadData(&data);
-
-  convergence = modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value;
+  if (modules->GetHistoryFields().CheckKey("CONVERGENCE"))
+    convergence = static_cast<bool>(modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value);
 
 
   /*--- Output using only the master node ---*/
@@ -1553,14 +1549,8 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
 
   } else {
 
-    SolverDataContainer data;
-    data.solver = solver;
-    data.geometry = geometry;
-    data.config = config;
-
-    modules->LoadVolumeDataAtPoint(&data, volumeDataSorter);
-
-    modules->LoadSurfaceDataAtVertex(&data, volumeDataSorter);
+    modules->LoadVolumeDataAtPoint({config, geometry, solver}, {curInnerIter, curTimeIter}, volumeDataSorter);
+    modules->LoadSurfaceDataAtVertex({config, geometry, solver}, {curInnerIter, curTimeIter}, volumeDataSorter);
 
   }
 }

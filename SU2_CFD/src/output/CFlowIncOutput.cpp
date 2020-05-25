@@ -90,6 +90,166 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) :
 
 CFlowIncOutput::~CFlowIncOutput(void) {}
 
+void CFlowIncOutputModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
+
+  historyFields.AddField("RMS_PRESSURE",    "rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the pressure.", FieldType::RESIDUAL);
+  historyFields.AddField("RMS_VELOCITY_X", "rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the velocity x-component.", FieldType::RESIDUAL);
+  historyFields.AddField("RMS_VELOCITY_Y", "rms[RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the velocity y-component.", FieldType::RESIDUAL);
+  if (nDim == 3)
+    historyFields.AddField("RMS_VELOCITY_Z", "rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the velocity z-component.", FieldType::RESIDUAL);
+  if (heat) historyFields.AddField("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", FieldType::RESIDUAL);
+
+  historyFields.AddField("MAX_PRESSURE",    "max[Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the pressure.", FieldType::RESIDUAL);
+  historyFields.AddField("MAX_VELOCITY_X", "max[RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the velocity x-component.", FieldType::RESIDUAL);
+  historyFields.AddField("MAX_VELOCITY_Y", "max[RhoV]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the velocity y-component.", FieldType::RESIDUAL);
+  if (nDim == 3)
+    historyFields.AddField("MAX_VELOCITY_Z", "max[RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the velocity z-component.", FieldType::RESIDUAL);
+  if (heat) historyFields.AddField("MAX_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Max residual of the temperature.", FieldType::RESIDUAL);
+
+  historyFields.AddField("BGS_PRESSURE",    "bgs[Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the pressure.", FieldType::RESIDUAL);
+  historyFields.AddField("BGS_VELOCITY_X", "bgs[RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the velocity x-component.", FieldType::RESIDUAL);
+  historyFields.AddField("BGS_VELOCITY_Y", "bgs[RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the velocity y-component.", FieldType::RESIDUAL);
+  if (nDim == 3)
+    historyFields.AddField("BGS_VELOCITY_Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the velocity z-component.", FieldType::RESIDUAL);
+  if (heat) historyFields.AddField("BGS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", FieldType::RESIDUAL);
+
+
+}
+
+void CFlowIncOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                           const IterationInfo&){
+
+  const auto* config      = get<0>(solverData);
+  const auto* flow_solver = get<2>(solverData)[FLOW_SOL];
+
+  historyFields.SetFieldValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
+  historyFields.SetFieldValue("RMS_VELOCITY_X", log10(flow_solver->GetRes_RMS(1)));
+  historyFields.SetFieldValue("RMS_VELOCITY_Y", log10(flow_solver->GetRes_RMS(2)));
+  if (nDim == 3){
+    historyFields.SetFieldValue("RMS_VELOCITY_Z", log10(flow_solver->GetRes_RMS(3)));
+    if (heat) historyFields.SetFieldValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(4)));
+  } else {
+    if (heat) historyFields.SetFieldValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(3)));
+  }
+
+  historyFields.SetFieldValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
+  historyFields.SetFieldValue("MAX_VELOCITY_X", log10(flow_solver->GetRes_Max(1)));
+  historyFields.SetFieldValue("MAX_VELOCITY_Y", log10(flow_solver->GetRes_Max(2)));
+  if (nDim == 3){
+    historyFields.SetFieldValue("MAX_VELOCITY_Z", log10(flow_solver->GetRes_Max(3)));
+    if (heat) historyFields.SetFieldValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(4)));
+  } else {
+    if (heat) historyFields.SetFieldValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(3)));
+  }
+
+  if (config->GetMultizone_Problem()){
+    historyFields.SetFieldValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
+    historyFields.SetFieldValue("BGS_VELOCITY_X", log10(flow_solver->GetRes_BGS(1)));
+    historyFields.SetFieldValue("BGS_VELOCITY_Y", log10(flow_solver->GetRes_BGS(2)));
+    if (nDim == 3){
+      historyFields.SetFieldValue("BGS_VELOCITY_Z", log10(flow_solver->GetRes_BGS(3)));
+      if (heat) historyFields.SetFieldValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(4)));
+    } else {
+      if (heat) historyFields.SetFieldValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(3)));
+    }
+  }
+}
+
+void CFlowIncOutputModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFields){
+
+  volumeFields.AddField("PRESSURE",    "Density",    "SOLUTION", "Pressure", FieldType::DEFAULT);
+  volumeFields.AddField("VELOCITY_X", "Momentum_x", "SOLUTION", "x-component of the velocity vector", FieldType::DEFAULT);
+  volumeFields.AddField("VELOCITY_Y", "Momentum_y", "SOLUTION", "y-component of the velocity vector", FieldType::DEFAULT);
+  if (nDim == 3)
+    volumeFields.AddField("VELOCITY_Z", "Momentum_z", "SOLUTION", "z-component of the velocity vector", FieldType::DEFAULT);
+  if (heat) volumeFields.AddField("TEMPERATURE",     "Temperature",     "SOLUTION", "Temperature", FieldType::DEFAULT);
+
+  volumeFields.AddField("DENSITY",    "Pressure",                "PRIMITIVE", "Density", FieldType::DEFAULT);
+  volumeFields.AddField("MACH",        "Mach",                    "PRIMITIVE", "Mach number", FieldType::DEFAULT);
+  volumeFields.AddField("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient", FieldType::DEFAULT);
+  if (viscous){
+    volumeFields.AddField("LAMINAR_VISC", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity", FieldType::DEFAULT);
+    if (heat) {
+      volumeFields.AddField("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heatflux", FieldType::DEFAULT);
+      volumeFields.AddField("ENTHALPY", "Enthalpy", "PRIMITIVE", "Enthalpy", FieldType::DEFAULT);
+    }
+  }
+  volumeFields.AddField("TOTAL_PRESS",    "Total Pressure", "TOTAL_QUANTITIES", "Total pressure", FieldType::DEFAULT);
+  volumeFields.AddField("TOTAL_TEMP", "Total Temperature", "TOTAL_QUANTITIES", "Total temperature", FieldType::DEFAULT);
+
+
+}
+
+void CFlowIncOutputModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                           const IterationInfo&, const PointInfo& pointInfo){
+  const auto iPoint  = get<0>(pointInfo);
+  const auto iVertex = get<1>(pointInfo);
+  const auto iMarker = get<2>(pointInfo);
+
+  const auto* config = get<0>(solverData);
+  const auto* geometry = get<1>(solverData);
+  auto* flow_solver = get<2>(solverData)[FLOW_SOL];
+
+  if (viscous && heat){
+    const auto& Grad_Sol = flow_solver->GetNodes()->GetGradient_Primitive(iPoint);
+    const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+    const auto RefHeatFlux = config->GetHeat_Flux_Ref();
+    su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    su2double UnitNormal[3];
+    for (int iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim]/Area;
+    }
+    su2double GradTemperature = 0.0;
+    for (int iDim = 0; iDim < nDim; iDim++)
+      GradTemperature -= Grad_Sol[nDim+1][iDim]*UnitNormal[iDim];
+
+    const su2double thermal_conductivity = flow_solver->GetNodes()->GetThermalConductivity(iPoint);
+    const auto Heatflux = -thermal_conductivity*GradTemperature*RefHeatFlux;
+
+    volumeFields.SetFieldValue("HEAT_FLUX", Heatflux);
+  }
+
+}
+
+void CFlowIncOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                          const IterationInfo&, const PointInfo& pointInfo){
+
+  const auto iPoint  = get<0>(pointInfo);
+  const auto* config = get<0>(solverData);
+  auto* flow_solver  = get<2>(solverData)[FLOW_SOL];
+  const auto* Node_Flow = flow_solver->GetNodes();
+
+  volumeFields.SetFieldValue("PRESSURE",      Node_Flow->GetSolution(iPoint, 0)*config->GetPressure_Ref());
+  volumeFields.SetFieldValue("VELOCITY_X",   Node_Flow->GetSolution(iPoint, 1)*config->GetVelocity_Ref());
+  volumeFields.SetFieldValue("VELOCITY_Y",   Node_Flow->GetSolution(iPoint, 2)*config->GetVelocity_Ref());
+  if (nDim == 3){
+    volumeFields.SetFieldValue("VELOCITY_Z", Node_Flow->GetSolution(iPoint, 3)*config->GetVelocity_Ref());
+    if (heat) volumeFields.SetFieldValue("TEMPERATURE",     Node_Flow->GetSolution(iPoint, 4)*config->GetTemperature_Ref());
+  } else {
+    if (heat) volumeFields.SetFieldValue("TEMPERATURE",     Node_Flow->GetSolution(iPoint, 3)*config->GetTemperature_Ref());
+  }
+
+  su2double VelMag = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    VelMag += pow(flow_solver->GetVelocity_Inf(iDim),2.0);
+  }
+  const su2double factor = 1.0/(0.5*flow_solver->GetDensity_Inf()*VelMag);
+  volumeFields.SetFieldValue("PRESSURE_COEFF", (Node_Flow->GetPressure(iPoint) - config->GetPressure_FreeStreamND())*factor);
+  volumeFields.SetFieldValue("DENSITY", Node_Flow->GetDensity(iPoint)*config->GetDensity_Ref());
+
+  if (viscous){
+    volumeFields.SetFieldValue("LAMINAR_VISC", Node_Flow->GetLaminarViscosity(iPoint)*config->GetViscosity_Ref());
+    if (heat) volumeFields.SetFieldValue("ENTHALPY", Node_Flow->GetSpecificHeatCp(iPoint)*Node_Flow->GetTemperature(iPoint)*config->GetEnergy_Ref());
+  }
+
+  volumeFields.SetFieldValue("TOTAL_PRESS",  (Node_Flow->GetPressure(iPoint)+
+                       0.5*Node_Flow->GetVelocity2(iPoint)*Node_Flow->GetDensity(iPoint))*config->GetPressure_Ref());
+
+  volumeFields.SetFieldValue("TOTAL_TEMP",  (Node_Flow->GetTemperature(iPoint) +
+                       0.5*Node_Flow->GetVelocity2(iPoint)/Node_Flow->GetSpecificHeatCp(iPoint))*config->GetTemperature_Ref());
+}
+
+
 
 void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 

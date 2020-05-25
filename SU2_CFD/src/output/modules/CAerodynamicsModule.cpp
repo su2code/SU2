@@ -16,21 +16,21 @@ CAerodynamicsModule::CAerodynamicsModule(CConfig *config, int nDim): CSolverOutp
 
 }
 
-void CAerodynamicsModule::LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields){
-
-  const int nDim = solverData.geometry->GetnDim();
+void CAerodynamicsModule::LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                                                    const IterationInfo&){
+  const auto* config   = std::get<0>(solverData);
   const su2double Force[3] = {historyFields.GetFieldValue("FORCE_X"),
                               historyFields.GetFieldValue("FORCE_Y"),
                               historyFields.GetFieldValue("FORCE_Z")};
 
-  const su2double alpha = solverData.config->GetAoA()*PI_NUMBER/180.0;
+  const su2double alpha = config->GetAoA()*PI_NUMBER/180.0;
   if (nDim == 2){
     const su2double Drag = Force[0]*cos(alpha) + Force[1]*sin(alpha);
     const su2double Lift = -Force[0]*sin(alpha) + Force[1]*cos(alpha);
     historyFields.SetFieldValue("DRAG", Drag);
     historyFields.SetFieldValue("LIFT", Lift);
   } else {
-    const su2double beta = solverData.config->GetAoS()*PI_NUMBER/180.0;
+    const su2double beta = config->GetAoS()*PI_NUMBER/180.0;
     const su2double Drag = Force[0]*cos(alpha)*cos(beta)  + Force[1]*sin(beta) + Force[2]*sin(alpha)*cos(beta);
     const su2double Lift = -Force[0]*sin(alpha)*cos(beta) + Force[2]*cos(alpha);
     const su2double Sideforce = Force[0]*sin(beta)*cos(alpha) + Force[1]*cos(beta) - Force[2]*sin(beta)*sin(alpha);
@@ -54,7 +54,7 @@ void CAerodynamicsModule::DefineHistoryFields(CHistoryOutFieldManager& historyFi
 }
 
 
-void CAerodynamicsModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFields){
+void CAerodynamicsModule::DefineVolumeFields(CVolumeOutFieldManager& volumeFields){
 
   std::string aeroGroupName = "AERO_COEFF";
 
@@ -70,27 +70,33 @@ void CAerodynamicsModule::DefineVolumeFields(CVolumeOutFieldManager &volumeField
   volumeFields.AddField("SKIN_FRICTION_Y", "Skin_Friction_Coefficient_y",  aeroGroupName, "Skin friction coefficient y-component", FieldType::SURFACE_INTEGRATE);
   volumeFields.AddField("SKIN_FRICTION_Z", "Skin_Friction_Coefficient_z",  aeroGroupName, "Skin friction coefficient z-component", FieldType::SURFACE_INTEGRATE);
 
-  volumeFields.AddField("HEATFLUX", "Heatflux", aeroGroupName, "Heatflux", FieldType::SURFACE_INTEGRATE);
   volumeFields.AddField("Y_PLUS", "Y_Plus", aeroGroupName, "Non-dim. wall distance (Y-Plus)", FieldType::DEFAULT);
 }
 
-void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
+void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                                          const IterationInfo&, const PointInfo& pointInfo){
+
+  const auto* config   = std::get<0>(solverData);
+  const auto* geometry = std::get<1>(solverData);
+  const auto* solver   = std::get<2>(solverData);
+  const auto iPoint    = std::get<0>(pointInfo);
+  const auto iVertex   = std::get<1>(pointInfo);
+  const auto iMarker   = std::get<2>(pointInfo);
 
   std::fill(std::begin(Moment), std::end(Moment), 0.0);
   std::fill(std::begin(Force), std::end(Force), 0.0);
   std::fill(std::begin(SkinFriction), std::end(SkinFriction), 0.0);
   Heatflux = 0.0;
 
-  const su2double RefDensity     = solverData.config->GetDensity_FreeStreamND();
-  const su2double RefTemperature = solverData.config->GetTemperature_FreeStreamND();
-  const su2double* RefVelocity   = solverData.config->GetVelocity_FreeStreamND();
-  const su2double RefHeatFlux    = solverData.config->GetHeat_Flux_Ref();
-  const su2double RefArea        = solverData.config->GetRefArea();
+  const su2double RefDensity     = config->GetDensity_FreeStreamND();
+  const su2double RefTemperature = config->GetTemperature_FreeStreamND();
+  const su2double* RefVelocity   = config->GetVelocity_FreeStreamND();
+  const su2double RefArea        = config->GetRefArea();
 
   su2double RefVel2;
-  if (solverData.config->GetDynamic_Grid()) {
+  if (config->GetDynamic_Grid()) {
     const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemperature);
-    const su2double Mach_Motion = solverData.config->GetMach_Motion();
+    const su2double Mach_Motion = config->GetMach_Motion();
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
   }
   else {
@@ -99,13 +105,12 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
       RefVel2  += RefVelocity[iDim]*RefVelocity[iDim];
   }
   const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
-  const unsigned long iPoint = solverData.iPoint;
-  const unsigned long iPointNormal = solverData.vertex->GetNormal_Neighbor();
+  const unsigned long iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-  const su2double* Normal = solverData.vertex->GetNormal();
-  const su2double* Coord = solverData.geometry->nodes->GetCoord(iPoint);
-  const su2double* Coord_Normal = solverData.geometry->nodes->GetCoord(iPointNormal);
-  const su2double Pressure_Inf = solverData.solver[FLOW_SOL]->GetPressure_Inf();
+  const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+  const su2double* Coord = geometry->nodes->GetCoord(iPoint);
+  const su2double* Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+  const su2double Pressure_Inf = solver[FLOW_SOL]->GetPressure_Inf();
 
   // TODO: Get ref origin from config
   su2double MomentDist[3] = {0.0}, Origin[3] = {0.0};
@@ -123,18 +128,18 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
   if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*Coord[1];
   else AxiFactor = 1.0;
 
-  const su2double Pressure = solverData.solver[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+  const su2double Pressure = solver[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
 
   for (int iDim = 0; iDim < nDim; iDim++) {
     Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
   }
 
-  if (solverData.config->GetViscous()){
+  if (config->GetViscous()){
 
-    const auto& Grad_Primitive = solverData.solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    const auto& Grad_Primitive = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     su2double div_vel = 0.0; for (int iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Primitive[iDim+1][iDim];
-    const su2double Viscosity = solverData.solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    const su2double Density = solverData.solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double Viscosity = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    const su2double Density = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     constexpr passivedouble delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     su2double UnitNormal[3];
@@ -149,7 +154,7 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
       }
     }
 
-    if (solverData.config->GetQCR()) {
+    if (config->GetQCR()) {
       su2double den_aux, c_cr1=0.3, O_ik, O_jk;
       unsigned short kDim;
 
@@ -200,14 +205,6 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
     const su2double FrictionVel = sqrt(fabs(WallShearStress)/Density);
     Y_Plus = WallDistMod*FrictionVel/(Viscosity/Density);
 
-    su2double GradTemperature = 0.0;
-    for (int iDim = 0; iDim < nDim; iDim++)
-      GradTemperature -= Grad_Primitive[0][iDim]*UnitNormal[iDim];
-
-    const su2double Cp = Gamma / (Gamma - 1) * Gas_Constant;
-    const su2double thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
-    Heatflux = -thermal_conductivity*GradTemperature*RefHeatFlux;
-
     for(int iDim = 0; iDim < nDim; iDim++){
       Force[iDim] += TauElem[iDim]*Area*factor*AxiFactor;
     }
@@ -226,7 +223,6 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields){
   volumeFields.SetFieldValue("FORCE_X", Force[0]);
   volumeFields.SetFieldValue("FORCE_Y", Force[1]);
   volumeFields.SetFieldValue("FORCE_Z", Force[2]);
-  volumeFields.SetFieldValue("HEATFLUX", Heatflux);
   volumeFields.SetFieldValue("SKIN_FRICTION_X", SkinFriction[0]);
   volumeFields.SetFieldValue("SKIN_FRICTION_Y", SkinFriction[1]);
   volumeFields.SetFieldValue("SKIN_FRICTION_Z", SkinFriction[2]);
