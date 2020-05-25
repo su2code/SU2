@@ -183,14 +183,14 @@ namespace SU2_TYPE {
    * \param[in] data - The non-primitive datatype.
    * \return - The primary value casted to int.
    */
-  FORCEINLINE int Int(const su2double& data) {return int(SU2_TYPE::GetValue(data));}
+  FORCEINLINE int Int(const su2double& data) {return static_cast<int>(SU2_TYPE::GetValue(data));}
 
   /*!
    * \brief Casts the primitive value to short (uses GetValue, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
    * \return - The primary value casted to short.
    */
-  FORCEINLINE short Short(const su2double& data) {return short(SU2_TYPE::GetValue(data));}
+  FORCEINLINE short Short(const su2double& data) {return static_cast<short>(SU2_TYPE::GetValue(data));}
 
   /*--- Special handling of the sprintf routine for non-primitive types. ---*/
   /*--- Pass-through for built-in types. ---*/

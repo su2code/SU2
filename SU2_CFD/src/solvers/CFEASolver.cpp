@@ -921,7 +921,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
-            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Kab, simp_penalty);
           }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);

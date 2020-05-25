@@ -432,7 +432,8 @@ public:
   }
 
   /*!
-   * \brief Set the value of a block in the sparse matrix with scaling.
+   * \brief Set the value of a block (in flat format) in the sparse matrix with scaling.
+   * \note If the template param Overwrite is false we add to the block (bij += alpha*b).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to set to A(i, j).
@@ -451,7 +452,7 @@ public:
   }
 
   /*!
-   * \brief Add a scaled block (in flat format) to the sparse matrix.
+   * \brief Add a scaled block (in flat format) to the sparse matrix (see SetBlock).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to set to A(i, j).
@@ -460,55 +461,61 @@ public:
   template<class OtherType,
            typename enable_if<!is_pointer<OtherType>::value,bool>::type = 0>
   inline void AddBlock(unsigned long block_i, unsigned long block_j,
-                       OtherType alpha, const OtherType *val_block) {
+                       const OtherType *val_block, OtherType alpha = 1.0) {
     SetBlock<OtherType,false>(block_i, block_j, val_block, alpha);
   }
 
   /*!
-   * \brief Set the value of a block in the sparse matrix.
+   * \brief Set the value of a scaled block in the sparse matrix.
+   * \note If the template param Overwrite is false we add to the block (bij += alpha*b).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, int Sign = 1, bool Overwrite = true>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
+  template<class OtherType, bool Overwrite = true>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j,
+                       const OtherType* const* val_block, OtherType alpha = 1.0) {
 
     auto mat_ij = GetBlock(block_i, block_j);
     if (!mat_ij) return;
     for (auto iVar = 0ul; iVar < nVar; ++iVar) {
       for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
-        *mat_ij = (Overwrite? ScalarType(0) : *mat_ij) + Sign * PassiveAssign(val_block[iVar][jVar]);
+        *mat_ij = (Overwrite? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block[iVar][jVar]);
         ++mat_ij;
       }
     }
   }
 
   /*!
-   * \brief Adds the specified block to the sparse matrix.
+   * \brief Adds a scaled block to the sparse matrix (see SetBlock).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to add to A(i, j).
+   * \param[in] alpha - Scale factor.
    */
   template<class OtherType>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
-    SetBlock<OtherType,1,false>(block_i, block_j, val_block);
+  inline void AddBlock(unsigned long block_i, unsigned long block_j,
+                       const OtherType* const* val_block, OtherType alpha = 1.0) {
+    SetBlock<OtherType,false>(block_i, block_j, val_block, alpha);
   }
 
   /*!
-   * \brief Subtracts the specified block to the sparse matrix.
+   * \brief Subtracts the specified block to the sparse matrix (see AddBlock).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to subtract to A(i, j).
    */
   template<class OtherType>
   inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
-    SetBlock<OtherType,-1,false>(block_i, block_j, val_block);
+    AddBlock(block_i, block_j, val_block, OtherType(-1));
   }
 
   /*!
    * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
    * \note The template parameter Sign, can be used create a "subtractive"
    *       update i.e. subtract from row i and add to row j instead.
+   *       This method assumes an FVM-type sparse pattern.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
    * \param[in] iPoint - Row to which we add the blocks.
    * \param[in] jPoint - Row from which we subtract the blocks.
@@ -547,17 +554,18 @@ public:
   }
 
   /*!
-   * \brief Update 2 blocks ij and ji (add to i* sub from j*).
+   * \brief Sets 2 blocks ij and ji (add to i* sub from j*) associated with
+   *        one edge of an FVM-type sparse pattern.
    * \note The template parameter Sign, can be used create a "subtractive"
    *       update i.e. subtract from row i and add to row j instead.
    *       The parameter Overwrite allows completely writing over the
-   *       current values held by the matrix.
+   *       current values held by the matrix (true), or updating them (false).
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
    * \param[in] block_i - Subs from ji.
    * \param[in] block_j - Adds to ij.
    */
-  template<class OtherType, int Sign = 1, bool Overwrite = false>
-  inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+  template<class OtherType, int Sign = 1, bool Overwrite = true>
+  inline void SetBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
 
     ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
     ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
@@ -574,46 +582,55 @@ public:
   }
 
   /*!
-   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
+   * \brief Short-hand for the "additive overwrite" version of SetBlocks.
+   */
+  template<class OtherType>
+  inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+    SetBlocks<OtherType,1,false>(iEdge, block_i, block_j);
+  }
+
+  /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of SetBlocks.
    */
   template<class OtherType>
   inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
-    UpdateBlocks<OtherType,-1>(iEdge, block_i, block_j);
+    SetBlocks<OtherType,-1,false>(iEdge, block_i, block_j);
   }
 
   /*!
-   * \brief Short-hand for the "additive overwrite" version of UpdateBlocks.
-   */
-  template<class OtherType>
-  inline void SetBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
-    UpdateBlocks<OtherType,1,true>(iEdge, block_i, block_j);
-  }
-
-  /*!
-   * \brief Adds the specified block to the (i, i) subblock of the matrix-by-blocks structure.
+   * \brief Sets the specified block to the (i, i) subblock of the sparse matrix.
+   *        Scales the input block by factor alpha. If the Overwrite parameter is
+   *        false we update instead (bii += alpha*b).
    * \param[in] block_i - Diagonal index.
    * \param[in] val_block - Block to add to the diagonal of the matrix.
+   * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, int Sign = 1>
-  inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
+  template<class OtherType, bool Overwrite = true>
+  inline void SetBlock2Diag(unsigned long block_i, const OtherType* const* val_block, OtherType alpha = 1.0) {
 
-    ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
+    auto mat_ii = &matrix[dia_ptr[block_i]*nVar*nEqn];
 
-    unsigned long iVar, jVar, offset = 0;
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nEqn; jVar++)
-        bii[offset++] += Sign * PassiveAssign(val_block[iVar][jVar]);
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
+      for (auto jVar = 0ul; jVar < nEqn; jVar++) {
+        *mat_ii = (Overwrite? ScalarType(0) : *mat_ii) + PassiveAssign(alpha * val_block[iVar][jVar]);
+        ++mat_ii;
+      }
   }
 
   /*!
-   * \brief Subtracts the specified block from the (i, i) subblock of the matrix-by-blocks structure.
-   * \param[in] block_i - Diagonal index.
-   * \param[in] val_block - Block to subtract from the diagonal of the matrix.
+   * \brief Non overwrite version of SetBlock2Diag, also with scaling.
+   */
+  template<class OtherType>
+  inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block, OtherType alpha = 1.0) {
+    SetBlock2Diag<OtherType,false>(block_i, val_block, alpha);
+  }
+
+  /*!
+   * \brief Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal.
    */
   template<class OtherType>
   inline void SubtractBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
-    AddBlock2Diag<OtherType,-1>(block_i, val_block);
+    AddBlock2Diag(block_i, val_block, OtherType(-1));
   }
 
   /*!

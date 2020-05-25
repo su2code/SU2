@@ -947,13 +947,18 @@ protected:
   unsigned short nDim;		/*!< \brief Number of dimensions. */
   unsigned short nVar;		/*!< \brief Number of variables. */
   
-  unsigned long nPoint;		   /*!< \brief Number of points. */
+  unsigned long nPoint;		     /*!< \brief Number of points. */
   unsigned long nPointDomain;  /*!< \brief Number of points in the domain. */
 
   unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
+#ifndef CODI_FORWARD_TYPE
+  CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
+  CSysSolve<su2mixedfloat>  System;      /*!< \brief Linear solver/smoother. */
+#else
+  CSysMatrix<su2double> StiffMatrix;
   CSysSolve<su2double>  System;
-  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+#endif
   CSysVector<su2double> LinSysSol;
   CSysVector<su2double> LinSysRes;
 

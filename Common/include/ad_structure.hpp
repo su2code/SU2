@@ -250,11 +250,11 @@ namespace AD{
   inline void Push_TapePosition() {}
 
 #else
-  typedef codi::DataStore CheckpointHandler;
+  using CheckpointHandler = codi::DataStore;
 
-  typedef su2double::TapeType Tape;
+  using Tape = su2double::TapeType;
 
-  typedef codi::ExternalFunctionHelper<su2double> ExtFuncHelper;
+  using ExtFuncHelper = codi::ExternalFunctionHelper<su2double>;
 
   extern ExtFuncHelper* FuncHelper;
 
