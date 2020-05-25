@@ -115,7 +115,6 @@ class Project:
         self.pyBeamProp = readConfig(self.configFSIPrimal['PYBEAM_CONFIG'], 'PROPERTY_FILE')
 
     def obj_f(self,x_new):
-        print('x_new = {}'.format(x_new)) 
         # Checking if new design is needed
         # In case starts new design and deform
         self.CheckNewDesign(x_new)
@@ -235,6 +234,7 @@ class Project:
             
             
     def CheckNewDesign(self, x_in):
+       x =  self.design[self.design_iter].getx()
        print('x_in = {}'.format(x_in)) 
        print('self.design_iter = {}'.format(self.design_iter)) 
        if self.design_iter == -1:
@@ -245,9 +245,8 @@ class Project:
            # Writing solution to Output           
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
        else:    
-          print('self.design[self.design_iter] = {}'.format(self.design[self.design_iter]))  
-          print('self.design[self.design_iter].x = {}'.format(self.design[self.design_iter].getx() ))  
-          delta = self.design[self.design_iter].getx() - x_in
+          print('x= {}'.format(x ))  
+          delta = x - x_in
           print('delta = {}'.format(delta)) 
           module = np.linalg.norm(delta)
           if module > self.design_toll:
@@ -264,7 +263,7 @@ class Project:
             
     
     def InitializeNewDesign(self,x_in):  
-        
+        print('project.InitializeNewDesign()')
         # old design
         if self.design_iter == 0:
            x_old = x_in
