@@ -87,10 +87,8 @@ class Project:
         
         # DV_values indexes (control points indexes of the FD Box)    
         self.FFD_indexes = readDVParam(self.config['CONFIG_DEF'])
-        
         self.n_dv = 0 # number of design variables
-        self.FFD_indexes = None # ffd box indexes of the control points (order of x)
-        self.PointInv = None  # point inversion coefficiens for Bezier mapping of the boundary
+
         
         # clean previous designs
         self.clean_previous_designs()
