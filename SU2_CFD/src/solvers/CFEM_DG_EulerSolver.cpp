@@ -7402,7 +7402,7 @@ void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M,
 
   // use x as the initial vector
   Eigen::VectorXd r = b - MatVec(A, b, m_loc);
-  M.solve(r); //M\q
+  r = M.solve(r); //M\q
   double b_norm = VecNorm(b);
   double r_norm = VecNorm(r);
   assert(!std::isnan(r_norm));
@@ -7411,23 +7411,23 @@ void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M,
   // initialize the 1D vectors
   Eigen::VectorXd sn = Eigen::VectorXd::Zero(m);
   Eigen::VectorXd cs = Eigen::VectorXd::Zero(m);
-  Eigen::VectorXd e1 = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd e1 = Eigen::VectorXd::Zero(m);
   e1(0) = 1;
-  Eigen::VectorXd e = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd e = Eigen::VectorXd::Zero(m);
   e(0) = error;
 
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(m_loc[rank],n+1);
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(m_loc[rank],m+1);
   Q.col(0) = r / r_norm;
-  Eigen::VectorXd beta = Eigen::VectorXd::Zero(n + 1);
-  beta.head(n) = r_norm * e1;
-  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n+1, n);
+  Eigen::VectorXd beta = Eigen::VectorXd::Zero(m + 1);
+  beta.head(m) = r_norm * e1;
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(m+1, m);
   int k = 0;
 
   for (; k < m; ++k) {
 
     // Arnoldi process
     Eigen::VectorXd q = MatVec(A, Q.col(k), m_loc);
-    M.solve(q); // M\q
+    q = M.solve(q); // M\q
     for (int i = 0; i < k + 1; ++i) {
       H(i,k) = VecDot(q, Q.col(i));
       q -= H(i,k) * Q.col(i);
@@ -7460,7 +7460,7 @@ void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M,
     error = abs(beta(k+1)) / b_norm;
     // if (rank == 0)
     //   printf("error at iteration %d is %e\n", k, error);
-    if (error <= 1e-14) {
+    if (error <= 1e-8) {
       if (rank == 0)
         printf("Converged error at iteration %d is %e\n", k, error);
       break;
@@ -7481,7 +7481,35 @@ void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M,
 }
 
 typedef Eigen::Triplet<double> T;
-void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
+template <typename SpMat>
+void LocalILU_Preconditioner(SpMat& Jacobian_global, Eigen::IncompleteLUT<double>& ILU_M, unsigned long* m_loc, unsigned long* fst_row, int rank){
+  // Extract the square block in each rank for local preconditioning
+  if (rank == 0)
+    cout << "start computing ILU preconditioner" << endl;
+  std::vector<T> Precond_coeff;
+  for (int k=0; k<Jacobian_global.outerSize(); ++k) {
+    for (typename SpMat::InnerIterator it(Jacobian_global,k); it; ++it)
+    {
+      if ((it.index() >= fst_row[rank]) && (it.index() < fst_row[rank]+m_loc[rank])) {
+        Precond_coeff.push_back(T(it.row()-fst_row[rank], it.col(), it.value()));
+      }
+    }
+  }
+
+  SpMat Jacobian_Precond(m_loc[rank], m_loc[rank]);
+  Jacobian_Precond.setFromTriplets(Precond_coeff.begin(), Precond_coeff.end());
+  su2double start_time = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  ILU_M.compute(Jacobian_Precond);
+  if (rank == 0)
+    cout << "Preconditioner time = " << su2double(clock())/su2double(CLOCKS_PER_SEC) - start_time << endl;
+  assert(ILU_M.info()==Eigen::Success);
+  if (rank == 0)
+    cout << "finish computing ILU preconditioner" << endl;
+  return;
+}
+
+typedef Eigen::Triplet<double> T;
+void CFEM_DG_EulerSolver::I`mplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config) {
 
 #ifdef CODI_FORWARD_TYPE
@@ -7676,14 +7704,16 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     mSol_delta(i) = -Res_global(i);
   } 
 
-  Eigen::MatrixXd Coord(nDOFsLocOwned, 2);
+  Eigen::MatrixXd Coord(2, nDOFsLocOwned*nVar);
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
     const unsigned long *DOFs = volElem[l].nodeIDsGrid.data();
     const unsigned long nDOFs  = volElem[l].nDOFsSol;
     const unsigned long offset = volElem[l].offsetDOFsSolLocal;
     for(unsigned short k=0; k<nDOFs; ++k) {
-      Coord(offset + k, 0) = SU2_TYPE::GetValue(meshPoints[DOFs[k]].coor[0]);
-      Coord(offset + k, 1) = SU2_TYPE::GetValue(meshPoints[DOFs[k]].coor[1]);
+      for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+        Coord(0, (offset + k)*nVar + iVar) = SU2_TYPE::GetValue(meshPoints[DOFs[k]].coor[0]);
+        Coord(1, (offset + k)*nVar + iVar) = SU2_TYPE::GetValue(meshPoints[DOFs[k]].coor[1]);
+      }
     }
   }
 
@@ -7695,8 +7725,9 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     }
   };
   precond M;
-
-  GMRES(Jacobian_global, mSol_delta, M, nDOFsGlobal*nVar, nDOFsGlobal*nVar, &m_loc[0], &fst_row[0]);
+  Eigen::IncompleteLUT<double> Jacobian_Precond;
+  LocalILU_Preconditioner(Jacobian_global, Jacobian_Precond, &m_loc[0], &fst_row[0], rank);
+  GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 150, &m_loc[0], &fst_row[0]);
   /*--- Solve the linear system using linear solver SUPERLU. ---*/
   // SUPERLU_LinSolver(nDOFsGlobal*nVar, Jacobian_global.nonZeros(), Jacobian_global.valuePtr(), Jacobian_global.innerIndexPtr(), 
   //   Jacobian_global.outerIndexPtr(), mSol_delta.data(), &m_loc[0], &fst_row[0]);
