@@ -8,7 +8,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,13 +29,13 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "../mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif
 
-#include "geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../geometry/primal_grid/CPrimalGridFEM.hpp"
 
 /* Forward declaration of CBoundaryFace to avoid problems. */
 class CBoundaryFace;

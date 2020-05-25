@@ -10,7 +10,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -63,16 +63,16 @@ Subject: Gauss-Jacobi Quadrature Code
 Dear John,
 
 I am the lead developer for the open-source SU2 suite, which is primarily for
-computational fluid dynamics, but also for solving other PDE systems 
+computational fluid dynamics, but also for solving other PDE systems
 (http://su2.stanford.edu, https://github.com/su2code/SU2). Over the past few months,
 we have been working on a new high-order discontinuous Galerkin fluid solver within
 the codebase, led by Prof. Edwin van der Weide at the University of Twente (cc’d).
 
 We found your attached code to be very helpful in resolving some issues with integration
 for our pyramid elements, and we would really like to reuse the implementation if possible.
-First, we would like to check if this is ok with you personally, and ask how we can 
+First, we would like to check if this is ok with you personally, and ask how we can
 properly attribute your work in the code? Second, we are curious just what version of the
-GNU LGPL license you are using to make sure that we don’t have any licensing issues. 
+GNU LGPL license you are using to make sure that we don’t have any licensing issues.
 For SU2, we are using GNU LGPL v2.1.
 
 Thanks for the time and take care,
@@ -86,7 +86,7 @@ Tom
 #include <cstdlib>
 #include <vector>
 
-#include "CConfig.hpp"
+#include "../CConfig.hpp"
 
 using namespace std;
 
@@ -99,17 +99,6 @@ using namespace std;
  */
 class CGaussJacobiQuadrature {
 public:
-
-  /*!
-   * \brief Constructor of the class, nothing to be done.
-   */
-  CGaussJacobiQuadrature();
-
-  /*!
-   * \brief Destructor of the class, nothing to be done.
-   */
-  ~CGaussJacobiQuadrature();
-
   /*!
    * \brief Function, which serves as the API to compute the integration points
             and weights.
@@ -186,5 +175,3 @@ private:
   void sgqf(int nt, const passivedouble aj[], passivedouble bj[], passivedouble zemu, passivedouble t[],
             passivedouble wts[]);
 };
-
-#include "fem_gauss_jacobi_quadrature.inl"

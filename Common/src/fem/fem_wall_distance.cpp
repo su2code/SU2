@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/fem_geometry_structure.hpp"
-#include "../include/adt_structure.hpp"
+#include "../../include/fem/fem_geometry_structure.hpp"
+#include "../../include/adt_structure.hpp"
 
 std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig *config) const {
 
