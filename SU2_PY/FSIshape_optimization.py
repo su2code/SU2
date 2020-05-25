@@ -213,10 +213,10 @@ def obj_df(x,project):
         scipy_slsqp: df(x), ndarray[dim]
     """    
     
-    dobj_list = project.obj_df(x)
+    obj_df = project.obj_df(x)
 
     
-    return dobj_list
+    return obj_df
 
 def con_ceq(x,project):
     """ cons = con_ceq(x,project)

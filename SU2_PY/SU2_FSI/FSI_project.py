@@ -121,7 +121,7 @@ class Project:
         # In case start new design and deform
         self.CheckNewDesign(x_new)
           
-        print('Executing Primal')        
+        print('obj_f')        
         #Primal
         self.Primal()
         
@@ -136,7 +136,7 @@ class Project:
         # In case start new design and deform
         self.CheckNewDesign(x_new)
         
-        print('Executing Adjoint') 
+        print('obj_df') 
         #Adjoint
         self.Adjoint()
         
@@ -151,10 +151,11 @@ class Project:
         # In case start new design and deform
         self.CheckNewDesign(x_new)
         
-        print('Executing Geo')
+        
         #Check if Geo has been executed, if it hasn't execute Geo
         self.CheckGeo()
         
+        print('con_ceq')
         # pulls constraint equality
         c_eq = self.design[self.design_iter].pull_c_eq(self.geo_folder)
         # return ceq
@@ -182,6 +183,7 @@ class Project:
         #Check if Geo has been executed, if it hasn't execute Geo
         self.CheckGeo()
         
+        print('con_cieq')
         # pull constraint inequality
         c_ieq = self.design[self.design_iter].pull_c_ieq(self.geo_folder)
         
@@ -237,7 +239,7 @@ class Project:
              # performing mesh deform
              self.DeformMesh()
           else:
-             print('Using previous new design')
+             print('Using previous design')
             
     
     def InitializeNewDesign(self,x_in):  
@@ -310,6 +312,7 @@ class Project:
            # pulling mesh file 
            self.SetMesh(self.geo_folder)
            
+           print('Executing Geo')
            # Running SU2_GEO
            self.design[self.design_iter].SU2_GEO(self.geo_folder)
            
@@ -333,6 +336,7 @@ class Project:
        # pulling mesh file 
        self.SetMesh(self.primal_folder)  
        
+       print('Executing Primal')
        # Running primal
        self.design[self.design_iter].FSIPrimal(self.primal_folder)
        
@@ -358,7 +362,7 @@ class Project:
        self.SetMesh(self.adjoint_folder)         
        
        # pulling restart for pyBeam and SU2 and flow.vtk
-       
+       command = []
        if self.design[self.design_iter].primal == True:
            
           # pyBeam 
@@ -382,6 +386,7 @@ class Project:
           print('Primal not yet available, can t pull solutions for Adjoint....')
           sys.exit()
 
+       print('Executing Geo')
        # Running primal
        self.design[self.design_iter].FSIAdjoint(self.adjoint_folder)
             
