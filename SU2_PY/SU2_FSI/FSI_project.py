@@ -246,8 +246,8 @@ class Project:
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
        else:    
           print('self.design[self.design_iter] = {}'.format(self.design[self.design_iter]))  
-          print('self.design[self.design_iter].x = {}'.format(self.design[self.design_iter].getx))  
-          delta = self.design[self.design_iter].getx - x_in
+          print('self.design[self.design_iter].x = {}'.format(self.design[self.design_iter].getx() ))  
+          delta = self.design[self.design_iter].getx() - x_in
           print('delta = {}'.format(delta)) 
           module = np.linalg.norm(delta)
           if module > self.design_toll:
