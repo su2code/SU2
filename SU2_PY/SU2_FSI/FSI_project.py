@@ -234,7 +234,6 @@ class Project:
             
             
     def CheckNewDesign(self, x_in):
-       x =  self.design[self.design_iter].getx()
        print('x_in = {}'.format(x_in)) 
        print('self.design_iter = {}'.format(self.design_iter)) 
        if self.design_iter == -1:
@@ -244,7 +243,8 @@ class Project:
            self.InitializeNewDesign(x_in)
            # Writing solution to Output           
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
-       else:    
+       else:   
+          x =  self.design[self.design_iter].getx()           
           print('x= {}'.format(x ))  
           delta = x - x_in
           print('delta = {}'.format(delta)) 
