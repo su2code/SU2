@@ -51,7 +51,7 @@ class Project:
         """
         Class constructor. Declare some variables and do some screen outputs.
         """
-
+        print('Initializing project....')
         self.config = config  # FSI optimization config object
         
         folder = self.config['FOLDER']  # root folder where optimization is done
