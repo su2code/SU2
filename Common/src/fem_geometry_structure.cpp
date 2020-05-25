@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../include/fem_geometry_structure.hpp"
+#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../include/adt_structure.hpp"
 

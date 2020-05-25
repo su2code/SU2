@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -1028,7 +1028,7 @@ def main():
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.test_iter = 6
     dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 6.6127e+04] #last 4 columns
-    dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
+    dynbeam2d.su2_exec  = "parallel_computation.py -f"
     dynbeam2d.timeout   = 1600
     dynbeam2d.unsteady  = True
     dynbeam2d.tol       = 0.00001

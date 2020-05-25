@@ -2,11 +2,11 @@
  * \file CParallelDataSorter.cpp
  * \brief Datasorter base class.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -27,21 +27,26 @@
 
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 #include <cassert>
+#include <numeric>
 
-CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields){
+
+const map<unsigned short, unsigned short> CParallelDataSorter::TypeMap = {
+  {LINE, 0},
+  {TRIANGLE, 1},
+  {QUADRILATERAL, 2},
+  {TETRAHEDRON, 3},
+  {HEXAHEDRON, 4},
+  {PRISM, 5},
+  {PYRAMID, 6}
+};
+
+CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
+  fieldNames(std::move(valFieldNames)){
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-  GlobalField_Counter = nFields;
-
-  nParallel_Hexa = 0;
-  nParallel_Line = 0;
-  nParallel_Quad = 0;
-  nParallel_Tetr = 0;
-  nParallel_Pris = 0;
-  nParallel_Pyra = 0;
-  nParallel_Tria = 0;
+  GlobalField_Counter = this->fieldNames.size();
 
   Conn_Line_Par = NULL;
   Conn_Hexa_Par = NULL;
@@ -62,68 +67,45 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   nSends = 0;
   nRecvs = 0;
 
-  nLocalPoint_Sort  = 0;
-  nGlobalPoint_Sort = 0;
+  nLocalPointsBeforeSort  = 0;
+  nGlobalPointBeforeSort = 0;
 
   nPoint_Send = new int[size+1]();
   nPoint_Recv = new int[size+1]();
-
+  nElem_Send  = new int[size+1]();  
+  nElem_Cum  = new int[size+1]();
+  nElemConn_Send = new int[size+1]();
+  nElemConn_Cum = new int[size+1]();
+  
   linearPartitioner = NULL;
+  
+  nElemPerType.fill(0);
+  nElemPerTypeGlobal.fill(0);
 
 }
 
 CParallelDataSorter::~CParallelDataSorter(){
 
-  if (nPoint_Send != NULL) delete [] nPoint_Send;
-  if (nPoint_Recv != NULL) delete [] nPoint_Recv;
-
+  delete [] nPoint_Send;
+  delete [] nPoint_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Cum;
+  delete [] nElemConn_Send;
+  delete [] nElemConn_Cum;
+  
   /*--- Deallocate memory for connectivity data on each processor. ---*/
 
-  if (nParallel_Line > 0 && Conn_Line_Par != NULL) delete [] Conn_Line_Par;
-  if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-  if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-  if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-  if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-  if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-  if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+  delete [] Conn_Line_Par;
+  delete [] Conn_Tria_Par;
+  delete [] Conn_Quad_Par;
+  delete [] Conn_Tetr_Par;
+  delete [] Conn_Hexa_Par;
+  delete [] Conn_Pris_Par;
+  delete [] Conn_Pyra_Par;
 
-  if (connSend != NULL) delete [] connSend;
+  delete [] connSend;
 
-  if (dataBuffer != NULL) delete [] dataBuffer;
-}
-
-
-unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
-
-  switch (type) {
-    case LINE:
-      return nParallel_Line;
-      break;
-    case TRIANGLE:
-      return nParallel_Tria;
-      break;
-    case QUADRILATERAL:
-      return nParallel_Quad;
-      break;
-    case TETRAHEDRON:
-      return nParallel_Tetr;
-      break;
-    case HEXAHEDRON:
-      return nParallel_Hexa;
-      break;
-    case PRISM:
-      return nParallel_Pris;
-      break;
-    case PYRAMID:
-      return nParallel_Pyra;
-      break;
-    default:
-      break;
-  }
-
-  SU2_MPI::Error("GEO_TYPE not found", CURRENT_FUNCTION);
-
-  return 0;
+  delete [] dataBuffer;
 }
 
 void CParallelDataSorter::SortOutputData() {
@@ -275,16 +257,12 @@ void CParallelDataSorter::SortOutputData() {
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
 
-  nParallel_Poin = nPoint_Recv[size];
+  nPoints = nPoint_Recv[size];
 
   /*--- Reduce the total number of points we will write in the output files. ---*/
 
-#ifndef HAVE_MPI
-  nGlobal_Poin_Par = nParallel_Poin;
-#else
-  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
+  SU2_MPI::Allreduce(&nPoints, &nPointsGlobal, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- Free temporary memory from communications ---*/
 
@@ -305,7 +283,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
    nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
    First, initialize a counter and flag. ---*/
 
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++ ) {
+  for (iPoint = 0; iPoint < nLocalPointsBeforeSort; iPoint++ ) {
 
     iProcessor = linearPartitioner->GetRankContainingIndex(globalID[iPoint]);
 
@@ -319,12 +297,8 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
                     &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
 
   /*--- Prepare to send coordinates. First check how many
    messages we will be sending and receiving. Here we also put
@@ -370,12 +344,12 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   unsigned long *idIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
 
-  Index = new unsigned long[nLocalPoint_Sort]();
+  Index = new unsigned long[nLocalPointsBeforeSort]();
 
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
 
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
+  for (iPoint = 0; iPoint < nLocalPointsBeforeSort; iPoint++) {
 
     iProcessor = linearPartitioner->GetRankContainingIndex(globalID[iPoint]);
 
@@ -403,7 +377,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   delete [] idIndex;
 }
 
-unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) {
+unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const {
 
   switch (type) {
     case LINE:
@@ -434,5 +408,61 @@ unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned 
   SU2_MPI::Error("GEO_TYPE not found", CURRENT_FUNCTION);
 
   return 0;
+}
+
+void CParallelDataSorter::SetTotalElements(){
+  
+  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
+
+  SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0); 
+  nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0);
+  
+  nConn = 0;
+  nConnGlobal   = 0;
+  auto addConnectivitySize = [this](GEO_TYPE elem, unsigned short nPoints){
+    nConn    += GetnElem(elem)*nPoints;
+    nConnGlobal   += GetnElemGlobal(elem)*nPoints;
+  };
+  
+  addConnectivitySize(LINE,          N_POINTS_LINE);
+  addConnectivitySize(TRIANGLE,      N_POINTS_TRIANGLE);
+  addConnectivitySize(QUADRILATERAL, N_POINTS_QUADRILATERAL);
+  addConnectivitySize(TETRAHEDRON,   N_POINTS_TETRAHEDRON);
+  addConnectivitySize(HEXAHEDRON,    N_POINTS_HEXAHEDRON);
+  addConnectivitySize(PRISM,         N_POINTS_PRISM);
+  addConnectivitySize(PYRAMID,       N_POINTS_PYRAMID);
+  
+  /*--- Communicate the number of total cells/storage that will be
+   written by each rank. After this communication, each proc knows how
+   many cells will be written before its location in the file and the
+   offsets can be correctly set. ---*/
+
+  nElem_Send[0] = 0; nElemConn_Send[0] = 0;
+  nElem_Cum[0] = 0; nElemConn_Cum[0] = 0;
+  for (int ii=1; ii <= size; ii++) {
+    nElem_Send[ii]     = int(nElem); 
+    nElemConn_Send[ii] = int(nConn);
+    nElem_Cum[ii] = 0;     
+    nElemConn_Cum[ii] = 0;
+  }
+
+  /*--- Communicate the local counts to all ranks for building offsets. ---*/
+
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+
+  SU2_MPI::Alltoall(&(nElemConn_Send[1]), 1, MPI_INT,
+                    &(nElemConn_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+
+  /*--- Put the counters into cumulative storage format. ---*/
+
+  for (int ii = 0; ii < size; ii++) {
+    nElem_Cum[ii+1]     += nElem_Cum[ii];
+    nElemConn_Cum[ii+1] += nElemConn_Cum[ii];
+  }
+  
+
 }
 

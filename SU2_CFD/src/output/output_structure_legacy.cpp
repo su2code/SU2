@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../include/output/COutputLegacy.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CBaselineSolver.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
 
@@ -18415,7 +18415,7 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
-  Enthalpy, Velocity[3], TangVel[3], Velocity2, MassFlow, Density, Area,
+  Enthalpy, Velocity[3]= {0.0}, TangVel[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
   su2double Gas_Constant      = config->GetGas_ConstantND();

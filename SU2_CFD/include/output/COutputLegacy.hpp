@@ -3,11 +3,11 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -41,12 +41,6 @@
 #include <time.h>
 #include <fstream>
 #include <vector>
-
-//#include "../solver_structure.hpp"
-//#include "../integration_structure.hpp"
-//#include "../../../Common/include/geometry_structure.hpp"
-//#include "../../../Common/include/fem_geometry_structure.hpp"
-//#include "../../../Common/include/fem_standard_element.hpp"
 
 #include "../../../Common/include/option_structure.hpp"
 class CGeometry;

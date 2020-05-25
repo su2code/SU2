@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,7 +56,7 @@ extern "C" {
 #include "dual_grid/CVertex.hpp"
 #include "dual_grid/CTurboVertex.hpp"
 
-#include "../config_structure.hpp"
+#include "../CConfig.hpp"
 #include "../geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 

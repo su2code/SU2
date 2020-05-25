@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,6 +41,24 @@
 
 #include "../../../Common/include/omp_structure.hpp"
 
+#include "../../include/solvers/CEulerSolver.hpp"
+#include "../../include/solvers/CIncEulerSolver.hpp"
+#include "../../include/solvers/CNSSolver.hpp"
+#include "../../include/solvers/CIncNSSolver.hpp"
+#include "../../include/solvers/CTurbSASolver.hpp"
+#include "../../include/solvers/CTurbSSTSolver.hpp"
+#include "../../include/solvers/CTransLMSolver.hpp"
+#include "../../include/solvers/CAdjEulerSolver.hpp"
+#include "../../include/solvers/CAdjNSSolver.hpp"
+#include "../../include/solvers/CAdjTurbSolver.hpp"
+#include "../../include/solvers/CHeatSolverFVM.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
+#include "../../include/solvers/CTemplateSolver.hpp"
+#include "../../include/solvers/CDiscAdjSolver.hpp"
+#include "../../include/solvers/CDiscAdjFEASolver.hpp"
+#include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
+#include "../../include/solvers/CFEM_DG_NSSolver.hpp"
+
 #include <cassert>
 
 #ifdef VTUNEPROF
@@ -51,7 +69,7 @@
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  SU2_Comm MPICommunicator, bool dummy_geo):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0),
-                 TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dummy_geometry(dummy_geo) {
+                 TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
 
   /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
 #ifdef HAVE_MPI
@@ -132,7 +150,7 @@ CDriver::CDriver(char* confFile,
        identified and linked, face areas and volumes of the dual mesh cells are
        computed, and the multigrid levels are created using an agglomeration procedure. ---*/
 
-      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dummy_geometry);
+      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dry_run);
 
       /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
        The solver classes are specific to a particular set of governing equations,
@@ -3343,7 +3361,8 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
       break;
     }
 
-    output[iZone]->PreprocessHistoryOutput(config[iZone]);
+    /*--- If dry-run is used, do not open/overwrite history file. ---*/
+    output[iZone]->PreprocessHistoryOutput(config[iZone], !dry_run);
 
     output[iZone]->PreprocessVolumeOutput(config[iZone]);
 
@@ -3354,7 +3373,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
       cout << endl <<"------------------- Output Preprocessing ( Multizone ) ------------------" << endl;
 
     driver_output = new CMultizoneOutput(driver_config, config, nDim);
-    driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config);
+    driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
 
 
@@ -3750,6 +3769,10 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
+  
+  /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
+  
+  StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;
 
@@ -4005,6 +4028,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
+  
+  /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
+  
+  StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;
 
