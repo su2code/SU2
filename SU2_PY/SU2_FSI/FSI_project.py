@@ -245,7 +245,7 @@ class Project:
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
        else:   
           x =  self.design[self.design_iter].getx()   
-          x_old =  self.design[self.design_iter].getx_old() 
+          x_old =  self.design[self.design_iter].getxold() 
           print('x= {}'.format(x ))  
           print('x_old= {}'.format(x_old )) 
           delta = x - x_in
