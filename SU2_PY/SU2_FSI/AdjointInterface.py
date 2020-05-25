@@ -890,7 +890,7 @@ class AdjointInterface:
             self.MPIPrint('\n##### Transferring displacement adjoint to the beam solver\n')
             self.MPIBarrier()
             self.transferDisplacementAdjoint_SourceTerm(FSIconfig, FluidSolver, SolidSolver, MLSSolver)
-            self.printDisplDisplacementAdjoint(True)
+            self.printDisplDisplacementAdjoint(False)
 
             # --- Solid solver call for FSI subiteration --- #
 
@@ -906,7 +906,7 @@ class AdjointInterface:
         self.MPIBarrier()
 
         # -- Outputting Displacement Adjoints on the Fluid Boundary
-        #self.printDisplDisplacementAdjoint(True)
+        self.printDisplDisplacementAdjoint(True)
 
         self.MPIPrint('\nBGS is converged (strong coupling)')
         self.MPIPrint(' ')
@@ -938,7 +938,8 @@ class AdjointInterface:
        if printing == True:
           if self.haveSolidSolver:
              print("Saving displacement adjoints to check convergence")              
-             s = open("Boundary_Nodes_Sensitivity_" + str(int(self.FSIIter)) + ".dat", "w")    
+             #s = open("Boundary_Nodes_Sensitivity_" + str(int(self.FSIIter)) + ".dat", "w")    
+             s = open("Boundary_Nodes_Sensitivity" + ".dat", "w")                 
              for i in range(0, self.nFluidInterfacePhysicalNodes):
                 s.write(str(i) + "\t") 
                 s.write(str(self.globalFluidCoordinates[i][0]) + "\t" + str(self.globalFluidCoordinates[i][1]) + "\t" + str(self.globalFluidCoordinates[i][2]) + "\t")

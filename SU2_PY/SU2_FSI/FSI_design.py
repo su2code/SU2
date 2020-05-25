@@ -66,7 +66,7 @@ import sys
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
-from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal
+from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal, FSIAdjoint, ChainRule
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------
@@ -101,13 +101,14 @@ class Design:
         self.deformation = False
         self.geo = False
         self.primal = False
-        self.Adjoint = False
+        self.adjoint = False
         
         
         self.c_eq = None
         self.c_ieq_plus = None
         self.c_ieq_minus = None
         self.obj_f = None
+        self.obj_df = None
 
     def SU2_DEF(self,deform_folder):    
         
@@ -136,7 +137,12 @@ class Design:
     def FSIAdjoint(self,adj_folder):   
         
         self.Adjoint = True
-
+        
+        # Set up current mesh file name
+        self.UpdateMeshFilename( adj_folder, self.configFSIAdjoint['SU2_CONFIG'])
+        
+        # perform adjoint
+        FSIAdjoint(adj_folder, self.config)        
 
     def SU2_GEO(self, geo_folder):
 
@@ -171,6 +177,21 @@ class Design:
         return np.concatenate((self.c_ieq_plus, - self.c_ieq_minus), axis=0) 
                             
 
+    def pull_obj_df(self,adj_folder,FFD_indexes, PointInv,ffd_degree):
+    
+        if self.Adjoint == True:
+            
+            obj_df = ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree)
+            
+        else:
+            print('Can t evaluate obj_df as Adjoint hasn t run')
+            sys.exit()    
+        
+        # scaling obj_function with gradient factor
+        global_factor = float(self.config['OPT_GRADIENT_FACTOR']) 
+                  
+        return obj_df, global_factor
+
     def UpdateMeshFilename(self, folder, SU2configFile):
         """ 
         Fuction that updates the name of the mesh file input from the config file of GEO, SU2_primal and SU2_Adjoint
@@ -200,6 +221,9 @@ class Design:
         else:   
            obj = obj_scale
            scale = float(1)
+          
+        # also considering OPT_GRADIENT_FACTOR
+        global_factor = float(self.config['OPT_GRADIENT_FACTOR'])
            
         # Now read file
         input_file = open(primal_folder + '/' + 'Objectives.dat')
@@ -219,20 +243,21 @@ class Design:
           logCD = open(primal_folder + '/../../' + logfileCD,"a")  
           logCL = open(primal_folder + '/../../' + logfileCL,"a")
           
-        logCD.write('%25s \n' % str(cd) )
-        logCL.write('%25s \n' % str(cl) )        
+        logCD.write( str(cd) )
+        logCL.write( str(cl) )        
           
         logCD.close()
         logCL.close()
         
         
         if obj =='DRAG':
-           return cd, scale
+           self.obj_f = cd*scale*global_factor 
+           return cd, scale, global_factor
         elif obj =='LIFT':
-           return cl, scale
+           self.obj_f = cl*scale* global_factor
+           return cl, scale, global_factor
         else:
             print('Not implemented objective function.[pull_obj_f in FSI_design.py]')
             sys.exit()
             
-        
-        
+    

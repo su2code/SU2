@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-## \file FSIOpt_interface.py
-#  \python package interfacing with the FSI optimization suite
+## \file FSI_tools.py
+#  \python various tools for the FSI optimization suite
 #  \author Rocco Bombardieri
 #  \version 7.0.2 "Blackbird"
 #
@@ -32,6 +32,7 @@
 import os, sys, shutil
 import subprocess
 import numpy as np
+from math import pow, factorial
 
 def SaveSplineMatrix(config):
     """
@@ -174,7 +175,7 @@ def FSIPrimal(primal_folder, config):
              ./Primal
     '''   
     
-    # going to ./GEO folder
+    # going to ./Primal folder
     os.chdir(primal_folder)    
     command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' pyBeamFSI_opt.py -f ' + config['CONFIG_PRIMAL']
     print (command)
@@ -187,15 +188,27 @@ def FSIPrimal(primal_folder, config):
     # go back to project folder (3 levels up)
     os.chdir( '../../..')    
     
-    return
 
-def Adjoint():
+
+def FSIAdjoint(adj_folder, config):
     '''
             Executes in:
              ./Adjoint
     '''      
-    return    
 
+    # going to ./Primal folder
+    os.chdir(adj_folder)    
+    command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' pyBeamFSI_AD_opt.py -f ' + config['CONFIG_ADJOINT']
+    print (command)
+    # Compose local output file
+    Output_file =  'Output_adjoint.out'   
+    
+    # Launching shell command
+    run_command(command, 'Adjoint', True,  Output_file)
+    
+    # go back to project folder (3 levels up)
+    os.chdir( '../../..')        
+    
 def Geometry(geo_folder, ConfigFileName):
     '''
             Executes in:
@@ -289,3 +302,152 @@ def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
     # returning list as numpy list
 
     return np.array(c_eq_list)  
+
+
+def PullingPrimalAdjointFiles(configOpt, folder, configFSI, pyBeamMesh, pyBeamProp):
+       # pulling primal files
+       command = []
+       # 1
+       config = configOpt['FOLDER'] + '/' + configFSI['SU2_CONFIG']
+       command.append('cp ' + config + ' ' + folder + '/')
+       # 2
+       config = configOpt['FOLDER'] + '/' + configFSI['PYBEAM_CONFIG']
+       command.append('cp ' + config + ' ' + folder + '/')
+       # 3
+       config = configOpt['FOLDER'] + '/' + configFSI['MLS_CONFIG_FILE_NAME']
+       command.append('cp ' + config + ' ' + folder + '/')
+       # 4
+       spline = configOpt['FOLDER'] + '/' + 'Spline.npy'
+       command.append('cp ' + spline + ' ' + folder + '/')      
+       for i in range(len(command)):
+          run_command(command[i], 'Pulling primal config file ' + str(i) , False) 
+          
+       # pulling files for pyBeam (mesh and properties)
+       command = []
+       # 1
+       config = configOpt['FOLDER'] + '/' + pyBeamMesh
+       command.append('cp ' + config + ' ' + folder + '/')
+       # 2
+       config = configOpt['FOLDER'] + '/' + pyBeamProp
+       command.append('cp ' + config + ' ' + folder + '/')       
+       for i in range(len(command)):
+          run_command(command[i], 'Pulling primal pyBeam file ' + str(i) , False)        
+          
+def ReadPointInversion(configDef,MeshFile):
+    # First it is necessary to look for the DV_MARKER 
+    DV_MARKER = readConfig(configDef, 'DV_MARKER')
+    DV_MARKER = DV_MARKER.strip('( )')
+    # Open mesh file
+    PointInv_arr = []
+    input_file = open(MeshFile)
+    while 1:
+        line = input_file.readline()
+        if not line:
+            break
+        # remove line returns
+        line = line.strip('\r\n')
+        # make sure it has useful data
+        if (line[0] == '%'):
+            continue
+        if line.startswith(DV_MARKER):
+            line = line.split()
+            a = [int(line[1]),float(line[2]),float(line[3]),float(line[4])]
+            PointInv_arr.append(a)
+    PointInv = np.array(PointInv_arr) 
+    # Sorting according to first column index
+    PointInv = PointInv[PointInv[:,0].argsort()]
+    
+    return PointInv
+
+def barnstein(l, mi):
+    """ 
+    Barnstein polynomials. L is the order of the polinomial. Mi is the parametric point (0,1) around which is evaluated.
+    Output is the vector of polynomial coefficients.
+    """
+    N = np.zeros((l+1, 1))    
+    for i in range(l+1):
+       N[i] = ( factorial(l)/factorial(i)/factorial(l-i) )* pow((1-mi),(l-i))*pow(mi,i)
+       
+    return N 
+
+def readDVParam(config_DEF):
+    """ 
+    This fuction returns the matrix of the i,j,k indices of the DV params. 
+    layout: DV_PARAM= ( WING_FFD,    0.0,    0.0,  0.0,   0.0,    0.0,    1.0) ; 
+    FFD_CONTROL_POINT ( FFD_BoxTag, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )    
+    For now only one FFD box is considered: oner FFD box name
+    For now only z displacements are taken into consideration: ... x_Disp = 0, y_Disp = 0, z_Disp = 1 )
+    This is the order in which x_dv are provided by the optimizator and whic hare given to SU2_DEF for deformation (DV_value)
+    These indexes are used for the chain rule of surface grid sensitivities
+    """    
+    
+    
+    dv_param_str = readConfig(config_DEF, 'DV_PARAM')
+    
+    dv_param_str = dv_param_str.split(';')
+    FFD_indexes = np.empty([len(dv_param_str),3])
+    for i in range(len(dv_param_str)):
+       dv_param_str[i] = dv_param_str[i].strip('( )')
+       a = dv_param_str[i].split(',')
+       FFD_indexes[i,:] = [int(float(a[1].strip())),int(float(a[2].strip())),int(float(a[3].strip()))]    
+       
+    return   FFD_indexes
+
+def readBoundarySensitivities(SensFile):
+    # Open mesh file
+    GridSensitivities_arr = []
+    input_file = open(SensFile)
+    while 1:
+        line = input_file.readline()
+        if not line:
+            break
+        # remove line returns
+        line = line.strip('\r\n')
+        line = line.split()
+        a =   [float(line[4]), float(line[5]), float(line[6]) ]
+        GridSensitivities_arr.append(a)
+        
+    GridSensitivities = np.array(GridSensitivities_arr)  
+    
+    return GridSensitivities
+          
+def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):     # To be tested
+    """ 
+    Chain rule to evaluate sensitivity of obj_f with respect to the FFD box control points
+    """    
+    
+    # Reading boundary nodes sensitivities
+    SensFile = adj_folder + '/' + 'Boundary_Nodes_Sensitivity.dat'
+    GridSensitivities = readBoundarySensitivities(SensFile)
+    
+    # number of control points with respect to which I evaluate sensitivity
+    Nalpha = np.shape(FFD_indexes)[0]
+    
+    # Number of boundary grid points
+    Nmesh = np.shape(PointInv)[0]
+    # Initialization of sensitivity matrix this has to be multiplied for each DoF/DeltaX_alpha DoF/DeltaY_alpha DoF/DeltaZ_alpha 
+    # where DoF/DeltaX_alpha(i) is the total derivative of the obj_f with respect of the i-th boundary node X displacement
+    chain = np.zeros((Nmesh, Nalpha)) 
+    
+    # Loop over the mesh points
+    for i in range(Nmesh):
+       Ni =  barnstein(ffd_degree[0], PointInv[i,1] )
+       Nj =  barnstein(ffd_degree[1], PointInv[i,2] )
+       Nk =  barnstein(ffd_degree[2] , PointInv[i,3] )
+       for j in range(Nalpha):
+           chain[i,j] =  Ni[ FFD_indexes[j, 0] ] * Nj[ FFD_indexes[j, 1] ] *Nk[ FFD_indexes[j, 2] ]
+    
+    
+    # chain rule for the sensitivity (for now only Z is allowed)
+    obj_df = np.zeros((Nalpha)) 
+    
+    for i in range(Nalpha):
+        obj_df[i] = GridSensitivities[:, 2]* chain[:,i]
+        
+        
+    return obj_df  
+    
+    
+    
+    
+    

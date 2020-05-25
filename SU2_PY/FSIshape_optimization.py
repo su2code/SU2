@@ -27,7 +27,7 @@
 
 import os, sys, shutil
 from SU2_FSI.FSI_config import OptConfig as OptConfig
-from SU2_FSI.FSI_tools import SaveSplineMatrix, readConfig
+from SU2_FSI.FSI_tools import SaveSplineMatrix, readConfig, readDVParam
 from SU2_FSI.FSI_project import Project
 from optparse import OptionParser  # use a parser for configuration
 from scipy.optimize import fmin_slsqp
@@ -77,7 +77,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     # Performing spline
     print('Splining commented')
     #SaveSplineMatrix(project.config)
-     
+          
     # function handles
     func           = obj_f
     f_eqcons       = con_ceq
@@ -90,8 +90,8 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     
     # number of design variables  (this is read from the DEF input file)
     n_dv = len(x0)
-    project.n_dv
-     
+    project.n_dv = n_dv
+        
     # prescale x0 # Not interested at the moment
     #dv_scales = project.config['DEFINITION_DV']['SCALE']
     #k = 0
