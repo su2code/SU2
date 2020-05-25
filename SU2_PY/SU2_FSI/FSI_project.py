@@ -33,7 +33,7 @@ import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
 from SU2_FSI import FSI_design
-from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion
+from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion, WriteSolution
 from SU2_FSI.FSI_design import Design
 from SU2_FSI.FSI_tools import  readConfig
 # -------------------------------------------------------------------
@@ -150,27 +150,31 @@ class Project:
         self.CheckNewDesign(x_new)
         
         
-        #Check if Geo has been executed, if it hasn't execute Geo
+        #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
         
         print('con_ceq')
         # pulls constraint equality
         c_eq = self.design[self.design_iter].pull_c_eq(self.geo_folder)
-        # return ceq
         
+        # return ceq        
         return c_eq
     
     def con_dceq(self,x_new):
         
-        # Check if new design is needed (it won't as geo gradient is calculated after ge       
+        # Check if new design is needed (it won't as geo gradient is calculated after geo)       
         # In case start new design and deform
         self.CheckNewDesign(x_new)
-        #If Geo hasn't been executed execute Geo
+
+        #Check if Geo has been executed, if it hasn't, execute Geo
+        self.CheckGeo()   
         
+        print('con_dceq')
         # pull gradient of constraint equality
+        dc_eq, global_factor = self.design[self.design_iter].pull_c_deq( self.geo_folder)
         
         # return dceq
-        return
+        return dc_eq*global_factor
     
     def con_cieq(self,x_new):
         
@@ -178,7 +182,7 @@ class Project:
         # In case start new design and deform
         self.CheckNewDesign(x_new)
         
-        #Check if Geo has been executed, if it hasn't execute Geo
+        #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
         
         print('con_cieq')
@@ -190,15 +194,19 @@ class Project:
     
     def con_dcieq(self,x_new):
         
-        # Check if new design is needed (it won't as geo gradient is calculated after ge       
+        # Check if new design is needed (it won't as geo gradient is calculated after geo)       
         # In case start new design and deform
         self.CheckNewDesign(x_new)
-        #If Geo hasn't been executed execute Geo
+
+        #Check if Geo has been executed, if it hasn't, execute Geo
+        self.CheckGeo()
         
+        print('con_diceq')
         # pull gradient of constraint inequality
-        
+        c_dieq, global_factor = self.design[self.design_iter].pull_c_dieq(self.geo_folder)
+       
         # return dcieq    
-        return
+        return c_dieq*global_factor
         
         
     def clean_previous_designs(self):
@@ -226,6 +234,8 @@ class Project:
            self.design_iter += 1
            # starting new design
            self.InitializeNewDesign(x_in)
+           # Writing solution to Output           
+           WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
        else:    
           delta = self.design[self.design_iter].x - x_in
           module = np.linalg.norm(delta)
@@ -234,6 +244,8 @@ class Project:
              self.design_iter += 1
              # starting new design
              self.InitializeNewDesign(x_in)
+             # Writing solution to Output
+             WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
              # performing mesh deform
              self.DeformMesh()
           else:
