@@ -2,7 +2,7 @@
  * \file fvs.cpp
  * \brief Implementations of Flux-Vector-Splitting schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -100,6 +100,8 @@ CUpwMSW_Flow::~CUpwMSW_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iDim, iVar, jVar, kVar;
   su2double P_i, P_j;

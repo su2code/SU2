@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridFEM.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 /*!
  * \class CPrimalGridFEM
  * \brief Class to define primal grid element for the FEM solver.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CPrimalGridFEM final: public CPrimalGrid {
 private:
@@ -159,7 +159,7 @@ public:
    * \brief Make available the global offset of the solution DOFs of this element.
    * \return The global offset of the solution DOFs.
    */
-  inline unsigned long GetGlobalOffsetDOFsSol(void) { return offsetDOFsSolGlobal; }
+  inline unsigned long GetGlobalOffsetDOFsSol(void) override { return offsetDOFsSolGlobal; }
 
   /*!
    * \brief Get the number of element that are neighbor to this element.

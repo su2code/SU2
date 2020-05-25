@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -137,7 +137,7 @@ CNSSolver::~CNSSolver(void) {
   delete [] Surface_MaxHF_Visc;
   delete [] Surface_Buffet_Metric;
 
-  if (CSkinFriction != NULL) {
+  if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete [] CSkinFriction[iMarker][iDim];
@@ -147,7 +147,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] CSkinFriction;
   }
 
-  if (HeatConjugateVar != NULL) {
+  if (HeatConjugateVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         delete [] HeatConjugateVar[iMarker][iVertex];
@@ -157,7 +157,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] HeatConjugateVar;
   }
 
-  if (Buffet_Sensor != NULL) {
+  if (Buffet_Sensor != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++){
       delete [] Buffet_Sensor[iMarker];
     }
@@ -171,108 +171,27 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool disc_adjoint         = config->GetDiscrete_Adjoint();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
   bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool fixed_cl             = config->GetFixed_CL_Mode();
-  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
-  bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
-  bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
-                              (config->GetKind_Upwind_Flow() == ROE ||
-                               config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
   bool wall_functions       = config->GetWall_Functions();
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
+  /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
-  if (fixed_cl && !disc_adjoint && !cont_adjoint) {
-    SU2_OMP_MASTER
-    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Set the primitive variables ---*/
-
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  SU2_OMP_BARRIER
-
-  SU2_OMP_ATOMIC
-  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
-      unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      config->SetNonphysical_Points(ErrorCounter);
-    }
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Compute the engine properties ---*/
-
-  if (engine) {
-    SU2_OMP_MASTER
-    GetPower_Properties(geometry, config, iMesh, Output);
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Compute the actuator disk properties and distortion levels ---*/
-
-  if (actuator_disk) {
-    SU2_OMP_MASTER
-    {
-      Set_MPI_ActDisk(solver_container, geometry, config);
-      SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
-    }
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Compute NearField MPI ---*/
-
-  if (nearfield) {
-    SU2_OMP_MASTER
-    Set_MPI_Nearfield(geometry, config);
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Artificial dissipation ---*/
-
-  if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-  }
-
-  /*--- Roe Low Dissipation Sensor ---*/
-
-  if (roe_low_dissipation){
-    SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
-      SetUpwind_Ducros_Sensor(geometry, config);
-    }
-  }
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
   if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
+    }
   }
 
   /*--- Compute gradient of the primitive variables ---*/
@@ -280,12 +199,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
   }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model
-   or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
+   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
     SetPrimitive_Limiter(geometry, config);
@@ -342,10 +261,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_BARRIER
   }
 
-  /*--- Initialize the Jacobian matrices ---*/
-
-  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
-
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
@@ -383,10 +298,6 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 
     nonPhysicalPoints += !physical;
 
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
   }
 
   return nonPhysicalPoints;
@@ -395,7 +306,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config) {
 
-  const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
                          (config->GetKind_Turb_Model() == SST_SUST);
 
@@ -404,13 +315,13 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
-  auto iPoint = geometry->edge[iEdge]->GetNode(0);
-  auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-  numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                     geometry->node[jPoint]->GetCoord());
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                     geometry->nodes->GetCoord(jPoint));
 
-  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
   /*--- Primitive and secondary variables. ---*/
 
@@ -440,7 +351,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   auto residual = numerics->ComputeResidual(config);
 
-  if ((MGLevel != MESH_0) && (omp_get_num_threads() > 1)) {
+  if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
     if (implicit)
       Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -550,8 +461,8 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Coord = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
+        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -651,11 +562,11 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
+        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           /*--- Force computation ---*/
@@ -1045,7 +956,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
 
@@ -1068,7 +979,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
@@ -1097,7 +1008,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -1125,7 +1036,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
         /*--- Get the grid velocity at the current boundary node ---*/
 
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
@@ -1204,8 +1115,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
           /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-          Coord_i = geometry->node[iPoint]->GetCoord();
-          Coord_j = geometry->node[Point_Normal]->GetCoord();
+          Coord_i = geometry->nodes->GetCoord(iPoint);
+          Coord_j = geometry->nodes->GetCoord(Point_Normal);
 
           dist_ij = 0;
           for (iDim = 0; iDim < nDim; iDim++)
@@ -1297,7 +1208,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
 
@@ -1319,7 +1230,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- If it is a customizable patch, retrieve the specified wall temperature. ---*/
 
@@ -1346,8 +1257,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      Coord_i = geometry->node[iPoint]->GetCoord();
-      Coord_j = geometry->node[Point_Normal]->GetCoord();
+      Coord_i = geometry->nodes->GetCoord(iPoint);
+      Coord_j = geometry->nodes->GetCoord(Point_Normal);
       dist_ij = 0;
       for (iDim = 0; iDim < nDim; iDim++)
         dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -1357,7 +1268,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       }
       else {
@@ -1440,7 +1351,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Get the grid velocity at the current boundary node ---*/
 
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
@@ -1586,13 +1497,13 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
 
-      su2double wall_distance = geometry->node[iPoint]->GetWall_Distance();
+      su2double wall_distance = geometry->nodes->GetWall_Distance(iPoint);
 
       nodes->SetRoe_Dissipation_FD(iPoint, wall_distance);
 
     } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {
 
-      const su2double delta = geometry->node[iPoint]->GetMaxLength();
+      const su2double delta = geometry->nodes->GetMaxLength(iPoint);
       assert(delta > 0 && "Delta must be initialized and non-negative");
       nodes->SetRoe_Dissipation_NTS(iPoint, delta, config->GetConst_DES());
     }
@@ -1621,7 +1532,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
   su2double Temperature_Ref = config->GetTemperature_Ref();
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
 
@@ -1640,7 +1551,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute dual-grid area and boundary normal ---*/
 
@@ -1663,8 +1574,8 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      Coord_i = geometry->node[iPoint]->GetCoord();
-      Coord_j = geometry->node[Point_Normal]->GetCoord();
+      Coord_i = geometry->nodes->GetCoord(iPoint);
+      Coord_j = geometry->nodes->GetCoord(Point_Normal);
       dist_ij = 0;
       for (iDim = 0; iDim < nDim; iDim++)
         dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -1674,7 +1585,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       }
       else {
@@ -1782,7 +1693,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
         /*--- Get the grid velocity at the current boundary node ---*/
 
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
@@ -1979,12 +1890,12 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
         /*--- Check if the node belongs to the domain (i.e, not a halo node)
          and the neighbor is not part of the physical boundary ---*/
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
-          Coord = geometry->node[iPoint]->GetCoord();
-          Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
+          Coord_Normal = geometry->nodes->GetCoord(Point_Normal);
 
           /*--- Compute dual-grid area and boundary normal ---*/
 

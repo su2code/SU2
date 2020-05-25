@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -264,16 +264,18 @@ protected:
 
 #ifdef HAVE_OMP
   vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
 #else
   array<DummyGridColor<>,1> EdgeColoring;
+  /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
+  static constexpr bool ReducerStrategy = false;
 #endif
-  unsigned long ColorGroupSize; /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
 
-  /*--- Edge fluxes, for OpenMP parallelization on coarse grids. As it is difficult to
-   * color them, we first store the fluxes and then compute the sum for each cell.
-   * This strategy is thread-safe but lower performance than writting to both end
-   * points of each edge, so we only use it when necessary, i.e. coarse grids and
-   * with more than one thread per MPI rank. ---*/
+  /*--- Edge fluxes, for OpenMP parallelization off difficult-to-color grids.
+   * We first store the fluxes and then compute the sum for each cell.
+   * This strategy is thread-safe but lower performance than writting to both
+   * end points of each edge, so we only use it when necessary, i.e. when the
+   * coloring does not allow "enough" parallelism. ---*/
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
@@ -300,6 +302,18 @@ protected:
   void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
    * \brief Update the AoA and freestream velocity at the farfield.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -309,14 +323,6 @@ protected:
    */
   void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                        CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute Ducros Sensor for Roe Dissipation.
@@ -360,11 +366,13 @@ protected:
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
+   * \brief Compute the undivided laplacian for the solution and the
+   *        dissipation sensor for centered schemes.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry,
+                                                              CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -373,7 +381,6 @@ protected:
    */
   inline virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) { }
 
-private:
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -381,9 +388,8 @@ private:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output);
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                               CConfig *config, bool Output);
 
 protected:
 
@@ -406,7 +412,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerSolver(void);
+  ~CEulerSolver(void) override;
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -437,7 +443,6 @@ public:
       Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
     return sqrt(Vel2);
   }
-
 
   /*!
    * \brief Compute the density multiply by energy at the infinity.
@@ -825,7 +830,6 @@ public:
                   CConfig *config,
                   unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the boundary condition using characteristic recostruction.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -871,7 +875,6 @@ public:
                 CNumerics *visc_numerics,
                 CConfig *config,
                 unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose a subsonic inlet boundary condition.
@@ -937,7 +940,6 @@ public:
                  CConfig *config,
                  unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -953,7 +955,6 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose the nacelle inflow boundary condition.
@@ -991,7 +992,7 @@ public:
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline void Set_NewSolution(CGeometry *geometry) final { nodes->SetSolution_New(); }
+  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
@@ -2141,7 +2142,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ttotal == NULL || Inlet_Ttotal[val_marker] == NULL)
+    else if (Inlet_Ttotal == nullptr || Inlet_Ttotal[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2163,7 +2164,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ptotal == NULL || Inlet_Ptotal[val_marker] == NULL)
+    else if (Inlet_Ptotal == nullptr || Inlet_Ptotal[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2187,7 +2188,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
         SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2279,7 +2280,7 @@ public:
     int iVar;
 
     for( iVar = 0; iVar < nPrimVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
         delete [] SlidingState[val_marker][val_vertex][iVar];
     }
 

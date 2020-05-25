@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.2 "Blackbird"',
+        version: '7.0.4 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -150,6 +150,8 @@ elif get_option('enable-openblas')
 
 endif
 
+catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
@@ -166,6 +168,8 @@ subdir('SU2_MSH/src')
 subdir('SU2_SOL/src')
 # install python scripts
 subdir('SU2_PY')
+# unit tests
+subdir('UnitTests')
 
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
@@ -173,7 +177,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.2 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.0.4 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

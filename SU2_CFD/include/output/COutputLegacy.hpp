@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -320,17 +320,6 @@ public:
    * \param[in] output - Create output files.
    */
   void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-
-  /*!
-   * \brief Create and write the file with the FSI convergence history.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Solver for all physical problems.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
-                         unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
 
   /*!
    * \brief Create and write the file with the FSI convergence history.

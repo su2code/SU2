@@ -2,7 +2,7 @@
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
  * \author T. Kattmann, T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,8 +105,8 @@ void CSTLFileWriter::Write_Data(){
   }
 
   /*--- Free temporary memory. ---*/
-  if(buffRecvCoords != NULL) delete [] buffRecvCoords;
-  if(buffRecvTriaCount != NULL) delete [] buffRecvTriaCount;
+  delete [] buffRecvCoords;
+  delete [] buffRecvTriaCount;
 }
 
 
@@ -265,7 +265,7 @@ void CSTLFileWriter::GatherCoordData(){
                   MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Free temporary memory. ---*/
-  if(buffSendCoords != NULL) delete [] buffSendCoords;
+  delete [] buffSendCoords;
 }
 
 

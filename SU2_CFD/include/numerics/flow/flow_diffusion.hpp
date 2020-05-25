@@ -2,7 +2,7 @@
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -213,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Base();
+  ~CAvgGrad_Base() override;
 
   /*!
    * \brief Set the value of the wall shear stress at point i and j (wall functions).

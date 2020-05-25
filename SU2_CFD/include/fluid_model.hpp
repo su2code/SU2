@@ -2,7 +2,7 @@
  * \file fluid_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -341,35 +341,35 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIdealGas(void);
+  ~CIdealGas(void) override;
 
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  void SetTDState_rhoe (su2double rho, su2double e );
+  void SetTDState_rhoe (su2double rho, su2double e ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure  and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  void SetTDState_PT (su2double P, su2double T );
+  void SetTDState_PT (su2double P, su2double T ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetTDState_Prho (su2double P, su2double rho );
+  void SetTDState_Prho (su2double P, su2double rho ) override;
 
   /*!
    * \brief Set the Dimensionless Internal Energy using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho (su2double P, su2double rho );
+  void SetEnergy_Prho (su2double P, su2double rho ) override;
 
   /*!
    * \brief Set the Dimensionless State using Enthalpy and Entropy
@@ -377,7 +377,7 @@ public:
    * \param[in] th2 - second thermodynamic variable (s).
    *
    */
-  void SetTDState_hs (su2double h, su2double s );
+  void SetTDState_hs (su2double h, su2double s ) override;
 
   /*!
    * \brief Set the Dimensionless State using Density and Temperature
@@ -385,14 +385,14 @@ public:
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  void SetTDState_rhoT (su2double rho, su2double T );
+  void SetTDState_rhoT (su2double rho, su2double T ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (s).
    */
-  void SetTDState_Ps (su2double P, su2double s );
+  void SetTDState_Ps (su2double P, su2double s ) override;
 
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
@@ -401,7 +401,7 @@ public:
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+  void ComputeDerivativeNRBC_Prho (su2double P, su2double rho ) override;
 };
 
 
@@ -432,35 +432,35 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CVanDerWaalsGas(void);
+  ~CVanDerWaalsGas(void) override;
 
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  void SetTDState_rhoe (su2double rho, su2double e );
+  void SetTDState_rhoe (su2double rho, su2double e ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  void SetTDState_PT (su2double P, su2double T );
+  void SetTDState_PT (su2double P, su2double T ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetTDState_Prho (su2double P, su2double rho );
+  void SetTDState_Prho (su2double P, su2double rho ) override;
 
   /*!
    * \brief Set the Dimensionless Internal Energy using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho (su2double P, su2double rho );
+  void SetEnergy_Prho (su2double P, su2double rho ) override;
 
   /*!
    * \brief Set the Dimensionless state using Enthalpy and Entropy
@@ -468,7 +468,7 @@ public:
    * \param[in] s - second thermodynamic variable (s).
    *
    */
-  void SetTDState_hs (su2double h, su2double s );
+  void SetTDState_hs (su2double h, su2double s ) override;
 
   /*!
    * \brief Set the Dimensionless state using Density and Temperature
@@ -476,14 +476,14 @@ public:
    * \param[in] T - second thermodynamic variable (T).
    *
    */
-  void SetTDState_rhoT (su2double rho, su2double T );
+  void SetTDState_rhoT (su2double rho, su2double T ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] P - first thermodynamic variable (P).
    * \param[in] s - second thermodynamic variable (s).
    */
-  void SetTDState_Ps (su2double P, su2double s );
+  void SetTDState_Ps (su2double P, su2double s ) override;
 
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
@@ -492,7 +492,7 @@ public:
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+  void ComputeDerivativeNRBC_Prho (su2double P, su2double rho ) override;
 
 };
 
@@ -542,35 +542,35 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPengRobinson(void);
+  ~CPengRobinson(void) override;
 
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  void SetTDState_rhoe (su2double rho, su2double e );
+  void SetTDState_rhoe (su2double rho, su2double e ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  void SetTDState_PT (su2double P, su2double T );
+  void SetTDState_PT (su2double P, su2double T ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetTDState_Prho (su2double P, su2double rho );
+  void SetTDState_Prho (su2double P, su2double rho ) override;
 
   /*!
    * \brief Set the Dimensionless Energy using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho (su2double P, su2double rho );
+  void SetEnergy_Prho (su2double P, su2double rho ) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -579,7 +579,7 @@ public:
    * \param[in] th2 - second thermodynamic variable (s).
    *
    */
-  void SetTDState_hs (su2double h, su2double s );
+  void SetTDState_hs (su2double h, su2double s ) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -588,14 +588,14 @@ public:
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  void SetTDState_rhoT (su2double rho, su2double T );
+  void SetTDState_rhoT (su2double rho, su2double T ) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (s).
    */
-  void SetTDState_Ps (su2double P, su2double s );
+  void SetTDState_Ps (su2double P, su2double s ) override;
 
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
@@ -604,7 +604,7 @@ public:
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+  void ComputeDerivativeNRBC_Prho (su2double P, su2double rho ) override;
 
 };
 
@@ -632,13 +632,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantDensity(void);
+  ~CConstantDensity(void) override;
   
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] T - Temperature value at the point.
    */
-  void SetTDState_T(su2double val_Temperature);
+  void SetTDState_T(su2double val_Temperature) override;
   
 };
 
@@ -668,14 +668,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncIdealGas(void);
+  ~CIncIdealGas(void) override;
   
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] T - Temperature value at the point.
    */
   
-  void SetTDState_T(su2double val_Temperature);
+  void SetTDState_T(su2double val_Temperature) override;
   
 };
 
@@ -707,19 +707,19 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncIdealGasPolynomial(void);
+  ~CIncIdealGasPolynomial(void) override;
   
   /*!
    * \brief Set the temperature polynomial coefficients for variable Cp.
    * \param[in] config - configuration container for the problem.
    */
-  void SetCpModel(CConfig *config);
+  void SetCpModel(CConfig *config) override;
   
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] T - Temperature value at the point.
    */
-  void SetTDState_T(su2double val_temperature);
+  void SetTDState_T(su2double val_temperature) override;
   
 };
 

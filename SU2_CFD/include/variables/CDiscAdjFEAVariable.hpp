@@ -2,11 +2,11 @@
  * \file CDiscAdjFEAVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver.
  * \author T. Albring, R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -34,7 +34,7 @@
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CDiscAdjFEAVariable : public CVariable {
 protected:
@@ -60,11 +60,6 @@ protected:
   MatrixType Solution_Direct_Vel;
   MatrixType Solution_Direct_Accel;
 
-  MatrixType Cross_Term_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative;
-
-  MatrixType Solution_BGS;
-
   /*!
    * \brief Constructor of the class.
    * \param[in] disp - Pointer to the adjoint value (initialization value).
@@ -83,7 +78,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEAVariable() = default;
+  ~CDiscAdjFEAVariable() override = default;
 
   /*!
    * \brief Set the sensitivity at the node
@@ -239,45 +234,5 @@ public:
    * \brief Set the value of the old velocity (Structural Analysis - adjoint).
    */
   void Set_OldSolution_Vel() final;
-
-  /*!
-   * \brief Set the contribution of crossed terms into the derivative.
-   */
-  inline void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Cross_Term_Derivative(iPoint,iVar) = der;
-  }
-
-  /*!
-   * \brief Get the contribution of crossed terms into the derivative.
-   */
-  inline su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const final { return Cross_Term_Derivative(iPoint,iVar); }
-
-  /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const final {
-    return Geometry_CrossTerm_Derivative(iPoint,iVar);
-  }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] der - cross term derivative.
-   */
-  inline void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Geometry_CrossTerm_Derivative(iPoint,iVar) = der;
-  }
-
-  /*!
-   * \brief Set the value of the adjoint solution in the current BGS subiteration.
-   */
-  inline void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double val_solution) final { Solution_BGS(iPoint,iDim) = val_solution; }
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const final { return Solution_BGS(iPoint,iDim); }
 
 };

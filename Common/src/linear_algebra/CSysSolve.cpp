@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -206,6 +206,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -240,7 +241,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Set the norm to the initial initial residual value ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -348,6 +350,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    a temporary CSysVector object for the copy constructor ---*/
 
   if (!gmres_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       W.resize(m+1, x);
@@ -398,7 +401,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Set the norm to the initial residual value ---*/
 
-  norm0 = beta;
+  if (tol_type == LinearToleranceType::RELATIVE)
+    norm0 = beta;
 
   /*--- Output header information including initial residual ---*/
 
@@ -495,6 +499,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -531,7 +536,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Set the norm to the initial initial residual value ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -658,6 +664,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -691,7 +698,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
     /*--- Set the norm to the initial initial residual value. ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual. ---*/
 
@@ -919,7 +927,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-        if ( residual < SolverTol*norm0 ) break;
+        if ( residual <= SolverTol*norm0 ) break;
       }
       break;
     case SMOOTHER:
@@ -929,13 +937,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
   }
 
   SU2_OMP_MASTER
-  Residual = residual;
+  {
+    Residual = residual;
+    Iterations = IterLinSol;
+  }
 
   HandleTemporariesOut(LinSysSol);
 
@@ -1059,13 +1071,14 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
-        if ( Residual < SolverTol*Norm0 ) break;
+        if ( Residual <= SolverTol*Norm0 ) break;
       }
       break;
     case PASTIX_LDLT : case PASTIX_LU:
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      Residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -1076,8 +1089,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
+  Iterations = IterLinSol;
   return IterLinSol;
 #else
+  Iterations = 0;
   return 0;
 #endif
 }

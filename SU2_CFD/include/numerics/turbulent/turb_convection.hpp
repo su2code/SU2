@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for discretization of
  *        convective fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,14 +80,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwScalar(void);
+  ~CUpwScalar(void) override;
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 

@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "../include/SU2_CFD.hpp"
 
@@ -48,7 +47,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v7.0.2 \"Blackbird\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v7.0.4 \"Blackbird\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -101,7 +100,6 @@ int main(int argc, char *argv[]) {
 
   CConfig* config = new CConfig(config_file_name, SU2_CFD);
   unsigned short nZone = config->GetnZone();
-  bool fsi = config->GetFSI_Simulation();
   bool turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
@@ -132,7 +130,7 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (multizone && !turbo && !fsi) {
+  else if (multizone && !turbo) {
 
     /*--- Generic multizone problems. ---*/
     if (disc_adj) {
@@ -147,18 +145,6 @@ int main(int argc, char *argv[]) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
-
-  }
-  else if (fsi && disc_adj) {
-
-    /*--- Discrete adjoint FSI problem with the legacy driver. ---*/
-    if (config->GetTime_Domain())
-      SU2_MPI::Error("There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
-
-    if (nZone != 2)
-      SU2_MPI::Error("The legacy discrete adjoint FSI driver only works for two-zone problems. ", CURRENT_FUNCTION);
-
-    driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
 
   }
   else if (turbo) {

@@ -3,11 +3,11 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,52 +29,25 @@
 #include "../../../include/interfaces/cfd/CSlidingInterface.hpp"
 
 
-CSlidingInterface::CSlidingInterface(void) : CInterface() {
-
-}
+CSlidingInterface::CSlidingInterface(void) : CInterface() { }
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
                                      CConfig *config) : CInterface() {
 
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
-  Physical_Constants = NULL;
-  Donor_Variable     = NULL;
-  Target_Variable    = NULL;
-
-  unsigned short iVar;
-
-  Physical_Constants = new su2double[val_nConst];
-  Donor_Variable     = new su2double[val_nVar];
-
-  Target_Variable    = new su2double[val_nVar+1];
+  Physical_Constants = new su2double[val_nConst] ();
+  Donor_Variable     = new su2double[val_nVar] ();
+  Target_Variable    = new su2double[val_nVar+1] ();
 
   valAggregated      = false;
 
   nVar = val_nVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Donor_Variable[iVar]  = 0.0;
-    Target_Variable[iVar] = 0.0;
-  }
-
-  for (iVar = 0; iVar < val_nConst; iVar++) {
-    Physical_Constants[iVar] = 0.0;
-  }
-
 }
 
-CSlidingInterface::~CSlidingInterface(void) {
-
-}
-
+CSlidingInterface::~CSlidingInterface(void) { }
 
 void CSlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                                               CGeometry *donor_geometry, CGeometry *target_geometry,
-                                              CConfig *donor_config, CConfig *target_config) {
-
-}
+                                              CConfig *donor_config, CConfig *target_config) { }
 
 void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                           CConfig *donor_config, unsigned long Marker_Donor,

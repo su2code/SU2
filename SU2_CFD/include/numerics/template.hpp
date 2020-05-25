@@ -5,7 +5,7 @@
  *        new schemes in SU2, in practice you should look for a similar
  *        scheme and try to re-use functionality (not by copy-paste).
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,7 +55,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CConvective_Template(void);
+  ~CConvective_Template(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -64,7 +64,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -90,7 +90,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CViscous_Template(void);
+  ~CViscous_Template(void) override;
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
@@ -99,7 +99,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -129,10 +129,10 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) override;
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSource_Template(void);
+  ~CSource_Template(void) override;
 };

@@ -2,7 +2,7 @@
  * \file CRadSolver.hpp
  * \brief Declaration and inlines of the class to compute a generic radiation solver.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadSolver(void) = default;
+  ~CRadSolver(void) override = default;
 
   /*!
    * \brief Constructor of the class.

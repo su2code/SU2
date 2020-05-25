@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -214,36 +214,31 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
   SU2_OMP_PARALLEL
   {
-
-  unsigned long iPoint;
+  /*--- Store old solution, volumes and coordinates (in case there is grid movement). ---*/
 
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
+
+  geometry->nodes->SetVolume_nM1();
+  geometry->nodes->SetVolume_n();
+
+  if (config->GetGrid_Movement()) {
+    geometry->nodes->SetCoord_n1();
+    geometry->nodes->SetCoord_n();
+  }
 
   SU2_OMP_MASTER
   solver->ResetCFLAdapt();
   SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
 
     /*--- Initialize the underrelaxation ---*/
-
     solver->GetNodes()->SetUnderRelaxation(iPoint, 1.0);
 
     /*--- Initialize the local CFL number ---*/
-
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
-
-    geometry->node[iPoint]->SetVolume_nM1();
-    geometry->node[iPoint]->SetVolume_n();
-
-    /*--- Store old coordinates in case there is grid movement ---*/
-
-    if (config->GetGrid_Movement()) {
-      geometry->node[iPoint]->SetCoord_n1();
-      geometry->node[iPoint]->SetCoord_n();
-    }
   }
 
   /*--- Store old aeroelastic solutions ---*/
@@ -331,12 +326,11 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver **solver_co
     case (CD_EXPLICIT):
       break;
     case (NEWMARK_IMPLICIT):
-      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, solver_container, config);
+      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, config);
       break;
     case (GENERALIZED_ALPHA):
-      //if (fsi)  solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
+      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, config);
+      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, config);
       break;
   }
 

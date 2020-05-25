@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.2 "Blackbird"
+# \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -93,12 +93,19 @@ lib_sources = \
   ../src/geometry/primal_grid/CTetrahedron.cpp \
   ../src/geometry/primal_grid/CQuadrilateral.cpp \
   ../src/geometry/primal_grid/CVertexMPI.cpp \
-  ../src/interpolation_structure.cpp \
+  ../src/interface_interpolation/CInterpolatorFactory.cpp \
+  ../src/interface_interpolation/CInterpolator.cpp \
+  ../src/interface_interpolation/CMirror.cpp \
+  ../src/interface_interpolation/CSlidingMesh.cpp \
+  ../src/interface_interpolation/CIsoparametric.cpp \
+  ../src/interface_interpolation/CNearestNeighbor.cpp \
+  ../src/interface_interpolation/CRadialBasisFunction.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/C1DInterpolation.cpp \
+  ../src/toolboxes/CSymmetricMatrix.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \

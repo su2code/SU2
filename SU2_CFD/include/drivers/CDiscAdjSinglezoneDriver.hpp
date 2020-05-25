@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CDiscAdjSinglezoneDriver
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
@@ -71,23 +71,23 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSinglezoneDriver(void);
+  ~CDiscAdjSinglezoneDriver(void) override;
 
   /*!
    * \brief Preprocess the single-zone iteration
    * \param[in] TimeIter - index of the current time-step.
    */
-  void Preprocess(unsigned long TimeIter);
+  void Preprocess(unsigned long TimeIter) override;
 
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-  void Run(void);
+  void Run(void) override;
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess(void);
+  void Postprocess(void) override;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.

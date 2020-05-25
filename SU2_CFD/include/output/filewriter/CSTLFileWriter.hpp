@@ -2,7 +2,7 @@
  * \file CSTLFileWriter.hpp
  * \brief Headers fo the STL file writer class.
  * \author T. Kattmann, T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CSTLFileWriter
  * \brief Class for writing STL output files.
  * \author T. Kattmann, T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CSTLFileWriter final : public CFileWriter{
 private:
@@ -59,10 +59,10 @@ private:
   vector<int> values_to_receive_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
 
   /*--- Variables for gathering the triangle data in one array. ---*/
-  unsigned long *buffRecvTriaCount = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
+  unsigned long *buffRecvTriaCount = nullptr; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
   unsigned long max_nLocalTriaAll; /*!< \brief Largest Tri count of all processors. */
-  su2double *buffSendCoords = NULL; /*!< \brief Array holding Coordinate data of one processor. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
-  su2double *buffRecvCoords = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+  su2double *buffSendCoords = nullptr; /*!< \brief Array holding Coordinate data of one processor. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+  su2double *buffRecvCoords = nullptr; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
 
 public:
 

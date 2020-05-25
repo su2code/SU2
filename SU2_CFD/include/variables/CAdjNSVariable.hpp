@@ -2,7 +2,7 @@
  * \file CAdjNSVariable.hpp
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjNSVariable() = default;
+  ~CAdjNSVariable() override = default;
 
   /*!
    * \brief Set the value of the force projection vector on the old solution vector.

@@ -1,9 +1,8 @@
 /*!
  * \file CEdge.hpp
- * \brief Headers of the main subroutines for doing the complete dual grid structure.
- *        The subroutines and functions are in the <i>CEdge.cpp</i> file.
+ * \brief Declaration of the edge class <i>CEdge.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,154 +24,187 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
-#include "CDualGrid.hpp"
+#include "../../toolboxes/C2DContainer.hpp"
 
 /*!
  * \class CEdge
- * \brief Class for defining an edge.
+ * \brief Class for defining the edges of the dual grid.
  * \author F. Palacios
  */
-class CEdge final : public CDualGrid {
+class CEdge {
+  static_assert(su2activematrix::Storage == StorageType::RowMajor, "Needed to return normal as pointer.");
+
 private:
-  su2double *Coord_CG;      /*!< \brief Center-of-gravity of the element. */
-  unsigned long *Nodes;   /*!< \brief Vector to store the global nodes of an element. */
-  su2double *Normal;        /*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
+  su2matrix<unsigned long> Nodes; /*!< \brief Vector to store the node indices of the edge. */
+  su2activematrix Normal;         /*!< \brief Normal (area) of the edge. */
+  su2activematrix Coord_CG;       /*!< \brief Center-of-gravity (mid point) of the edge. */
 
 public:
+  enum NodePosition : unsigned long {LEFT = 0, RIGHT = 1};
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_iPoint - First node of the edge.
-   * \param[in] val_jPoint - Second node of the edge.
-   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] nEdge - Number of edges
+   * \param[in] nDim - Number of dimensions of the problem.
    */
-  CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim);
+  CEdge(unsigned long nEdge, unsigned long nDim);
 
   /*!
-   * \brief Destructor of the class.
+   * \brief No default construction.
    */
-  ~CEdge(void) override;
+  CEdge() = delete;
 
   /*!
    * \brief Set the center of gravity of the edge.
-   * \param[in] val_coord - Coordinates of all the nodes needed for computing the centre of gravity of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] nodeCoord - Coordinates of the two nodes.
    */
-  void SetCoord_CG(su2double **val_coord);
+  template<class T>
+  void SetCoord_CG(unsigned long iEdge, const T& nodeCoord) {
+    for (auto iDim = 0u; iDim < Coord_CG.cols(); ++iDim)
+      Coord_CG(iEdge,iDim) = 0.5 * (nodeCoord[0][iDim] + nodeCoord[1][iDim]);
+  }
 
   /*!
-   * \brief Obtain the centre of gravity of the edge.
-   * \param[in] val_dim - Position to read the coordinate.
-   * \return Coordinate <i>val_dim</i> of the centre of gravity.
+   * \brief Obtain the center of gravity of the edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] iDim - Dimension.
+   * \return Coordinate of the centre of gravity.
    */
-  inline su2double GetCG(unsigned short val_dim) const { return Coord_CG[val_dim]; }
+  inline su2double GetCG(unsigned long iEdge, unsigned long iDim) const { return Coord_CG(iEdge,iDim); }
 
   /*!
-   * \brief Get the nodes of the edge.
-   * \param[in] val_node - Position of the node that makes the edge.
-   * \return Index of the node that compose the edge.
+   * \brief Get left/right node index defining the edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] iNode - Node index 0 or 1, LEFT or RIGHT.
+   * \return Index of the node that composes the edge.
    */
-
-  inline unsigned long GetNode(unsigned short val_node) const { return Nodes[val_node]; }
+  inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge,iNode); }
 
   /*!
-   * \brief Get the number of nodes of an element.
-   * \return Number of nodes that set an edge (2).
+   * \brief Set the node indices of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] iPoint - Index of left node.
+   * \param[in] jPoint - Index of right node.
    */
-  inline unsigned short GetnNodes() const override { return 2; }
+  inline void SetNodes(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint) {
+    Nodes(iEdge, LEFT) = iPoint;
+    Nodes(iEdge, RIGHT) = jPoint;
+  }
 
   /*!
-   * \brief Compute Volume associated to each edge.
-   * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-   * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
-   * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] val_coord_Point - Coordinates of the point that form the control volume.
+   * \brief Get the number of nodes of an edge (2).
+   */
+  inline unsigned long GetnNodes() const { return 2; }
+
+  /*!
+   * \brief Compute the volume associated with an edge (3D version).
+   * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
+   * \param[in] coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
+   * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] coord_Point - Coordinates of the point that form the control volume.
    * \return Local volume associated to the edge.
    */
-  su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point) const;
+  static su2double GetVolume(const su2double* coord_Edge_CG,
+                             const su2double* coord_FaceElem_CG,
+                             const su2double* coord_Elem_CG,
+                             const su2double* coord_Point);
 
   /*!
-   * \overload
-   * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-   * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] val_coord_Point - Coordinates of the point that form the control volume.
+   * \brief Compute the volume associated with an edge (2D version).
+   * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
+   * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] coord_Point - Coordinates of the point that form the control volume.
    * \return Local volume associated to the edge.
    */
-  su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point) const;
+  static su2double GetVolume(const su2double* coord_Edge_CG,
+                             const su2double* coord_Elem_CG,
+                             const su2double* coord_Point);
 
   /*!
-   * \brief Set the face that correspond to an edge.
-   * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-   * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
-   * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \brief Set the face that corresponds to an edge (3D version).
+   * \param[in] iEdge - Edge index.
+   * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
+   * \param[in] coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
+   * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
    * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
    */
-  void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) override;
+  void SetNodes_Coord(unsigned long iEdge,
+                      const su2double* coord_Edge_CG,
+                      const su2double* coord_FaceElem_CG,
+                      const su2double* coord_Elem_CG);
 
   /*!
-   * \overload
-   * \brief Set the face that correspond to an edge.
-   * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-   * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \brief Set the face that corresponds to an edge (2D version).
+   * \param[in] iEdge - Edge index.
+   * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
+   * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
    * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
    */
-  void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) override;
+  void SetNodes_Coord(unsigned long iEdge,
+                      const su2double* coord_Edge_CG,
+                      const su2double* coord_Elem_CG);
 
   /*!
    * \brief Copy the the normal vector of a face.
-   * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensional).
+   * \param[in] iEdge - Edge index.
+   * \param[out] normal - Object into which the normal (dimensional) will be copied.
    */
-  inline void GetNormal(su2double *val_normal) const override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      val_normal[iDim] = Normal[iDim];
+  template<class T>
+  inline void GetNormal(unsigned long iEdge, T& normal) const {
+    for (auto iDim = 0ul; iDim < Normal.cols(); iDim++)
+      normal[iDim] = Normal(iEdge,iDim);
   }
 
   /*!
    * \brief Get the normal to a face of the control volume asociated with an edge.
+   * \param[in] iEdge - Edge index.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetNormal(void) override {  return Normal; }
+  inline const su2double* GetNormal(unsigned long iEdge) const { return Normal[iEdge]; }
 
   /*!
-   * \brief Initialize normal vector.
+   * \brief Initialize normal vector to 0.
    */
-  inline void SetZeroValues(void) override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim ++)
-      Normal[iDim] = 0.0;
-  }
+  void SetZeroValues(void);
 
   /*!
-   * \brief Set the normal vector.
-   * \param[in] val_face_normal - Vector to initialize the normal vector.
+   * \brief Set the normal vector of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] normal - Vector to initialize the normal vector.
    * \return Value of the normal vector.
    */
-  inline void SetNormal(const su2double *val_face_normal) override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim]=val_face_normal[iDim];
+  template<class T>
+  void SetNormal(unsigned long iEdge, const T& normal) {
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim)
+      Normal(iEdge,iDim) = normal[iDim];
   }
 
   /*!
-   * \brief Add a vector to the normal vector.
-   * \param[in] val_face_normal - Vector to add to the normal vector.
+   * \brief Add a vector to the normal vector of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] normal - Vector to add to the normal vector.
    */
-  inline void AddNormal(const su2double *val_face_normal) override {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] += val_face_normal[iDim];
+  template<class T>
+  void AddNormal(unsigned long iEdge, const T& normal) {
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim)
+      Normal(iEdge,iDim) += normal[iDim];
   }
 
   /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
+   * \brief Subtract a vector to the normal vector of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] normal - Vector to add to the normal vector.
    */
-  inline su2double *GetCoord(void) override { return NULL; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline void SetCoord(const su2double *val_coord) override { }
+  template<class T>
+  void SubNormal(unsigned long iEdge, const T& normal) {
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim)
+      Normal(iEdge,iDim) -= normal[iDim];
+  }
 
 };

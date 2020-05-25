@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,26 +37,23 @@
  */
 class CVertex : public CDualGrid {
 protected:
-  unsigned long *Nodes; /*!< \brief Vector to store the global nodes of an element. */
-  su2double *Normal;      /*!< \brief Normal coordinates of the element and its center of gravity. */
-  su2double Aux_Var;      /*!< \brief Auxiliar variable defined only on the surface. */
-  su2double CartCoord[3];   /*!< \brief Vertex cartesians coordinates. */
-  su2double VarCoord[3];    /*!< \brief Used for storing the coordinate variation due to a surface modification. */
-  su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-  long PeriodicPoint[5];      /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
-  bool ActDisk_Perimeter;     /*!< \brief Identify nodes at the perimeter of the actuator disk */
-  short Rotation_Type;      /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
+  unsigned long Nodes[1];        /*!< \brief Vector to store the global nodes of an element. */
+  su2double Normal[3];           /*!< \brief Normal coordinates of the element and its center of gravity. */
+  su2double Aux_Var;             /*!< \brief Auxiliar variable defined only on the surface. */
+  su2double CartCoord[3];        /*!< \brief Vertex cartesians coordinates. */
+  su2double VarCoord[3];         /*!< \brief Used for storing the coordinate variation due to a surface modification. */
+  su2double *VarRot;             /*!< \brief Used for storing the rotation variation due to a surface modification. */
+  long PeriodicPoint[5];         /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+  bool ActDisk_Perimeter;        /*!< \brief Identify nodes at the perimeter of the actuator disk */
+  short Rotation_Type;           /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
   unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
-  unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
-  unsigned long *Donor_Proc; /*!< \brief indices of donor processor for interpolation across zones in parallel */
-  unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
-  unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
-  su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
-  su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
-  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
+  unsigned long *Donor_Points;   /*!< \brief indices of donor points for interpolation across zones */
+  unsigned long *Donor_Proc;     /*!< \brief indices of donor processor for interpolation across zones in parallel */
+  su2double Basis_Function[3];   /*!< \brief Basis function values for interpolation across zones. */
+  su2double *Donor_Coeff;        /*!< \brief Store a list of coefficients corresponding to the donor points. */
+  unsigned short nDonor_Points;  /*!< \brief Number of points in Donor_Coeff. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_point - Node of the vertex.
@@ -112,6 +109,11 @@ public:
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
   inline su2double *GetNormal(void) override { return Normal; }
+
+  /*!
+   * \brief Get the ith component of the normal.
+   */
+  inline su2double GetNormal(unsigned short iDim) const { return Normal[iDim]; }
 
   /*!
    * \brief Initialize normal vector.
@@ -309,30 +311,6 @@ public:
   inline bool GetActDisk_Perimeter(void) const { return ActDisk_Perimeter; }
 
   /*!
-   * \brief Set the donor element of a vertex for interpolation across zones.
-   * \param[in] val_donorelem - donor element index.
-   */
-  inline void SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
-
-  /*!
-   * \brief Get the donor element of a vertex for interpolation across zones.
-   * \return Value of the donor element of a vertex.
-   */
-  inline long GetDonorElem(void) const { return Donor_Elem; }
-
-  /*!
-   * \brief Set the donor face of a vertex for interpolation across zones.
-   * \param[in] val_donorface- donor face index (w/in donor elem).
-   */
-  inline void SetDonorFace(unsigned short val_donorface) { Donor_Face = val_donorface; }
-
-  /*!
-   * \brief Get the donor face of a vertex for interpolation across zones.
-   * \return Value of the donor face index (w/in donor elem).
-   */
-  inline unsigned short GetDonorFace(void) const { return Donor_Face; }
-
-  /*!
    * \brief Set the finite element basis functions needed for interpolation.
    * \param[in] val_node - a node index of the owner element.
    * \param[in] val_basis - basis function value for the node.
@@ -357,17 +335,6 @@ public:
    * \return Index of the closest neighbor.
    */
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
-
-  /*!
-   * \brief Increment the number of donor points by 1.
-   */
-  inline void IncrementnDonor(void) {nDonor_Points++;}
-
-  /*!
-   * \brief Set the value of nDonor_Points
-   * \param[in] nDonor - the number of donor points
-   */
-  inline void SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
 
   /*!
    * \brief Return the value of nDonor_Points
@@ -419,9 +386,9 @@ public:
 
   /*!
    * \brief Allocate memory based on how many donor points need to be stored.
-   * Uses nDonor_Points
+   * \param[in] nDonor - the number of donor points
    */
-  void Allocate_DonorInfo(void);
+  void Allocate_DonorInfo(unsigned short nDonor);
 
   /*!
    * \brief Get the rotation variation

@@ -2,7 +2,7 @@
  * \file output_structure.inl
  * \brief In-Line subroutines of the <i>output.hpp</i> file.
  * \author J. Smith
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

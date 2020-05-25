@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,7 +76,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshSolver(void);
+  ~CDiscAdjMeshSolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the AD-based mesh adjoint solver.
@@ -101,12 +101,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) override;
-
-  /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Prepare the solver for a new recording.

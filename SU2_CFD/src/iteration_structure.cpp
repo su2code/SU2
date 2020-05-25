@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,7 +55,6 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
   unsigned long nIterMesh;
   bool stat_mesh = true;
   bool adjoint = config->GetContinuous_Adjoint();
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   /*--- Only write to screen if this option is enabled ---*/
   bool Screen_Output = config->GetDeform_Output();
@@ -67,244 +66,142 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
 
   case RIGID_MOTION:
 
-      if (rank == MASTER_NODE) {
-        cout << endl << " Performing rigid mesh transformation." << endl;
-      }
+    if (rank == MASTER_NODE)
+      cout << endl << " Performing rigid mesh transformation." << endl;
 
-      /*--- Move each node in the volume mesh using the specified type
-       of rigid mesh motion. These routines also compute analytic grid
-       velocities for the fine mesh. ---*/
+    /*--- Move each node in the volume mesh using the specified type
+     of rigid mesh motion. These routines also compute analytic grid
+     velocities for the fine mesh. ---*/
 
-      grid_movement->Rigid_Translation(geometry[MESH_0],
-                                       config, val_iZone, TimeIter);
-      grid_movement->Rigid_Plunging(geometry[MESH_0],
-                                    config, val_iZone, TimeIter);
-      grid_movement->Rigid_Pitching(geometry[MESH_0],
-                                    config, val_iZone, TimeIter);
-      grid_movement->Rigid_Rotation(geometry[MESH_0],
-                                    config, val_iZone, TimeIter);
+    grid_movement->Rigid_Translation(geometry[MESH_0], config, val_iZone, TimeIter);
+    grid_movement->Rigid_Plunging(geometry[MESH_0], config, val_iZone, TimeIter);
+    grid_movement->Rigid_Pitching(geometry[MESH_0], config, val_iZone, TimeIter);
+    grid_movement->Rigid_Rotation(geometry[MESH_0], config, val_iZone, TimeIter);
 
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
+    /*--- Update the multigrid structure after moving the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
 
-      grid_movement->UpdateMultiGrid(geometry, config);
+    grid_movement->UpdateMultiGrid(geometry, config);
 
-      break;
+    break;
 
  	/*--- Already initialized in the static mesh movement routine at driver level. ---*/
-  case STEADY_TRANSLATION: case ROTATING_FRAME:
+  case STEADY_TRANSLATION:
+  case ROTATING_FRAME:
     break;
 
   }
 
-  if (config->GetSurface_Movement(DEFORMING)){
-      if (rank == MASTER_NODE)
-        cout << endl << " Updating surface positions." << endl;
+  if (config->GetSurface_Movement(AEROELASTIC) ||
+      config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION)) {
 
-      /*--- Translating ---*/
-
-      /*--- Compute the new node locations for moving markers ---*/
-
-      surface_movement->Surface_Translating(geometry[MESH_0],
-                                            config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                           config, true);
-
-      /*--- Plunging ---*/
-
-      /*--- Compute the new node locations for moving markers ---*/
-
-      surface_movement->Surface_Plunging(geometry[MESH_0],
-                                         config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                           config, true);
-
-      /*--- Pitching ---*/
-
-      /*--- Compute the new node locations for moving markers ---*/
-
-      surface_movement->Surface_Pitching(geometry[MESH_0],
-                                         config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                           config, true);
-
-      /*--- Rotating ---*/
-
-      /*--- Compute the new node locations for moving markers ---*/
-
-      surface_movement->Surface_Rotating(geometry[MESH_0],
-                                         config, TimeIter, val_iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                           config, true);
-
-      /*--- Update the grid velocities on the fine mesh using finite
-       differencing based on node coordinates at previous times. ---*/
-
-      if (!adjoint) {
-        if (rank == MASTER_NODE)
-          cout << " Computing grid velocities by finite differencing." << endl;
-        geometry[MESH_0]->SetGridVelocity(config, TimeIter);
-      }
-
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
-
-      grid_movement->UpdateMultiGrid(geometry, config);
-
-      }
-
-  if (config->GetSurface_Movement(AEROELASTIC)
-      || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION)){
-
-      /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
-      if (IntIter == 0) {
-        if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
-
-          if (rank == MASTER_NODE) {
-            cout << endl << " Performing rigid mesh transformation." << endl;
-          }
-
-          /*--- Move each node in the volume mesh using the specified type
-           of rigid mesh motion. These routines also compute analytic grid
-           velocities for the fine mesh. ---*/
-
-          grid_movement->Rigid_Translation(geometry[MESH_0],
-                                           config, val_iZone, TimeIter);
-          grid_movement->Rigid_Plunging(geometry[MESH_0],
-                                        config, val_iZone, TimeIter);
-          grid_movement->Rigid_Pitching(geometry[MESH_0],
-                                        config, val_iZone, TimeIter);
-          grid_movement->Rigid_Rotation(geometry[MESH_0],
-                                        config, val_iZone, TimeIter);
-
-          /*--- Update the multigrid structure after moving the finest grid,
-           including computing the grid velocities on the coarser levels. ---*/
-
-          grid_movement->UpdateMultiGrid(geometry, config);
-        }
-
-      }
-
-      /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % config->GetAeroelasticIter() == 0) {
+    /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
+    if (IntIter == 0) {
+      if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
 
         if (rank == MASTER_NODE)
-          cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
+          cout << endl << " Performing rigid mesh transformation." << endl;
 
-        /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
+        /*--- Move each node in the volume mesh using the specified type
+         of rigid mesh motion. These routines also compute analytic grid
+         velocities for the fine mesh. ---*/
 
-        solver[MESH_0][FLOW_SOL]->Aeroelastic(surface_movement, geometry[MESH_0], config, TimeIter);
-
-        /*--- Deform the volume grid around the new boundary locations ---*/
-
-        if (rank == MASTER_NODE)
-          cout << " Deforming the volume grid due to the aeroelastic movement." << endl;
-        grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                             config, true);
-
-        /*--- Update the grid velocities on the fine mesh using finite
-         differencing based on node coordinates at previous times. ---*/
-
-        if (rank == MASTER_NODE)
-          cout << " Computing grid velocities by finite differencing." << endl;
-        geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+        grid_movement->Rigid_Translation(geometry[MESH_0], config, val_iZone, TimeIter);
+        grid_movement->Rigid_Plunging(geometry[MESH_0], config, val_iZone, TimeIter);
+        grid_movement->Rigid_Pitching(geometry[MESH_0], config, val_iZone, TimeIter);
+        grid_movement->Rigid_Rotation(geometry[MESH_0], config, val_iZone, TimeIter);
 
         /*--- Update the multigrid structure after moving the finest grid,
          including computing the grid velocities on the coarser levels. ---*/
 
         grid_movement->UpdateMultiGrid(geometry, config);
       }
-        }
-  if (config->GetSurface_Movement(FLUID_STRUCTURE)){
-      if (rank == MASTER_NODE && Screen_Output)
-        cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
+
+    }
+
+    /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
+    else if (IntIter % config->GetAeroelasticIter() == 0) {
+
+      if (rank == MASTER_NODE)
+        cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
+
+      /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
+
+      solver[MESH_0][FLOW_SOL]->Aeroelastic(surface_movement, geometry[MESH_0], config, TimeIter);
 
       /*--- Deform the volume grid around the new boundary locations ---*/
 
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid due to the aeroelastic movement." << endl;
+      grid_movement->SetVolume_Deformation(geometry[MESH_0], config, true);
+
+      /*--- Update the grid velocities on the fine mesh using finite
+       differencing based on node coordinates at previous times. ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Computing grid velocities by finite differencing." << endl;
+      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement->UpdateMultiGrid(geometry, config);
+    }
+
+  }
+
+  if (config->GetSurface_Movement(FLUID_STRUCTURE)) {
+    if (rank == MASTER_NODE && Screen_Output)
+      cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
+
+    /*--- Deform the volume grid around the new boundary locations ---*/
+
+    if (rank == MASTER_NODE && Screen_Output)
+      cout << "Deforming the volume grid." << endl;
+    grid_movement->SetVolume_Deformation(geometry[MESH_0], config, true, false);
+
+    nIterMesh = grid_movement->Get_nIterMesh();
+    stat_mesh = (nIterMesh == 0);
+
+    if (!adjoint && !stat_mesh) {
       if (rank == MASTER_NODE && Screen_Output)
-        cout << "Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                           config, true, false);
-
-      nIterMesh = grid_movement->Get_nIterMesh();
-      stat_mesh = (nIterMesh == 0);
-
-      if (!adjoint && !stat_mesh) {
+        cout << "Computing grid velocities by finite differencing." << endl;
+      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+    }
+    else if (stat_mesh) {
         if (rank == MASTER_NODE && Screen_Output)
-          cout << "Computing grid velocities by finite differencing." << endl;
-        geometry[MESH_0]->SetGridVelocity(config, TimeIter);
-      }
-      else if (stat_mesh) {
-          if (rank == MASTER_NODE && Screen_Output)
-            cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
-      }
+          cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
+    }
 
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
+    /*--- Update the multigrid structure after moving the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
 
-      grid_movement->UpdateMultiGrid(geometry, config);
+    grid_movement->UpdateMultiGrid(geometry, config);
 
   }
-  if (config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)){
 
-    if ((rank == MASTER_NODE) && (!discrete_adjoint) && Screen_Output)
-        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
+  if (config->GetSurface_Movement(EXTERNAL) ||
+      config->GetSurface_Movement(EXTERNAL_ROTATION)) {
 
-      /*--- Deform the volume grid around the new boundary locations ---*/
-
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
-        cout << "Deforming the volume grid." << endl;
-
-      grid_movement->SetVolume_Deformation_Elas(geometry[MESH_0], config, true, false);
-
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
-        cout << "There is no grid velocity." << endl;
-
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
-
-      grid_movement->UpdateMultiGrid(geometry, config);
-
-  }
-  if (config->GetSurface_Movement(EXTERNAL) || config->GetSurface_Movement(EXTERNAL_ROTATION)){
     /*--- Apply rigid rotation to entire grid first, if necessary ---*/
 
     if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
       if (rank == MASTER_NODE)
         cout << " Updating node locations by rigid rotation." << endl;
-      grid_movement->Rigid_Rotation(geometry[MESH_0],
-                                                          config, val_iZone, TimeIter);
+      grid_movement->Rigid_Rotation(geometry[MESH_0], config, val_iZone, TimeIter);
     }
 
     /*--- Load new surface node locations from external files ---*/
 
-      if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE)
       cout << " Updating surface locations from file." << endl;
-    surface_movement->SetExternal_Deformation(geometry[MESH_0],
-                                                         config, val_iZone, TimeIter);
+    surface_movement->SetExternal_Deformation(geometry[MESH_0], config, val_iZone, TimeIter);
 
     /*--- Deform the volume grid around the new boundary locations ---*/
 
     if (rank == MASTER_NODE)
       cout << " Deforming the volume grid." << endl;
-    grid_movement->SetVolume_Deformation(geometry[MESH_0],
-                                                               config, true);
+    grid_movement->SetVolume_Deformation(geometry[MESH_0], config, true);
 
     /*--- Update the grid velocities on the fine mesh using finite
        differencing based on node coordinates at previous times. ---*/
@@ -313,7 +210,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       if (rank == MASTER_NODE)
         cout << " Computing grid velocities by finite differencing." << endl;
       geometry[MESH_0]->SetGridVelocity(config, TimeIter);
-  }
+    }
 
     /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
@@ -321,6 +218,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
     grid_movement->UpdateMultiGrid(geometry, config);
 
   }
+
 }
 
 void CIteration::SetMesh_Deformation(CGeometry **geometry,
@@ -329,35 +227,30 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
                                      CConfig *config,
                                      unsigned short kind_recording) {
 
-  bool ActiveTape = NO;
+  if (!config->GetDeform_Mesh()) return;
 
   /*--- Perform the elasticity mesh movement ---*/
-  if (config->GetDeform_Mesh()) {
 
-    if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
-      /*--- In a primal run, AD::TapeActive returns a false ---*/
-      /*--- In any other recordings, the tape is passive during the deformation ---*/
-      ActiveTape = AD::TapeActive();
-      AD::StopRecording();
-    }
+  const bool ActiveTape = AD::TapeActive();
 
-    /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
-
-    solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
-
-    /*--- Deform the volume grid around the new boundary locations ---*/
-
-    solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
-
-    if (ActiveTape) {
-      /*--- Start recording if it was stopped ---*/
-      AD::StartRecording();
-    }
+  if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
+    /*--- In a primal run, AD::TapeActive returns a false ---*/
+    /*--- In any other recordings, the tape is passive during the deformation. ---*/
+    AD::StopRecording();
   }
 
+  /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
+
+  solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+
+  /*--- Deform the volume grid around the new boundary locations ---*/
+
+  solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
+
+  /*--- Continue recording. ---*/
+  if (ActiveTape) AD::StartRecording();
+
 }
-
-
 
 void CIteration::Preprocess(COutput *output,
                             CIntegration ****integration,
@@ -580,11 +473,12 @@ void CFluidIteration::Iterate(COutput *output,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression
-   with under-relaxation approach. ---*/
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
   if (config[val_iZone]->GetCFL_Adapt() == YES) {
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone]);
+    SU2_OMP_PARALLEL
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -668,11 +562,8 @@ bool CFluidIteration::Monitor(COutput *output,
 
   bool StopCalc = false;
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime - StartTime;
 
 
@@ -760,11 +651,7 @@ void CFluidIteration::Solve(COutput *output,
   /*--- Synchronization point before a single solver iteration.
         Compute the wall clock time required. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   /*--- Preprocess the solver ---*/
   Preprocess(output, integration, geometry, solver, numerics, config,
@@ -884,7 +771,7 @@ void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, C
       /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
       if (Kind_Grid_Movement == GUST) {
         for (iDim = 0; iDim < nDim; iDim++)
-          geometry[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
+          geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, 0.0);
       }
 
       /*--- initialize the gust and derivatives to zero everywhere ---*/
@@ -896,8 +783,8 @@ void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, C
 
       if (Physical_t >= tbegin) {
 
-        x = geometry[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
-        y = geometry[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
+        x = geometry[iMGlevel]->nodes->GetCoord(iPoint)[0]; // x-location of the node.
+        y = geometry[iMGlevel]->nodes->GetCoord(iPoint)[1]; // y-location of the node.
 
         // Gust coordinate
         x_gust = (x - xbegin - Uinf*(Physical_t-tbegin))/L;
@@ -977,13 +864,13 @@ void CFluidIteration::SetWind_GustField(CConfig *config, CGeometry **geometry, C
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGust(iPoint, Gust);
       solver[iMGlevel][FLOW_SOL]->GetNodes()->SetWindGustDer(iPoint, GustDer);
 
-      GridVel = geometry[iMGlevel]->node[iPoint]->GetGridVel();
+      GridVel = geometry[iMGlevel]->nodes->GetGridVel(iPoint);
 
       /*--- Store new grid velocity ---*/
 
       for (iDim = 0; iDim < nDim; iDim++) {
         NewGridVel[iDim] = GridVel[iDim] - Gust[iDim];
-        geometry[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
+        geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, NewGridVel[iDim]);
       }
 
     }
@@ -1357,16 +1244,7 @@ void CHeatIteration::Solve(COutput *output,
   /*--- Synchronization point before a single solver iteration.
         Compute the wall clock time required. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
-
-  /*--- Preprocess the solver ---*/
-
-  Preprocess(output, integration, geometry, solver, numerics, config,
-            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+  StartTime = SU2_MPI::Wtime();
 
   /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
   /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
@@ -1436,435 +1314,305 @@ CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
 void CFEAIteration::Preprocess() { }
 void CFEAIteration::Iterate(COutput *output,
-                                CIntegration ****integration,
-                                CGeometry ****geometry,
-                                CSolver *****solver,
-                                CNumerics ******numerics,
-                                CConfig **config,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement ***grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone,
-                                unsigned short val_iInst
-                                ) {
+                            CIntegration ****integration,
+                            CGeometry ****geometry,
+                            CSolver *****solver,
+                            CNumerics ******numerics,
+                            CConfig **config,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement ***grid_movement,
+                            CFreeFormDefBox*** FFDBox,
+                            unsigned short val_iZone,
+                            unsigned short val_iInst) {
 
-  su2double loadIncrement;
+  bool StopCalc = false;
   unsigned long IntIter = 0;
-  unsigned long TimeIter = config[val_iZone]->GetTimeIter();
-  bool StopCalc;
-  unsigned long iIncrement;
-  unsigned long nIncrements = config[val_iZone]->GetNumberIncrements();
 
-  bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
-  bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Geometrically non-linear problems
+  const unsigned long TimeIter = config[val_iZone]->GetTimeIter();
+  const unsigned long nIncrements = config[val_iZone]->GetNumberIncrements();
 
-  bool disc_adj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
+  const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  const bool disc_adj_fem = config[val_iZone]->GetDiscrete_Adjoint();
 
-  bool incremental_load = config[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
+  /*--- Loads applied in steps (not used for discrete adjoint). ---*/
+  const bool incremental_load = config[val_iZone]->GetIncrementalLoad() && !disc_adj_fem;
 
-  /*--- This is to prevent problems when running a linear solver ---*/
-  if (!nonlinear) incremental_load = false;
+  CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
-  integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
+  feaIntegration->SetConvergence(false);
+
+  /*--- FEA equations ---*/
+  config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
 
   if (linear) {
+    /*--- Run the (one) iteration ---*/
 
     config[val_iZone]->SetInnerIter(0);
 
-    /*--- FEA equations ---*/
+    feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
+                                         RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-    config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
-
-    /*--- Run the iteration ---*/
-
-    integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-        config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-    if (!disc_adj_fem){
-      Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+    if (!disc_adj_fem) {
+      Monitor(output, integration, geometry,  solver, numerics, config,
+              surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
       /*--- Set the convergence monitor to true, to prevent the solver to stop in intermediate FSI subiterations ---*/
       output->SetConvergence(true);
     }
 
   }
-  /*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
-  else if (nonlinear) {
+  else if (nonlinear && !incremental_load) {
 
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
-    if (!incremental_load) {
+    /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases as file output depends on it ---*/
+    const auto CurIter = config[val_iZone]->GetInnerIter();
 
-      /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases as file output depends on it ---*/
-      unsigned long CurIter = config[val_iZone]->GetInnerIter();
+    /*--- Newton-Raphson subiterations ---*/
 
-      IntIter = 0;
+    for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
+
       config[val_iZone]->SetInnerIter(IntIter);
 
-      /*--- FEA equations ---*/
+      feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
+                                           RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-      config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
-
-      /*--- Run the iteration ---*/
-
-      integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-          config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-      if (!disc_adj_fem)
-        Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-      /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
-
-      for (IntIter = 1; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-
-        /*--- Limit to only one iteration for the discrete adjoint recording, restore inner iter (see above) ---*/
-        if (disc_adj_fem) {
-          config[val_iZone]->SetInnerIter(CurIter);
-          break;
-        }
-
-        config[val_iZone]->SetInnerIter(IntIter);
-
-        integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-            config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-        StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-
-        if (StopCalc) break;
-
+      /*--- Limit to only one iteration for the discrete adjoint recording, restore inner iter (see above) ---*/
+      if (disc_adj_fem) {
+        config[val_iZone]->SetInnerIter(CurIter);
+        break;
       }
-
-    }
-    /*--- The incremental load is only used in nonlinear cases ---*/
-    else if (incremental_load) {
-
-      /*--- Set the initial condition: store the current solution as Solution_Old ---*/
-
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
-
-      /*--- The load increment is 1.0 ---*/
-
-      loadIncrement = 1.0;
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetForceCoeff(loadIncrement);
-
-      /*--- Set the value of the internal iteration ---*/
-
-      IntIter = 0;
-      config[val_iZone]->SetInnerIter(IntIter);
-
-      /*--- FEA equations ---*/
-
-      config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
-
-      /*--- Run the first iteration ---*/
-
-      integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-          config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-      /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-
-      Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-      /*--- Run the second iteration ---*/
-
-      IntIter = 1;
-      config[val_iZone]->SetInnerIter(IntIter);
-
-      integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-          config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-      /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-      Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-      bool meetCriteria;
-      su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-      su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
-
-      Criteria_UTOL = config[val_iZone]->GetIncLoad_Criteria(0);
-      Criteria_RTOL = config[val_iZone]->GetIncLoad_Criteria(1);
-      Criteria_ETOL = config[val_iZone]->GetIncLoad_Criteria(2);
-
-      Residual_UTOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysSol.norm());
-      Residual_RTOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysRes.norm());
-      Residual_ETOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysSol.dot(
-                              solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysRes));
-
-      meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-                       ( Residual_RTOL <  Criteria_RTOL ) &&
-                       ( Residual_ETOL <  Criteria_ETOL ) );
-
-      /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-      if (meetCriteria) {
-
-        for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-
-          integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-              config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-          StopCalc = Monitor(output, integration, geometry,  solver, numerics, config,
-                             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-          if (StopCalc) break;
-
-        }
-
-      }
-
-      /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
-
       else {
+        StopCalc = Monitor(output, integration, geometry,  solver, numerics, config,
+                           surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-        /*--- Here we have to restart the solution to the original one of the iteration ---*/
-        /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
-
-        solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->ResetInitialCondition(geometry[val_iZone][val_iInst],
-                                                       solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
-
-        /*--- For the number of increments ---*/
-        for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
-
-          loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
-
-          /*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
-
-          /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
-          output->SetConvergence(false);
-
-          /*--- FEA equations ---*/
-
-          config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
-
-          solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-
-          if (rank == MASTER_NODE) {
-            cout << endl;
-            cout << "Incremental load: increment " << iIncrement + 1 << endl;
-          }
-
-          /*--- Set the value of the internal iteration ---*/
-          IntIter = 0;
-          config[val_iZone]->SetInnerIter(IntIter);
-
-          /*--- FEA equations ---*/
-
-          config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
-
-          /*--- Run the iteration ---*/
-
-          integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-              config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-          Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-
-          /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
-
-          for (IntIter = 1; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-
-            config[val_iZone]->SetInnerIter(IntIter);
-
-            integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
-                config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-            /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-            StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-            if (StopCalc) break;
-
-          }
-
-        }
-
+        if (StopCalc && (IntIter > 0)) break;
       }
-
     }
 
   }
+  else {
 
-  /*--- Finally, we need to compute the objective function, in case that we are running a discrete adjoint solver... ---*/
+    /*--- THIS IS THE INCREMENTAL LOAD APPROACH (only makes sense for nonlinear) ---*/
 
-  switch (config[val_iZone]->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-      if ((config[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
-        solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry[val_iZone][val_iInst][MESH_0],solver[val_iZone][val_iInst][MESH_0],
-          numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
+    /*--- Assume the initial load increment as 1.0 ---*/
+
+    feaSolver->SetLoad_Increment(0, 1.0);
+    feaSolver->SetForceCoeff(1.0);
+
+    /*--- Run two nonlinear iterations to check if incremental loading can be skipped ---*/
+
+    for (IntIter = 0; IntIter < 2; ++IntIter) {
+
+      config[val_iZone]->SetInnerIter(IntIter);
+
+      feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
+                                           RUNTIME_FEA_SYS, val_iZone, val_iInst);
+
+      StopCalc = Monitor(output, integration, geometry, solver, numerics, config,
+                         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+    }
+
+    /*--- Early return if we already meet the convergence criteria. ---*/
+    if (StopCalc) return;
+
+    /*--- Check user-defined criteria to either increment loads or continue with NR iterations. ---*/
+
+    bool meetCriteria = true;
+    for (int i = 0; i < 3; ++i)
+      meetCriteria &= (log10(feaSolver->GetRes_FEM(i)) < config[val_iZone]->GetIncLoad_Criteria(i));
+
+    /*--- If the criteria is met, i.e. the load is not too large, continue the regular calculation. ---*/
+
+    if (meetCriteria) {
+
+      /*--- Newton-Raphson subiterations ---*/
+
+      for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
+
+        config[val_iZone]->SetInnerIter(IntIter);
+
+        feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
+                                             RUNTIME_FEA_SYS, val_iZone, val_iInst);
+
+        StopCalc = Monitor(output, integration, geometry,  solver, numerics, config,
+                           surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+        if (StopCalc) break;
       }
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry[val_iZone][val_iInst][MESH_0],solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-      break;
-    case REFERENCE_NODE:
-      if ((config[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
-        solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry[val_iZone][val_iInst][MESH_0],solver[val_iZone][val_iInst][MESH_0],
-          numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
+
+    }
+
+    /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done. ---*/
+
+    else {
+
+      /*--- Restore solution to initial. Because we ramp the load from zero, in multizone cases it is not
+       * adequate to take "old values" as those will be for maximum loading on the previous outer iteration. ---*/
+
+      feaSolver->SetInitialCondition(geometry[val_iZone][val_iInst],
+                                     solver[val_iZone][val_iInst],
+                                     config[val_iZone], TimeIter);
+
+      /*--- For the number of increments ---*/
+      for (auto iIncrement = 1ul; iIncrement <= nIncrements; iIncrement++) {
+
+        /*--- Set the load increment and the initial condition, and output the
+         *    parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
+
+        su2double loadIncrement = su2double(iIncrement) / nIncrements;
+        feaSolver->SetLoad_Increment(iIncrement, loadIncrement);
+
+        /*--- Set the convergence monitor to false, to force the solver to converge every subiteration ---*/
+        output->SetConvergence(false);
+
+        if (rank == MASTER_NODE)
+          cout << "\nIncremental load: increment " << iIncrement << endl;
+
+        /*--- Newton-Raphson subiterations ---*/
+
+        for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
+
+          config[val_iZone]->SetInnerIter(IntIter);
+
+          feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
+                                               RUNTIME_FEA_SYS, val_iZone, val_iInst);
+
+          StopCalc = Monitor(output, integration, geometry,  solver, numerics, config,
+                             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+          if (StopCalc && (IntIter > 0)) break;
+
+        }
+
       }
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry[val_iZone][val_iInst][MESH_0],solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-      break;
-    case VOLUME_FRACTION:
-    case TOPOL_DISCRETENESS:
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFVolFrac(geometry[val_iZone][val_iInst][MESH_0],solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-      break;
-    case TOPOL_COMPLIANCE:
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFCompliance(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-      break;
+      /*--- Just to be sure, set default increment settings. ---*/
+      feaSolver->SetLoad_Increment(0, 1.0);
+    }
+
   }
 
 }
 
 void CFEAIteration::Update(COutput *output,
-       CIntegration ****integration,
-       CGeometry ****geometry,
-       CSolver *****solver,
-       CNumerics ******numerics,
-       CConfig **config,
-       CSurfaceMovement **surface_movement,
-       CVolumetricMovement ***grid_movement,
-       CFreeFormDefBox*** FFDBox,
-       unsigned short val_iZone,
-       unsigned short val_iInst) {
+                           CIntegration ****integration,
+                           CGeometry ****geometry,
+                           CSolver *****solver,
+                           CNumerics ******numerics,
+                           CConfig **config,
+                           CSurfaceMovement **surface_movement,
+                           CVolumetricMovement ***grid_movement,
+                           CFreeFormDefBox*** FFDBox,
+                           unsigned short val_iZone,
+                           unsigned short val_iInst) {
 
-  su2double Physical_dt, Physical_t;
-    unsigned long TimeIter = config[val_iZone]->GetTimeIter();
-  bool dynamic = (config[val_iZone]->GetTime_Domain());          // Dynamic problems
-  bool static_fem = (!config[val_iZone]->GetTime_Domain());         // Static problems
-  bool fsi = config[val_iZone]->GetFSI_Simulation();         // Fluid-Structure Interaction problems
+  const auto TimeIter = config[val_iZone]->GetTimeIter();
+  const bool dynamic = (config[val_iZone]->GetTime_Domain());
+  const bool fsi = config[val_iZone]->GetFSI_Simulation();
 
-  /*----------------- Compute averaged nodal stress and reactions ------------------------*/
-
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*----------------- Update structural solver ----------------------*/
 
   if (dynamic) {
 
-    integration[val_iZone][val_iInst][FEA_SOL]->SetStructural_Solver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    integration[val_iZone][val_iInst][FEA_SOL]->SetStructural_Solver(geometry[val_iZone][val_iInst][MESH_0],
+                                                solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
     integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
     /*--- Verify convergence criteria (based on total time) ---*/
 
-    Physical_dt = config[val_iZone]->GetDelta_DynTime();
-    Physical_t  = (TimeIter+1)*Physical_dt;
-    if (Physical_t >=  config[val_iZone]->GetTotal_DynTime())
+    const su2double Physical_dt = config[val_iZone]->GetDelta_DynTime();
+    const su2double Physical_t  = (TimeIter+1)*Physical_dt;
+    if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
 
-  } else if ( static_fem && fsi) {
+  } else if (fsi) {
 
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart purposes) ---*/
-    switch (config[val_iZone]->GetKind_TimeIntScheme_FEA()) {
-      case (NEWMARK_IMPLICIT):
-        solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-        break;
+    if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == NEWMARK_IMPLICIT) {
+      feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     }
   }
 
 }
 
 void CFEAIteration::Predictor(COutput *output,
-                        CIntegration ****integration,
-                        CGeometry ****geometry,
-                        CSolver *****solver,
-                        CNumerics ******numerics,
-                        CConfig **config,
-                        CSurfaceMovement **surface_movement,
-                        CVolumetricMovement ***grid_movement,
-                        CFreeFormDefBox*** FFDBox,
-                        unsigned short val_iZone,
-                        unsigned short val_iInst)      {
+                              CIntegration ****integration,
+                              CGeometry ****geometry,
+                              CSolver *****solver,
+                              CNumerics ******numerics,
+                              CConfig **config,
+                              CSurfaceMovement **surface_movement,
+                              CVolumetricMovement ***grid_movement,
+                              CFreeFormDefBox*** FFDBox,
+                              unsigned short val_iZone,
+                              unsigned short val_iInst) {
 
-  /*--- Predict displacements ---*/
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry[val_iZone][val_iInst], config[val_iZone],
-      solver[val_iZone][val_iInst]);
-
-  /*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
-
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->InitiateComms(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], SOLUTION_PRED);
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->CompleteComms(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], SOLUTION_PRED);
+  feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
 }
-void CFEAIteration::Relaxation(COutput *output,
-                        CIntegration ****integration,
-                        CGeometry ****geometry,
-                        CSolver *****solver,
-                        CNumerics ******numerics,
-                        CConfig **config,
-                        CSurfaceMovement **surface_movement,
-                        CVolumetricMovement ***grid_movement,
-                        CFreeFormDefBox*** FFDBox,
-                        unsigned short val_iZone,
-                        unsigned short val_iInst)      {
 
-  unsigned long OuterIter = config[val_iZone]->GetOuterIter();
+void CFEAIteration::Relaxation(COutput *output,
+                               CIntegration ****integration,
+                               CGeometry ****geometry,
+                               CSolver *****solver,
+                               CNumerics ******numerics,
+                               CConfig **config,
+                               CSurfaceMovement **surface_movement,
+                               CVolumetricMovement ***grid_movement,
+                               CFreeFormDefBox*** FFDBox,
+                               unsigned short val_iZone,
+                               unsigned short val_iInst) {
+
+  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*-------------------- Aitken's relaxation ------------------------*/
 
   /*------------------- Compute the coefficient ---------------------*/
 
-  solver[val_iZone][INST_0][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry[val_iZone][INST_0], config[val_iZone],
-      solver[val_iZone][INST_0], OuterIter);
+  feaSolver->ComputeAitken_Coefficient(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone],
+                                       config[val_iZone]->GetOuterIter());
 
   /*----------------- Set the relaxation parameter ------------------*/
 
-  solver[val_iZone][INST_0][MESH_0][FEA_SOL]->SetAitken_Relaxation(geometry[val_iZone][INST_0], config[val_iZone],
-      solver[val_iZone][INST_0]);
-
-  /*----------------- Communicate the predicted solution and the old one ------------------*/
-
-  solver[val_iZone][INST_0][MESH_0][FEA_SOL]->InitiateComms(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], SOLUTION_PRED_OLD);
-  solver[val_iZone][INST_0][MESH_0][FEA_SOL]->CompleteComms(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], SOLUTION_PRED_OLD);
+  feaSolver->SetAitken_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
 }
 
 bool CFEAIteration::Monitor(COutput *output,
-    CIntegration ****integration,
-    CGeometry ****geometry,
-    CSolver *****solver,
-    CNumerics ******numerics,
-    CConfig **config,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement ***grid_movement,
-    CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone,
-    unsigned short val_iInst)     {
+                            CIntegration ****integration,
+                            CGeometry ****geometry,
+                            CSolver *****solver,
+                            CNumerics ******numerics,
+                            CConfig **config,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement ***grid_movement,
+                            CFreeFormDefBox*** FFDBox,
+                            unsigned short val_iZone,
+                            unsigned short val_iInst) {
 
-  bool StopCalc = false;
+  StopTime = SU2_MPI::Wtime();
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
   UsedTime = StopTime - StartTime;
 
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry[val_iZone][val_iInst][MESH_0],
-                                                                     numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
-
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
-                              config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(), config[val_iZone]->GetInnerIter());
+    output->SetHistory_Output(geometry[val_iZone][val_iInst][MESH_0],
+                              solver[val_iZone][val_iInst][MESH_0],
+                              config[val_iZone], config[val_iZone]->GetTimeIter(),
+                              config[val_iZone]->GetOuterIter(), config[val_iZone]->GetInnerIter());
   }
 
-  StopCalc = output->GetConvergence();
-
-  return StopCalc;
+  return output->GetConvergence();
 
 }
 
 void CFEAIteration::Postprocess(COutput *output,
-                                          CIntegration ****integration,
-                                          CGeometry ****geometry,
-                                          CSolver *****solver,
-                                          CNumerics ******numerics,
-                                          CConfig **config,
-                                          CSurfaceMovement **surface_movement,
-                                          CVolumetricMovement ***grid_movement,
-                                          CFreeFormDefBox*** FFDBox,
-                                          unsigned short val_iZone,
-                                          unsigned short val_iInst) { }
-
-void CFEAIteration::Solve(COutput *output,
                                 CIntegration ****integration,
                                 CGeometry ****geometry,
                                 CSolver *****solver,
@@ -1874,20 +1622,30 @@ void CFEAIteration::Solve(COutput *output,
                                 CVolumetricMovement ***grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone,
-                                unsigned short val_iInst
-                                ) {
+                                unsigned short val_iInst) { }
+
+void CFEAIteration::Solve(COutput *output,
+                          CIntegration ****integration,
+                          CGeometry ****geometry,
+                          CSolver *****solver,
+                          CNumerics ******numerics,
+                          CConfig **config,
+                          CSurfaceMovement **surface_movement,
+                          CVolumetricMovement ***grid_movement,
+                          CFreeFormDefBox*** FFDBox,
+                          unsigned short val_iZone,
+                          unsigned short val_iInst
+                          ) {
 
   /*------------------ Structural subiteration ----------------------*/
-  Iterate(output, integration, geometry,
-      solver, numerics, config,
-      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
+  Iterate(output, integration, geometry, solver, numerics, config,
+          surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
 
   /*--- Write the convergence history for the structure (only screen output) ---*/
 //  if (multizone) output->SetConvHistory_Body(geometry, solver, config, integration, false, 0.0, val_iZone, INST_0);
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
-  integration[val_iZone][INST_0][FEA_SOL]->SetConvergence(false);
+  integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
 }
 
@@ -2099,12 +1857,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
                                            CFreeFormDefBox*** FFDBox,
                                            unsigned short val_iZone,
                                            unsigned short val_iInst) {
-
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
@@ -2157,10 +1910,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n1();
           }
           if (grid_IsMoving) {
-            for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n();
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n1();
-            }
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n();
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1();
           }
         }
       }
@@ -2180,9 +1931,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_Solution_time_n();
           }
           if (grid_IsMoving) {
-            for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n();
-            }
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n();
           }
         }
       }
@@ -2190,6 +1939,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       /*--- Load solution timestep n ---*/
 
       LoadUnsteady_Solution(geometry, solver,config, val_iInst, val_iZone, Direct_Iter);
+
+      if (config[val_iZone]->GetDeform_Mesh()) {
+        solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
+      }
 
     } else if ((TimeIter > 0) && dual_time) {
 
@@ -2199,6 +1952,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       correct containers as well, i.e. follow the same logic for the solution.
       Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
+
+      if (config[val_iZone]->GetDeform_Mesh()) {
+        solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
+      }
 
       /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
       if (dual_time_1st){
@@ -2211,17 +1968,15 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_OldSolution();
+        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->Set_OldSolution();
         if (turbulent) {
-          solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_OldSolution();
+          solver[val_iZone][val_iInst][iMesh][TURB_SOL]->Set_OldSolution();
         }
         if (heat) {
-          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_OldSolution();
+          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->Set_OldSolution();
         }
         if (grid_IsMoving) {
-          for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-            geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_Old();
-          }
+          geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_Old();
         }
       }
 
@@ -2232,7 +1987,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint));
 
           if (grid_IsMoving) {
-            geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_n());
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord(iPoint,geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_n(iPoint));
           }
           if (turbulent) {
             solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n(iPoint));
@@ -2249,7 +2004,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
 
             if (grid_IsMoving) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_Old());
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint, geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_Old(iPoint));
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_Old(iPoint));
@@ -2267,7 +2022,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
 
             if (grid_IsMoving) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_n1());
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n(iPoint, geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_n1(iPoint));
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
@@ -2283,7 +2038,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
 
             if (grid_IsMoving) {
-              geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->SetCoord_n1(geometry[val_iZone][val_iInst][iMesh]->node[iPoint]->GetCoord_Old());
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1(iPoint, geometry[val_iZone][val_iInst][iMesh]->nodes->GetCoord_Old(iPoint));
             }
             if (turbulent) {
               solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1(iPoint, solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution_Old(iPoint));
@@ -2392,57 +2147,44 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                         CSurfaceMovement **surface_movement,
                                         CVolumetricMovement ***volume_grid_movement,
                                         CFreeFormDefBox*** FFDBox,
-                                        unsigned short val_iZone,
-                                        unsigned short val_iInst) {
+                                        unsigned short iZone,
+                                        unsigned short iInst) {
 
-  unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
-  bool frozen_visc = config[val_iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
-      (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
+  if (config[iZone]->GetFluidProblem()) {
+    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-    solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-
-    solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-
+    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (turbulent && !frozen_visc) {
 
-    solver[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                              config[val_iZone]);
+    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (heat) {
-
-    solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                              config[val_iZone]);
+    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (config[val_iZone]->AddRadiation()) {
+  if (config[iZone]->AddRadiation()) {
+    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-    solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                              config[val_iZone]);
-
-    solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-
+    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
+
 }
 
 
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst){
 
-  unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
-      (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
-
+  if (config[iZone]->GetFluidProblem()) {
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
@@ -2467,17 +2209,14 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
-  unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
-  if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
+  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
 
     /*--- Register flow and turbulent variables as input ---*/
 
-    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
-        (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
-
+    if (config[iZone]->GetFluidProblem()) {
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -2495,29 +2234,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
       solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
   }
+
   if (kind_recording == MESH_COORDS){
-
-    /*--- Register node coordinates as input ---*/
-
-    geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
-
-  }
-
-  if (kind_recording == FLOW_CROSS_TERM){
-
-    /*--- Register flow and turbulent variables as input ---*/
-
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    if (turbulent && !frozen_visc){
-      solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-    }
-    if (config[iZone]->AddRadiation()) {
-      solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-    }
-  }
-
-  if (kind_recording == GEOMETRY_CROSS_TERM){
 
     /*--- Register node coordinates as input ---*/
 
@@ -2541,27 +2259,29 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
 void CDiscAdjFluidIteration::SetRecording(CSolver *****solver,
                                           CGeometry ****geometry,
                                           CConfig **config,
-                                          unsigned short val_iZone,
-                                          unsigned short val_iInst,
+                                          unsigned short iZone,
+                                          unsigned short iInst,
                                           unsigned short kind_recording) {
 
-  unsigned short iMesh;
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
-  solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  if (solver[iZone][iInst][MESH_0][ADJFEA_SOL]) {
+    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
+  }
 
-  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++){
-    solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[val_iZone][val_iInst][iMesh], config[val_iZone]);
+  for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++){
+    solver[iZone][iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[iZone][iInst][iMesh], config[iZone]);
   }
-  if ((config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) && !config[val_iZone]->GetFrozen_Visc_Disc()) {
-    solver[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  if (turbulent && !frozen_visc) {
+    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
-    solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
+    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (config[val_iZone]->GetKind_RadiationModel() != NONE) {
-    solver[val_iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry[val_iZone][INST_0][MESH_0], config[val_iZone]);
+  if (config[iZone]->AddRadiation()) {
+    solver[iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry[iZone][INST_0][MESH_0], config[iZone]);
   }
 
 }
@@ -2576,12 +2296,14 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
 
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
-      (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
+
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
+
+    CGeometry::ComputeWallDistance(config, geometry);
 
   }
 
@@ -2612,26 +2334,20 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****geometry, CConfig **config, COutput* output, unsigned short iZone, unsigned short iInst){
 
-  unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
 
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
-      (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
-
   /*--- Register conservative variables as output of the iteration ---*/
 
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],config[iZone]);
-
+  if (config[iZone]->GetFluidProblem()){
+    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (turbulent && !frozen_visc){
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
-                                                                 config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (heat){
-    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
-                                                                 config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (config[iZone]->AddRadiation()){
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -2640,35 +2356,6 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
     solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
-
-void CDiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst){
-
-  unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-  /*--- Initialize the adjoints the conservative variables ---*/
-
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
-      (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
-
-  solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
-                                                                  config[iZone]);
-}
-
-  if (turbulent && !frozen_visc) {
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
-                                                                    config[iZone]);
-  }
-
-  if (config[iZone]->AddRadiation()) {
-    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-}
-
 
 void CDiscAdjFluidIteration::Update(COutput *output,
                                        CIntegration ****integration,
@@ -2694,6 +2381,7 @@ void CDiscAdjFluidIteration::Update(COutput *output,
     }
   }
 }
+
 bool CDiscAdjFluidIteration::Monitor(COutput *output,
     CIntegration ****integration,
     CGeometry ****geometry,
@@ -2706,11 +2394,8 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     unsigned short val_iZone,
     unsigned short val_iInst)     {
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime - StartTime;
 
   /*--- Write the convergence history for the fluid (only screen output) ---*/
@@ -2945,7 +2630,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
     /*--- Clear indices of coupling variables ---*/
 
-    SetDependencies(solver, geometry, numerics, config, val_iZone, val_iInst, ALL_VARIABLES);
+    SetDependencies(solver, geometry, numerics, config, val_iZone, val_iInst, SOLUTION_AND_MESH);
 
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
@@ -3026,9 +2711,6 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
     /*--- Register variables as input ---*/
 
     solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    /*--- Both need to be registered regardless of kind_recording for structural shape derivatives to work properly.
-          Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
   }
   else {
     /*--- Register topology optimization densities (note direct solver) ---*/
@@ -3125,7 +2807,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   /*--- FSI specific dependencies. ---*/
   if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
-    dir_solver->PredictStruct_Displacement(nullptr, config[iZone], solver[iZone][iInst]);
+    dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
   }
 
   /*--- MPI dependencies. ---*/
@@ -3160,19 +2842,6 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver *****solver, CGeometry ****geo
 }
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst){
-
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-  /*--- Initialize the adjoints the conservative variables ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-}
-
-
-void CDiscAdjFEAIteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst){
 
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
 
@@ -3422,7 +3091,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput *output,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++)
-        solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->GetNodes()->Set_OldSolution();
+        solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->Set_OldSolution();
 
       /*--- Set Solution at timestep n to solution at n-1 ---*/
 
@@ -3545,7 +3214,7 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver *****solver,
                                           unsigned short iZone, unsigned short iInst,
                                           unsigned short kind_recording){
 
-  if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
+  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH){
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -3570,12 +3239,13 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver *****solver,
                                             unsigned short iZone, unsigned short iInst,
                                             unsigned short kind_recording){
 
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
-      (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
+
+    CGeometry::ComputeWallDistance(config, geometry);
 
   }
 

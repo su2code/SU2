@@ -2,7 +2,7 @@
  * \file CRadVariable.hpp
  * \brief Class for defining the variables of the radiation solver.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,7 +52,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadVariable(void) = default;
+  ~CRadVariable(void) override = default;
 
   /*!
    * \brief Get the Radiative source term at the node

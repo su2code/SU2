@@ -301,7 +301,6 @@ void CTransLMSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-
   if (dual_time|| time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);*/
 
@@ -416,7 +415,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
           variables. Note that it is not needed to recompute the gradients of the
           flow variables, because these have not been altered (assuming that the
           transition solver is called after the turbulence solver). ---*/
-    const su2double dist = geometry->node[iPoint]->GetWall_Distance();
+    const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     const su2double rho        = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     const su2double vel2       = solver_container[FLOW_SOL]->GetNodes()->GetVelocity2(iPoint);
@@ -495,8 +494,8 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTransVar(nodes->GetSolution(iPoint), NULL);
 
     /*--- Set the volume and the distance to the wall. ---*/
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+    numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
     
     /*--- Compute the source term ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
@@ -522,7 +521,7 @@ void CTransLMSolver::BC_Far_Field(CGeometry      *geometry,
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Set the value of the flow solution at the infinity
             as well as at the node of the farfield boundary. ---*/
@@ -550,8 +549,8 @@ void CTransLMSolver::BC_Far_Field(CGeometry      *geometry,
       conv_numerics->SetNormal(Normal);
 
       if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute residuals and Jacobians ---*/
       auto residual = conv_numerics->ComputeResidual(config);
@@ -669,8 +668,8 @@ void CTransLMSolver::BC_Inlet_Turbo(CGeometry      *geometry,
       conv_numerics->SetNormal(Normal);
 
       if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
       // conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -680,7 +679,7 @@ void CTransLMSolver::BC_Inlet_Turbo(CGeometry      *geometry,
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
       visc_numerics->SetNormal(Normal);
 
       /*--- Primitive variables w/o reconstruction ---*/
@@ -727,7 +726,7 @@ void CTransLMSolver::BC_Fluid_Interface(CGeometry *geometry,
 
         /*--- Get the point ID and determine if it is owned by this rank. ---*/
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Determine the number of donor vertices for this point. ---*/
           const unsigned long nDonorVertex = GetnSlidingStates(iMarker, iVertex);
@@ -768,7 +767,7 @@ void CTransLMSolver::BC_Fluid_Interface(CGeometry *geometry,
             conv_numerics->SetNormal(Normal);
 
             if (grid_movement)
-              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+              conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
             /*--- Compute the residual, which is stored in tmp_residual. ---*/
             //conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
@@ -794,7 +793,7 @@ void CTransLMSolver::BC_Fluid_Interface(CGeometry *geometry,
 
           /*--- Set the normal vector and the coordinates ---*/
           visc_numerics->SetNormal(Normal);
-          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+          visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
           /*--- Primitive variables ---*/
           visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);

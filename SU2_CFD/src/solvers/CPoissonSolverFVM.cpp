@@ -104,7 +104,6 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Computation of gradients by least squares ---*/
   
@@ -319,11 +318,11 @@ void CPoissonSolverFVM:: LoadRestart(CGeometry **geometry, CSolver ***solver, CC
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint,iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][POISSON_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -359,16 +358,16 @@ void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_c
    
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-		iPoint = geometry->edge[iEdge]->GetNode(0);
-		jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edges->GetNode(iEdge,0);
+		jPoint = geometry->edges->GetNode(iEdge,1);
 		
 		/*--- Points coordinates, and normal vector ---*/
-		numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-						geometry->node[jPoint]->GetCoord());
-		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+						geometry->nodes->GetCoord(jPoint));
+		numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 		
-		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-		numerics->SetVolume(geometry->node[jPoint]->GetVolume());
+		numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+		numerics->SetVolume(geometry->nodes->GetVolume(jPoint));
 		
 		/*--- Primitive variables w/o reconstruction ---*/
 		Poissonval_i = nodes->GetSolution(iPoint, 0);
@@ -441,7 +440,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     /*--- Load the volume of the dual mesh cell ---*/
 
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
     /*--- Compute the source term ---*/
         
@@ -507,7 +506,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
 	/*--- Read the volume ---*/
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
     
     su2double *diag = Jacobian.GetBlock(iPoint, iPoint);
     
@@ -522,7 +521,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar] );
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
   
@@ -593,7 +592,7 @@ su2double CPoissonSolverFVM::GetDirichlet_BC(CGeometry *geometry, CConfig *confi
 	if (config->GetKind_Incomp_System() == PRESSURE_BASED ) 
 	    dirichlet_bc = 0.0;
 	else 
-	    dirichlet_bc = sin(geometry->node[Point]->GetCoord(0))*cos(geometry->node[Point]->GetCoord(1));
+	    dirichlet_bc = 0.0;
 	
 	return dirichlet_bc;
 	
@@ -651,7 +650,7 @@ void CPoissonSolverFVM::BC_Neumann(CGeometry *geometry, CSolver **solver_contain
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       Area = 0.0;
@@ -687,7 +686,7 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       /*--- The farfield boundary is considered as an inlet-outlet boundary, where flow 
        * can either enter or leave. For pressure, it is treated as a fully developed flow
        * and a dirichlet BC is applied. For velocity, based on the sign of massflux, either 
@@ -745,7 +744,7 @@ su2double *Normal = new su2double[nDim];
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
      /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -782,7 +781,7 @@ su2double *Normal = new su2double[nDim];
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
      /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -821,7 +820,7 @@ unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
             
@@ -897,7 +896,7 @@ string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
      /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -932,7 +931,7 @@ string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
      /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {

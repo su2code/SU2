@@ -2,7 +2,7 @@
  * \file hllc.hpp
  * \brief Declaration of HLLC numerics classes, implemented in hllc.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CUpwHLLC_Flow final : public CNumerics {
 private:
@@ -70,7 +70,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwHLLC_Flow(void);
+  ~CUpwHLLC_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -86,7 +86,7 @@ public:
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:
@@ -123,7 +123,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwGeneralHLLC_Flow(void);
+  ~CUpwGeneralHLLC_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.

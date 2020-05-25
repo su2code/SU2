@@ -13,7 +13,7 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,6 +80,19 @@ inline void omp_set_num_threads(int) { }
  */
 inline constexpr int omp_get_thread_num(void) {return 0;}
 
+/*!
+ * \brief Dummy lock type and associated functions.
+ */
+struct omp_lock_t {};
+struct DummyVectorOfLocks {
+  omp_lock_t l;
+  inline omp_lock_t& operator[](int) {return l;}
+};
+inline void omp_init_lock(omp_lock_t*){}
+inline void omp_set_lock(omp_lock_t*){}
+inline void omp_unset_lock(omp_lock_t*){}
+inline void omp_destroy_lock(omp_lock_t*){}
+
 #endif
 
 /*--- Convenience macros (do not use excessive nesting of macros). ---*/
@@ -109,6 +122,14 @@ inline constexpr size_t roundUpDiv(size_t numerator, size_t denominator)
 }
 
 /*!
+ * \brief Round up to next multiple.
+ */
+inline constexpr size_t nextMultiple(size_t argument, size_t multiple)
+{
+  return roundUpDiv(argument, multiple) * multiple;
+}
+
+/*!
  * \brief Compute a chunk size based on totalWork and number of threads such that
  *        all threads get the same number of chunks (with limited size).
  * \param[in] totalWork - e.g. total number of loop iterations.
@@ -135,7 +156,7 @@ inline size_t computeStaticChunkSize(size_t totalWork,
 template<class T, class U>
 void parallelCopy(size_t size, const T* src, U* dst)
 {
-  SU2_OMP_FOR_STAT(4196)
+  SU2_OMP_FOR_STAT(4096)
   for(size_t i=0; i<size; ++i) dst[i] = src[i];
 }
 
@@ -148,7 +169,7 @@ void parallelCopy(size_t size, const T* src, U* dst)
 template<class T, class U>
 void parallelSet(size_t size, T val, U* dst)
 {
-  SU2_OMP_FOR_STAT(4196)
+  SU2_OMP_FOR_STAT(4096)
   for(size_t i=0; i<size; ++i) dst[i] = val;
 }
 

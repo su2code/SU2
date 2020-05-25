@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,16 +37,16 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
 {
-  Proj_Mean_GradTurbVar_Normal = new su2double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
-  Proj_Mean_GradTurbVar = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Normal = new su2double [nVar] ();
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar] ();
+  Proj_Mean_GradTurbVar = new su2double [nVar] ();
 
-  Flux = new su2double [nVar];
+  Flux = new su2double [nVar] ();
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
   }
 }
 

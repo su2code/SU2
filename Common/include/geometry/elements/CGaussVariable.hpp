@@ -2,7 +2,7 @@
  * \file CGaussVariable.hpp
  * \brief Light-weight class to store Gaussian point information.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,7 @@
 /*!
  * \class CGaussVariable
  * \brief Main class for defining the gaussian points.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CGaussVariable {
 protected:

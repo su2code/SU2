@@ -2,11 +2,11 @@
  * \file CDiscAdjFEAVariable.cpp
  * \brief Definition of the variables for FEM adjoint elastic structural problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -32,8 +32,6 @@
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel, unsigned long npoint,
   unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
-  bool fsi = config->GetFSI_Simulation();
-
   Solution_Direct.resize(nPoint,nVar);
 
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
@@ -42,14 +40,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = disp[iVar];
 
-  if (fsi) {
-    Cross_Term_Derivative.resize(nPoint,nDim) = su2double(0.0);
-    Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
-
-    Solution_BGS.resize(nPoint,nDim) = su2double(0.0);
-  }
-
-  if (config->GetMultizone_Problem()) {
+  if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint()) {
     External.resize(nPoint,nVar) = su2double(0.0);
   }
 

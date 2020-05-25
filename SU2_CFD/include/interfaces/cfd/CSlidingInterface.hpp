@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,7 +51,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSlidingInterface(void);
+  ~CSlidingInterface(void) override;
 
   /*!
    * \brief Retrieve some constants needed for the calculations.
@@ -64,7 +64,7 @@ public:
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                              CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config);
+                             CConfig *donor_config, CConfig *target_config) override;
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -76,7 +76,7 @@ public:
    * \param[in] Point_Donor - Index of the donor point.
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-                         unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+                         unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) override;
 
   /*!
    * \brief A virtual member, initializes the target variable for sliding mesh.
@@ -86,7 +86,7 @@ public:
    * \param[in] nDonorPoints - Number of donor points.
    */
   void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
-                                 unsigned long Vertex_Target, unsigned short nDonorPoints);
+                                 unsigned long Vertex_Target, unsigned short nDonorPoints) override;
 
   /*!
    * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
@@ -95,7 +95,7 @@ public:
    * \param[in] donorCoeff - value of the donor coefficient.
    */
   void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
-                              su2double donorCoeff);
+                              su2double donorCoeff) override;
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -107,6 +107,6 @@ public:
    * \param[in] Point_Target - Index of the target point.
    */
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
-                          unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
+                          unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target) override;
 
 };

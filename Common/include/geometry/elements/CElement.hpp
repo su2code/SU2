@@ -3,11 +3,11 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -449,9 +449,10 @@ public:
    * the latter are needed for compatibility with shape derivatives, there is no problem registering
    * because inactive variables are ignored.
    */
-  inline void SetPreaccIn_Coords(void) {
+  inline void SetPreaccIn_Coords(bool nonlinear = true) {
     AD::SetPreaccIn(RefCoord.data(), nNodes*nDim);
-    AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
+    if (nonlinear)
+      AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
   }
 
   /*!
@@ -460,6 +461,13 @@ public:
    */
   inline void SetPreaccOut_Kt_a(void) {
     AD::SetPreaccOut(Kt_a.data(), nNodes*nDim);
+  }
+
+  /*!
+   * \brief Register the mass matrix as a pre-accumulation output.
+   */
+  inline void SetPreaccOut_Mab(void) {
+    AD::SetPreaccOut(Mab.data(), nNodes*nNodes);
   }
 
 };
@@ -628,6 +636,26 @@ public:
   CQUAD4();
 
   /*!
+   * \brief Shape functions (Ni) evaluated at point Xi,Eta.
+   */
+  inline static void ShapeFunctions(su2double Xi, su2double Eta, su2double* Ni) {
+    Ni[0] = 0.25*(1.0-Xi)*(1.0-Eta);
+    Ni[1] = 0.25*(1.0+Xi)*(1.0-Eta);
+    Ni[2] = 0.25*(1.0+Xi)*(1.0+Eta);
+    Ni[3] = 0.25*(1.0-Xi)*(1.0+Eta);
+  }
+
+  /*!
+   * \brief Shape function Jacobian (dNi) evaluated at point Xi,Eta.
+   */
+  inline static void ShapeFunctionJacobian(su2double Xi, su2double Eta, su2double dNi[][2]) {
+    dNi[0][0] = -0.25*(1.0-Eta);  dNi[0][1] = -0.25*(1.0-Xi);
+    dNi[1][0] =  0.25*(1.0-Eta);  dNi[1][1] = -0.25*(1.0+Xi);
+    dNi[2][0] =  0.25*(1.0+Eta);  dNi[2][1] =  0.25*(1.0+Xi);
+    dNi[3][0] = -0.25*(1.0+Eta);  dNi[3][1] =  0.25*(1.0-Xi);
+  }
+
+  /*!
    * \brief Compute the value of the area of the element.
    * \param[in] mode - Type of coordinates to consider in the computation.
    * \return Area of the element.
@@ -717,7 +745,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6,6,3> {
 private:

@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for continuous adjoint
  *        diffusion discretization. Implemented in adj_diffusion.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_AdjFlow(void);
+  ~CAvgGrad_AdjFlow(void) override;
 
   /*!
    * \brief Residual computation.
@@ -68,7 +68,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) override;
 };
 
 /*!
@@ -102,7 +102,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_AdjFlow(void);
+  ~CAvgGradCorrected_AdjFlow(void) override;
 
   /*!
    * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
@@ -116,7 +116,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) override;
 };
 
 /*!
@@ -144,7 +144,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_AdjTurb(void);
+  ~CAvgGrad_AdjTurb(void) override;
 
   /*!
    * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
@@ -154,7 +154,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
 
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 
   /*!
    * \overload
@@ -168,7 +168,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) override;
 };
 
 /*!
@@ -196,7 +196,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_AdjTurb(void);
+  ~CAvgGradCorrected_AdjTurb(void) override;
 
   /*!
    * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
@@ -206,7 +206,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
 
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 
   /*!
    * \overload
@@ -220,5 +220,5 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) override;
 };

@@ -2,7 +2,7 @@
  * \file CRadP1Variable.hpp
  * \brief Class for defining the variables of the P1 radiation model.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,6 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadP1Variable(void) = default;
+  ~CRadP1Variable(void) override = default;
 
 };

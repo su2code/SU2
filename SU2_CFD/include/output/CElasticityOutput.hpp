@@ -2,7 +2,7 @@
  * \file CElasticityOutput.hpp
  * \brief  Headers of the elasticity output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

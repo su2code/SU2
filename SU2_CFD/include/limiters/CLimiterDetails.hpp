@@ -3,7 +3,7 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -272,8 +272,8 @@ struct CLimiterDetails<SHARP_EDGES>
    */
   inline su2double geometricFactor(size_t iPoint, CGeometry& geometry) const
   {
-    AD::SetPreaccIn(geometry.node[iPoint]->GetSharpEdge_Distance());
-    su2double dist = geometry.node[iPoint]->GetSharpEdge_Distance()/(sharpCoeff*eps1)-1.0;
+    AD::SetPreaccIn(geometry.nodes->GetSharpEdge_Distance(iPoint));
+    su2double dist = geometry.nodes->GetSharpEdge_Distance(iPoint)/(sharpCoeff*eps1)-1.0;
     return LimiterHelpers::raisedSine(dist);
   }
 
@@ -313,8 +313,8 @@ struct CLimiterDetails<WALL_DISTANCE>
    */
   inline su2double geometricFactor(size_t iPoint, CGeometry& geometry) const
   {
-    AD::SetPreaccIn(geometry.node[iPoint]->GetWall_Distance());
-    su2double dist = geometry.node[iPoint]->GetWall_Distance()/(sharpCoeff*eps1)-1.0;
+    AD::SetPreaccIn(geometry.nodes->GetWall_Distance(iPoint));
+    su2double dist = geometry.nodes->GetWall_Distance(iPoint)/(sharpCoeff*eps1)-1.0;
     return LimiterHelpers::raisedSine(dist);
   }
 

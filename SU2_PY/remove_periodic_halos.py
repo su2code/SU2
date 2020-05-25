@@ -4,7 +4,7 @@
 #  \brief Python script to remove halo layers from SU2 native ascii
 #         mesh file preprocessed by SU2_MSH for periodic calcs prior to v7.
 #  \author T. Economon
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

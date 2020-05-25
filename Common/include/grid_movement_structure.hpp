@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
-#include <ctime>
 
 #include "geometry/CGeometry.hpp"
 #include "CConfig.hpp"
@@ -159,14 +158,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBSplineBlending();
+  ~CBSplineBlending() override;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t) override;
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -174,14 +173,14 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der) override;
 
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  void SetOrder(short val_order, short n_controlpoints);
+  void SetOrder(short val_order, short n_controlpoints) override;
 
 };
 
@@ -234,14 +233,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBezierBlending();
+  ~CBezierBlending() override;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t) override;
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -249,14 +248,14 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der) override;
 
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  void SetOrder(short val_order, short n_controlpoints);
+  void SetOrder(short val_order, short n_controlpoints) override;
 
 };
 
@@ -324,7 +323,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFreeFormDefBox(void);
+  ~CFreeFormDefBox(void) override;
 
   /*!
    * \brief Define the I planes to to fix in a FFD box.
@@ -973,7 +972,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CVolumetricMovement(void);
+  ~CVolumetricMovement(void) override;
   
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -1290,183 +1289,6 @@ public:
   virtual void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 };
 
-/*! 
- * \class CElasticityMovement
- * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
- * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
- * \version 7.0.2 "Blackbird"
- */
-class CElasticityMovement : public CVolumetricMovement {
-protected:
-
-  unsigned short nDim;    /*!< \brief Number of dimensions. */
-  unsigned short nVar;    /*!< \brief Number of variables. */
-
-  unsigned long nPoint;   /*!< \brief Number of points. */
-  unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
-
-  unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
-  su2double valResidual;
-
-  su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
-  *Solution;         /*!< \brief Auxiliary nDim vector. */
-
-  su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
-  su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
-
-  su2double MinVolume;
-  su2double MaxVolume;
-
-#ifndef CODI_FORWARD_TYPE
-  CSysSolve<passivedouble>  System;
-  CSysMatrix<passivedouble> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-#else
-  CSysSolve<su2double>  System;
-  CSysMatrix<su2double> StiffMatrix;
-#endif
-  CSysVector<su2double> LinSysSol;
-  CSysVector<su2double> LinSysRes;
-
-  su2double E;                  /*!< \brief Young's modulus of elasticity. */
-  su2double Nu;                 /*!< \brief Poisson's ratio. */
-
-  su2double Mu;                 /*!< \brief Lame's coeficient. */
-  su2double Lambda;             /*!< \brief Lame's coeficient. */
-
-  su2double **Jacobian_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
-
-  su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
-  **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
-  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
-  su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
-  su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
-
-public:
-
-  CElement** element_container;  /*!< \brief Container which stores the element information. */
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CElasticityMovement(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CElasticityMovement(void);
-
-  /*!
-   * \brief Grid deformation using the linear elasticity equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] UpdateGeo - Update geometry.
-   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
-   */
-  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
-
-  /*!
-   * \brief Update the value of the coordinates after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the dual grid after the grid movement (edges and control volumes).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the coarse multigrid levels after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-
-  /*!
-   * \brief Check the boundary vertex that are going to be moved.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements to 0.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker -
-   */
-  void SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \return Value of the length of the smallest edge of the grid.
-   */
-  void SetMinMaxVolume(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \return Value of the length of the smallest edge of the grid.
-   */
-  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the number of iterations when moving the mesh.
-   * \param[in] val_nIterMesh - Number of iterations.
-   */
-  void Set_nIterMesh(unsigned long val_nIterMesh);
-
-  /*!
-   * \brief Retrieve the number of iterations when moving the mesh.
-   * \param[out] Number of iterations.
-   */
-  unsigned long Get_nIterMesh(void);
-
-  /*!
-   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
-   */
-  void Set_Element_Stiffness(su2double ElemVolume, CConfig *config);
-
-  /*!
-   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
-   */
-  void Compute_Element_Contribution(CElement *element, CConfig *config);
-
-  /*!
-   * \brief Compute the constitutive matrix in an element for mesh deformation problems
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  void Compute_Constitutive_Matrix(void);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
-
-};
-
 /*!
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
@@ -1494,7 +1316,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSurfaceMovement(void);
+  ~CSurfaceMovement(void) override;
   
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
@@ -1570,46 +1392,6 @@ public:
    * \param[in] iter - Physical time iteration number.
    */
   void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-  
-  /*!
-   * \brief Computes the displacement of a translating surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Translating(CGeometry *geometry, CConfig *config,
-                           unsigned long iter, unsigned short iZone);
-  
-  /*!
-   * \brief Computes the displacement of a plunging surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Plunging(CGeometry *geometry, CConfig *config,
-                        unsigned long iter, unsigned short iZone);
-  
-  /*!
-   * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Pitching(CGeometry *geometry, CConfig *config,
-                        unsigned long iter, unsigned short iZone);
-  
-  /*!
-   * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Rotating(CGeometry *geometry, CConfig *config,
-                        unsigned long iter, unsigned short iZone);
   
   /*!
    * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
@@ -1688,7 +1470,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config);
+  void SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy

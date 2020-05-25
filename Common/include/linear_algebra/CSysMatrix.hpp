@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -95,7 +95,7 @@ private:
   const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
   const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
-  vector<const ScalarType*> col_ptr;/*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+  const unsigned long *col_ptr;     /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
   ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -349,10 +349,12 @@ public:
    * \param[in] neqn - Number of equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] needTranspPtr - If "col_ptr" should be created.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
-                  bool EdgeConnect, CGeometry *geometry, CConfig *config);
+                  bool EdgeConnect, CGeometry *geometry,
+                  CConfig *config, bool needTranspPtr = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -584,11 +586,13 @@ public:
    * \brief Update 2 blocks ij and ji (add to i* sub from j*).
    * \note The template parameter Sign, can be used create a "subtractive"
    *       update i.e. subtract from row i and add to row j instead.
+   *       The parameter Overwrite allows completely writing over the
+   *       current values held by the matrix.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
    * \param[in] block_i - Subs from ji.
    * \param[in] block_j - Adds to ij.
    */
-  template<class OtherType, int Sign = 1>
+  template<class OtherType, int Sign = 1, bool Overwrite = false>
   inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
 
     ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
@@ -598,8 +602,8 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bij[offset] += PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
-        bji[offset] -= PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
         ++offset;
       }
     }
@@ -611,6 +615,14 @@ public:
   template<class OtherType>
   inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
     UpdateBlocks<OtherType,-1>(iEdge, block_i, block_j);
+  }
+
+  /*!
+   * \brief Short-hand for the "additive overwrite" version of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void SetBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,1,true>(iEdge, block_i, block_j);
   }
 
   /*!
@@ -693,7 +705,13 @@ public:
    * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
    */
   template<class OtherType>
-  void EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+  void EnforceSolutionAtNode(unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+
+  /*!
+   * \brief Version of EnforceSolutionAtNode for a single degree of freedom.
+   */
+  template<class OtherType>
+  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType> & b);
 
   /*!
    * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
@@ -706,8 +724,7 @@ public:
    * \param[in] alpha - The scaling constant.
    * \param[in] B - Matrix being.
    */
-  template<class OtherType>
-  void MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B);
+  void MatrixMatrixAddition(ScalarType alpha, const CSysMatrix& B);
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.

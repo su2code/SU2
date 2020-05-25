@@ -3,7 +3,7 @@
  * \brief Declararion of the vector class used in the solution of
  *        large, distributed, sparse linear systems.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

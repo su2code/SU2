@@ -2,7 +2,7 @@
  * \file CElementProperty.hpp
  * \brief Light classes to define finite element properties.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
  * \class CProperty
  * \brief Base class for defining element properties.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CProperty {
 protected:
@@ -106,7 +106,7 @@ public:
  * \class CElementProperty
  * \brief Class for defining element properties for the structural solver.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CElementProperty final : public CProperty {
 private:
@@ -136,7 +136,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CElementProperty(void) {}
+  ~CElementProperty(void) override {}
 
   /*!
    * \brief Get the material model to use for the element.

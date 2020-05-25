@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the classes used to compute
  *        residual terms in radiation problems.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -122,7 +122,7 @@ class CAvgGradCorrected_P1 final : public CNumericsRadiation {
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_P1(void);
+  ~CAvgGradCorrected_P1(void) override;
 
   /*!
    * \brief Compute the viscous residual of the P1 equation.

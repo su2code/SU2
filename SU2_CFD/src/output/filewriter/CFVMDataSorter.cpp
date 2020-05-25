@@ -2,7 +2,7 @@
  * \file CFVMDataSorter.cpp
  * \brief Datasorter class for FVM solvers.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,9 +45,9 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
     /*--- Store the global IDs ---*/
 
-    globalID.push_back(geometry->node[iPoint]->GetGlobalIndex());
+    globalID.push_back(geometry->nodes->GetGlobalIndex(iPoint));
 
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
   }
 
 
@@ -72,9 +72,9 @@ CFVMDataSorter::~CFVMDataSorter(){
 
   delete [] Local_Halo;
 
-  if (Index != NULL)       delete [] Index;
-  if (idSend != NULL)      delete [] idSend;
-  if (linearPartitioner != NULL) delete linearPartitioner;
+        delete [] Index;
+       delete [] idSend;
+  delete linearPartitioner;
 
 }
 
@@ -141,7 +141,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   unsigned long iPoint, jPoint;
   unsigned long nElem_Total = 0, Global_Index;
 
-  int *Conn_Elem  = NULL;
+  int *Conn_Elem  = nullptr;
 
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
@@ -200,7 +200,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
         /*--- Get the index of the current point. ---*/
 
         iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Search for the lowest global index in this element. We
          send the element to the processor owning the range that includes
@@ -208,7 +208,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
         for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
           jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
           if (newID < Global_Index) Global_Index = newID;
         }
 
@@ -262,7 +262,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
 
   /*--- Allocate arrays for storing halo flags. ---*/
@@ -290,7 +290,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
         /*--- Get the index of the current point. ---*/
 
         iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Search for the lowest global index in this element. We
          send the element to the processor owning the range that includes
@@ -298,7 +298,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
         for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
           jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
           if (newID < Global_Index) Global_Index = newID;
         }
 
@@ -325,7 +325,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
           for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
             iPoint = geometry->elem[ii]->GetNode(kk);
-            connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+            connSend[nn] = geometry->nodes->GetGlobalIndex(iPoint); nn++;
 
             /*--- Check if this is a halo node. If so, flag this element
              as a halo cell. We will use this later to sort and remove
@@ -356,7 +356,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
 
   unsigned short *haloRecv = new unsigned short[nElem_Cum[size]]();
@@ -484,27 +484,27 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   switch (Elem_Type) {
     case TRIANGLE:
-      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_Elem;
       break;
     case TETRAHEDRON:
-      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+      delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_Elem;
       break;
     case HEXAHEDRON:
-      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+      delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_Elem;
       break;
     case PRISM:
-      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+      delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_Elem;
       break;
     case PYRAMID:
-      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+      delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_Elem;
       break;
     default:

@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.cpp
  * \brief Space and time integration for structural problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,32 +71,20 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,
                                                    CNumerics **numerics, CConfig *config,
                                                    unsigned short RunTime_EqSystem) {
-  bool dynamic = config->GetTime_Domain();
   bool first_iter = (config->GetInnerIter() == 0);
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
   unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   CSolver* solver = solver_container[MainSolver];
 
-  /*--- Initial calculation, different logic for restarted simulations. ---*/
-  bool initial_calc = false;
-  if (config->GetRestart())
-    initial_calc = (config->GetTimeIter() == config->GetRestart_Iter()) && first_iter;
-  else
-    initial_calc = (config->GetTimeIter() == 0) && first_iter;
+  /*--- Mass Matrix was computed during preprocessing, see notes therein. ---*/
 
-  /*--- Mass Matrix computed during preprocessing, see notes therein. ---*/
-
-  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed. ---*/
-  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant. ---*/
-  /*--- For correct differentiation of dynamic cases the matrix needs to be computed every time. ---*/
-  if (linear_analysis && (dynamic || initial_calc))
+  if (linear_analysis) {
+    /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed. ---*/
     solver->Compute_StiffMatrix(geometry, numerics, config);
-
-  if (nonlinear_analysis) {
-
+  }
+  else {
     /*--- If the analysis is nonlinear the stress terms also need to be computed. ---*/
     /*--- For full Newton-Raphson the stiffness matrix and the nodal term are updated every time. ---*/
     if (IterativeScheme == NEWTON_RAPHSON) {
@@ -111,7 +99,6 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
       else
         solver->Compute_NodalStressRes(geometry, numerics, config);
     }
-
   }
 
   /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
@@ -150,13 +137,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
     case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
     case (GENERALIZED_ALPHA):
-      solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, numerics, config);
       break;
   }
 
@@ -167,16 +154,16 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
       case CLAMPED_BOUNDARY:
         solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
         break;
+      case SYMMETRY_PLANE:
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
       case DISP_DIR_BOUNDARY:
         solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
-        break;
-      case DISPLACEMENT_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
   }
 
-  /*--- Solver linearized system ---*/
+  /*--- Solver linear system ---*/
 
   solver_container[MainSolver]->Solve_System(geometry, config);
 
@@ -184,13 +171,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
     case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
     case (GENERALIZED_ALPHA):
-      solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
+      solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, config);
       break;
   }
 
@@ -203,10 +190,5 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
         break;
     }
   }
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
-  solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }

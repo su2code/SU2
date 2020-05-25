@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,11 +49,11 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDummyDriver(){}
+  ~CDummyDriver() override{}
 
   /*!
    * \brief Does nothing except printing the information that no solver is running.
    */
-  void StartSolver();
+  void StartSolver() override;
 
 };

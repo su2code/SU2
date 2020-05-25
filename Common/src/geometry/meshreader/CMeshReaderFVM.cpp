@@ -3,7 +3,7 @@
  * \brief Helper class that provides the counts for each rank in a linear
  *        partitioning given the global count as input.
  * \author T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

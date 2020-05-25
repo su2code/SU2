@@ -2,7 +2,7 @@
  * \file CFEAElasticity.hpp
  * \brief Declaration and inlines of the base class for elasticity problems.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
  *        document the public interface of this class hierarchy.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEAElasticity : public CNumerics {
 
@@ -96,7 +96,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEAElasticity(void);
+  ~CFEAElasticity(void) override;
 
   /*!
    * \brief Set elasticity modulus and Poisson ratio.

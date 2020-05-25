@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.hpp
  * \brief Headers of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiGridGeometry(void);
+  ~CMultiGridGeometry(void) override;
 
   /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.

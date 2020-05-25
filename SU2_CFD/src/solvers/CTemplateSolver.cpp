@@ -1,8 +1,8 @@
 /*!
  * \file CTemplateSolver.cpp
- * \brief Subrotuines to be implemented for any new solvers
+ * \brief Subroutines to be implemented for any new solvers
  * \author F. Palacios
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

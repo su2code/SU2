@@ -2,7 +2,7 @@
  * \file CFEM_DG_NSSolver.hpp
  * \brief Headers of the CFEM_DG_NSSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEM_DG_NSSolver final : public CFEM_DG_EulerSolver {
 private:
@@ -104,7 +104,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_DG_NSSolver(void);
+  ~CFEM_DG_NSSolver(void) override;
 
   /*!
    * \brief Function to compute the time step for solving the Navier-Stokes equations.

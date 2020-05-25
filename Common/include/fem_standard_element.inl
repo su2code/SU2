@@ -2,7 +2,7 @@
  * \file fem_standard_element.inl
  * \brief In-Line subroutines of the <i>fem_standard_element.hpp</i> file.
  * \author E. van der Weide
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

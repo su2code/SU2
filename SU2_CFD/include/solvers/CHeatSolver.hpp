@@ -2,7 +2,7 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CHeatSolver final : public CSolver {
 protected:
@@ -67,7 +67,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CHeatSolver(void);
+  ~CHeatSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

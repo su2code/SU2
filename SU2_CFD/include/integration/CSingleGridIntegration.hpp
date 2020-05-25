@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.hpp
  * \brief Declaration of class for numerical integration of fine grid-only problems.
  * \author A. Bueno.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

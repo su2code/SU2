@@ -2,7 +2,7 @@
  * \file CDummyDriver.cpp
  * \brief Dummy driver class for running the preprocessing without geometry preprocessing.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

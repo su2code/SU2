@@ -2,11 +2,11 @@
  * \file CQUAD4.cpp
  * \brief Definition of the 4-node quadrilateral element with 4 Gauss points.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -41,25 +41,23 @@ CQUAD4::CQUAD4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
-  unsigned short iNode, iGauss;
-  su2double Xi, Eta, val_Ni;
+  unsigned short iNode, iGauss, jGauss;
+  su2double Xi, Eta;
 
   for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
 
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
 
-    val_Ni = 0.25*(1.0-Xi)*(1.0-Eta);		GaussPoint[iGauss].SetNi(val_Ni,0);
-    val_Ni = 0.25*(1.0+Xi)*(1.0-Eta);		GaussPoint[iGauss].SetNi(val_Ni,1);
-    val_Ni = 0.25*(1.0+Xi)*(1.0+Eta);		GaussPoint[iGauss].SetNi(val_Ni,2);
-    val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);		GaussPoint[iGauss].SetNi(val_Ni,3);
+    su2double Ni[4] = {0.0};
+    ShapeFunctions(Xi, Eta, Ni);
+
+    for (jGauss = 0; jGauss < NGAUSS; jGauss++)
+      GaussPoint[iGauss].SetNi(Ni[jGauss], jGauss);
 
     /*--- dN/d xi, dN/d eta ---*/
 
-    dNiXj[iGauss][0][0] = -0.25*(1.0-Eta);  dNiXj[iGauss][0][1] = -0.25*(1.0-Xi);
-    dNiXj[iGauss][1][0] =  0.25*(1.0-Eta);  dNiXj[iGauss][1][1] = -0.25*(1.0+Xi);
-    dNiXj[iGauss][2][0] =  0.25*(1.0+Eta);  dNiXj[iGauss][2][1] =  0.25*(1.0+Xi);
-    dNiXj[iGauss][3][0] = -0.25*(1.0+Eta);  dNiXj[iGauss][3][1] =  0.25*(1.0-Xi);
+    ShapeFunctionJacobian(Xi, Eta, dNiXj[iGauss]);
 
   }
 

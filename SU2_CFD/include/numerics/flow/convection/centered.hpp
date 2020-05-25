@@ -3,7 +3,7 @@
  * \brief Delaration of numerics classes for centered schemes,
  *        the implementation is in centered.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,7 +96,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentBase_Flow(void);
+  ~CCentBase_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a centered method with artificial dissipation.
@@ -169,7 +169,7 @@ private:
    * \brief Set input variables for AD preaccumulation.
    * \return true, as we will define inputs.
    */
-  bool SetPreaccInVars(void);
+  bool SetPreaccInVars(void) override;
 
 public:
   /*!
@@ -267,7 +267,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentLaxInc_Flow(void);
+  ~CCentLaxInc_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a Lax method.
@@ -327,7 +327,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentJSTInc_Flow(void);
+  ~CCentJSTInc_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a JST method.

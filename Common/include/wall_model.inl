@@ -2,7 +2,7 @@
  * \file wall_model.inl
  * \brief In-Line subroutines of the <i>wall_model.hpp</i> file.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

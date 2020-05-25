@@ -2,7 +2,7 @@
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -45,9 +45,9 @@ import scipy.optimize
 
 ####### SETUP #######
 
-obj_scale = 1/0.0125 # scale the objective so that it starts at 1-4
-con_scale = 1/0.5    # 1 over upper bound (e.g. max volume)
-var_scale = 1.0      # variable scale 
+obj_scale = 1/1.25e-3 # scale the objective so that it starts at 1-4
+con_scale = 1/0.5     # 1 over upper bound (e.g. max volume)
+var_scale = 1.0       # variable scale 
 
 # maximum number of iterations
 maxJev_t = 1000
@@ -73,11 +73,10 @@ commands = ["SU2_CFD ", "SU2_CFD_AD "]
 inputFile = "element_properties.dat"
 
 # names of the output files [objective value, objective gradient, constraint value, ...]
-outputFiles = ["of_refnode.dat", "grad_ref_node.dat",
-               "of_volfrac.dat", "grad_vol_frac.dat"]
+outputFiles = ["grad_compliance.dat", "grad_vol_frac.dat"]
 
 # settings for direct run and adjoint of the objective and constraint
-fnames = ["settings.cfg", "settings_refnode.cfg", "settings_volfrac.cfg"]
+fnames = ["settings.cfg", "settings_compliance.cfg", "settings_volfrac.cfg"]
 
 # use the DILATE, ERODE, (DILATE,ERODE), or (ERODE,DILATE) filters, the first value is
 # for gray initialization, then it is ramped until a solid-void topology is obtained
@@ -89,10 +88,10 @@ filterParam = [0.01, 1, 4, 16, 64, 200]
 class Driver:
   def __init__(self,commands,inputFile,configFiles,outputFiles):
     self._inputFile  = inputFile
-    self._objValFile = outputFiles[0]
-    self._objDerFile = outputFiles[1]
-    self._conValFile = outputFiles[2]
-    self._conDerFile = outputFiles[3]
+    self._objValFile = "history.csv"
+    self._objDerFile = outputFiles[0]
+    self._conValFile = "history.csv"
+    self._conDerFile = outputFiles[1]
     self._objValCommand = commands[0]+configFiles[0]+" > objval.stdout"
     self._objDerCommand = commands[1]+configFiles[1]+" > objder.stdout"
     self._conDerCommand = commands[1]+configFiles[2]+" > conval.stdout"
@@ -123,7 +122,7 @@ class Driver:
 
     try:
       sp.call(self._objValCommand,shell=True)
-      fid = open(self._objValFile,"r"); val = float(fid.read()); fid.close()
+      fid = open(self._objValFile,"r"); val = float(fid.readlines()[1]); fid.close()
       # the return code of mpirun is useless, we test the value of the function
       self._assert_isfinite(val)
     except:
@@ -170,7 +169,7 @@ class Driver:
 
     try:
       sp.call(self._conDerCommand,shell=True)
-      fid = open(self._conValFile,"r"); val = float(fid.read()); fid.close()
+      fid = open(self._conValFile,"r"); val = float(fid.readlines()[1]); fid.close()
       self._assert_isfinite(val)
     except:
       raise RuntimeError("Constraint function evaluation failed")

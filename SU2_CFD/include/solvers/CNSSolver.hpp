@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -68,7 +68,6 @@ private:
    */
   void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) override;
 
-private:
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -77,8 +76,7 @@ private:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output);
+                                       CConfig *config, bool Output) override;
 
 protected:
 
@@ -99,7 +97,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void);
+  ~CNSSolver(void) override;
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

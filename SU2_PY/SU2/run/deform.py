@@ -3,7 +3,7 @@
 ## \file deform.py
 #  \brief python package for deforming meshes
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

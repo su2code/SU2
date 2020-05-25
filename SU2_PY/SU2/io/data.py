@@ -3,7 +3,7 @@
 ## \file data.py
 #  \brief python package for data utility functions 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -94,7 +94,7 @@ def load_data( file_name, var_names=None   ,
                                            chars_as_strings = True      ,
                                            struct_as_record = True       )
             # pull core variable
-            assert input_data.has_key(core_name) , 'core data not found'
+            assert (core_name in input_data) , 'core data not found'
             input_data = input_data[core_name]
             
             # convert recarray to dictionary
@@ -104,7 +104,7 @@ def load_data( file_name, var_names=None   ,
         elif file_format == 'pickle':
             input_data = load_pickle(file_name)
             # pull core variable
-            assert input_data.has_key(core_name) , 'core data not found'
+            assert (core_name in input_data) , 'core data not found'
             input_data = input_data[core_name]
             
         #: if file_format
@@ -188,7 +188,7 @@ def save_data( file_name, data_dict, append=False ,
                                   core_name   = core_name    )
             # check for keys not in new data
             for key,value in data_dict_old.iteritems():
-                if not data_dict.has_key(key):
+                if not(key in data_dict):
                     data_dict[key] = value
             #: for each dict item
         #: if append

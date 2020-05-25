@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,20 +35,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Basic array initialization ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+  CD_Inv = nullptr; CL_Inv = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
 
   /*--- Surface-based array initialization ---*/
-  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv = nullptr; Surface_CD_Inv = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL = nullptr; Surface_CD = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr; Surface_CFy = nullptr; Surface_CFz = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
@@ -61,7 +61,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   Total_CEff = 0.0;
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
-  blasFunctions = NULL;
+  blasFunctions = nullptr;
 
 }
 
@@ -69,20 +69,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
   /*--- Basic array initialization ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+  CD_Inv = nullptr; CL_Inv = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
 
   /*--- Surface-based array initialization ---*/
-  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv = nullptr; Surface_CD_Inv = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL = nullptr; Surface_CD = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr; Surface_CFy = nullptr; Surface_CFz = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -107,26 +107,26 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Total_CEff = 0.0;
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
-  blasFunctions = NULL;
+  blasFunctions = nullptr;
 
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
   /*--- Array initialization ---*/
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL; CEff_Inv = NULL;
-  CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
-  CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
+  CD_Inv = nullptr; CL_Inv = nullptr; CSF_Inv = nullptr; CEff_Inv = nullptr;
+  CMx_Inv = nullptr;   CMy_Inv = nullptr;   CMz_Inv = nullptr;
+  CFx_Inv = nullptr;   CFy_Inv = nullptr;   CFz_Inv = nullptr;
 
-  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
+  Surface_CL_Inv = nullptr; Surface_CD_Inv = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr;   Surface_CFy_Inv = nullptr;   Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr;   Surface_CMy_Inv = nullptr;   Surface_CMz_Inv = nullptr;
 
-  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
-  Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
+  Surface_CL = nullptr; Surface_CD = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr;   Surface_CFy = nullptr;   Surface_CFz = nullptr;
+  Surface_CMx = nullptr;   Surface_CMy = nullptr;   Surface_CMz = nullptr;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -730,40 +730,40 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 
-  if(FluidModel    != NULL) delete FluidModel;
-  if(blasFunctions != NULL) delete blasFunctions;
+  delete FluidModel;
+  delete blasFunctions;
 
   /*--- Array deallocation ---*/
-  if (CD_Inv != NULL)           delete [] CD_Inv;
-  if (CL_Inv != NULL)           delete [] CL_Inv;
-  if (CSF_Inv != NULL)          delete [] CSF_Inv;
-  if (CMx_Inv != NULL)          delete [] CMx_Inv;
-  if (CMy_Inv != NULL)          delete [] CMy_Inv;
-  if (CMz_Inv != NULL)          delete [] CMz_Inv;
-  if (CFx_Inv != NULL)          delete [] CFx_Inv;
-  if (CFy_Inv != NULL)          delete [] CFy_Inv;
-  if (CFz_Inv != NULL)          delete [] CFz_Inv;
-  if (Surface_CL_Inv != NULL)   delete [] Surface_CL_Inv;
-  if (Surface_CD_Inv != NULL)   delete [] Surface_CD_Inv;
-  if (Surface_CSF_Inv != NULL)  delete [] Surface_CSF_Inv;
-  if (Surface_CEff_Inv != NULL) delete [] Surface_CEff_Inv;
-  if (Surface_CFx_Inv != NULL)  delete [] Surface_CFx_Inv;
-  if (Surface_CFy_Inv != NULL)  delete [] Surface_CFy_Inv;
-  if (Surface_CFz_Inv != NULL)  delete [] Surface_CFz_Inv;
-  if (Surface_CMx_Inv != NULL)  delete [] Surface_CMx_Inv;
-  if (Surface_CMy_Inv != NULL)  delete [] Surface_CMy_Inv;
-  if (Surface_CMz_Inv != NULL)  delete [] Surface_CMz_Inv;
-  if (Surface_CL != NULL)       delete [] Surface_CL;
-  if (Surface_CD != NULL)       delete [] Surface_CD;
-  if (Surface_CSF != NULL)      delete [] Surface_CSF;
-  if (Surface_CEff != NULL)     delete [] Surface_CEff;
-  if (Surface_CFx != NULL)      delete [] Surface_CFx;
-  if (Surface_CFy != NULL)      delete [] Surface_CFy;
-  if (Surface_CFz != NULL)      delete [] Surface_CFz;
-  if (Surface_CMx != NULL)      delete [] Surface_CMx;
-  if (Surface_CMy != NULL)      delete [] Surface_CMy;
-  if (Surface_CMz != NULL)      delete [] Surface_CMz;
-  if (CEff_Inv != NULL)         delete [] CEff_Inv;
+            delete [] CD_Inv;
+            delete [] CL_Inv;
+           delete [] CSF_Inv;
+           delete [] CMx_Inv;
+           delete [] CMy_Inv;
+           delete [] CMz_Inv;
+           delete [] CFx_Inv;
+           delete [] CFy_Inv;
+           delete [] CFz_Inv;
+    delete [] Surface_CL_Inv;
+    delete [] Surface_CD_Inv;
+   delete [] Surface_CSF_Inv;
+  delete [] Surface_CEff_Inv;
+   delete [] Surface_CFx_Inv;
+   delete [] Surface_CFy_Inv;
+   delete [] Surface_CFz_Inv;
+   delete [] Surface_CMx_Inv;
+   delete [] Surface_CMy_Inv;
+   delete [] Surface_CMz_Inv;
+        delete [] Surface_CL;
+        delete [] Surface_CD;
+       delete [] Surface_CSF;
+      delete [] Surface_CEff;
+       delete [] Surface_CFx;
+       delete [] Surface_CFy;
+       delete [] Surface_CFz;
+       delete [] Surface_CMx;
+       delete [] Surface_CMy;
+       delete [] Surface_CMz;
+          delete [] CEff_Inv;
 
 }
 
@@ -3444,7 +3444,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
     nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
 
   /* Copy the solution into the working variables. */
-  Set_OldSolution(geometry);
+  Set_OldSolution();
 
   /* Allocate the memory for local part of the Jacobian. Note that passivedouble
      must be used for the Jacobian matrix. */
@@ -3574,12 +3574,12 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
   }
 }
 
-void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
+void CFEM_DG_EulerSolver::Set_OldSolution() {
 
   memcpy(VecWorkSolDOFs[0].data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
-void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
+void CFEM_DG_EulerSolver::Set_NewSolution() {
 
   memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
@@ -3897,7 +3897,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                  in time to the given time integration point for the
                  given time level. */
               const unsigned short level = tasksList[i].timeLevel;
-              unsigned long nAdjElem = 0, *adjElem = NULL;
+              unsigned long nAdjElem = 0, *adjElem = nullptr;
               if(level < (nTimeLevels-1)) {
                 nAdjElem = ownedElemAdjLowTimeLevel[level+1].size();
                 adjElem  = ownedElemAdjLowTimeLevel[level+1].data();
@@ -3919,7 +3919,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                  in time to the given time integration point for the
                  given time level. */
               const unsigned short level = tasksList[i].timeLevel;
-              unsigned long nAdjElem = 0, *adjElem = NULL;
+              unsigned long nAdjElem = 0, *adjElem = nullptr;
               if(level < (nTimeLevels-1)) {
                 nAdjElem = haloElemAdjLowTimeLevel[level+1].size();
                 adjElem  = haloElemAdjLowTimeLevel[level+1].data();
@@ -5759,7 +5759,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
-  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : nullptr;
 
   /*--- Get the physical time for MMS if necessary. ---*/
   su2double time = 0.0;
@@ -9386,8 +9386,8 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
       delete [] Jacobian_i;
       delete [] Jacobian_j;
 
-      Jacobian_i = NULL;
-      Jacobian_j = NULL;
+      Jacobian_i = nullptr;
+      Jacobian_j = nullptr;
     }
   }
 }
@@ -9508,8 +9508,8 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

@@ -2,7 +2,7 @@
  * \file CTurbSAVariable.hpp
  * \brief Declaration of the variables of the SA turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSAVariable() = default;
+  ~CTurbSAVariable() override = default;
 
   /*!
    * \brief Set the harmonic balance source term.

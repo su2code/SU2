@@ -2,7 +2,7 @@
  * \file CBaslineSolver.hpp
  * \brief Headers of the CBaselineSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,7 +69,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CBaselineSolver(void);
+  ~CBaselineSolver(void) override;
 
   /*!
    * \brief Load a solution from a restart file.

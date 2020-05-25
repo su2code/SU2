@@ -2,7 +2,7 @@
  * \file CNSVariable.hpp
  * \brief Class for defining the variables of the compressible Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -63,7 +63,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSVariable() = default;
+  ~CNSVariable() override = default;
 
   /*!
    * \brief Set the laminar viscosity.

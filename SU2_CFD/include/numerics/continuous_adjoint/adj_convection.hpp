@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for continuous adjoint
  *        convective discretization. Implemented in adj_convection.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentLax_AdjFlow(void);
+  ~CCentLax_AdjFlow(void) override;
 
   /*!
    * \brief Compute the adjoint flow residual using a Lax method.
@@ -77,7 +77,7 @@ public:
                         su2double *val_resconv_j, su2double *val_resvisc_j,
                         su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                         su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
-                        CConfig *config);
+                        CConfig *config) override;
 };
 
 /*!
@@ -109,7 +109,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentJST_AdjFlow(void);
+  ~CCentJST_AdjFlow(void) override;
 
   /*!
    * \brief Compute the adjoint flow residual using a JST method.
@@ -127,7 +127,7 @@ public:
                         su2double *val_resconv_j, su2double *val_resvisc_j,
                         su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                         su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
-                        CConfig *config);
+                        CConfig *config) override;
 };
 
 /*!
@@ -163,7 +163,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwRoe_AdjFlow(void);
+  ~CUpwRoe_AdjFlow(void) override;
 
   /*!
    * \brief Compute the adjoint Roe's flux between two nodes i and j.
@@ -177,7 +177,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) override;
 };
 
 /*!
@@ -202,7 +202,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwLin_AdjTurb(void);
+  ~CUpwLin_AdjTurb(void) override;
 
   /*!
    * \brief Compute the adjoint upwind flux between two nodes i and j.
@@ -211,7 +211,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -237,7 +237,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_AdjTurb(void);
+  ~CUpwSca_AdjTurb(void) override;
 
   /*!
    * \param[out] val_residual_i - Pointer to the total residual at point i.
@@ -250,5 +250,5 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) override;
 };

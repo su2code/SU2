@@ -2,7 +2,7 @@
  * \file cusp.cpp
  * \brief Implementation of the CUSP scheme.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,6 +62,8 @@ CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwCUSP_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iDim, iVar;
   su2double Diff_U[5] = {0.0};

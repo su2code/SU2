@@ -2,11 +2,11 @@
  * \file fem_wall_distance.cpp
  * \brief Main subroutines for computing the wall distance for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -28,7 +28,7 @@
 #include "../include/fem_geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
+std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig *config) const {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
@@ -117,16 +117,62 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   /*--------------------------------------------------------------------------*/
 
   /* Build the ADT. */
-  CADTElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
-                        markerIDs, elemIDs, true);
+  std::unique_ptr<CADTElemClass> WallADT(new CADTElemClass(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
+                                                           markerIDs, elemIDs, true));
 
-  /* Release the memory of the vectors used to build the ADT. To make sure
-     that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(markerIDs);
-  vector<unsigned short>().swap(VTK_TypeElem);
-  vector<unsigned long>().swap(elemIDs);
-  vector<unsigned long>().swap(surfaceConn);
-  vector<su2double>().swap(surfaceCoor);
+  return WallADT;
+
+}
+
+/*!
+ * \brief Set wall distances a specific value
+ */
+void CMeshFEM_DG::SetWallDistance(su2double val){
+
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Get the required data from the corresponding standard element. */
+    const unsigned short ind  = volElem[l].indStandardElement;
+    const unsigned short nInt = standardElementsGrid[ind].GetNIntegration();
+
+    /* Store the number of solDOFS a bit easier. */
+    const unsigned short nDOFsSol  = volElem[l].nDOFsSol;
+
+    /* Allocate the memory for the wall distance of this element. */
+    volElem[l].wallDistance.resize(nInt, val);
+    volElem[l].wallDistanceSolDOFs.resize(nDOFsSol, val);
+
+  }
+
+  for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+    /* Get the required data from the corresponding standard element. */
+    const unsigned short ind   = matchingFaces[l].indStandardElement;
+    const unsigned short nInt  = standardMatchingFacesGrid[ind].GetNIntegration();
+
+    /* Allocate the memory for the wall distance for this matching face. */
+    matchingFaces[l].wallDistance.resize(nInt, val);
+  }
+
+  for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+      /* Loop over the boundary faces and determine the wall distances
+         in the integration points. */
+      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+      for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+        /* Get the required data from the corresponding standard element. */
+        const unsigned short ind   = surfElem[l].indStandardElement;
+        const unsigned short nInt  = standardBoundaryFacesGrid[ind].GetNIntegration();
+
+        /* Allocate the memory for the wall distance for this boundary face. */
+        surfElem[l].wallDistance.resize(nInt, val);
+      }
+    }
+  }
+}
+
+void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the wall distance of the integration points of   ---*/
@@ -144,14 +190,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     /* Allocate the memory for the wall distance of this element. */
     volElem[l].wallDistance.resize(nInt);
 
-    /* Check for an empty tree. In that case the wall distance is set to zero. */
-    if( WallADT.IsEmpty() ) {
-
-      /* Empty tree, i.e. no viscous solid walls present. */
-      for(unsigned short i=0; i<nInt; ++i)
-        volElem[l].wallDistance[i] = 0.0;
-    }
-    else {
+    if( !WallADT->IsEmpty() ) {
 
       /*--- The tree is not empty. Loop over the integration points
             and determine the wall distance. ---*/
@@ -162,7 +201,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         volElem[l].wallDistance[i] = dist;
       }
@@ -184,14 +223,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     /* Allocate the memory for the wall distance of the solution DOFs. */
     volElem[l].wallDistanceSolDOFs.resize(nDOFsSol);
 
-    /* Check for an empty tree. In that case the wall distance is set to zero. */
-    if( WallADT.IsEmpty() ) {
-
-      /* Empty tree, i.e. no viscous solid walls present. */
-      for(unsigned short i=0; i<nDOFsSol; ++i)
-        volElem[l].wallDistanceSolDOFs[i] = 0.0;
-    }
-    else {
+    if( !WallADT->IsEmpty() ) {
 
       /*--- The tree is not empty. Loop over the solution DOFs
             and determine the wall distance. ---*/
@@ -202,7 +234,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         volElem[l].wallDistanceSolDOFs[i] = dist;
       }
@@ -223,14 +255,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     /* Allocate the memory for the wall distance for this matching face. */
     matchingFaces[l].wallDistance.resize(nInt);
 
-    /* Check for an empty tree. In that case the wall distance is set to zero. */
-    if( WallADT.IsEmpty() ) {
-
-      /* Empty tree, i.e. no viscous solid walls present. */
-      for(unsigned short i=0; i<nInt; ++i)
-        matchingFaces[l].wallDistance[i] = 0.0;
-    }
-    else {
+    if( !WallADT->IsEmpty() ) {
 
       /*--- The tree is not empty. Loop over the integration points
             and determine the wall distance. */
@@ -242,7 +267,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         matchingFaces[l].wallDistance[i] = dist;
       }
@@ -277,26 +302,24 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
 
         /* Check for an empty tree or a viscous wall.
            In those case the wall distance is set to zero. */
-        if(WallADT.IsEmpty() || viscousWall) {
+        if(viscousWall) {
 
           /* Wall distance must be set to zero. */
           for(unsigned short i=0; i<nInt; ++i)
             surfElem[l].wallDistance[i] = 0.0;
         }
-        else {
-
-          /*--- Not a viscous wall boundary, while viscous walls are present. 
+        else if ( !WallADT->IsEmpty() ) {
+          /*--- Not a viscous wall boundary, while viscous walls are present.
                 The distance must be computed. Loop over the integration points
                 and do so. ---*/
           for(unsigned short i=0; i<nInt; ++i) {
 
-            const su2double *coor = surfElem[l].coorIntegrationPoints.data()
-                                  + i*nDim;
+            const su2double *coor = surfElem[l].coorIntegrationPoints.data() + i*nDim;
             unsigned short markerID;
             unsigned long  elemID;
             int            rankID;
             su2double      dist;
-            WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+            WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
             surfElem[l].wallDistance[i] = dist;
           }

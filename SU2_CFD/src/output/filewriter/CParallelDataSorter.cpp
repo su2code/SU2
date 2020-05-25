@@ -2,7 +2,7 @@
  * \file CParallelDataSorter.cpp
  * \brief Datasorter base class.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,22 +48,22 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
 
   GlobalField_Counter = this->fieldNames.size();
 
-  Conn_Line_Par = NULL;
-  Conn_Hexa_Par = NULL;
-  Conn_Pris_Par = NULL;
-  Conn_Quad_Par = NULL;
-  Conn_Tetr_Par = NULL;
-  Conn_Tria_Par = NULL;
-  Conn_Pyra_Par = NULL;
+  Conn_Line_Par = nullptr;
+  Conn_Hexa_Par = nullptr;
+  Conn_Pris_Par = nullptr;
+  Conn_Quad_Par = nullptr;
+  Conn_Tetr_Par = nullptr;
+  Conn_Tria_Par = nullptr;
+  Conn_Pyra_Par = nullptr;
 
-  nPoint_Send  = NULL;
-  nPoint_Recv  = NULL;
-  Index        = NULL;
-  connSend     = NULL;
-  dataBuffer   = NULL;
-  passiveDoubleBuffer = NULL;
-  doubleBuffer = NULL;
-  idSend       = NULL;
+  nPoint_Send  = nullptr;
+  nPoint_Recv  = nullptr;
+  Index        = nullptr;
+  connSend     = nullptr;
+  dataBuffer   = nullptr;
+  passiveDoubleBuffer = nullptr;
+  doubleBuffer = nullptr;
+  idSend       = nullptr;
   nSends = 0;
   nRecvs = 0;
 
@@ -77,7 +77,7 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   nElemConn_Send = new int[size+1]();
   nElemConn_Cum = new int[size+1]();
   
-  linearPartitioner = NULL;
+  linearPartitioner = nullptr;
   
   nElemPerType.fill(0);
   nElemPerTypeGlobal.fill(0);
@@ -318,7 +318,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  connSend = NULL;
+  connSend = nullptr;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
 
   /*--- Allocate the data buffer to hold the sorted data. We have to make it large enough

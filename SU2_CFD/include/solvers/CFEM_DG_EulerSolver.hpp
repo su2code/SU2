@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.hpp
  * \brief Headers of the CFEM_DG_EulerSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -295,7 +295,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_DG_EulerSolver(void);
+  ~CFEM_DG_EulerSolver(void) override;
 
   /*!
    * \brief Set the fluid solver nondimensionalization.
@@ -402,16 +402,14 @@ public:
 
   /*!
    * \brief Set the working solution of the first time level to the current
-            solution. Used for Runge-Kutta type schemes.
-   * \param[in] geometry - Geometrical definition of the problem.
+   *        solution. Used for Runge-Kutta type schemes.
    */
-  void Set_OldSolution(CGeometry *geometry) final;
+  void Set_OldSolution() final;
 
   /*!
    * \brief Set the new solution to the current solution for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Set_NewSolution(CGeometry *geometry) final;
+  void Set_NewSolution() final;
 
   /*!
    * \brief Function to compute the time step for solving the Euler equations.

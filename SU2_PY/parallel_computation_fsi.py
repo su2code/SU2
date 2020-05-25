@@ -3,7 +3,7 @@
 ## \file parallel_computation_fsi.py
 #  \brief Python script for running FSI simulations using the SU2 suite.
 #  \author T. Economon, T. Lukaczyk, F. Palacios, H. Kline, R. Sanchez
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

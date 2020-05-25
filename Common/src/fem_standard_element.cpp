@@ -2,7 +2,7 @@
  * \file fem_standard_element.cpp
  * \brief Functions for the FEM standard elements.
  * \author E. van der Weide
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2083,7 +2083,7 @@ CFEMStandardElement::CFEMStandardElement(unsigned short          val_VTK_Type,
          if should be included. */
       blasFunctions.gemm(nIntegration, nDOFs, nDOFs, matDerBasisInt,
                          matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
-                         mat2ndDerBasisIntPoint, NULL);
+                         mat2ndDerBasisIntPoint, nullptr);
 
       /* Update the pointer to the position where the next second
          derivative will be stored. */

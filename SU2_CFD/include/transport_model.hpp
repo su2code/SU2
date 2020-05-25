@@ -2,7 +2,7 @@
  * \file transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -121,7 +121,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantViscosity(void);
+  ~CConstantViscosity(void) override;
    
 };
 
@@ -153,17 +153,17 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSutherland(void);
+  ~CSutherland(void) override;
   
   /*!
    * \brief Set Viscosity.
    */
-  void SetViscosity(su2double T, su2double rho);
+  void SetViscosity(su2double T, su2double rho) override;
   
   /*!
    * \brief Set Viscosity Derivatives.
    */
-  void SetDerViscosity(su2double T, su2double rho);
+  void SetDerViscosity(su2double T, su2double rho) override;
   
 };
 
@@ -192,12 +192,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialViscosity(void);
+  ~CPolynomialViscosity(void) override;
   
   /*!
    * \brief Set Viscosity.
    */
-  void SetViscosity(su2double T, su2double rho);
+  void SetViscosity(su2double T, su2double rho) override;
   
 };
 
@@ -275,7 +275,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantConductivity(void);
+  ~CConstantConductivity(void) override;
 
 };
 
@@ -306,12 +306,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantConductivityRANS(void);
+  ~CConstantConductivityRANS(void) override;
   
   /*!
    * \brief Set effective thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
   
 };
 
@@ -335,7 +335,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantPrandtl(void);
+  ~CConstantPrandtl(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -347,12 +347,12 @@ public:
    * \brief par1 -> Cp.
    * \brief par2 -> Mu.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
 
   /*!
    * \brief Set Thermal conductivity derivatives.
    */
-  void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+  void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) override;
 
 };
 
@@ -378,7 +378,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantPrandtlRANS(void);
+  ~CConstantPrandtlRANS(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -388,7 +388,7 @@ public:
   /*!
    * \brief Set effective thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
 
 };
 
@@ -412,7 +412,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialConductivity(void);
+  ~CPolynomialConductivity(void) override;
   
   /*!
    * \brief Constructor of the class.
@@ -422,7 +422,7 @@ public:
   /*!
    * \brief Set Thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
   
 };
 
@@ -447,7 +447,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialConductivityRANS(void);
+  ~CPolynomialConductivityRANS(void) override;
   
   /*!
    * \brief Constructor of the class.
@@ -457,7 +457,7 @@ public:
   /*!
    * \brief Set Thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
   
 };
 

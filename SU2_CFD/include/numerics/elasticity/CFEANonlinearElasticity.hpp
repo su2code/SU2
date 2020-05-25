@@ -2,7 +2,7 @@
  * \file CFEANonlinearElasticity.hpp
  * \brief Declaration and inlines of the nonlinear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 
@@ -97,7 +97,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEANonlinearElasticity(void);
+  ~CFEANonlinearElasticity(void) override;
 
   /*!
    * \brief Set element electric field.

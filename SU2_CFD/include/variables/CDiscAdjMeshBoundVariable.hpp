@@ -3,11 +3,11 @@
  * \brief Declaration and inlines of the class
  *        to define the adjoint variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -37,8 +37,6 @@ private:
   MatrixType Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
   MatrixType Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
 
-  MatrixType Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
-
   CVertexMap<unsigned> VertexMap; /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
@@ -54,7 +52,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshBoundVariable() = default;
+  ~CDiscAdjMeshBoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
@@ -116,9 +114,22 @@ public:
   }
 
   /*!
+   * \brief Get the value of the BGS solution.
+   */
+  inline su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Bound_Disp_Sens(iPoint,iDim);
+  }
+
+  /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
   void Set_BGSSolution_k() override;
+
+  /*!
+   * \brief Restore the previous BGS subiteration to solution.
+   */
+  void Restore_BGSSolution_k() override;
 
   /*!
    * \brief Get the value of the solution in the previous BGS subiteration.
@@ -127,6 +138,15 @@ public:
   inline su2double Get_BGSSolution_k(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Solution_BGS_k(iPoint,iDim);
+  }
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  inline void Set_BGSSolution_k(unsigned long iPoint, unsigned long iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Solution_BGS_k(iPoint,iDim) = val;
   }
 
 };

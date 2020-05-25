@@ -2,7 +2,7 @@
  * \file heat.hpp
  * \brief Delarations of numerics classes for heat transfer problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for scalar centered scheme.
  * \ingroup ConvDiscr
  * \author O. Burghardt
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CCentSca_Heat : public CNumerics {
 
@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentSca_Heat(void);
+  ~CCentSca_Heat(void) override;
 
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -73,7 +73,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+                       CConfig *config) override;
 };
 
 /*!
@@ -81,7 +81,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the heat convection equation.
  * \ingroup ConvDiscr
  * \author O. Burghardt.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CUpwSca_Heat : public CNumerics {
 private:
@@ -102,7 +102,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_Heat(void);
+  ~CUpwSca_Heat(void) override;
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -111,7 +111,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -119,7 +119,7 @@ public:
  * \brief Class for computing viscous term using average of gradients without correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CAvgGrad_Heat : public CNumerics {
 private:
@@ -143,7 +143,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Heat(void);
+  ~CAvgGrad_Heat(void) override;
 
   /*!
    * \brief Compute the viscous heat residual using an average of gradients with correction.
@@ -152,7 +152,7 @@ public:
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -160,7 +160,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CAvgGradCorrected_Heat : public CNumerics {
 private:
@@ -183,7 +183,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_Heat(void);
+  ~CAvgGradCorrected_Heat(void) override;
 
   /*!
    * \brief Compute the viscous heat residual using an average of gradients with correction.
@@ -192,5 +192,5 @@ public:
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };

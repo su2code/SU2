@@ -2,11 +2,11 @@
  * \file CDiscAdjMeshVariable.cpp
  * \brief Main subroutines for the discrete adjoint mesh variable structure.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,10 +29,14 @@
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
 
-CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
-  CVariable(npoint, ndim, config) {
+CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) {
 
+  nPoint = npoint;
+  nVar = ndim;
   nDim = ndim;
+
+  /*--- Allocate the solution array. ---*/
+  Solution.resize(nPoint,nVar) = su2double(0.0);
 
   VertexMap.Reset(nPoint);
 }
@@ -62,4 +66,8 @@ void CDiscAdjMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
 void CDiscAdjMeshBoundVariable::Set_BGSSolution_k() {
   Solution_BGS_k = Bound_Disp_Sens;
+}
+
+void CDiscAdjMeshBoundVariable::Restore_BGSSolution_k() {
+  Bound_Disp_Sens = Solution_BGS_k;
 }

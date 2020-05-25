@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for continuous adjoint
  *        source term integration. Implemented in adj_sources.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,14 +49,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceAxisymmetric_AdjFlow(void);
+  ~CSourceAxisymmetric_AdjFlow(void) override;
 
   /*!
    * \brief Residual of the rotational frame source term.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) override;
 };
 
 class CSourceConservative_AdjFlow : public CNumerics {
@@ -76,14 +76,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceConservative_AdjFlow(void);
+  ~CSourceConservative_AdjFlow(void) override;
 
   /*!
    * \brief Source term integration using a conservative scheme.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
+  void ComputeResidual(su2double *val_residual, CConfig *config) override;
 };
 
 /*!
@@ -106,7 +106,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceRotatingFrame_AdjFlow(void);
+  ~CSourceRotatingFrame_AdjFlow(void) override;
 
   /*!
    * \brief Residual of the adjoint rotating frame source term.
@@ -114,7 +114,7 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) override;
 };
 
 /*!
@@ -141,14 +141,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceViscous_AdjFlow(void);
+  ~CSourceViscous_AdjFlow(void) override;
 
   /*!
    * \brief Source term integration of the flow adjoint equation.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual (su2double *val_residual, CConfig *config);
+  void ComputeResidual (su2double *val_residual, CConfig *config) override;
 
 };
 
@@ -172,7 +172,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceConservative_AdjTurb(void);
+  ~CSourceConservative_AdjTurb(void) override;
 
   /*!
    * \brief Source term integration using a conservative scheme.
@@ -181,7 +181,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -207,7 +207,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourcePieceWise_AdjTurb(void);
+  ~CSourcePieceWise_AdjTurb(void) override;
 
   /*!
    * \brief Source term integration of the adjoint turbulence equation.
@@ -216,5 +216,5 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };

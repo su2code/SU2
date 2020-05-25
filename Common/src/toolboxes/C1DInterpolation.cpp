@@ -2,7 +2,7 @@
  * \file C1DInterpolation.cpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -148,8 +148,10 @@ vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolat
   /*---For turbulence variables columns---*/
   if (nVar_Turb == 1)
     Inlet_Values[nDim+5] = Inlet_Interpolated[5];
-  else if (nVar_Turb == 2)
+  else if (nVar_Turb == 2){
+    Inlet_Values[nDim+5] = Inlet_Interpolated[5];
     Inlet_Values[nDim+6] = Inlet_Interpolated[6];
+  }
 
   /*--- Correct for Interpolation Type now ---*/
   switch(Interpolation_Type){

@@ -3,7 +3,7 @@
  * \brief Header file for the class CTGVSolution.
  *        The implementations are in the <i>CTGVSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,7 +71,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTGVSolution(void);
+  ~CTGVSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

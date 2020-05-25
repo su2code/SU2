@@ -2,7 +2,7 @@
  * \file template.cpp
  * \brief Empty implementation of numerics templates, see .hpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

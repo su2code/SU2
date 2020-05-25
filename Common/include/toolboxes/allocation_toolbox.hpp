@@ -5,7 +5,7 @@
  * \note  These are "kernel" functions, only to be used with good reason,
  *        always try to use higher level container classes.
  * \author P. Gomes, D. Kavolis
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -507,7 +507,7 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   min_Point = nPoint+5;
   min_dist = 1e6;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	  Coord_i = geometry->node[iPoint]->GetCoord();
+	  Coord_i = geometry->nodes->GetCoord(iPoint);
 	  
 	  dist_iref = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++)
@@ -531,7 +531,7 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Normal     = new su2double[nDim];
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 	  FaceVelocity[iEdge] = 0.0;
-	  geometry->edge[iEdge]->GetNormal(Normal);
+	  geometry->edges->GetNormal(iEdge,Normal);
 	  Area = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) {
 		  Area += Normal[iDim]*Normal[iDim];
@@ -844,11 +844,11 @@ void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Points, coordinates and normal vector in edge ---*/
     
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                       geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
     
     /*--- Primitive and secondary variables ---*/
     
@@ -918,10 +918,10 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Point identification, Normal vector and area ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
-    geometry->edge[iEdge]->GetNormal(Normal);
+    geometry->edges->GetNormal(iEdge,Normal);
 
     Area = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -942,8 +942,8 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     /*--- Adjustment for grid movement ---*/
     
     if (dynamic_grid) {
-      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
       ProjVel_i = 0.0; ProjVel_j =0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
@@ -956,8 +956,8 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     
     /*--- Inviscid contribution ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda+EPS);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda+EPS);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda+EPS);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda+EPS);
     
     
     /*--- Viscous contribution ---*/
@@ -968,8 +968,8 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
    
     Lambda = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc)*Area*Area/Mean_Density;
     
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint,Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint,Lambda);
 
   }
 
@@ -1002,7 +1002,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       /*--- Adjustment for grid movement ---*/
       
       if (dynamic_grid) {
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVel += GridVel[iDim]*Normal[iDim];
@@ -1011,7 +1011,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     
       Lambda = fabs(Mean_ProjVel) + fabs(RefProjFlux);
     
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         nodes->AddMax_Lambda_Inv(iPoint,Lambda+EPS);
       }
       
@@ -1023,7 +1023,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       Lambda = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc)*Area*Area/Mean_Density;
       
-      if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
     }
   }
   
@@ -1033,7 +1033,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
     
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
@@ -1129,7 +1129,7 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
       /*--- Compute dual-grid area and boundary normal ---*/
       
@@ -1155,7 +1155,7 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
       
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -1169,7 +1169,6 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim);
-      //node[iPoint]->SetVel_ResTruncError_Zero();
       
       nodes->SetStrongBC(iPoint);
 
@@ -1313,8 +1312,8 @@ unsigned long iVertex, iPoint, iPointNormal;
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Coord = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
+        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
         geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
 
@@ -1376,11 +1375,11 @@ unsigned long iVertex, iPoint, iPointNormal;
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
+        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint,1);
           else AxiFactor = 1.0;
 
           /*--- Force computation ---*/

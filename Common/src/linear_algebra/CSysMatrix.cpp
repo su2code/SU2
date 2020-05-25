@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,7 +72,7 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
 template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
-  if (omp_partitions != nullptr) delete [] omp_partitions;
+  delete [] omp_partitions;
   if (ILU_matrix != nullptr) MemoryAllocation::aligned_free(ILU_matrix);
   if (matrix != nullptr) MemoryAllocation::aligned_free(matrix);
   if (invM != nullptr) MemoryAllocation::aligned_free(invM);
@@ -89,8 +89,9 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain,
-                            unsigned short nvar, unsigned short neqn,
-                            bool EdgeConnect, CGeometry *geometry, CConfig *config) {
+                                        unsigned short nvar, unsigned short neqn,
+                                        bool EdgeConnect, CGeometry *geometry,
+                                        CConfig *config, bool needTranspPtr) {
 
   assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -126,10 +127,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const auto& csr = geometry->GetSparsePattern(type,0);
 
+  nnz = csr.getNumNonZeros();
   row_ptr = csr.outerPtr();
   col_ind = csr.innerIdx();
   dia_ptr = csr.diagPtr();
-  nnz = csr.getNumNonZeros();
+
+  if (needTranspPtr)
+    col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
   if (type == ConnectivityType::FiniteVolume)
     edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
@@ -188,24 +192,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   for(auto part = 0ul; part < omp_num_parts; ++part)
     omp_partitions[part] = part * pts_per_part;
   omp_partitions[omp_num_parts] = nPointDomain;
-
-  /*--- For coarse grid levels setup a structure that allows doing a column sum efficiently,
-   * essentially the transpose of the col_ind, this allows populating the matrix by setting
-   * the off-diagonal entries and then setting the diagonal ones as the sum of column
-   * (excluding the diagonal itself). We use the fact that the pattern is symmetric. ---*/
-
-  if ((geometry->GetMGLevel() != MESH_0) && (omp_get_max_threads() > 1)) {
-
-    col_ptr.resize(nnz, nullptr);
-
-    SU2_OMP_PARALLEL_(for schedule(static,omp_heavy_size))
-    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-      for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
-        auto jPoint = col_ind[k];
-        col_ptr[k] = GetBlock(jPoint, iPoint);
-      }
-    }
-  }
 
   /*--- Generate MKL Kernels ---*/
 
@@ -998,7 +984,8 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
   bool add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
   unsigned short iMarker, iNode;
-  su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+  su2double alpha = 0.9, weight, max_weight, area, volume_iPoint, volume_jPoint;
+  const su2double* normal;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
 
   /*--- Memory allocation --*/
@@ -1059,15 +1046,15 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
         iPoint = LineletPoint[iLinelet][index_Point];
         max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
+        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+          if ((check_Point[jPoint]) && geometry->nodes->GetDomain(jPoint)) {
             iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edge[iEdge]->GetNormal();
+            normal = geometry->edges->GetNormal(iEdge);
             if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
             else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->node[iPoint]->GetVolume();
-            volume_jPoint = geometry->node[jPoint]->GetVolume();
+            volume_iPoint = geometry->nodes->GetVolume(iPoint);
+            volume_jPoint = geometry->nodes->GetVolume(jPoint);
             weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
             max_weight = max(max_weight, weight);
           }
@@ -1077,17 +1064,17 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
         add_point = false;
         counter = 0;
-        next_Point = geometry->node[iPoint]->GetPoint(0);
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+        next_Point = geometry->nodes->GetPoint(iPoint, 0);
+        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edge[iEdge]->GetNormal();
+          normal = geometry->edges->GetNormal(iEdge);
           if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
           else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->node[iPoint]->GetVolume();
-          volume_jPoint = geometry->node[jPoint]->GetVolume();
+          volume_iPoint = geometry->nodes->GetVolume(iPoint);
+          volume_jPoint = geometry->nodes->GetVolume(jPoint);
           weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
+          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->nodes->GetDomain(jPoint))) &&
               ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
             add_point = true;
             next_Point = jPoint;
@@ -1326,6 +1313,45 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 }
 
 template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar,
+                                                  OtherType x_i, CSysVector<OtherType> & b) {
+
+  for (auto index = row_ptr[node_i]; index < row_ptr[node_i+1]; ++index) {
+
+    const auto node_j = col_ind[index];
+
+    /*--- Delete row iVar of block j on row i (bij) and ATTEMPT
+     *    to delete column iVar block i on row j (bji). ---*/
+
+    auto bij = &matrix[index*nVar*nVar];
+    auto bji = GetBlock(node_j, node_i);
+
+    /*--- The "attempt" part. ---*/
+    if (bji != nullptr) {
+      for(auto jVar = 0ul; jVar < nVar; ++jVar) {
+        /*--- Column product. ---*/
+        b[node_j*nVar+jVar] -= bji[jVar*nVar+iVar] * x_i;
+        /*--- Delete entries. ---*/
+        bji[jVar*nVar+iVar] = 0.0;
+      }
+    }
+
+    /*--- Delete row. ---*/
+    for(auto jVar = 0ul; jVar < nVar; ++jVar)
+      bij[iVar*nVar+jVar] = 0.0;
+
+    /*--- Set the diagonal entry of the block to 1. ---*/
+    if (node_j == node_i)
+      bij[iVar*(nVar+1)] = 1.0;
+  }
+
+  /*--- Set know solution in rhs vector. ---*/
+  b(node_i, iVar) = x_i;
+
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
@@ -1333,16 +1359,17 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
     auto block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
 
+    for (auto k = 0ul; k < nVar*nEqn; ++k) block_ii[k] = 0.0;
+
     for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
-      auto block_ji = col_ptr[k];
+      auto block_ji = &matrix[col_ptr[k]*nVar*nEqn];
       if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);
     }
   }
 }
 
 template<class ScalarType>
-template<class OtherType>
-void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B) {
+void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMatrix<ScalarType>& B) {
 
   /*--- Check that the sparse structure is shared between the two matrices,
    *    comparing pointers is ok as they are obtained from CGeometry. ---*/
@@ -1356,7 +1383,7 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMat
 
   SU2_OMP_FOR_STAT(omp_light_size)
   for (auto i = 0ul; i < nnz*nVar*nEqn; ++i)
-    matrix[i] += PassiveAssign<ScalarType,OtherType>(alpha*B.matrix[i]);
+    matrix[i] += alpha*B.matrix[i];
 
 }
 
@@ -1395,7 +1422,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #endif
 }
 
-#ifdef CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
 template<>
 void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
                                                       unsigned short kind_fact, bool transposed) {
@@ -1415,7 +1442,7 @@ template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+template void  CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
@@ -1425,6 +1452,6 @@ template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(passivedouble, const CSysMatrix<passivedouble>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, passivedouble, CSysVector<passivedouble>&);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 #endif

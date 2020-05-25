@@ -2,7 +2,7 @@
  * \file sgs_model.hpp
  * \brief Headers of the LES subgrid scale models of the SU2 solvers.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@ using namespace std;
  * \class CSGSModel
  * \brief Base class for defining the LES subgrid scale model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CSGSModel {
 
@@ -224,7 +224,7 @@ public:
  * \class CSmagorinskyModel
  * \brief Derived class for defining the Smagorinsky SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CSmagorinskyModel : public CSGSModel {
 
@@ -240,7 +240,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSmagorinskyModel(void);
+  ~CSmagorinskyModel(void) override;
 
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -260,7 +260,7 @@ public:
                                     const su2double dvdx,
                                     const su2double dvdy,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
 /*!
    * \brief Function to determine the eddy viscosity for
@@ -290,7 +290,7 @@ public:
                                     const su2double dwdy,
                                     const su2double dwdz,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
@@ -329,7 +329,7 @@ public:
                                    const su2double lenScale,
                                    const su2double distToWall,
                                          su2double &dMuTdx,
-                                         su2double &dMuTdy);
+                                         su2double &dMuTdy) override;
 
   /*!
    * \brief function to determine the gradients of the eddy viscosity
@@ -406,14 +406,14 @@ public:
                                    const su2double distToWall,
                                          su2double &dMuTdx,
                                          su2double &dMuTdy,
-                                         su2double &dMuTdz);
+                                         su2double &dMuTdz) override;
 };
 
 /*!
  * \class CWALEModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CWALEModel : public CSGSModel {
 
@@ -428,7 +428,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CWALEModel(void);
+  ~CWALEModel(void) override;
 
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -448,7 +448,7 @@ public:
                                     const su2double dvdx,
                                     const su2double dvdy,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
 /*!
    * \brief Function to determine the eddy viscosity for
@@ -478,7 +478,7 @@ public:
                                     const su2double dwdy,
                                     const su2double dwdz,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
 
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
@@ -517,7 +517,7 @@ public:
                                    const su2double lenScale,
                                    const su2double distToWall,
                                          su2double &dMuTdx,
-                                         su2double &dMuTdy);
+                                         su2double &dMuTdy) override;
 
   /*!
    * \brief function to determine the gradients of the eddy viscosity
@@ -594,14 +594,14 @@ public:
                                    const su2double distToWall,
                                          su2double &dMuTdx,
                                          su2double &dMuTdy,
-                                         su2double &dMuTdz);
+                                         su2double &dMuTdz) override;
 };
 
 /*!
  * \class CVremanModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk, E. Molina
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CVremanModel : public CSGSModel {
   
@@ -616,7 +616,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CVremanModel(void);
+  ~CVremanModel(void) override;
   
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -636,7 +636,7 @@ public:
                                     const su2double dvdx,
                                     const su2double dvdy,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
   
   /*!
    * \brief Function to determine the eddy viscosity for
@@ -666,7 +666,7 @@ public:
                                     const su2double dwdy,
                                     const su2double dwdz,
                                     const su2double lenScale,
-                                    const su2double distToWall);
+                                    const su2double distToWall) override;
   
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
@@ -705,7 +705,7 @@ public:
                                    const su2double lenScale,
                                    const su2double distToWall,
                                    su2double &dMuTdx,
-                                   su2double &dMuTdy);
+                                   su2double &dMuTdy) override;
   
   /*!
    * \brief function to determine the gradients of the eddy viscosity
@@ -782,6 +782,6 @@ public:
                                    const su2double distToWall,
                                    su2double &dMuTdx,
                                    su2double &dMuTdy,
-                                   su2double &dMuTdz);
+                                   su2double &dMuTdz) override;
 };
 #include "sgs_model.inl"

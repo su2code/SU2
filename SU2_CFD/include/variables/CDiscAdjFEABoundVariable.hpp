@@ -2,7 +2,7 @@
  * \file CDiscAdjFEABoundVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver at the boundary.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
  * \ingroup Discrete_Adjoint
  * \author R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CDiscAdjFEABoundVariable final : public CDiscAdjFEAVariable {
 private:
@@ -64,7 +64,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEABoundVariable() = default;
+  ~CDiscAdjFEABoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").

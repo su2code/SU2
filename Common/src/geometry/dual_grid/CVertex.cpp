@@ -2,7 +2,7 @@
  * \file CVertex.cpp
  * \brief Main classes for defining the vertices of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,52 +40,35 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 
   ActDisk_Perimeter = false;
 
-  /*--- Pointers initialization ---*/
-
-  Nodes  = NULL;
-  Normal = NULL;
-
-  /*--- Allocate node, and face normal ---*/
-
-  Nodes  = new unsigned long[1];
-  Normal = new su2double [nDim];
-
   /*--- Initializate the structure ---*/
 
   Nodes[0] = val_point;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    Normal[iDim] = 0.0;
+
+  for (iDim = 0; iDim < 3; iDim ++) Normal[iDim] = 0.0;
 
   /*--- Set to zero the variation of the coordinates ---*/
 
-  VarCoord[0] = 0.0;
-  VarCoord[1] = 0.0;
-  VarCoord[2] = 0.0;
+  for (iDim = 0; iDim < 3; iDim ++) VarCoord[iDim] = 0.0;
 
-  /*--- Set to NULL variation of the rotation  ---*/
+  /*--- Set to nullptr variation of the rotation  ---*/
 
-  VarRot = NULL;
+  VarRot = nullptr;
 
-  /*--- Set to NULL donor arrays for interpolation ---*/
+  /*--- Set to nullptr donor arrays for interpolation ---*/
 
-  Donor_Points  = NULL;
-  Donor_Proc    = NULL;
-  Donor_Coeff   = NULL;
+  Donor_Points  = nullptr;
+  Donor_Proc    = nullptr;
+  Donor_Coeff   = nullptr;
   nDonor_Points = 1;
 
 }
 
 CVertex::~CVertex() {
 
-  if (Normal != NULL) delete[] Normal;
-  if (Nodes  != NULL) delete[] Nodes;
-
-  /*---  donor arrays for interpolation ---*/
-
-  if (VarRot       != NULL) delete[] VarRot;
-  if (Donor_Coeff  != NULL) delete[] Donor_Coeff;
-  if (Donor_Proc   != NULL) delete[] Donor_Proc;
-  if (Donor_Points != NULL) delete[] Donor_Points;
+  delete[] VarRot;
+  delete[] Donor_Coeff;
+  delete[] Donor_Proc;
+  delete[] Donor_Points;
 
 }
 
@@ -131,13 +114,16 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
 }
 
-void CVertex::Allocate_DonorInfo(void){
+void CVertex::Allocate_DonorInfo(unsigned short nDonor) {
 
-  if( Donor_Points != NULL )  delete [] Donor_Points;
-  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
-  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;
+  nDonor_Points = nDonor;
 
-  Donor_Points = new unsigned long[nDonor_Points];
-  Donor_Proc   = new unsigned long[nDonor_Points];
-  Donor_Coeff  = new su2double[nDonor_Points];
+  delete [] Donor_Points;
+  delete [] Donor_Proc;
+  delete [] Donor_Coeff;
+
+  Donor_Points = new unsigned long [nDonor_Points];
+  Donor_Proc   = new unsigned long [nDonor_Points];
+  Donor_Coeff  = new su2double [nDonor_Points];
+
 }

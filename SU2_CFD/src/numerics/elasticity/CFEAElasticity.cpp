@@ -2,7 +2,7 @@
  * \file CFEAElasticity.cpp
  * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -187,9 +187,12 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *confi
   unsigned short iGauss, nGauss;
   unsigned short iNode, jNode, nNode;
 
-  su2double Weight, Jac_X;
+  su2double Weight, Jac_X, val_Mab;
 
-  su2double val_Mab;
+  /*--- Register pre-accumulation inputs, density and reference coords. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(Rho_s);
+  element->SetPreaccIn_Coords(false);
 
   element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear(); /*--- Need to compute the gradients to obtain the Jacobian ---*/
@@ -226,6 +229,10 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *confi
     }
 
   }
+
+  /*--- Register the mass matrix as preaccumulation output. ---*/
+  element->SetPreaccOut_Mab();
+  AD::EndPreacc();
 
 }
 

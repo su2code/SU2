@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -170,7 +170,7 @@ public:
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.
    */
-  void SetCoord_CG(su2double **val_coord);
+  void SetCoord_CG(const su2double* const* val_coord);
 
   /*!
    * \brief Get the center of gravity of an element (including edges).
@@ -438,7 +438,7 @@ public:
             for the wall function treatment.
    * \return The pointer to the data of donorElementsWallFunctions.
    */
-  inline virtual unsigned long *GetDonorsWallFunctions(void) {return NULL;}
+  inline virtual unsigned long *GetDonorsWallFunctions(void) {return nullptr;}
 
   /*!
    * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.

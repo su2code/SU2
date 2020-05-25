@@ -2,7 +2,7 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "C2DContainer.hpp"
+#include "../omp_structure.hpp"
 
 #include <set>
 #include <vector>
@@ -59,11 +60,30 @@ private:
   su2vector<Index_t> m_outerPtr; /*!< \brief Start positions of the inner indices for each outer index. */
   su2vector<Index_t> m_innerIdx; /*!< \brief Inner indices of the non zero entries. */
   su2vector<Index_t> m_diagPtr;  /*!< \brief Position of the diagonal entry. */
+  su2vector<Index_t> m_innerIdxTransp; /*!< \brief Position of the transpose non zero entries, requires symmetry. */
 
 public:
   using IndexType = Index_t;
 
   CCompressedSparsePattern() = default;
+
+  /*!
+   * \brief Construct with default inner indices.
+   * \param[in] outerPtrBegin - Start of outer pointers.
+   * \param[in] outerPtrEnd - End of outer pointers.
+   * \param[in] defaultInnerIdx - Default value for inner indices.
+   */
+  template<class Iterator>
+  CCompressedSparsePattern(Iterator outerPtrBegin, Iterator outerPtrEnd, Index_t defaultInnerIdx)
+  {
+    const auto size = outerPtrEnd - outerPtrBegin;
+    m_outerPtr.resize(size);
+    Index_t k = 0;
+    for(auto it = outerPtrBegin; it != outerPtrEnd; ++it)
+      m_outerPtr(k++) = *it;
+
+    m_innerIdx.resize(m_outerPtr(size-1)) = defaultInnerIdx;
+  }
 
   /*!
    * \brief Construct from rvalue refs.
@@ -101,14 +121,53 @@ public:
   }
 
   /*!
+   * \brief Build from a "list of lists" type object
+   * \param[in] lil - An object with operator [][] and method "size" e.g. vector<vector<?> >.
+   */
+  template<class T>
+  CCompressedSparsePattern(const T& lil)
+  {
+    m_outerPtr.resize(lil.size()+1);
+    m_outerPtr(0) = 0;
+    for(Index_t i=1; i < Index_t(m_outerPtr.size()); ++i)
+      m_outerPtr(i) = m_outerPtr(i-1) + lil[i-1].size();
+
+    m_innerIdx.resize(m_outerPtr(lil.size()));
+    Index_t k = 0;
+    for(Index_t i=0; i < Index_t(lil.size()); ++i)
+      for(Index_t j=0; j < Index_t(lil[i].size()); ++j)
+        m_innerIdx(k++) = lil[i][j];
+  }
+
+  /*!
    * \brief Build a list of pointers to the diagonal entries of the pattern.
    */
   void buildDiagPtr() {
     if(!m_diagPtr.empty()) return;
 
     m_diagPtr.resize(getOuterSize());
+
+    SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
     for(Index_t k = 0; k < getOuterSize(); ++k)
       m_diagPtr(k) = findInnerIdx(k,k);
+  }
+
+  /*!
+   * \brief Build a list of pointers to the transpose entries of the pattern, requires symmetry.
+   */
+  void buildTransposePtr() {
+    if(!m_innerIdxTransp.empty()) return;
+
+    m_innerIdxTransp.resize(getNumNonZeros());
+
+    SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
+    for(Index_t i = 0; i < getOuterSize(); ++i) {
+      for(Index_t k = m_outerPtr(i); k < m_outerPtr(i+1); ++k) {
+        auto j = m_innerIdx(k);
+        m_innerIdxTransp(k) = findInnerIdx(j,i);
+        assert(m_innerIdxTransp(k) != m_innerIdx.size() && "The pattern is not symmetric.");
+      }
+    }
   }
 
   /*!
@@ -146,6 +205,16 @@ public:
    * \return The index of the i'th inner index associated with the outer index.
    */
   inline Index_t getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) const {
+    assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
+    return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
+  }
+
+  /*!
+   * \param[in] iOuterIdx - Outer index.
+   * \param[in] iNonZero - Relative position of the inner index.
+   * \return The index of the i'th inner index associated with the outer index.
+   */
+  inline Index_t& getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) {
     assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
     return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
   }
@@ -225,6 +294,14 @@ public:
   }
 
   /*!
+   * \return Raw pointer to the transpose pointer vector.
+   */
+  inline const su2vector<Index_t>& transposePtr() const {
+    assert(!m_innerIdxTransp.empty() && "Transpose map has not been built.");
+    return m_innerIdxTransp;
+  }
+
+  /*!
    * \return The minimum inner index.
    */
   Index_t getMinInnerIdx() const {
@@ -255,6 +332,7 @@ using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowM
 
 
 using CCompressedSparsePatternUL = CCompressedSparsePattern<unsigned long>;
+using CCompressedSparsePatternL = CCompressedSparsePattern<long>;
 using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<unsigned long>;
 
 
@@ -305,14 +383,12 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
        *    neighbors, not duplicating any existing neighbor. ---*/
       for(auto jPoint : addedNeighbors)
       {
-        auto point = geometry.node[jPoint];
-
         if(type == ConnectivityType::FiniteVolume)
         {
           /*--- For FVM we know the neighbors of point j directly. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < point->GetnPoint(); ++iNeigh)
+          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnPoint(jPoint); ++iNeigh)
           {
-            Index_t kPoint = point->GetPoint(iNeigh);
+            Index_t kPoint = geometry.nodes->GetPoint(jPoint, iNeigh);
 
             if(neighbors.count(kPoint) == 0) // no duplication
               newNeighbors.insert(kPoint);
@@ -321,9 +397,9 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
         else // FiniteElement
         {
           /*--- For FEM we need the nodes of all elements that contain point j. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < point->GetnElem(); ++iNeigh)
+          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnElem(jPoint); ++iNeigh)
           {
-            auto elem = geometry.elem[point->GetElem(iNeigh)];
+            auto elem = geometry.elem[geometry.nodes->GetElem(jPoint, iNeigh)];
 
             for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
             {
@@ -373,14 +449,38 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
 
   for(Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge)
   {
-    Index_t iPoint = geometry.edge[iEdge]->GetNode(0);
-    Index_t jPoint = geometry.edge[iEdge]->GetNode(1);
+    Index_t iPoint = geometry.edges->GetNode(iEdge,0);
+    Index_t jPoint = geometry.edges->GetNode(iEdge,1);
 
     edgeMap(iEdge,0) = pattern.quickFindInnerIdx(iPoint,jPoint);
     edgeMap(iEdge,1) = pattern.quickFindInnerIdx(jPoint,iPoint);
   }
 
   return edgeMap;
+}
+
+
+/*!
+ * \brief Create the natural coloring (equivalent to the normal sequential loop
+ *        order) for a given number of inner indexes.
+ * \note This is to reduce overhead in "OpenMP-ready" code when only 1 thread is used.
+ * \param[in] numInnerIndexes - Number of indexes that are to be colored.
+ * \return Natural (sequential) coloring of the inner indices.
+ */
+template<class T = CCompressedSparsePatternUL,
+         class Index_t = typename T::IndexType>
+T createNaturalColoring(Index_t numInnerIndexes)
+{
+  /*--- One color. ---*/
+  su2vector<Index_t> outerPtr(2);
+  outerPtr(0) = 0;
+  outerPtr(1) = numInnerIndexes;
+
+  /*--- Containing all indexes in ascending order. ---*/
+  su2vector<Index_t> innerIdx(numInnerIndexes);
+  std::iota(innerIdx.data(), innerIdx.data()+numInnerIndexes, 0);
+
+  return T(std::move(outerPtr), std::move(innerIdx));
 }
 
 
@@ -404,7 +504,7 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
-template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
+template<class T, typename Color_t = char, size_t MaxColors = 32, size_t MaxMB = 128>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {
@@ -415,6 +515,10 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors 
 
   const Index_t grpSz = groupSize;
   const Index_t nOuter = pattern.getOuterSize();
+
+  /*--- Trivial case. ---*/
+  if(groupSize >= nOuter) return createNaturalColoring(nOuter);
+
   const Index_t minIdx = pattern.getMinInnerIdx();
   const Index_t nInner = pattern.getMaxInnerIdx()+1-minIdx;
 
@@ -521,30 +625,6 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors 
 
 
 /*!
- * \brief Create the natural coloring (equivalent to the normal sequential loop
- *        order) for a given number of inner indexes.
- * \note This is to reduce overhead in "OpenMP-ready" code when only 1 thread is used.
- * \param[in] numInnerIndexes - Number of indexes that are to be colored.
- * \return Natural (sequential) coloring of the inner indices.
- */
-template<class T = CCompressedSparsePatternUL,
-         class Index_t = typename T::IndexType>
-T createNaturalColoring(Index_t numInnerIndexes)
-{
-  /*--- One color. ---*/
-  su2vector<Index_t> outerPtr(2);
-  outerPtr(0) = 0;
-  outerPtr(1) = numInnerIndexes;
-
-  /*--- Containing all indexes in ascending order. ---*/
-  su2vector<Index_t> innerIdx(numInnerIndexes);
-  std::iota(innerIdx.data(), innerIdx.data()+numInnerIndexes, 0);
-
-  return T(std::move(outerPtr), std::move(innerIdx));
-}
-
-
-/*!
  * \brief A way to represent one grid color that allows range-for syntax.
  */
 template<typename T = unsigned long>
@@ -553,9 +633,11 @@ struct GridColor
   static_assert(std::is_integral<T>::value,"");
 
   const T size;
+  T groupSize;
   const T* const indices;
 
-  GridColor(const T* idx = nullptr, T sz = 0) : size(sz), indices(idx) { }
+  GridColor(const T* idx = nullptr, T sz = 0, T grp = 0) :
+    size(sz), groupSize(grp), indices(idx) { }
 
   inline const T* begin() const {return indices;}
   inline const T* end() const {return indices+size;}
@@ -592,3 +674,23 @@ struct DummyGridColor
   inline IteratorLikeInt begin() const {return IteratorLikeInt(0);}
   inline IteratorLikeInt end() const {return IteratorLikeInt(size);}
 };
+
+
+/*!
+ * \brief Computes the efficiency of a grid coloring for given number of threads and chunk size.
+ */
+template<class SparsePattern>
+su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int chunkSize)
+{
+  using Index_t = typename SparsePattern::IndexType;
+
+  /*--- Ideally compute time is proportional to total work over number of threads. ---*/
+  su2double ideal = coloring.getNumNonZeros() / su2double(numThreads);
+
+  /*--- In practice the total work is quantized first by colors and then by chunks. ---*/
+  Index_t real = 0;
+  for(Index_t color = 0; color < coloring.getOuterSize(); ++color)
+    real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
+
+  return ideal / real;
+}

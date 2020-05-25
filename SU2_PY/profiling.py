@@ -3,7 +3,7 @@
 ## \file profiling.py
 #  \brief Python script for postprocessing the SU2 custom profiling (profiling.csv)
 #  \author T. Economon
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

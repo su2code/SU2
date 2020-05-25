@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -60,7 +60,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTransLMSolver(void);
+  ~CTransLMSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -230,7 +230,7 @@ public:
                           CSolver **solver_container,
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
-                          CConfig *config) override;                             
+                          CConfig *config) final;                       
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.

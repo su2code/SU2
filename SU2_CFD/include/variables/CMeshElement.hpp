@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

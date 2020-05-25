@@ -2,11 +2,11 @@
  * \file CAdjEulerVariable.hpp
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -43,8 +43,8 @@ protected:
   MatrixType IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   MatrixType HB_Source;          /*!< \brief Harmonic balance source term. */
 
-  VectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  VectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
 
 public:
   /*!
@@ -63,7 +63,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjEulerVariable() = default;
+  ~CAdjEulerVariable() override = default;
 
   /*!
    * \brief Set all the primitive variables for compressible flows.
@@ -171,6 +171,6 @@ public:
    * \brief Get the reconstruction gradient for variables at all points.
    * \return Reference to reconstruction gradient.
    */
-  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
 };

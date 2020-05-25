@@ -4,7 +4,7 @@
 #  \brief Python script that generates the source terms for a 
 #         manufactured solution for the incompressible Navier-Stokes eqns.
 #  \author T. Economon
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

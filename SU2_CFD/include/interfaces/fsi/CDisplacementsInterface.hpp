@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer boundary displacements
  *        from a structural zone into a fluid zone.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,7 +46,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDisplacementsInterface(void);
+  ~CDisplacementsInterface(void) override;
 
   /*!
    * \brief Retrieve some constants needed for the calculations.
@@ -59,7 +59,7 @@ public:
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                              CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config);
+                             CConfig *donor_config, CConfig *target_config) override;
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -70,7 +70,7 @@ public:
    * \param[in] Vertex_Donor - Index of the donor vertex.
    */
   void GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-                         unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct);
+                         unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) override;
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -83,6 +83,6 @@ public:
    */
   void SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
                           CConfig *flow_config, unsigned long Marker_Flow,
-                          unsigned long Vertex_Flow, unsigned long Point_Mesh);
+                          unsigned long Vertex_Flow, unsigned long Point_Mesh) override;
 
 };
