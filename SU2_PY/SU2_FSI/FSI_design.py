@@ -66,7 +66,7 @@ import sys
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
-from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal, FSIAdjoint, ChainRule
+from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal, FSIAdjoint, ChainRule, ReadGeoConstraintGradients
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------

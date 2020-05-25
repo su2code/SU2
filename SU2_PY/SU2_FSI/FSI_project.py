@@ -31,6 +31,7 @@
 
 import numpy as np
 from math import pow, factorial
+import time
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
 from SU2_FSI import FSI_design
 from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion, WriteSolution
@@ -211,8 +212,14 @@ class Project:
         
     def clean_previous_designs(self):
 
-        # I remove old designs
-        print('Removing old designs...')
+        # Removing old designs
+        t0 = time.time()
+        print('Removing old designs in 5 sec...')
+        elapsed = 0
+        while elapsed <=5:
+           t = time.time() 
+           elapsed = t - t0
+        print('Done!')   
         command = 'rm -r ' + self.folder + '/DESIGNS'
         
         # Executes shell command
