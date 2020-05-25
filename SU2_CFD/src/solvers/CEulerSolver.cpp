@@ -6986,10 +6986,16 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         if (config->GetKind_Turb_Model() == SST) {
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+          visc_numerics->SetTurbSpecificDissipation(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
+                                                    solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
           visc_numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
                                        solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
+          visc_numerics->SetF2blending(solver_container[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
+                                       solver_container[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
+          visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
+                                      nodes->GetVorticity(iPoint));
         }
 
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
