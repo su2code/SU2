@@ -113,6 +113,10 @@ class Design:
     def getx(self):
         
         return self.__x
+    
+    def getxold(self):
+        
+        return self.__x_old   
 
     def SU2_DEF(self,deform_folder):    
         
