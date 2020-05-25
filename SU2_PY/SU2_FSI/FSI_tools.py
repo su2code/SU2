@@ -445,7 +445,7 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):     # To be tested
     obj_df = np.zeros((Nalpha)) 
     
     for i in range(Nalpha):
-        obj_df[i] = GridSensitivities[:, 2]* chain[:,i]
+       obj_df[i] = np.dot(GridSensitivities[:, 2], chain[:,i])
         
         
     return obj_df  
