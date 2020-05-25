@@ -225,7 +225,7 @@ def Geometry(geo_folder, ConfigFileName):
     os.chdir( '../../..')
 
     
-def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
+def ReadGeoConstraints( geo_folder,ConsList, sign, it ):
     """ 
     Fuction that returns the numpy list of geometrical constraints for the given sign
     """
@@ -281,7 +281,7 @@ def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
         logfile = 'Inequality_constr_plus.dat'
         
         
-    if iter ==0:
+    if it ==0:
        log = open(geo_folder + '/../../' + logfile,"w") 
        for i in range(len(constraint_list)):
            log.write('%25s \t' % str(constraint_list[i]) )
@@ -303,7 +303,50 @@ def ReadGeoConstraints( geo_folder,ConsList, sign, iter ):
 
     return np.array(c_eq_list)  
 
-
+def ReadGeoConstraintGradients( geo_folder,ConsList,n_dv, sign ):
+    """ 
+    Fuction that returns the numpy list of the gradient of geometric constraints 
+    """
+        
+    # Open and read output file
+    input_file = open(geo_folder + '/' + 'geo_gradient.dat')
+    # going directly to line 3
+    line = input_file.readline();line = input_file.readline();line = input_file.readline()
+     
+    # list of constraints given in output
+    constr = line.split(',')
+    for i in range(len(constr)): constr[i] = constr[i].strip(' "\n')  
+    
+    # going to line 4 
+    line = input_file.readline(); 
+    
+    # Gradients for every control point given in output as a matrix   
+    value_arr = []
+    for i in range(n_dv):
+        line = input_file.readline();
+        # List of constraint values (float)
+        value = line.split(',')
+        value = [float(i) for i in value]  
+        value_arr.append(value)
+    value_matr = np.array(value_arr)
+    
+    # Initialization of gradient matrix list
+    gradient_array = []  
+    
+    # quick loop over the constraints
+    for i in range(len(ConsList)):
+            # Looking for the given constraints
+            if ConsList[i][1] == sign:
+                # loop over the output constraints 
+                for j in range(len(constr)): 
+                    if constr[j] == ConsList[i][0]:   
+                        a = value_matr[:,j]
+                        gradient_array.append(a)
+    
+    gradient = np.array(gradient_array)
+    
+    return gradient
+    
 def PullingPrimalAdjointFiles(configOpt, folder, configFSI, pyBeamMesh, pyBeamProp):
        # pulling primal files
        command = []
@@ -411,7 +454,7 @@ def readBoundarySensitivities(SensFile):
     
     return GridSensitivities
           
-def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):     # To be tested
+def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):    
     """ 
     Chain rule to evaluate sensitivity of obj_f with respect to the FFD box control points
     """    
@@ -431,13 +474,7 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):     # To be tested
     
     # Loop over the mesh points
     for i in range(Nmesh):
-       Ni =  barnstein(ffd_degree[0], PointInv[i,1] )
-       Nj =  barnstein(ffd_degree[1], PointInv[i,2] )
-       Nk =  barnstein(ffd_degree[2] , PointInv[i,3] )
        for j in range(Nalpha):
-           print(FFD_indexes[j, 0])
-           print(FFD_indexes[j, 1])
-           print(FFD_indexes[j, 2])
            chain[i,j] =  Ni[ int(FFD_indexes[j, 0]) ] * Nj[ int(FFD_indexes[j, 1]) ] *Nk[ int(FFD_indexes[j, 2]) ]
     
     
@@ -451,6 +488,18 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):     # To be tested
     return obj_df  
     
     
+def WriteSolution(folder,x,it):    
     
+    logfile = 'Solution.dat'
+    if it ==0:
+       log = open(folder + '/' + logfile,"w") 
+    else:   
+       log = open(folder + '/' + logfile,"a") 
+       
+    log.write('%3s \t' % str(it) ) 
+    for i in range(len(x)):
+          log.write('%10s \t' % str(x[i]) )
+    log.write("\n")      
+    log.close() 
     
-    
+    return

@@ -162,7 +162,24 @@ class Design:
         self.c_eq = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '=', self.design_nbr)
 
         return self.c_eq
- 
+    
+    def pull_c_deq(self, geo_folder):
+        """ 
+        Fuction that returns the numpy matrix of c_deq
+        """
+        if self.geo == True:
+        
+           self.dc_eq = ReadGeoConstraintGradients( geo_folder,self.config['OPT_CONSTRAINT'],self.n_dv, '=' )
+
+           # scaling obj_function with gradient factor
+           global_factor = float(self.config['OPT_GRADIENT_FACTOR']) 
+        
+        else:
+           print('Cant evaluate c_deq. Geo hasn t run.[pull_c_deq in FSI_design.py]')
+           sys.exit()            
+            
+        return self.dc_eq, global_factor    
+                           
     def pull_c_ieq(self, geo_folder):
         """ 
         Fuction that returns the numpy list of c_ieq
@@ -175,8 +192,26 @@ class Design:
 
 
         return np.concatenate((self.c_ieq_plus, - self.c_ieq_minus), axis=0) 
-                            
+    
+    def pull_c_dieq(self, geo_folder):
+        """ 
+        Fuction that returns the numpy matrix of c_dieq
+        """
+        
+        if self.geo == True:
+           # First > constraints
+           self.c_dieq_plus = ReadGeoConstraintGradients( geo_folder,self.config['OPT_CONSTRAINT'],self.n_dv, '>' )
+           # After < constraints   
+           self.c_dieq_minus = ReadGeoConstraintGradients( geo_folder,self.config['OPT_CONSTRAINT'],self.n_dv, '<' )
 
+           # scaling obj_function with gradient factor
+           global_factor = float(self.config['OPT_GRADIENT_FACTOR']) 
+        else:
+           print('Cant evaluate c_dieq. Geo hasn t run.[pull_c_dieq in FSI_design.py]')
+           sys.exit()               
+        
+        return np.concatenate((self.c_dieq_plus, - self.c_dieq_minus), axis=0), global_factor 
+    
     def pull_obj_df(self,adj_folder,FFD_indexes, PointInv,ffd_degree):
     
         if self.Adjoint == True:
