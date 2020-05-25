@@ -117,7 +117,7 @@ class Project:
     def obj_f(self,x_new):
         print('x_new = {}'.format(x_new)) 
         # Checking if new design is needed
-        # In case start new design and deform
+        # In case starts new design and deform
         self.CheckNewDesign(x_new)
           
         print('obj_f')        
@@ -246,8 +246,8 @@ class Project:
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
        else:    
           print('self.design[self.design_iter] = {}'.format(self.design[self.design_iter]))  
-          print('self.design[self.design_iter].x = {}'.format(self.design[self.design_iter].x))  
-          delta = self.design[self.design_iter].x - x_in
+          print('self.design[self.design_iter].x = {}'.format(self.design[self.design_iter].getx))  
+          delta = self.design[self.design_iter].getx - x_in
           print('delta = {}'.format(delta)) 
           module = np.linalg.norm(delta)
           if module > self.design_toll:

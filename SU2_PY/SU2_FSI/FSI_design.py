@@ -92,9 +92,9 @@ class Design:
         self.design_folder  = design_folder      # design folder
         self.folder =  folder            # run folder 
         self.design_nbr = nbr      # current design number
-        self.x = x              # collection of dv_variables of the current design
-        self.x_old = x_old          # collection of dv_variable of the previous design
-        self.n_dv = len(self.x)
+        self.__x = x              # collection of dv_variables of the current design
+        self.__x_old = x_old          # collection of dv_variable of the previous design
+        self.n_dv = len(self.__x)
         self.configFSIPrimal = configFSIPrimal
         self.configFSIAdjoint = configFSIAdjoint   
         # booleians for every analysis
@@ -110,6 +110,10 @@ class Design:
         self.obj_f = None
         self.obj_df = None
 
+    def getx(self):
+        
+        return self.__x
+
     def SU2_DEF(self,deform_folder):    
         
         # booleian for deformation
@@ -117,7 +121,7 @@ class Design:
         # before running the command the new DV_VALUE needs to be specified inside the deformation config
         ConfigFileName = deform_folder + '/' + self.config['CONFIG_DEF']
         # It includes the relaxation prameter as done in SU2
-        UpdateConfig(ConfigFileName, 'DV_VALUE', self.x/float ( self.config['OPT_RELAX_FACTOR'] ))
+        UpdateConfig(ConfigFileName, 'DV_VALUE', self.__x/float ( self.config['OPT_RELAX_FACTOR'] ))
         
         # performing SU2_DEF
         DeformMesh(deform_folder,self.config['CONFIG_DEF'])
