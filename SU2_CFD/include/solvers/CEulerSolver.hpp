@@ -83,7 +83,7 @@ protected:
 
     void allocate(int size);      /*!< \brief Allocates arrays. */
 
-    void setZero(int i) const;          /*!< \brief Sets all values to zero at a particular index. */
+    void setZero(int i);          /*!< \brief Sets all values to zero at a particular index. */
     void setZero() {              /*!< \brief Sets all values to zero for all indices. */
       for(int i=0; i<_size; ++i) setZero(i);
     }

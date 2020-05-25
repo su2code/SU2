@@ -522,14 +522,14 @@ public:
    * \param[in] val_marker - Marker of the boundary.
    * \param[in] val_index - Index of the marker.
    */
-  inline void SetMarker_Tag(unsigned short val_marker, string val_index) const { Tag_to_Marker[val_marker] = std::move(val_index); }
+  inline void SetMarker_Tag(unsigned short val_marker, string val_index) { Tag_to_Marker[val_marker] = std::move(val_index); }
 
   /*!
    * \brief Set the number of boundary elements.
    * \param[in] val_marker - Marker of the boundary.
    * \param[in] val_nelem_bound - Number of boundary elements.
    */
-  inline void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound) const {
+  inline void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound) {
     nElem_Bound[val_marker]= val_nelem_bound;
   }
 
@@ -867,27 +867,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetRotationalVelocity(CConfig *config, bool print = false) const;
+  void SetRotationalVelocity(CConfig *config, bool print = false);
 
   /*!
    * \brief Set the rotational velocity of the points on the shroud markers to 0.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetShroudVelocity(CConfig *config) const;
+  void SetShroudVelocity(CConfig *config);
 
   /*!
    * \brief Set the translational velocity at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetTranslationalVelocity(CConfig *config, bool print = false) const;
+  void SetTranslationalVelocity(CConfig *config, bool print = false);
 
   /*!
    * \brief Set the grid velocity via finite differencing at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iter - Current physical time step.
    */
-  void SetGridVelocity(CConfig *config, unsigned long iter) const;
+  void SetGridVelocity(CConfig *config, unsigned long iter);
 
   /*!
    * \brief A virtual member.
@@ -1585,7 +1585,7 @@ public:
    * \brief Compute and store the volume of the elements.
    * \param[in] config - Problem configuration.
    */
-  void SetElemVolume(CConfig *config) const;
+  void SetElemVolume(CConfig *config);
 
   /*!
    * \brief Set the multigrid index for the current geometry object.

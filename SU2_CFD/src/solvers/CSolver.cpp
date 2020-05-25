@@ -2892,7 +2892,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
   }
 }
 
-void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) const {
+void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
 
   /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 

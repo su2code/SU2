@@ -601,7 +601,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry *geometry, CConfig *config) const;
+  void SetGridVel_Gradient(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute slope limiter.

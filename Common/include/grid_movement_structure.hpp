@@ -539,7 +539,7 @@ public:
    * \param[in] val_coord - Coordinates of the corner point with index <i>val_icornerpoints</i>.
    * \param[in] val_icornerpoints - Index of the corner point.
    */
-  void SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints) const;
+  void SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints);
 
   /*!
    * \overload
@@ -548,7 +548,7 @@ public:
    * \param[in] val_zcoord - Z coordinate of the corner point with index <i>val_icornerpoints</i>.
    * \param[in] val_icornerpoints - Index of the corner point.
    */
-  void SetCoordCornerPoints(su2double val_xcoord, su2double val_ycoord, su2double val_zcoord, unsigned short val_icornerpoints) const;
+  void SetCoordCornerPoints(su2double val_xcoord, su2double val_ycoord, su2double val_zcoord, unsigned short val_icornerpoints);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -557,7 +557,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) const;
+  void SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -566,7 +566,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) const;
+  void SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -575,7 +575,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) const;
+  void SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Get the coordinates of the corner points.
@@ -613,7 +613,7 @@ public:
   /*!
    * \brief Set the control points in a parallelepiped (hexahedron).
    */
-  void SetControlPoints_Parallelepiped(void) const;
+  void SetControlPoints_Parallelepiped(void);
 
   /*!
    * \brief Set the control points of the final chuck in a unitary hexahedron free form.
@@ -626,7 +626,7 @@ public:
    * \param[in] val_index - Local index (i, j, k) of the control point.
    * \param[in] movement - Movement of the control point.
    */
-  void SetControlPoints(const unsigned short *val_index, const su2double *movement) const;
+  void SetControlPoints(const unsigned short *val_index, const su2double *movement);
 
   /*!
    * \brief Set the original value of the control points.
@@ -659,13 +659,13 @@ public:
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCyl2Cart_ControlPoints(CConfig *config) const;
+  void SetCyl2Cart_ControlPoints(CConfig *config);
   
   /*!
    * \brief Set Cartesians to Cylindrical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Cyl_ControlPoints(CConfig *config) const;
+  void SetCart2Cyl_ControlPoints(CConfig *config);
   
   /*!
    * \brief Set Cylindrical to Cartesians_CornerPoints.
@@ -683,13 +683,13 @@ public:
    * \brief Set Spherical to Cartesians ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSphe2Cart_ControlPoints(CConfig *config) const;
+  void SetSphe2Cart_ControlPoints(CConfig *config);
   
   /*!
    * \brief SetCartesians to Spherical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCart2Sphe_ControlPoints(CConfig *config) const;
+  void SetCart2Sphe_ControlPoints(CConfig *config);
   
   /*!
    * \brief Set Spherical to Cartesians_CornerPoints.

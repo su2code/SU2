@@ -137,35 +137,35 @@ inline void CFreeFormDefBox::SetmOrder(unsigned short val_mOrder) { mOrder = val
 
 inline void CFreeFormDefBox::SetnOrder(unsigned short val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1;}
 
-inline void  CFreeFormDefBox::SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints) const {
+inline void  CFreeFormDefBox::SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
 		Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
 }
 
-inline void CFreeFormDefBox::SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) const {
+inline void CFreeFormDefBox::SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 			Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
 		}
 }
 
-inline void CFreeFormDefBox::SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) const {
+inline void CFreeFormDefBox::SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 			Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
 		}
 }
 
-inline void CFreeFormDefBox::SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) const {
+inline void CFreeFormDefBox::SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 			ParCoord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
 }
 
-inline void CFreeFormDefBox::SetCoordCornerPoints(su2double val_xcoord, su2double val_ycoord, su2double val_zcoord, unsigned short val_icornerpoints) const {
+inline void CFreeFormDefBox::SetCoordCornerPoints(su2double val_xcoord, su2double val_ycoord, su2double val_zcoord, unsigned short val_icornerpoints) {
 	Coord_Corner_Points[val_icornerpoints][0] = val_xcoord;
 	Coord_Corner_Points[val_icornerpoints][1] = val_ycoord;
 	Coord_Corner_Points[val_icornerpoints][2] = val_zcoord;
 }
 
-inline void CFreeFormDefBox::SetControlPoints(const unsigned short *val_index, const su2double *movement) const {
+inline void CFreeFormDefBox::SetControlPoints(const unsigned short *val_index, const su2double *movement) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_Control_Points[val_index[0]][val_index[1]][val_index[2]][iDim] += movement[iDim];
 }

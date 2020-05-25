@@ -3628,7 +3628,7 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   return finished;
 }
 
-void CGeometry::SetElemVolume(CConfig *config) const
+void CGeometry::SetElemVolume(CConfig *config)
 {
   SU2_OMP_PARALLEL
   {
@@ -3784,7 +3784,7 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
   delete[] FaceArea;
 }
 
-void CGeometry::SetRotationalVelocity(CConfig *config, bool print) const {
+void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -3837,7 +3837,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) const {
 
 }
 
-void CGeometry::SetShroudVelocity(CConfig *config) const {
+void CGeometry::SetShroudVelocity(CConfig *config) {
 
   unsigned long iPoint, iVertex;
   unsigned short iMarker, iMarkerShroud;
@@ -3856,7 +3856,7 @@ void CGeometry::SetShroudVelocity(CConfig *config) const {
   }
 }
 
-void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) const {
+void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
 
   su2double xDot[3] = {0.0,0.0,0.0};
 
@@ -3879,7 +3879,7 @@ void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) const {
 
 }
 
-void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) const {
+void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 

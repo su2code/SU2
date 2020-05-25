@@ -7488,7 +7488,7 @@ void  CFreeFormDefBox::SetUnitCornerPoints(void) {
 
 }
 
-void CFreeFormDefBox::SetControlPoints_Parallelepiped (void) const {
+void CFreeFormDefBox::SetControlPoints_Parallelepiped (void) {
   unsigned short iDim, iDegree, jDegree, kDegree;
 
   /*--- Set base control points according to the notation of Vtk for hexahedrons ---*/
@@ -7605,7 +7605,7 @@ void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox *FFDBox) {
 
 }
 
-void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig *config) const {
+void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig *config) {
 
   unsigned short iDegree, jDegree, kDegree;
   su2double CartCoord[3];
@@ -7645,7 +7645,7 @@ void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig *config) const {
 
 }
 
-void CFreeFormDefBox::SetCyl2Cart_ControlPoints(CConfig *config) const {
+void CFreeFormDefBox::SetCyl2Cart_ControlPoints(CConfig *config) {
 
   unsigned short iDegree, jDegree, kDegree;
   su2double PolarCoord[3];
@@ -7723,7 +7723,7 @@ void CFreeFormDefBox::SetCyl2Cart_CornerPoints(CConfig *config) {
 
 }
 
-void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig *config) const {
+void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig *config) {
 
   unsigned short iDegree, jDegree, kDegree;
   su2double CartCoord[3];
@@ -7764,7 +7764,7 @@ void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig *config) const {
 
 }
 
-void CFreeFormDefBox::SetSphe2Cart_ControlPoints(CConfig *config) const {
+void CFreeFormDefBox::SetSphe2Cart_ControlPoints(CConfig *config) {
 
   unsigned short iDegree, jDegree, kDegree;
   su2double PolarCoord[3];

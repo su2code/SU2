@@ -49,7 +49,7 @@ CEulerSolver::AeroCoeffsArray::~AeroCoeffsArray() {
   delete [] CoPz; delete [] CT; delete [] CQ; delete [] CMerit;
 }
 
-void CEulerSolver::AeroCoeffsArray::setZero(int i) const {
+void CEulerSolver::AeroCoeffsArray::setZero(int i) {
   CD[i] = CL[i] = CSF[i] = CEff[i] = 0.0;
   CFx[i] = CFy[i] = CFz[i] = CMx[i] = 0.0;
   CMy[i] = CMz[i] = CoPx[i] = CoPy[i] = 0.0;
