@@ -46,6 +46,11 @@ public:
   inline FieldRef AddField(const std::string& refName, const std::string& headerName,
                            const std::string& groupName, const std::string& description,
                            FieldType type){
+    /*--- Throw an error if the refName not smaller than 15 characters.
+     * Otherwise, small string optimization will not be used, which can lead to some loss in performance ---*/
+    if(refName.size() > 15){
+      SU2_MPI::Error("Field names must be smaller than 15 characters: " + refName, CURRENT_FUNCTION);
+    }
     return fields.AddItem(refName, COutputField(headerName, groupName, description, type));
   }
 
