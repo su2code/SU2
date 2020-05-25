@@ -31,6 +31,7 @@
 
 import os, sys, shutil, copy
 import time as timer
+import numpy as np
 
 from optparse import OptionParser  # use a parser for configuration
 
