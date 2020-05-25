@@ -474,6 +474,9 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):
     
     # Loop over the mesh points
     for i in range(Nmesh):
+       Ni =  barnstein(ffd_degree[0], PointInv[i,1] )
+       Nj =  barnstein(ffd_degree[1], PointInv[i,2] )
+       Nk =  barnstein(ffd_degree[2] , PointInv[i,3] )        
        for j in range(Nalpha):
            chain[i,j] =  Ni[ int(FFD_indexes[j, 0]) ] * Nj[ int(FFD_indexes[j, 1]) ] *Nk[ int(FFD_indexes[j, 2]) ]
     
