@@ -278,8 +278,8 @@ class Design:
           logCD = open(primal_folder + '/../../' + logfileCD,"a")  
           logCL = open(primal_folder + '/../../' + logfileCL,"a")
           
-        logCD.write( str(cd) )
-        logCL.write( str(cl) )        
+        logCD.write( str(cd) + '\n' )
+        logCL.write( str(cl) + '\n' )        
           
         logCD.close()
         logCL.close()
