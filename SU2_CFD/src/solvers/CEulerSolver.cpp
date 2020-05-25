@@ -6414,7 +6414,7 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
 }
 
-void CEulerSolver::SetCoefficient_Gradients(CConfig *config){
+void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
   su2double dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
   su2double AoA = config->GetAoA();
 

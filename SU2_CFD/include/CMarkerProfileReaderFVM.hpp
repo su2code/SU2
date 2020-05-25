@@ -124,7 +124,7 @@ public:
    * \brief Get the number of profiles found within the input file.
    * \returns Number of profiles found within the input file.
    */
-  inline unsigned long GetNumberOfProfiles() {
+  inline unsigned long GetNumberOfProfiles() const {
     return numberOfProfiles;
   }
   

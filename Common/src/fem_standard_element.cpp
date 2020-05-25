@@ -1778,7 +1778,7 @@ void CFEMStandardElementBase::GradVandermonde3D_Hexahedron(unsigned short       
 
 su2double CFEMStandardElementBase::ViscousPenaltyParameter(
                                        const unsigned short VTK_TypeElem,
-                                       const unsigned short nPolyElem) {
+                                       const unsigned short nPolyElem) const {
 
   /*--- Determine the element type and set the value of the penalty
         parameter accordingly. ---*/
@@ -3230,7 +3230,7 @@ void CFEMStandardElement::ChangeDirectionQuadConn(vector<unsigned short> &connQu
                                                   unsigned short         vert0,
                                                   unsigned short         vert1,
                                                   unsigned short         vert2,
-                                                  unsigned short         vert3) {
+                                                  unsigned short         vert3) const {
 
   /*--- Determine the indices of the 4 corner vertices of the quad. ---*/
   unsigned short ind0 = 0;
@@ -3391,7 +3391,7 @@ void CFEMStandardElement::ChangeDirectionQuadConn(vector<unsigned short> &connQu
 void CFEMStandardElement::ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
                                                       unsigned short         vert0,
                                                       unsigned short         vert1,
-                                                      unsigned short         vert2) {
+                                                      unsigned short         vert2) const {
 
   /*--- Determine the indices of the 3 corner vertices of the triangle. ---*/
   unsigned short ind0 = 0;
