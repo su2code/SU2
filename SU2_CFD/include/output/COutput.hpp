@@ -430,7 +430,7 @@ public:
    * \brief Get convergence of the problem.
    * \return Boolean indicating whether the problem is converged.
    */
-  bool GetConvergence() {return convergence;}
+  bool GetConvergence() const {return convergence;}
 
   /*!
      * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput

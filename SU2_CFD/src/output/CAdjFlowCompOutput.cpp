@@ -64,6 +64,11 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
+  if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
+    requestedVolumeFields.emplace_back("SENSITIVITY");
+    nRequestedVolumeFields ++;
+  }
+
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
   multiZoneHeaderString = ss.str();
@@ -193,12 +198,21 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field temperature.", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+
+  if (config->GetDeform_Mesh()){
+    AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
+    AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
+  }
+
 }
 
 void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
 
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];
+  CSolver* mesh_solver = solver[MESH_SOL];
 
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
@@ -237,7 +251,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
       break;
     case SST:
       SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
-      SetHistoryOutputValue("MAX_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_Max(1)));
+      SetHistoryOutputValue("MAX_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_Max(1)));
       break;
     default: break;
     }
@@ -272,6 +286,14 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
   SetHistoryOutputValue("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
+
+  SetHistoryOutputValue("LINSOL_ITER", adjflow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjflow_solver->GetResLinSolver()));
+
+  if (config->GetDeform_Mesh()) {
+    SetHistoryOutputValue("DEFORM_ITER", mesh_solver->System.GetIterations());
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->System.GetResidual()));
+  }
 
 }
 

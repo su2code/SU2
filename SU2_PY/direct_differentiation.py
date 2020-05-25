@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import division, print_function, absolute_import
-import os, sys
+import os, sys, shutil
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -89,6 +89,31 @@ def direct_differentiation( filename           ,
     
     if not foundDerivativeField:
         sys.exit('No derivative field found in HISTORY_OUTPUT')
+
+    # link restart files to subfolder DIRECTDIFF, if restart solution is selected
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES':
+        # check if directory DIRECTDIFF/DIRECT exists, if not, create
+        if not os.path.isdir('DIRECTDIFF/DIRECT'):
+            if not os.path.isdir('DIRECTDIFF'):
+                os.mkdir('DIRECTDIFF')
+            os.mkdir('DIRECTDIFF/DIRECT')
+
+        restart_name = config['RESTART_FILENAME'].split('.')[0]
+        restart_filename = restart_name + '_' + str(int(config['RESTART_ITER']) - 1).zfill(5) + '.dat'
+        if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
+            #throw, if restart file does not exist
+            if not os.path.isfile(restart_filename):
+                sys.exit("Error: Restart file <" + restart_filename + "> not found." )
+            shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
+
+        # use only, if time integration is second order
+        if config.get('TIME_MARCHING', 'NO') == 'DUAL_TIME_STEPPING-2ND_ORDER':
+            restart_filename = restart_name + '_' + str(int(config['RESTART_ITER']) - 2).zfill(5) + '.dat'
+            if not os.path.isfile('DIRECTDIFF/DIRECT/' + restart_filename):
+                # throw, if restart file does not exist
+                if not os.path.isfile(restart_filename):
+                    sys.exit("Error: Restart file <" + restart_filename + "> not found.")
+                shutil.copyfile(restart_filename, 'DIRECTDIFF/DIRECT/' + restart_filename)
 
     # Direct Differentiation Gradients
     SU2.eval.gradients.directdiff(config,state)

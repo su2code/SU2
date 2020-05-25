@@ -890,13 +890,16 @@ def expand_part(name,config):
 def expand_time(name,config):
     if 'TIME_MARCHING' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
+        n_start_time = 0
+        if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') == 'YES':
+            n_start_time = int(config['RESTART_ITER'])
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%05d')
-            names = [name_pat%i for i in range(n_time)]
+            names = [name_pat%i for i in range(n_start_time, n_time)]
         else:
             for n in range(len(name)):
                 name_pat = add_suffix(name[n], '%05d')
-                names    = [name_pat%i for i in range(n_time)]
+                names    = [name_pat%i for i in range(n_start_time, n_time)]
     else:
         if not isinstance(name, list):
             names = [name]
