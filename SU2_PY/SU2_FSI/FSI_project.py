@@ -33,7 +33,7 @@ import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
 from SU2_FSI import FSI_design
-from SU2_FSI.FSI_tools import run_command, readConfig
+from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion
 from SU2_FSI.FSI_design import Design
 from SU2_FSI.FSI_tools import  readConfig
 # -------------------------------------------------------------------
@@ -74,7 +74,23 @@ class Project:
         self.design_iter = -1  # optimization iter (design number) [initialization]
         self.magnord_design = 3 # Expected order of magnitude of design number
         
+        # Design variable options
+        # Reading point inversion
+        MeshFile = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
+        self.PointInv = ReadPointInversion(self.config['CONFIG_DEF'],MeshFile)
+    
+        # reading Bezier curves order
+        line = readConfig(self.config['CONFIG_DEF'], 'FFD_DEGREE')
+        line = line.strip('( )')
+        line.line.split(',')
+        self.ffd_degree = [int(float(line[0])),int(float(line[1])),int(float(line[2]))]
+        
+        # DV_values indexes (control points indexes of the FD Box)    
+        self.FFD_indexes = readDVParam(self.config['CONFIG_DEF'])
+        
         self.n_dv = 0 # number of design variables
+        self.FFD_indexes = None # ffd box indexes of the control points (order of x)
+        self.PointInv = None  # point inversion coefficiens for Bezier mapping of the boundary
         
         # clean previous designs
         self.clean_previous_designs()
@@ -110,19 +126,24 @@ class Project:
         self.Primal()
         
         # pulling obj function with scale
-        obj_f, scale = self.design[self.design_iter].pull_obj_f(self.primal_folder)
+        obj_f, scale, global_factor = self.design[self.design_iter].pull_obj_f(self.primal_folder)
         # return function
-        return obj_f*scale
+        return obj_f*scale*global_factor
         
     def obj_df(self,x_new):
         
         # Check if new design is needed (it won't as Adjoin is performed after primal)        
         # In case start new design and deform
         self.CheckNewDesign(x_new)
-        #Adjoint
         
-        # return d function
-        return 
+        print('Executing Adjoint') 
+        #Adjoint
+        self.Adjoint()
+        
+        # return the function
+        obj_df, global_factor = self.design[self.design_iter].pull_obj_df(self.adj_folder,self.FFD_indexes, self.PointInv,self.ffd_degree)
+                
+        return obj_df*global_factor
 
     def con_ceq(self,x_new):
         
@@ -295,7 +316,7 @@ class Project:
     
     def Primal(self):
        """
-       Sets up and Perform primal solver
+       Sets up and Performs primal solver
        """         
        # creating folder for analysis
        self.primal_folder = self.design_folder + '/Primal'
@@ -307,42 +328,63 @@ class Project:
        command = 'cp ' + config_input + ' ' + self.primal_folder + '/'
        run_command(command, 'Pulling primal config', False) 
        
-       # pulling primal files
-       command = []
-       # 1
-       config = self.config['FOLDER'] + '/' + self.configFSIPrimal['SU2_CONFIG']
-       command.append('cp ' + config + ' ' + self.primal_folder + '/')
-       # 2
-       config = self.config['FOLDER'] + '/' + self.configFSIPrimal['PYBEAM_CONFIG']
-       command.append('cp ' + config + ' ' + self.primal_folder + '/')
-       # 3
-       config = self.config['FOLDER'] + '/' + self.configFSIPrimal['MLS_CONFIG_FILE_NAME']
-       command.append('cp ' + config + ' ' + self.primal_folder + '/')
-       # 4
-       spline = self.config['FOLDER'] + '/' + 'Spline.npy'
-       command.append('cp ' + spline + ' ' + self.primal_folder + '/')      
-       for i in range(len(command)):
-          run_command(command[i], 'Pulling primal config file ' + str(i) , False) 
-          
-       # pulling files for pyBeam (mesh and properties)
-       command = []
-       # 1
-       config = self.config['FOLDER'] + '/' + self.pyBeamMesh
-       command.append('cp ' + config + ' ' + self.primal_folder + '/')
-       # 2
-       config = self.config['FOLDER'] + '/' + self.pyBeamProp
-       command.append('cp ' + config + ' ' + self.primal_folder + '/')       
-       for i in range(len(command)):
-          run_command(command[i], 'Pulling primal pyBeam file ' + str(i) , False)        
-
+       PullingPrimalAdjointFiles(self.config, self.primal_folder, self.configFSIPrimal, self.pyBeamMesh, self.pyBeamProp)
+       
        # pulling mesh file 
        self.SetMesh(self.primal_folder)  
        
        # Running primal
        self.design[self.design_iter].FSIPrimal(self.primal_folder)
        
+    def Adjoint(self):
+       """
+       Sets up and Performs Adjoint solver
+       """          
        
+       # creating folder for analysis
+       self.adjoint_folder = self.design_folder + '/Adjoint'
+       command = 'mkdir ' + self.adjoint_folder   
+       run_command(command, 'Creating Adjoint directory for design ' + str(int(self.design_iter)).zfill(self.magnord_design), False)   
+       
+       # pulling adjoint config
+       config_input = self.config['FOLDER'] + '/' + self.config['CONFIG_ADJOINT'] 
+       command = 'cp ' + config_input + ' ' + self.adjoint_folder + '/'
+       run_command(command, 'Pulling Adjoint config', False)        
+       
+       
+       PullingPrimalAdjointFiles(self.config, self.adjoint_folder, self.configFSIAdjoint, self.pyBeamMesh, self.pyBeamProp)
+
+       # pulling mesh file 
+       self.SetMesh(self.adjoint_folder)         
+       
+       # pulling restart for pyBeam and SU2 and flow.vtk
+       
+       if self.design[self.design_iter].primal == True:
+           
+          # pyBeam 
+          orig_file = self.primal_folder + '/' + 'restart.pyBeam'
+          dest_file = self.adjoint_folder + '/' + 'solution.pyBeam'
+          command.append('cp ' + orig_file + ' ' + dest_file )       
+          
+          # SU2
+          orig_file = self.primal_folder + '/' + 'restart_flow.dat'
+          dest_file = self.adjoint_folder + '/' + 'solution_flow.dat'
+          command.append('cp ' + orig_file + ' ' + dest_file ) 
+          
+          # flow.meta
+          orig_file = self.primal_folder + '/' + 'flow.meta'  
+          command.append('cp ' + orig_file + ' ' + self.adjoint_folder + '/' )
+
+          for i in range(len(command)):
+             run_command(command[i], 'Pulling solution file ' + str(i) , False)  
         
+       else:     
+          print('Primal not yet available, can t pull solutions for Adjoint....')
+          sys.exit()
+
+       # Running primal
+       self.design[self.design_iter].FSIAdjoint(self.adjoint_folder)
+            
     def SetMesh(self, destination_folder):
        """
        Pulls mesh file. If optimization iter is 1, pulling is from project folder. If a deformation occurred, pulling is done from DEFORM folder
