@@ -3827,7 +3827,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
 }
 
-void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) {
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) const {
 
   su2double AoA_ = config->GetAoA();
   su2double AoS_ = config->GetAoS();
@@ -4016,7 +4016,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                                CConfig *config,
                                int val_iter,
                                unsigned short val_kind_solver,
-                               unsigned short val_kind_marker) {
+                               unsigned short val_kind_marker) const {
 
   /*-- First, set the solver and marker kind for the particular problem at
    hand. Note that, in the future, these routines can be used for any solver

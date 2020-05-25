@@ -248,5 +248,5 @@ public:
    */
   void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) override;
 
-  void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
+  void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(const su2double *TransVar_i, const su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
 };

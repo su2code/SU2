@@ -28,23 +28,23 @@
 #pragma once
 
 inline void CFluidModel::SetCpModel(CConfig *config) { }
-inline su2double CFluidModel::GetPressure () { return Pressure; }
-inline su2double CFluidModel::GetSoundSpeed () { return sqrt(SoundSpeed2); }
-inline su2double CFluidModel::GetSoundSpeed2 () { return SoundSpeed2; }
-inline su2double CFluidModel::GetDensity () { return Density; }
-inline su2double CFluidModel::GetEntropy () { return Entropy; }
-inline su2double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
-inline su2double CFluidModel::GetTemperature () { return Temperature; }
-inline su2double CFluidModel::GetCp () { return Cp; }
-inline su2double CFluidModel::GetCv () { return Cv; }
-inline su2double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
-inline su2double CFluidModel::GetdPde_rho () { return dPde_rho; }
-inline su2double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
-inline su2double CFluidModel::GetdTde_rho () { return dTde_rho; }
-inline su2double CFluidModel::Getdhdrho_P () {return dhdrho_P;}
-inline su2double CFluidModel::GetdhdP_rho () {return dhdP_rho;}
-inline su2double CFluidModel::Getdsdrho_P () {return dsdrho_P;}
-inline su2double CFluidModel::GetdsdP_rho () {return dsdP_rho;}
+inline su2double CFluidModel::GetPressure () const { return Pressure; }
+inline su2double CFluidModel::GetSoundSpeed () const { return sqrt(SoundSpeed2); }
+inline su2double CFluidModel::GetSoundSpeed2 () const { return SoundSpeed2; }
+inline su2double CFluidModel::GetDensity () const { return Density; }
+inline su2double CFluidModel::GetEntropy () const { return Entropy; }
+inline su2double CFluidModel::GetStaticEnergy () const { return StaticEnergy; }
+inline su2double CFluidModel::GetTemperature () const { return Temperature; }
+inline su2double CFluidModel::GetCp () const { return Cp; }
+inline su2double CFluidModel::GetCv () const { return Cv; }
+inline su2double CFluidModel::GetdPdrho_e () const { return dPdrho_e; }
+inline su2double CFluidModel::GetdPde_rho () const { return dPde_rho; }
+inline su2double CFluidModel::GetdTdrho_e () const { return dTdrho_e; }
+inline su2double CFluidModel::GetdTde_rho () const { return dTde_rho; }
+inline su2double CFluidModel::Getdhdrho_P () const {return dhdrho_P;}
+inline su2double CFluidModel::GetdhdP_rho () const {return dhdP_rho;}
+inline su2double CFluidModel::Getdsdrho_P () const {return dsdrho_P;}
+inline su2double CFluidModel::GetdsdP_rho () const {return dsdP_rho;}
 
 inline su2double CFluidModel::GetLaminarViscosity () {
         LaminarViscosity->SetViscosity(Temperature, Density);
@@ -73,11 +73,11 @@ inline su2double CFluidModel::GetThermalConductivity () {
 }
 
 
-inline su2double CFluidModel::Getdktdrho_T () {
+inline su2double CFluidModel::Getdktdrho_T () const {
         return dktdrho_T;
 }
 
-inline su2double CFluidModel::GetdktdT_rho () {
+inline su2double CFluidModel::GetdktdT_rho () const {
         return dktdT_rho;
 }
 

@@ -73,17 +73,17 @@ public:
   /*!
    * \brief return viscosity value.
    */
-  su2double GetViscosity(void);
+  su2double GetViscosity(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdmudrho_T(void);
+  su2double Getdmudrho_T(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdmudT_rho(void);
+  su2double GetdmudT_rho(void) const;
 
   /*!
    * \brief Set Viscosity.
@@ -187,7 +187,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b);
+  CPolynomialViscosity(unsigned short val_nCoeffs, const su2double* val_b);
   
   /*!
    * \brief Destructor of the class.
@@ -228,17 +228,17 @@ public:
   /*!
    * \brief return viscosity value.
    */
-  su2double GetConductivity(void);
+  su2double GetConductivity(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdktdrho_T(void);
+  su2double Getdktdrho_T(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdktdT_rho(void);
+  su2double GetdktdT_rho(void) const;
 
   /*!
    * \brief Set Thermal conductivity.
@@ -417,7 +417,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b);
+  CPolynomialConductivity(unsigned short val_nCoeffs, const su2double* val_b);
   
   /*!
    * \brief Set Thermal conductivity.
@@ -452,7 +452,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb);
+  CPolynomialConductivityRANS(unsigned short val_nCoeffs, const su2double* val_b, su2double pr_turb);
   
   /*!
    * \brief Set Thermal conductivity.

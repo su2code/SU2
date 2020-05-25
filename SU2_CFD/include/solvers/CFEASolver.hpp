@@ -83,7 +83,7 @@ protected:
   CSysVector<su2double> LinSysReact;  /*!< \brief Vector to store the residual before applying the BCs */
 
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+  CSysMatrix<su2mixedfloat> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
 #else
   CSysMatrix<su2double> MassMatrix;
 #endif

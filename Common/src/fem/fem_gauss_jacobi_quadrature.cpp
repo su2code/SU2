@@ -8,7 +8,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -77,7 +77,7 @@ Thanks for the time and take care,
 Tom
 */
 
-#include "../include/fem_gauss_jacobi_quadrature.hpp"
+#include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
 void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,     const passivedouble   beta,
                                                  const passivedouble   a,         const passivedouble   b,
@@ -116,7 +116,7 @@ void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passiv
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -130,7 +130,7 @@ void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passiv
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -201,7 +201,7 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passive
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -215,7 +215,7 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passive
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -255,7 +255,7 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passive
 //
   cdgqf ( nt, kind, alpha, beta, t, wts );
 //
-//  Prepare to scale the quadrature formula to other weight function with 
+//  Prepare to scale the quadrature formula to other weight function with
 //  valid A and B.
 //
   mlt = new int[nt];
@@ -278,7 +278,7 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passive
 //****************************************************************************80
 
 passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedouble alpha,
-                                                   passivedouble beta, passivedouble aj[], 
+                                                   passivedouble beta, passivedouble aj[],
                                                    passivedouble bj[])
 
 //****************************************************************************80
@@ -302,7 +302,7 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -316,7 +316,7 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -426,10 +426,10 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
   {
     ab = alpha + beta;
     abi = 2.0 + ab;
-    zemu = pow ( 2.0, ab + 1.0 ) * tgamma ( alpha + 1.0 ) 
+    zemu = pow ( 2.0, ab + 1.0 ) * tgamma ( alpha + 1.0 )
       * tgamma ( beta + 1.0 ) / tgamma ( abi );
     aj[0] = ( beta - alpha ) / abi;
-    bj[0] = sqrt ( 4.0 * ( 1.0 + alpha ) * ( 1.0 + beta ) 
+    bj[0] = sqrt ( 4.0 * ( 1.0 + alpha ) * ( 1.0 + beta )
       / ( ( abi + 1.0 ) * abi * abi ) );
     a2b2 = beta * beta - alpha * alpha;
 
@@ -438,7 +438,7 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
       abi = 2.0 * i + ab;
       aj[i-1] = a2b2 / ( ( abi - 2.0 ) * abi );
       abi = abi * abi;
-      bj[i-1] = sqrt ( 4.0 * i * ( i + alpha ) * ( i + beta ) * ( i + ab ) 
+      bj[i-1] = sqrt ( 4.0 * i * ( i + alpha ) * ( i + beta ) * ( i + ab )
         / ( ( abi - 1.0 ) * abi ) );
     }
   }
@@ -486,7 +486,7 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
   else   // if ( kind == 8 )
   {
     ab = alpha + beta;
-    zemu = tgamma ( alpha + 1.0 ) * tgamma ( - ( ab + 1.0 ) ) 
+    zemu = tgamma ( alpha + 1.0 ) * tgamma ( - ( ab + 1.0 ) )
       / tgamma ( - beta );
     apone = alpha + 1.0;
     aba = ab * apone;
@@ -502,7 +502,7 @@ passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedoubl
     for ( i = 2; i <= m - 1; i++ )
     {
       abti = ab + 2.0 * i;
-      bj[i-1] = i * ( alpha + i ) / ( abti - 1.0 ) * ( beta + i ) 
+      bj[i-1] = i * ( alpha + i ) / ( abti - 1.0 ) * ( beta + i )
         / ( abti * abti ) * ( ab + i ) / ( abti + 1.0 );
     }
     bj[m-1] = 0.0;
@@ -526,20 +526,20 @@ void CGaussJacobiQuadrature::imtqlx(int n, passivedouble d[], passivedouble e[],
 //
 //  Discussion:
 //
-//    This routine is a slightly modified version of the EISPACK routine to 
-//    perform the implicit QL algorithm on a symmetric tridiagonal matrix. 
+//    This routine is a slightly modified version of the EISPACK routine to
+//    perform the implicit QL algorithm on a symmetric tridiagonal matrix.
 //
 //    The authors thank the authors of EISPACK for permission to use this
-//    routine. 
+//    routine.
 //
-//    It has been modified to produce the product Q' * Z, where Z is an input 
-//    vector and Q is the orthogonal matrix diagonalizing the input matrix.  
+//    It has been modified to produce the product Q' * Z, where Z is an input
+//    vector and Q is the orthogonal matrix diagonalizing the input matrix.
 //    The changes consist (essentialy) of applying the orthogonal transformations
 //    directly to Z as they are generated.
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -553,7 +553,7 @@ void CGaussJacobiQuadrature::imtqlx(int n, passivedouble d[], passivedouble e[],
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -570,7 +570,7 @@ void CGaussJacobiQuadrature::imtqlx(int n, passivedouble d[], passivedouble e[],
 //    Input/output, passivedouble D(N), the diagonal entries of the matrix.
 //    On output, the information in D has been overwritten.
 //
-//    Input/output, passivedouble E(N), the subdiagonal entries of the 
+//    Input/output, passivedouble E(N), the subdiagonal entries of the
 //    matrix, in entries E(1) through E(N-1).  On output, the information in
 //    E has been overwritten.
 //
@@ -716,11 +716,11 @@ void CGaussJacobiQuadrature::parchk(int kind, int m, passivedouble alpha, passiv
 //
 //  Purpose:
 //
-//    PARCHK checks parameters ALPHA and BETA for classical weight functions. 
+//    PARCHK checks parameters ALPHA and BETA for classical weight functions.
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -734,7 +734,7 @@ void CGaussJacobiQuadrature::parchk(int kind, int m, passivedouble alpha, passiv
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -854,7 +854,7 @@ passivedouble CGaussJacobiQuadrature::r8_sign(passivedouble x)
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -876,7 +876,7 @@ passivedouble CGaussJacobiQuadrature::r8_sign(passivedouble x)
   if ( x < 0.0 )
   {
     value = -1.0;
-  } 
+  }
   else
   {
     value = 1.0;
@@ -885,9 +885,9 @@ passivedouble CGaussJacobiQuadrature::r8_sign(passivedouble x)
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passivedouble wts[],
+void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt[], const passivedouble wts[],
                                   int nwts, int ndx[], passivedouble swts[], passivedouble st[],
-                                  int kind, passivedouble alpha, passivedouble beta, passivedouble a, 
+                                  int kind, passivedouble alpha, passivedouble beta, passivedouble a,
                                   passivedouble b)
 
 //****************************************************************************80
@@ -904,7 +904,7 @@ void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passived
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -918,7 +918,7 @@ void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passived
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -935,7 +935,7 @@ void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passived
 //
 //    Input, int NWTS, the number of weights.
 //
-//    Input, int NDX[NT], used to index the array WTS.  
+//    Input, int NDX[NT], used to index the array WTS.
 //    For more details see the comments in CAWIQ.
 //
 //    Output, passivedouble SWTS[NWTS], the scaled weights.
@@ -1124,7 +1124,7 @@ void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passived
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::sgqf(int nt, passivedouble aj[], passivedouble bj[],
+void CGaussJacobiQuadrature::sgqf(int nt, const passivedouble aj[], passivedouble bj[],
                                   passivedouble zemu, passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80
@@ -1141,7 +1141,7 @@ void CGaussJacobiQuadrature::sgqf(int nt, passivedouble aj[], passivedouble bj[]
 //
 //  Licensing:
 //
-//    This code is distributed under the GNU LGPL license. 
+//    This code is distributed under the GNU LGPL license.
 //
 //  Modified:
 //
@@ -1155,7 +1155,7 @@ void CGaussJacobiQuadrature::sgqf(int nt, passivedouble aj[], passivedouble bj[]
 //  Reference:
 //
 //    Sylvan Elhay, Jaroslav Kautsky,
-//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of 
+//    Algorithm 655: IQPACK, FORTRAN Subroutines for the Weights of
 //    Interpolatory Quadrature,
 //    ACM Transactions on Mathematical Software,
 //    Volume 13, Number 4, December 1987, pages 399-415.
@@ -1166,7 +1166,7 @@ void CGaussJacobiQuadrature::sgqf(int nt, passivedouble aj[], passivedouble bj[]
 //
 //    Input, passivedouble AJ[NT], the diagonal of the Jacobi matrix.
 //
-//    Input/output, passivedouble BJ[NT], the subdiagonal of the Jacobi 
+//    Input/output, passivedouble BJ[NT], the subdiagonal of the Jacobi
 //    matrix, in entries 1 through NT-1.  On output, BJ has been overwritten.
 //
 //    Input, passivedouble ZEMU, the zero-th moment of the weight function.

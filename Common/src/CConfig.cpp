@@ -29,8 +29,8 @@
 #include "../include/CConfig.hpp"
 #undef ENABLE_MAPS
 
-#include "../include/fem_gauss_jacobi_quadrature.hpp"
-#include "../include/fem_geometry_structure.hpp"
+#include "../include/fem/fem_gauss_jacobi_quadrature.hpp"
+#include "../include/fem/fem_geometry_structure.hpp"
 
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
@@ -254,7 +254,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   }
 }
 
-SU2_MPI::Comm CConfig::GetMPICommunicator() {
+SU2_MPI::Comm CConfig::GetMPICommunicator() const {
 
   return SU2_Communicator;
 
@@ -3018,7 +3018,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-void CConfig::SetHeader(unsigned short val_software){
+void CConfig::SetHeader(unsigned short val_software) const{
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
    the two lines below that use the dt variable. ---*/
   //time_t now = time(0);
@@ -7674,7 +7674,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   return filename;
 }
 
-string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) {
+string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) const {
 
   string UnstExt="", UnstFilename = val_filename;
   char buffer[50];
@@ -7705,7 +7705,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string e
   return UnstFilename;
 }
 
-string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string ext) {
+string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string ext) const {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -7722,7 +7722,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string
     return multizone_filename;
 }
 
-string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) {
+string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -9474,7 +9474,7 @@ void CConfig::GEMMProfilingCSV(void) {
 
 }
 
-void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
+void CConfig::SetFreeStreamTurboNormal(const su2double* turboNormal){
 
   FreeStreamTurboNormal[0] = turboNormal[0];
   FreeStreamTurboNormal[1] = turboNormal[1];

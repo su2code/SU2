@@ -603,7 +603,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
 }
 
-void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
+void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
 
   /*--- Update the multigrid structure after moving the finest grid,
    including computing the grid velocities on the coarser levels
