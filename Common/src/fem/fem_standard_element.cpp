@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,9 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/fem_standard_element.hpp"
-#include "../include/fem_gauss_jacobi_quadrature.hpp"
-#include "../include/blas_structure.hpp"
+#include "../../include/fem/fem_standard_element.hpp"
+#include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
+#include "../../include/blas_structure.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardElementBase.                     */

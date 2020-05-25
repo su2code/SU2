@@ -44,7 +44,7 @@
 #include "../task_definition.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../sgs_model.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"

@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
-#include "../../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../../Common/include/fem/fem_geometry_structure.hpp"
 #include <numeric>
 
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
@@ -92,7 +92,7 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
 
   /*--- Sort volumetric grid connectivity. ---*/
-  
+
   nElemPerType.fill(0);
 
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
@@ -101,9 +101,9 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
   SortVolumetricConnectivity(config, geometry, PRISM        );
   SortVolumetricConnectivity(config, geometry, PYRAMID      );
-   
+
   SetTotalElements();
-  
+
   connectivitySorted = true;
 
 }
@@ -204,7 +204,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
         Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
     }
   }
-  
+
   nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
 
   /*--- Store the particular global element count in the class data,
