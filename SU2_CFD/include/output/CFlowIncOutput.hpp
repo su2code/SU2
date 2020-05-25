@@ -63,8 +63,10 @@ class CFlowIncOutput final: public CFlowOutput {
 
   using Modules = ModuleList<CCommonModule,
                              CFVMBaseModule,
+                             CFlowIncOutputModule,
                              CTurbOutputModule,
                              CAerodynamicsModule,
+                             CVortexIdentificationModule,
                              CFlowCoefficientModule,
                              CConvergenceModule,
                              CResidualModule,

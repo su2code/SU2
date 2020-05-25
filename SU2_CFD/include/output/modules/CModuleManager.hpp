@@ -10,6 +10,7 @@
 #include "CUserFunctionModule.hpp"
 #include "CTurbOutputModule.hpp"
 #include "CFVMBaseModule.hpp"
+#include "CVortexIdentificationModule.hpp"
 
 #include "COutFieldManager.hpp"
 
@@ -106,7 +107,7 @@ void CModuleManager<ModuleList>::SetHistoryFields(CConfig *config){
     auto newField = historyFieldsAll.AddField(field->first, field->second.fieldName,
                                               ScreenOutputFormat::SCIENTIFIC,
                                               field->second.outputGroup,
-                                              "", FieldType::COEFFICIENT);
+                                              "Integrated volume field (total)", FieldType::COEFFICIENT);
     surfaceIntegralHistory.push_back(newField);
   }
 

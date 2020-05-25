@@ -69,6 +69,7 @@ private:
                              CFlowCompOutputModule,
                              CTurbOutputModule,
                              CAerodynamicsModule,
+                             CVortexIdentificationModule,
                              CFlowCoefficientModule,
                              CConvergenceModule,
                              CResidualModule,
