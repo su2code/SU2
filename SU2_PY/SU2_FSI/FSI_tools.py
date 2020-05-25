@@ -385,7 +385,7 @@ def readDVParam(config_DEF):
     dv_param_str = readConfig(config_DEF, 'DV_PARAM')
     
     dv_param_str = dv_param_str.split(';')
-    FFD_indexes = np.empty([len(dv_param_str),3])
+    FFD_indexes = np.empty([len(dv_param_str),3], dtype=int)
     for i in range(len(dv_param_str)):
        dv_param_str[i] = dv_param_str[i].strip('( )')
        a = dv_param_str[i].split(',')
@@ -435,7 +435,10 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):     # To be tested
        Nj =  barnstein(ffd_degree[1], PointInv[i,2] )
        Nk =  barnstein(ffd_degree[2] , PointInv[i,3] )
        for j in range(Nalpha):
-           chain[i,j] =  Ni[ FFD_indexes[j, 0] ] * Nj[ FFD_indexes[j, 1] ] *Nk[ FFD_indexes[j, 2] ]
+           print(FFD_indexes[j, 0])
+           print(FFD_indexes[j, 1])
+           print(FFD_indexes[j, 2])
+           chain[i,j] =  Ni[ int(FFD_indexes[j, 0]) ] * Nj[ int(FFD_indexes[j, 1]) ] *Nk[ int(FFD_indexes[j, 2]) ]
     
     
     # chain rule for the sensitivity (for now only Z is allowed)
