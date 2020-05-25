@@ -60,9 +60,9 @@ class Project:
         self.deform_folder = ''
         self.geo_folder = ''
         self.primal_folder = ''
-        self.adj_folder = ''
+        self.adjoint_folder = ''
         
-        self.design_toll = 10**8  # allowable difference into design variable vector to consider the same design
+        self.design_toll = 10**(-8)  # allowable difference into design variable vector to consider the same design
         
         # config objects for primal and adjoint simulations with structural and fluid config files and options
         self.configFSIPrimal = None
@@ -141,7 +141,7 @@ class Project:
         self.Adjoint()
         
         # return the function
-        obj_df, global_factor = self.design[self.design_iter].pull_obj_df(self.adj_folder,self.FFD_indexes, self.PointInv,self.ffd_degree)
+        obj_df, global_factor = self.design[self.design_iter].pull_obj_df(self.adjoint_folder,self.FFD_indexes, self.PointInv,self.ffd_degree)
                 
         return obj_df*global_factor
 
@@ -386,7 +386,7 @@ class Project:
           print('Primal not yet available, can t pull solutions for Adjoint....')
           sys.exit()
 
-       print('Executing Geo')
+       print('Executing Adjoint')
        # Running primal
        self.design[self.design_iter].FSIAdjoint(self.adjoint_folder)
             
