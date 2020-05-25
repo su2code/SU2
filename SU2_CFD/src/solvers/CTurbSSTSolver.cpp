@@ -664,12 +664,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
 
       Solution[0] = 0.0;
-      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance+eps*eps);
+      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
-      nodes->SetSolution(iPoint,Solution);
+//      nodes->SetSolution(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
+      unsigned long total_index = iPoint*nVar + 1;
+      LinSysRes[total_index] = Solution[1] - nodes->GetSolution(iPoint,1);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
