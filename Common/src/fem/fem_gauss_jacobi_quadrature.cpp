@@ -885,7 +885,7 @@ passivedouble CGaussJacobiQuadrature::r8_sign(passivedouble x)
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passivedouble wts[],
+void CGaussJacobiQuadrature::scqf(int nt, const passivedouble t[], const int mlt[], const passivedouble wts[],
                                   int nwts, int ndx[], passivedouble swts[], passivedouble st[],
                                   int kind, passivedouble alpha, passivedouble beta, passivedouble a,
                                   passivedouble b)
@@ -1124,7 +1124,7 @@ void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passived
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::sgqf(int nt, passivedouble aj[], passivedouble bj[],
+void CGaussJacobiQuadrature::sgqf(int nt, const passivedouble aj[], passivedouble bj[],
                                   passivedouble zemu, passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80

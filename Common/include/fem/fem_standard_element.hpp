@@ -119,7 +119,7 @@ public:
   * \brief Function, which makes available the polynomial order that must be integrated exactly.
   * \return  The polynomial order that must be integrated exactly.
   */
-  inline unsigned short GetOrderExact(void){return orderExact;}
+  inline unsigned short GetOrderExact(void) const {return orderExact;}
 
   /*!
   * \brief Static function, which computes the inverse of the given square matrix.
@@ -698,7 +698,7 @@ protected:
   * \return                   The value of the viscous penalty parameter.
   */
   su2double ViscousPenaltyParameter(const unsigned short VTK_TypeElem,
-                                    const unsigned short nPolyElem);
+                                    const unsigned short nPolyElem) const;
 private:
   /*!
   * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
@@ -1117,7 +1117,7 @@ private:
                                unsigned short         vert0,
                                unsigned short         vert1,
                                unsigned short         vert2,
-                               unsigned short         vert3);
+                               unsigned short         vert3) const;
 
   /*!
   * \brief Function, which changes the given triangular connectivity, such that the direction coincides
@@ -1130,7 +1130,7 @@ private:
   void ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
                                    unsigned short         vert0,
                                    unsigned short         vert1,
-                                   unsigned short         vert2);
+                                   unsigned short         vert2) const;
 
   /*!
   * \brief Function, which copies the data of the given object into the current object.

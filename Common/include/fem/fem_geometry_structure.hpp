@@ -532,13 +532,13 @@ public:
   * \brief Function, which makes available the number of owned volume elements in the local FEM mesh.
   * \return  Number of owned volume elements of the local FEM mesh.
   */
-  inline unsigned long GetNVolElemOwned(void) {return nVolElemOwned;}
+  inline unsigned long GetNVolElemOwned(void) const {return nVolElemOwned;}
 
   /*!
   * \brief Function, which makes available the total number of volume elements in the local FEM mesh.
   * \return  Total number of volume elements of the local FEM mesh.
   */
-  inline unsigned long GetNVolElemTot(void) {return nVolElemTot;}
+  inline unsigned long GetNVolElemTot(void) const {return nVolElemTot;}
 
   /*!
   * \brief Function, which makes available the volume elements in the local FEM mesh.
