@@ -629,7 +629,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim;
   su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
   su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
@@ -668,10 +667,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
-//      nodes->SetSolution(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
-      unsigned long total_index = iPoint*nVar + 1;
-      LinSysRes[total_index] = Solution[1] - nodes->GetSolution(iPoint,1);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
