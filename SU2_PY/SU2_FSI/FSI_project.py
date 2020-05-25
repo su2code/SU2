@@ -230,7 +230,7 @@ class Project:
     def CheckNewDesign(self, x_in):
         
        if self.design_iter == -1:
-           print('Starting initial design')
+           print('Evaluating initial design')
            self.design_iter += 1
            # starting new design
            self.InitializeNewDesign(x_in)
@@ -240,7 +240,7 @@ class Project:
           delta = self.design[self.design_iter].x - x_in
           module = np.linalg.norm(delta)
           if module > self.design_toll:
-             print('Starting new design')
+             print('Evaluating new design')
              self.design_iter += 1
              # starting new design
              self.InitializeNewDesign(x_in)
