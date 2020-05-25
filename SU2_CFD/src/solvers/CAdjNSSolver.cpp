@@ -2,14 +2,14 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
-  su2double Area=0.0, *Normal = NULL, myArea_Monitored;
+  su2double Area=0.0, *Normal = nullptr, myArea_Monitored;
   su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
   su2double *Velocity_Inf;
 
@@ -251,7 +251,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
            iMarker = jMarker;
            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-             if (geometry->node[iPoint]->GetDomain()) {
+             if (geometry->nodes->GetDomain(iPoint)) {
                Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
                Area = 0.0;
                for (iDim = 0; iDim < nDim; iDim++)
@@ -336,7 +336,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
 
-  bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
@@ -352,7 +352,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Get the distance form a sharp edge ---*/
 
-    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
+    SharpEdge_Distance = geometry->nodes->GetSharpEdge_Distance(iPoint);
 
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
@@ -416,21 +416,24 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iPoint, jPoint, iEdge;
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge, coordinates and normal vector---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive variables w/o reconstruction and adjoint variables w/o reconstruction---*/
 
@@ -453,22 +456,25 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     LinSysRes.AddBlock(jPoint, Residual_j);
 
     if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+      Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
     }
 
   }
 
 }
 
-void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                   CConfig *config, unsigned short iMesh) {
+void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+  CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
 
   unsigned long iPoint, jPoint, iEdge;
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
 
   /*--- Loop over all the points, note that we are supposing that primitive and
@@ -478,17 +484,17 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Primitive variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), NULL);
+    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), nullptr);
 
     /*--- Gradient of adjoint variables ---*/
 
-    numerics->SetAdjointVarGradient(nodes->GetGradient(iPoint), NULL);
+    numerics->SetAdjointVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Set volume ---*/
 
-    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
 
@@ -496,19 +502,19 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
 
-      numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), NULL);
+      numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
 
-      numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), NULL);
+      numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
 
       /*--- Turbulent adjoint variables w/o reconstruction and its gradient ---*/
 
-      numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->GetNodes()->GetSolution(iPoint), NULL);
+      numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
 
-      numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->GetNodes()->GetGradient(iPoint), NULL);
+      numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
 
       /*--- Set distance to the surface ---*/
 
-      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+      numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
 
     }
 
@@ -530,9 +536,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Points in edge, and normal vector ---*/
 
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      second_numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Conservative variables w/o reconstruction ---*/
 
@@ -561,7 +567,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set distance to the surface ---*/
 
-      second_numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), geometry->node[jPoint]->GetWall_Distance());
+      second_numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), geometry->nodes->GetWall_Distance(jPoint));
 
       /*--- Update adjoint viscous residual ---*/
 
@@ -587,7 +593,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
                                      nodes->GetSolution(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
-      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the adjoint rotating frame source residual ---*/
       second_numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -596,7 +602,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
     }
   }
@@ -606,9 +612,14 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
-  su2double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0}, CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
-  su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
+  su2double *d = nullptr, **PsiVar_Grad = nullptr, **PrimVar_Grad = nullptr, div_phi, *Normal = nullptr, Area,
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, temp_sens = 0.0,
+  *Psi = nullptr, *U = nullptr, Enthalpy, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density,
+  Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0},
+  CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,
+  dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0,
+  RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
+  const su2double* const* GridVel_Grad;
 
   su2double *USens = new su2double[nVar];
   su2double *UnitNormal = new su2double[nDim];
@@ -698,7 +709,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           PsiVar_Grad = nodes->GetGradient(iPoint);
           PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
@@ -798,7 +809,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
 
-            GridVel_Grad = geometry->node[iPoint]->GetGridVel_Grad();
+            GridVel_Grad = geometry->nodes->GetGridVel_Grad(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               normal_grad_gridvel[iDim] = 0.0;
               for (jDim = 0; jDim < nDim; jDim++)
@@ -897,7 +908,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
           if (config->GetSens_Remove_Sharp()) {
             eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
+            if ( geometry->nodes->GetSharpEdge_Distance(iPoint) < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
 
@@ -928,7 +939,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Psi = nodes->GetSolution(iPoint);
           U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1082,7 +1093,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           p = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
@@ -1210,7 +1221,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
   su2double dSigma5_psi5;
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
 
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
@@ -1236,7 +1247,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -1266,7 +1277,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Correct the adjoint velocity BC for dynamic meshes ---*/
 
       if (grid_movement) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
           phi[iDim] -= Psi[nDim+1]*GridVel[iDim];
       }
@@ -1300,7 +1311,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Get the grid velocity at this node and impose v = u_wall ---*/
 
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = GridVel[iDim];
 
         /*--- Get some additional quantities from the flow solution ---*/
@@ -1383,8 +1394,8 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
             /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
-            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
+            Coord_j = geometry->nodes->GetCoord(Point_Normal);
             dist_ij_2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -1456,8 +1467,8 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
             /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
-            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
+            Coord_j = geometry->nodes->GetCoord(Point_Normal);
             dist_ij_2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -1528,7 +1539,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
       if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
         for (iVar = 1; iVar <= nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
@@ -1583,7 +1594,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double *GradDens;
   su2double *dPoRho2 = new su2double[nDim];
 
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   bool heat_flux_obj;
 
@@ -1619,7 +1630,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -1637,7 +1648,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      Volume = geometry->node[iPoint]->GetVolume();
+      Volume = geometry->nodes->GetVolume(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Get the force projection vector (based on the objective function) ---*/
@@ -1645,7 +1656,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
       if ( grid_movement) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) {
           phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
         }
@@ -1774,7 +1785,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       if (grid_movement) {
 
         /*--- Get the appropriate grid velocity at this node ---*/
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
 
         /*--- Get the enthalpy from the direct solution ---*/
         Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
@@ -1890,7 +1901,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, Res_Conv_i);
       LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
       if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
       }
 
     }

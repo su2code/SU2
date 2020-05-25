@@ -2,14 +2,14 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -174,23 +174,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 }
 
 COutput::~COutput(void) {
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
 
-  if (volumeDataSorter != nullptr)
-    delete volumeDataSorter;
-
+  delete volumeDataSorter;
   volumeDataSorter = nullptr;
 
-  if (surfaceDataSorter != nullptr)
-    delete surfaceDataSorter;
-
+  delete surfaceDataSorter;
   surfaceDataSorter = nullptr;
-
-
 }
 
 
@@ -274,6 +267,8 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   Postprocess_HistoryData(driver_config);
 
+  MonitorTimeConvergence(driver_config, curTimeIter);
+
   /*--- Output using only the master node ---*/
 
   if (rank == MASTER_NODE && !noWriting) {
@@ -339,7 +334,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
-  CFileWriter *fileWriter = NULL;
+  CFileWriter *fileWriter = nullptr;
 
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
@@ -713,11 +708,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       break;
 
     default:
-      fileWriter = NULL;
+      fileWriter = nullptr;
       break;
   }
 
-  if (fileWriter != NULL){
+  if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
 
@@ -1177,7 +1172,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     if (rank == MASTER_NODE && !noWriting){
 
       /*--- Open history file and print the header ---*/
-      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
+      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
         PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
@@ -1401,7 +1396,7 @@ void COutput::CheckHistoryOutput(){
   }
 
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(convFields.empty()){
       cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
     }
     else{
@@ -1433,7 +1428,7 @@ void COutput::CheckHistoryOutput(){
     wndConvFields.erase(std::find(wndConvFields.begin(), wndConvFields.end(), FieldsToRemove[iField_Conv]));
   }
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(wndConvFields.empty()){
       cout << "Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive."<<  endl;
     }
     else{
@@ -1609,7 +1604,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->node[iPoint]->GetDomain()){
+          if(geometry->nodes->GetDomain(iPoint)){
 
             buildFieldIndexCache = fieldIndexCache.empty();
 
@@ -1956,7 +1951,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);
 
-  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneHist()){
 
     return false;
 
@@ -2027,7 +2022,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 
   /*--- Update the current time only if the time iteration has changed ---*/
 
-  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != curTimeIter){
+  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != static_cast<int>(curTimeIter)) {
     SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
   }
 
@@ -2036,13 +2031,10 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
   su2double StopTime, UsedTime;
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
 
-  UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
+  StopTime = SU2_MPI::Wtime();
+
+  UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
   SetHistoryOutputValue("WALL_TIME", UsedTime);
 

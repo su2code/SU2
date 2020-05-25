@@ -4,14 +4,14 @@
  * \brief Header file for the class CMeshReaderFVM.
  *        The implementations are in the <i>CMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -83,7 +83,7 @@ public:
    * \brief Get the physical dimension of the problem (2 or 3).
    * \returns Physical dimension of the problem.
    */
-  inline unsigned short GetDimension() {
+  inline unsigned short GetDimension() const {
     return dimension;
   }
   
@@ -125,7 +125,7 @@ public:
    * \brief Get the total number of markers in the mesh zone.
    * \returns Total number of markers in the mesh zone.
    */
-  inline unsigned long GetNumberOfMarkers() {
+  inline unsigned long GetNumberOfMarkers() const {
     return numberOfMarkers;
   }
   
@@ -141,7 +141,7 @@ public:
    * \brief Get the number of local grid points within the linear partition on this rank.
    * \returns Number of local grid points within the linear partition on this rank.
    */
-  inline unsigned long GetNumberOfLocalPoints() {
+  inline unsigned long GetNumberOfLocalPoints() const {
     return numberOfLocalPoints;
   }
   
@@ -149,7 +149,7 @@ public:
    * \brief Get the number of global grid points within the mesh file.
    * \returns Number of global grid points within the mesh file.
    */
-  inline unsigned long GetNumberOfGlobalPoints() {
+  inline unsigned long GetNumberOfGlobalPoints() const {
     return numberOfGlobalPoints;
   }
   
@@ -157,7 +157,7 @@ public:
    * \brief Get the number of local elements within the linear partition on this rank.
    * \returns Number of local elements within the linear partition on this rank.
    */
-  inline unsigned long GetNumberOfLocalElements() {
+  inline unsigned long GetNumberOfLocalElements() const {
     return numberOfLocalElements;
   }
   
@@ -165,7 +165,7 @@ public:
    * \brief Get the number of global elements within the mesh file.
    * \returns Number of global elements within the mesh file.
    */
-  inline unsigned long GetNumberOfGlobalElements() {
+  inline unsigned long GetNumberOfGlobalElements() const {
     return numberOfGlobalElements;
   }
   

@@ -2,14 +2,14 @@
  * \file CTurboVertex.cpp
  * \brief Main classes for defining the turbo vertices of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
   unsigned short iDim;
  /*--- Pointers initialization ---*/
-  TurboNormal = NULL;
+  TurboNormal = nullptr;
   /*--- Allocate node, and face normal ---*/
   TurboNormal = new su2double [nDim];
 
@@ -41,6 +41,6 @@ CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : C
 
 CTurboVertex::~CTurboVertex() {
 
-  if (TurboNormal != NULL) delete [] TurboNormal;
+  delete [] TurboNormal;
 
 }

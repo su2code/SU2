@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,8 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <climits>
+#include <memory>
+#include <unordered_map>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -57,8 +59,9 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../geometry_structure_fem_part.hpp"
+#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
+#include "../adt_structure.hpp"
 
 using namespace std;
 
@@ -188,8 +191,8 @@ public:
   CPrimalGrid** elem;                    /*!< \brief Element vector (primal grid information). */
   CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
-  CPoint** node;                         /*!< \brief Node vector (dual grid information). */
-  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
+  CPoint* nodes;                         /*!< \brief Node vector (dual grid information). */
+  CEdge* edges;                          /*!< \brief Edge vector (dual grid information). */
   CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */
@@ -199,7 +202,7 @@ public:
 
   /*--- Partitioning-specific variables ---*/
 
-  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unordered_map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
   unsigned long *beg_node;           /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
   unsigned long *end_node;           /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
   unsigned long *nPointLinear;       /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
@@ -292,7 +295,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse);
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse) const;
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation.
@@ -303,7 +306,7 @@ public:
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse);
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse) const;
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.
@@ -335,7 +338,7 @@ public:
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage) const;
 
   /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to
@@ -344,7 +347,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data into the geometry class.
@@ -470,7 +473,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point);
+  long FindEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
@@ -478,7 +481,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  bool CheckEdge(unsigned long first_point, unsigned long second_point);
+  bool CheckEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the distance between a plane (defined by three point) and a point.
@@ -488,12 +491,12 @@ public:
    * \param[in] kCoord - Coordinates of the third point that defines the plane.
    * \return Signed distance.
    */
-  su2double Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord);
+  su2double Point2Plane_Distance(const su2double *Coord, const su2double *iCoord, const su2double *jCoord, const su2double *kCoord);
 
   /*!
    * \brief Create a file for testing the geometry.
    */
-  void TestGeometry(void);
+  void TestGeometry(void) const;
 
   /*!
    * \brief A virtual member.
@@ -576,21 +579,15 @@ public:
                                unsigned short &face_second_elem) {return false;}
 
   /*!
-   * \brief Computes the wall distance.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeWall_Distance(CConfig *config) {}
-
-  /*!
    * \brief Sets area to be positive in Z direction.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPositive_ZArea(CConfig *config) {}
 
   /*!
-   * \brief Setas connectivity between points.
+   * \brief Set connectivity between points.
    */
-  inline virtual void SetPoint_Connectivity(void) {}
+  inline virtual void SetPoint_Connectivity() {}
 
   /*!
    * \brief Orders the RCM.
@@ -922,7 +919,7 @@ public:
                               su2double MinXCoord, su2double MaxXCoord,
                               su2double MinYCoord, su2double MaxYCoord,
                               su2double MinZCoord, su2double MaxZCoord,
-                              su2double *FlowVariable,
+                              const su2double *FlowVariable,
                               vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                               vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                               bool original_surface, CConfig *config);
@@ -1222,38 +1219,38 @@ public:
    * \param[in] Intersection - Definition of the particular problem.
    * \return If the intersection has has been successful.
    */
-  bool SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                              su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
+  bool SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
+                              const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
 
   /*!
    * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
    */
-  bool RayIntersectsTriangle(su2double orig[3], su2double dir[3],
-  su2double vert0[3], su2double vert1[3], su2double vert2[3],
+  bool RayIntersectsTriangle(const su2double orig[3], const su2double dir[3],
+  const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
   su2double *intersect);
 
   /*!
    * \brief Segment Intersects Triangle
    */
-  bool SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
+  bool SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3],
   su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
   /*!
    * \brief Segment Intersects Line (for 2D FFD Intersection)
    */
-  bool SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
+  bool SegmentIntersectsLine(const su2double point0[2], const su2double point1[2], const su2double vert0[2], const su2double vert1[2]);
 
   /*!
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config);
+  void RegisterCoordinates(CConfig *config) const;
 
   /*!
    * \brief Register the coordinates of the mesh nodes as output.
    * \param[in] config
    */
-  void RegisterOutput_Coordinates(CConfig *config);
+  void RegisterOutput_Coordinates(CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
@@ -1603,12 +1600,6 @@ public:
   inline unsigned short GetMGLevel(void) const { return MGLevel; }
 
   /*!
-   * \brief Compute and store the volume of the elements.
-   * \param[in] config - Problem configuration.
-   */
-  void UpdateBoundaries(CConfig *config);
-
-  /*!
    * \brief A virtual member.
    * \param config - Config
    */
@@ -1621,7 +1612,7 @@ public:
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl);
+  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
    * \brief Get the edge to sparse pattern map.
@@ -1631,11 +1622,24 @@ public:
   const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
 
   /*!
+   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the map.
+   */
+  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \param[out] efficiency - optional output of the coloring efficiency.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetEdgeColoring(void);
+  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) edge coloring.
+   */
+  void SetNaturalEdgeColoring();
 
   /*!
    * \brief Get the group size used in edge coloring.
@@ -1646,15 +1650,48 @@ public:
   /*!
    * \brief Get the element coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \param[out] efficiency - optional output of the coloring efficiency.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetElementColoring(void);
+  const CCompressedSparsePatternUL& GetElementColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) element coloring.
+   */
+  void SetNaturalElementColoring();
 
   /*!
    * \brief Get the group size used in element coloring.
    * \return Group size.
    */
   inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const { return nullptr; }
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  virtual void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {}
+
+  /*!
+   * \brief Set wall distances a specific value
+   *  \param[in] val - new value for the wall distance at all points.
+   */
+  virtual void SetWallDistance(su2double val) {}
+
+  /*!
+   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   */
+  static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
 
 };
 

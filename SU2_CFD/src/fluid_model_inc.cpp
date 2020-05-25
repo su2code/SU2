@@ -2,14 +2,14 @@
  * fluid_model_inc.cpp
  * \brief Source of the incompressible fluid models.
  * \author T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,7 +96,7 @@ CIncIdealGasPolynomial::CIncIdealGasPolynomial() : CFluidModel() {
   Gamma            = 0.0;
   Cp               = 0.0;
   Cv               = 0.0;
-  b                = NULL;
+  b                = nullptr;
 }
 
 CIncIdealGasPolynomial::CIncIdealGasPolynomial(su2double val_gas_constant, su2double val_operating_pressure) : CFluidModel() {
@@ -115,12 +115,12 @@ CIncIdealGasPolynomial::CIncIdealGasPolynomial(su2double val_gas_constant, su2do
   /*--- The polynomial is constructed later. ---*/
   
   nPolyCoeffs = 0;
-  b           = NULL;
+  b           = nullptr;
   
 }
 
 CIncIdealGasPolynomial::~CIncIdealGasPolynomial(void) {
-  if (b != NULL) delete [] b;
+  delete [] b;
 }
 
 void CIncIdealGasPolynomial::SetCpModel(CConfig *config) {

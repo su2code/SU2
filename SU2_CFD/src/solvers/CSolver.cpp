@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,43 +60,43 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   /*--- Array initialization ---*/
 
-  OutputHeadingNames = NULL;
-  Residual_RMS       = NULL;
-  Residual_Max       = NULL;
-  Residual_BGS       = NULL;
-  Residual_Max_BGS   = NULL;
-  Residual           = NULL;
-  Residual_i         = NULL;
-  Residual_j         = NULL;
-  Point_Max          = NULL;
-  Point_Max_Coord    = NULL;
-  Point_Max_BGS      = NULL;
-  Point_Max_Coord_BGS = NULL;
-  Solution           = NULL;
-  Solution_i         = NULL;
-  Solution_j         = NULL;
-  Vector             = NULL;
-  Vector_i           = NULL;
-  Vector_j           = NULL;
-  Res_Conv           = NULL;
-  Res_Visc           = NULL;
-  Res_Sour           = NULL;
-  Res_Conv_i         = NULL;
-  Res_Visc_i         = NULL;
-  Res_Conv_j         = NULL;
-  Res_Visc_j         = NULL;
-  Jacobian_i         = NULL;
-  Jacobian_j         = NULL;
-  Jacobian_ii        = NULL;
-  Jacobian_ij        = NULL;
-  Jacobian_ji        = NULL;
-  Jacobian_jj        = NULL;
-  iPoint_UndLapl     = NULL;
-  jPoint_UndLapl     = NULL;
-  Smatrix            = NULL;
-  Cvector            = NULL;
-  Restart_Vars       = NULL;
-  Restart_Data       = NULL;
+  OutputHeadingNames = nullptr;
+  Residual_RMS       = nullptr;
+  Residual_Max       = nullptr;
+  Residual_BGS       = nullptr;
+  Residual_Max_BGS   = nullptr;
+  Residual           = nullptr;
+  Residual_i         = nullptr;
+  Residual_j         = nullptr;
+  Point_Max          = nullptr;
+  Point_Max_Coord    = nullptr;
+  Point_Max_BGS      = nullptr;
+  Point_Max_Coord_BGS = nullptr;
+  Solution           = nullptr;
+  Solution_i         = nullptr;
+  Solution_j         = nullptr;
+  Vector             = nullptr;
+  Vector_i           = nullptr;
+  Vector_j           = nullptr;
+  Res_Conv           = nullptr;
+  Res_Visc           = nullptr;
+  Res_Sour           = nullptr;
+  Res_Conv_i         = nullptr;
+  Res_Visc_i         = nullptr;
+  Res_Conv_j         = nullptr;
+  Res_Visc_j         = nullptr;
+  Jacobian_i         = nullptr;
+  Jacobian_j         = nullptr;
+  Jacobian_ii        = nullptr;
+  Jacobian_ij        = nullptr;
+  Jacobian_ji        = nullptr;
+  Jacobian_jj        = nullptr;
+  iPoint_UndLapl     = nullptr;
+  jPoint_UndLapl     = nullptr;
+  Smatrix            = nullptr;
+  Cvector            = nullptr;
+  Restart_Vars       = nullptr;
+  Restart_Data       = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
@@ -106,7 +106,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   IterLinSolver = 0;
 
   /*--- Initialize pointer for any verification solution. ---*/
-  VerificationSolution  = NULL;
+  VerificationSolution  = nullptr;
 
   /*--- Flags for the periodic BC communications. ---*/
 
@@ -121,8 +121,8 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   dynamic_grid = false;
 
   /*--- Container to store the vertex tractions. ---*/
-  VertexTraction = NULL;
-  VertexTractionAdjoint = NULL;
+  VertexTraction = nullptr;
+  VertexTractionAdjoint = nullptr;
 
   /*--- Auxiliary data needed for CFL adaption. ---*/
 
@@ -144,102 +144,102 @@ CSolver::~CSolver(void) {
 
   /*--- Public variables, may be accessible outside ---*/
 
-  if ( OutputHeadingNames != NULL) {
+  
     delete [] OutputHeadingNames;
-  }
+  
 
   /*--- Private ---*/
 
-  if (Residual_RMS != NULL) delete [] Residual_RMS;
-  if (Residual_Max != NULL) delete [] Residual_Max;
-  if (Residual != NULL) delete [] Residual;
-  if (Residual_i != NULL) delete [] Residual_i;
-  if (Residual_j != NULL) delete [] Residual_j;
-  if (Point_Max != NULL) delete [] Point_Max;
+  delete [] Residual_RMS;
+  delete [] Residual_Max;
+  delete [] Residual;
+  delete [] Residual_i;
+  delete [] Residual_j;
+  delete [] Point_Max;
 
-  if (Residual_BGS != NULL) delete [] Residual_BGS;
-  if (Residual_Max_BGS != NULL) delete [] Residual_Max_BGS;
-  if (Point_Max_BGS != NULL) delete [] Point_Max_BGS;
+  delete [] Residual_BGS;
+  delete [] Residual_Max_BGS;
+  delete [] Point_Max_BGS;
 
-  if (Point_Max_Coord != NULL) {
+  if (Point_Max_Coord != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord[iVar];
     }
     delete [] Point_Max_Coord;
   }
 
-  if (Point_Max_Coord_BGS != NULL) {
+  if (Point_Max_Coord_BGS != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord_BGS[iVar];
     }
     delete [] Point_Max_Coord_BGS;
   }
 
-  if (Solution != NULL) delete [] Solution;
-  if (Solution_i != NULL) delete [] Solution_i;
-  if (Solution_j != NULL) delete [] Solution_j;
-  if (Vector != NULL) delete [] Vector;
-  if (Vector_i != NULL) delete [] Vector_i;
-  if (Vector_j != NULL) delete [] Vector_j;
-  if (Res_Conv != NULL) delete [] Res_Conv;
-  if (Res_Visc != NULL) delete [] Res_Visc;
-  if (Res_Sour != NULL) delete [] Res_Sour;
-  if (Res_Conv_i != NULL) delete [] Res_Conv_i;
-  if (Res_Visc_i != NULL) delete [] Res_Visc_i;
-  if (Res_Visc_j != NULL) delete [] Res_Visc_j;
+  delete [] Solution;
+  delete [] Solution_i;
+  delete [] Solution_j;
+  delete [] Vector;
+  delete [] Vector_i;
+  delete [] Vector_j;
+  delete [] Res_Conv;
+  delete [] Res_Visc;
+  delete [] Res_Sour;
+  delete [] Res_Conv_i;
+  delete [] Res_Visc_i;
+  delete [] Res_Visc_j;
 
-  if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
+  delete [] iPoint_UndLapl;
+  delete [] jPoint_UndLapl;
 
-  if (Jacobian_i != NULL) {
+  if (Jacobian_i != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_i[iVar];
     delete [] Jacobian_i;
   }
 
-  if (Jacobian_j != NULL) {
+  if (Jacobian_j != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_j[iVar];
     delete [] Jacobian_j;
   }
 
-  if (Jacobian_ii != NULL) {
+  if (Jacobian_ii != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_ii[iVar];
     delete [] Jacobian_ii;
   }
 
-  if (Jacobian_ij != NULL) {
+  if (Jacobian_ij != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_ij[iVar];
     delete [] Jacobian_ij;
   }
 
-  if (Jacobian_ji != NULL) {
+  if (Jacobian_ji != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_ji[iVar];
     delete [] Jacobian_ji;
   }
 
-  if (Jacobian_jj != NULL) {
+  if (Jacobian_jj != nullptr) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
   }
 
-  if (Smatrix != NULL) {
+  if (Smatrix != nullptr) {
     for (iDim = 0; iDim < nDim; iDim++)
       delete [] Smatrix[iDim];
     delete [] Smatrix;
   }
 
-  if (Cvector != NULL) {
+  if (Cvector != nullptr) {
     for (iVar = 0; iVar < nVarGrad; iVar++)
       delete [] Cvector[iVar];
     delete [] Cvector;
   }
 
-  if (VertexTraction != NULL) {
+  if (VertexTraction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] VertexTraction[iMarker][iVertex];
@@ -248,7 +248,7 @@ CSolver::~CSolver(void) {
     delete [] VertexTraction;
   }
 
-  if (VertexTractionAdjoint != NULL) {
+  if (VertexTractionAdjoint != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] VertexTractionAdjoint[iMarker][iVertex];
@@ -257,12 +257,12 @@ CSolver::~CSolver(void) {
     delete [] VertexTractionAdjoint;
   }
 
-  if (nVertex != nullptr) delete [] nVertex;
+  delete [] nVertex;
 
-  if (Restart_Vars != NULL) {delete [] Restart_Vars; Restart_Vars = NULL;}
-  if (Restart_Data != NULL) {delete [] Restart_Data; Restart_Data = NULL;}
+  if (Restart_Vars != nullptr) {delete [] Restart_Vars; Restart_Vars = nullptr;}
+  if (Restart_Data != nullptr) {delete [] Restart_Data; Restart_Data = nullptr;}
 
-  if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
+  if (VerificationSolution != nullptr) {delete VerificationSolution; VerificationSolution = nullptr;}
 
 }
 
@@ -480,22 +480,22 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              we can accumulate the total control volume size on all
              periodic faces. ---*/
 
-            bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume() +
-            geometry->node[iPoint]->GetPeriodicVolume();
+            bufDSend[buf_offset] = geometry->nodes->GetVolume(iPoint) +
+            geometry->nodes->GetPeriodicVolume(iPoint);
 
             break;
 
           case PERIODIC_NEIGHBORS:
 
             nNeighbor = 0;
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              Neighbor_Point = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              Neighbor_Point = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Check if this neighbor lies on the periodic face so
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (!geometry->node[Neighbor_Point]->GetPeriodicBoundary())
+              if (!geometry->nodes->GetPeriodicBoundary(Neighbor_Point))
               nNeighbor++;
 
             }
@@ -512,27 +512,27 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              volume to the other side of the periodic face. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar] = LinSysRes.GetBlock(iPoint, iVar);
+              bufDSend[buf_offset+iVar] = LinSysRes(iPoint, iVar);
             }
 
             /*--- Rotate the momentum components of the residual array. ---*/
 
             if (rotate_periodic) {
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2));
+                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[0][1]*LinSysRes(iPoint, 2));
+                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[1][1]*LinSysRes(iPoint, 2));
               } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[0][2]*LinSysRes.GetBlock(iPoint, 3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[1][2]*LinSysRes.GetBlock(iPoint, 3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[2][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[2][2]*LinSysRes.GetBlock(iPoint, 3));
+                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[0][1]*LinSysRes(iPoint, 2) +
+                                          rotMatrix[0][2]*LinSysRes(iPoint, 3));
+                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[1][1]*LinSysRes(iPoint, 2) +
+                                          rotMatrix[1][2]*LinSysRes(iPoint, 3));
+                bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[2][1]*LinSysRes(iPoint, 2) +
+                                          rotMatrix[2][2]*LinSysRes(iPoint, 3));
               }
             }
             buf_offset += nVar;
@@ -634,13 +634,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar< nVar; iVar++)
             Und_Lapl[iVar] = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Solution differences ---*/
 
@@ -657,14 +657,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                   (base_nodes->GetSolution(jPoint,nVar-1) + Pressure_j));
                 }
 
-                boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-                boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
                 /*--- Both points inside the domain, or both in the boundary ---*/
 
                 if ((!boundary_i && !boundary_j) ||
                     ( boundary_i &&  boundary_j)) {
-                  if (geometry->node[iPoint]->GetDomain()) {
+                  if (geometry->nodes->GetDomain(iPoint)) {
                     for (iVar = 0; iVar< nVar; iVar++)
                     Und_Lapl[iVar] -= Diff[iVar];
                   }
@@ -673,7 +673,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
                 if (!boundary_i && boundary_j)
-                if (geometry->node[iPoint]->GetDomain()){
+                if (geometry->nodes->GetDomain(iPoint)){
                   for (iVar = 0; iVar< nVar; iVar++)
                   Und_Lapl[iVar] -= Diff[iVar];
                 }
@@ -725,13 +725,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              on both sides of the periodic face. ---*/
 
             Sensor_i = 0.0; Sensor_j = 0.0;
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Use density instead of pressure for incomp. flows. ---*/
 
@@ -743,14 +743,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   Pressure_j = base_nodes->GetPressure(jPoint);
                 }
 
-                boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-                boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
                 /*--- Both points inside domain, or both on boundary ---*/
 
                 if ((!boundary_i && !boundary_j) ||
                     (boundary_i && boundary_j)) {
-                  if (geometry->node[iPoint]->GetDomain()) {
+                  if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += Pressure_j - Pressure_i;
                     Sensor_j += Pressure_i + Pressure_j;
                   }
@@ -759,7 +759,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
                 if (!boundary_i && boundary_j) {
-                  if (geometry->node[iPoint]->GetDomain()) {
+                  if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += (Pressure_j - Pressure_i);
                     Sensor_j += (Pressure_i + Pressure_j);
 
@@ -884,7 +884,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get coordinates for the current point. ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
 
             /*--- Get the position vector from rotation center to point. ---*/
 
@@ -941,17 +941,17 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
-                Coord_j = geometry->node[jPoint]->GetCoord();
+                Coord_j = geometry->nodes->GetCoord(jPoint);
 
                 /*--- Get the position vector from rotation center. ---*/
 
@@ -1093,7 +1093,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get coordinates ---*/
 
-            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_i = geometry->nodes->GetCoord(iPoint);
 
             /*--- Get the position vector from rot center to point. ---*/
 
@@ -1150,17 +1150,17 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
-                Coord_j = geometry->node[jPoint]->GetCoord();
+                Coord_j = geometry->nodes->GetCoord(jPoint);
 
                 /*--- Get the position vector from rotation center. ---*/
 
@@ -1298,8 +1298,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetPrimitive(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
@@ -1396,8 +1396,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
+            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
+              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
               for (iVar = 0; iVar < nVar; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetSolution(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));
@@ -1608,8 +1608,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                total volume spread across the periodic faces. ---*/
 
               Volume = (bufDRecv[buf_offset] +
-                        geometry->node[iPoint]->GetPeriodicVolume());
-              geometry->node[iPoint]->SetPeriodicVolume(Volume);
+                        geometry->nodes->GetPeriodicVolume(iPoint));
+              geometry->nodes->SetPeriodicVolume(iPoint, Volume);
 
               break;
 
@@ -1617,9 +1617,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               /*--- Store the extra neighbors on the periodic face. ---*/
 
-              nNeighbor = (geometry->node[iPoint]->GetnNeighbor() +
+              nNeighbor = (geometry->nodes->GetnNeighbor(iPoint) +
                            bufSRecv[buf_offset]);
-              geometry->node[iPoint]->SetnNeighbor(nNeighbor);
+              geometry->nodes->SetnNeighbor(iPoint, nNeighbor);
 
               break;
 
@@ -1665,7 +1665,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               if (implicit_periodic) {
 
-                Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+                Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1958,10 +1958,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nVar*3;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_DISPONLY:
-      COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
     case SOLUTION_PRED:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -2103,10 +2099,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel_time_n(iPoint, iVar);
             }
             break;
-          case SOLUTION_DISPONLY:
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
-            break;
           case SOLUTION_PRED:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_Pred(iPoint, iVar);
@@ -2219,7 +2211,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetUndivided_Laplacian(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+              base_nodes->SetUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case SOLUTION_LIMITER:
             for (iVar = 0; iVar < nVar; iVar++)
@@ -2271,10 +2263,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetSolution_Accel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
             break;
-          case SOLUTION_DISPONLY:
-            for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-            break;
           case SOLUTION_PRED:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution_Pred(iPoint, iVar, bufDRecv[buf_offset+iVar]);
@@ -2318,7 +2306,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
 }
 
-void CSolver::ResetCFLAdapt(){
+void CSolver::ResetCFLAdapt() {
   NonLinRes_Series.clear();
   NonLinRes_Value = 0;
   NonLinRes_Func = 0;
@@ -2340,6 +2328,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+  const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
@@ -2374,6 +2363,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Check that we are meeting our nonlinear residual reduction target
      over time so that we do not get stuck in limit cycles. */
+
+    SU2_OMP_MASTER
+    { /* Only the master thread updates the shared variables. */
 
     Old_Func = New_Func;
     unsigned short Res_Count = 100;
@@ -2418,17 +2410,30 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      Reset the array so that we delay the next decrease for some iterations. */
 
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-      reduceCFL = true;
       NonLinRes_Counter = 0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
     }
 
+    } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+    SU2_OMP_BARRIER
+
+    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+      reduceCFL = true;
+    }
+
     /* Loop over all points on this grid and apply CFL adaption. */
 
-    su2double myCFLMin = 1e30;
-    su2double myCFLMax = 0.0;
-    su2double myCFLSum = 0.0;
+    su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+
+    SU2_OMP_MASTER
+    if ((iMesh == MESH_0) && fullComms) {
+      Min_CFL_Local = 1e30;
+      Max_CFL_Local = 0.0;
+      Avg_CFL_Local = 0.0;
+    }
+
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
 
       /* Get the current local flow CFL number at this point. */
@@ -2486,36 +2491,37 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
       }
 
-      /* Store min and max CFL for reporting on fine grid. */
+      /* Store min and max CFL for reporting on the fine grid. */
 
-      myCFLMin = min(CFL,myCFLMin);
-      myCFLMax = max(CFL,myCFLMax);
-      myCFLSum += CFL;
+      if ((iMesh == MESH_0) && fullComms) {
+        myCFLMin = min(CFL,myCFLMin);
+        myCFLMax = max(CFL,myCFLMax);
+        myCFLSum += CFL;
+      }
 
     }
 
     /* Reduce the min/max/avg local CFL numbers. */
 
-    su2double rbuf_min, sbuf_min;
-    sbuf_min = myCFLMin;
-    SU2_MPI::Allreduce(&sbuf_min, &rbuf_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    Min_CFL_Local = rbuf_min;
+    if ((iMesh == MESH_0) && fullComms) {
+      SU2_OMP_CRITICAL
+      { /* OpenMP reduction. */
+        Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
+        Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
+        Avg_CFL_Local += myCFLSum;
+      }
+      SU2_OMP_BARRIER
 
-    su2double rbuf_max, sbuf_max;
-    sbuf_max = myCFLMax;
-    SU2_MPI::Allreduce(&sbuf_max, &rbuf_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    Max_CFL_Local = rbuf_max;
-
-    su2double rbuf_sum, sbuf_sum;
-    sbuf_sum = myCFLSum;
-    SU2_MPI::Allreduce(&sbuf_sum, &rbuf_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    Avg_CFL_Local = rbuf_sum;
-
-    unsigned long Global_nPointDomain;
-    unsigned long Local_nPointDomain = geometry[iMesh]->GetnPointDomain();
-    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    Avg_CFL_Local /= (su2double)Global_nPointDomain;
+      SU2_OMP_MASTER
+      { /* MPI reduction. */
+        myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
+        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
+      }
+      SU2_OMP_BARRIER
+    }
 
   }
 
@@ -2549,8 +2555,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 
   /*--- Set the L2 Norm residual in all the processors ---*/
 
-  sbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
-  rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  sbuf_residual = new su2double[nVar];
+  rbuf_residual = new su2double[nVar];
 
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
 
@@ -2560,15 +2566,15 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
-  } else {
-
+  }
+  else {
     /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      rbuf_residual[iVar] = sbuf_residual[iVar];
     Global_nPointDomain = geometry->GetnPointDomain();
 
   }
-
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
@@ -2587,13 +2593,13 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 
   if (config->GetComm_Level() == COMM_FULL) {
 
-    sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
-    sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
-    sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+    sbuf_residual = new su2double [nVar]();
+    sbuf_point = new unsigned long [nVar]();
+    sbuf_coord = new su2double[nVar*nDim]();
 
-    rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
-    rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
-    rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+    rbuf_residual = new su2double [nProcessor*nVar]();
+    rbuf_point = new unsigned long [nProcessor*nVar]();
+    rbuf_coord = new su2double[nProcessor*nVar*nDim]();
 
     for (iVar = 0; iVar < nVar; iVar++) {
       sbuf_residual[iVar] = GetRes_Max(iVar);
@@ -2723,14 +2729,15 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
   unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
   unsigned long iVertex, iEdge;
-  su2double ProjGridVel, *Normal;
+  su2double ProjGridVel;
+  const su2double* Normal;
 
   /*--- Loop interior edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
-    const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
+    const unsigned long iPoint = geometry->edges->GetNode(iEdge,0);
+    const unsigned long jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Solution at each edge point ---*/
 
@@ -2742,12 +2749,12 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
     /*--- Grid Velocity at each edge point ---*/
 
-    su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-    su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+    su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+    su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
     for (iDim = 0; iDim < nDim; iDim++)
       Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
 
     ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
@@ -2779,7 +2786,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
         /*--- Grid Velocity at each edge point ---*/
 
-        su2double *GridVel = geometry->node[Point]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(Point);
 
         /*--- Summed normal components ---*/
 
@@ -2886,112 +2893,20 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 }
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
-  unsigned short iDim, jDim, iVar, iNeigh;
-  unsigned long iPoint, jPoint;
-  su2double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
-  r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
-  z22, z23, z33, product;
-  su2double **Cvector;
 
-  /*--- Note that all nVar entries in this routine have been changed to nDim ---*/
-  Cvector = new su2double* [nDim];
-  for (iVar = 0; iVar < nDim; iVar++)
-    Cvector[iVar] = new su2double [nDim];
+  /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
-  /*--- Loop over points of the grid ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  const auto& gridVel = geometry->nodes->GetGridVel();
+  auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
+  auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
 
-    Coord_i = geometry->node[iPoint]->GetCoord();
-    Solution_i = geometry->node[iPoint]->GetGridVel();
-
-    /*--- Inizialization of variables ---*/
-    for (iVar = 0; iVar < nDim; iVar++)
-      for (iDim = 0; iDim < nDim; iDim++)
-        Cvector[iVar][iDim] = 0.0;
-    r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      Coord_j = geometry->node[jPoint]->GetCoord();
-      Solution_j = geometry->node[jPoint]->GetGridVel();
-
-      weight = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-      /*--- Sumations for entries of upper triangular matrix R ---*/
-      r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
-      r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
-      r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/(weight);
-      if (nDim == 3) {
-        r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
-      }
-
-      /*--- Entries of c:= transpose(A)*b ---*/
-      for (iVar = 0; iVar < nDim; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
-    }
-
-    /*--- Entries of upper triangular matrix R ---*/
-    r11 = sqrt(r11);
-    r12 = r12/(r11);
-    r22 = sqrt(r22-r12*r12);
-    if (nDim == 3) {
-      r13 = r13/(r11);
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
-    }
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    if (nDim == 2) {
-      detR2 = (r11*r22)*(r11*r22);
-      Smatrix[0][0] = (r12*r12+r22*r22)/(detR2);
-      Smatrix[0][1] = -r11*r12/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = r11*r11/(detR2);
-    }
-    else {
-      detR2 = (r11*r22*r33)*(r11*r22*r33);
-      z11 = r22*r33;
-      z12 = -r12*r33;
-      z13 = r12*r23-r13*r22;
-      z22 = r11*r33;
-      z23 = -r11*r23;
-      z33 = r11*r22;
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/(detR2);
-      Smatrix[0][1] = (z12*z22+z13*z23)/(detR2);
-      Smatrix[0][2] = (z13*z33)/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = (z22*z22+z23*z23)/(detR2);
-      Smatrix[1][2] = (z23*z33)/(detR2);
-      Smatrix[2][0] = Smatrix[0][2];
-      Smatrix[2][1] = Smatrix[1][2];
-      Smatrix[2][2] = (z33*z33)/(detR2);
-    }
-    /*--- Computation of the gradient: S*c ---*/
-    for (iVar = 0; iVar < nDim; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        product = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
-        geometry->node[iPoint]->SetGridVel_Grad(iVar, iDim, product);
-      }
-    }
-  }
-
-  /*--- Deallocate memory ---*/
-  for (iVar = 0; iVar < nDim; iVar++)
-    delete [] Cvector[iVar];
-  delete [] Cvector;
-
+  computeGradientsLeastSquares(nullptr, GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
+                               true, gridVel, 0, nDim, gridVelGrad, rmatrix);
 }
 
 void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iDim, jDim, iNeigh, iMarker, Boundary;
+  unsigned short iDim, jDim, iNeigh, iMarker;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint, iVertex;
   su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j;
@@ -3005,99 +2920,92 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop over boundary markers to select those for Euler or NS walls ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    switch (Boundary) {
-      case EULER_WALL:
-      case HEAT_FLUX:
-      case ISOTHERMAL:
-      case CHT_WALL_INTERFACE:
 
-        /*--- Loop over points on the surface (Least-Squares approximation) ---*/
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) {
-            Coord_i = geometry->node[iPoint]->GetCoord();
-            AuxVar_i = base_nodes->GetAuxVar(iPoint);
+    if (config->GetSolid_Wall(iMarker)) {
 
-            /*--- Inizialization of variables ---*/
+      /*--- Loop over points on the surface (Least-Squares approximation) ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->nodes->GetDomain(iPoint)) {
+          Coord_i = geometry->nodes->GetCoord(iPoint);
+          AuxVar_i = base_nodes->GetAuxVar(iPoint);
+
+          /*--- Inizialization of variables ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            Cvector[iDim] = 0.0;
+          su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+
+          for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+            jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+            Coord_j = geometry->nodes->GetCoord(jPoint);
+            AuxVar_j = base_nodes->GetAuxVar(jPoint);
+
+            su2double weight = 0;
             for (iDim = 0; iDim < nDim; iDim++)
-              Cvector[iDim] = 0.0;
-            su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+              weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 
-            for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-              jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-              Coord_j = geometry->node[jPoint]->GetCoord();
-              AuxVar_j = base_nodes->GetAuxVar(jPoint);
-
-              su2double weight = 0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-              /*--- Sumations for entries of upper triangular matrix R ---*/
-              r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-              r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-              r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
-              if (nDim == 3) {
-                r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-                r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
-              }
-
-              /*--- Entries of c:= transpose(A)*b ---*/
-              for (iDim = 0; iDim < nDim; iDim++)
-                Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
-            }
-
-            /*--- Entries of upper triangular matrix R ---*/
-            r11 = sqrt(r11);
-            r12 = r12/r11;
-            r22 = sqrt(r22-r12*r12);
+            /*--- Sumations for entries of upper triangular matrix R ---*/
+            r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+            r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+            r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
             if (nDim == 3) {
-              r13 = r13/r11;
-              r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-              r33 = sqrt(r33-r23*r23-r13*r13);
+              r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+              r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+              r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+              r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
             }
-            /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-            if (nDim == 2) {
-              su2double detR2 = (r11*r22)*(r11*r22);
-              Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-              Smatrix[0][1] = -r11*r12/detR2;
-              Smatrix[1][0] = Smatrix[0][1];
-              Smatrix[1][1] = r11*r11/detR2;
-            }
-            else {
-              su2double detR2 = (r11*r22*r33)*(r11*r22*r33);
-              su2double z11, z12, z13, z22, z23, z33; // aux vars
-              z11 = r22*r33;
-              z12 = -r12*r33;
-              z13 = r12*r23-r13*r22;
-              z22 = r11*r33;
-              z23 = -r11*r23;
-              z33 = r11*r22;
-              Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-              Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-              Smatrix[0][2] = (z13*z33)/detR2;
-              Smatrix[1][0] = Smatrix[0][1];
-              Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-              Smatrix[1][2] = (z23*z33)/detR2;
-              Smatrix[2][0] = Smatrix[0][2];
-              Smatrix[2][1] = Smatrix[1][2];
-              Smatrix[2][2] = (z33*z33)/detR2;
-            }
-            /*--- Computation of the gradient: S*c ---*/
-            su2double product;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              product = 0.0;
-              for (jDim = 0; jDim < nDim; jDim++)
-                product += Smatrix[iDim][jDim]*Cvector[jDim];
-              base_nodes->SetAuxVarGradient(iPoint, iDim, product);
-            }
+
+            /*--- Entries of c:= transpose(A)*b ---*/
+            for (iDim = 0; iDim < nDim; iDim++)
+              Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
           }
-        } /*--- End of loop over surface points ---*/
-        break;
-      default:
-        break;
+
+          /*--- Entries of upper triangular matrix R ---*/
+          r11 = sqrt(r11);
+          r12 = r12/r11;
+          r22 = sqrt(r22-r12*r12);
+          if (nDim == 3) {
+            r13 = r13/r11;
+            r23 = r23_a/r22 - r23_b*r12/(r11*r22);
+            r33 = sqrt(r33-r23*r23-r13*r13);
+          }
+          /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+          if (nDim == 2) {
+            su2double detR2 = (r11*r22)*(r11*r22);
+            Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+            Smatrix[0][1] = -r11*r12/detR2;
+            Smatrix[1][0] = Smatrix[0][1];
+            Smatrix[1][1] = r11*r11/detR2;
+          }
+          else {
+            su2double detR2 = (r11*r22*r33)*(r11*r22*r33);
+            su2double z11, z12, z13, z22, z23, z33; // aux vars
+            z11 = r22*r33;
+            z12 = -r12*r33;
+            z13 = r12*r23-r13*r22;
+            z22 = r11*r33;
+            z23 = -r11*r23;
+            z33 = r11*r22;
+            Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+            Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+            Smatrix[0][2] = (z13*z33)/detR2;
+            Smatrix[1][0] = Smatrix[0][1];
+            Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+            Smatrix[1][2] = (z23*z33)/detR2;
+            Smatrix[2][0] = Smatrix[0][2];
+            Smatrix[2][1] = Smatrix[1][2];
+            Smatrix[2][2] = (z33*z33)/detR2;
+          }
+          /*--- Computation of the gradient: S*c ---*/
+          su2double product;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            product = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++)
+              product += Smatrix[iDim][jDim]*Cvector[jDim];
+            base_nodes->SetAuxVarGradient(iPoint, iDim, product);
+          }
+        }
+      } /*--- End of loop over surface points ---*/
     }
   }
 
@@ -3453,14 +3361,14 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   string text_line;
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
-  unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
   /*--- First, we load the restart file for time n ---*/
 
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
   filename_n = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
@@ -3496,7 +3404,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       if (nDim == 3){
         Coord[2] = PrintingToolbox::stod(point_line[3]);
       }
-      geometry->node[iPoint_Local]->SetCoord_n(Coord);
+      geometry->nodes->SetCoord_n(iPoint_Local, Coord);
 
       iPoint_Global_Local++;
     }
@@ -3504,13 +3412,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  rbuf_NotMatching = 0; sbuf_NotMatching = 0;
-
-  if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < geometry->GetnPointDomain()) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
@@ -3530,7 +3432,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-2;
     filename_n1 = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
@@ -3568,7 +3471,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
           Coord[2] = PrintingToolbox::stod(point_line[3]);
         }
 
-        geometry->node[iPoint_Local]->SetCoord_n1(Coord);
+        geometry->nodes->SetCoord_n1(iPoint_Local, Coord);
 
         iPoint_Global_Local++;
       }
@@ -3577,13 +3480,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    rbuf_NotMatching = 0; sbuf_NotMatching = 0;
-
-    if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
+    if (iPoint_Global_Local < geometry->GetnPointDomain()) {
       SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
@@ -3934,16 +3831,16 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
   int *blocklen = new int[geometry->GetnPointDomain()];
-  int *displace = new int[geometry->GetnPointDomain()];
+  MPI_Aint *displace = new MPI_Aint[geometry->GetnPointDomain()];
   int counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
       blocklen[counter] = nFields;
-      displace[counter] = iPoint_Global*nFields;
+      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
       counter++;
     }
   }
-  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -3974,7 +3871,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
 }
 
-void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) {
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) const {
 
   su2double AoA_ = config->GetAoA();
   su2double AoS_ = config->GetAoS();
@@ -4163,7 +4060,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                                CConfig *config,
                                int val_iter,
                                unsigned short val_kind_solver,
-                               unsigned short val_kind_marker) {
+                               unsigned short val_kind_marker) const {
 
   /*-- First, set the solver and marker kind for the particular problem at
    hand. Note that, in the future, these routines can be used for any solver
@@ -4176,7 +4073,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
-  su2double Area_Children, Area_Parent, *Coord, dist, min_dist, Interp_Radius, Theta;
+  su2double Area_Children, Area_Parent, dist, min_dist, Interp_Radius, Theta;
+  const su2double *Coord = nullptr;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
@@ -4191,9 +4089,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   string profile_filename = config->GetInlet_FileName();
   ifstream inlet_file;
   string Interpolation_Function, Interpolation_Type;
-  bool Interpolate;
+  bool Interpolate = false;
 
-  su2double *Normal       = new su2double[nDim];
+  su2double *Normal = new su2double[nDim];
 
   unsigned long Marker_Counter = 0;
 
@@ -4250,207 +4148,218 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
-      /*--- Get tag in order to identify the correct inlet data. ---*/
+    /*--- Skip if this is the wrong type of marker. ---*/
 
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
 
-      for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+    /*--- Get tag in order to identify the correct inlet data. ---*/
 
-        /*--- If we have found the matching marker string, continue. ---*/
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-        if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
+    for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
 
-          /*--- Increment our counter for marker matches. ---*/
+      /*--- If we have not found the matching marker string, continue to next marker. ---*/
 
-          Marker_Counter++;
+      if (profileReader.GetTagForProfile(jMarker) != Marker_Tag) continue;
 
-          /*--- Get data for this profile. ---*/
+      /*--- Increment our counter for marker matches. ---*/
 
-          vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-          unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-          vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
+      Marker_Counter++;
 
-          /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
-          vector<su2double> Inlet_Values(nCol_InletFile+nDim);
-          vector<su2double> Inlet_Interpolated(nColumns);
+      /*--- Get data for this profile. ---*/
 
-          unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
+      vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
+      unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+      vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
-          /*--- Pointer to call Set and Evaluate functions. ---*/
-          vector<C1DInterpolation*> interpolator (nColumns);
-          string interpolation_function, interpolation_type;
+      /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
+      vector<su2double> Inlet_Values(nCol_InletFile+nDim);
+      vector<su2double> Inlet_Interpolated(nColumns);
 
-          /*--- Define the reference for interpolation. ---*/
-          unsigned short radius_index=0;
-          vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
-          vector<su2double> Interpolation_Column (nRows);
+      unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
-          switch(config->GetKindInletInterpolationFunction()){
+      /*--- Pointer to call Set and Evaluate functions. ---*/
+      vector<C1DInterpolation*> interpolator (nColumns);
+      string interpolation_function, interpolation_type;
 
-            case (NONE):
-            Interpolate = false;
-            break;
+      /*--- Define the reference for interpolation. ---*/
+      unsigned short radius_index=0;
+      vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
+      vector<su2double> Interpolation_Column (nRows);
 
-            case (AKIMA_1D):
-              for (unsigned short iCol=0; iCol < nColumns; iCol++){
-                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
-                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
-                  interpolation_function = "AKIMA";
-                  Interpolate = true;
-                }
-            break;
-            
-            case (LINEAR_1D):
-              for (unsigned short iCol=0; iCol < nColumns; iCol++){
-                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
-                  interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
-                  interpolation_function = "LINEAR";
-                  Interpolate = true;
-                }
-            break;
-            
-            default:
-              SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
-            break;
+      switch(config->GetKindInletInterpolationFunction()){
+
+        case (NONE):
+          Interpolate = false;
+          break;
+
+        case (AKIMA_1D):
+          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+            Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+            interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
+            interpolation_function = "AKIMA";
+            Interpolate = true;
           }
+          break;
 
-          if (Interpolate == true){
-            switch(config->GetKindInletInterpolationType()){
-              case(VR_VTHETA):
-                interpolation_type="VR_VTHETA";
-              break;
-              case(ALPHA_PHI):
-                interpolation_type="ALPHA_PHI";
-              break;
-              }
-              cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<" for "<< Marker_Tag<<endl;
-              if(nDim == 3)
-                cout<<"Ensure the flow direction is in z direction"<<endl;
-              else if (nDim == 2)
-                cout<<"Ensure the flow direction is in x direction"<<endl;
+        case (LINEAR_1D):
+          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+            Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+            interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
+            interpolation_function = "LINEAR";
+            Interpolate = true;
           }
-          else if(Interpolate == false)
-            cout<<"No Inlet Interpolation being used"<<endl;
+          break;
 
-            /*--- Loop through the nodes on this marker. ---*/
-
-            for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-            
-              iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
-
-            if(Interpolate == false){ 
-
-              min_dist = 1e16;
-
-                /*--- Find the distance to the closest point in our inlet profile data. ---*/
-                
-                for (iRow = 0; iRow < nRows; iRow++) {
-
-                    /*--- Get the coords for this data point. ---*/
-
-                    index = iRow*nColumns;
-
-                    dist = 0.0;
-                    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-                    dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
-                    dist = sqrt(dist);
-
-                    /*--- Check is this is the closest point and store data if so. ---*/
-
-                    if (dist < min_dist) {
-                    min_dist = dist;
-                    for (iVar = 0; iVar < nColumns; iVar++)
-                        Inlet_Values[iVar] = Inlet_Data[index+iVar];
-                    }
-
-                }
-
-                /*--- If the diff is less than the tolerance, match the two.
-                We could modify this to simply use the nearest neighbor, or
-                eventually add something more elaborate here for interpolation. ---*/
-
-                if (min_dist < tolerance) {
-
-                    solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-
-                } else {
-
-                    unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
-                    cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
-                    cout << "and point " << GlobalIndex;
-                    cout << std::scientific;
-                    cout << " at location: [" << Coord[0] << ", " << Coord[1];
-                    if (nDim ==3) error_msg << ", " << Coord[2];
-                    cout << "]" << endl;
-                    cout << "Distance to closest point: " << min_dist << endl;
-                    cout << "Current tolerance:         " << tolerance << endl;
-                    cout << endl;
-                    cout << "You can widen the tolerance for point matching by changing the value" << endl;
-                    cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
-                    local_failure++;
-                    break;
-                }
-
-            }
-
-            else if(Interpolate == true){
-
-              /* --- Calculating the radius and angle of the vertex ---*/
-              /* --- Flow should be in z direction for 3D cases ---*/
-              /* --- Or in x direction for 2D cases ---*/
-              Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-              Theta = atan2(Coord[1],Coord[0]);
-
-              /* --- Evaluating and saving the final spline data ---*/
-              for  (unsigned short iVar=0; iVar < nColumns; iVar++){
-
-              /*---Evaluate spline will get the respective value of the Data set (column) specified
-              for that interpolator[iVar], cycling through all columns to get all the 
-              data for that vertex ---*/
-                Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
-                if (interpolator[iVar]->GetPointMatch() == false){
-                    cout << "WARNING: Did not find a match between the radius in the inlet file " ;
-                    cout << std::scientific;
-                    cout << "at location: [" << Coord[0] << ", " << Coord[1];
-                    if (nDim == 3) {cout << ", " << Coord[2];}
-                    cout << "]";
-                    cout << " with Radius: "<< Interp_Radius << endl;
-                    cout << "You can add a row for Radius: " << Interp_Radius <<" in the inlet file ";
-                    cout << "to eliminate this issue or give proper data" << endl;
-                    local_failure++;
-                    break;
-                }
-              }
-
-              /* --- Correcting for Interpolation Type ---*/
-              switch(config->GetKindInletInterpolationType()){
-              case(VR_VTHETA):
-                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
-              break;
-              case(ALPHA_PHI):
-                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
-              break;
-              }
-
-              solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-              
-              for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
-                Inlet_Data_Interpolated[iVertex*(nCol_InletFile+nDim)+iVar] = Inlet_Values[iVar];
-            }
-          }
-            if(config->GetPrintInlet_InterpolatedData() == true)
-                PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim, nCol_InletFile+nDim);
-            
-            for (int i=0; i<nColumns;i++)
-              delete interpolator[i];
-        }
+        default:
+          SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
+          break;
       }
-      if (local_failure > 0) break;
-    }
-  }
+
+      if (Interpolate == true){
+        switch(config->GetKindInletInterpolationType()){
+          case(VR_VTHETA):
+            interpolation_type="VR_VTHETA";
+            break;
+          case(ALPHA_PHI):
+            interpolation_type="ALPHA_PHI";
+            break;
+        }
+        cout<<"Inlet Interpolation being done using "<<interpolation_function
+            <<" function and type "<<interpolation_type<<" for "<< Marker_Tag<<endl;
+        if(nDim == 3)
+          cout<<"Ensure the flow direction is in z direction"<<endl;
+        else if (nDim == 2)
+          cout<<"Ensure the flow direction is in x direction"<<endl;
+      }
+      else if(Interpolate == false) {
+        cout<<"No Inlet Interpolation being used"<<endl;
+      }
+
+      /*--- Loop through the nodes on this marker. ---*/
+
+      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+        iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        Coord = geometry[MESH_0]->nodes->GetCoord(iPoint);
+
+        if(Interpolate == false) {
+
+          min_dist = 1e16;
+
+          /*--- Find the distance to the closest point in our inlet profile data. ---*/
+
+          for (iRow = 0; iRow < nRows; iRow++) {
+
+            /*--- Get the coords for this data point. ---*/
+
+            index = iRow*nColumns;
+
+            dist = 0.0;
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
+            dist = sqrt(dist);
+
+            /*--- Check is this is the closest point and store data if so. ---*/
+
+            if (dist < min_dist) {
+            min_dist = dist;
+            for (iVar = 0; iVar < nColumns; iVar++)
+              Inlet_Values[iVar] = Inlet_Data[index+iVar];
+            }
+
+          }
+
+          /*--- If the diff is less than the tolerance, match the two.
+          We could modify this to simply use the nearest neighbor, or
+          eventually add something more elaborate here for interpolation. ---*/
+
+          if (min_dist < tolerance) {
+
+            solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+          } else {
+
+            unsigned long GlobalIndex = geometry[MESH_0]->nodes->GetGlobalIndex(iPoint);
+            cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+            cout << "and point " << GlobalIndex;
+            cout << std::scientific;
+            cout << " at location: [" << Coord[0] << ", " << Coord[1];
+            if (nDim ==3) error_msg << ", " << Coord[2];
+            cout << "]" << endl;
+            cout << "Distance to closest point: " << min_dist << endl;
+            cout << "Current tolerance:         " << tolerance << endl;
+            cout << endl;
+            cout << "You can widen the tolerance for point matching by changing the value" << endl;
+            cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
+            local_failure++;
+            break;
+          }
+
+        }
+
+        else if(Interpolate == true) {
+
+          /* --- Calculating the radius and angle of the vertex ---*/
+          /* --- Flow should be in z direction for 3D cases ---*/
+          /* --- Or in x direction for 2D cases ---*/
+          Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
+          Theta = atan2(Coord[1],Coord[0]);
+
+          /* --- Evaluating and saving the final spline data ---*/
+          for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+
+            /*---Evaluate spline will get the respective value of the Data set (column) specified
+            for that interpolator[iVar], cycling through all columns to get all the
+            data for that vertex ---*/
+            Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
+            if (interpolator[iVar]->GetPointMatch() == false){
+              cout << "WARNING: Did not find a match between the radius in the inlet file " ;
+              cout << std::scientific;
+              cout << "at location: [" << Coord[0] << ", " << Coord[1];
+              if (nDim == 3) {cout << ", " << Coord[2];}
+              cout << "]";
+              cout << " with Radius: "<< Interp_Radius << endl;
+              cout << "You can add a row for Radius: " << Interp_Radius <<" in the inlet file ";
+              cout << "to eliminate this issue or give proper data" << endl;
+              local_failure++;
+              break;
+            }
+          }
+
+          /* --- Correcting for Interpolation Type ---*/
+          switch(config->GetKindInletInterpolationType()){
+          case(VR_VTHETA):
+            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
+          break;
+          case(ALPHA_PHI):
+            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
+          break;
+          }
+
+          solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+          for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
+            Inlet_Data_Interpolated[iVertex*(nCol_InletFile+nDim)+iVar] = Inlet_Values[iVar];
+
+        }
+
+      } // end iVertex loop
+
+      if(config->GetPrintInlet_InterpolatedData() == true) {
+          PrintInletInterpolatedData(Inlet_Data_Interpolated, profileReader.GetTagForProfile(jMarker),
+                                     geometry[MESH_0]->nVertex[iMarker], nDim, nCol_InletFile+nDim);
+      }
+
+      for (int i=0; i<nColumns;i++)
+        delete interpolator[i];
+
+    } // end jMarker loop
+
+    if (local_failure > 0) break;
+
+  } // end iMarker loop
 
   SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 
@@ -4473,8 +4382,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
             nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-            if(Interpolate == true)
-              nColumns+=nDim;
           }
         }
         vector<su2double> Inlet_Values(nColumns);
@@ -4503,8 +4410,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            children from the interior volume will not be included in
            the averaging. ---*/
 
-          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+          for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+            Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
             for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
             Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
                                                                            Marker_Tag, geometry[iMesh-1], config);
@@ -4588,7 +4495,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
         iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
         /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           // Retrieve the values of pressure
           Pn = base_nodes->GetPressure(iPoint);
@@ -4658,7 +4565,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Register the vertex traction as output ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -4690,7 +4597,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Set the adjoint of the vertex traction from the value received ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -4716,7 +4623,7 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
   switch( config->GetVerification_Solution() ) {
 
     case NO_VERIFICATION_SOLUTION:
-      VerificationSolution = NULL; break;
+      VerificationSolution = nullptr; break;
     case INVISCID_VORTEX:
       VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
     case RINGLEB:
@@ -4751,28 +4658,22 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
   su2double residual;
 
   /*--- Set Residuals to zero ---*/
-
   for (iVar = 0; iVar < nVar; iVar++){
     SetRes_BGS(iVar,0.0);
     SetRes_Max_BGS(iVar,0.0,0);
   }
 
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = base_nodes->GetSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+  /*--- Set the residuals and BGSSolution_k to solution for next multizone outer iteration. ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double domain = (iPoint < nPointDomain);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      residual = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
+      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
+      AddRes_BGS(iVar, residual*residual);
+      AddRes_Max_BGS(iVar, fabs(residual), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
 
   SetResidual_BGS(geometry, config);
 
-}
-
-
-void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  base_nodes->Set_BGSSolution_k();
 }

@@ -2,14 +2,14 @@
  * \file transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,17 +73,17 @@ public:
   /*!
    * \brief return viscosity value.
    */
-  su2double GetViscosity(void);
+  su2double GetViscosity(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdmudrho_T(void);
+  su2double Getdmudrho_T(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdmudT_rho(void);
+  su2double GetdmudT_rho(void) const;
 
   /*!
    * \brief Set Viscosity.
@@ -121,7 +121,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantViscosity(void);
+  ~CConstantViscosity(void) override;
    
 };
 
@@ -153,17 +153,17 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSutherland(void);
+  ~CSutherland(void) override;
   
   /*!
    * \brief Set Viscosity.
    */
-  void SetViscosity(su2double T, su2double rho);
+  void SetViscosity(su2double T, su2double rho) override;
   
   /*!
    * \brief Set Viscosity Derivatives.
    */
-  void SetDerViscosity(su2double T, su2double rho);
+  void SetDerViscosity(su2double T, su2double rho) override;
   
 };
 
@@ -187,17 +187,17 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b);
+  CPolynomialViscosity(unsigned short val_nCoeffs, const su2double* val_b);
   
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialViscosity(void);
+  ~CPolynomialViscosity(void) override;
   
   /*!
    * \brief Set Viscosity.
    */
-  void SetViscosity(su2double T, su2double rho);
+  void SetViscosity(su2double T, su2double rho) override;
   
 };
 
@@ -228,17 +228,17 @@ public:
   /*!
    * \brief return viscosity value.
    */
-  su2double GetConductivity(void);
+  su2double GetConductivity(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdktdrho_T(void);
+  su2double Getdktdrho_T(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdktdT_rho(void);
+  su2double GetdktdT_rho(void) const;
 
   /*!
    * \brief Set Thermal conductivity.
@@ -275,7 +275,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantConductivity(void);
+  ~CConstantConductivity(void) override;
 
 };
 
@@ -306,12 +306,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantConductivityRANS(void);
+  ~CConstantConductivityRANS(void) override;
   
   /*!
    * \brief Set effective thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
   
 };
 
@@ -335,7 +335,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantPrandtl(void);
+  ~CConstantPrandtl(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -347,12 +347,12 @@ public:
    * \brief par1 -> Cp.
    * \brief par2 -> Mu.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
 
   /*!
    * \brief Set Thermal conductivity derivatives.
    */
-  void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+  void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) override;
 
 };
 
@@ -378,7 +378,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantPrandtlRANS(void);
+  ~CConstantPrandtlRANS(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -388,7 +388,7 @@ public:
   /*!
    * \brief Set effective thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
 
 };
 
@@ -412,17 +412,17 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialConductivity(void);
+  ~CPolynomialConductivity(void) override;
   
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b);
+  CPolynomialConductivity(unsigned short val_nCoeffs, const su2double* val_b);
   
   /*!
    * \brief Set Thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
   
 };
 
@@ -447,17 +447,17 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialConductivityRANS(void);
+  ~CPolynomialConductivityRANS(void) override;
   
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb);
+  CPolynomialConductivityRANS(unsigned short val_nCoeffs, const su2double* val_b, su2double pr_turb);
   
   /*!
    * \brief Set Thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
   
 };
 

@@ -3,14 +3,14 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.4 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -885,13 +885,16 @@ def expand_part(name,config):
 def expand_time(name,config):
     if 'TIME_MARCHING' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
+        n_start_time = 0
+        if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') == 'YES':
+            n_start_time = int(config['RESTART_ITER'])
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%05d')
-            names = [name_pat%i for i in range(n_time)]
+            names = [name_pat%i for i in range(n_start_time, n_time)]
         else:
             for n in range(len(name)):
                 name_pat = add_suffix(name[n], '%05d')
-                names    = [name_pat%i for i in range(n_time)]
+                names    = [name_pat%i for i in range(n_start_time, n_time)]
     else:
         if not isinstance(name, list):
             names = [name]

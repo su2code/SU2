@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -124,7 +124,7 @@ public:
    * \brief Get the number of profiles found within the input file.
    * \returns Number of profiles found within the input file.
    */
-  inline unsigned long GetNumberOfProfiles() {
+  inline unsigned long GetNumberOfProfiles() const {
     return numberOfProfiles;
   }
   

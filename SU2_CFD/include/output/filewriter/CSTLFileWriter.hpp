@@ -2,14 +2,14 @@
  * \file CSTLFileWriter.hpp
  * \brief Headers fo the STL file writer class.
  * \author T. Kattmann, T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
  * \class CSTLFileWriter
  * \brief Class for writing STL output files.
  * \author T. Kattmann, T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  */
 class CSTLFileWriter final : public CFileWriter{
 private:
@@ -59,10 +59,10 @@ private:
   vector<int> values_to_receive_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
 
   /*--- Variables for gathering the triangle data in one array. ---*/
-  unsigned long *buffRecvTriaCount = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
+  unsigned long *buffRecvTriaCount = nullptr; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
   unsigned long max_nLocalTriaAll; /*!< \brief Largest Tri count of all processors. */
-  su2double *buffSendCoords = NULL; /*!< \brief Array holding Coordinate data of one processor. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
-  su2double *buffRecvCoords = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+  su2double *buffSendCoords = nullptr; /*!< \brief Array holding Coordinate data of one processor. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+  su2double *buffRecvCoords = nullptr; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
 
 public:
 
