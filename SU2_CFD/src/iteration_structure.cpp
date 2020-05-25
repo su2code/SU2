@@ -1867,8 +1867,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             if (Direct_Iter - 2 < 0) {
               for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
                 geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume(iPoint,0.0);
-	      }
-	    }
+              }
+            }
 
             /*--- Set currently loaded volume to Volume_nM1 ---*/
             geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_n();
