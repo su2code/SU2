@@ -200,8 +200,9 @@ def obj_f(x,project):
         
         scipy_slsqp: minimize f(x), float
     """
-        
+    print('x = {}'.format(x))    
     obj = project.obj_f(x)   
+    print('obj = {}'.format(obj)) 
     return obj
 
 def obj_df(x,project):
