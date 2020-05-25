@@ -82,7 +82,7 @@ class Project:
         # reading Bezier curves order
         line = readConfig(self.config['CONFIG_DEF'], 'FFD_DEGREE')
         line = line.strip('( )')
-        line.line.split(',')
+        line = line.split(',')
         self.ffd_degree = [int(float(line[0])),int(float(line[1])),int(float(line[2]))]
         
         # DV_values indexes (control points indexes of the FD Box)    
