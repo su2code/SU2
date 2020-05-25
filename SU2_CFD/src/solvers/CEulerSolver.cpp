@@ -6758,7 +6758,7 @@ void CEulerSolver::BC_Euler_Wall_old(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
       
@@ -6790,7 +6790,7 @@ void CEulerSolver::BC_Euler_Wall_old(CGeometry *geometry, CSolver **solver_conta
         Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim]; //Force the velocity to be tangential to the surface.
 
       if (grid_movement) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         for (iDim = 0; iDim < nDim; iDim++) Velocity_b[iDim] += GridVel[iDim] - ProjGridVel * UnitNormal[iDim];
@@ -6809,17 +6809,17 @@ void CEulerSolver::BC_Euler_Wall_old(CGeometry *geometry, CSolver **solver_conta
       StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
       Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b + turb_ke;
 
-      FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
-      Kappa_b = FluidModel->GetdPde_rho() / Density_b;
-      Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-      Pressure_b = FluidModel->GetPressure();
+      GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+      Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
+      Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+      Pressure_b = GetFluidModel()->GetPressure();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
 
       numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
 
       /*--- Grid velocity correction to the energy term ---*/
       if (grid_movement) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim];

@@ -1623,25 +1623,20 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config);
 
           /*--- Definition of the boundary condition method ---*/
-//<<<<<<< HEAD
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
             if(config->GetMUSCL_AdjFlow()) {
-                cout << "CONV_BOUND_TERM = CCentJST_Flow" << endl;
+                cout << "CONV_BOUND_TERM = CCentJST_Flow, straight JST scheme" << endl;
                 numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CCentJST_Flow(nDim, nVar_Flow, config);
             } else {
               if(config->GetVisualize_Volume_Def()) { //VISUALIZE_VOLUME_DEF= YES
-                cout << "CONV_BOUND_TERM = CUpwRoe_Flow" << endl;
+                cout << "CONV_BOUND_TERM = CUpwRoe_Flow, this the defalut" << endl;
                 numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
               } else { //VISUALIZE_VOLUME_DEF= NO
-                cout << "CONV_BOUND_TERM = CCentJST_Flow_BC" << endl;
+                cout << "CONV_BOUND_TERM = CCentJST_Flow_BC, JST without dissipation term." << endl;
                 numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CCentJST_Flow_BC(nDim, nVar_Flow, config);
               }//if Visualize_Volume_Def
             }//if USCL_AdjFlow
           }//for iMGlevel
-//=======
-          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
-// origin/develop
 
         }
         if (incompressible) {
