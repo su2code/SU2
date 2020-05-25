@@ -37,7 +37,7 @@ inline const su2double* CFEMStandardElementBase::GetWeightsIntegration(void) con
 
 inline unsigned short CFEMStandardElementBase::GetNIntegration(void) const {return nIntegration;}
 
-inline unsigned short CFEMStandardElementBase::GetOrderExact(void){return orderExact;}
+inline unsigned short CFEMStandardElementBase::GetOrderExact(void) const{return orderExact;}
 
 inline CFEMStandardElement::CFEMStandardElement(){}
 

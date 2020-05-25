@@ -305,7 +305,7 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
 
 
 
-void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
+void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) const {
 
   unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
   unsigned short iMarker, iDim;
@@ -937,7 +937,7 @@ su2double CVolumetricMovement::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2do
 
 }
 
-su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
@@ -958,7 +958,7 @@ su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
@@ -990,7 +990,7 @@ su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3
 
 }
 
-su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1017,7 +1017,7 @@ su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1061,7 +1061,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1122,7 +1122,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -3927,7 +3927,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
 
 
 bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-    unsigned short iDV, bool ResetDef) {
+    unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, iFFDBox, iPlane;
@@ -4084,7 +4084,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 }
 
 bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                      unsigned short iDV, bool ResetDef) {
+                                      unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, k, iPlane, iFFDBox;
@@ -4244,7 +4244,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 }
 
 bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                  unsigned short iDV, bool ResetDef) {
+                                  unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, k, iPlane, iFFDBox;
@@ -4300,7 +4300,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
 }
 
 bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                     unsigned short iDV, bool ResetDef) {
+                                     unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, k, iPlane, iFFDBox, Theta, ThetaMax;
@@ -4435,7 +4435,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
 }
 
 bool CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                       unsigned short iDV, bool ResetDef) {
+                                       unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iFFDBox;
@@ -4481,7 +4481,7 @@ bool CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 }
 
 bool CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                          unsigned short iDV, bool ResetDef) {
+                                          unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3]= {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iFFDBox;
@@ -4534,7 +4534,7 @@ bool CSurfaceMovement::SetFFDTwist_2D(CGeometry *geometry, CConfig *config, CFre
 }
 
 bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                    unsigned short iDV, bool ResetDef) {
+                                    unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
@@ -4612,7 +4612,7 @@ void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config,
 }
 
 bool CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                       unsigned short iDV, bool ResetDef) {
+                                       unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
@@ -4680,7 +4680,7 @@ bool CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 }
 
 bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                   unsigned short iDV, bool ResetDef) {
+                                   unsigned short iDV, bool ResetDef) const {
 
   unsigned short iOrder, jOrder, kOrder;
   su2double  x, y, z, movement[3], Segment_P0[3], Segment_P1[3], Plane_P0[3], Plane_Normal[3],
@@ -4815,7 +4815,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
 }
 
 bool CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                      unsigned short iDV, bool ResetDef) {
+                                      unsigned short iDV, bool ResetDef) const {
 
   unsigned short iOrder, jOrder, kOrder;
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
@@ -4893,7 +4893,7 @@ bool CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 }
 
 bool CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                             unsigned short iDV, bool ResetDef) {
+                                             unsigned short iDV, bool ResetDef) const {
 
   unsigned short iOrder, jOrder, kOrder;
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
@@ -7263,7 +7263,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
 CFreeFormDefBox::CFreeFormDefBox(void) : CGridMovement() { }
 
-CFreeFormDefBox::CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending) : CGridMovement() {
+CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending) : CGridMovement() {
 
   unsigned short iCornerPoints, iOrder, jOrder, kOrder, iDim;
 
@@ -7948,7 +7948,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
 
 }
 
-su2double *CFreeFormDefBox::GetParametricCoord_Analytical(su2double *cart_coord) {
+su2double *CFreeFormDefBox::GetParametricCoord_Analytical(const su2double *cart_coord) {
   unsigned short iDim;
   su2double *e1, *e2, *e3, *e12, *e23, *e13, *p;
 
@@ -7986,7 +7986,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Analytical(su2double *cart_coord)
   return ParamCoord;
 }
 
-su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
+su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) const {
   unsigned short iDim, iDegree, jDegree, kDegree;
 
   for (iDim = 0; iDim < nDim; iDim++)
@@ -8066,7 +8066,7 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
 
 }
 
-su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *ParamCoordGuess, CConfig *config) {
+su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, const su2double *ParamCoordGuess, CConfig *config) {
 
   su2double *IndepTerm, SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3] = {0.0,0.0,0.0};
   unsigned short iDim, jDim, RandonCounter;
@@ -8200,7 +8200,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
 
 }
 
-bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
+bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) const {
   su2double Coord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar, jVar, iDim;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -8272,7 +8272,7 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
 }
 
-void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) {
+void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
   su2double *Coord;
   unsigned short iMarker, iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -8318,7 +8318,7 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
   }
 }
 
-su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) {
+su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const {
 
   unsigned short iDim;
   su2double value = 0.0;
@@ -8332,7 +8332,7 @@ su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_dif
 
 }
 
-su2double CFreeFormDefBox::GetDerivative2 (su2double *uvw, unsigned short dim, su2double *xyz, unsigned short *lmn) {
+su2double CFreeFormDefBox::GetDerivative2 (su2double *uvw, unsigned short dim, const su2double *xyz, const unsigned short *lmn) const {
 
   unsigned short iDegree, jDegree, kDegree;
   su2double value = 0.0;
@@ -8372,7 +8372,7 @@ su2double CFreeFormDefBox::GetDerivative3(su2double *uvw, unsigned short dim, un
 }
 
 su2double CFreeFormDefBox::GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-                                       unsigned short *ijk, unsigned short *lmn) {
+                                       unsigned short *ijk, unsigned short *lmn) const {
   unsigned short iDim;
   su2double value = 0.0;
 

@@ -109,26 +109,26 @@ public:
    * \brief Function to make available the variable commSolution.
    * \return Whether or not the solution of the element must be communicated.
    */
-  bool GetCommSolution(void);
+  bool GetCommSolution(void) const;
 
   /*!
    * \brief Function to make available the element type of the element.
    * \return The value of elemType, which stores the VTK type, polynomial degree
              and whether or not the Jacobian is constant.
    */
-  unsigned short GetElemType(void);
+  unsigned short GetElemType(void) const;
 
   /*!
    * \brief Function to make available the global element ID.
    * \return The global element ID of the element.
    */
-  unsigned long GetGlobalElemID(void);
+  unsigned long GetGlobalElemID(void) const;
 
   /*!
    * \brief Function to make available the time level.
    * \return The time level of the element.
    */
-  unsigned short GetTimeLevel(void);
+  unsigned short GetTimeLevel(void) const;
 
   /*!
    * \brief Function, which sets the value of commSolution.
@@ -675,13 +675,13 @@ public:
   * \brief Function, which makes available the number of owned volume elements in the local FEM mesh.
   * \return  Number of owned volume elements of the local FEM mesh.
   */
-  unsigned long GetNVolElemOwned(void);
+  unsigned long GetNVolElemOwned(void) const;
 
   /*!
   * \brief Function, which makes available the total number of volume elements in the local FEM mesh.
   * \return  Total number of volume elements of the local FEM mesh.
   */
-  unsigned long GetNVolElemTot(void);
+  unsigned long GetNVolElemTot(void) const;
 
   /*!
   * \brief Function, which makes available the volume elements in the local FEM mesh.

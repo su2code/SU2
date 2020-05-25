@@ -175,7 +175,7 @@ private:
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void scqf(int nt, passivedouble t[], int mlt[], passivedouble wts[], int nwts, int ndx[],
+  void scqf(int nt, const passivedouble t[], const int mlt[], const passivedouble wts[], int nwts, int ndx[],
             passivedouble swts[], passivedouble st[], int kind, passivedouble alpha,
             passivedouble beta, passivedouble a, passivedouble b);
 
@@ -183,7 +183,7 @@ private:
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void sgqf(int nt, passivedouble aj[], passivedouble bj[], passivedouble zemu, passivedouble t[],
+  void sgqf(int nt, const passivedouble aj[], passivedouble bj[], passivedouble zemu, passivedouble t[],
             passivedouble wts[]);
 };
 
