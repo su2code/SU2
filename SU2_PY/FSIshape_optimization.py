@@ -158,7 +158,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     else:
        obj_scale = float(1) 
        
-    # scale accuracy
+    # scale accuracy: The step size for finite-difference derivative estimates.
     eps = 1.0e-04
 
     # optimizer summary
