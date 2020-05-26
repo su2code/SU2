@@ -111,7 +111,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     """
 
     # Performing spline
-    print('Splining commented')
+    #print('Splining commented')
     SaveSplineMatrix(project.config)
           
     # function handles
