@@ -144,7 +144,7 @@ class Design:
         
     def FSIAdjoint(self,adj_folder):   
         
-        self.Adjoint = True
+        self.adjoint = True
         
         # Set up current mesh file name
         self.UpdateMeshFilename( adj_folder, self.configFSIAdjoint['SU2_CONFIG'])
@@ -222,7 +222,7 @@ class Design:
     
     def pull_obj_df(self,adj_folder,FFD_indexes, PointInv,ffd_degree):
     
-        if self.Adjoint == True:
+        if self.adjoint == True:
             
             obj_df = ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree)
             
@@ -275,7 +275,9 @@ class Design:
         line = line.split()
         cd = float(line[0])
         cl = float(line[1])
-        
+        input_file.close()
+        # removing this temporary file so that it cannot be accessed in case in the future
+        os.remove(primal_folder + '/' + 'Objectives.dat')
         # writing history
         logfileCD = 'HistoryCD.dat'
         logfileCL = 'HistoryCL.dat'
