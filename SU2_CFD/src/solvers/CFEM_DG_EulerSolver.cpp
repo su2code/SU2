@@ -7381,7 +7381,7 @@ double VecDot(const Eigen::VectorXd& A, const Eigen::VectorXd& B) {
 }
 
 template <typename Precond>
-void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M, int n, int restart, unsigned long* m_loc_long, unsigned long* fst_col_long){
+unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M, int n, int restart, unsigned long* m_loc_long, unsigned long* fst_col_long){
   assert(A.cols() == b.size());
   int size = 1, rank = 0;
   int m = restart;
@@ -7477,7 +7477,7 @@ void GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M,
 
   delete m_loc;
   delete fst_col;
-  return;
+  return k;
 }
 
 typedef Eigen::Triplet<double> T;
@@ -7509,7 +7509,7 @@ void LocalILU_Preconditioner(SpMat& Jacobian_global, Eigen::IncompleteLUT<double
 }
 
 typedef Eigen::Triplet<double> T;
-void CFEM_DG_EulerSolver::I`mplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
+void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config) {
 
 #ifdef CODI_FORWARD_TYPE
@@ -7727,7 +7727,20 @@ void CFEM_DG_EulerSolver::I`mplicitEuler_Iteration(CGeometry *geometry, CSolver 
   precond M;
   Eigen::IncompleteLUT<double> Jacobian_Precond;
   LocalILU_Preconditioner(Jacobian_global, Jacobian_Precond, &m_loc[0], &fst_row[0], rank);
-  GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 150, &m_loc[0], &fst_row[0]);
+
+  su2double Timer_start, Timer_end; //timer for superlu solver
+  if (rank == MASTER_NODE)
+  {
+    Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  }
+  unsigned long IterLinSol;
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 150, &m_loc[0], &fst_row[0]);
+  SetIterLinSolver(IterLinSol);
+  if (rank == MASTER_NODE)
+  {
+    Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
+    Time_LINSOL = Timer_end - Timer_start;
+  }
   /*--- Solve the linear system using linear solver SUPERLU. ---*/
   // SUPERLU_LinSolver(nDOFsGlobal*nVar, Jacobian_global.nonZeros(), Jacobian_global.valuePtr(), Jacobian_global.innerIndexPtr(), 
   //   Jacobian_global.outerIndexPtr(), mSol_delta.data(), &m_loc[0], &fst_row[0]);
