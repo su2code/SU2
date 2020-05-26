@@ -1,26 +1,24 @@
 #pragma once
 
 #include "COutputModule.hpp"
+#include "../../../../Common/include/toolboxes/parser/ExpressionParser.hpp"
+#include "../../../../Common/include/toolboxes/parser/CFunctionParser.hpp"
 
 class CUserFunctionModule final : public CSolverOutputModule {
 
   using FieldRef = typename COutFieldCollection::Map::iterator;
-  using FieldRefFuncPair  = std::pair<FieldRef, interpreter::UserFunction*>;
-  using FieldRefTokenPair = std::pair<FieldRef, Token<su2double>*>;
+  std::vector<FieldRef> volumeFunctionFields;
+  std::vector<FieldRef> historyFunctionFields;
 
-  TokenMap historyScope;
-  TokenMap volumeScope;
+//  using FieldRefFuncPair  = std::pair<FieldRef, Parser::Expression>;
 
-  std::vector<interpreter::UserFunction*> historyUserFunctions;
-  std::vector<interpreter::UserFunction*> volumeUserFunctions;
-  std::vector<string> inlineHistoryUserFunctions;
-  std::vector<string> inlineVolumeUserFunctions;
+  std::vector<Parser::CFunctionParser::RawExpression> historyUserFunctions;
+  std::vector<Parser::CFunctionParser::RawExpression> volumeUserFunctions;
 
-  std::vector<FieldRefTokenPair> histFieldTokenRefs;
-  std::vector<FieldRefTokenPair> volFieldTokenRefs;
+  std::unique_ptr<Parser::Scope> historyScope;
+  std::unique_ptr<Parser::Scope> volumeScope;
 
-  std::vector<FieldRefFuncPair> funcHistFieldRefs;
-  std::vector<FieldRefFuncPair>  funcVolFieldRefs;
+  std::vector<std::string> markerNames;
 
 public:
   explicit CUserFunctionModule(CConfig *config, int nDim);
@@ -40,13 +38,8 @@ public:
   void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
 
-  static void EvalUserFunctions(const std::vector<FieldRefTokenPair> &fieldTokenRef,
-                                const std::vector<FieldRefFuncPair> &funcFieldRef,
-                                TokenMap &scope, interpreter::FunctionType type);
+  static void EvalUserFunctions(Parser::Scope *scope, std::vector<FieldRef> &functionFields);
 
-  static interpreter::UserFunction* CreateInlineUserFunction(string name, interpreter::FunctionType type);
-
-  static packToken getSurfaceValue(TokenMap scope, const std::string &name);
 };
 
 
