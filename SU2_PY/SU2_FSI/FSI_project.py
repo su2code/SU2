@@ -246,7 +246,6 @@ class Project:
        else:            
           x =  self._design[self.design_iter].getdv()   
           delta = x - x_in
-          print('delta = {}'.format(delta.tolist())) 
           module = np.linalg.norm(delta)
           if module > self.design_toll:
              print('Evaluating new design')
@@ -420,8 +419,10 @@ class Project:
           run_command(command, 'Pulling mesh config for deformation', False)
           
        else:
+          print('SetMesh in case of deformation')
           # in case deform has occurred mesh file is named as output of SU2_DEF and needs to be pulled from the dedicated folder
           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
           command = 'cp ' + self.deform_folder + '/' + mesh_filename + ' ' + destination_folder + '/'
+          print(command)
           
            

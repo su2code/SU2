@@ -198,9 +198,9 @@ def obj_f(x,project):
         
         scipy_slsqp: minimize f(x), float
     """  
-    print('obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))    
+    #print('obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))    
     obj = project.obj_f(x)   
-    print('After obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))   
+    #print('After obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))   
     return obj
 
 def obj_df(x,project):
@@ -211,9 +211,9 @@ def obj_df(x,project):
         
         scipy_slsqp: df(x), ndarray[dim]
     """    
-    print('obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
+    #print('obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
     obj_df = project.obj_df(x)   
-    print('After obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))       
+    #print('After obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))       
     return obj_df
 
 def con_ceq(x,project):
@@ -221,9 +221,9 @@ def con_ceq(x,project):
         
         Equality Constraint Functions
     """
-    if project.design_iter !=-1: print('con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    #if project.design_iter !=-1: print('con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     cons = project.con_ceq(x)  
-    print('After con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    #print('After con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     return cons
 
 def con_dceq(x,project):
@@ -234,9 +234,9 @@ def con_dceq(x,project):
         
         scipy_slsqp: dceq(x), ndarray[nceq x dim]
     """
-    print('con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    #print('con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     dcons = project.con_dceq(x)
-    print('After con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    #print('After con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     return dcons
 
 def con_cieq(x,project):
@@ -245,9 +245,9 @@ def con_cieq(x,project):
         Inequality Constraints
 
     """ 
-    if project.design_iter !=-1: print('con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    #if project.design_iter !=-1: print('con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     cons = project.con_cieq(x)  
-    print('After con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))          
+    #print('After con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))          
     return cons
     
     
@@ -259,9 +259,9 @@ def con_dcieq(x,project):
         
         scipy_slsqp: dcieq(x), ndarray[ncieq x dim]
     """
-    print('con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
+    #print('con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
     dcons = project.con_dcieq(x)
-    print('After con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    #print('After con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     return dcons
 
 
