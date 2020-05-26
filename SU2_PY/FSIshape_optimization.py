@@ -124,6 +124,13 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     fprime_eqcons  = con_dceq
     fprime_ieqcons = con_dcieq        
     
+    # case of no geo constraints
+    if project.config['OPT_CONSTRAINT'] == None:
+       f_eqcons       = None
+       f_ieqcons      = None 
+       fprime_eqcons  = None
+       fprime_ieqcons = None     
+    
     # number of design variables  (this is read from the DEF input file)
     n_dv = len(x0)
     project.n_dv = n_dv
