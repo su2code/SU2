@@ -76,9 +76,9 @@ def call_pyamg(mesh, config):
     if 'metric' in mesh: mesh['metric'] = mesh['metric'].tolist()
     if 'sensor' in mesh:
         mesh['sensor']           = mesh['sensor'].tolist()
-        remesh_options['Lp']     = config['Lp']
 
-    #--- TODO: do I need these with metric?
+    #--- Give pyamg these parameters in case metric intersection violates hmax, hmin, or target
+    remesh_options['Lp']     = config['Lp']
     remesh_options['hmax']   = config['hmax']
     remesh_options['hmin']   = config['hmin']
     remesh_options['target'] = config['size']
