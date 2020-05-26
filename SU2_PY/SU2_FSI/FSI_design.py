@@ -92,8 +92,8 @@ class Design:
         self.design_folder  = design_folder      # design folder
         self.folder =  folder            # run folder 
         self.design_nbr = nbr      # current design number
-        self._x = x              # collection of dv_variables of the current design
-        self._x_old = x_old          # collection of dv_variable of the previous design
+        self._x = x              # collection of dv_variables of the current design (private)
+        self._x_old = x_old          # collection of dv_variable of the previous design (private)
         self.n_dv = len(self._x)
         self.configFSIPrimal = configFSIPrimal
         self.configFSIAdjoint = configFSIAdjoint   

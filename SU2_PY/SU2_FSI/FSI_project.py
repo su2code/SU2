@@ -234,8 +234,7 @@ class Project:
             
             
     def CheckNewDesign(self, x_in):
-       print('x_in = {}'.format(x_in)) 
-       print('self.design_iter = {}'.format(self.design_iter)) 
+       print('x_in = {}'.format(x_in.tolist())) 
        if self.design_iter == -1:
            print('Evaluating initial design')
            self.design_iter += 1
@@ -244,12 +243,30 @@ class Project:
            # Writing solution to Output           
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
        else:   
+          print('DEBUG project')
+          print('self.design_iter = {}'.format(self.design_iter)) 
+          print('self.design[self.design_iter].getx() = {}'.format(self.design[self.design_iter].getx().tolist())) 
+          
+          print('self.design[self.design_iter].getxold() = {}'.format(self.design[self.design_iter].getxold().tolist()))
+          
+          print('self.design[self.design_iter].getxold() = {}'.format(self.design[self.design_iter].getxold().tolist()))
+          
+          print('self.design[self.design_iter].design_nbr = {}'.format(self.design[self.design_iter].design_nbr))
+          
+          print('self.design[self.design_iter].deformation = {}'.format(self.design[self.design_iter].deformation))
+          
+          print('self.design[self.design_iter].geo = {}'.format(self.design[self.design_iter].geo))
+          
+          print('self.design[self.design_iter].primal = {}'.format(self.design[self.design_iter].primal))
+          
+          print('self.design[self.design_iter].adjoint = {}'.format(self.design[self.design_iter].adjoint))
+          
+          print('self.design[self.design_iter].c_eq = {}'.format(self.design[self.design_iter].c_eq.tolist()))
+          
           x =  self.design[self.design_iter].getx()   
           x_old =  self.design[self.design_iter].getxold() 
-          print('x= {}'.format(x ))  
-          print('x_old= {}'.format(x_old )) 
           delta = x - x_in
-          print('delta = {}'.format(delta)) 
+          print('delta = {}'.format(delta.tolist())) 
           module = np.linalg.norm(delta)
           if module > self.design_toll:
              print('Evaluating new design')

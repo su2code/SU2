@@ -199,8 +199,7 @@ def obj_f(x,project):
         SU2 Project interface to scipy.fmin_slsqp
         
         scipy_slsqp: minimize f(x), float
-    """
-    print('x = {}'.format(x))    
+    """  
     obj = project.obj_f(x)   
 
     return obj
