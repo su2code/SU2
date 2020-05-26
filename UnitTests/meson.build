@@ -27,7 +27,7 @@ if get_option('enable-tests')
         'test_driver',
         unit_test_files,
         install : true,
-        dependencies : [su2_cfd_dep, common_dep, cparse_dep, su2_deps, catch2_dep],
+        dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
@@ -39,7 +39,7 @@ if get_option('enable-tests')
         'test_driver_AD',
         unit_test_files_ad,
         install : true,
-        dependencies : [su2_cfd_dep_ad, commonAD_dep, su2_deps, cparse_depAD, codi_dep, catch2_dep],
+        dependencies : [su2_cfd_dep_ad, commonAD_dep, su2_deps, codi_dep, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args, codi_rev_args]
     )
     test('Catch2 test driver (AD)', test_driver_AD)
@@ -51,7 +51,7 @@ if get_option('enable-tests')
         'test_driver_DD',
         unit_test_files_dd,
         install : true,
-        dependencies : [su2_cfd_dep_dd, commonDD_dep, su2_deps, cparse_depDD, codi_dep, catch2_dep],
+        dependencies : [su2_cfd_dep_dd, commonDD_dep, su2_deps, codi_dep, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args, codi_for_args]
     )
     test('Catch2 test driver (DD)', test_driver_DD)
