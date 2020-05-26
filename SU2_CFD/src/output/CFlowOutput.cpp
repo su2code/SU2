@@ -62,11 +62,6 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  SetVolumeOutputValue("COORD_X", iPoint, geometry->node[iPoint]->GetCoord(0));
-  SetVolumeOutputValue("COORD_Y", iPoint, geometry->node[iPoint]->GetCoord(1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD_Z", iPoint, geometry->node[iPoint]->GetCoord(2));
-
 }
 
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
