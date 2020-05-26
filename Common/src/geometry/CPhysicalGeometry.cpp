@@ -3072,10 +3072,10 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 }
 
 void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
-                                         int *nElemSend,
+                                         const int *nElemSend,
                                          SU2_MPI::Request *sendReq,
                                          void *bufRecv,
-                                         int *nElemRecv,
+                                         const int *nElemRecv,
                                          SU2_MPI::Request *recvReq,
                                          unsigned short countPerElem,
                                          unsigned short commType) {

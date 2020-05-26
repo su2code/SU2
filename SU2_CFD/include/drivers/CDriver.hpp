@@ -158,7 +158,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration);
+  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -190,7 +190,7 @@ protected:
    * \param[in] solver - Container vector with all the solutions.
    * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -214,7 +214,7 @@ protected:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics);
+  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const;
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -234,7 +234,7 @@ protected:
    * \param grid_movement
    * \param surface_movement
    */
-  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement);
+  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement) const;
 
   /*!
    * \brief Initialize Python interface functionalities
@@ -454,7 +454,7 @@ public:
    * \brief Get the current external iteration.
    * \return Current external iteration.
    */
-  unsigned long GetTime_Iter();
+  unsigned long GetTime_Iter() const;
 
   /*!
    * \brief Get the unsteady time step.
@@ -661,7 +661,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                    CConfig *config);
+                                    CConfig *config) const;
 
   /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
