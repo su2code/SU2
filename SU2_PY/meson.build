@@ -20,7 +20,6 @@ install_data(['continuous_adjoint.py',
 	     'pyBeamFSI_AD_opt.py',
              'pyBeamFSI_MLSGen.py',
              'FSIshape_optimization.py',
-             'FSIshape_optimization_test.py',
 	     'SU2_CFD.py'],
 	     install_dir: join_paths(get_option('bindir')))
 

@@ -133,6 +133,10 @@ class OptConfig:
         self._ConfigContent[key] = value
 
     def readConfig(self):
+        
+        # Case of no constraints (default)
+        self._ConfigContent["OPT_CONSTRAINT"] = None
+        
         input_file = open(self.ConfigFileName)
         while 1:
             line = input_file.readline()

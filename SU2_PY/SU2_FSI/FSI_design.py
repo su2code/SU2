@@ -86,7 +86,6 @@ class Design:
     """
 
     def __init__( self, config, configFSIPrimal,configFSIAdjoint, folder, design_folder, nbr ,dv, x_old ):
-        print('Initializing design....')
         # Attributes:
         self.config  = config      # base config
         self.design_folder  = design_folder      # design folder
@@ -110,6 +109,8 @@ class Design:
         self.c_ieq_minus = None
         self.obj_f = None
         self.obj_df = None
+        self.c_dieq_plus = None
+        self.c_dieq_minus = None
 
     def _setdv(self,dv):
         self.__dv = dv
@@ -222,7 +223,15 @@ class Design:
            print('Cant evaluate c_dieq. Geo hasn t run.[pull_c_dieq in FSI_design.py]')
            sys.exit()               
         
-        return np.concatenate((self.c_dieq_plus, - self.c_dieq_minus), axis=0), global_factor 
+        if len(self.c_dieq_plus) !=0 and len(self.c_dieq_minus) !=0: 
+           return np.concatenate((self.c_dieq_plus, - self.c_dieq_minus), axis=0), global_factor 
+        elif len(self.c_dieq_plus) == 0:
+           return -self.c_dieq_minus, global_factor
+        elif len(self.c_dieq_minus) == 0:
+           return self.c_dieq_plus, global_factor
+        else:
+            print('Empty constraint gradient.[pull_c_dieq in FSI_design.py]')
+            sys.exit()
     
     def pull_obj_df(self,adj_folder,FFD_indexes, PointInv,ffd_degree):
     
