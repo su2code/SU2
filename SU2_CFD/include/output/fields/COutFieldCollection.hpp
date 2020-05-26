@@ -3,7 +3,6 @@
 #include "../../../Common/include/toolboxes/CIndexedMap.hpp"
 #include "../../../Common/include/datatype_structure.hpp"
 #include "../../../Common/include/mpi_structure.hpp"
-#include "../../../Common/include/toolboxes/interpreter/FunctionStatement.hpp"
 #include "COutField.hpp"
 
 class COutFieldCollection : public CIndexedMap<std::string, COutputField> {
@@ -17,7 +16,6 @@ public:
   using Map             = typename CurrentType::Map;
 
 protected:
-  TokenMap outFieldScope;
   using CurrentType::insertionVector;
   using CurrentType::map;
 
@@ -63,16 +61,6 @@ private:
   }
 
 public:
-
-  /*!
-   * \brief Get the reference to the expression scope
-   * \return Reference to the expression scope
-   */
-  TokenMap& GetScope() { return outFieldScope; }
-
-  void SetScope(TokenMap& newScope){
-    outFieldScope = newScope.getChild();
-  }
 
   /*!
    * \brief Get fields by using a list of keys
@@ -217,36 +205,6 @@ public:
    */
   void SetValueByIndex(const int i, su2double value){
     insertionVector[i]->second.value = value;
-  }
-
-  /*!
-   * \brief Update the values of all variables in the scope so
-   *  that they are available when evaluation custom expressions
-   */
-  void UpdateTokens(){
-    for (const auto& field : insertionVector){
-      if (field->second.tokenRef != nullptr){
-        (*field->second.tokenRef) = field->second.value;
-      }
-    }
-  }
-
-  /*!
-   * \brief Evaluate the custom fields by evaluating the corresponding expression.
-   * \param customFields - References to the custom fields
-   */
-  void EvalCustomFields(const InsertionVector& customFields, bool accumulate = false){
-    for (const auto& field : customFields){
-      try {
-        if (accumulate)
-          field->second.value += field->second.userFunction->exec(&outFieldScope).asDouble();
-        else
-          field->second.value = field->second.userFunction->exec(&outFieldScope).asDouble();
-      }  catch (msg_exception err) {
-        SU2_MPI::Error(std::string("In expression ") + field->first
-                       + std::string(": ") + std::string(err.what()), CURRENT_FUNCTION);
-      }
-    }
   }
 };
 

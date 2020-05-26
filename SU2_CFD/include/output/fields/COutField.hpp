@@ -41,10 +41,6 @@ public:
   /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
   short       offset = -1;
 
-  packToken* tokenRef = nullptr;
-
-  interpreter::UserFunction* userFunction = nullptr;
-
   COutputField() = default;
 
   COutputField(std::string fieldName_, ScreenOutputFormat format_, std::string OutputGroup_, std::string description_, FieldType type_)

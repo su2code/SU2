@@ -114,7 +114,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   ObjectiveFunction = config->GetObjectiveFunction();
   if (!ObjectiveFunction.empty() && !direct_output->GetHistoryFieldsAll().CheckKey(ObjectiveFunction)){
-    direct_output->AddCustomHistoryOutput(ObjectiveFunction);
+//    direct_output->AddCustomHistoryOutput(ObjectiveFunction);
   }
 
 }

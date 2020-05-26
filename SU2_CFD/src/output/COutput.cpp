@@ -110,14 +110,6 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output, bool cus
     for (unsigned short iField = 0; iField < nRequestedVolumeFields; iField++){
       requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
     }
-
-    historyFieldsAll.SetScope(interpreter::globalScope);
-    volumeFieldsAll.SetScope(interpreter::globalScope);
-
-    historyUserFunctions = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::HISTFIELD});
-    volumeUserFunctions  = interpreter::GetUserFunctions(interpreter::globalScope, {interpreter::FunctionType::VOLUMEFIELD,
-                                                                                    interpreter::FunctionType::VOLUMEINTEGRAL,
-                                                                                    interpreter::FunctionType::SURFACEINTEGRAL});
   }
 
   gridMovement = config->GetGrid_Movement();
@@ -1267,60 +1259,44 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
 }
 
-packToken getSurfaceValue(TokenMap scope, const std::string &name){
-
-  std::string markerName = scope["markerName"].asString();
-
-  su2double val = 0.0;
-  packToken* token = scope.find(name + "@" + markerName);
-
-  if (token != nullptr){
-    val = token->asDouble();
-  } else {
-    throw(msg_exception(name + "(" + markerName + "): " + " Unkown token " + "\"" + markerName + "\""));
-  }
-
-  return val;
-
-}
 
 void COutput::SetUserDefinedHistoryFields(CConfig *config){
 
-  regex exp("\\{\\S*\\}");
+//  regex exp("\\{\\S*\\}");
 
-  /*--- Add inline defined output fields ---*/
+//  /*--- Add inline defined output fields ---*/
 
-  for (const auto& reqField : requestedScreenFields){
-    if (regex_match(reqField, exp)){
-      AddCustomHistoryOutput(reqField);
-    }
-  }
+//  for (const auto& reqField : requestedScreenFields){
+//    if (regex_match(reqField, exp)){
+//      AddCustomHistoryOutput(reqField);
+//    }
+//  }
 
-  /*--- Add output fields defined in function file ---*/
+//  /*--- Add output fields defined in function file ---*/
 
-  for (const auto function : historyUserFunctions){
-    if (function->getType() == interpreter::FunctionType::HISTFIELD){
-      AddCustomHistoryOutput(function->name(), function, FieldType::CUSTOM_EVAL);
-    }
-  }
+//  for (const auto function : historyUserFunctions){
+//    if (function->getType() == interpreter::FunctionType::HISTFIELD){
+//      AddCustomHistoryOutput(function->name(), function, FieldType::CUSTOM_EVAL);
+//    }
+//  }
 
-  std::vector<std::string> markerNames;
-  for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
-    markerNames.push_back(config->GetMarker_CfgFile_TagBound(iMarker_CfgFile));
-    /*--- Make marker names available as string variables ---*/
+//  std::vector<std::string> markerNames;
+//  for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
+//    markerNames.push_back(config->GetMarker_CfgFile_TagBound(iMarker_CfgFile));
+//    /*--- Make marker names available as string variables ---*/
 
-    historyFieldsAll.GetScope()[markerNames[iMarker_CfgFile]] = markerNames[iMarker_CfgFile];
-  }
-  for (const auto& volField : volumeFieldsAll.GetFieldsByType({FieldType::SURFACE_INTEGRATE,
-                                                               FieldType::CUSTOM_SURFACE_INTEGRATE})){
-    AddHistoryOutputPerSurface(volField->first, volField->first, ScreenOutputFormat::SCIENTIFIC,
-                               volField->second.outputGroup, markerNames, volField->second.description);
+//    historyFieldsAll.GetScope()[markerNames[iMarker_CfgFile]] = markerNames[iMarker_CfgFile];
+//  }
+//  for (const auto& volField : volumeFieldsAll.GetFieldsByType({FieldType::SURFACE_INTEGRATE,
+//                                                               FieldType::CUSTOM_SURFACE_INTEGRATE})){
+//    AddHistoryOutputPerSurface(volField->first, volField->first, ScreenOutputFormat::SCIENTIFIC,
+//                               volField->second.outputGroup, markerNames, volField->second.description);
 
-    historyFieldsAll.GetScope()[volField->first] = CppFunction(&getSurfaceValue, {"markerName"}, volField->first);
-  }
+//    historyFieldsAll.GetScope()[volField->first] = CppFunction(&getSurfaceValue, {"markerName"}, volField->first);
+//  }
 
-  historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
+//  historyFieldsAll.UpdateTokens();
+//  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
 }
 
 void COutput::CheckHistoryOutput(CConfig* config){
@@ -1534,9 +1510,9 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
 
         if (!userDefinedFields.empty()){
 
-          volumeFieldsAll.UpdateTokens();
+//          volumeFieldsAll.UpdateTokens();
 
-          volumeFieldsAll.EvalCustomFields(userDefinedFields);
+//          volumeFieldsAll.EvalCustomFields(userDefinedFields);
 
         }
 
@@ -1600,9 +1576,9 @@ void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **so
             LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
 
             if (!userDefinedFields.empty() || !userDefinedIntegration.empty()){
-              volumeFieldsAll.UpdateTokens();
-              volumeFieldsAll.EvalCustomFields(userDefinedFields);
-              volumeFieldsAll.EvalCustomFields(userDefinedIntegration, true);
+//              volumeFieldsAll.UpdateTokens();
+//              volumeFieldsAll.EvalCustomFields(userDefinedFields);
+//              volumeFieldsAll.EvalCustomFields(userDefinedIntegration, true);
             }
             WriteToDataSorter(iPoint);
           }
@@ -1738,8 +1714,8 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       SetHistoryOutputValue("AVG_" + it->first, average);
   }
 
-  historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
+//  historyFieldsAll.UpdateTokens();
+//  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
 
 }
 

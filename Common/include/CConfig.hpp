@@ -45,7 +45,6 @@
 
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
-#include "toolboxes/interpreter/FunctionStatement.hpp"
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
 #endif
@@ -1145,8 +1144,6 @@ private:
 
   string UserFunctionCode; /*!< \brief String containing the user defined function code. */
 
-  GlobalScope globalScope;
-  TokenMap configTokens;
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.

@@ -158,9 +158,6 @@ protected:
   su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
-  std::vector<interpreter::UserFunction*> historyUserFunctions;
-  std::vector<interpreter::UserFunction*> volumeUserFunctions;
-
 
   bool customOutput = true;
 
@@ -364,21 +361,21 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
 
-  inline void AddCustomHistoryOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
+//  inline void AddCustomHistoryOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    COutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", type);
-    string tokenName = name;
-    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
-    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
-    customField.tokenRef = &historyFieldsAll.GetScope()[tokenName];
-    customField.userFunction = userFunction;
-    historyFieldsAll.AddItem(name, customField);
+//    COutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", type);
+//    string tokenName = name;
+//    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
+//    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
+//    customField.tokenRef = &historyFieldsAll.GetScope()[tokenName];
+//    customField.userFunction = userFunction;
+//    historyFieldsAll.AddItem(name, customField);
 
-  }
+//  }
 
-  inline void AddCustomHistoryOutput(string name){
-    AddCustomHistoryOutput(name, CreateInlineUserFunction(name));
-  }
+//  inline void AddCustomHistoryOutput(string name){
+//    AddCustomHistoryOutput(name, CreateInlineUserFunction(name));
+//  }
 protected:
 
   /*----------------------------- Protected member functions ----------------------------*/
@@ -421,7 +418,7 @@ protected:
                                string groupname, string description,
                                FieldType field_type = FieldType::DEFAULT ){
     COutputField newField(field_name, format, groupname, description, field_type);
-    newField.tokenRef = &historyFieldsAll.GetScope()[name];
+//    newField.tokenRef = &historyFieldsAll.GetScope()[name];
     historyFieldsAll.AddItem(name, newField);
   }
 
@@ -456,37 +453,37 @@ protected:
     }
   }
 
-  inline interpreter::UserFunction* CreateInlineUserFunction(string name){
-    interpreter::BlockStatement body;
-    string rawName = name;
-    rawName.pop_back();
-    rawName.erase(0,1);
+//  inline interpreter::UserFunction* CreateInlineUserFunction(string name){
+//    interpreter::BlockStatement body;
+//    string rawName = name;
+//    rawName.pop_back();
+//    rawName.erase(0,1);
 
-    string funcName = rawName;
-    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
-    replace_if(funcName.begin(),funcName.end(),::isblank,'_');
-    std::string func = "{"
-                       " var = " + rawName + ";"
-                       " return var; }";
+//    string funcName = rawName;
+//    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+//    replace_if(funcName.begin(),funcName.end(),::isblank,'_');
+//    std::string func = "{"
+//                       " var = " + rawName + ";"
+//                       " return var; }";
 
-    body.compile(func.c_str());
+//    body.compile(func.c_str());
 
-    return new interpreter::UserFunction({},body, funcName, interpreter::FunctionType::HISTFIELD);
+//    return new interpreter::UserFunction({},body, funcName, interpreter::FunctionType::HISTFIELD);
 
-  }
+//  }
 
 
-  inline void AddCustomVolumeOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
+//  inline void AddCustomVolumeOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    COutputField customField(name, "CUSTOM", "User-defined field", type);
-    string tokenName = name;
-    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
-    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
-    customField.tokenRef = &volumeFieldsAll.GetScope()[tokenName];
-    customField.userFunction = userFunction;
-    volumeFieldsAll.AddItem(name, customField);
+//    COutputField customField(name, "CUSTOM", "User-defined field", type);
+//    string tokenName = name;
+//    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
+//    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
+//    customField.tokenRef = &volumeFieldsAll.GetScope()[tokenName];
+//    customField.userFunction = userFunction;
+//    volumeFieldsAll.AddItem(name, customField);
 
-  }
+//  }
 
   void CustomIntegration(CGeometry *geometry, unsigned long iPoint);
 
@@ -509,7 +506,7 @@ protected:
    */
   inline void AddVolumeOutput(string name, string field_name, string groupname, string description, FieldType type = FieldType::DEFAULT){
     COutputField newField(field_name, groupname, description, type);
-    newField.tokenRef = &volumeFieldsAll.GetScope()[name];
+//    newField.tokenRef = &volumeFieldsAll.GetScope()[name];
     volumeFieldsAll.AddItem(name, newField);
   }
 
