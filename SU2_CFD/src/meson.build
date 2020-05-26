@@ -168,14 +168,14 @@ if get_option('enable-normal')
   su2_cfd_lib = static_library('SU2core',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, cparse_dep, common_dep],
+		               dependencies : [su2_deps, common_dep],
 		               cpp_args:  [default_warning_flags, su2_cpp_args])
   su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
                                    include_directories: su2_cfd_include)
   su2_cfd = executable('SU2_CFD',
                        'SU2_CFD.cpp',
                        install : true,
-                       dependencies : [su2_cfd_dep, su2_deps, cparse_dep, common_dep],
+                       dependencies : [su2_cfd_dep, su2_deps, common_dep],
                        cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
 endif
 
@@ -183,7 +183,7 @@ if get_option('enable-autodiff')
   su2_cfd_lib_ad = static_library('SU2core_AD',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, codi_dep, cparse_depAD, commonAD_dep],
+		               dependencies : [su2_deps, codi_dep, commonAD_dep],
                                cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
   su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
                                    include_directories: su2_cfd_include)
@@ -198,14 +198,14 @@ if get_option('enable-directdiff')
   su2_cfd_lib_dd = static_library('SU2core_DIRECTDIFF',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, cparse_depDD, codi_dep, commonDD_dep],
+		               dependencies : [su2_deps, codi_dep, commonDD_dep],
                                cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args])
   su2_cfd_dep_dd = declare_dependency(link_with: su2_cfd_lib_dd,
                                    include_directories: su2_cfd_include)
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
                           'SU2_CFD.cpp',
                           install : true,
-                          dependencies : [su2_cfd_dep_dd, su2_deps, cparse_depDD, codi_dep, commonDD_dep],
+                          dependencies : [su2_cfd_dep_dd, su2_deps, codi_dep, commonDD_dep],
                           cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
 endif
 
