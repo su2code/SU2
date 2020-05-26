@@ -62,7 +62,7 @@ Design for every iteration needs to memorize
 #  Imports
 # ----------------------------------------------------------------------
 
-import sys
+import os, sys
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
