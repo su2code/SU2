@@ -246,11 +246,7 @@ class Project:
           print('DEBUG project')
           print('self.design_iter = {}'.format(self.design_iter)) 
           print('self.design[self.design_iter].getx() = {}'.format(self.design[self.design_iter].getx().tolist())) 
-          
-          print('self.design[self.design_iter].getxold() = {}'.format(self.design[self.design_iter].getxold().tolist()))
-          
-          print('self.design[self.design_iter].getxold() = {}'.format(self.design[self.design_iter].getxold().tolist()))
-          
+                   
           print('self.design[self.design_iter].design_nbr = {}'.format(self.design[self.design_iter].design_nbr))
           
           print('self.design[self.design_iter].deformation = {}'.format(self.design[self.design_iter].deformation))
@@ -264,7 +260,6 @@ class Project:
           print('self.design[self.design_iter].c_eq = {}'.format(self.design[self.design_iter].c_eq.tolist()))
           
           x =  self.design[self.design_iter].getx()   
-          x_old =  self.design[self.design_iter].getxold() 
           delta = x - x_in
           print('delta = {}'.format(delta.tolist())) 
           module = np.linalg.norm(delta)
@@ -287,7 +282,7 @@ class Project:
         if self.design_iter == 0:
            x_old = x_in
         else:   
-           x_old = self.design[self.design_iter-1].x
+           x_old = self.design[self.design_iter-1].getx()
         
         # create design folder
         self.design_folder = self.folder + '/DESIGNS/' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design)

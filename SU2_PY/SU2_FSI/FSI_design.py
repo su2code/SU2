@@ -92,9 +92,9 @@ class Design:
         self.design_folder  = design_folder      # design folder
         self.folder =  folder            # run folder 
         self.design_nbr = nbr      # current design number
-        self._x = x              # collection of dv_variables of the current design (private)
-        self._x_old = x_old          # collection of dv_variable of the previous design (private)
-        self.n_dv = len(self._x)
+        _setx(self,x)              # collection of dv_variables of the current design (private)
+        #self._x_old = x_old          # collection of dv_variable of the previous design (private)
+        self.n_dv = len(self.__x)
         self.configFSIPrimal = configFSIPrimal
         self.configFSIAdjoint = configFSIAdjoint   
         # booleians for every analysis
@@ -110,13 +110,16 @@ class Design:
         self.obj_f = None
         self.obj_df = None
 
+    def _setx(self,x):
+        self.__x = x
+
     def getx(self):
         
-        return self._x
+        return self.__x
     
-    def getxold(self):
+    #def getxold(self):
         
-        return self._x_old   
+    #    return self._x_old   
 
     def SU2_DEF(self,deform_folder):    
         
