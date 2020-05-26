@@ -721,6 +721,7 @@ void CAvgGradCorrected_NEMO::GetViscousProjFlux(su2double *val_primvar,
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += GV[VEL_INDEX+iDim][iDim];
 
+
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
@@ -1080,6 +1081,8 @@ void CAvgGradCorrected_NEMO::ComputeResidual(su2double *val_residual,
                                              su2double **val_Jacobian_i,
                                              su2double **val_Jacobian_j,
                                              CConfig *config) {
+
+
 
   unsigned short iSpecies;
   su2double dist_ij_2;
