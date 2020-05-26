@@ -29,6 +29,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
+import copy
 import numpy as np
 from math import pow, factorial
 import time
@@ -114,11 +115,12 @@ class Project:
         # locate pyBeam properties
         self.pyBeamProp = readConfig(self.configFSIPrimal['PYBEAM_CONFIG'], 'PROPERTY_FILE')
 
-    def obj_f(self,x_new):
+    def obj_f(self,dvs):
         print('Project obj_f') 
+        x_in = copy.deepcopy(dvs)
         # Checking if new design is needed
         # In case starts new design and deform
-        self.CheckNewDesign(x_new)
+        self.CheckNewDesign(x_in)
                  
         #Primal
         self.Primal()
@@ -128,11 +130,12 @@ class Project:
         # return function
         return obj_f*scale*global_factor
         
-    def obj_df(self,x_new):
-        print('Project obj_df')    
+    def obj_df(self,dvs):
+        print('Project obj_df')   
+        x_in = copy.deepcopy(dvs)
         # Check if new design is needed (it won't as Adjoin is performed after primal)        
         # In case start new design and deform
-        self.CheckNewDesign(x_new)
+        self.CheckNewDesign(x_in)
         
         #Adjoint
         self.Adjoint()
@@ -142,11 +145,12 @@ class Project:
                 
         return obj_df*global_factor
 
-    def con_ceq(self,x_new):
+    def con_ceq(self,dvs):
         print('Project con_ceq')
+        x_in = copy.deepcopy(dvs)
         # Check if new design is needed        
         # In case start new design and deform
-        self.CheckNewDesign(x_new)
+        self.CheckNewDesign(x_in)
         
         
         #Check if Geo has been executed, if it hasn't, execute Geo
@@ -158,11 +162,12 @@ class Project:
         # return ceq        
         return c_eq
     
-    def con_dceq(self,x_new):
+    def con_dceq(self,dvs):
         print('Project con_dceq')
+        x_in = copy.deepcopy(dvs)
         # Check if new design is needed (it won't as geo gradient is calculated after geo)       
         # In case start new design and deform
-        self.CheckNewDesign(x_new)
+        self.CheckNewDesign(x_in)
 
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()   
@@ -173,11 +178,12 @@ class Project:
         # return dceq
         return dc_eq*global_factor
     
-    def con_cieq(self,x_new):
+    def con_cieq(self,dvs):
         print('Project con_cieq')
+        x_in = copy.deepcopy(dvs)
         # Check if new design is needed        
         # In case start new design and deform
-        self.CheckNewDesign(x_new)
+        self.CheckNewDesign(x_in)
         
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
@@ -188,11 +194,12 @@ class Project:
         # return cieq
         return c_ieq
     
-    def con_dcieq(self,x_new):
+    def con_dcieq(self,dvs):
         print('con_diceq')
+        x_in = copy.deepcopy(dvs)
         # Check if new design is needed (it won't as geo gradient is calculated after geo)       
         # In case start new design and deform
-        self.CheckNewDesign(x_new)
+        self.CheckNewDesign(x_in)
 
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
