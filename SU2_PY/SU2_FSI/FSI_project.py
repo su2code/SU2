@@ -423,6 +423,6 @@ class Project:
           # in case deform has occurred mesh file is named as output of SU2_DEF and needs to be pulled from the dedicated folder
           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
           command = 'cp ' + self.deform_folder + '/' + mesh_filename + ' ' + destination_folder + '/'
-          print(command)
+          run_command(command, 'Pulling mesh config for deformation', False)
           
            
