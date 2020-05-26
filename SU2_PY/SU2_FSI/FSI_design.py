@@ -86,7 +86,6 @@ class Design:
     """
 
     def __init__( self, config, configFSIPrimal,configFSIAdjoint, folder, design_folder, nbr ,dv, x_old ):
-        print('Initializing design....')
         # Attributes:
         self.config  = config      # base config
         self.design_folder  = design_folder      # design folder

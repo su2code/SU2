@@ -329,7 +329,6 @@ class Project:
            # pulling mesh file 
            self.SetMesh(self.geo_folder)
            
-           print('Executing Geo')
            # Running SU2_GEO
            self._design[self.design_iter].SU2_GEO(self.geo_folder)
            
@@ -353,7 +352,6 @@ class Project:
        # pulling mesh file 
        self.SetMesh(self.primal_folder)  
        
-       print('Executing Primal')
        # Running primal
        self._design[self.design_iter].FSIPrimal(self.primal_folder)
        
@@ -403,7 +401,6 @@ class Project:
           print('Primal not yet available, can t pull solutions for Adjoint....')
           sys.exit()
 
-       print('Executing Adjoint')
        # Running adjoint
        self._design[self.design_iter].FSIAdjoint(self.adjoint_folder)
             
@@ -419,7 +416,6 @@ class Project:
           run_command(command, 'Pulling mesh config for deformation', False)
           
        else:
-          print('SetMesh in case of deformation')
           # in case deform has occurred mesh file is named as output of SU2_DEF and needs to be pulled from the dedicated folder
           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
           command = 'cp ' + self.deform_folder + '/' + mesh_filename + ' ' + destination_folder + '/'

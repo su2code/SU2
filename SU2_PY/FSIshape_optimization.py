@@ -112,7 +112,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
 
     # Performing spline
     print('Splining commented')
-    #SaveSplineMatrix(project.config)
+    SaveSplineMatrix(project.config)
           
     # function handles
     func           = obj_f
@@ -127,25 +127,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     # number of design variables  (this is read from the DEF input file)
     n_dv = len(x0)
     project.n_dv = n_dv
-        
-    # prescale x0 # Not interested at the moment
-    #dv_scales = project.config['DEFINITION_DV']['SCALE']
-    #k = 0
-    #for i, dv_scl in enumerate(dv_scales):
-    #    for j in range(dv_size[i]):
-    #        x0[k] =x0[k]/dv_scl;
-    #        k = k + 1
-
-    # scale accuracy # further scaling of the accuracy (not interested now)
-    #obj = project.config['OPT_OBJECTIVE']
-    #obj_scale = []
-    #for this_obj in obj.keys():
-    #    obj_scale = obj_scale + [obj[this_obj]['SCALE']]
-    # 
-    # Only scale the accuracy for single-objective problems: 
-    #if len(obj.keys())==1:
-    #    accu = accu*obj_scale[0]
-       
+              
     # obj scale
     # I need to look into the Adjoint flow file
     # Adjoint config
@@ -193,27 +175,23 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
 def obj_f(x,project):
     """ obj = obj_f(x,project)
         
-        Objective Function
-        SU2 Project interface to scipy.fmin_slsqp
-        
+        Objective Functio       
         scipy_slsqp: minimize f(x), float
     """  
-    #print('obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))    
+  
     obj = project.obj_f(x)   
-    #print('After obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))   
+  
     return obj
 
 def obj_df(x,project):
     """ dobj = obj_df(x,project)
         
-        Objective Function Gradients
-        SU2 Project interface to scipy.fmin_slsqp
-        
+        Objective Function Gradients    
         scipy_slsqp: df(x), ndarray[dim]
     """    
-    #print('obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
-    obj_df = project.obj_df(x)   
-    #print('After obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))       
+  
+    obj_df = project.obj_df(x)    
+    
     return obj_df
 
 def con_ceq(x,project):
@@ -221,22 +199,22 @@ def con_ceq(x,project):
         
         Equality Constraint Functions
     """
-    #if project.design_iter !=-1: print('con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+
     cons = project.con_ceq(x)  
-    #print('After con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+  
     return cons
 
 def con_dceq(x,project):
     """ dcons = con_dceq(x,project)
         
         Equality Constraint Gradients
-        SU2 Project interface to scipy.fmin_slsqp
+
         
         scipy_slsqp: dceq(x), ndarray[nceq x dim]
     """
-    #print('con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    
     dcons = project.con_dceq(x)
-    #print('After con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+  
     return dcons
 
 def con_cieq(x,project):
@@ -245,9 +223,9 @@ def con_cieq(x,project):
         Inequality Constraints
 
     """ 
-    #if project.design_iter !=-1: print('con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+
     cons = project.con_cieq(x)  
-    #print('After con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))          
+         
     return cons
     
     
@@ -255,13 +233,13 @@ def con_dcieq(x,project):
     """ dcons = con_dcieq(x,project)
         
         Inequality Constraint Gradients
-        SU2 Project interface to scipy.fmin_slsqp
+
         
         scipy_slsqp: dcieq(x), ndarray[ncieq x dim]
     """
-    #print('con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
+
     dcons = project.con_dcieq(x)
-    #print('After con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    
     return dcons
 
 
