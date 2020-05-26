@@ -219,20 +219,22 @@ class Design:
 
            # scaling obj_function with gradient factor
            global_factor = float(self.config['OPT_GRADIENT_FACTOR']) 
+                
+           if len(self.c_dieq_plus) !=0 and len(self.c_dieq_minus) !=0: 
+              return np.concatenate((self.c_dieq_plus, - self.c_dieq_minus), axis=0), global_factor 
+           elif len(self.c_dieq_plus) == 0:
+              return -self.c_dieq_minus, global_factor
+           elif len(self.c_dieq_minus) == 0:
+              return self.c_dieq_plus, global_factor
+           else:
+               print('Empty constraint gradient.[pull_c_dieq in FSI_design.py]')
+               sys.exit()           
+           
         else:
            print('Cant evaluate c_dieq. Geo hasn t run.[pull_c_dieq in FSI_design.py]')
-           sys.exit()               
-        
-        if len(self.c_dieq_plus) !=0 and len(self.c_dieq_minus) !=0: 
-           return np.concatenate((self.c_dieq_plus, - self.c_dieq_minus), axis=0), global_factor 
-        elif len(self.c_dieq_plus) == 0:
-           return -self.c_dieq_minus, global_factor
-        elif len(self.c_dieq_minus) == 0:
-           return self.c_dieq_plus, global_factor
-        else:
-            print('Empty constraint gradient.[pull_c_dieq in FSI_design.py]')
-            sys.exit()
-    
+           sys.exit()   
+           
+           
     def pull_obj_df(self,adj_folder,FFD_indexes, PointInv,ffd_degree):
     
         if self.adjoint == True:
