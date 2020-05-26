@@ -200,7 +200,7 @@ def obj_f(x,project):
     """  
     print('obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))    
     obj = project.obj_f(x)   
-
+    print('After obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))   
     return obj
 
 def obj_df(x,project):
@@ -213,6 +213,7 @@ def obj_df(x,project):
     """    
     print('obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
     obj_df = project.obj_df(x)   
+    print('After obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))       
     return obj_df
 
 def con_ceq(x,project):
@@ -221,7 +222,8 @@ def con_ceq(x,project):
         Equality Constraint Functions
     """
     if project.design_iter !=-1: print('con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
-    cons = project.con_ceq(x)        
+    cons = project.con_ceq(x)  
+    print('After con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     return cons
 
 def con_dceq(x,project):
@@ -234,7 +236,7 @@ def con_dceq(x,project):
     """
     print('con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     dcons = project.con_dceq(x)
-    
+    print('After con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     return dcons
 
 def con_cieq(x,project):
@@ -244,7 +246,8 @@ def con_cieq(x,project):
 
     """ 
     if project.design_iter !=-1: print('con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
-    cons = project.con_cieq(x)    
+    cons = project.con_cieq(x)  
+    print('After con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))          
     return cons
     
     
@@ -258,7 +261,7 @@ def con_dcieq(x,project):
     """
     print('con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
     dcons = project.con_dcieq(x)
-         
+    print('After con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     return dcons
 
 
