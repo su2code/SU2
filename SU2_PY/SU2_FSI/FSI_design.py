@@ -92,7 +92,7 @@ class Design:
         self.design_folder  = design_folder      # design folder
         self.folder =  folder            # run folder 
         self.design_nbr = nbr      # current design number
-        _setx(self,x)              # collection of dv_variables of the current design (private)
+        self._setx(x)              # collection of dv_variables of the current design (private)
         #self._x_old = x_old          # collection of dv_variable of the previous design (private)
         self.n_dv = len(self.__x)
         self.configFSIPrimal = configFSIPrimal
@@ -128,7 +128,7 @@ class Design:
         # before running the command the new DV_VALUE needs to be specified inside the deformation config
         ConfigFileName = deform_folder + '/' + self.config['CONFIG_DEF']
         # It includes the relaxation prameter as done in SU2
-        UpdateConfig(ConfigFileName, 'DV_VALUE', self._x/float ( self.config['OPT_RELAX_FACTOR'] ))
+        UpdateConfig(ConfigFileName, 'DV_VALUE', self.__x/float ( self.config['OPT_RELAX_FACTOR'] ))
         
         # performing SU2_DEF
         DeformMesh(deform_folder,self.config['CONFIG_DEF'])
