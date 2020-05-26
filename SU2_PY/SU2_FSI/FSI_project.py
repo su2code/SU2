@@ -70,7 +70,7 @@ class Project:
         self.configFSIAdjoint = None
         
         # Design container
-        self.design = []
+        self._design = []
 
         self.design_iter = -1  # optimization iter (design number) [initialization]
         self.magnord_design = 3 # Expected order of magnitude of design number
@@ -124,7 +124,7 @@ class Project:
         self.Primal()
         
         # pulling obj function with scale
-        obj_f, scale, global_factor = self.design[self.design_iter].pull_obj_f(self.primal_folder)
+        obj_f, scale, global_factor = self._design[self.design_iter].pull_obj_f(self.primal_folder)
         # return function
         return obj_f*scale*global_factor
         
@@ -139,7 +139,7 @@ class Project:
         self.Adjoint()
         
         # return the function
-        obj_df, global_factor = self.design[self.design_iter].pull_obj_df(self.adjoint_folder,self.FFD_indexes, self.PointInv,self.ffd_degree)
+        obj_df, global_factor = self._design[self.design_iter].pull_obj_df(self.adjoint_folder,self.FFD_indexes, self.PointInv,self.ffd_degree)
                 
         return obj_df*global_factor
 
@@ -155,7 +155,7 @@ class Project:
         
         print('con_ceq')
         # pulls constraint equality
-        c_eq = self.design[self.design_iter].pull_c_eq(self.geo_folder)
+        c_eq = self._design[self.design_iter].pull_c_eq(self.geo_folder)
         
         # return ceq        
         return c_eq
@@ -171,7 +171,7 @@ class Project:
         
         print('con_dceq')
         # pull gradient of constraint equality
-        dc_eq, global_factor = self.design[self.design_iter].pull_c_deq( self.geo_folder)
+        dc_eq, global_factor = self._design[self.design_iter].pull_c_deq( self.geo_folder)
         
         # return dceq
         return dc_eq*global_factor
@@ -187,7 +187,7 @@ class Project:
         
         print('con_cieq')
         # pull constraint inequality
-        c_ieq = self.design[self.design_iter].pull_c_ieq(self.geo_folder)
+        c_ieq = self._design[self.design_iter].pull_c_ieq(self.geo_folder)
         
         # return cieq
         return c_ieq
@@ -203,7 +203,7 @@ class Project:
         
         print('con_diceq')
         # pull gradient of constraint inequality
-        c_dieq, global_factor = self.design[self.design_iter].pull_c_dieq(self.geo_folder)
+        c_dieq, global_factor = self._design[self.design_iter].pull_c_dieq(self.geo_folder)
        
         # return dcieq    
         return c_dieq*global_factor
@@ -245,21 +245,21 @@ class Project:
        else:   
           print('DEBUG project')
           print('self.design_iter = {}'.format(self.design_iter)) 
-          print('self.design[self.design_iter].getx() = {}'.format(self.design[self.design_iter].getx().tolist())) 
+          print('self.design[self.design_iter].getx() = {}'.format(self._design[self.design_iter].getx().tolist())) 
                    
-          print('self.design[self.design_iter].design_nbr = {}'.format(self.design[self.design_iter].design_nbr))
+          print('self.design[self.design_iter].design_nbr = {}'.format(self._design[self.design_iter].design_nbr))
           
-          print('self.design[self.design_iter].deformation = {}'.format(self.design[self.design_iter].deformation))
+          print('self.design[self.design_iter].deformation = {}'.format(self._design[self.design_iter].deformation))
           
-          print('self.design[self.design_iter].geo = {}'.format(self.design[self.design_iter].geo))
+          print('self.design[self.design_iter].geo = {}'.format(self._design[self.design_iter].geo))
           
-          print('self.design[self.design_iter].primal = {}'.format(self.design[self.design_iter].primal))
+          print('self.design[self.design_iter].primal = {}'.format(self._design[self.design_iter].primal))
           
-          print('self.design[self.design_iter].adjoint = {}'.format(self.design[self.design_iter].adjoint))
+          print('self.design[self.design_iter].adjoint = {}'.format(self._design[self.design_iter].adjoint))
           
-          print('self.design[self.design_iter].c_eq = {}'.format(self.design[self.design_iter].c_eq.tolist()))
+          print('self.design[self.design_iter].c_eq = {}'.format(self._design[self.design_iter].c_eq.tolist()))
           
-          x =  self.design[self.design_iter].getx()   
+          x =  self._design[self.design_iter].getx()   
           delta = x - x_in
           print('delta = {}'.format(delta.tolist())) 
           module = np.linalg.norm(delta)
@@ -282,7 +282,7 @@ class Project:
         if self.design_iter == 0:
            x_old = x_in
         else:   
-           x_old = self.design[self.design_iter-1].getx()
+           x_old = self._design[self.design_iter-1].getx()
         
         # create design folder
         self.design_folder = self.folder + '/DESIGNS/' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design)
@@ -292,7 +292,7 @@ class Project:
         run_command(command, 'Creating design ' + str(int(self.design_iter)).zfill(self.magnord_design) + ' directory', False)  
             
         # initialize and append new design object    
-        self.design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, self.folder, self.design_folder, self.design_iter ,x_in, x_old ))    
+        self._design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, self.folder, self.design_folder, self.design_iter ,x_in, x_old ))    
         
 
     def DeformMesh(self):    
@@ -323,7 +323,7 @@ class Project:
         run_command(command, 'Pulling mesh config for deformation', False)
         
         # Performing mesh deformation
-        self.design[self.design_iter].SU2_DEF(self.deform_folder)
+        self._design[self.design_iter].SU2_DEF(self.deform_folder)
         
         
     def CheckGeo(self):    
@@ -331,7 +331,7 @@ class Project:
        If Geo sensitivities (constraints and gradients). are required, checks if GEO run has been done. If not sets up the folder and performs it.
        """ 
        
-       if self.design[self.design_iter].geo == False:
+       if self._design[self.design_iter].geo == False:
             
            # creating folder for analysis
            self.geo_folder = self.design_folder + '/GEO'
@@ -348,7 +348,7 @@ class Project:
            
            print('Executing Geo')
            # Running SU2_GEO
-           self.design[self.design_iter].SU2_GEO(self.geo_folder)
+           self._design[self.design_iter].SU2_GEO(self.geo_folder)
            
     
     def Primal(self):
@@ -372,7 +372,7 @@ class Project:
        
        print('Executing Primal')
        # Running primal
-       self.design[self.design_iter].FSIPrimal(self.primal_folder)
+       self._design[self.design_iter].FSIPrimal(self.primal_folder)
        
     def Adjoint(self):
        """
@@ -397,7 +397,7 @@ class Project:
        
        # pulling restart for pyBeam and SU2 and flow.vtk
        command = []
-       if self.design[self.design_iter].primal == True:
+       if self._design[self.design_iter].primal == True:
            
           # pyBeam 
           orig_file = self.primal_folder + '/' + 'restart.pyBeam'
@@ -421,15 +421,15 @@ class Project:
           sys.exit()
 
        print('Executing Adjoint')
-       # Running primal
-       self.design[self.design_iter].FSIAdjoint(self.adjoint_folder)
+       # Running adjoint
+       self._design[self.design_iter].FSIAdjoint(self.adjoint_folder)
             
     def SetMesh(self, destination_folder):
        """
        Pulls mesh file. If optimization iter is 1, pulling is from project folder. If a deformation occurred, pulling is done from DEFORM folder
        """ 
        
-       if self.design[self.design_iter].deformation == False:
+       if self._design[self.design_iter].deformation == False:
           # In case deformation hasn't occurred (first iteration) we need the original mesh file
           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
           command = 'cp ' + mesh_filename + ' ' + destination_folder + '/'
