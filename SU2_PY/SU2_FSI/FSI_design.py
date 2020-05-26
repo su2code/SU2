@@ -85,16 +85,16 @@ class Design:
 
     """
 
-    def __init__( self, config, configFSIPrimal,configFSIAdjoint, folder, design_folder, nbr ,x, x_old ):
+    def __init__( self, config, configFSIPrimal,configFSIAdjoint, folder, design_folder, nbr ,dv, x_old ):
         print('Initializing design....')
         # Attributes:
         self.config  = config      # base config
         self.design_folder  = design_folder      # design folder
         self.folder =  folder            # run folder 
         self.design_nbr = nbr      # current design number
-        self._setx(x)              # collection of dv_variables of the current design (private)
+        self._setdv(dv)              # collection of dv_variables of the current design (private)
         #self._x_old = x_old          # collection of dv_variable of the previous design (private)
-        self.n_dv = len(self.__x)
+        self.n_dv = len(self.__dv)
         self.configFSIPrimal = configFSIPrimal
         self.configFSIAdjoint = configFSIAdjoint   
         # booleians for every analysis
@@ -110,12 +110,12 @@ class Design:
         self.obj_f = None
         self.obj_df = None
 
-    def _setx(self,x):
-        self.__x = x
+    def _setdv(self,dv):
+        self.__dv = dv
 
-    def getx(self):
+    def getdv(self):
         
-        return self.__x
+        return self.__dv
     
     #def getxold(self):
         
@@ -128,7 +128,7 @@ class Design:
         # before running the command the new DV_VALUE needs to be specified inside the deformation config
         ConfigFileName = deform_folder + '/' + self.config['CONFIG_DEF']
         # It includes the relaxation prameter as done in SU2
-        UpdateConfig(ConfigFileName, 'DV_VALUE', self.__x/float ( self.config['OPT_RELAX_FACTOR'] ))
+        UpdateConfig(ConfigFileName, 'DV_VALUE', self.__dv/float ( self.config['OPT_RELAX_FACTOR'] ))
         
         # performing SU2_DEF
         DeformMesh(deform_folder,self.config['CONFIG_DEF'])
