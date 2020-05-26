@@ -161,6 +161,42 @@ def get_su2_dim(filename):
         
     return dim
 
+def get_su2_npoin(filename):
+    
+    meshfile = open(filename,'r')
+    
+    def mesh_readlines(n_lines=1):
+        fileslice = islice(meshfile,n_lines)
+        return list(fileslice)
+    
+    npoin = -1
+    
+    keepon = True
+    while keepon:
+        
+        line = mesh_readlines()
+        
+        if not line: 
+            keepon = False
+            break
+        
+        # fix white space
+        line = line[0]
+        line = line.replace('\t',' ')
+        line = line.replace('\n',' ')
+    
+        # skip comments
+        if line[0] == "%":
+            pass
+    
+        # number of dimensions
+        elif "NPOIN=" in line:
+            # save to SU2_MESH data
+            npoin = int( line.split("=")[1].strip() )
+            keepon = False
+        
+    return npoin
+
 # --- Merge 2 solutions (e.g. primal and dual)
 def merge_sol(mesh0, mesh1):
     mesh0['solution'] = np.hstack((mesh0['solution'], \
@@ -248,7 +284,7 @@ def create_sensor(solution, sensor):
     
     return sensor_wrap
 
-def plot_results(history_format, filename, iter):
+def plot_results(history_format, filename, iter, npoin):
     """ writes a Tecplot or CSV file for plotting adaptation results
     """
 
@@ -279,7 +315,7 @@ def plot_results(history_format, filename, iter):
                 if i == headerline:
                     break
 
-        header = header + '"Adap_Iter", ' + line.decode('ascii')
+        header = header + '"Adap_Iter", "NDOFs", ' + line.decode('ascii')
 
         plotfile = open(filename,'w')
         plotfile.write(header)
@@ -297,7 +333,7 @@ def plot_results(history_format, filename, iter):
         last_line = f.readline().decode('ascii')
 
     plotfile.write(indent_spacing)
-    plotfile.write('%d, '%iter)
+    plotfile.write('%d, %d, '%(iter,npoin))
     plotfile.write(last_line)
     plotfile.write('\n')
 
