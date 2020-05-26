@@ -150,8 +150,8 @@ elif get_option('enable-openblas')
 
 endif
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
-subdir('externals/cparse')
 
+subdir('externals/exprtk')
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
