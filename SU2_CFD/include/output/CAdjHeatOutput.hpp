@@ -28,6 +28,9 @@
 #pragma once
 
 #include "COutput.hpp"
+#include "modules/CCommonModule.hpp"
+#include "modules/CConvergenceModule.hpp"
+#include "modules/CResidualModule.hpp"
 
 /*! \class CAdjHeatOutput
  *  \brief Output class for adjoint heat output.

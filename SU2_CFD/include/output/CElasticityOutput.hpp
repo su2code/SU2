@@ -28,6 +28,11 @@
 #pragma once
 
 #include "COutput.hpp"
+#include "modules/CCommonModule.hpp"
+#include "modules/CConvergenceModule.hpp"
+#include "modules/CResidualModule.hpp"
+#include "modules/CDirectDiffModule.hpp"
+#include "modules/CUserFunctionModule.hpp"
 
 /*! \class CElasticityOutput
  *  \brief Output class for FEA problems.

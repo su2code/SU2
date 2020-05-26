@@ -1,16 +1,6 @@
 #pragma once
 #include "COutputModule.hpp"
-#include "CCommonModule.hpp"
-#include "CAerodynamicsModule.hpp"
-#include "CConvergenceModule.hpp"
-#include "CFlowCoefficientModule.hpp"
-#include "CResidualModule.hpp"
-#include "CTimeConvergenceModule.hpp"
-#include "CDirectDiffModule.hpp"
-#include "CUserFunctionModule.hpp"
-#include "CTurbOutputModule.hpp"
-#include "CFVMBaseModule.hpp"
-#include "CVortexIdentificationModule.hpp"
+
 
 #include "COutFieldManager.hpp"
 

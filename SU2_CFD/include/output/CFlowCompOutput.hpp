@@ -28,7 +28,17 @@
 #pragma once
 
 #include "CFlowOutput.hpp"
-#include "../../include/output/modules/CModuleManager.hpp"
+#include "modules/CCommonModule.hpp"
+#include "modules/CAerodynamicsModule.hpp"
+#include "modules/CConvergenceModule.hpp"
+#include "modules/CFlowCoefficientModule.hpp"
+#include "modules/CResidualModule.hpp"
+#include "modules/CTimeConvergenceModule.hpp"
+#include "modules/CDirectDiffModule.hpp"
+#include "modules/CUserFunctionModule.hpp"
+#include "modules/CTurbOutputModule.hpp"
+#include "modules/CFVMBaseModule.hpp"
+#include "modules/CVortexIdentificationModule.hpp"
 
 class CVariable;
 

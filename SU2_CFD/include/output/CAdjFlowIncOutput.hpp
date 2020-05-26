@@ -28,6 +28,9 @@
 #pragma once
 
 #include "COutput.hpp"
+#include "modules/CCommonModule.hpp"
+#include "modules/CConvergenceModule.hpp"
+#include "modules/CResidualModule.hpp"
 
 /*! \class CAdjFlowIncOutput
  *  \brief Output class for incompressible flow discrete adjoint problems.

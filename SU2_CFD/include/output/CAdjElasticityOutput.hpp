@@ -28,6 +28,9 @@
 #pragma once
 
 #include "COutput.hpp"
+#include "modules/CCommonModule.hpp"
+#include "modules/CConvergenceModule.hpp"
+#include "modules/CResidualModule.hpp"
 
 /*! \class CAdjElasticityOutput
  *  \brief Output class for elasticity discrete adjoint problems.
