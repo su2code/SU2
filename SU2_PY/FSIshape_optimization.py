@@ -57,6 +57,42 @@ def main():
     
 #: main()
 
+def FSIshape_optimization( filename                           ,
+                        partitions  = 0                       ):
+
+    # Read opt Config
+    config = OptConfig(filename)  # opt configuration file
+
+
+
+    config['NUMBER_PART'] = partitions
+    config['FOLDER'] = '.'
+
+    its               = int ( config['OPT_ITERATIONS'] )                      # number of opt iterations
+    bound_upper       = float ( config['OPT_BOUND_UPPER'] )                   # variable bound to be scaled by the line search
+    bound_lower       = float ( config['OPT_BOUND_LOWER'] )                   # variable bound to be scaled by the line search
+    relax_factor      = float ( config['OPT_RELAX_FACTOR'] )                  # line search scale
+    gradient_factor   = float ( config['OPT_GRADIENT_FACTOR'] )               # objective function and gradient scale
+    opt_constraint    = config['OPT_CONSTRAINT']
+    folder = config['FOLDER']
+    accu              = float ( config['OPT_ACCURACY'] ) * gradient_factor    # optimizer accuracy
+    # n_dv
+    dv_kind_str = readConfig(config['CONFIG_DEF'], 'DV_KIND')
+    n_dv = int(len(dv_kind_str.split(',')))
+    x0                = [0.0]*n_dv # initial design
+    xb_low            = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
+    xb_up             = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
+    xb                = list(zip(xb_low, xb_up)) # design bounds
+
+    # Instantiate project object
+    project = Project(config)
+    
+    
+    # call optimization function  (nned to define some high level elements yet....)
+    slsqp(project,x0,xb,its,accu)
+
+    return 
+
 def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     """ result = scipy_slsqp(project,x0=[],xb=[],its=100,accu=1e-10)
     
@@ -154,44 +190,6 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     return outputs
 
 
-
-def FSIshape_optimization( filename                           ,
-                        partitions  = 0                       ):
-
-    # Read opt Config
-    config = OptConfig(filename)  # opt configuration file
-
-
-
-    config['NUMBER_PART'] = partitions
-    config['FOLDER'] = '.'
-
-    its               = int ( config['OPT_ITERATIONS'] )                      # number of opt iterations
-    bound_upper       = float ( config['OPT_BOUND_UPPER'] )                   # variable bound to be scaled by the line search
-    bound_lower       = float ( config['OPT_BOUND_LOWER'] )                   # variable bound to be scaled by the line search
-    relax_factor      = float ( config['OPT_RELAX_FACTOR'] )                  # line search scale
-    gradient_factor   = float ( config['OPT_GRADIENT_FACTOR'] )               # objective function and gradient scale
-    opt_constraint    = config['OPT_CONSTRAINT']
-    folder = config['FOLDER']
-    accu              = float ( config['OPT_ACCURACY'] ) * gradient_factor    # optimizer accuracy
-    # n_dv
-    dv_kind_str = readConfig(config['CONFIG_DEF'], 'DV_KIND')
-    n_dv = int(len(dv_kind_str.split(',')))
-    x0                = [0.0]*n_dv # initial design
-    xb_low            = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
-    xb_up             = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
-    xb                = list(zip(xb_low, xb_up)) # design bounds
-
-    # Instantiate project object
-    project = Project(config)
-    
-    
-    # call optimization function  (nned to define some high level elements yet....)
-    slsqp(project,x0,xb,its,accu)
-
-    return 
-
-
 def obj_f(x,project):
     """ obj = obj_f(x,project)
         
@@ -200,6 +198,7 @@ def obj_f(x,project):
         
         scipy_slsqp: minimize f(x), float
     """  
+    print('obj_f: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))    
     obj = project.obj_f(x)   
 
     return obj
@@ -212,10 +211,8 @@ def obj_df(x,project):
         
         scipy_slsqp: df(x), ndarray[dim]
     """    
-    
-    obj_df = project.obj_df(x)
-
-    
+    print('obj_df: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
+    obj_df = project.obj_df(x)   
     return obj_df
 
 def con_ceq(x,project):
@@ -223,10 +220,8 @@ def con_ceq(x,project):
         
         Equality Constraint Functions
     """
-    
-    cons = project.con_ceq(x)
-    
-        
+    if project.design_iter !=-1: print('con_ceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    cons = project.con_ceq(x)        
     return cons
 
 def con_dceq(x,project):
@@ -237,7 +232,7 @@ def con_dceq(x,project):
         
         scipy_slsqp: dceq(x), ndarray[nceq x dim]
     """
-    
+    print('con_dceq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
     dcons = project.con_dceq(x)
     
     return dcons
@@ -247,8 +242,9 @@ def con_cieq(x,project):
         
         Inequality Constraints
 
-    """    
-    cons = project.con_cieq(x)
+    """ 
+    if project.design_iter !=-1: print('con_cieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))      
+    cons = project.con_cieq(x)    
     return cons
     
     
@@ -260,9 +256,9 @@ def con_dcieq(x,project):
         
         scipy_slsqp: dcieq(x), ndarray[ncieq x dim]
     """
-    
+    print('con_dcieq: design {} x ={}'.format(project.design_iter,project._design[project.design_iter].getdv()))     
     dcons = project.con_dcieq(x)
-        
+         
     return dcons
 
 

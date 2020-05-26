@@ -115,11 +115,11 @@ class Project:
         self.pyBeamProp = readConfig(self.configFSIPrimal['PYBEAM_CONFIG'], 'PROPERTY_FILE')
 
     def obj_f(self,x_new):
+        print('Project obj_f') 
         # Checking if new design is needed
         # In case starts new design and deform
         self.CheckNewDesign(x_new)
-          
-        print('obj_f')        
+                 
         #Primal
         self.Primal()
         
@@ -129,12 +129,11 @@ class Project:
         return obj_f*scale*global_factor
         
     def obj_df(self,x_new):
-        
+        print('Project obj_df')    
         # Check if new design is needed (it won't as Adjoin is performed after primal)        
         # In case start new design and deform
         self.CheckNewDesign(x_new)
         
-        print('obj_df') 
         #Adjoint
         self.Adjoint()
         
@@ -144,7 +143,7 @@ class Project:
         return obj_df*global_factor
 
     def con_ceq(self,x_new):
-        
+        print('Project con_ceq')
         # Check if new design is needed        
         # In case start new design and deform
         self.CheckNewDesign(x_new)
@@ -153,7 +152,6 @@ class Project:
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
         
-        print('con_ceq')
         # pulls constraint equality
         c_eq = self._design[self.design_iter].pull_c_eq(self.geo_folder)
         
@@ -161,7 +159,7 @@ class Project:
         return c_eq
     
     def con_dceq(self,x_new):
-        
+        print('Project con_dceq')
         # Check if new design is needed (it won't as geo gradient is calculated after geo)       
         # In case start new design and deform
         self.CheckNewDesign(x_new)
@@ -169,7 +167,6 @@ class Project:
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()   
         
-        print('con_dceq')
         # pull gradient of constraint equality
         dc_eq, global_factor = self._design[self.design_iter].pull_c_deq( self.geo_folder)
         
@@ -177,7 +174,7 @@ class Project:
         return dc_eq*global_factor
     
     def con_cieq(self,x_new):
-        
+        print('Project con_cieq')
         # Check if new design is needed        
         # In case start new design and deform
         self.CheckNewDesign(x_new)
@@ -185,7 +182,6 @@ class Project:
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
         
-        print('con_cieq')
         # pull constraint inequality
         c_ieq = self._design[self.design_iter].pull_c_ieq(self.geo_folder)
         
@@ -193,7 +189,7 @@ class Project:
         return c_ieq
     
     def con_dcieq(self,x_new):
-        
+        print('con_diceq')
         # Check if new design is needed (it won't as geo gradient is calculated after geo)       
         # In case start new design and deform
         self.CheckNewDesign(x_new)
@@ -201,7 +197,6 @@ class Project:
         #Check if Geo has been executed, if it hasn't, execute Geo
         self.CheckGeo()
         
-        print('con_diceq')
         # pull gradient of constraint inequality
         c_dieq, global_factor = self._design[self.design_iter].pull_c_dieq(self.geo_folder)
        
@@ -234,7 +229,6 @@ class Project:
             
             
     def CheckNewDesign(self, x_in):
-       print('x_in = {}'.format(x_in.tolist())) 
        if self.design_iter == -1:
            print('Evaluating initial design')
            self.design_iter += 1
@@ -242,24 +236,8 @@ class Project:
            self.InitializeNewDesign(x_in)
            # Writing solution to Output           
            WriteSolution(self.folder + '/DESIGNS' ,x_in,self.design_iter)
-       else:   
-          print('DEBUG project')
-          print('self.design_iter = {}'.format(self.design_iter)) 
-          print('self.design[self.design_iter].getx() = {}'.format(self._design[self.design_iter].getx().tolist())) 
-                   
-          print('self.design[self.design_iter].design_nbr = {}'.format(self._design[self.design_iter].design_nbr))
-          
-          print('self.design[self.design_iter].deformation = {}'.format(self._design[self.design_iter].deformation))
-          
-          print('self.design[self.design_iter].geo = {}'.format(self._design[self.design_iter].geo))
-          
-          print('self.design[self.design_iter].primal = {}'.format(self._design[self.design_iter].primal))
-          
-          print('self.design[self.design_iter].adjoint = {}'.format(self._design[self.design_iter].adjoint))
-          
-          print('self.design[self.design_iter].c_eq = {}'.format(self._design[self.design_iter].c_eq.tolist()))
-          
-          x =  self._design[self.design_iter].getx()   
+       else:            
+          x =  self._design[self.design_iter].getdv()   
           delta = x - x_in
           print('delta = {}'.format(delta.tolist())) 
           module = np.linalg.norm(delta)
@@ -277,12 +255,11 @@ class Project:
             
     
     def InitializeNewDesign(self,x_in):  
-        print('project.InitializeNewDesign()')
         # old design
         if self.design_iter == 0:
            x_old = x_in
         else:   
-           x_old = self._design[self.design_iter-1].getx()
+           x_old = self._design[self.design_iter-1].getdv()
         
         # create design folder
         self.design_folder = self.folder + '/DESIGNS/' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design)
