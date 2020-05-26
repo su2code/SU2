@@ -987,12 +987,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
-      //std::cout << "nonPhys " << std::endl << std::endl;
-      //std::cout << " inside nonPhys U_i[3] =" << U[3] << std::endl << std::endl;
-     // std::cout << "rhos" << std::endl << std::endl;
       U[iSpecies]            = 1E-20;
-      //nonPhys                = true;
-      
+    //  nonPhys                = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
     V[RHO_INDEX]            += U[iSpecies];

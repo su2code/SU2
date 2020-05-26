@@ -617,10 +617,14 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
 
   SetBaseClassPointerToNodes();
 
+  cout << "cat: finish creating all NS nodes" << endl;
+
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    cout << "cat: check node " << iPoint << endl;
 
     check = nodes->SetPrimVar_Compressible(iPoint, config); 
 
@@ -1021,21 +1025,22 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *confi
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
   /*--- Get indices of species & mixture density ---*/
-  RHOS_INDEX = nodes->GetRhosIndex();
-  RHO_INDEX  = nodes->GetRhoIndex();
+  //RHOS_INDEX = nodes->GetRhosIndex();
+  //RHO_INDEX  = nodes->GetRhoIndex();
 
   /*--- Modify species density to mass concentration ---*/
-  for ( iPoint = 0; iPoint < nPoint; iPoint++){
-    for( iVar = 0; iVar < nPrimVar; iVar++) {
-      primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
-    }
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
-    for( iVar = 0; iVar < nPrimVar; iVar++)
-      nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
-  }
+  //for ( iPoint = 0; iPoint < nPoint; iPoint++){
+  //  for( iVar = 0; iVar < nPrimVar; iVar++) {
+  //    primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
+  //  }
+  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  //    primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
+  //  for( iVar = 0; iVar < nPrimVar; iVar++)
+  //    nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
+  //}
 
-  const auto& primitives = nodes->GetPrimitive_Aux();
+  //const auto& primitives = nodes->GetPrimitive_Aux();
+  const auto& primitives = nodes->GetPrimitive();
   
   computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
