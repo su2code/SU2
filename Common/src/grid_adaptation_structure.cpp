@@ -352,7 +352,7 @@ void CGridAdaptation::SetSupShock_Refinement(CGeometry *geometry, CConfig *confi
     }
 }
 
-long CGridAdaptation::CheckRectCode(bool *AdaptCode) {
+long CGridAdaptation::CheckRectCode(const bool *AdaptCode) {
 
   int Code = -1;
 
@@ -374,7 +374,7 @@ long CGridAdaptation::CheckRectCode(bool *AdaptCode) {
 
 }
 
-long CGridAdaptation::CheckRectExtCode(bool *AdaptCode) {
+long CGridAdaptation::CheckRectExtCode(const bool *AdaptCode) {
 
   int Code = -1;
 
@@ -414,7 +414,7 @@ long CGridAdaptation::CheckRectExtCode(bool *AdaptCode) {
 
 }
 
-long CGridAdaptation::CheckTriangleCode(bool *AdaptCode) {
+long CGridAdaptation::CheckTriangleCode(const bool *AdaptCode) {
 
   int Code = -1;
 
@@ -444,7 +444,7 @@ long CGridAdaptation::CheckTriangleCode(bool *AdaptCode) {
 
 }
 
-long CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
+long CGridAdaptation::CheckTetraCode(const bool *AdaptCode) {
 
   int Code = -1;
   unsigned short nDivEdges, iVar;
@@ -485,7 +485,7 @@ long CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
 
 }
 
-long CGridAdaptation::CheckHexaCode(bool *AdaptCode) {
+long CGridAdaptation::CheckHexaCode(const bool *AdaptCode) {
 
   int Code = -1;
 
@@ -533,7 +533,7 @@ long CGridAdaptation::CheckHexaCode(bool *AdaptCode) {
 
 }
 
-long CGridAdaptation::CheckPyramCode(bool *AdaptCode) {
+long CGridAdaptation::CheckPyramCode(const bool *AdaptCode) {
 
   int Code = -1;
 
@@ -588,7 +588,7 @@ long CGridAdaptation::CheckPyramCode(bool *AdaptCode) {
 
 }
 
-void CGridAdaptation::RectDivision(long code , long *nodes, long **Division, long *nPart) {
+void CGridAdaptation::RectDivision(long code , const long *nodes, long **Division, long *nPart) {
 
   if (code == 1) {
 
@@ -633,7 +633,7 @@ void CGridAdaptation::RectDivision(long code , long *nodes, long **Division, lon
 
 }
 
-void CGridAdaptation::RectExtDivision(long code , long *nodes, long **Division, long *nPart) {
+void CGridAdaptation::RectExtDivision(long code , const long *nodes, long **Division, long *nPart) {
 
   if (code == 2) {
     // number of nodes at each new element
@@ -821,7 +821,7 @@ void CGridAdaptation::RectExtDivision(long code , long *nodes, long **Division, 
 
 }
 
-void CGridAdaptation::TriangleDivision(long code , long *nodes, long *edges, long **Division, long *nPart) {
+void CGridAdaptation::TriangleDivision(long code , const long *nodes, long *edges, long **Division, long *nPart) {
 
   if (code == 1) {
     // number of nodes at each new element
@@ -994,7 +994,7 @@ void CGridAdaptation::TriangleDivision(long code , long *nodes, long *edges, lon
   }
 }
 
-void CGridAdaptation::TetraDivision(long code , long *nodes, long *edges, long **Division, long *nPart) {
+void CGridAdaptation::TetraDivision(long code , const long *nodes, long *edges, long **Division, long *nPart) {
 
 
   if (code == 1) {
@@ -1163,7 +1163,7 @@ void CGridAdaptation::TetraDivision(long code , long *nodes, long *edges, long *
 
 }
 
-void CGridAdaptation::HexaDivision(long code , long *nodes, long **Division, long *nPart) {
+void CGridAdaptation::HexaDivision(long code , const long *nodes, long **Division, long *nPart) {
 
   if (code == 1) {
 
@@ -1303,7 +1303,7 @@ void CGridAdaptation::HexaDivision(long code , long *nodes, long **Division, lon
 
 }
 
-void CGridAdaptation::PyramDivision(long code , long *nodes, long **Division, long *nPart) {
+void CGridAdaptation::PyramDivision(long code , const long *nodes, long **Division, long *nPart) {
 
   if (code == 1) {
 

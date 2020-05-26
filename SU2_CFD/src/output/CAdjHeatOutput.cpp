@@ -111,6 +111,14 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// END_GROUP
 
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+
+  if (config->GetDeform_Mesh()){
+    AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
+    AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
+  }
+
 }
 
 void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -127,6 +135,13 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
 
+  SetHistoryOutputValue("LINSOL_ITER", adjheat_solver->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjheat_solver->GetResLinSolver()));
+
+  if (config->GetDeform_Mesh()) {
+    SetHistoryOutputValue("DEFORM_ITER", solver[MESH_SOL]->System.GetIterations());
+    SetHistoryOutputValue("DEFORM_RESIDUAL", log10(solver[MESH_SOL]->System.GetResidual()));
+  }
 
 }
 
@@ -175,7 +190,7 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
-  SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
 
   // Residuals
   SetVolumeOutputValue("RES_ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0) - Node_AdjHeat->GetSolution_Old(iPoint, 0));
@@ -192,5 +207,4 @@ void CAdjHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJHEAT_SOL]->GetCSensitivity(iMarker, iVertex));
 
 }
-
 

@@ -19,7 +19,7 @@ swig_gen = generator(
 )
 
 wrapper_deps = [
-    dependency('python3'),
+    python.dependency(embed: true),
 ]
 
 if get_option('enable-normal')

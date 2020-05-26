@@ -42,7 +42,7 @@
 #include <cmath>
 
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
+#include "../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"

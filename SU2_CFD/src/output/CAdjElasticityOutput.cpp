@@ -109,6 +109,9 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
   AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", FieldType::COEFFICIENT);
 
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -136,6 +139,9 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
   SetHistoryOutputValue("SENS_NU", Total_SensNu);
 
   SetHistoryOutputValue("COMBO", solver[FEA_SOL]->GetTotal_ComboObj());
+
+  SetHistoryOutputValue("LINSOL_ITER", solver[ADJFEA_SOL]->GetIterLinSolver());
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(solver[ADJFEA_SOL]->GetResLinSolver()));
 
 }
 
