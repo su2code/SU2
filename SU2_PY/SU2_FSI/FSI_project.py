@@ -62,8 +62,6 @@ class Project:
         self.geo_folder = ''
         self.primal_folder = ''
         self.adjoint_folder = ''
-        self.x = None
-        self.x_old = None
         
         self.design_toll = 10**(-8)  # allowable difference into design variable vector to consider the same design
         
@@ -248,14 +246,8 @@ class Project:
           print('DEBUG project')
           print('self.design_iter = {}'.format(self.design_iter)) 
           print('self.design[self.design_iter].getx() = {}'.format(self.design[self.design_iter].getx().tolist())) 
-          
-          print('self.design[self.design_iter].getxold() = {}'.format(self.design[self.design_iter].getxold().tolist()))
-          
-          print('self.design[self.design_iter].getxold() = {}'.format(self.design[self.design_iter].getxold().tolist()))
-          
-          print('self.x = {}'.format(self.x))
-          
-          print('self.x_old = {}'.format(self.x_old))
+                   
+          print('self.design[self.design_iter].design_nbr = {}'.format(self.design[self.design_iter].design_nbr))
           
           print('self.design[self.design_iter].deformation = {}'.format(self.design[self.design_iter].deformation))
           
@@ -268,8 +260,7 @@ class Project:
           print('self.design[self.design_iter].c_eq = {}'.format(self.design[self.design_iter].c_eq.tolist()))
           
           x =  self.design[self.design_iter].getx()   
-          x_old =  self.design[self.design_iter].getxold() 
-          delta = self.x - x_in
+          delta = x - x_in
           print('delta = {}'.format(delta.tolist())) 
           module = np.linalg.norm(delta)
           if module > self.design_toll:
@@ -290,12 +281,9 @@ class Project:
         # old design
         if self.design_iter == 0:
            x_old = x_in
-           self.x_old = x_in
         else:   
            x_old = self.design[self.design_iter-1].getx()
-           self.x_old = self.x
-           
-        self.x = x_in   
+        
         # create design folder
         self.design_folder = self.folder + '/DESIGNS/' + 'DSN_'+ str(int(self.design_iter)).zfill(self.magnord_design)
         command = 'mkdir ' + self.design_folder
@@ -304,7 +292,7 @@ class Project:
         run_command(command, 'Creating design ' + str(int(self.design_iter)).zfill(self.magnord_design) + ' directory', False)  
             
         # initialize and append new design object    
-        self.design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, self.folder, self.design_folder, self.design_iter ,self.x, x_old ))    
+        self.design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, self.folder, self.design_folder, self.design_iter ,x_in, x_old ))    
         
 
     def DeformMesh(self):    
