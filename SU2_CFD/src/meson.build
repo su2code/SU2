@@ -190,7 +190,7 @@ if get_option('enable-autodiff')
   su2_cfd_ad = executable('SU2_CFD_AD',
                           'SU2_CFD.cpp',
                           install : true,
-                          dependencies : [su2_cfd_dep_ad, su2_deps, cparse_depAD, codi_dep, commonAD_dep],
+                          dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
                           cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
 endif
 

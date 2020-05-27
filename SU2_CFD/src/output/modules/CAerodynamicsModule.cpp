@@ -1,7 +1,6 @@
 #include "../../../include/output/modules/CAerodynamicsModule.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
-#include "../../../../Common/include/fem_geometry_structure.hpp"
 
 #include "../../../include/solvers/CSolver.hpp"
 

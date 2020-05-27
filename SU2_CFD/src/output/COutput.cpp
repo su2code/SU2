@@ -234,7 +234,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   modules->LoadData({config, geometry, solver_container}, {curInnerIter, TimeIter});
 
   if (modules->GetHistoryFields().CheckKey("CONVERGENCE"))
-    convergence = static_cast<bool>(modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value);
+    convergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value));
 
 
   /*--- Output using only the master node ---*/

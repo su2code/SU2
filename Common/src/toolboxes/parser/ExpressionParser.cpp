@@ -1,6 +1,11 @@
-#include "exprtk.hpp"
+
 #include "../../../include/toolboxes/parser/ExpressionParser.hpp"
 #include "../../../include/mpi_structure.hpp"
+#if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
+#define CUSTOM_TYPE su2double
+#endif
+#include "exprtk.hpp"
+
 
 namespace Parser {
 
