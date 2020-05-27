@@ -921,7 +921,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
-            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Kab, simp_penalty);
           }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
@@ -1947,18 +1947,18 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*---  Compute the residual Ax-f ---*/
 
 #ifndef CODI_FORWARD_TYPE
-    CSysVector<passivedouble> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
+    CSysVector<su2mixedfloat> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #else
     CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #endif
 
     SU2_OMP_PARALLEL
     {
-#ifndef CODI_REVERSE_TYPE
+#if !defined(CODI_REVERSE_TYPE) && !defined(USE_MIXED_PRECISION)
     Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
 #else
     /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<passivedouble> sol, res;
+    CSysVector<su2mixedfloat> sol, res;
     sol.PassiveCopy(LinSysSol);
     res.PassiveCopy(LinSysRes);
     Jacobian.ComputeResidual(sol, res, LinSysAux);

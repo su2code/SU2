@@ -96,47 +96,47 @@ public:
   /*!
    * \brief Get fluid pressure.
    */
-  su2double GetPressure ();
+  su2double GetPressure () const;
 
   /*!
    * \brief Get fluid temperature.
    */
-  su2double GetTemperature ();
+  su2double GetTemperature () const;
 
   /*!
    * \brief Get fluid entropy.
    */
-  su2double GetEntropy ();
+  su2double GetEntropy () const;
 
   /*!
    * \brief Get fluid internal energy.
    */
-  su2double GetStaticEnergy ();
+  su2double GetStaticEnergy () const;
 
   /*!
    * \brief Get fluid density.
    */
-  su2double GetDensity ();
+  su2double GetDensity () const;
 
   /*!
    * \brief Get fluid speed of sound.
    */
-  su2double GetSoundSpeed ();
+  su2double GetSoundSpeed () const;
 
   /*!
    * \brief Get fluid speed of sound squared.
    */
-  su2double GetSoundSpeed2 ();
+  su2double GetSoundSpeed2 () const;
 
   /*!
    * \brief Get fluid specific heat at constant pressure.
    */
-  su2double GetCp ();
+  su2double GetCp () const;
 
   /*!
    * \brief Get fluid specific heat at constant volume.
    */
-  su2double GetCv ();
+  su2double GetCv () const;
 
   /*!
    * \brief Get fluid dynamic viscosity
@@ -153,42 +153,42 @@ public:
   /*!
    * \brief Get fluid pressure partial derivative.
    */
-  su2double GetdPdrho_e ();
+  su2double GetdPdrho_e () const;
 
   /*!
    * \brief Get fluid pressure partial derivative.
    */
-  su2double GetdPde_rho ();
+  su2double GetdPde_rho () const;
 
   /*!
    * \brief Get fluid temperature partial derivative.
    */
-  su2double GetdTdrho_e ();
+  su2double GetdTdrho_e () const;
 
   /*!
    * \brief Get fluid temperature partial derivative.
    */
-  su2double GetdTde_rho ();
+  su2double GetdTde_rho () const;
 
   /*!
    * \brief Get fluid pressure partial derivative.
    */
-  su2double Getdhdrho_P ();
+  su2double Getdhdrho_P () const;
 
   /*!
    * \brief Get fluid pressure partial derivative.
    */
-  su2double GetdhdP_rho ();
+  su2double GetdhdP_rho () const;
 
   /*!
    * \brief Get fluid temperature partial derivative.
    */
-  su2double Getdsdrho_P ();
+  su2double Getdsdrho_P () const;
 
   /*!
    * \brief Get fluid temperature partial derivative.
    */
-  su2double GetdsdP_rho ();
+  su2double GetdsdP_rho () const;
 
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
@@ -203,12 +203,12 @@ public:
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
    */
-  su2double Getdktdrho_T ();
+  su2double Getdktdrho_T () const;
 
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
    */
-  su2double GetdktdT_rho ();
+  su2double GetdktdT_rho () const;
 
   /*!
    * \brief Set specific heat Cp model.
@@ -515,7 +515,7 @@ private:
   /*!
    * \brief Internal model parameter.
    */
-  su2double  alpha2 (su2double T);
+  su2double  alpha2 (su2double T) const;
 
   /*!
    * \brief Internal function for the implicit call hs.

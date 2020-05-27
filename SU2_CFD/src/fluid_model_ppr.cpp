@@ -53,7 +53,7 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
 CPengRobinson::~CPengRobinson(void) { }
 
 
-su2double CPengRobinson::alpha2(su2double T) {
+su2double CPengRobinson::alpha2(su2double T) const {
 
   return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
 }
