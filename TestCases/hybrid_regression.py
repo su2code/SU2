@@ -568,7 +568,7 @@ def main():
 
     for test in test_list:
         test.su2_exec = "SU2_CFD -t 2"
-        test.timeout = 300
+        test.timeout = 600
         test.tol = 1e-4
     #end
 
