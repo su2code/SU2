@@ -33,7 +33,7 @@
 #include <map>
 #endif
 
-#include "./datatype_structure.hpp"
+#include "basic_types/datatype_structure.hpp"
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>

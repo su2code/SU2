@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/datatype_structure.hpp"
+#include "../../include/basic_types/datatype_structure.hpp"
 
 namespace AD {
 #ifdef CODI_REVERSE_TYPE
