@@ -78,6 +78,9 @@ template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
 #if defined CODI_REVERSE_TYPE
 class CBaseMPIWrapper;
 template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#if defined USE_MIXED_PRECISION
+template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
+#endif
 #endif
 
 /*!

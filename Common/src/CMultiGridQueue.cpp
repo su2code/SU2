@@ -144,7 +144,9 @@ void CMultiGridQueue::VisualizeQueue(void) const {
   unsigned short iQ = 0;
   for (const auto& Q : QueueCV) {
     cout << "Number of neighbors " << iQ << ": ";
-    for (auto iPoint : Q) cout << iPoint << " ";
+    for (auto iPoint : Q)
+      if (iPoint != QueueType::ErasedValue)
+        cout << iPoint << " ";
     cout << endl;
     iQ++;
   }
@@ -164,7 +166,8 @@ bool CMultiGridQueue::EmptyQueue(void) const {
 
   if (QueueCV.size() == 1) {
     for (auto iPoint : QueueCV[0])
-      if (RightCV[iPoint]) return false;
+      if ((iPoint != QueueType::ErasedValue) && RightCV[iPoint])
+        return false;
   }
   else {
     for (size_t iQ = 1; iQ < QueueCV.size(); ++iQ)
