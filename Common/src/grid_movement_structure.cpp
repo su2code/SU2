@@ -38,33 +38,31 @@ CGridMovement::CGridMovement(void) { }
 
 CGridMovement::~CGridMovement(void) { }
 
-CVolumetricMovement::CVolumetricMovement(void) : CGridMovement() {
-
-
+CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(true) {
 
 }
 
-CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
+CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement(), System(true) {
 
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
-    /*--- Initialize the number of spatial dimensions, length of the state
-     vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
+  /*--- Initialize the number of spatial dimensions, length of the state
+   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-    nDim   = geometry->GetnDim();
-    nVar   = geometry->GetnDim();
-    nPoint = geometry->GetnPoint();
-    nPointDomain = geometry->GetnPointDomain();
+  nDim   = geometry->GetnDim();
+  nVar   = geometry->GetnDim();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 
-    nIterMesh = 0;
+  nIterMesh = 0;
 
-    /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-    if (config->GetVolumetric_Movement()){
-      LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-      LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-      StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-    }
+  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+  if (config->GetVolumetric_Movement()){
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+  }
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) { }
@@ -127,16 +125,13 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
 
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
-  bool Screen_Output;
+  unsigned long Tot_Iter = 0;
+  su2double MinVolume, MaxVolume;
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
 
-  Smoothing_Iter = config->GetDeform_Linear_Solver_Iter();
-  Screen_Output  = config->GetDeform_Output();
-  NumError       = config->GetDeform_Linear_Solver_Error();
-  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+  auto Screen_Output  = config->GetDeform_Output();
+  auto Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
 
   /*--- Disable the screen output if we're running SU2_CFD ---*/
 
@@ -150,7 +145,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
    deformation can be divided into increments to help with stability. In
    particular, the linear elasticity equations hold only for small deformations. ---*/
 
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+  for (auto iNonlinear_Iter = 0ul; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
 
     /*--- Initialize vector and sparse matrix ---*/
 
@@ -178,9 +173,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (Derivative) { SetBoundaryDerivatives(geometry, config); }
 
-    CMatrixVectorProduct<su2double>* mat_vec = nullptr;
-    CPreconditioner<su2double>* precond = nullptr;
-
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
@@ -193,120 +185,19 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
-    /*--- If we want no derivatives or the direct derivatives,
-     * we solve the system using the normal matrix vector product and preconditioner.
-     * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
-     * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
+    /*--- If we want no derivatives or the direct derivatives, we solve the system using the
+     * normal matrix vector product and preconditioner. For the mesh sensitivities using
+     * the discrete adjoint method we solve the system using the transposed matrix. ---*/
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
 
-      if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# LU_SGS preconditioner." << endl;
-    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CLU_SGSPreconditioner<su2double>(StiffMatrix, geometry, config);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
-    		StiffMatrix.BuildILUPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, false);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
-    		StiffMatrix.BuildJacobiPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, false);
-    	}
+      Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
 
-      /*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
-
-      if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
-          (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
-    		StiffMatrix.BuildILUPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, true);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
-    		StiffMatrix.BuildJacobiPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, true);
-    	}
+      Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
     }
-
-    if (LinSysRes.norm() != 0.0){
-      switch (config->GetKind_Deform_Linear_Solver()) {
-
-        /*--- Solve the linear system (GMRES with restart) ---*/
-
-        case RESTARTED_FGMRES:
-
-          Tot_Iter = 0; MaxIter = RestartIter;
-
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, Residual_Init, false, config);
-
-          if ((rank == MASTER_NODE) && Screen_Output) {
-            cout << "\n# FGMRES (with restart) residual history" << endl;
-            cout << "# Residual tolerance target = " << NumError << endl;
-            cout << "# Initial residual norm     = " << Residual_Init << endl;
-          }
-
-          if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-
-          while (Tot_Iter < Smoothing_Iter) {
-
-            if (IterLinSol + RestartIter > Smoothing_Iter)
-              MaxIter = Smoothing_Iter - IterLinSol;
-
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, Residual, false, config);
-            Tot_Iter += IterLinSol;
-
-            if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-
-            if (Residual < Residual_Init*NumError) { break; }
-
-          }
-
-          if ((rank == MASTER_NODE) && Screen_Output) {
-            cout << "# FGMRES (with restart) final (true) residual:" << endl;
-            cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-          }
-
-          break;
-
-          /*--- Solve the linear system (GMRES) ---*/
-
-        case FGMRES:
-
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
-
-          break;
-
-          /*--- Solve the linear system (BCGSTAB) ---*/
-
-        case BCGSTAB:
-
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
-
-          break;
-
-
-        case CONJUGATE_GRADIENT:
-
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
-
-          break;
-
-      }
-    }
-
-    /*--- Deallocate memory needed by the Krylov linear solver ---*/
-
-    delete mat_vec;
-    delete precond;
+    su2double Residual = System.GetResidual();
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
