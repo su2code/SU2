@@ -489,9 +489,7 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):
         
     # writing output file with the chain rule
     Output = adj_folder + '/' + 'Control_Points_Sensitivity.dat'
-    log = open(Output,"w")
-    log.write(obj_df)
-    log.close()
+    np.savetxt(Output, obj_df, delimiter =', ')
     
     return obj_df  
     
