@@ -487,7 +487,12 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):
     for i in range(Nalpha):
        obj_df[i] = np.dot(GridSensitivities[:, 2], chain[:,i])
         
-        
+    # writing output file with the chain rule
+    Output = adj_folder + '/' + 'Control_Points_Sensitivity.dat'
+    log = open(Output,"w")
+    log.write(obj_df)
+    log.close()
+    
     return obj_df  
     
     

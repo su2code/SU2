@@ -274,6 +274,7 @@ class Project:
         # Executes shell command
         run_command(command, 'Creating design ' + str(int(self.design_iter)).zfill(self.magnord_design) + ' directory', False)  
             
+        print('InitializeNew Design x_in = {}'.format(x_in))    
         # initialize and append new design object    
         self._design.append(Design(self.config,self.configFSIPrimal,self.configFSIAdjoint, self.folder, self.design_folder, self.design_iter ,x_in, x_old ))    
         
