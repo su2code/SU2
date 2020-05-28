@@ -5,6 +5,9 @@
 CResidualModule::CResidualModule(CConfig* config, int nDim) : CSolverOutputModule(nDim) {}
 
 void CResidualModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) {
+
+  initialResiduals.clear();
+
   map<string, bool> Average;
 
   for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::RESIDUAL})) {

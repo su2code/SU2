@@ -38,6 +38,9 @@ CUserFunctionModule::CUserFunctionModule(CConfig* config, int nDim) : CSolverOut
 }
 
 void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager& volumeFields) {
+
+  volumeFunctionFields.clear();
+
   for (const auto& field : volumeFields.GetCollection().GetReferencesAll()) {
     volumeScope->addVariable(field->first, field->second.value);
   }
@@ -75,6 +78,7 @@ void CUserFunctionModule::DefineHistoryFields(CHistoryOutFieldManager&) {}
 
 void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) {
 
+  historyFunctionFields.clear();
 
   for (const auto& field : historyFields.GetCollection().GetReferencesAll()) {
     historyScope->addVariable(field->first, field->second.value);

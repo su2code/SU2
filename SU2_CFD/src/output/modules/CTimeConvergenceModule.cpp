@@ -36,6 +36,12 @@ void CTimeConvergenceModule::DefineHistoryFields(CHistoryOutFieldManager &histor
 
 void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 
+  WndOld_Func = vector<su2double>(wndConvFields.size());
+  WndNew_Func = vector<su2double>(wndConvFields.size());
+  WndCauchy_Serie = vector<vector<su2double>>(wndConvFields.size(), vector<su2double>(nWndCauchy_Elems, 0.0));
+  WndCauchy_Value = 0.0;
+  TimeConvergence = false;
+
   const auto& coefficentFields = historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT});
 
   for (auto field : coefficentFields){

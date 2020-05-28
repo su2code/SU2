@@ -58,6 +58,8 @@ public:
 
   void CommunicateIntegrals(const string& markerName);
 
+  void Init(CConfig* config);
+
   void LoadVolumeDataAtPoint(const SolverData& solverData, const IterationInfo& iterationInfo, CParallelDataSorter* sorter) override;
 
   void LoadSurfaceDataAtVertex(const SolverData& solverData, const IterationInfo& iterationInfo, CParallelDataSorter* sorter) override;
@@ -65,10 +67,27 @@ public:
   std::string GetPerSurfaceName(const std::string& fieldName, const std::string& markerName){
     return fieldName + "@" + markerName;
   }
+
+  void Clear(){
+    historyFieldsAll = CHistoryOutFieldManager();
+    volumeFieldsAll  = CVolumeOutFieldManager();
+
+    surfaceIntegralVolume.clear();
+    surfaceIntegralVolume.clear();
+  }
 };
+
+
 
 template<typename ModuleList>
 CModuleManager<ModuleList>::CModuleManager(CConfig* config, int nDim) : modules(config, nDim) {
+
+  Init(config);
+
+}
+
+template<typename ModuleList>
+void CModuleManager<ModuleList>::Init(CConfig* config) {
 
   /*--- Set the history output fields for all modules ---*/
 

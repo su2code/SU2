@@ -32,6 +32,13 @@ void CConvergenceModule::DefineHistoryFields(CHistoryOutFieldManager &historyFie
 }
 
 void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
+
+  newFunc = vector<su2double>(convFields.size());
+  oldFunc = vector<su2double>(convFields.size());
+  cauchySerie = vector<vector<su2double>>(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
+  cauchyValue = 0.0;
+  convergence = false;
+
   /*--- Filter convergence fields which are coefficients ---*/
 
   const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT},
@@ -127,6 +134,8 @@ void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& histor
       }
 
       convergence = fieldConverged && convergence;
+    }else {
+      SU2_MPI::Error("Convergence field " + convField + " not found.", CURRENT_FUNCTION);
     }
   }
 
