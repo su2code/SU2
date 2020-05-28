@@ -6,6 +6,8 @@
 #include "../../../SU2_CFD/include/solvers/CNSSolver.hpp"
 #include "../../../SU2_CFD/include/output/modules/CModuleManager.hpp"
 #include "../../../SU2_CFD/include/output/modules/CCommonModule.hpp"
+#include "../../../SU2_CFD/include/output/CFlowCompOutput.hpp"
+#include "../../../SU2_CFD/include/output/modules/CConvergenceModule.hpp"
 #include "../../../SU2_CFD/include/output/modules/CAerodynamicsModule.hpp"
 #include "../../../SU2_CFD/include/output/modules/CFVMBaseModule.hpp"
 
@@ -18,6 +20,7 @@ struct __TestCase__ {
                                      "MACH_NUMBER=0.5\n"
                                      "MARKER_CUSTOM= ( x_minus, x_plus, y_minus, y_plus,z_plus, z_minus)\n"
                                      "VISCOSITY_MODEL= CONSTANT_VISCOSITY\n"
+                                     "CONV_FIELD=RMS_DENSITY\n"
                                      "MESH_BOX_SIZE=5,5,5\n"
                                      "MESH_BOX_LENGTH=1,1,1\n"
                                      "MESH_BOX_OFFSET=0,0,0\n"
@@ -79,7 +82,7 @@ TEST_CASE("Common module", "[Output Module]"){
 
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{100,0});
 
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("INNER_ITER") == Approx(100));
+  CHECK(modules.GetHistoryFields().GetValueByKey("INNER_ITER") == Approx(100));
 
 }
 
@@ -95,7 +98,7 @@ TEST_CASE("FVM Base Module", "[Output Module]"){
               + modules.GetHistoryFields().GetValueByKey("AREA@z_minus")
               + modules.GetHistoryFields().GetValueByKey("AREA@z_plus");
 
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("AREA") == Approx(Area));
+  CHECK(modules.GetHistoryFields().GetValueByKey("AREA") == Approx(Area));
 
 }
 
@@ -107,7 +110,24 @@ TEST_CASE("Aerodynamics Module", "[Output Module]"){
 
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{0,0});
 
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.5338212762));
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("DRAG") == Approx(-2.3919536834));
+  CHECK(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.5338212762));
+  CHECK(modules.GetHistoryFields().GetValueByKey("DRAG") == Approx(-2.3919536834));
 
 }
+
+TEST_CASE("Convergence Module", "[Output Module]"){
+
+  CModuleManager<ModuleList<CFlowCompOutputModule, CConvergenceModule>>  modules(TestCase->config, TestCase->geometry->GetnDim());
+
+  modules.GetHistoryFields().GetItemByKey("RMS_DENSITY").value = -13.0;
+
+  modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{1,0});
+
+  CHECK(modules.GetHistoryFields().GetValueByKey("CONVERGENCE") == 0.0);
+
+  modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{50,0});
+
+  CHECK(modules.GetHistoryFields().GetValueByKey("CONVERGENCE") == 1.0);
+
+}
+
