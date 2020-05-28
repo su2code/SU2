@@ -92,7 +92,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
+  void UpdateMultiGrid(CGeometry **geometry, CConfig *config) const;
 
   /*!
    * \brief Check the boundary vertex that are going to be moved.

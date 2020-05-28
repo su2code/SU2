@@ -44,7 +44,6 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
-#include "./datatype_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -1282,7 +1281,7 @@ public:
    * \brief Constructor of the class which takes an istream buffer containing the config options.
    */
   CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
-  
+
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
@@ -1302,7 +1301,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
   /*!
   * \brief Initialize common fields of the config structure.
   */
@@ -1322,13 +1321,13 @@ public:
   * \brief Print the header to screen
   * \param val_software - Kind of software component
   */
-  void SetHeader(unsigned short val_software);
+  void SetHeader(unsigned short val_software) const;
 
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
-  SU2_MPI::Comm GetMPICommunicator();
+  SU2_MPI::Comm GetMPICommunicator() const;
 
   /*!
    * \brief Set the MPI communicator for SU2.
@@ -3937,7 +3936,7 @@ public:
    * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
    * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
    */
-  bool GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+  bool GetReconstructionGradientRequired(void) const { return ReconstructionGradientRequired; }
 
   /*!
    * \brief Get flag for whether a least-squares gradient method is being applied.
@@ -5403,13 +5402,13 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_FileName(string val_filename, int val_iZone, string ext);
+  string GetMultizone_FileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5483,7 +5482,7 @@ public:
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, int val_iter, string ext);
+  string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
 
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.
@@ -5688,7 +5687,7 @@ public:
    * \param[in] val - new value of the origin
    * \return The mesh motion origin.
    */
-  void SetMotion_Origin(su2double* val) { for (int iDim = 0; iDim < 3; iDim++) Motion_Origin[iDim] = val[iDim]; }
+  void SetMotion_Origin(const su2double* val) { for (int iDim = 0; iDim < 3; iDim++) Motion_Origin[iDim] = val[iDim]; }
 
   /*!
    * \brief Get the mesh motion origin.
@@ -5703,7 +5702,7 @@ public:
    * \param[in] val - new value of the origin
    * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    */
-  void SetMarkerMotion_Origin(su2double* val, unsigned short iMarkerMoving) {
+  void SetMarkerMotion_Origin(const su2double* val, unsigned short iMarkerMoving) {
     for (int iDim = 0; iDim < 3; iDim++) MarkerMotion_Origin[3*iMarkerMoving + iDim] = val[iDim];
   }
 
@@ -8009,8 +8008,8 @@ public:
   /*!
    * \brief Set the config file parsing.
    */
-  void SetConfig_Parsing(istream &config_buffer);  
-  
+  void SetConfig_Parsing(istream &config_buffer);
+
   /*!
    * \brief Set the config file parsing.
    */
@@ -8338,27 +8337,7 @@ public:
    * \brief Get the current number of non-physical reconstructions for 2nd-order upwinding.
    * \return Current number of non-physical reconstructions for 2nd-order upwinding.
    */
-  unsigned long GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
-
-  /*!
-   * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
-   x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
-   function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
-   the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
-   ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
-   condition for a natural spline, with zero second derivative on that boundary.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   */
-  void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
-
-  /*!
-   * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
-   and given the array y2a[1..n], which is the output from spline above, and given a value of
-   x, this routine returns a cubic-spline interpolated value y.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   * \return The interpolated value of for x.
-   */
-  su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
+  unsigned long GetNonphysical_Reconstr(void) const { return Nonphys_Reconstr; }
 
   /*!
    * \brief Start the timer for profiling subroutines.
@@ -8401,7 +8380,7 @@ public:
    *
    * \brief Set freestream turbonormal for initializing solution.
    */
-  void SetFreeStreamTurboNormal(su2double* turboNormal);
+  void SetFreeStreamTurboNormal(const su2double* turboNormal);
 
   /*!
    *

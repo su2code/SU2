@@ -44,7 +44,7 @@
 #include "../task_definition.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../sgs_model.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"
@@ -118,8 +118,6 @@ protected:
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  su2double **Smatrix,        /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  **Cvector;                  /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
@@ -165,8 +163,8 @@ public:
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
+  CSysMatrix<su2mixedfloat> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<su2mixedfloat>  System;   /*!< \brief Linear solver/smoother. */
 #else
   CSysMatrix<su2double> Jacobian;
   CSysSolve<su2double>  System;
@@ -3642,7 +3640,7 @@ public:
   void Read_SU2_Restart_Metadata(CGeometry *geometry,
                                  CConfig *config,
                                  bool adjoint_run,
-                                 string val_filename);
+                                 string val_filename) const;
 
   /*!
    * \brief Load a inlet profile data from file into a particular solver.
@@ -3658,7 +3656,7 @@ public:
                         CConfig *config,
                         int val_iter,
                         unsigned short val_kind_solver,
-                        unsigned short val_kind_marker);
+                        unsigned short val_kind_marker) const;
 
   /*!
    * \brief A virtual member.
@@ -4516,7 +4514,7 @@ public:
    * \brief Get the solution fields.
    * \return A vector containing the solution fields.
    */
-  inline vector<string> GetSolutionFields(){return fields;}
+  inline vector<string> GetSolutionFields() const{return fields;}
 
   /*!
    * \brief A virtual member.

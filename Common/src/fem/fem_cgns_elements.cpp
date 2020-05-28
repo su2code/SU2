@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -26,10 +26,9 @@
  */
 
 #ifdef HAVE_CGNS
-#include "../include/fem_cgns_elements.hpp"
-#include "../include/geometry_structure_fem_part.hpp"
-#include "../include/mpi_structure.hpp"
-#include "../include/datatype_structure.hpp"
+#include "../../include/fem/fem_cgns_elements.hpp"
+#include "../../include/fem/geometry_structure_fem_part.hpp"
+#include "../../include/mpi_structure.hpp"
 
 #include <cmath>
 #include <climits>
