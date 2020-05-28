@@ -5,7 +5,7 @@
 #define CUSTOM_TYPE su2double
 #endif
 #include "exprtk.hpp"
-
+#undef CUSTOM_TYPE
 
 namespace Parser {
 
