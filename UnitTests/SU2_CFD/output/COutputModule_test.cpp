@@ -101,14 +101,13 @@ TEST_CASE("FVM Base Module", "[Output Module]"){
 
 TEST_CASE("Aerodynamics Module", "[Output Module]"){
 
-
-//  __TestCase__ TestCase;
   CModuleManager<ModuleList<CAerodynamicsModule>>  modules(TestCase->config, TestCase->geometry->GetnDim());
 
   TestCase->solver[FLOW_SOL]->Preprocessing(TestCase->geometry, TestCase->solver, TestCase->config, 0, 0, RUNTIME_FLOW_SYS, false);
 
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{0,0});
 
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.245231));
+  REQUIRE(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.4904615));
+  REQUIRE(modules.GetHistoryFields().GetValueByKey("DRAG") == Approx(-2.36281));
 
 }

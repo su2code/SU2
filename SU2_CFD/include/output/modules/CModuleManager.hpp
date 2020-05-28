@@ -152,7 +152,7 @@ void CModuleManager<ModuleList>::LoadData(const SolverData& solverData, const It
     CommunicateIntegrals(markerNameCfg);
   }
 
-  for (const auto& field : surfaceIntegralHistory){
+  for (const auto& field : coefficients){
     field->second.value = 0.0;
     for (int iMarker_CfgFile = 0; iMarker_CfgFile <  config->GetnMarker_CfgFile(); iMarker_CfgFile++){
       const string markerNameCfg = config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
