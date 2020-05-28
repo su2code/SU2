@@ -1573,6 +1573,8 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
       for (iVar = 1; iVar <= nVar; iVar++) Solution[iVar-1] = Restart_Data[index+iVar];
       nodes->SetSolution(iPoint_Local, Solution);
       iPoint_Global_Local++;
+      /*--- Remove mass flux. ---*/
+      index++;
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/

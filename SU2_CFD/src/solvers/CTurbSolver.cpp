@@ -1047,8 +1047,10 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  bool pressure_based       = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+  if (pressure_based) skipVars++;
 
   /*--- Load data from the restart into correct containers. ---*/
 
