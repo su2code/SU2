@@ -166,7 +166,7 @@ class Design:
         self.UpdateMeshFilename( geo_folder, self.config['CONFIG_GEO'])
                 
         # Performing SU2_GEO
-        Geometry(geo_folder, self.config['CONFIG_GEO'])
+        Geometry(geo_folder, self.config)
         
     
     def pull_c_eq(self, geo_folder):
