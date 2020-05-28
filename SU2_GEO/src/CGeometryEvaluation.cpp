@@ -240,9 +240,14 @@ void CGeometryEvaluation::Geometry_Preprocessing(){
 
 }
 
-void CGeometryEvaluation::SetSectioningVariables(unsigned short nPlane_val){
+void CGeometryEvaluation::SetSectioningVariables(unsigned short nPlane_val = 0){
 
-  nPlane = nPlane_val;
+  if (nPlane_val == 0){
+    nPlane = config->GetnLocationStations();
+  }
+  else {
+    nPlane = nPlane_val;
+  }
 
   Xcoord_Airfoil = new vector<su2double>[nPlane];
   Ycoord_Airfoil = new vector<su2double>[nPlane];
@@ -483,7 +488,7 @@ void CGeometryEvaluation::EvaluateObjectiveFunction(){
 
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
-  
+
   if (rank == MASTER_NODE) {
     
     /*--- Evaluate objective function ---*/
