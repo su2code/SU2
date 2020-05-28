@@ -5248,7 +5248,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar*nDim];
+          su2double hess[nMetr*nVar];
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
