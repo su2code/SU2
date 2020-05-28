@@ -195,7 +195,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
 
       Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
-
     }
     su2double Residual = System.GetResidual();
 

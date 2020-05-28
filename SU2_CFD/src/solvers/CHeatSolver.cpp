@@ -134,19 +134,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     OutputHeadingNames = new string[nOutputVariables];
   }
 
-  /*--- Computation of gradients by least squares ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar+1];
-    for (iVar = 0; iVar < nVar+1; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-  }
-
   HeatFlux_per_Marker = new su2double[nMarker];
   AverageT_per_Marker = new su2double[nMarker];
   Surface_Areas       = new su2double[config->GetnMarker_HeatFlux()];

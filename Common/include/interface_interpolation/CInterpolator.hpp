@@ -26,7 +26,7 @@
  */
 #pragma once
 
-#include "../../include/datatype_structure.hpp"
+#include "../../include/basic_types/datatype_structure.hpp"
 #include "../../include/toolboxes/C2DContainer.hpp"
 #include <vector>
 
