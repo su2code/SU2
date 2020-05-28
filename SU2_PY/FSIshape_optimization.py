@@ -121,6 +121,8 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     fprime         = obj_df
         
     # constraints handling
+    
+    print(project.config['OPT_CONSTRAINT'])
     if project.config['OPT_CONSTRAINT'] == None:
        f_eqcons       = None
        f_ieqcons      = None 
@@ -159,7 +161,6 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     # obj scale
     # I need to look into the Adjoint flow file
     # Adjoint config
-    print(project.configFSIAdjoint['SU2_CONFIG'])
     adjointflow_config = project.configFSIAdjoint['SU2_CONFIG']
     line = readConfig(adjointflow_config, 'OBJECTIVE_FUNCTION')
     if line.find('*') != -1:

@@ -209,7 +209,7 @@ def FSIAdjoint(adj_folder, config):
     # go back to project folder (3 levels up)
     os.chdir( '../../..')        
     
-def Geometry(geo_folder, ConfigFileName):
+def Geometry(geo_folder, config):
     '''
             Executes in:
              ./GEO
@@ -217,7 +217,9 @@ def Geometry(geo_folder, ConfigFileName):
     # going to ./GEO folder
     os.chdir(geo_folder)
     
-    command = 'SU2_GEO ' + ConfigFileName
+    ConfigFileName = config['CONFIG_GEO']
+    
+    command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' SU2_GEO ' + ConfigFileName
     Output_file =  'Output_SU2_GEO.out'
     run_command(command, 'SU2_DEF', True, Output_file)
     
