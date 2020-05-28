@@ -3121,7 +3121,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
                                weighted, solution, 0, nVar, gradient, rmatrix);
 }
 
-void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
+void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   
   //--- communicate the solution values via MPI
   InitiateComms(geometry, config, SOLUTION);
@@ -3133,14 +3133,14 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   computeGradientsGreenGauss(this, ANISO_GRADIENT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, nVar, gradient);
   
-  CorrectSymmPlaneGradient(geometry, config);
+  CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
   
   auto& hessian = base_nodes->GetHessian();
   
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
   
-  CorrectSymmPlaneHessian(geometry, config);
+//  CorrectSymmPlaneHessian(geometry, config);
   
 }
 
@@ -3166,12 +3166,12 @@ void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config) {
+void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   
   if (rank == MASTER_NODE)
     cout << "Least squares Hessian computation not currently supported.\nUsing Green-Gauss instead.\n" <<endl;
   
-  SetHessian_GG(geometry, config);
+  SetHessian_GG(geometry, config, Kind_Solver);
 }
 
 void CSolver::Add_External_To_Solution() {
@@ -5235,13 +5235,16 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
   
 }
 
-void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config) {
+void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   unsigned short iVar, iDim, iMarker;
   unsigned long iVertex;
   
   su2double Area,
             *Normal     = new su2double[nDim],
-            *UnitNormal = new su2double[nDim];
+            *UnitNormal = new su2double[nDim],
+            *Tangential  = new su2double[nDim],
+            *GradNormVel = new su2double[nDim],
+            *GradTangVel = new su2double[nDim];
   
   su2double **Grad_Symm = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -5266,26 +5269,101 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config) {
           for (iDim = 0; iDim < nDim; iDim++)
             UnitNormal[iDim] = -Normal[iDim]/Area;
           
+          //--- Compute unit tangent.
+          switch( nDim ) {
+            case 2: {
+              Tangential[0] = -UnitNormal[1];
+              Tangential[1] =  UnitNormal[0];
+              break;
+            }
+            case 3: {
+              /*--- n = ai + bj + ck, if |b| > |c| ---*/
+              if( abs(UnitNormal[1]) > abs(UnitNormal[2])) {
+                /*--- t = bi + (c-a)j - bk  ---*/
+                Tangential[0] = UnitNormal[1];
+                Tangential[1] = UnitNormal[2] - UnitNormal[0];
+                Tangential[2] = -UnitNormal[1];
+              } else {
+                /*--- t = ci - cj + (b-a)k  ---*/
+                Tangential[0] = UnitNormal[2];
+                Tangential[1] = -UnitNormal[2];
+                Tangential[2] = UnitNormal[1] - UnitNormal[0];
+              }
+              /*--- Make it a unit vector. ---*/
+              const su2double TangentialNorm = sqrt(pow(Tangential[0],2) + pow(Tangential[1],2) + pow(Tangential[2],2));
+              Tangential[0] = Tangential[0] / TangentialNorm;
+              Tangential[1] = Tangential[1] / TangentialNorm;
+              Tangential[2] = Tangential[2] / TangentialNorm;
+              break;
+            }
+          }// switch
+          
           //--- Get gradients of the solution of boundary cell.
           for (iVar = 0; iVar < nVar; iVar++)
             for (iDim = 0; iDim < nDim; iDim++)
               Grad_Symm[iVar][iDim] = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
           
+          //--- Reflect the gradients for all scalars including the momentum components.
+          //--- The gradients of the primal and adjoint momentum components are set later with the
+          //--- correct values: grad(V)_s = grad(V) - [grad(V)*n]n, V being any conservative.
           for (iVar = 0; iVar < nVar; iVar++) {
-            //--- Compute projected part of the gradient in a dot product.
-            su2double ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGradient += Grad_Symm[iVar][iDim]*UnitNormal[iDim];
-            
-            //--- Set normal part of the gradient to zero.
-            for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Symm[iVar][iDim] = Grad_Symm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
-            
-            //--- Set gradients of the solution of boundary cell.
-            for (iVar = 0; iVar < nVar; iVar++)
+            if ((iVar == 0) || (iVar > nDim) || (Kind_Solver == RUNTIME_TURB_SYS)) {
+              //--- Compute projected part of the gradient in a dot product.
+              su2double ProjGradient = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
-                 base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, Grad_Symm[iVar][iDim]);
-          }
+                ProjGradient += Grad_Symm[iVar][iDim]*UnitNormal[iDim];
+              
+              //--- Set normal part of the gradient to zero.
+              for (iDim = 0; iDim < nDim; iDim++)
+                Grad_Symm[iVar][iDim] = Grad_Symm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
+              
+            }// if density, energy, or turbulent
+          }// iVar
+          
+          if (Kind_Solver == RUNTIME_FLOW_SYS) {
+            //--- Compute gradients of normal and tangential momentum:
+            //--- grad(rv*n) = grad(rv_x) n_x + grad(rv_y) n_y (+ grad(rv_z) n_z)
+            //--- grad(rv*t) = grad(rv_x) t_x + grad(rv_y) t_y (+ grad(rv_z) t_z)
+            for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
+              GradNormVel[iVar] = 0.0;
+              GradTangVel[iVar] = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
+                GradNormVel[iVar] += Grad_Symm[iDim+1][iVar] * UnitNormal[iDim];
+                GradTangVel[iVar] += Grad_Symm[iDim+1][iVar] * Tangential[iDim];
+              }
+            }
+
+            //--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
+            //--- component, just as done with momentum above.
+            //--- grad(rv*n)_s = grad(rv*n) - {grad([rv*n])*t}t
+            //--- grad(rv*t)_s = grad(rv*t) - {grad([rv*t])*n}n
+            su2double ProjNormMomGrad = 0.0;
+            su2double ProjTangMomGrad = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              ProjNormMomGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([rv*n])*t
+              ProjTangMomGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([rv*t])*n
+            }
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              GradNormVel[iDim] = GradNormVel[iDim] - ProjNormMomGrad * Tangential[iDim];
+              GradTangVel[iDim] = GradTangVel[iDim] - ProjTangMomGrad * UnitNormal[iDim];
+            }
+
+            //--- Transfer reflected gradients back into the Cartesian Coordinate system:
+            //--- grad(rv_x)_s = grad(rv*n)_s n_x + grad(rv*t)_s t_x
+            //--- grad(rv_y)_s = grad(rv*n)_s n_y + grad(rv*t)_s t_y
+            //--- ( grad(rv_z)_s = grad(rv*n)_s n_z + grad(rv*t)_s t_z ) ---*/
+            for (iVar = 0; iVar < nDim; iVar++) // loops over the momentum component gradients
+              for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
+                Grad_Symm[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
+            
+          }// if flow
+          
+          //--- Set gradients of the solution of boundary cell.
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+               base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, Grad_Symm[iVar][iDim]);
+          
         }// if domain
       }// iVertex
     }// if KindBC

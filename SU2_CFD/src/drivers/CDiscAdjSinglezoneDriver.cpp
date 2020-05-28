@@ -589,7 +589,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
-    solver_flow->SetHessian_GG(geometry, config);
+    solver_flow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
     
     /*
     if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) &&
@@ -600,31 +600,31 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     */
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
-    solver_adjflow->SetHessian_GG(geometry, config);
+    solver_adjflow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
     
     if ( config->GetKind_Turb_Model() != NONE) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
-      solver_turb->SetHessian_GG(geometry, config);
+      solver_turb->SetHessian_GG(geometry, config, RUNTIME_TURB_SYS);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
-      solver_adjturb->SetHessian_GG(geometry, config);
+      solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_TURB_SYS);
     }
   }
   else {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
-    solver_flow->SetHessian_LS(geometry, config);
+    solver_flow->SetHessian_LS(geometry, config, RUNTIME_FLOW_SYS);
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
-    solver_adjflow->SetHessian_LS(geometry, config);
+    solver_adjflow->SetHessian_LS(geometry, config, RUNTIME_FLOW_SYS);
     
     if ( config->GetKind_Turb_Model() != NONE) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
-      solver_turb->SetHessian_LS(geometry, config);
+      solver_turb->SetHessian_LS(geometry, config, RUNTIME_TURB_SYS);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
-      solver_adjturb->SetHessian_LS(geometry, config);
+      solver_adjturb->SetHessian_LS(geometry, config, RUNTIME_TURB_SYS);
     }
   }
 
