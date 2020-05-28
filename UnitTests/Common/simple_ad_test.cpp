@@ -29,7 +29,7 @@
 
 #include "catch.hpp"
 
-#include "../../Common/include/datatype_structure.hpp"
+#include "../../Common/include/basic_types/datatype_structure.hpp"
 
 su2double func(const su2double& x) {
   return x * x * x;

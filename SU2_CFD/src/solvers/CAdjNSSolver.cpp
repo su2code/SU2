@@ -151,18 +151,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       cout << "Explicit scheme. No Jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
   }
 
-  /*--- Array structures for computation of gradients by least squares ---*/
-  if (config->GetLeastSquaresRequired()) {
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-  }
-
   /*--- Sensitivity definition and coefficient on all markers ---*/
   CSensitivity = new su2double* [nMarker];
   for (iMarker=0; iMarker<nMarker; iMarker++) {
