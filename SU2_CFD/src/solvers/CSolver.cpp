@@ -5231,6 +5231,56 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
   
 }
 
+void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iMetr, iMarker;
+  unsigned short nMetr = 3*(nDim-1);
+  unsigned long iVertex;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ) {
+      
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          //--- Correct if any of the neighbors belong to the volume
+          unsigned short iNeigh, counter = 0;
+          su2double hess[nMetr*nVar*nDim];
+          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+            if(!geometry->node[jPoint]->GetBoundary()) {
+              for(iVar = 0; iVar < nVar; iVar++){
+                const unsigned short i = iVar*nMetr;
+                //--- Reset hessian if first volume node detected
+                if(counter == 0) {
+                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                    hess[i+iMetr] = base_nodes->GetHessian(iPoint, iVar, iMetr);
+                  }// iMetr
+                }// if counter
+                for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
+                }// iMetr
+              }// iVar
+              counter ++;
+            }// if boundary
+          }// iNeigh
+          if(counter > 0) {
+            for(iVar = 0; iVar < nVar; iVar++){
+              const unsigned short i = iVar*nMetr;
+              for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter+1));
+              }// iMetr
+            }// iVar
+          }// if counter
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+}
+
 void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
   
   unsigned short iDim, jDim, iVar;
@@ -5249,15 +5299,6 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, u
       const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
       const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
       const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-      
-//      if (fabs(a*c - b*b) < 1.0E-16) {
-//        A[0][0] = a+1.0E-16; A[0][1] = b;
-//        A[1][0] = b;         A[1][1] = c+1.0E-16;
-//      }
-//      else {
-//        A[0][0] = a; A[0][1] = b;
-//        A[1][0] = b; A[1][1] = c;
-//      }
       
       A[0][0] = a; A[0][1] = b;
       A[1][0] = b; A[1][1] = c;
@@ -5303,17 +5344,6 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, u
       const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
       const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
       const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
-      
-//      if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
-//        A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
-//        A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
-//        A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
-//      }
-//      else {
-//        A[0][0] = a; A[0][1] = b; A[0][2] = c;
-//        A[1][0] = b; A[1][1] = d; A[1][2] = e;
-//        A[2][0] = c; A[2][1] = e; A[2][2] = f;
-//      }
 
       A[0][0] = a; A[0][1] = b; A[0][2] = c;
       A[1][0] = b; A[1][1] = d; A[1][2] = e;

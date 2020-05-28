@@ -314,6 +314,12 @@ public:
                        unsigned long   jPoint,
                        const su2double *const *const *const Jacobian_ic,
                        const su2double *const *const *const Jacobian_jc);
+  
+  /*!
+   * \brief Correct the Hessian at symmetry planes.
+   */
+  void CorrectBoundHessian(CGeometry *geometry,
+                           CConfig *config);
 
   /*!
    * \brief Make the eigenvalues of the Hessians positive.
