@@ -32,7 +32,7 @@
 #include "../include/fem/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/fem/fem_geometry_structure.hpp"
 
-#include "../include/ad_structure.hpp"
+#include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
 using namespace PrintingToolbox;
@@ -3659,99 +3659,58 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    that for each option, a value has been declared for each moving marker. ---*/
 
   if (nMarker_Moving > 0){
-    unsigned short iDim;
     if (nMarkerMotion_Origin == 0){
       nMarkerMotion_Origin = 3*nMarker_Moving;
-      MarkerMotion_Origin = new su2double[nMarkerMotion_Origin];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerMotion_Origin[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerMotion_Origin = new su2double[nMarkerMotion_Origin] ();
     }
     if (nMarkerMotion_Origin/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_MOTION_ORIGIN must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerTranslation == 0){
       nMarkerTranslation = 3*nMarker_Moving;
-      MarkerTranslation_Rate = new su2double[nMarkerTranslation];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerTranslation_Rate[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerTranslation_Rate = new su2double[nMarkerTranslation] ();
     }
     if (nMarkerTranslation/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_TRANSLATION_RATE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerRotation_Rate == 0){
       nMarkerRotation_Rate = 3*nMarker_Moving;
-      MarkerRotation_Rate = new su2double[nMarkerRotation_Rate];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerRotation_Rate[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerRotation_Rate = new su2double[nMarkerRotation_Rate] ();
     }
     if (nMarkerRotation_Rate/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_ROTATION_RATE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerPlunging_Ampl == 0){
       nMarkerPlunging_Ampl = 3*nMarker_Moving;
-      MarkerPlunging_Ampl = new su2double[nMarkerPlunging_Ampl];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerPlunging_Ampl[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerPlunging_Ampl = new su2double[nMarkerPlunging_Ampl] ();
     }
     if (nMarkerPlunging_Ampl/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PLUNGING_AMPL must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerPlunging_Omega == 0){
       nMarkerPlunging_Omega = 3*nMarker_Moving;
-      MarkerPlunging_Omega = new su2double[nMarkerPlunging_Omega];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerPlunging_Omega[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerPlunging_Omega = new su2double[nMarkerPlunging_Omega] ();
     }
     if (nMarkerPlunging_Omega/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PLUNGING_OMEGA must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerPitching_Ampl == 0){
       nMarkerPitching_Ampl = 3*nMarker_Moving;
-      MarkerPitching_Ampl = new su2double[nMarkerPitching_Ampl];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerPitching_Ampl[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerPitching_Ampl = new su2double[nMarkerPitching_Ampl] ();
     }
     if (nMarkerPitching_Ampl/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PITCHING_AMPL must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerPitching_Omega == 0){
       nMarkerPitching_Omega = 3*nMarker_Moving;
-      MarkerPitching_Omega = new su2double[nMarkerPitching_Omega];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerPitching_Omega[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerPitching_Omega = new su2double[nMarkerPitching_Omega] ();
     }
     if (nMarkerPitching_Omega/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PITCHING_OMEGA must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
     }
     if (nMarkerPitching_Phase == 0){
       nMarkerPitching_Phase = 3*nMarker_Moving;
-      MarkerPitching_Phase = new su2double[nMarkerPitching_Phase];
-      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-        for (iDim = 0; iDim < 3; iDim++){
-          MarkerPitching_Phase[3*iMarker+iDim] = 0.0;
-        }
-      }
+      MarkerPitching_Phase = new su2double[nMarkerPitching_Phase] ();
     }
     if (nMarkerPitching_Phase/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PITCHING_PHASE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
@@ -3761,7 +3720,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       nMoveMotion_Origin = nMarker_Moving;
       MoveMotion_Origin = new unsigned short[nMoveMotion_Origin];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
-          MoveMotion_Origin[iMarker] = NO;
+        MoveMotion_Origin[iMarker] = NO;
       }
     }
     if (nMoveMotion_Origin != nMarker_Moving){
@@ -9093,61 +9052,6 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
     if ((tag == sideA) || (tag == sideB)) return iMarker;
   }
   return -1;
-}
-
-void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
-  unsigned long i, k;
-  su2double p, qn, sig, un, *u;
-
-  u = new su2double [n];
-
-  if (yp1 > 0.99e30)      // The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;       // -ural"
-  else {                  // or else to have a specified first derivative.
-    y2[0] = -0.5;
-    u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
-  }
-
-  for (i=2; i<=n-1; i++) {                  //  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);    //  gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;                    //  porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;                    //  factors.
-    u[i-1]=(y[i]-y[i-1])/(x[i]-x[i-1]) - (y[i-1]-y[i-2])/(x[i-1]-x[i-2]);
-    u[i-1]=(6.0*u[i-1]/(x[i]-x[i-2])-sig*u[i-2])/p;
-  }
-
-  if (ypn > 0.99e30)            // The upper boundary condition is set either to be
-    qn=un=0.0;                  // "natural"
-  else {                        // or else to have a specified first derivative.
-    qn=0.5;
-    un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
-  }
-  y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)          // This is the backsubstitution loop of the tridiagonal
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];   // algorithm.
-
-  delete[] u;
-
-}
-
-su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<su2double>&y2a, unsigned long n, su2double x) {
-  unsigned long klo, khi, k;
-  su2double h, b, a, y;
-
-  klo=1;                    // We will find the right place in the table by means of
-  khi=n;                    // bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {     // routine are at random values of x. If sequential calls
-    k=(khi+klo) >> 1;       // are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi=k;   // to store previous values of klo and khi and test if
-    else klo=k;             // they remain appropriate on the next call.
-  }               // klo and khi now bracket the input value of x
-  h=xa[khi-1]-xa[klo-1];
-  if (h == 0.0) cout << "Bad xa input to routine splint" << endl; // The xa?s must be dis-
-  a=(xa[khi-1]-x)/h;                                                // tinct.
-  b=(x-xa[klo-1])/h;        // Cubic spline polynomial is now evaluated.
-  y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
-
-  return y;
 }
 
 void CConfig::Tick(double *val_start_time) {

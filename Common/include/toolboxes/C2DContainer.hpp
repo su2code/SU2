@@ -28,7 +28,7 @@
 #pragma once
 
 #include "allocation_toolbox.hpp"
-#include "../datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 #include <utility>
 #include <type_traits>

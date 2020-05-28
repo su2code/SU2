@@ -1952,13 +1952,16 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #endif
 
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+    /*---  We need temporaries to interface with the passive matrix. ---*/
+    CSysVector<su2mixedfloat> sol, res;
+#endif
+
     SU2_OMP_PARALLEL
     {
 #if !defined(CODI_REVERSE_TYPE) && !defined(USE_MIXED_PRECISION)
     Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
 #else
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<su2mixedfloat> sol, res;
     sol.PassiveCopy(LinSysSol);
     res.PassiveCopy(LinSysRes);
     Jacobian.ComputeResidual(sol, res, LinSysAux);

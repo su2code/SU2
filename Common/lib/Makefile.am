@@ -59,7 +59,7 @@ lib_sources = \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
   ../src/mpi_structure.cpp \
-  ../src/ad_structure.cpp \
+  ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \
   ../src/geometry/CPhysicalGeometry.cpp \
