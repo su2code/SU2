@@ -33,7 +33,7 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include "../datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 namespace PrintingToolbox {
 

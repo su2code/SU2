@@ -252,20 +252,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
   }
 
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-  }
-
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
   CharacPrimVar = new su2double** [nMarker];

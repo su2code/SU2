@@ -29,7 +29,6 @@
 #include "../../include/fem/fem_cgns_elements.hpp"
 #include "../../include/fem/geometry_structure_fem_part.hpp"
 #include "../../include/mpi_structure.hpp"
-#include "../../include/datatype_structure.hpp"
 
 #include <cmath>
 #include <climits>

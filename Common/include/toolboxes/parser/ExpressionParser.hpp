@@ -2,7 +2,7 @@
 #include <fstream>
 #include <vector>
 
-#include "../../datatype_structure.hpp"
+#include "../../basic_types/datatype_structure.hpp"
 namespace Parser {
 
 enum class CustomFunction { SURFACE_SUM };

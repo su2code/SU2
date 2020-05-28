@@ -88,7 +88,6 @@ void CFunctionParser::ParseFunctions(const std::string& functions) {
       if (posOpenExpBracket == std::string::npos) {
         SU2_MPI::Error(errorPrefix + ": Missing \":\".", CURRENT_FUNCTION);
       }
-      std::cout << defString << std::endl;
       auto posCloseExpBracket = defString.find("end", posOpenExpBracket + 1);
       if (posCloseExpBracket == std::string::npos) {
         SU2_MPI::Error(errorPrefix + ": Missing \"end\" keyword", CURRENT_FUNCTION);

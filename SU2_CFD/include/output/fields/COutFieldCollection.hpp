@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../../Common/include/toolboxes/CIndexedMap.hpp"
-#include "../../../Common/include/datatype_structure.hpp"
+#include "../../../Common/include/basic_types/datatype_structure.hpp"
 #include "../../../Common/include/mpi_structure.hpp"
 #include "COutField.hpp"
 
