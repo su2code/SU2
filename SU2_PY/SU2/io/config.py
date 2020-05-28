@@ -347,7 +347,13 @@ def read_config(filename):
         # make sure it has useful data
         if (line[0] == '%'):
             continue
-
+            
+        # --- Check if there is a line continuation character at the
+        # end of the current line or somewhere in between (the rest is ignored then).
+        # If yes, read until there is a line without one or an empty line.
+        # If there is a statement after a cont. char
+        # throw an error. ---*/
+    
         while(line[0].endswith('\\') or len(line.split('\\')) > 1):
             tmp_line = input_file.readline()
             tmp_line = tmp_line.strip()
