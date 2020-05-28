@@ -10,6 +10,7 @@
 #include "../../../SU2_CFD/include/output/modules/CConvergenceModule.hpp"
 #include "../../../SU2_CFD/include/output/modules/CAerodynamicsModule.hpp"
 #include "../../../SU2_CFD/include/output/modules/CFVMBaseModule.hpp"
+#include "../../../SU2_CFD/include/output/modules/CResidualModule.hpp"
 
 struct __TestCase__ {
 
@@ -117,9 +118,15 @@ TEST_CASE("Aerodynamics Module", "[Output Module]"){
 
 TEST_CASE("Convergence Module", "[Output Module]"){
 
-  CModuleManager<ModuleList<CFlowCompOutputModule, CConvergenceModule>>  modules(TestCase->config, TestCase->geometry->GetnDim());
+  CModuleManager<ModuleList<CConvergenceModule>>  modules(TestCase->config, TestCase->geometry->GetnDim());
 
-  modules.GetHistoryFields().GetItemByKey("RMS_DENSITY").value = -13.0;
+  modules.Clear();
+
+  modules.GetHistoryFields().AddItem("RMS_DENSITY", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+
+  modules.Init(TestCase->config);
+
+  modules.GetHistoryFields().GetItemByKey("RMS_DENSITY").value = -15.0;
 
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{1,0});
 
@@ -128,6 +135,42 @@ TEST_CASE("Convergence Module", "[Output Module]"){
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{50,0});
 
   CHECK(modules.GetHistoryFields().GetValueByKey("CONVERGENCE") == 1.0);
+
+}
+
+TEST_CASE("Residual Module", "[Residual Module]"){
+
+  CModuleManager<ModuleList<CResidualModule>>  modules(TestCase->config, TestCase->geometry->GetnDim());
+
+  modules.Clear();
+
+  modules.GetHistoryFields().AddItem("RMS_DENSITY", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+  modules.GetHistoryFields().AddItem("RMS_MOMENTUM_X", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+  modules.GetHistoryFields().AddItem("RMS_MOMENTUM_Y", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+  modules.GetHistoryFields().AddItem("RMS_MOMENTUM_Z", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+  modules.GetHistoryFields().AddItem("RMS_ENERGY", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+
+  auto rms_density = modules.GetHistoryFields().GetItemByKey("RMS_DENSITY").value    = -5.765;
+  auto rms_mom_x   = modules.GetHistoryFields().GetItemByKey("RMS_MOMENTUM_X").value = -6.52;
+  auto rms_mom_y   = modules.GetHistoryFields().GetItemByKey("RMS_MOMENTUM_Y").value = -8.52;
+  auto rms_mom_z   = modules.GetHistoryFields().GetItemByKey("RMS_MOMENTUM_Z").value = -3.32;
+  auto rms_energy  = modules.GetHistoryFields().GetItemByKey("RMS_ENERGY").value     = -4.64;
+
+  modules.Init(TestCase->config);
+
+  modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{0,0});
+
+  REQUIRE(modules.GetHistoryFields().CheckKey("AVG_RMS_RES"));
+  CHECK(modules.GetHistoryFields().GetValueByKey("AVG_RMS_RES") == (rms_density+rms_mom_x+rms_mom_y+rms_mom_z+rms_energy)/5);
+
+  su2double reduction = -1.453;
+  rms_density += reduction;
+  modules.GetHistoryFields().GetItemByKey("RMS_DENSITY").value    = rms_density;
+
+  modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{10,0});
+
+  REQUIRE(modules.GetHistoryFields().CheckKey("REL_RMS_DENSITY"));
+  CHECK(modules.GetHistoryFields().GetValueByKey("REL_RMS_DENSITY") == Approx(reduction));
 
 }
 
