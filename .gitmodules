@@ -12,3 +12,6 @@
 [submodule "externals/meson"]
 	path = externals/meson
 	url = https://github.com/mesonbuild/meson
+[submodule "externals/exprtk"]
+	path = externals/exprtk
+	url = https://github.com/talbring/exprtk
