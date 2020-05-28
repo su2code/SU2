@@ -132,7 +132,7 @@ void CModuleManager<ModuleList>::LoadData(const SolverData& solverData, const It
 
   CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadHistoryData, historyFieldsAll, solverData, iterationInfo);
 
-  const auto* config = std::get<0>(solverData);
+  const auto* config = solverData.config;
 
   for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
     const string markerNameCfg =  config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
@@ -170,14 +170,14 @@ void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(const SolverData& solverD
 
   volumeFieldsAll.GetCollection().SetCaching(true);
 
-  const auto* geometry = get<1>(solverData);
+  const auto* geometry = solverData.geometry;
 
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++){
 
     volumeFieldsAll.GetCollection().StartCaching();
 
     CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll,
-                                  solverData, iterationInfo, make_tuple(iPoint, 0, 0));
+                                  solverData, iterationInfo, PointInfo{iPoint, 0, 0});
 
     if (sorter != nullptr){
       for (const auto& field : volumeFieldsAll.GetCollection().GetReferencesAll()){
@@ -194,12 +194,12 @@ void CModuleManager<ModuleList>::LoadVolumeDataAtPoint(const SolverData& solverD
 template<typename ModuleList>
 void CModuleManager<ModuleList>::LoadSurfaceDataAtVertex(const SolverData& solverData, const IterationInfo& iterationInfo, CParallelDataSorter *sorter){
 
-  const auto* config = std::get<0>(solverData);
-  const auto* geometry = get<1>(solverData);
+  const auto* config = solverData.config;
+  const auto* geometry = solverData.geometry;
 
   volumeFieldsAll.GetCollection().SetCaching(true);
 
-  for (int iMarker = 0; iMarker <  config->GetnMarker_All(); iMarker++) {
+  for (uint iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++){
 
       unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -207,10 +207,10 @@ void CModuleManager<ModuleList>::LoadSurfaceDataAtVertex(const SolverData& solve
       volumeFieldsAll.GetCollection().StartCaching();
 
       CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll,
-                                    solverData, iterationInfo, make_tuple(iPoint, iVertex, iMarker));
+                                    solverData, iterationInfo, PointInfo{iPoint, iVertex, iMarker});
 
       CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadSurfaceData, volumeFieldsAll,
-                                    solverData, iterationInfo, make_tuple(iPoint, iVertex, iMarker));
+                                    solverData, iterationInfo, PointInfo{iPoint, iVertex, iMarker});
 
       if (sorter != nullptr){
         for (const auto& field : volumeFieldsAll.GetCollection().GetReferencesAll()){
@@ -228,7 +228,7 @@ template<typename ModuleList>
 void CModuleManager<ModuleList>::IntegrateCoefficients(const SolverData& solverData, const IterationInfo& iterationInfo,
                                                        unsigned short iMarker, const string& markerName){
 
-  const auto* geometry = get<1>(solverData);
+  const auto* geometry = solverData.geometry;
 
   for (const auto& field : surfaceIntegralHistory){ field->second.value = 0.0; }
   volumeFieldsAll.GetCollection().SetCaching(true);
@@ -239,12 +239,12 @@ void CModuleManager<ModuleList>::IntegrateCoefficients(const SolverData& solverD
     unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
     CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadVolumeData, volumeFieldsAll,
-                                  solverData, iterationInfo, make_tuple(iPoint, iVertex, iMarker));
+                                  solverData, iterationInfo, PointInfo{iPoint, iVertex, iMarker});
 
     /*--- Fill all volume fields with the values at the current surface point --- */
 
     CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadSurfaceData, volumeFieldsAll,
-                                  solverData, iterationInfo, make_tuple(iPoint, iVertex, iMarker));
+                                  solverData, iterationInfo, PointInfo{iPoint, iVertex, iMarker});
 
     /*--- For all volume fields marked as integral, add the contribution to the corresponding history field ---*/
 

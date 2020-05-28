@@ -26,9 +26,9 @@ void CCommonModule::DefineHistoryFields(CHistoryOutFieldManager& historyFields){
 void CCommonModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                     const IterationInfo& iterationInfo){
 
-  const auto* config = get<0>(solverData);
-  auto curInnerIter = get<0>(iterationInfo);
-  auto curTimeIter  = get<1>(iterationInfo);
+  const auto* config = solverData.config;
+  const auto curInnerIter = iterationInfo.Iter;
+  const auto curTimeIter  = iterationInfo.TimeIter;
 
   su2double TimeStep = config->GetDelta_UnstTimeND()*config->GetTime_Ref();
   su2double curTime = historyFields.GetFieldValue("CUR_TIME");

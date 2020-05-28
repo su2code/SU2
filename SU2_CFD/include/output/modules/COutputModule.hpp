@@ -40,7 +40,6 @@ class COutputModule {
 
 class CSolverOutputModule : public COutputModule<CSolverOutputModule> {
  protected:
-  SolverDataContainer solverData;
   int nDim;
 
  public:

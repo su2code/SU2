@@ -17,7 +17,7 @@ CAerodynamicsModule::CAerodynamicsModule(CConfig *config, int nDim): CSolverOutp
 
 void CAerodynamicsModule::LoadHistoryDataPerSurface(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                                     const IterationInfo&){
-  const auto* config   = std::get<0>(solverData);
+  const auto* config   = solverData.config;
   const su2double Force[3] = {historyFields.GetFieldValue("FORCE_X"),
                               historyFields.GetFieldValue("FORCE_Y"),
                               historyFields.GetFieldValue("FORCE_Z")};
@@ -75,12 +75,12 @@ void CAerodynamicsModule::DefineVolumeFields(CVolumeOutFieldManager& volumeField
 void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                           const IterationInfo&, const PointInfo& pointInfo){
 
-  const auto* config   = std::get<0>(solverData);
-  const auto* geometry = std::get<1>(solverData);
-  const auto* solver   = std::get<2>(solverData);
-  const auto iPoint    = std::get<0>(pointInfo);
-  const auto iVertex   = std::get<1>(pointInfo);
-  const auto iMarker   = std::get<2>(pointInfo);
+  const auto* config   = solverData.config;
+  const auto* geometry = solverData.geometry;
+  auto* solver   = solverData.solver[FLOW_SOL];
+  const auto iPoint    = pointInfo.iPoint;
+  const auto iVertex   = pointInfo.iVertex;
+  const auto iMarker   = pointInfo.iMarker;
 
   std::fill(std::begin(Moment), std::end(Moment), 0.0);
   std::fill(std::begin(Force), std::end(Force), 0.0);
@@ -109,7 +109,7 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, 
   const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
   const su2double* Coord = geometry->nodes->GetCoord(iPoint);
   const su2double* Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-  const su2double Pressure_Inf = solver[FLOW_SOL]->GetPressure_Inf();
+  const su2double Pressure_Inf = solver->GetPressure_Inf();
 
   // TODO: Get ref origin from config
   su2double MomentDist[3] = {0.0}, Origin[3] = {0.0};
@@ -127,7 +127,7 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, 
   if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*Coord[1];
   else AxiFactor = 1.0;
 
-  const su2double Pressure = solver[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+  const su2double Pressure = solver->GetNodes()->GetPressure(iPoint);
 
   for (int iDim = 0; iDim < nDim; iDim++) {
     Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
@@ -135,10 +135,10 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, 
 
   if (config->GetViscous()){
 
-    const auto& Grad_Primitive = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    const auto& Grad_Primitive = solver->GetNodes()->GetGradient_Primitive(iPoint);
     su2double div_vel = 0.0; for (int iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Primitive[iDim+1][iDim];
-    const su2double Viscosity = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    const su2double Density = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    const su2double Viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
+    const su2double Density = solver->GetNodes()->GetDensity(iPoint);
     constexpr passivedouble delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     su2double UnitNormal[3];

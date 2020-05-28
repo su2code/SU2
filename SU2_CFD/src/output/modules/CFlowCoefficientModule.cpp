@@ -24,12 +24,12 @@ void CFlowCoefficientModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields
 
 void CFlowCoefficientModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                              const IterationInfo& iterationInfo, const PointInfo& pointInfo){
-  const auto* config   = std::get<0>(solverData);
-  const auto* geometry = std::get<1>(solverData);
-  const auto* solver   = std::get<2>(solverData);
-  const auto iPoint    = std::get<0>(pointInfo);
-  const auto iVertex   = std::get<1>(pointInfo);
-  const auto iMarker   = std::get<2>(pointInfo);
+  const auto* config   = solverData.config;
+  const auto* geometry = solverData.geometry;
+  const auto* solver   = solverData.solver;
+  const auto iPoint    = pointInfo.iPoint;
+  const auto iVertex   = pointInfo.iVertex;
+  const auto iMarker   = pointInfo.iMarker;
   const auto *Node_Flow = solver[FLOW_SOL]->GetNodes();
 
   const su2double Area = volumeFields.GetFieldValue("AREA");

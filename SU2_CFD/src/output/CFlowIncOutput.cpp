@@ -119,8 +119,8 @@ void CFlowIncOutputModule::DefineHistoryFields(CHistoryOutFieldManager &historyF
 void CFlowIncOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                            const IterationInfo&){
 
-  const auto* config      = get<0>(solverData);
-  const auto* flow_solver = get<2>(solverData)[FLOW_SOL];
+  const auto* config = solverData.config;
+  auto* flow_solver = solverData.solver[FLOW_SOL];
 
   historyFields.SetFieldValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   historyFields.SetFieldValue("RMS_VELOCITY_X", log10(flow_solver->GetRes_RMS(1)));
@@ -182,13 +182,13 @@ void CFlowIncOutputModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFiel
 
 void CFlowIncOutputModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                            const IterationInfo&, const PointInfo& pointInfo){
-  const auto iPoint  = get<0>(pointInfo);
-  const auto iVertex = get<1>(pointInfo);
-  const auto iMarker = get<2>(pointInfo);
+  const auto iPoint  = pointInfo.iPoint;
+  const auto iVertex = pointInfo.iVertex;
+  const auto iMarker = pointInfo.iMarker;
 
-  const auto* config = get<0>(solverData);
-  const auto* geometry = get<1>(solverData);
-  auto* flow_solver = get<2>(solverData)[FLOW_SOL];
+  const auto* config = solverData.config;
+  const auto* geometry = solverData.geometry;
+  auto* flow_solver = solverData.solver[FLOW_SOL];
 
   if (viscous && heat){
     const auto& Grad_Sol = flow_solver->GetNodes()->GetGradient_Primitive(iPoint);
@@ -214,9 +214,9 @@ void CFlowIncOutputModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields,
 void CFlowIncOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                           const IterationInfo&, const PointInfo& pointInfo){
 
-  const auto iPoint  = get<0>(pointInfo);
-  const auto* config = get<0>(solverData);
-  auto* flow_solver  = get<2>(solverData)[FLOW_SOL];
+  const auto iPoint  = pointInfo.iPoint;
+  const auto* config = solverData.config;
+  auto* flow_solver = solverData.solver[FLOW_SOL];
   const auto* Node_Flow = flow_solver->GetNodes();
 
   volumeFields.SetFieldValue("PRESSURE",      Node_Flow->GetSolution(iPoint, 0)*config->GetPressure_Ref());

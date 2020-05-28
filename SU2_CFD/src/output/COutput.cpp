@@ -231,7 +231,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
 //  MonitorTimeConvergence(config, curTimeIter);
 
-  modules->LoadData({config, geometry, solver_container}, {curInnerIter, TimeIter});
+  modules->LoadData(SolverData{config, geometry, solver_container}, {curInnerIter, TimeIter});
 
   if (modules->GetHistoryFields().CheckKey("CONVERGENCE"))
     convergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value));

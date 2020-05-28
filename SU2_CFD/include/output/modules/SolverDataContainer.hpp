@@ -3,35 +3,30 @@
 #include "../../../Common/include/CConfig.hpp"
 
 class CSolver;
-class CVertex;
 class CGeometry;
 class CConfig;
-class CSurfaceElementFEM;
 
-class OutputData{
+struct IterationInfo{
 
-public:
-  inline virtual ~OutputData() {};
+  unsigned long Iter    ;
+  unsigned long TimeIter;
+
 };
 
-class SolverDataContainer : public OutputData{
-public:
-  const CGeometry *geometry;
-  const CConfig   *config;
-  CSolver  **solver;
-  CVertex*  vertex;
+struct SolverData{
+
+  CConfig* config;
+  CGeometry* geometry;
+  CSolver** solver;
+
+};
+
+
+struct PointInfo{
+
   unsigned long iPoint;
-  unsigned long Iter, TimeIter;
-
-  const CSurfaceElementFEM *surfElem;
-  const su2double *sol;
-  su2double weight;
-  int i;
-  inline ~SolverDataContainer(){}
+  unsigned long iVertex;
+  uint iMarker;
 
 };
 
-
-typedef std::tuple<unsigned long, unsigned long> IterationInfo;
-typedef std::tuple<CConfig*, CGeometry*, CSolver**> SolverData;
-typedef std::tuple<unsigned long, unsigned long, unsigned short> PointInfo;

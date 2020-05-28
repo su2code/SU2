@@ -30,9 +30,9 @@ void CFVMBaseModule::DefineVolumeFields(CVolumeOutFieldManager& volumeFields) {
 
 void CFVMBaseModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) {
-  const auto* geometry = get<1>(solverData);
-  const auto iVertex   = get<1>(pointInfo);
-  const auto iMarker   = get<2>(pointInfo);
+  const auto* geometry = solverData.geometry;
+  const auto iVertex   = pointInfo.iVertex;
+  const auto iMarker   = pointInfo.iMarker;
   const auto* normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
   su2double area = 0.0;
@@ -51,10 +51,10 @@ void CFVMBaseModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const
 
 void CFVMBaseModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                     const IterationInfo& iterationInfo, const PointInfo& pointInfo) {
-  const auto* geometry  = get<1>(solverData);
-  const auto  iPoint    = get<0>(pointInfo);
-  const auto* coord   = geometry->nodes->GetCoord(iPoint);
-  const auto* nodeGeo = geometry->nodes;
+  const auto* geometry = solverData.geometry;
+  const auto  iPoint   = pointInfo.iPoint;
+  const auto* coord    = geometry->nodes->GetCoord(iPoint);
+  const auto* nodeGeo  = geometry->nodes;
 
   volumeFields.SetFieldValue("COORD_X", coord[0]);
   volumeFields.SetFieldValue("COORD_Y", coord[1]);

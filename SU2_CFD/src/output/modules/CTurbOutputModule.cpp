@@ -43,8 +43,8 @@ void CTurbOutputModule::DefineHistoryFields(CHistoryOutFieldManager& historyFiel
 void CTurbOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                         const IterationInfo& iterationInfo) {
 
-  const auto* config      = get<0>(solverData);
-  const auto* turb_solver = get<2>(solverData)[TURB_SOL];
+  const auto* config      = solverData.config;
+  const auto* turb_solver = solverData.solver[TURB_SOL];
 
   switch (turb_model) {
     case SA:
@@ -121,10 +121,10 @@ void CTurbOutputModule::DefineVolumeFields(CVolumeOutFieldManager& volumeFields)
 void CTurbOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                        const IterationInfo& iterationInfo, const PointInfo& pointInfo) {
 
-  const auto* geometry    = get<1>(solverData);
-  auto* turb_solver       = get<2>(solverData)[TURB_SOL];
-  auto* flow_solver       = get<2>(solverData)[FLOW_SOL];
-  const auto  iPoint      = get<0>(pointInfo);
+  const auto* geometry    = solverData.geometry;
+  auto* turb_solver       = solverData.solver[TURB_SOL];
+  auto* flow_solver       = solverData.solver[FLOW_SOL];
+  const auto  iPoint      = pointInfo.iPoint;
   const auto* Node_Turb  = turb_solver->GetNodes();
   const auto* Node_Flow  = flow_solver->GetNodes();
   const auto* Node_Geo   = geometry->nodes;

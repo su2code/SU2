@@ -47,8 +47,8 @@ void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &his
 void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                                  const IterationInfo& iterationInfo){
 
-  const auto* config = get<0>(solverData);
-  const auto Iter = get<0>(iterationInfo);
+  const auto* config = solverData.config;
+  const auto Iter = iterationInfo.Iter;
   unsigned short iCounter;
 
   convergence = true;

@@ -56,9 +56,9 @@ void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager 
 void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                              const IterationInfo& iterationInfo){
 
-  const auto* config  = get<0>(solverData);
-  const auto Iter     = get<0>(iterationInfo);
-  const auto TimeIter = get<1>(iterationInfo);
+  const auto* config  = solverData.config;
+  const auto Iter     = iterationInfo.Iter;
+  const auto TimeIter = iterationInfo.TimeIter;
 
   bool Inner_IterConv = historyFields.GetCollection().GetValueByKey("CONVERGENCE") ||
      config->GetnInner_Iter()-1 <=  Iter; //Check, if Inner_Iter is converged

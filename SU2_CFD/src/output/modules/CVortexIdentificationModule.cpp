@@ -22,9 +22,9 @@ void CVortexIdentificationModule::DefineVolumeFields(CVolumeOutFieldManager& vol
 void CVortexIdentificationModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                                  const IterationInfo&, const PointInfo& pointInfo) {
 
-  auto* flow_solver = get<2>(solverData)[FLOW_SOL];
+  auto* flow_solver = solverData.solver[FLOW_SOL];
   auto* Node_Flow = flow_solver->GetNodes();
-  const auto iPoint = get<0>(pointInfo);
+  const auto iPoint = pointInfo.iPoint;
 
   if (nDim == 3) {
     volumeFields.SetFieldValue("VORTICITY_X", Node_Flow->GetVorticity(iPoint)[0]);

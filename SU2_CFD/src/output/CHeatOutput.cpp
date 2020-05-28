@@ -88,8 +88,8 @@ void CHeatOutputModule::DefineHistoryFields(CHistoryOutFieldManager &historyFiel
 void CHeatOutputModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                         const IterationInfo&){
 
-  const auto* config = get<0>(solverData);
-  const auto* heat_solver = get<2>(solverData)[HEAT_SOL];
+  const auto* config = solverData.config;
+  const auto* heat_solver = solverData.solver[HEAT_SOL];
 
   historyFields.SetFieldValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
   historyFields.SetFieldValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
@@ -112,8 +112,8 @@ void CHeatOutputModule::DefineVolumeFields(CVolumeOutFieldManager &volumeFields)
 void CHeatOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                        const IterationInfo&, const PointInfo& pointInfo){
 
-  auto* heat_solver = get<2>(solverData)[HEAT_SOL];
-  auto iPoint = get<0>(pointInfo);
+  auto* heat_solver = solverData.solver[HEAT_SOL];
+  auto iPoint = pointInfo.iPoint;
 
   volumeFields.SetFieldValue("TEMPERATURE", heat_solver->GetNodes()->GetSolution(iPoint,0));
 
@@ -122,13 +122,13 @@ void CHeatOutputModule::LoadVolumeData(CVolumeOutFieldManager& volumeFields, con
 void CHeatOutputModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
                                         const IterationInfo&, const PointInfo& pointInfo){
 
-  const auto iPoint  = get<0>(pointInfo);
-  const auto iVertex = get<1>(pointInfo);
-  const auto iMarker = get<2>(pointInfo);
+  const auto iPoint  = pointInfo.iPoint;
+  const auto iVertex = pointInfo.iVertex;
+  const auto iMarker = pointInfo.iMarker;
 
-  const auto* config = get<0>(solverData);
-  const auto* geometry = get<1>(solverData);
-  auto* heat_solver = get<2>(solverData)[HEAT_SOL];
+  const auto* config   = solverData.config;
+  const auto* geometry = solverData.geometry;
+  auto* heat_solver = solverData.solver[HEAT_SOL];
 
   const auto& Grad_Sol = heat_solver->GetNodes()->GetGradient(iPoint);
   const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();

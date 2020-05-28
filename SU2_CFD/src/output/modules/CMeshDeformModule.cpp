@@ -4,7 +4,7 @@
 void CMeshDeformModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
                                         const IterationInfo&){
 
-  const auto* mesh_solver = get<2>(solverData)[MESH_SOL];
+  const auto* mesh_solver = solverData.solver[MESH_SOL];
 
   historyFields.SetFieldValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
   historyFields.SetFieldValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
