@@ -3133,10 +3133,14 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   computeGradientsGreenGauss(this, ANISO_GRADIENT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, nVar, gradient);
   
+  CorrectSymmPlaneGradient(geometry, config);
+  
   auto& hessian = base_nodes->GetHessian();
   
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
+  
+  CorrectSymmPlaneHessian(geometry, config);
   
 }
 
@@ -5229,6 +5233,102 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
   
   AD_END_PASSIVE
   
+}
+
+void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iDim, iMarker;
+  unsigned long iVertex;
+  
+  su2double Area,
+            *Normal     = new su2double[nDim],
+            *UnitNormal = new su2double[nDim];
+  
+  su2double **Grad_Symm = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Grad_Symm[iVar] = new su2double[nDim];
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++)
+            Normal[iDim] = -Normal[iDim];
+
+          //--- Compute unit normal.
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = -Normal[iDim]/Area;
+          
+          //--- Get gradients of the solution of boundary cell.
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              Grad_Symm[iVar][iDim] = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
+          
+          for (iVar = 0; iVar < nVar; iVar++) {
+            //--- Compute projected part of the gradient in a dot product.
+            su2double ProjGradient = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              ProjGradient += Grad_Symm[iVar][iDim]*UnitNormal[iDim];
+            
+            //--- Set normal part of the gradient to zero.
+            for (iDim = 0; iDim < nDim; iDim++)
+              Grad_Symm[iVar][iDim] = Grad_Symm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
+            
+            //--- Set gradients of the solution of boundary cell.
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                 base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, Grad_Symm[iVar][iDim]);
+          }
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+  
+  //--- communicate the gradient values via MPI
+  InitiateComms(geometry, config, ANISO_GRADIENT);
+  CompleteComms(geometry, config, ANISO_GRADIENT);
+  
+  //--- Free locally allocated memory
+  delete [] Normal;
+  delete [] UnitNormal;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Grad_Symm[iVar];
+  delete [] Grad_Symm;
+}
+
+void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iMetr, iMarker;
+  unsigned short nMetr = 3*(nDim-1);
+  unsigned long iVertex;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            for (iMetr = 0; iMetr < nMetr; iMetr++) {
+              //--- Double Hessian at symmetry plane
+              const su2double hess = base_nodes->GetHessian(iPoint, iVar, iMetr);
+              base_nodes->SetHessian(iPoint, iVar, iMetr, 2.*hess);
+            }// iVar
+          }// iMetr
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+  
+  //--- communicate the gradient values via MPI
+  InitiateComms(geometry, config, HESSIAN);
+  CompleteComms(geometry, config, HESSIAN);
 }
 
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {

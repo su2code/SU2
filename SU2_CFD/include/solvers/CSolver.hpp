@@ -316,7 +316,19 @@ public:
                        const su2double *const *const *const Jacobian_jc);
   
   /*!
-   * \brief Correct the Hessian at symmetry planes.
+   * \brief Correct the gradient at symmetry planes.
+   */
+  void CorrectSymmPlaneGradient(CGeometry *geometry,
+                                CConfig *config);
+  
+  /*!
+   * \brief Correct the gradient at symmetry planes.
+   */
+  void CorrectSymmPlaneHessian(CGeometry *geometry,
+                               CConfig *config);
+  
+  /*!
+   * \brief Correct the Hessian at boundaries.
    */
   void CorrectBoundHessian(CGeometry *geometry,
                            CConfig *config);
