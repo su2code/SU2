@@ -17,7 +17,7 @@ TEST_CASE("Expression parser and scope", "[Parser]"){
   x = 5.5;
   y = 10.2;
 
-  auto result = scope.EvalExpressions();
+  const auto result = scope.EvalExpressions();
 
 
   REQUIRE(result[0] == x+y);
@@ -56,7 +56,7 @@ TEST_CASE("Custom function surface sum", "[Parser]"){
   x_surf2 = 0.35;
   y_surf2 = 421.042;
 
-  auto result = scope.EvalExpressions();
+  const auto result = scope.EvalExpressions();
 
   REQUIRE(result[0] == x_surf1 + x_surf2);
   REQUIRE(result[1] == y_surf1 + y_surf2);
