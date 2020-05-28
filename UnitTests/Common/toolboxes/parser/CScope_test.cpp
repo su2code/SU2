@@ -28,7 +28,7 @@ TEST_CASE("Expression parser and scope", "[Parser]"){
 }
 
 
-TEST_CASE("Custom function sum", "[Parser]"){
+TEST_CASE("Custom function surface sum", "[Parser]"){
 
   Parser::Scope scope;
 

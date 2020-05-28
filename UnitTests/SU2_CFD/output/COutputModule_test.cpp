@@ -18,7 +18,7 @@ struct __TestCase__ {
                                      "MACH_NUMBER=0.5\n"
                                      "MARKER_CUSTOM= ( x_minus, x_plus, y_minus, y_plus,z_plus, z_minus)\n"
                                      "VISCOSITY_MODEL= CONSTANT_VISCOSITY\n"
-                                     "MESH_BOX_SIZE=30,30,30\n"
+                                     "MESH_BOX_SIZE=5,5,5\n"
                                      "MESH_BOX_LENGTH=1,1,1\n"
                                      "MESH_BOX_OFFSET=0,0,0\n"
                                      "REF_ORIGIN_MOMENT_X=0.0\n"
@@ -107,7 +107,7 @@ TEST_CASE("Aerodynamics Module", "[Output Module]"){
 
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{0,0});
 
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.4904615));
-  REQUIRE(modules.GetHistoryFields().GetValueByKey("DRAG") == Approx(-2.36281));
+  REQUIRE(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.5338212762));
+  REQUIRE(modules.GetHistoryFields().GetValueByKey("DRAG") == Approx(-2.3919536834));
 
 }
