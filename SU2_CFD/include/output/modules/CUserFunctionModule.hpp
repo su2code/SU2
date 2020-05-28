@@ -12,8 +12,8 @@ class CUserFunctionModule final : public CSolverOutputModule {
 
 //  using FieldRefFuncPair  = std::pair<FieldRef, Parser::Expression>;
 
-  std::vector<Parser::CFunctionParser::RawExpression> historyUserFunctions;
-  std::vector<Parser::CFunctionParser::RawExpression> volumeUserFunctions;
+  std::vector<Parser::CFunctionParser::RawFunction> historyUserFunctions;
+  std::vector<Parser::CFunctionParser::RawFunction> volumeUserFunctions;
 
   std::unique_ptr<Parser::Scope> historyScope;
   std::unique_ptr<Parser::Scope> volumeScope;

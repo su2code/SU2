@@ -7,10 +7,10 @@ CUserFunctionModule::CUserFunctionModule(CConfig* config, int nDim) : CSolverOut
   Parser::CFunctionParser funcParser;
   funcParser.ParseFunctionsFromFile("functions.su2x");
 
-  historyUserFunctions = funcParser.GetExpressions({"historyfield"});
-  volumeUserFunctions = funcParser.GetExpressions({"volumefield", "surfaceintegral"});
+  historyUserFunctions = funcParser.GetFunctions({"historyfield"});
+  volumeUserFunctions = funcParser.GetFunctions({"volumefield", "surfaceintegral"});
 
-  auto addInlineUserFunction = [&](std::string field, std::vector<Parser::CFunctionParser::RawExpression>& userFuncsVector) {
+  auto addInlineUserFunction = [&](std::string field, std::vector<Parser::CFunctionParser::RawFunction>& userFuncsVector) {
     if (*field.begin() == '{' && *(field.end() - 1) == '}') {
       auto rawExpr = field;
       rawExpr.pop_back();
