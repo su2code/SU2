@@ -6,6 +6,7 @@
 #endif
 #include "exprtk.hpp"
 #undef CUSTOM_TYPE
+#include <memory>
 
 namespace Parser {
 

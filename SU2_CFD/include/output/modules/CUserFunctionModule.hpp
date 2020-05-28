@@ -3,6 +3,7 @@
 #include "COutputModule.hpp"
 #include "../../../../Common/include/toolboxes/parser/ExpressionParser.hpp"
 #include "../../../../Common/include/toolboxes/parser/CFunctionParser.hpp"
+#include <memory>
 
 class CUserFunctionModule final : public CSolverOutputModule {
 

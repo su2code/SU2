@@ -1,43 +1,37 @@
 #pragma once
-#include "../../datatype_structure.hpp"
 #include <fstream>
-#include <list>
-#include "../printing_toolbox.hpp"
-namespace Parser{
+#include <vector>
 
+#include "../../datatype_structure.hpp"
+namespace Parser {
 
-  enum class CustomFunction {
-    SURFACE_SUM
-  };
+enum class CustomFunction { SURFACE_SUM };
 
+class Scope {
+ private:
+  struct ScopeImpl;
+  ScopeImpl* Impl;
 
-  class Scope {
+ public:
+  Scope();
 
-  private:
-    struct ScopeImpl;
-    ScopeImpl* Impl;
-  public:
+  ~Scope();
 
-    Scope();
+  // Asssignment Operator and Copy Constructor
 
-    ~Scope();
+  Scope(const Scope& other) = delete;
+  Scope& operator=(Scope rhs) = delete;
 
-    // Asssignment Operator and Copy Constructor
+  void addVariable(const std::string& name, su2double& var);
 
-     Scope(const Scope& other) = delete;
-     Scope& operator=(Scope rhs) = delete;
+  void addStringVar(const std::string& name, std::string& var);
 
-    void addVariable(const std::string& name, su2double &var);
+  bool addExpression(const std::string& expr);
 
-    void addStringVar(const std::string& name, std::string &var);
+  std::string GetError();
 
-    bool addExpression(const std::string &expr);
+  std::vector<su2double> EvalExpressions();
 
-    std::string GetError();
-
-    std::vector<su2double> EvalExpressions();
-
-    void addCustomFunction(const std::string& name, CustomFunction type);
-
-  };
+  void addCustomFunction(const std::string& name, CustomFunction type);
 };
+};  // namespace Parser
