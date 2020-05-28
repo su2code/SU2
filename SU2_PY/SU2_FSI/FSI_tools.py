@@ -400,6 +400,8 @@ def ReadPointInversion(configDef,MeshFile):
             PointInv_arr.append(a)
     PointInv = np.array(PointInv_arr) 
     # Sorting according to first column index
+    # In case nodes on the boundary are not numbered from 0 to the maximum a argsort is required for PointInv[:,0]
+    PointInv[:,0] = np.argsort(PointInv[:,0]) 
     PointInv = PointInv[PointInv[:,0].argsort()]
     
     return PointInv
