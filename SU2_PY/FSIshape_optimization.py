@@ -116,20 +116,41 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
           
     # function handles
     func           = obj_f
-    f_eqcons       = con_ceq
-    f_ieqcons      = con_cieq 
     
     # gradient handles
     fprime         = obj_df
-    fprime_eqcons  = con_dceq
-    fprime_ieqcons = con_dcieq        
-    
-    # case of no geo constraints
+        
+    # constraints handling
     if project.config['OPT_CONSTRAINT'] == None:
        f_eqcons       = None
        f_ieqcons      = None 
        fprime_eqcons  = None
        fprime_ieqcons = None     
+       
+    else:
+       eq =False
+       ieq = False
+       for i in range(len(project.config['OPT_CONSTRAINT'])):
+          # Looking for the given constraints
+          if project.config['OPT_CONSTRAINT'][i][1] == '=': 
+              eq =True
+          elif project.config['OPT_CONSTRAINT'][i][1] == '>' or project.config['OPT_CONSTRAINT'][i][1] == '<':    
+              ieq = True
+       if eq == True:
+          f_eqcons       = con_ceq 
+          fprime_eqcons  = con_dceq
+       else:
+          f_eqcons       = None 
+          fprime_eqcons  = None   
+
+       if ieq == True:
+          f_ieqcons       = con_cieq 
+          fprime_ieqcons  = con_dcieq
+       else:
+          f_ieqcons       = None 
+          fprime_ieqcons  = None           
+    
+    
     
     # number of design variables  (this is read from the DEF input file)
     n_dv = len(x0)
