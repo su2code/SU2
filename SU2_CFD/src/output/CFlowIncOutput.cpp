@@ -383,6 +383,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
+  if (pressure_based)
+    AddVolumeOutput("MASS_FLUX", "Mass_flux","SOLUTION", "Mass flux at a point");
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -526,6 +528,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 	  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 0));
 	  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 1));
 	  if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 2));
+	  SetVolumeOutputValue("MASS_FLUX", iPoint, Node_Flow->GetMassFlux(iPoint));
   }  else {
 	  SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
 	  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));

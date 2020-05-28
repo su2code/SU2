@@ -1415,7 +1415,15 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     if ((limiter) && (iMesh == MESH_0) && !Output) {
       SetPrimitive_Limiter(geometry, config);
     }
-    
+
+    /*--- Compute gradient of the primitive variables for pressure source term ---*/
+
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetPrimitive_Gradient_GG(geometry, config, false);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetPrimitive_Gradient_LS(geometry, config, false);
+    }
   }
   
   SetResMassFluxZero();
@@ -3361,7 +3369,6 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   Normal = new su2double [nDim];
   Vel_i = new su2double[nDim];
   Vel_j = new su2double[nDim];
-  int ranknp = SU2_MPI::GetRank();
 
   /*--- Initialize mass flux to zero ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
@@ -3372,8 +3379,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   /*--- Point loop ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol_i = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
+    Vol_i = (geometry->nodes->GetVolume(iPoint));
 
     Density_i = nodes->GetDensity(iPoint);
 
@@ -3395,8 +3401,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
       dir = (iPoint == geometry->edges->GetNode(iEdge,0))? 1.0 : -1.0;
 
-      Vol_j = (geometry->nodes->GetVolume(jPoint) );//+
-           //geometry->nodes->GetPeriodicVolume(jPoint));
+      Vol_j = (geometry->nodes->GetVolume(jPoint));
 
       /*--- Face average mass flux. ---*/
       Density_j = nodes->GetDensity(jPoint);
@@ -3422,7 +3427,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
 	  /*--- Interpolate the pressure gradient based on node values ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        Grad_Avg = 0.5*(nodes->GetGradient_Primitive(iPoint,0,iDim) + nodes->GetGradient_Primitive(jPoint,0,iDim)) ;
+        Grad_Avg = 0.5*(nodes->GetGradient_Primitive(iPoint,0,iDim) + nodes->GetGradient_Primitive(jPoint,0,iDim));
         GradP_in[iDim] = Grad_Avg;
       }
 
@@ -3446,7 +3451,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       for (iDim = 0; iDim < nDim; iDim++) {
         RhieChowInterp += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
       }
-      
+
       /*--- Rhie Chow correction for time step must go here ---*/
 
 	  MassFlux_Part += dir*(MassFlux_Avg - RhieChowInterp);
@@ -3692,11 +3697,11 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     }
     alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
   }
-   
+
   /*--- Reassign strong boundary conditions ---*/
   /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
    *  where different treatment of pressure might be needed. Symmetry and Euler wall are weak BCs. ---*/
-  
+
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 
     KindBC = config->GetMarker_All_KindBC(iMarker);
@@ -3802,7 +3807,14 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     Current_Pressure = nodes->GetPressure(iPoint);
     Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
     nodes->SetPressure_val(iPoint,Current_Pressure);
-   }
+    /*su2double x,y;
+    x=geometry->nodes->GetCoord(iPoint, 0);
+    y=geometry->nodes->GetCoord(iPoint, 1);
+    if (((y >-0.0022)&&(y<-0.0015)) && ((x>0.023)&&(x<0.0245))) {
+      cout<<iPoint<<"\t"<<alpha_p[iPoint]<<"\t"<<vel_corr[iPoint][0]<<"\t"<<vel_corr[iPoint][1]<<endl;
+      cout<<nodes->GetSolution(iPoint,0)<<"\t"<<nodes->GetSolution(iPoint,1)<<endl;
+    }*/
+  }
      
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {

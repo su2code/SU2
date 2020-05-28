@@ -162,40 +162,26 @@ void CPoissonSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   Jacobian.SetValZero();
 
-  if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config,true);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+   SetSolution_Gradient_GG(geometry, config,false);
 
-  if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config,true);
-    
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) 
+    SetSolution_Gradient_LS(geometry, config,false);  
 }
 
+void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                        unsigned short iMesh){
+							
+ /*--- Compute gradients so we can use it to find the velocity corrections ---*/
+  
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) 
+    SetSolution_Gradient_GG(geometry, config,false);
 
-
-
-void CPoissonSolverFVM:: SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
-
-}
-
-
-void CPoissonSolverFVM:: Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
-
-
-}
-
-
-void CPoissonSolverFVM:: Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-
-
-}
-
-void CPoissonSolverFVM:: Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
-
-
-
-}
-
-void CPoissonSolverFVM:: Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config){
-
-
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) 
+    SetSolution_Gradient_LS(geometry, config,false);
+  
+  
+  	
 }
 
 void CPoissonSolverFVM:: LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo){
@@ -410,18 +396,6 @@ void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_c
   }
 }
 
-void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iMesh){
-							
- /*--- Compute gradients so we can use it to find the velocity corrections ---*/
-  
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);							
-  
-  	
-}
-
 void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh) {
 
@@ -465,13 +439,11 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
   }
 }
 
-void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-
-
-
-}
 void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  /*--- No time integration is done here. The routine is used as a means to solve the jacobian matrix in a way
+   * consistent with the rest of the code. Time step is set to zero and no under-relaxation is applied to the
+   * jacobian matrix.*/
   
   unsigned long iPoint, total_index, IterLinSol = 0;;
   unsigned short iVar;
@@ -508,12 +480,13 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 	/*--- Read the volume ---*/
     Vol = geometry->nodes->GetVolume(iPoint);
     
-    su2double *diag = Jacobian.GetBlock(iPoint, iPoint);
-    
+    /*--- Possible under-relaxation if needed goes here. ---*/
+    /*--- Currently, nothing changes. ---*/
+    /*su2double *diag = Jacobian.GetBlock(iPoint, iPoint);
     for (iVar = 0; iVar < nVar; iVar++)
-      diag[(nVar+1)*iVar] = diag[(nVar+1)*iVar]/1.0;
+      diag[(nVar+1)*iVar] = diag[(nVar+1)*iVar]/1.0; 
     
-    Jacobian.SetBlock(iPoint, iPoint, diag);
+    Jacobian.SetBlock(iPoint, iPoint, diag);*/
 
 	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -540,7 +513,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
-      //nodes->AddSolution(iPoint, iVar, config->GetRelaxation_Factor_PBFlow()*LinSysSol[iPoint*nVar+iVar]);
      }
   }
   
@@ -569,11 +541,6 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
 }
 
-void CPoissonSolverFVM::Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  
-}
-
 void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh, unsigned long Iteration){
 
@@ -583,91 +550,6 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
   }
    
 }
-
-
-su2double CPoissonSolverFVM::GetDirichlet_BC(CGeometry *geometry, CConfig *config, unsigned long Point){
-	
-	su2double dirichlet_bc;
-	
-	if (config->GetKind_Incomp_System() == PRESSURE_BASED ) 
-	    dirichlet_bc = 0.0;
-	else 
-	    dirichlet_bc = 0.0;
-	
-	return dirichlet_bc;
-	
-}
-
-
-void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
-                                  CConfig *config, unsigned short val_marker) {
-  unsigned long Point, iVertex;
-  su2double val_res,pi;
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  unsigned short iVar = 0;
-  pi = 4.0*atan(1.0);
-  
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    Point = geometry->vertex[val_marker][iVertex]->GetNode();
-   
-    Solution[0] = GetDirichlet_BC(geometry,config,Point);
-    
-    
- /*--- Assign the dirichlet BC value to the solution ---*/
-    nodes->SetSolution(Point, Solution);
-    nodes->SetSolution_Old(Point, Solution);
-    
-	if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
-		Jacobian.DeleteValsRowi(Point);
-	}
-    LinSysRes.SetBlock_Zero(Point, iVar);
-    if (config->GetnMGLevels() > 0) nodes->SetVal_ResTruncError_Zero(Point, iVar);
-    LinSysSol.SetBlock(Point, Solution);
-  }
-
-  
-  
-  
-}
-
-
-void CPoissonSolverFVM::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                unsigned short val_marker) { 
-									
-									
-  unsigned short iDim;
-  unsigned long iVertex, iPoint;
-  su2double NeumannFlux, Area, *Normal,*Res_Visc;
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  NeumannFlux = 0.0;
-
-  Res_Visc = new su2double[nVar];
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
-      Res_Visc[0] = NeumannFlux * Area;
-
-      /*--- Viscous contribution to the residual at the wall ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-    }
-
-   }
-}
-
 
 void CPoissonSolverFVM::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

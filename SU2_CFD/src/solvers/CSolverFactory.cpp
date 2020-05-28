@@ -279,8 +279,10 @@ CSolver* CSolverFactory::createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::TRANSITION:
-      genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      if (config->GetKind_Trans_Model() == LM) {
+        genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
+        metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      }
       break;
     case SUB_SOLVER_TYPE::TURB: case SUB_SOLVER_TYPE::TURB_SA: case SUB_SOLVER_TYPE::TURB_SST:
       genericSolver = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);

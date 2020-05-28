@@ -461,10 +461,15 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
   unsigned short iDim, iVar, jVar;
   su2double Momentum[MAXNDIM] = {0},
             Velocity_i[MAXNDIM] = {0};
+  unsigned short iVel = 1;
+  if (config->GetKind_Incomp_System()==PRESSURE_BASED) iVel = 0;
 
   /*--- Primitive variables plus momentum at the node (point i) ---*/
 
-  DensityInc_i  = V_i[nDim+2];
+  if (config->GetKind_Incomp_System()==PRESSURE_BASED)
+    DensityInc_i  = V_i[nDim+1];
+  else
+    DensityInc_i  = V_i[nDim+2];
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
@@ -472,18 +477,17 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
   }
 
   /*--- Calculate rotating frame source term residual as ( Omega X Rho-U ) ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+        residual[iVar] = 0.0;
 
   if (nDim == 2) {
-    residual[0] = 0.0;
-    residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-    residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    residual[3] = 0.0;
+    residual[iVel]   = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    residual[iVel+1] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
   } else {
-    residual[0] = 0.0;
-    residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-    residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
-    residual[4] = 0.0;
+    residual[iVel]   = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    residual[iVel+1] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    residual[iVel+2] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
   }
 
   /*--- Calculate the source term Jacobian ---*/
@@ -493,15 +497,15 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
       for (jVar = 0; jVar < nVar; jVar++)
         jacobian[iVar][jVar] = 0.0;
     if (nDim == 2) {
-      jacobian[1][2] = -DensityInc_i*Omega[2]*Volume;
-      jacobian[2][1] =  DensityInc_i*Omega[2]*Volume;
+      jacobian[iVel][iVel+1] = -DensityInc_i*Omega[2]*Volume;
+      jacobian[iVel+1][iVel] =  DensityInc_i*Omega[2]*Volume;
     } else {
-      jacobian[1][2] = -DensityInc_i*Omega[2]*Volume;
-      jacobian[1][3] =  DensityInc_i*Omega[1]*Volume;
-      jacobian[2][1] =  DensityInc_i*Omega[2]*Volume;
-      jacobian[2][3] = -DensityInc_i*Omega[0]*Volume;
-      jacobian[3][1] = -DensityInc_i*Omega[1]*Volume;
-      jacobian[3][2] =  DensityInc_i*Omega[0]*Volume;
+      jacobian[iVel][iVel+1]   = -DensityInc_i*Omega[2]*Volume;
+      jacobian[iVel][iVel+2]   =  DensityInc_i*Omega[1]*Volume;
+      jacobian[iVel+1][iVel]   =  DensityInc_i*Omega[2]*Volume;
+      jacobian[iVel+1][iVel+2] = -DensityInc_i*Omega[0]*Volume;
+      jacobian[iVel+2][iVel]   = -DensityInc_i*Omega[1]*Volume;
+      jacobian[iVel+2][iVel+1] =  DensityInc_i*Omega[0]*Volume;
     }
   }
 
