@@ -13,8 +13,7 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp'])
 
 # Forward-mode (direct differentiation) tests:
-su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp',
-                          'SU2_CFD/output/COutputModule_test.cpp'])
+su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
 
 # -------------------------------------------------------------------------
 # End of unit test listings
