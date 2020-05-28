@@ -6,6 +6,7 @@
 # Direct-mode tests:
 su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'Common/geometry/dual_grid/CDualGrid_tests.cpp',
+                       'Common/toolboxes/parser/CFunctionParser_test.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
                        'SU2_CFD/output/COutputModule_test.cpp'])
 
