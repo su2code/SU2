@@ -2,7 +2,7 @@ common_include = include_directories('./')
 common_src =files(['graph_coloring_structure.cpp',
            'CConfig.cpp',
            'blas_structure.cpp',
-           'ad_structure.cpp',
+           'basic_types/ad_structure.cpp',
            'grid_movement_structure.cpp',
            'grid_adaptation_structure.cpp',
            'wall_model.cpp',

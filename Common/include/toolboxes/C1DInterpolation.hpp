@@ -31,7 +31,6 @@
 #include <cmath>
 #include <vector>
 #include<fstream>
-#include "../datatype_structure.hpp"
 #include "../option_structure.hpp"
 
 using namespace std;
