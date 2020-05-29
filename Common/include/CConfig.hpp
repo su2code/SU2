@@ -44,7 +44,6 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
-#include "./datatype_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -1293,7 +1292,7 @@ public:
    * \brief Constructor of the class which takes an istream buffer containing the config options.
    */
   CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
-  
+
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
@@ -1313,7 +1312,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
   /*!
   * \brief Initialize common fields of the config structure.
   */
@@ -8107,8 +8106,8 @@ public:
   /*!
    * \brief Set the config file parsing.
    */
-  void SetConfig_Parsing(istream &config_buffer);  
-  
+  void SetConfig_Parsing(istream &config_buffer);
+
   /*!
    * \brief Set the config file parsing.
    */
@@ -8437,26 +8436,6 @@ public:
    * \return Current number of non-physical reconstructions for 2nd-order upwinding.
    */
   unsigned long GetNonphysical_Reconstr(void) const { return Nonphys_Reconstr; }
-
-  /*!
-   * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
-   x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
-   function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
-   the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
-   ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
-   condition for a natural spline, with zero second derivative on that boundary.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   */
-  void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
-
-  /*!
-   * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
-   and given the array y2a[1..n], which is the output from spline above, and given a value of
-   x, this routine returns a cubic-spline interpolated value y.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   * \return The interpolated value of for x.
-   */
-  su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
 
   /*!
    * \brief Start the timer for profiling subroutines.
