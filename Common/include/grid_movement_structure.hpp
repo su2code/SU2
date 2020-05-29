@@ -952,6 +952,11 @@ protected:
 
   unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
+  bool using_pitching_file;
+  vector<string> pitching_labels;
+  vector<vector<su2double>> pitching_vals;
+
+
 #ifndef CODI_FORWARD_TYPE
   CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
   CSysSolve<su2mixedfloat>  System;      /*!< \brief Linear solver/smoother. */
@@ -1292,6 +1297,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Read csv file
+   * \param[in] filename: name of csv file to read 
+   * \param[in] labels: vector containing labels of csv file
+   * \param[in] vals: 2D vector containing all the values in the csv file
+   */
+  void ReadCSVFile(string filename, vector<string>& labels, vector<vector<string>>& vals);
 };
 
 /*!

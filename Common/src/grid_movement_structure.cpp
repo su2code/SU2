@@ -63,6 +63,24 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   }
+
+  string filename = config->GetPitching_Filename();
+  vector<vector<string>> vals_string;
+  if (!filename.empty()){
+    cout << "about to read file" << endl;
+    using_pitching_file = true;
+    ReadCSVFile(filename, pitching_labels, vals_string);
+    pitching_vals.resize(vals_string.size(),{});
+    for (unsigned long i = 0; i < vals_string.size(); i++){
+      pitching_vals[i].resize(vals_string[i].size(),0.0);
+      for (unsigned short j; j < vals_string.size(); j++){
+        pitching_vals[i][j] = stod(vals_string[i][j]);
+      }
+    }
+  }
+  else{
+    using_pitching_file = false;
+  }
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) { }
@@ -1950,6 +1968,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  unsigned long restart_iter = config->GetRestart_Iter();
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -1981,29 +2000,44 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     time_new = static_cast<su2double>(directIter)*deltaT;
     time_old = time_new;
     if (iter != 0) time_old = (static_cast<su2double>(directIter)+1.0)*deltaT;
-  } else {
+  } 
+  else {
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
     if (harmonic_balance) {
       /*--- For harmonic balance, begin movement from the zero position ---*/
       time_old = 0.0;
-    } else {
+    } 
+    else {
       time_old = time_new;
       if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
     }
   }
 
-  /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+  if (using_pitching_file){
+    dtheta = pitching_vals[iter-restart_iter][0];
+    dphi   = pitching_vals[iter-restart_iter][1];
+    dpsi   = pitching_vals[iter-restart_iter][2];
 
-  dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0]) - sin(Omega[0]*time_old + Phase[0]));
-  dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1]) - sin(Omega[1]*time_old + Phase[1]));
-  dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2]) - sin(Omega[2]*time_old + Phase[2]));
+    /*--- Angular velocity at the new time ---*/
 
-  /*--- Angular velocity at the new time ---*/
+    alphaDot[0] = pitching_vals[iter-restart_iter][3];
+    alphaDot[1] = pitching_vals[iter-restart_iter][4];
+    alphaDot[2] = pitching_vals[iter-restart_iter][5];
+  }
+  else{
+    /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
 
-  alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
-  alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
-  alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
+    dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0]) - sin(Omega[0]*time_old + Phase[0]));
+    dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1]) - sin(Omega[1]*time_old + Phase[1]));
+    dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2]) - sin(Omega[2]*time_old + Phase[2]));
+
+    /*--- Angular velocity at the new time ---*/
+
+    alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
+    alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
+    alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
+  }
 
   if (rank == MASTER_NODE && iter == 0) {
       cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
@@ -2486,6 +2520,37 @@ void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *confi
   /*--- After moving all nodes, update geometry class ---*/
   if (UpdateGeo) UpdateDualGrid(geometry, config);
 
+}
+
+void CVolumetricMovement::ReadCSVFile(string filename, vector<string>& labels, vector<vector<string>>& vals){
+  string line;
+  ifstream file(filename);
+  int i = 0;
+  if(file){
+
+    /* --- Read the labels in the csv file --- */
+
+    getline(file, line);
+    stringstream sep(line);
+    string field;
+    while (getline(sep,field,',')){
+      labels.push_back(field);
+    }
+
+    /* --- Read the values in the csv file --- */
+
+    while (getline(file, line)){
+      stringstream sep(line);
+      string field;
+      vals.push_back({});
+      while (getline(sep,field,',')){
+        vals[i].push_back(field);
+      }
+      i++;
+    }
+  }
+
+  else SU2_MPI::Error("Could not find csv file: " + filename, CURRENT_FUNCTION);
 }
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {

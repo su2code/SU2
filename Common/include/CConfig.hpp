@@ -911,6 +911,7 @@ private:
   *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */
   *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */
   *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
+  string Pitching_Filename;       /*!< \brief Filename defining arbitrary pitching motion */
 
   unsigned short
   nMarkerMotion_Origin,           /*!< \brief Number of values provided for mesh motion origin of marker. */
@@ -5789,6 +5790,11 @@ public:
    */
   su2double GetMarkerPitching_Phase(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerPitching_Phase[3*iMarkerMoving + iDim];}
 
+  /*!
+   * \brief Get filename defining pitching movement
+   * \return pitching filename
+   */
+  string GetPitching_Filename() const { return Pitching_Filename; }
   /*!
    * \brief Get the plunging rate of the mesh.
    * \param[in] iDim - spatial component
