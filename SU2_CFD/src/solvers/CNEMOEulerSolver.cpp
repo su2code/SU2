@@ -1455,7 +1455,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Compute the upwind residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-   // exit(0);
 
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
