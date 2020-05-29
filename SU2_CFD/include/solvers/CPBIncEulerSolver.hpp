@@ -195,7 +195,7 @@ protected:
   least_squares;        /*!< \brief True if computing gradients by least squares. */
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
-  
+
   su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
   *Primitive_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Primitive_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
@@ -208,16 +208,17 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
-  
+
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-  
+
   su2double ResMassFlux;
-  
-  su2double *FaceVelocity;
+
+  su2double **FaceVelocity;
   su2double *FaceVelocityCorrec;
-  
+
   unsigned long PRef_Point;    /*!< \brief Store the index of reference cell for pressure */
   bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
+  unsigned long nEdge;
 
   CPBIncEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -225,26 +226,26 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPBIncEulerSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPBIncEulerSolver(void);  
-  
+  virtual ~CPBIncEulerSolver(void);
+
  /*!
    * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
@@ -608,7 +609,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
-  
+
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1391,52 +1392,52 @@ public:
                              CConfig *config) const final;
   /*!
    * \brief Correct the velocity using the velocity corrections.
-   *  
-   * 
+   *
+   *
    */
   void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
-   * \brief Compute the source term for the pressure correction equation based 
+   * \brief Compute the source term for the pressure correction equation based
    *        on the residuals from the solution of momentum equation.
-   * 
+   *
    */
   void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
-  
+
   /*!
-   * \brief Compute the coefficients for the pressure correction equation based 
+   * \brief Compute the coefficients for the pressure correction equation based
    *        on the residuals from the solution of momentum equation.
-   * 
+   *
    */
   void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh);
-  
+
   /*!
-   * \brief Compute the coefficients for the pressure correction equation based 
+   * \brief Compute the coefficients for the pressure correction equation based
    *        on the residuals from the solution of momentum equation in a periodic problem.
-   * 
+   *
    */
   void SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */
   void SetResMassFluxZero() { ResMassFlux = 0.0; }
-  
+
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */
   void SetResMassFlux(su2double val_ResMassFlux) { ResMassFlux = val_ResMassFlux; }
-  
+
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */
   void SetResMassFluxRMS(CGeometry *geometry, CConfig *config);
-  
+
    /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */
   void AddResMassFlux(su2double val_ResMassFlux) { ResMassFlux += val_ResMassFlux; }
-  
+
   /*!
    * \brief Get the convergence of mass flux for current internal iteration.
    * \return Value of the residual for the variable in the position <i>val_var</i>.
