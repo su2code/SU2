@@ -1,9 +1,0 @@
-[options]
-buildtype = debug
-prefix = /home/catarina/Codes/SU2/SU2-TNE2/SU2-develop
-enable-tecio = false
-with-mpi = enabled
-backend = ninja
-
-[properties]
-
