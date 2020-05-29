@@ -3,7 +3,7 @@
 ## \file redirect.py
 #  \brief python package for file redirection 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

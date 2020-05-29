@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -95,8 +95,6 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -129,6 +127,7 @@ const unsigned short N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CG
 const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
+enum: unsigned short{N_POINTS_MAXIMUM = 8};      /*!< \brief Max. out of the above, used for static arrays, keep it up to date. */
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
@@ -191,9 +190,7 @@ enum ENUM_MAIN_SOLVER {
   FEM_NAVIER_STOKES = 27,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 28,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30,
-  NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42          /*!< \brief Definition of the NEMO NS solver. */
+  MULTIPHYSICS = 30
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -207,8 +204,6 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
   MakePair("FEM_RANS", FEM_RANS)
   MakePair("FEM_LES", FEM_LES)
-  MakePair("NEMO_EULER",NEMO_EULER)
-  MakePair("NEMO_NAVIER_STOKES",NEMO_NAVIER_STOKES)
   MakePair("ADJ_EULER", ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", ADJ_RANS )
@@ -378,9 +373,7 @@ enum ENUM_TRANSFER {
   NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
   NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
   FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
-  STRUCTURAL_DISPLACEMENTS_LEGACY   = 11,   /*!< \brief Structural displacements (between fluids and solids) - legacy version (to be removed). */
   BOUNDARY_DISPLACEMENTS            = 21,   /*!< \brief Boundary displacements (between fluids and solids) */
-  STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
   MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
@@ -448,7 +441,6 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
-  RUNTIME_NEMO_SYS = 25      /*!< \brief One-physics case, the code is solving the two-temperature model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -456,8 +448,6 @@ const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow 
 
 const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int NEMO_SOL = 0;     /*!< \brief Position of the mean flow solution in the solution container array. */
 
 const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
@@ -549,44 +539,6 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("CONSTANT_DENSITY", CONSTANT_DENSITY)
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
-};
-
-/*!
- * \brief types of gas models
- */
-enum ENUM_GASMODEL {
-   NO_MODEL   = 0,
-   ARGON      = 1,
-   AIR7       = 2,
-   AIR21      = 3,
-   O2         = 4,
-   N2         = 5,
-   AIR5       = 6,
-   ARGON_SID  = 7,
-   ONESPECIES = 8
-};
-static const MapType<string, ENUM_GASMODEL> GasModel_Map = {
-MakePair("NONE", NO_MODEL)
-MakePair("ARGON", ARGON)
-MakePair("AIR-7", AIR7)
-MakePair("AIR-21", AIR21)
-MakePair("O2", O2)
-MakePair("N2", N2)
-MakePair("AIR-5", AIR5)
-MakePair("ARGON-SID",ARGON_SID)
-MakePair("ONESPECIES", ONESPECIES)
-};
-
-/*!
- * \brief types of coefficient transport model
- */
-enum ENUM_TRANSCOEFFMODEL {
-  WILKE      = 0,
-  GUPTAYOS = 1
-};
-static const MapType<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
-MakePair("WILKE", WILKE)
-MakePair("GUPTA-YOS", GUPTAYOS)
 };
 
 /*!
@@ -697,14 +649,12 @@ enum ENUM_SURFACEMOVEMENT {
   FLUID_STRUCTURE = 5,           /*!< \brief Fluid structure deformation. */
   EXTERNAL = 6,                  /*!< \brief Simulation with external motion. */
   EXTERNAL_ROTATION = 7,         /*!< \brief Simulation with external rotation motion. */
-  FLUID_STRUCTURE_STATIC = 8     /*!< \brief Fluid structure deformation with no grid velocity. */
 };
 static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
   MakePair("DEFORMING", DEFORMING)
   MakePair("MOVING_WALL", MOVING_WALL)
   MakePair("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
   MakePair("AEROELASTIC", AEROELASTIC)
-  MakePair("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
   MakePair("FLUID_STRUCTURE", FLUID_STRUCTURE)
   MakePair("EXTERNAL", EXTERNAL)
   MakePair("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
@@ -782,8 +732,7 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWplus = 18            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPLUSUP2 = 17            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
 };
 static const MapType<string, ENUM_UPWIND> Upwind_Map = {
   MakePair("NONE", NO_UPWIND)
@@ -792,7 +741,6 @@ static const MapType<string, ENUM_UPWIND> Upwind_Map = {
   MakePair("AUSM", AUSM)
   MakePair("AUSMPLUSUP", AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", AUSMPLUSUP2)
-  MakePair("AUSMPWplus", AUSMPWplus)
   MakePair("SLAU", SLAU)
   MakePair("HLLC", HLLC)
   MakePair("SW", SW)
@@ -1142,10 +1090,6 @@ enum BC_TYPE {
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
-  HEAT_FLUX_NONCATALYTIC = 51, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
-  HEAT_FLUX_CATALYTIC= 52, /*!< \brief No-slip, constant heat flux, catalytic bc. */
-  ISOTHERMAL_NONCATALYTIC = 53, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
-  ISOTHERMAL_CATALYTIC = 54, /*!< \brief No-slip, constant temperature, catalytic bc. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
 };
 
@@ -2077,15 +2021,10 @@ static const MapType<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
 
 
 enum ENUM_RECORDING {
-  FLOW_CONS_VARS   = 1,
+  SOLUTION_VARIABLES = 1,
   MESH_COORDS = 2,
-  COMBINED    = 3,
-  FEA_DISP_VARS = 4,
-  FLOW_CROSS_TERM = 5,
-  FEM_CROSS_TERM_GEOMETRY = 6,
-  GEOMETRY_CROSS_TERM = 7,
-  ALL_VARIABLES = 8,
-  MESH_DEFORM = 9
+  MESH_DEFORM = 3,
+  SOLUTION_AND_MESH = 4
 };
 
 /*!
@@ -2144,7 +2083,6 @@ enum MPI_QUANTITIES {
   SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
   SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_DISPONLY    =  4,  /*!< \brief Solution displacement only communication. */
   SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
   SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
   SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
@@ -2169,8 +2107,7 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 29,   /*!< \brief Solution at time n-1. */
-  PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
+  SOLUTION_TIME_N1     = 29   /*!< \brief Solution at time n-1. */
 };
 
 /*!

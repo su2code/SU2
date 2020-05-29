@@ -2,7 +2,7 @@
  * \file CFEMDataSorter.cpp
  * \brief Datasorter class for FEM solvers.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
-#include "../../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../../Common/include/fem/fem_geometry_structure.hpp"
 #include <numeric>
 
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
@@ -76,9 +76,9 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
 CFEMDataSorter::~CFEMDataSorter(){
 
-  if (Index != NULL)       delete [] Index;
-  if (idSend != NULL)      delete [] idSend;
-  if (linearPartitioner != NULL) delete linearPartitioner;
+        delete [] Index;
+       delete [] idSend;
+  delete linearPartitioner;
 
 }
 
@@ -92,7 +92,7 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
 
   /*--- Sort volumetric grid connectivity. ---*/
-  
+
   nElemPerType.fill(0);
 
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
@@ -101,9 +101,9 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
   SortVolumetricConnectivity(config, geometry, PRISM        );
   SortVolumetricConnectivity(config, geometry, PYRAMID      );
-   
+
   SetTotalElements();
-  
+
   connectivitySorted = true;
 
 }
@@ -161,7 +161,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
 
   /* Allocate the memory to store the connectivity if the size is
      larger than zero. */
-  int *Conn_SubElem = NULL;
+  int *Conn_SubElem = nullptr;
   if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Loop again over the local volume elements and store the global
@@ -204,34 +204,34 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
         Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
     }
   }
-  
+
   nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
 
   /*--- Store the particular global element count in the class data,
         and set the class data pointer to the connectivity array. ---*/
   switch (Elem_Type) {
     case TRIANGLE:
-      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
-      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
-      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+      delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
-      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+      delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
-      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+      delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
-      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+      delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_SubElem;
       break;
     default:

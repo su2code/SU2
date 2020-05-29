@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,16 +38,17 @@
  */
 class CPhysicalGeometry final : public CGeometry {
 
-  map<unsigned long, unsigned long> Global_to_Local_Point;  /*!< \brief Global-local indexation for the points. */
-  long *Local_to_Global_Point;                              /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker;                   /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker;                   /*!< \brief Global to Local marker. */
-  unsigned long *adj_counter;                               /*!< \brief Adjacency counter. */
-  unsigned long **adjacent_elem;                            /*!< \brief Adjacency element list. */
-  su2activematrix Sensitivity;                              /*!< \brief Matrix holding the sensitivities at each point. */
+  unordered_map<unsigned long, unsigned long>
+  Global_to_Local_Point;                    /*!< \brief Global-local indexation for the points. */
+  long *Local_to_Global_Point;              /*!< \brief Local-global indexation for the points. */
+  unsigned short *Local_to_Global_Marker;   /*!< \brief Local to Global marker. */
+  unsigned short *Global_to_Local_Marker;   /*!< \brief Global to Local marker. */
+  unsigned long *adj_counter;               /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem;            /*!< \brief Adjacency element list. */
+  su2activematrix Sensitivity;              /*!< \brief Matrix holding the sensitivities at each point. */
 
   vector<vector<unsigned long> > Neighbors;
-  map<unsigned long, unsigned long> Color_List;
+  unordered_map<unsigned long, unsigned long> Color_List;
   vector<string> Marker_Tags;
   unsigned long nLocal_Point,
   nLocal_PointDomain,
@@ -152,7 +153,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CPhysicalGeometry(void);
+  ~CPhysicalGeometry(void) override;
 
   /*!
    * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.
@@ -231,10 +232,10 @@ public:
    * \param[in] countPerElem - Pieces of data per element communicated.
    */
   void InitiateCommsAll(void *bufSend,
-                        int *nElemSend,
+                        const int *nElemSend,
                         SU2_MPI::Request *sendReq,
                         void *bufRecv,
-                        int *nElemRecv,
+                        const int *nElemRecv,
                         SU2_MPI::Request *recvReq,
                         unsigned short countPerElem,
                         unsigned short commType);
@@ -382,12 +383,6 @@ public:
                 unsigned short &face_second_elem) override;
 
   /*!
-   * \brief Computes the distance to the nearest no-slip wall for each grid node.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeWall_Distance(CConfig *config) override;
-
-  /*!
    * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
    * \param[in] config - Definition of the particular problem.
    */
@@ -396,7 +391,7 @@ public:
   /*!
    * \brief Set points which surround a point.
    */
-  void SetPoint_Connectivity(void) override;
+  void SetPoint_Connectivity() override;
 
   /*!
    * \brief Set a renumbering using a Reverse Cuthill-McKee Algorithm
@@ -786,5 +781,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Check_Periodicity(CConfig *config) override;
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+
+  /*!
+   * \brief Set wall distances a specific value
+   */
+  void SetWallDistance(su2double val) override {
+    for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
+      nodes->SetWall_Distance(iPoint, val);
+    }
+  }
 
 };

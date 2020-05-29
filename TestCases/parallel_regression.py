@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -37,47 +37,6 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
-
-    #########################
-    ## NEMO solver ###
-    #########################
-
-    # Adiabatic thermal bath
-    thermalbath           = TestCase('thermalbath')
-    thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
-    thermalbath.cfg_file  = "thermalbath.cfg"
-    thermalbath.test_iter = 10
-    thermalbath.test_vals = [2.473627,    2.473627,  -11.876010,  -11.867806,  -32.000000,   10.804939] 
-    thermalbath.su2_exec  = "parallel_computation.py -f"
-    thermalbath.timeout   = 1600
-    thermalbath.new_output = True
-    thermalbath.tol       = 0.00001
-    test_list.append(thermalbath)
-
-    # Adiabatic frozen thermal bath
-    thermalbath_frozen           = TestCase('thermalbath_frozen')
-    thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
-    thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
-    thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [-32.000000,  -32.000000,  -11.907152,  -11.867806,  -32.000000,   10.813864] 
-    thermalbath_frozen.su2_exec  = "parallel_computation.py -f"
-    thermalbath_frozen.timeout   = 1600
-    thermalbath_frozen.new_output = True
-    thermalbath_frozen.tol       = 0.00001
-    test_list.append(thermalbath_frozen)
-
-    # Inviscid single wedge
-    invwedge           = TestCase('invwedge')
-    invwedge.cfg_dir   = "nonequilibrium/invwedge"
-    invwedge.cfg_file  = "invwedge.cfg"
-    invwedge.test_iter = 10
-    invwedge.test_vals = [-0.954130, -1.478893, -16.737310, -17.063693, -17.010416, 2.374072, 1.733626, 5.401966, 0.955538]
-    invwedge.su2_exec  = "parallel_computation.py -f"
-    invwedge.timeout   = 1600
-    invwedge.new_output = True
-    invwedge.tol       = 0.00001
-    test_list.append(invwedge)
-
 
     ##########################
     ### Compressible Euler ###
@@ -731,7 +690,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.589862, 3.922099, -0.001443, 0.099456] #last 4 columns
+    harmonic_balance.test_vals = [-1.589755, 3.922208, 0.006724, 0.099454] #last 4 columns
     harmonic_balance.su2_exec  = "parallel_computation.py -f"
     harmonic_balance.timeout   = 1600
     harmonic_balance.tol       = 0.00001
@@ -797,7 +756,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977545, 3.481778, -0.001525, -0.007375] #last 4 columns
+    sine_gust.test_vals = [-1.977520, 3.481804, -0.012343, -0.007390] #last 4 columns
     sine_gust.su2_exec  = "parallel_computation.py -f"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -809,7 +768,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.081326, 0.033214, -0.001666, -0.000155] #last 4 columns
+    aeroelastic.test_vals = [0.076842, 0.033154, -0.001650, -0.000127] #last 4 columns
     aeroelastic.su2_exec  = "parallel_computation.py -f"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.00001
@@ -875,7 +834,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.300315, 0.365966, 44.731500, 2.271371] #last 4 columns
+    Jones_tc.test_vals = [-5.280323, 0.379654, 44.725390, 2.271597] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.new_output = False
@@ -887,7 +846,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.626438, -1.570818, 34.014660, 10.187090] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.625216, -1.569511, 34.013520, 10.187670] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.new_output = False
@@ -899,7 +858,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933205, 5.381305, 73.357930, 1.780284] #last 4 columns
+    axial_stage2D.test_vals = [-1.933205, 5.381311, 73.357930, 1.780467] #last 4 columns
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
     axial_stage2D.new_output = False
@@ -991,7 +950,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777274, 1.134742, 1.224125] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777575, 1.134804, 1.224136] #last 4 columns
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -1017,7 +976,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.619179, -1.879082] #last 4 columns
+    bars_SST_2D.test_vals = [13.000000, -0.619179, -1.564701] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1080,7 +1039,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123968] #last 4 columns
+    fsi2d.test_vals = [4, 0, -3.764076, -4.081142] #last 4 columns
     fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
     fsi2d.timeout   = 1600
     fsi2d.multizone= True
@@ -1093,7 +1052,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.313322, -4.963786, 0.000000, 46.000000] #last 5 columns
+    stat_fsi.test_vals = [-3.313612, -4.957573, 0.000000, 7.000000] #last 4 columns
     stat_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi.multizone = True
     stat_fsi.timeout   = 1600
@@ -1105,7 +1064,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.389734, -4.060117, 0.000000, 64.000000] #last 5 columns
+    dyn_fsi.test_vals = [-4.379832, -4.005999, 0.000000, 0.000000] #last 4 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
@@ -1118,7 +1077,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-3.422307, -4.212725, 0.000000, 46.000000] #last 5 columns
+    stat_fsi_restart.test_vals = [-3.422425, -4.289201, 0.000000, 27.000000] #last 4 columns
     stat_fsi_restart.su2_exec  = "mpirun -n 2 SU2_CFD"
     stat_fsi_restart.multizone = True
     stat_fsi_restart.timeout   = 1600
@@ -1225,7 +1184,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.081326, 0.033214, -0.001666, -0.000155] #last 4 columns
+    pywrapper_aeroelastic.test_vals = [0.076842, 0.033154, -0.001650, -0.000127] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001
@@ -1237,7 +1196,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.801272, -4.123968] #last 4 columns
+    pywrapper_fsi2d.test_vals = [4, 0, -3.764076, -4.081142] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "mpirun -np 2 SU2_CFD.py --nZone 2 --fsi True --parallel -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.unsteady  = True

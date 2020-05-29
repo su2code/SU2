@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #pragma once
 
 #include "allocation_toolbox.hpp"
-#include "../datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 #include <utility>
 #include <type_traits>
@@ -113,15 +113,14 @@ public:
                                                                         \
   AccessorImpl& operator= (AccessorImpl&& other) noexcept               \
   {                                                                     \
-    if(m_data!=nullptr) free(m_data);                                   \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
     MOVE; m_data=other.m_data; other.m_data=nullptr;                    \
     return *this;                                                       \
   }                                                                     \
                                                                         \
   ~AccessorImpl()                                                       \
   {                                                                     \
-    if(m_data!=nullptr)                                                 \
-      MemoryAllocation::aligned_free<Scalar_t>(m_data);                 \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
   /*!
    * Shorthand for when specialization has only one more member than m_data.
@@ -371,6 +370,7 @@ public:
   using Base::size;
   using Index = Index_t;
   using Scalar = Scalar_t;
+  static constexpr StorageType Storage = Store;
 
 private:
   /*!
@@ -380,7 +380,7 @@ private:
   {
     /*--- fully static, no allocation needed ---*/
     if(StaticRows!=DynamicSize && StaticCols!=DynamicSize)
-        return StaticRows*StaticCols;
+      return StaticRows*StaticCols;
 
     /*--- dynamic row vector, swap size specification ---*/
     if(StaticRows==1 && StaticCols==DynamicSize) {cols = rows; rows = 1;}
@@ -399,12 +399,10 @@ private:
     /*--- compare with current dimensions to determine if deallocation
      is needed, also makes the container safe against self assignment
      no need to check for 0 size as the allocators handle that ---*/
-    if(m_data!=nullptr)
-    {
-      if(rows==this->rows() && cols==this->cols())
-        return reqSize;
-      free(m_data);
-    }
+    if(rows==this->rows() && cols==this->cols())
+      return reqSize;
+
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);
 
     /*--- request actual allocation to base class as it needs specialization ---*/
     size_t bytes = reqSize*sizeof(Scalar_t);
@@ -487,6 +485,52 @@ public:
   }
 };
 
+/*!
+ * \brief Useful typedefs with default template parameters
+ */
+template<class T> using su2vector = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+
+using su2activevector = su2vector<su2double>;
+using su2activematrix = su2matrix<su2double>;
+
+using su2passivevector = su2vector<passivedouble>;
+using su2passivematrix = su2matrix<passivedouble>;
+
+/*!
+ * \class CVectorOfMatrix
+ * \brief This contrived container is used to store small matrices in a contiguous manner
+ *        but still present the "su2double**" interface to the outside world.
+ *        The "interface" part should be replaced by something more efficient, e.g. a "matrix view".
+ */
+struct CVectorOfMatrix {
+  su2activevector storage;
+  su2matrix<su2double*> interface;
+  unsigned long M, N;
+
+  CVectorOfMatrix() = default;
+
+  CVectorOfMatrix(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
+    resize(length, rows, cols, value);
+  }
+
+  void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
+    M = rows;
+    N = cols;
+    storage.resize(length*rows*cols) = value;
+    interface.resize(length,rows);
+
+    for(unsigned long i=0; i<length; ++i)
+      for(unsigned long j=0; j<rows; ++j)
+        interface(i,j) = &(*this)(i,j,0);
+  }
+
+  su2double& operator() (unsigned long i, unsigned long j, unsigned long k) { return storage(i*M*N + j*N + k); }
+  const su2double& operator() (unsigned long i, unsigned long j, unsigned long k) const { return storage(i*M*N + j*N + k); }
+
+  su2double** operator[] (unsigned long i) { return interface[i]; }
+  const su2double* const* operator[] (unsigned long i) const { return interface[i]; }
+};
 
 /*!
  * \class C2DDummyLastView
@@ -551,15 +595,3 @@ struct C3DDummyMiddleView
     return data(i,k);
   }
 };
-
-/*!
- * \brief Useful typedefs with default template parameters
- */
-template<class T> using su2vector = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
-
-using su2activevector = su2vector<su2double>;
-using su2activematrix = su2matrix<su2double>;
-
-using su2passivevector = su2vector<passivedouble>;
-using su2passivematrix = su2matrix<passivedouble>;

@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,12 +57,12 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout
    the entire code ---*/
   
-  CConfig **config_container          = NULL;
-  CGeometry **geometry_container      = NULL;
-  CSurfaceMovement **surface_movement = NULL;
-  CVolumetricMovement **grid_movement = NULL;
-  COutput **output                     = NULL;
-  CConfig *driver_config                = NULL;
+  CConfig **config_container          = nullptr;
+  CGeometry **geometry_container      = nullptr;
+  CSurfaceMovement **surface_movement = nullptr;
+  CVolumetricMovement **grid_movement = nullptr;
+  COutput **output                     = nullptr;
+  CConfig *driver_config                = nullptr;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used) ---*/
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation)  ---*/
 
-  CConfig *config = NULL;
+  CConfig *config = nullptr;
   config = new CConfig(config_file_name, SU2_DEF);
 
   nZone    = config->GetnZone();
@@ -87,14 +87,14 @@ int main(int argc, char *argv[]) {
   grid_movement      = new CVolumetricMovement*[nZone];
   output             = new COutput*[nZone];
   
-  driver_config       = NULL;
+  driver_config       = nullptr;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]       = NULL;
-    geometry_container[iZone]     = NULL;
-    surface_movement[iZone]       = NULL;
-    grid_movement[iZone]          = NULL;
-    output[iZone]                 = NULL;
+    config_container[iZone]       = nullptr;
+    geometry_container[iZone]     = nullptr;
+    surface_movement[iZone]       = nullptr;
+    grid_movement[iZone]          = nullptr;
+    output[iZone]                 = nullptr;
   }
   
   /*--- Initialize the configuration of the driver ---*/
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
-    CGeometry *geometry_aux = NULL;
+    CGeometry *geometry_aux = nullptr;
     
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
     
@@ -165,11 +165,8 @@ int main(int argc, char *argv[]) {
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
   
-#ifdef HAVE_MPI
-  StartTime = MPI_Wtime();
-#else
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StartTime = SU2_MPI::Wtime();
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Computational grid preprocesing ---*/
@@ -339,7 +336,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Load the data --- */
     
-    output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], NULL);
+    output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], nullptr);
     
     output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], MESH, config->GetMesh_Out_FileName());
     
@@ -373,13 +370,13 @@ int main(int argc, char *argv[]) {
   }
   
   delete config;
-  config = NULL;
+  config = nullptr;
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
   
-  if (geometry_container != NULL) {
+  if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != NULL) {
+      if (geometry_container[iZone] != nullptr) {
         delete geometry_container[iZone];
       }
     }
@@ -387,9 +384,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-  if (surface_movement != NULL) {
+  if (surface_movement != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (surface_movement[iZone] != NULL) {
+      if (surface_movement[iZone] != nullptr) {
         delete surface_movement[iZone];
       }
     }
@@ -397,9 +394,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
-  if (grid_movement != NULL) {
+  if (grid_movement != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (grid_movement[iZone] != NULL) {
+      if (grid_movement[iZone] != nullptr) {
         delete grid_movement[iZone];
       }
     }
@@ -407,17 +404,17 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
   
-  if (config_container != NULL) {
+  if (config_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
+      if (config_container[iZone] != nullptr) {
         delete config_container[iZone];
       }
     }
     delete [] config_container;
   }
-  if (output != NULL) {
+  if (output != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (output[iZone] != NULL) {
+      if (output[iZone] != nullptr) {
         delete output[iZone];
       }
     }
@@ -430,11 +427,7 @@ int main(int argc, char *argv[]) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
-#ifdef HAVE_MPI
-  StopTime = MPI_Wtime();
-#else
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#endif
+  StopTime = SU2_MPI::Wtime();
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
   

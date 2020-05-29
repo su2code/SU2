@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -269,7 +269,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Writes inverse design.
@@ -298,7 +298,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Writes one dimensional output.
@@ -308,7 +308,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -319,18 +319,7 @@ public:
    * \param[in] val_iZone - Current zone number in the grid file.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-
-  /*!
-   * \brief Create and write the file with the FSI convergence history.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Solver for all physical problems.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
-                         unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
+  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Create and write the file with the FSI convergence history.
@@ -743,7 +732,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const;
 
   /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
@@ -808,7 +797,7 @@ public:
    * \param[in] val_iZone - Zone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
+  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) const;
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
@@ -860,15 +849,6 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for NEMO problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_NEMO(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.

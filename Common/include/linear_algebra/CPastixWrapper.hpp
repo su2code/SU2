@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,10 @@
 
 #ifdef HAVE_PASTIX
 
+#ifdef CODI_FORWARD_TYPE
+  #error Cannot use PaStiX with forward mode AD
+#endif
+
 namespace PaStiX {
 extern "C" {
 #include <pastix.h>
@@ -47,6 +51,7 @@ class CGeometry;
  * \brief Wrapper class that converts between SU2 sparse format and PaStiX
  *        format and simplifies calls to the external solver.
  */
+template<class ScalarType>
 class CPastixWrapper
 {
 private:
@@ -62,24 +67,24 @@ private:
   PaStiX::pastix_int_t iparm[PaStiX::IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
   passivedouble        dparm[PaStiX::DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */
 
-  struct Matrix {
+  struct {
     unsigned long nVar = 0;
     unsigned long nPoint = 0;
     unsigned long nPointDomain = 0;
     const unsigned long *rowptr = nullptr;
     const unsigned long *colidx = nullptr;
-    const passivedouble *values = nullptr;
+    const ScalarType *values = nullptr;
 
-    unsigned long size_rhs() {return nPointDomain*nVar;}
+    unsigned long size_rhs() const {return nPointDomain*nVar;}
   }
-  matrix;
+  matrix;  /*!< \brief Pointers and sizes of the input matrix. */
 
   bool issetup;        /*!< \brief Signals that the matrix data has been provided. */
   bool isinitialized;  /*!< \brief Signals that the sparsity pattern has been set. */
   bool isfactorized;   /*!< \brief Signals that a factorization has been computed. */
   unsigned long iter;  /*!< \brief Number of times a factorization has been requested. */
   unsigned short verb; /*!< \brief Verbosity level. */
-  int mpi_size, mpi_rank;
+  const int mpi_size, mpi_rank;
 
   vector<unsigned long>          sort_rows;  /*!< \brief List of rows with halo points. */
   vector<vector<unsigned long> > sort_order; /*!< \brief How each of those rows needs to be sorted. */
@@ -116,9 +121,8 @@ public:
    * \brief Class constructor.
    */
   CPastixWrapper() : state(nullptr), issetup(false), isinitialized(false),
-                     isfactorized(false), iter(0), verb(0) {
-    mpi_size = SU2_MPI::GetSize();
-    mpi_rank = SU2_MPI::GetRank();
+                     isfactorized(false), iter(0), verb(0),
+                     mpi_size(SU2_MPI::GetSize()), mpi_rank(SU2_MPI::GetRank()) {
   }
 
   /*--- Move or copy is not allowed. ---*/
@@ -146,7 +150,7 @@ public:
                  unsigned long nPointDomain,
                  const unsigned long *rowptr,
                  const unsigned long *colidx,
-                 const passivedouble *values) {
+                 const ScalarType *values) {
 
     if (issetup) return;
     matrix.nVar = nVar;
