@@ -631,14 +631,10 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
 
   SetBaseClassPointerToNodes();
 
-  cout << "cat: finish creating all NS nodes" << endl;
-
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    cout << "cat: check node " << iPoint << endl;
 
     check = nodes->SetPrimVar_Compressible(iPoint, config); 
 
