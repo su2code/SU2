@@ -38,6 +38,47 @@ def main():
 
     test_list = []
 
+    #########################
+    ## NEMO solver ###
+    #########################
+
+    # Adiabatic thermal bath
+    thermalbath           = TestCase('thermalbath')
+    thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
+    thermalbath.cfg_file  = "thermalbath.cfg"
+    thermalbath.test_iter = 10
+    thermalbath.test_vals = [2.473627,    2.473627,  -11.876010,  -11.867806,  -32.000000,   10.804939] 
+    thermalbath.su2_exec  = "parallel_computation.py -f"
+    thermalbath.timeout   = 1600
+    thermalbath.new_output = True
+    thermalbath.tol       = 0.00001
+    test_list.append(thermalbath)
+
+    # Adiabatic frozen thermal bath
+    thermalbath_frozen           = TestCase('thermalbath_frozen')
+    thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
+    thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
+    thermalbath_frozen.test_iter = 10
+    thermalbath_frozen.test_vals = [-32.000000,  -32.000000,  -11.907152,  -11.867806,  -32.000000,   10.813864] 
+    thermalbath_frozen.su2_exec  = "parallel_computation.py -f"
+    thermalbath_frozen.timeout   = 1600
+    thermalbath_frozen.new_output = True
+    thermalbath_frozen.tol       = 0.00001
+    test_list.append(thermalbath_frozen)
+
+    # Inviscid single wedge
+    invwedge           = TestCase('invwedge')
+    invwedge.cfg_dir   = "nonequilibrium/invwedge"
+    invwedge.cfg_file  = "invwedge.cfg"
+    invwedge.test_iter = 10
+    invwedge.test_vals = [-0.954130, -1.478893, -16.737310, -17.063693, -17.010416, 2.374072, 1.733626, 5.401966, 0.955538]
+    invwedge.su2_exec  = "parallel_computation.py -f"
+    invwedge.timeout   = 1600
+    invwedge.new_output = True
+    invwedge.tol       = 0.00001
+    test_list.append(invwedge)
+
+
     ##########################
     ### Compressible Euler ###
     ##########################

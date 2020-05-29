@@ -1190,6 +1190,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+  /* DESCRIPTION: Specify if mixture is frozen */
+  addBoolOption("FROZEN_MIXTURE", frozen, false);
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 

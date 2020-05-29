@@ -1187,6 +1187,7 @@ private:
   **degen; /*!< \brief Degeneracy of electron states. */
   unsigned short nReactions;                 /*!< \brief Number of reactions in chemical model. */
   bool ionization;                  /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  bool frozen;                  /*!< \brief Flag for determining if mixture is frozen. */
 
 
   /*!
@@ -5428,6 +5429,11 @@ public:
    * \brief Indicates whether electron gas is present in the gas mixture.
    */
   bool GetIonization(void) const { return ionization; }
+
+  /*!
+   * \brief Indicates whether electron gas is present in the gas mixture.
+   */
+  bool GetFrozen(void) const { return frozen; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
