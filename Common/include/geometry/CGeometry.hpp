@@ -210,7 +210,7 @@ public:
 
   /*--- Data structures for point-to-point MPI communications. ---*/
 
-  int countPerPoint;                     /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
+  int maxCountPerPoint;                  /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
   int nP2PSend;                          /*!< \brief Number of sends during point-to-point comms. */
   int nP2PRecv;                          /*!< \brief Number of receives during point-to-point comms. */
   int *nPoint_P2PSend;                   /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
@@ -293,9 +293,11 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
-   * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
+   * \param[in] countPerPoint - Number of variables per point.
+   * \param[in] val_reverse - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse) const;
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType,
+                    unsigned short countPerPoint, bool val_reverse) const;
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation.
@@ -303,10 +305,12 @@ public:
    * \param[in] geometry     - Geometrical definition of the problem.
    * \param[in] config       - Definition of the particular problem.
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] countPerPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse) const;
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType,
+                    unsigned short countPerPoint, int val_iMessage, bool val_reverse) const;
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.

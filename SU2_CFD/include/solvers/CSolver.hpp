@@ -196,6 +196,18 @@ public:
   }
 
   /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   */
+  void GetCommCountAndType(const CConfig* config,
+                           unsigned short commType,
+                           unsigned short &COUNT_PER_POINT,
+                           unsigned short &MPI_TYPE) const;
+
+  /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.

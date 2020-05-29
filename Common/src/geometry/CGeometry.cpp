@@ -91,7 +91,7 @@ CGeometry::CGeometry(void) {
   nP2PSend = 0;
   nP2PRecv = 0;
 
-  countPerPoint = 0;
+  maxCountPerPoint = 0;
 
   bufD_P2PSend = nullptr;
   bufD_P2PRecv = nullptr;
@@ -467,7 +467,7 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
 
 }
 
-void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
+void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
 
   /*--- This routine is activated whenever we attempt to perform
    a point-to-point MPI communication with our neighbors but the
@@ -476,43 +476,32 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
    reallocate a large enough array. Note that after the first set
    communications, this routine will not need to be called again. ---*/
 
-  int iSend, iRecv;
+  if (countPerPoint <= maxCountPerPoint) return;
 
   /*--- Store the larger packet size to the class data. ---*/
 
-  countPerPoint = val_countPerPoint;
+  maxCountPerPoint = countPerPoint;
 
   /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
 
   delete [] bufD_P2PSend;
-
-  bufD_P2PSend = new su2double[countPerPoint*nPoint_P2PSend[nP2PSend]];
-  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
-    bufD_P2PSend[iSend] = 0.0;
+  bufD_P2PSend = new su2double[maxCountPerPoint*nPoint_P2PSend[nP2PSend]] ();
 
   delete [] bufD_P2PRecv;
-
-  bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
-  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
-    bufD_P2PRecv[iRecv] = 0.0;
+  bufD_P2PRecv = new su2double[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
   delete [] bufS_P2PSend;
-
-  bufS_P2PSend = new unsigned short[countPerPoint*nPoint_P2PSend[nP2PSend]];
-  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
-    bufS_P2PSend[iSend] = 0;
+  bufS_P2PSend = new unsigned short[maxCountPerPoint*nPoint_P2PSend[nP2PSend]] ();
 
   delete [] bufS_P2PRecv;
-
-  bufS_P2PRecv = new unsigned short[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
-  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
-    bufS_P2PRecv[iRecv] = 0;
+  bufS_P2PRecv = new unsigned short[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
 }
 
 void CGeometry::PostP2PRecvs(CGeometry *geometry,
                              CConfig *config,
                              unsigned short commType,
+                             unsigned short countPerPoint,
                              bool val_reverse) const {
 
   /*--- Local variables ---*/
@@ -622,6 +611,7 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
 void CGeometry::PostP2PSends(CGeometry *geometry,
                              CConfig *config,
                              unsigned short commType,
+                             unsigned short countPerPoint,
                              int val_iSend,
                              bool val_reverse) const {
 
@@ -771,9 +761,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
    buffer. It will be reallocated whenever we find a larger count
    per point. After the first cycle of comms, this should be inactive. ---*/
 
-  if (COUNT_PER_POINT > geometry->countPerPoint) {
-    geometry->AllocateP2PComms(COUNT_PER_POINT);
-  }
+  geometry->AllocateP2PComms(COUNT_PER_POINT);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -789,7 +777,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
 
     /*--- Post all non-blocking recvs first before sends. ---*/
 
-    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, false);
 
     for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
 
@@ -809,7 +797,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
-        buf_offset = (msg_offset + iSend)*countPerPoint;
+        buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
         switch (commType) {
           case COORDINATES:
@@ -849,7 +837,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
-      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage, false);
 
     }
   }
@@ -862,11 +850,25 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iDim;
+  unsigned short iDim, COUNT_PER_POINT = 0;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
+
+  switch (commType) {
+    case COORDINATES:
+    case GRID_VELOCITY:
+      COUNT_PER_POINT  = nDim;
+      break;
+    case COORDINATES_OLD:
+      COUNT_PER_POINT  = (config->GetTime_Marching() == DT_STEPPING_2ND)? 2*nDim : nDim;
+      break;
+    case MAX_LENGTH:
+    case NEIGHBORS:
+      COUNT_PER_POINT  = 1;
+      break;
+  }
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -911,7 +913,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 
         /*--- Compute the total offset in the recv buffer for this point. ---*/
 
-        buf_offset = (msg_offset + iRecv)*countPerPoint;
+        buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
         /*--- Store the data correctly depending on the quantity. ---*/
 

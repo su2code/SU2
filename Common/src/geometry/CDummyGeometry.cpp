@@ -79,7 +79,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   nP2PSend = 0;
   nP2PRecv = 0;
 
-  countPerPoint = 0;
+  maxCountPerPoint = 0;
 
   bufD_P2PSend = nullptr;
   bufD_P2PRecv = nullptr;

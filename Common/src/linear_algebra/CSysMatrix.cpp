@@ -278,9 +278,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
    buffer. It will be reallocated whenever we find a larger count
    per point. After the first cycle of comms, this should be inactive. ---*/
 
-  if (COUNT_PER_POINT > geometry->countPerPoint) {
-    geometry->AllocateP2PComms(COUNT_PER_POINT);
-  }
+  geometry->AllocateP2PComms(COUNT_PER_POINT);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -293,7 +291,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
     /*--- Post all non-blocking recvs first before sends. ---*/
 
-    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, reverse);
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, reverse);
 
     for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
 
@@ -318,7 +316,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
             /*--- Load the buffer with the data to be sent. ---*/
 
@@ -356,7 +354,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
             /*--- Load the buffer with the data to be sent. ---*/
 
@@ -376,7 +374,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
-      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, reverse);
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage, reverse);
 
     }
   }
@@ -394,6 +392,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
   unsigned short iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
+  const auto COUNT_PER_POINT = nVar;
 
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -443,7 +442,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
             /*--- Store the data correctly depending on the quantity. ---*/
 
@@ -482,7 +481,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
 
             for (iVar = 0; iVar < nVar; iVar++)

@@ -1880,22 +1880,10 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
 }
 
-void CSolver::InitiateComms(CGeometry *geometry,
-                            CConfig *config,
-                            unsigned short commType) {
-
-  /*--- Local variables ---*/
-
-  unsigned short iVar, iDim;
-  unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
-
-  unsigned long iPoint, msg_offset, buf_offset;
-
-  int iMessage, iSend, nSend;
-
-  /*--- Set the size of the data packet and type depending on quantity. ---*/
-
+void CSolver::GetCommCountAndType(const CConfig* config,
+                                  unsigned short commType,
+                                  unsigned short &COUNT_PER_POINT,
+                                  unsigned short &MPI_TYPE) const {
   switch (commType) {
     case SOLUTION:
     case SOLUTION_OLD:
@@ -1965,15 +1953,32 @@ void CSolver::InitiateComms(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
+}
+
+void CSolver::InitiateComms(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned short commType) {
+
+  /*--- Local variables ---*/
+
+  unsigned short iVar, iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+
+  unsigned long iPoint, msg_offset, buf_offset;
+
+  int iMessage, iSend, nSend;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE);
 
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. This is only for the su2double
    buffer. It will be reallocated whenever we find a larger count
    per point. After the first cycle of comms, this should be inactive. ---*/
 
-  if (COUNT_PER_POINT > geometry->countPerPoint) {
-    geometry->AllocateP2PComms(COUNT_PER_POINT);
-  }
+  geometry->AllocateP2PComms(COUNT_PER_POINT);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -1986,7 +1991,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
     /*--- Post all non-blocking recvs first before sends. ---*/
 
-    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, false);
 
     for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
 
@@ -2007,7 +2012,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
-        buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
+        buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
         switch (commType) {
           case SOLUTION:
@@ -2109,7 +2114,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
-      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage, false);
 
     }
   }
@@ -2123,9 +2128,15 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   unsigned short iDim, iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE = 0;
 
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -2169,7 +2180,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
-        buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
+        buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
         /*--- Store the data correctly depending on the quantity. ---*/
 
