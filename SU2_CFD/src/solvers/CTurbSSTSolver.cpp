@@ -2076,7 +2076,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 //                               + 10.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
         weights[0][0]         += 10.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
         weights[0][nVarFlo+0] += -10.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
-//        weights[0][nVarFlo+1] += -10.0*betastar*k*varAdjTur->GetSolution(iPoint,0)
+        weights[0][nVarFlo+1] += -10.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
 //                               - 20.0*lim*alfa*betastar*omega*varAdjTur->GetSolution(iPoint,1)
 //                               - 10.0*(1.-lim)*alfa*betastar*VorticityMag*F1/a1*varAdjTur->GetSolution(iPoint,1);
       }
