@@ -276,7 +276,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = -1.589755, 3.922207, 0.006725, 0.099455]
+    harmonic_balance.test_vals = [-1.589755, 3.922207, 0.006725, 0.099455]
     harmonic_balance.new_output = False
     test_list.append(harmonic_balance)
 
