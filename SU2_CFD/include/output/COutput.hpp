@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -424,7 +424,7 @@ public:
    * \brief Get convergence of the problem.
    * \return Boolean indicating whether the problem is converged.
    */
-  bool GetConvergence() {return convergence;}
+  bool GetConvergence() const {return convergence;}
 
   /*!
      * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput

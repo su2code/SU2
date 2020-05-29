@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -244,6 +244,16 @@ def adjoint( func_name, config, state=None ):
     name = su2io.expand_zones(name,konfig)
     name = su2io.expand_time(name,konfig)
     link.extend(name)
+    # files restart
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES':
+       if 'RESTART_FILE_1' in files:
+           name = files['RESTART_FILE_1']
+           name = su2io.expand_part(name, config)
+           link.extend(name)
+       if 'RESTART_FILE_1' in files:  # not the case for 1st order time stepping
+           name = files['RESTART_FILE_2']
+           name = su2io.expand_part(name, config)
+           link.extend(name)
     
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
@@ -256,7 +266,9 @@ def adjoint( func_name, config, state=None ):
         link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO' #Can this be deleted?
-        konfig['RESTART_SOL'] = 'NO'
+        if config.get('TIME_DOMAIN', 'NO') != 'YES':  # rules out steady state optimization special cases.
+            konfig['RESTART_SOL'] = 'NO'  # for shape optimization with restart files.
+        # Restart solution gets handled just before solver starts for unsteady optimization
 
     # files: target equivarea adjoint weights
     if 'EQUIV_AREA' in special_cases:
@@ -291,8 +303,21 @@ def adjoint( func_name, config, state=None ):
                 konfig['OBJECTIVE_FUNCTION'] = func_name
 
             # # RUN ADJOINT SOLUTION # #
+
+            # We do not want a restart in adjoint run, we want that the adjoint run computes only up to the restart iteration of the primal run.
+            restart_sol_activated = False
+            if konfig.get('TIME_DOMAIN', 'NO') == 'YES' and konfig.get('RESTART_SOL', 'NO') == 'YES':
+                restart_sol_activated = True
+                original_time_iter = konfig['TIME_ITER']
+                konfig['TIME_ITER'] = konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
+                konfig.RESTART_SOL = 'NO'
+
             info = su2run.adjoint(konfig)
+            # Workaround, since expandTime relies on UNST_ADJOINT_ITER to determine number of solution files.
+            if restart_sol_activated:
+                konfig['UNST_ADJOINT_ITER'] = original_time_iter - int(konfig['RESTART_ITER'])
             su2io.restart2solution(konfig,info)
+
             state.update(info)
 
             # Gradient Projection
@@ -318,6 +343,144 @@ def adjoint( func_name, config, state=None ):
 # ----------------------------------------------------------------------
 #  Stability Functions
 # ----------------------------------------------------------------------
+#  Multipoint Functions
+# ----------------------------------------------------------------------
+
+def multipoint( func_name, config, state=None, step=1e-2 ):
+  
+    mach_list = config['MULTIPOINT_MACH_NUMBER'].replace("(", "").replace(")", "").split(',')
+    reynolds_list = config['MULTIPOINT_REYNOLDS_NUMBER'].replace("(", "").replace(")", "").split(',')
+    freestream_temp_list = config['MULTIPOINT_FREESTREAM_TEMPERATURE'].replace("(", "").replace(")", "").split(',')    
+    freestream_press_list = config['MULTIPOINT_FREESTREAM_PRESSURE'].replace("(", "").replace(")", "").split(',')
+    aoa_list = config['MULTIPOINT_AOA'].replace("(", "").replace(")", "").split(',')
+    sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
+    target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
+    weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
+    solution_flow_list = su2io.expand_multipoint(config.SOLUTION_FILENAME, config)
+    solution_adj_list = su2io.expand_multipoint(config.SOLUTION_ADJ_FILENAME, config)
+    flow_meta_list = su2io.expand_multipoint('flow.meta', config)
+    restart_sol = config['RESTART_SOL']
+    grads = []
+    folder = []
+    for i in range(len(weight_list)):
+        grads.append(0)
+        folder.append(0)
+
+    for i in range(len(weight_list)):
+        folder[i] = 'MULTIPOINT_' + str(i)
+
+    opt_names = []
+    for key in su2io.historyOutFields:
+        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            opt_names.append(key)
+    
+    # ----------------------------------------------------
+    #  Initialize
+    # ----------------------------------------------------
+    
+    # initialize
+    state = su2io.State(state)
+    if not 'MESH' in state.FILES:
+        state.FILES.MESH = config['MESH_FILENAME']
+    special_cases = su2io.get_specialCases(config)
+    
+    # find base func name
+    matches = [ k for k in opt_names if k in func_name ]
+    if not len(matches) == 1:
+        raise Exception('could not find multipoint function name')
+    base_name = matches[0]
+    
+    ADJ_NAME = 'ADJOINT_' + base_name
+    MULTIPOINT_ADJ_NAME = 'MULTIPOINT_' + ADJ_NAME
+    
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+        log_direct = 'log_Direct.out'
+    else:
+        log_direct = None
+  
+#    # ----------------------------------------------------
+#    #  Update Mesh
+#    # ----------------------------------------------------
+#    
+#    # does decomposition and deformation
+#    info = update_mesh(config,state)
+    
+    # ----------------------------------------------------
+    #  FIRST POINT
+    # ----------------------------------------------------
+    
+    # will run in ADJOINT/
+    
+    config.AOA = aoa_list[0]
+    config.SIDESLIP_ANGLE = sideslip_list[0]
+    config.MACH_NUMBER = mach_list[0]
+    config.REYNOLDS_NUMBER = reynolds_list[0]
+    config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
+    config.FREESTREAM_PRESSURE = freestream_press_list[0]
+    config.TARGET_CL = target_cl_list[0]
+    config.SOLUTION_FILENAME = solution_flow_list[0]
+    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+    if MULTIPOINT_ADJ_NAME in state.FILES and state.FILES[MULTIPOINT_ADJ_NAME][0]:
+        state.FILES[ADJ_NAME] = state.FILES[MULTIPOINT_ADJ_NAME][0]
+
+    # If flow.meta file for the first point is available, rename it before using it
+    if os.path.exists(flow_meta_list[0]):
+        os.rename(flow_meta_list[0], 'flow.meta')
+        state.FILES['FLOW_META'] = 'flow.meta'
+
+    grads[0] = gradient(base_name,'DISCRETE_ADJOINT',config,state)
+
+    src = os.getcwd()
+    src = os.path.abspath(src).rstrip('/') + '/' + ADJ_NAME + '/'
+
+    # change name of flow.meta back to multipoint name
+    if os.path.exists('flow.meta'):
+        os.rename('flow.meta',flow_meta_list[0])
+        state.FILES['FLOW_META'] = flow_meta_list[0]
+
+    # ----------------------------------------------------
+    #  Run Multipoint
+    # ----------------------------------------------------
+    
+    # files to pull
+    files = state.FILES
+    pull = []; link = []
+    
+    # files: mesh
+    name = files['MESH']
+    name = su2io.expand_part(name,config)
+    link.extend(name)
+    
+    # files: direct solution
+    ## DO NOT PULL DIRECT SOLUTION, use the one in MULTIPOINT/
+    
+    # files: adjoint solution
+    if ADJ_NAME in files:
+        name = files[ADJ_NAME]
+        name = su2io.expand_time(name,config)
+        link.extend(name)
+        solution_adj_list[0] = files[ADJ_NAME]
+    else:
+        config['RESTART_SOL'] = 'NO'
+
+    # files: target equivarea adjoint weights
+    ## DO NOT PULL EQUIVAREA WEIGHTS, use the one in MULTIPOINT/
+
+    # pull needed files, start folder
+    with redirect_folder( folder[0], pull, link ) as push:
+        with redirect_output(log_direct):
+
+            konfig = copy.deepcopy(config)
+            ztate  = copy.deepcopy(state)
+
+            dst = os.getcwd()
+            dst = os.path.abspath(dst).rstrip('/')+'/'
+
+            # make unix link
+            string = "ln -s " + src + " " + dst
+            string_list = string.split()
+            subprocess.Popen(string_list)
 
 def stability( func_name, config, state=None, step=1e-2 ):
 

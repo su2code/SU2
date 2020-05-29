@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.hpp
  * \brief Headers of the CDiscAdjFEASolver class
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,7 +50,6 @@ private:
 
   su2double ObjFunc_Value = 0.0;        /*!< \brief Value of the objective function. */
   su2double *normalLoads = nullptr;     /*!< \brief Values of the normal loads for each marker iMarker_nL. */
-  unsigned long nMarker_nL = 0;         /*!< \brief Total number of markers that have a normal load applied. */
 
   unsigned short nMPROP = 0;            /*!< \brief Number of material properties */
 
@@ -126,7 +125,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEASolver(void);
+  ~CDiscAdjFEASolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -160,22 +159,6 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Sets the adjoint values of the structural variables due to cross term contributions
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config) override;
 
   /*!
    * \brief Register the objective function as output.
@@ -385,12 +368,5 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
-
-  /*!
-   * \brief Compute the multizone residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
 };

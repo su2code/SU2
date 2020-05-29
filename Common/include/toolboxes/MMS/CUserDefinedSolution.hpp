@@ -3,7 +3,7 @@
  * \brief Header file for the class CUserDefinedSolution.
  *        The implementations are in the <i>CUserDefinedSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -60,7 +60,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUserDefinedSolution(void);
+  ~CUserDefinedSolution(void) override;
 
   /*!
    * \brief Get the exact solution at the current position and time.

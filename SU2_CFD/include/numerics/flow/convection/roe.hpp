@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for Roe-type schemes,
  *        implemented in roe.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,9 +50,6 @@ protected:
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
-  CNEMOEulerVariable *variable;
-
-
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
    * \param[out] val_residual - Convective flux.
@@ -76,7 +73,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwRoeBase_Flow(void);
+  ~CUpwRoeBase_Flow(void) override;
 
   /*!
    * \brief Compute the flux from node i to node j, part common to most Roe schemes.
@@ -122,7 +119,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of L2Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CUpwL2Roe_Flow final : public CUpwRoeBase_Flow {
 private:
@@ -152,7 +149,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of LMRoe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CUpwLMRoe_Flow final : public CUpwRoeBase_Flow {
 private:
@@ -216,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwTurkel_Flow(void);
+  ~CUpwTurkel_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -269,7 +266,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwGeneralRoe_Flow(void);
+  ~CUpwGeneralRoe_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.

@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -572,6 +572,8 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim,
 
 CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
@@ -758,6 +760,8 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
 }
 
 CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
@@ -1057,6 +1061,8 @@ void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar
 }
 
 CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);

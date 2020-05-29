@@ -3,7 +3,7 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -75,17 +75,14 @@ void computeGradientsLeastSquares(CSolver* solver,
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
-    auto node = geometry.node[iPoint];
-    const su2double* coord_i = node->GetCoord();
+    auto nodes = geometry.nodes;
+    const su2double* coord_i = nodes->GetCoord(iPoint);
 
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
-    for (size_t iVar = varBegin; iVar < varEnd; ++iVar){
-
-      AD::SetPreaccIn(field(iPoint,iVar));    
-
-    }
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      AD::SetPreaccIn(field(iPoint,iVar));
 
     /*--- Clear gradient and Rmatrix. ---*/
 
@@ -96,15 +93,14 @@ void computeGradientsLeastSquares(CSolver* solver,
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
         Rmatrix(iPoint, iDim, jDim) = 0.0;
-  
 
-    for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
+
+    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      size_t jPoint = node->GetPoint(iNeigh);
+      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
 
-      const su2double* coord_j = geometry.node[jPoint]->GetCoord();
+      const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
-
 
       /*--- Distance vector from iPoint to jPoint ---*/
 
@@ -112,7 +108,6 @@ void computeGradientsLeastSquares(CSolver* solver,
 
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = coord_j[iDim] - coord_i[iDim];
-
 
       /*--- Compute inverse weight, default 1 (unweighted). ---*/
 
@@ -180,7 +175,6 @@ void computeGradientsLeastSquares(CSolver* solver,
     }
   }
   SU2_OMP_BARRIER
-
 
   /*--- Second loop over points of the grid to compute final gradient. ---*/
 
