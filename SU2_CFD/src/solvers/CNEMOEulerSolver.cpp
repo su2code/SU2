@@ -1525,6 +1525,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   /*--- Assign booleans ---*/
   bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool frozen = config->GetFrozen();
   bool err = false;
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
@@ -1595,23 +1596,28 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
 
-    /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
-    /*--- Check for errors before applying source to the linear system ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (Residual[iVar] != Residual[iVar]) err = true;
-    if (implicit)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-    /*--- Apply the chemical sources to the linear system ---*/
-    if (!err) {
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    } else
-      eChm_local++;
+    
+    if(!frozen){
+
+        /*--- Compute the non-equilibrium chemistry ---*/
+        numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = false;
+        for (iVar = 0; iVar < nVar; iVar++)
+          if (Residual[iVar] != Residual[iVar]) err = true;
+        if (implicit)
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+        /*--- Apply the chemical sources to the linear system ---*/
+        if (!err) {
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          if (implicit)
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        } else
+          eChm_local++;
+
+    }      
 
     /*--- Compute vibrational energy relaxation ---*/
     /// NOTE: Jacobians don't account for relaxation time derivatives
