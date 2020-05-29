@@ -2,7 +2,7 @@
  * \file CDualGrid_tests.cpp
  * \brief Unit tests for the dual grid classes
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
