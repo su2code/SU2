@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subrotuines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
