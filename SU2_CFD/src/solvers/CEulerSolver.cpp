@@ -28,6 +28,7 @@
 
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
@@ -6841,6 +6842,11 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
             velocity in normal direction: v_r = v - 2 (v*n)n ---*/
       ProjVelocity_i = nodes->GetProjVel(iPoint,UnitNormal);
 
+      /*--- Adjustment to v.n due to grid movement. ---*/
+      if (dynamic_grid) {
+          ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
+      }
+  
       for (iDim = 0; iDim < nDim; iDim++)
         V_reflected[iDim+1] = nodes->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
 

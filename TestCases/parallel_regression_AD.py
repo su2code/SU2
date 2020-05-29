@@ -230,7 +230,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.236430, -1.654332, -0.007426, 0.000013] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.225570, -1.643131, -0.007597, 0.000013] #last 4 columns
     discadj_pitchingNACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
