@@ -478,6 +478,9 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
 
   if (countPerPoint <= maxCountPerPoint) return;
 
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER
+  {
   /*--- Store the larger packet size to the class data. ---*/
 
   maxCountPerPoint = countPerPoint;
@@ -495,6 +498,8 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
 
   delete [] bufS_P2PRecv;
   bufS_P2PRecv = new unsigned short[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
+  }
+  SU2_OMP_BARRIER
 
 }
 

@@ -263,7 +263,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
       reverse          = false;
       break;
     case SOLUTION_MATRIXTRANS:
-      COUNT_PER_POINT  = nVar;
+      COUNT_PER_POINT  = nEqn;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       reverse          = true;
       break;
@@ -321,7 +321,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
             /*--- Load the buffer with the data to be sent. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
+              bufDSend[buf_offset+iVar] = x(iPoint,iVar);
 
           }
 
@@ -358,8 +358,8 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
             /*--- Load the buffer with the data to be sent. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
+            for (iVar = 0; iVar < nEqn; iVar++)
+              bufDSend[buf_offset+iVar] = x(iPoint,iVar);
 
           }
 
@@ -392,7 +392,16 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
   unsigned short iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
-  const auto COUNT_PER_POINT = nVar;
+  unsigned short COUNT_PER_POINT = 0;
+
+  switch (commType) {
+    case SOLUTION_MATRIX:
+      COUNT_PER_POINT  = nVar;
+      break;
+    case SOLUTION_MATRIXTRANS:
+      COUNT_PER_POINT  = nEqn;
+      break;
+  }
 
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -447,7 +456,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
             /*--- Store the data correctly depending on the quantity. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++)
-              x[iPoint*nVar+iVar] = ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
+              x(iPoint,iVar) = ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
 
           }
           break;
@@ -483,9 +492,10 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
             buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
+            /*--- Update receiving point. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              x[iPoint*nVar+iVar] += ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
+            for (iVar = 0; iVar < nEqn; iVar++)
+              x(iPoint,iVar) += ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
 
           }
 
