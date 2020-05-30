@@ -5385,27 +5385,28 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   delete [] Grad_Symm;
 }
 
-void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config) {
+void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   unsigned short iVar, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            for (iMetr = 0; iMetr < nMetr; iMetr++) {
-              //--- Double Hessian at symmetry plane
-              const su2double hess = base_nodes->GetHessian(iPoint, iVar, iMetr);
-              base_nodes->SetHessian(iPoint, iVar, iMetr, 2.*hess);
-            }// iVar
-          }// iMetr
-        }// if domain
-      }// iVertex
-    }// if KindBC
-  }// iMarker
+  //--- Eliminate Hessians of normal velocity at symmetry plane
+  if (Kind_Solver == RUNTIME_FLOW_SYS) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+              for (iMetr = 0; iMetr < nMetr; iMetr++) {
+                
+              }// iVar
+            }// iMetr
+          }// if domain
+        }// iVertex
+      }// if KindBC
+    }// iMarker
+  }// if Kind_Solver
   
   //--- communicate the gradient values via MPI
   InitiateComms(geometry, config, HESSIAN);
