@@ -851,7 +851,9 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
-  SU2_MPI::Status status;
+
+  /*--- Global status so all threads can see the result of Waitany. ---*/
+  static SU2_MPI::Status status;
 
   switch (commType) {
     case COORDINATES:

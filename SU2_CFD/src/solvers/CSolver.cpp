@@ -2133,7 +2133,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
   unsigned short MPI_TYPE = 0;
 
   int ind, source, iMessage, jRecv;
-  SU2_MPI::Status status;
+
+  /*--- Global status so all threads can see the result of Waitany. ---*/
+  static SU2_MPI::Status status;
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 

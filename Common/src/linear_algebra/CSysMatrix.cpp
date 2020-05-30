@@ -405,7 +405,9 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
   }
 
   int ind, source, iMessage, jRecv;
-  SU2_MPI::Status status;
+
+  /*--- Global status so all threads can see the result of Waitany. ---*/
+  static SU2_MPI::Status status;
 
   /*--- Set some local pointers to make access simpler. ---*/
 
