@@ -1085,7 +1085,7 @@ void CConfig::SetConfig_Options() {
    Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
    are set to zero and will be properly non-dim. in the solver. ---*/
 
-  nPolyCoeffs = 5;
+  nPolyCoeffs = N_POLY_COEFFS;
   default_cp_polycoeffs = new su2double[nPolyCoeffs]();
   default_mu_polycoeffs = new su2double[nPolyCoeffs]();
   default_kt_polycoeffs = new su2double[nPolyCoeffs]();

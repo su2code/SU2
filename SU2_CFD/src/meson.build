@@ -1,14 +1,16 @@
 su2_cfd_include = include_directories('./')
-su2_cfd_src = files(['transport_model.cpp',
-                     'fluid_model_pvdw.cpp',
-                     'fluid_model_pig.cpp',
-                     'iteration_structure.cpp',
-                     'fluid_model_inc.cpp',
+su2_cfd_src = files(['iteration_structure.cpp',
                      'definition_structure.cpp',
-                     'fluid_model.cpp',
-                     'fluid_model_ppr.cpp',
                      'python_wrapper_structure.cpp',
                      'CMarkerProfileReaderFVM.cpp'])
+
+su2_cfd_src += files(['thermophysical/CConstantDensity.cpp',
+                      'thermophysical/CFluidModel.cpp',
+                      'thermophysical/CIdealGas.cpp',
+                      'thermophysical/CIncIdealGas.cpp',
+                      'thermophysical/CIncIdealGasPolynomial.cpp',
+                      'thermophysical/CPengRobinson.cpp',
+                      'thermophysical/CVanDerWaalsGas.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',

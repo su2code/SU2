@@ -34,16 +34,13 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <memory>
 
-#define LEN_COMPONENTS 32
-
-#include "stdio.h"
-#include "math.h"
+#include "../include/thermophysical/CViscosityModel.hpp"
+#include "../include/thermophysical/CConductivityModel.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 using namespace std;
-
-#include "../include/transport_model.hpp"
-#include "../../Common/include/CConfig.hpp"
 
 /*!
  * \class CFluidModel
@@ -78,8 +75,8 @@ protected:
   dktdrho_T,     /*!< \brief Specific Heat Capacity at constant pressure. */
   dktdT_rho;     /*!< \brief Specific Heat Capacity at constant pressure. */
 
-  CViscosityModel *LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
-  CConductivityModel *ThermalConductivity;  /*!< \brief Thermal Conductivity Model */
+  unique_ptr<CViscosityModel> LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
+  unique_ptr<CConductivityModel> ThermalConductivity;  /*!< \brief Thermal Conductivity Model */
 
 public:
 
