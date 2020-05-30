@@ -1956,7 +1956,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
 }
 
 void CSolver::InitiateComms(CGeometry *geometry,
-                            CConfig *config,
+                            const CConfig *config,
                             unsigned short commType) {
 
   /*--- Local variables ---*/
@@ -2122,7 +2122,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
 }
 void CSolver::CompleteComms(CGeometry *geometry,
-                            CConfig *config,
+                            const CConfig *config,
                             unsigned short commType) {
 
   /*--- Local variables ---*/

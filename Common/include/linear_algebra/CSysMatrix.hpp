@@ -376,7 +376,7 @@ public:
   template<class OtherType>
   void InitiateComms(const CSysVector<OtherType> & x,
                      CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType) const;
 
   /*!
@@ -390,7 +390,7 @@ public:
   template<class OtherType>
   void CompleteComms(CSysVector<OtherType> & x,
                      CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType) const;
 
   /*!
@@ -706,7 +706,7 @@ public:
    * \param[out] prod - Result of the product.
    */
   void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                           CGeometry *geometry, CConfig *config) const;
+                           CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
@@ -716,7 +716,7 @@ public:
    * \param[out] prod - Result of the product.
    */
   void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                     CGeometry *geometry, CConfig *config) const;
+                                     CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.
@@ -731,7 +731,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                   CGeometry *geometry, CConfig *config) const;
+                                   CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Build the ILU preconditioner.
@@ -747,7 +747,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                CGeometry *geometry, CConfig *config) const;
+                                CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
@@ -755,7 +755,7 @@ public:
    * \param[out] prod - Result of the product A*vec.
    */
   void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                   CGeometry *geometry, CConfig *config) const;
+                                   CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Build the Linelet preconditioner.
@@ -763,7 +763,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return Average number of points per linelet.
    */
-  unsigned long BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
+  unsigned long BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
@@ -771,7 +771,7 @@ public:
    * \param[out] prod - Result of the product A*vec.
    */
   void ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                    CGeometry *geometry, CConfig *config) const;
+                                    CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Compute the linear residual.
@@ -789,7 +789,7 @@ public:
    * \param[in] kind_fact - Type of factorization.
    * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, unsigned short kind_fact, bool transposed = false);
+  void BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed = false);
 
   /*!
    * \brief Apply the PaStiX factorization to CSysVec.
@@ -799,7 +799,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                   CGeometry *geometry, CConfig *config) const;
+                                   CGeometry *geometry, const CConfig *config) const;
 
 };
 

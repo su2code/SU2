@@ -296,7 +296,7 @@ public:
    * \param[in] countPerPoint - Number of variables per point.
    * \param[in] val_reverse - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType,
+  void PostP2PRecvs(CGeometry *geometry, const CConfig *config, unsigned short commType,
                     unsigned short countPerPoint, bool val_reverse) const;
 
   /*!
@@ -309,7 +309,7 @@ public:
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType,
+  void PostP2PSends(CGeometry *geometry, const CConfig *config, unsigned short commType,
                     unsigned short countPerPoint, int val_iMessage, bool val_reverse) const;
 
   /*!
@@ -345,13 +345,25 @@ public:
   void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage) const;
 
   /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   */
+  void GetCommCountAndType(const CConfig* config,
+                           unsigned short commType,
+                           unsigned short &COUNT_PER_POINT,
+                           unsigned short &MPI_TYPE) const;
+
+  /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to
    *        launch non-blocking sends and recvs for all point-to-point communication with neighboring partitions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType) const;
+  void InitiateComms(CGeometry *geometry, const CConfig *config, unsigned short commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data into the geometry class.
@@ -359,7 +371,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void CompleteComms(CGeometry *geometry, const CConfig *config, unsigned short commType);
 
   /*!
    * \brief Get number of coordinates.

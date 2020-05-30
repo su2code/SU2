@@ -214,7 +214,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   void InitiateComms(CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType);
 
   /*!
@@ -224,7 +224,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   void CompleteComms(CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType);
 
   /*!

@@ -1,12 +1,12 @@
 /*!
- * \file linear_solvers_structure_b.hpp
+ * \file CSysSolve_b.hpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,16 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
-
-#include "../CConfig.hpp"
 
 #ifdef CODI_REVERSE_TYPE
 template<class ScalarType>
-class CSysSolve_b{
-
-public:
+struct CSysSolve_b {
   static void Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m,
                       const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n,
                       codi::DataStore* d);

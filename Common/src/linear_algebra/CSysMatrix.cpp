@@ -237,7 +237,7 @@ template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
                                            CGeometry *geometry,
-                                           CConfig *config,
+                                           const CConfig *config,
                                            unsigned short commType) const {
   if (geometry->nP2PSend == 0) return;
 
@@ -385,7 +385,7 @@ template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
                                            CGeometry *geometry,
-                                           CConfig *config,
+                                           const CConfig *config,
                                            unsigned short commType) const {
   if (geometry->nP2PRecv == 0) return;
 
@@ -656,7 +656,7 @@ void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                 CGeometry *geometry, CConfig *config) const {
+                                                 CGeometry *geometry, const CConfig *config) const {
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
@@ -697,7 +697,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                           CGeometry *geometry, CConfig *config) const {
+                                                           CGeometry *geometry, const CConfig *config) const {
 
   /// TODO: The transpose product requires a different thread-parallel strategy.
   SU2_OMP_MASTER
@@ -747,7 +747,7 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) const {
+                                                         CGeometry *geometry, const CConfig *config) const {
 
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   SU2_OMP_BARRIER
@@ -873,7 +873,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                      CGeometry *geometry, CConfig *config) const {
+                                                      CGeometry *geometry, const CConfig *config) const {
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -931,7 +931,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) const {
+                                                         CGeometry *geometry, const CConfig *config) const {
 
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
@@ -997,7 +997,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 }
 
 template<class ScalarType>
-unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config) {
 
   assert(omp_get_thread_num()==0 && "Linelet preconditioner cannot be built by multiple threads.");
 
@@ -1167,7 +1167,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                          CGeometry *geometry, CConfig *config) const {
+                                                          CGeometry *geometry, const CConfig *config) const {
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -1405,7 +1405,7 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
+void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config,
                                                        unsigned short kind_fact, bool transposed) {
 #ifdef HAVE_PASTIX
   /*--- Pastix will launch nested threads. ---*/
@@ -1423,7 +1423,7 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) const {
+                                                         CGeometry *geometry, const CConfig *config) const {
 #ifdef HAVE_PASTIX
   SU2_OMP_BARRIER
   SU2_OMP_MASTER
@@ -1442,20 +1442,20 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #ifdef CODI_FORWARD_TYPE
 /*--- In forward AD only the active type is used. ---*/
 template class CSysMatrix<su2double>;
-template void CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+template void CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
 template void CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 #else
 /*--- Base and reverse AD, matrix is passive (either float or double). ---*/
 template class CSysMatrix<su2mixedfloat>;
-template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixedfloat>&, CGeometry*, CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
 template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 #if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
 /*--- In reverse AD (or mixed precision) the passive matrix is also used to communicate active (or double) vectors resp.. ---*/
-template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
 #endif
 #endif // CODI_FORWARD_TYPE

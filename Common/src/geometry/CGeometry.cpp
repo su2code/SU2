@@ -504,7 +504,7 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
 }
 
 void CGeometry::PostP2PRecvs(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short commType,
                              unsigned short countPerPoint,
                              bool val_reverse) const {
@@ -607,7 +607,7 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
 }
 
 void CGeometry::PostP2PSends(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short commType,
                              unsigned short countPerPoint,
                              int val_iSend,
@@ -705,24 +705,10 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
 
 }
 
-void CGeometry::InitiateComms(CGeometry *geometry,
-                              CConfig *config,
-                              unsigned short commType) const {
-
-  if (nP2PSend == 0) return;
-
-  /*--- Local variables ---*/
-
-  unsigned short iDim;
-  unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
-
-  unsigned long iPoint, msg_offset, buf_offset;
-
-  int iMessage, iSend, nSend;
-
-  /*--- Set the size of the data packet and type depending on quantity. ---*/
-
+void CGeometry::GetCommCountAndType(const CConfig* config,
+                                    unsigned short commType,
+                                    unsigned short &COUNT_PER_POINT,
+                                    unsigned short &MPI_TYPE) const {
   switch (commType) {
     case COORDINATES:
       COUNT_PER_POINT  = nDim;
@@ -752,6 +738,27 @@ void CGeometry::InitiateComms(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
+}
+
+void CGeometry::InitiateComms(CGeometry *geometry,
+                              const CConfig *config,
+                              unsigned short commType) const {
+
+  if (nP2PSend == 0) return;
+
+  /*--- Local variables ---*/
+
+  unsigned short iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+
+  unsigned long iPoint, msg_offset, buf_offset;
+
+  int iMessage, iSend, nSend;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE);
 
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. This is only for the su2double
@@ -840,14 +847,14 @@ void CGeometry::InitiateComms(CGeometry *geometry,
 }
 
 void CGeometry::CompleteComms(CGeometry *geometry,
-                              CConfig *config,
+                              const CConfig *config,
                               unsigned short commType) {
 
   if (nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, COUNT_PER_POINT = 0;
+  unsigned short iDim, COUNT_PER_POINT = 0, MPI_TYPE = 0;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
@@ -855,19 +862,9 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   /*--- Global status so all threads can see the result of Waitany. ---*/
   static SU2_MPI::Status status;
 
-  switch (commType) {
-    case COORDINATES:
-    case GRID_VELOCITY:
-      COUNT_PER_POINT  = nDim;
-      break;
-    case COORDINATES_OLD:
-      COUNT_PER_POINT  = (config->GetTime_Marching() == DT_STEPPING_2ND)? 2*nDim : nDim;
-      break;
-    case MAX_LENGTH:
-    case NEIGHBORS:
-      COUNT_PER_POINT  = 1;
-      break;
-  }
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
