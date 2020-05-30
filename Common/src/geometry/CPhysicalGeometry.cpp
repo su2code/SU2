@@ -7114,8 +7114,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 void CPhysicalGeometry::SetCoord_CG(void) {
 
-  SU2_OMP_PARALLEL
-  {
   unsigned short iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
 
@@ -7170,10 +7168,12 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     edges->SetCoord_CG(iEdge, Coord.data());
   }
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
+
+  SU2_OMP_MASTER {
+
   unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
   unsigned long Neighbor_Point, iVertex, iPoint, iElem;
   long iEdge;
@@ -7251,55 +7251,45 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
-    const unsigned short nNeigh = nodes->GetnPoint(iPoint);
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,omp_get_max_threads()))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double* Coord_i = nodes->GetCoord(iPoint);
 
-    /*--- If using AD, computing the maximum grid length can generate
-     * a lot of unnecessary overhead since we would store all computations
-     * of each grid length, even though we only need the maximum value.
-     * We solve that by finding the neighbor that's furthest away
-     * (corresponding to the maximum distance) using passive calculations,
-     * then set the max using the AD datatype. ---*/
+    /*--- If using AD, stop the recording to find the most distant
+     * neighbor, then enable it again and recompute the distance.
+     * This reduces the overhead of storing irrelevant computations. ---*/
 
-    passivedouble passive_max_delta=0;
-    unsigned short max_neighbor = 0;
-    for (unsigned short iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+    AD_BEGIN_PASSIVE
+
+    su2double max_delta=0;
+    auto max_neighbor = iPoint;
+    for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
 
       /*-- Calculate the cell-center to cell-center length ---*/
 
       const unsigned long jPoint  = nodes->GetPoint(iPoint, iNeigh);
       const su2double* Coord_j = nodes->GetCoord(jPoint);
 
-      passivedouble delta_aux = 0;
-      for (unsigned short iDim = 0;iDim < nDim; iDim++){
-        delta_aux += pow(SU2_TYPE::GetValue(Coord_j[iDim])-SU2_TYPE::GetValue(Coord_i[iDim]), 2.);
-      }
+      su2double delta = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
 
       /*--- Only keep the maximum length ---*/
 
-      if (delta_aux > passive_max_delta) {
-        passive_max_delta = delta_aux;
-        max_neighbor = iNeigh;
+      if (delta > max_delta) {
+        max_delta = delta;
+        max_neighbor = jPoint;
       }
     }
 
-    /*--- Now that we know where the maximum distance is, repeat
-     * calculation with the AD-friendly su2double datatype ---*/
+    AD_END_PASSIVE
 
-    const unsigned long jPoint  = nodes->GetPoint(iPoint, max_neighbor);
-    const su2double* Coord_j = nodes->GetCoord(jPoint);
-
-    su2double max_delta = 0;
-    for (unsigned short iDim = 0;iDim < nDim; iDim++) {
-      max_delta += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
-    }
-    max_delta = sqrt(max_delta);
-
+    /*--- Recompute and set. ---*/
+    const su2double* Coord_j = nodes->GetCoord(max_neighbor);
+    max_delta = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
     nodes->SetMaxLength(iPoint, max_delta);
   }
 
@@ -8081,6 +8071,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
 
+  SU2_OMP_MASTER {
+
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
   su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
@@ -8180,6 +8172,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<< endl;
     if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
+
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {

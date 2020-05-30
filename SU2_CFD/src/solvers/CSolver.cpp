@@ -2004,6 +2004,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       nSend = (geometry->nPoint_P2PSend[iMessage+1] -
                geometry->nPoint_P2PSend[iMessage]);
 
+      SU2_OMP_FOR_STAT(32)
       for (iSend = 0; iSend < nSend; iSend++) {
 
         /*--- Get the local index for this communicated data. ---*/
@@ -2152,8 +2153,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
 
-      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
-                       &ind, &status);
+      SU2_OMP_MASTER
+      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
+      SU2_OMP_BARRIER
 
       /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -2172,6 +2174,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
       nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
                geometry->nPoint_P2PRecv[jRecv]);
 
+      SU2_OMP(for schedule(static,32) nowait)
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
         /*--- Get the local index for this communicated data. ---*/
@@ -2288,9 +2291,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
+    SU2_OMP_MASTER
     SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
 #endif
-
+    SU2_OMP_BARRIER
   }
 
 }
@@ -3312,6 +3316,8 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
+  SU2_OMP_MASTER {
+
   /*--- This function is intended for dual time simulations ---*/
 
   int Unst_RestartIter;
@@ -3321,8 +3327,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   string filename_n;
 
   /*--- Auxiliary vector for storing the coordinates ---*/
-  su2double *Coord;
-  Coord = new su2double[nDim];
+  su2double Coord[3] = {0.0};
 
   /*--- Variables for reading the restart files ---*/
   string text_line;
@@ -3458,12 +3463,12 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   }
 
+  } SU2_OMP_BARRIER
+
   /*--- It's necessary to communicate this information ---*/
 
   geometry->InitiateComms(geometry, config, COORDINATES_OLD);
   geometry->CompleteComms(geometry, config, COORDINATES_OLD);
-
-  delete [] Coord;
 
 }
 

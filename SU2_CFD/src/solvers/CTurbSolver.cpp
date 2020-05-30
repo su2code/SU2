@@ -631,22 +631,23 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
 
-  SU2_OMP_MASTER
-  {
+  if (config->GetnMarker_Periodic() > 0) {
+    SU2_OMP_MASTER
     for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
-
-    /*--- MPI solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION_EDDY);
-    CompleteComms(geometry, config, SOLUTION_EDDY);
-
-    /*--- Compute the root mean square residual ---*/
-
-    SetResidual_RMS(geometry, config);
+    SU2_OMP_BARRIER
   }
+
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
+
+  /*--- Compute the root mean square residual ---*/
+  SU2_OMP_MASTER
+  SetResidual_RMS(geometry, config);
   SU2_OMP_BARRIER
 
 }
@@ -1052,13 +1053,13 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
+  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  SU2_OMP_BARRIER
+
   /*--- MPI solution and compute the eddy viscosity ---*/
 
   solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-
-  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
-  SU2_OMP_BARRIER
 
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
@@ -1081,12 +1082,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
 
-    SU2_OMP_MASTER
-    {
-      solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    }
-    SU2_OMP_BARRIER
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
@@ -1095,7 +1092,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Go back to single threaded execution. ---*/
   SU2_OMP_MASTER
   {
-
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;

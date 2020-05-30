@@ -2510,13 +2510,12 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
       }
     }
 
+    /*--- Perform the MPI communication of the solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
+
   } // end SU2_OMP_PARALLEL
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
-
 }
 
 void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) {
@@ -2562,12 +2561,9 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    SU2_OMP_MASTER
-    {
-      InitiateComms(geometry, config, SOLUTION_FEA);
-      CompleteComms(geometry, config, SOLUTION_FEA);
-    }
-    SU2_OMP_BARRIER
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
 
     /*--- After the solution has been communicated, set the 'old' predicted solution as the solution. ---*/
     /*--- Loop over n points (as we have already communicated everything. ---*/

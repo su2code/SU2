@@ -488,8 +488,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   if (ActiveTape) AD::StartRecording();
 
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
-  SU2_OMP_PARALLEL
-  {
+  SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
   }
 
@@ -499,6 +498,8 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
 
+  SU2_OMP_PARALLEL {
+
   /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
   UpdateGridCoord(geometry[MESH_0], config);
@@ -506,17 +507,19 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Update the dual grid. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
 
-  /*--- Check for failed deformation (negative volumes). ---*/
-  /*--- This is not recorded as it does not influence the solution. ---*/
-  AD::StopRecording();
-  SetMinMaxVolume(geometry[MESH_0], config, true);
-  if (ActiveTape) AD::StartRecording();
-
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
 
   /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);
+
+  } // end parallel
+
+  /*--- Check for failed deformation (negative volumes). ---*/
+  /*--- This is not recorded as it does not influence the solution. ---*/
+  AD::StopRecording();
+  SetMinMaxVolume(geometry[MESH_0], config, true);
+  if (ActiveTape) AD::StartRecording();
 
 }
 
@@ -525,7 +528,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       /*--- Retrieve the displacement from the solution of the linear system ---*/
@@ -565,7 +568,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
   /*--- Compute the velocity of each node in the domain of the current rank
    (halo nodes are not computed as the grid velocity is later communicated). ---*/
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
