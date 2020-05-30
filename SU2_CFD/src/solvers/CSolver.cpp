@@ -5376,6 +5376,9 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   //--- Free locally allocated memory
   delete [] Normal;
   delete [] UnitNormal;
+  delete [] Tangential;
+  delete [] GradNormVel;
+  delete [] GradTangVel;
   
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Grad_Symm[iVar];
