@@ -1,5 +1,5 @@
 /*!
- * \file CViscosityModel.cpp
+ * \file CViscosityModel.hpp
  * \brief Interface class for defining laminar viscosity models.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

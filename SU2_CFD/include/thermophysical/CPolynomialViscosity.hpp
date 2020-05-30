@@ -1,5 +1,5 @@
 /*!
- * \file CPolynomialViscosity.cpp
+ * \file CPolynomialViscosity.hpp
  * \brief Defines a laminar viscosity model as a polynomial function of temperature.
  * \author T. Economon
  * \version 7.0.4 "Blackbird"

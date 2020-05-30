@@ -1,5 +1,5 @@
 /*!
- * \file CConductivityModel.cpp
+ * \file CConductivityModel.hpp
  * \brief Defines an interface class for thermal conductivity models.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

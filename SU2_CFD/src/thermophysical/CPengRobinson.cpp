@@ -1,5 +1,5 @@
 /*!
- * CPengRobinson.cpp
+ * \file CPengRobinson.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
  * \version 7.0.4 "Blackbird"
@@ -25,14 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fluid_model.hpp"
-
-CPengRobinson::CPengRobinson() : CIdealGas() {
-  a = 0.0;
-  b = 0.0;
-  k = 0.0;
-  TstarCrit = 0.0;
-}
+#include "../../include/thermophysical/CPengRobinson.hpp"
 
 CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w)
     : CIdealGas(gamma, R) {
@@ -46,8 +39,6 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
   else
     k = 0.379642 + 1.48503 * w - 0.164423 * w * w + 0.016666 * w * w * w;
 }
-
-CPengRobinson::~CPengRobinson(void) {}
 
 su2double CPengRobinson::alpha2(su2double T) const {
   return (1 + k * (1 - sqrt(T / TstarCrit))) * (1 + k * (1 - sqrt(T / TstarCrit)));

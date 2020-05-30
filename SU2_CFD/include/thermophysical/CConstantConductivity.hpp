@@ -1,5 +1,5 @@
 /*!
- * \file CConstantConductivity.cpp
+ * \file CConstantConductivity.hpp
  * \brief Defines a constant laminar thermal conductivity model.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

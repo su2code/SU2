@@ -4,11 +4,8 @@ su2_cfd_src = files(['iteration_structure.cpp',
                      'python_wrapper_structure.cpp',
                      'CMarkerProfileReaderFVM.cpp'])
 
-su2_cfd_src += files(['thermophysical/CConstantDensity.cpp',
-                      'thermophysical/CFluidModel.cpp',
+su2_cfd_src += files(['thermophysical/CFluidModel.cpp',
                       'thermophysical/CIdealGas.cpp',
-                      'thermophysical/CIncIdealGas.cpp',
-                      'thermophysical/CIncIdealGasPolynomial.cpp',
                       'thermophysical/CPengRobinson.cpp',
                       'thermophysical/CVanDerWaalsGas.cpp'])
 

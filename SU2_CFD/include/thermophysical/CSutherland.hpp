@@ -1,5 +1,5 @@
 /*!
- * \file CSutherland.cpp
+ * \file CSutherland.hpp
  * \brief Defines Sutherland's Law for laminar viscosity.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

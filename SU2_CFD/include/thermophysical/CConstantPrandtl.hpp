@@ -1,5 +1,5 @@
 /*!
- * \file CConstantPrandtl.cpp
+ * \file CConstantPrandtl.hpp
  * \brief Defines a non-constant laminar Prandtl number thermal conductivity model.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

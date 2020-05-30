@@ -1,5 +1,5 @@
 /*!
- * \file CConstantViscosity.cpp
+ * \file CConstantViscosity.hpp
  * \brief Defines a constant laminar viscosity model.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

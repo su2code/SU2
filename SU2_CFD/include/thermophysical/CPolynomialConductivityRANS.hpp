@@ -1,5 +1,5 @@
 /*!
- * \file CPolynomialConductivityRANS.cpp
+ * \file CPolynomialConductivityRANS.hpp
  * \brief Defines a non-constant thermal conductivity using a polynomial function of temperature
  *        for RANS problems with the addition of a turbulent component based on a turbulent Prandtl number.
  * \author T. Economon

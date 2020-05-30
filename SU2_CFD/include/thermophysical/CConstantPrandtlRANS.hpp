@@ -1,5 +1,5 @@
 /*!
- * \file CConstantPrandtlRANS.cpp
+ * \file CConstantPrandtlRANS.hpp
  * \brief Defines a non-constant effective thermal conductivity for RANS problems using Prandtl numbers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.4 "Blackbird"

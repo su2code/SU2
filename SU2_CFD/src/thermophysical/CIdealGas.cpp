@@ -1,5 +1,5 @@
 /*!
- * CIdealGas.cpp
+ * \file CIdealGas.cpp
  * \brief Source of the ideal gas model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
  * \version 7.0.4 "Blackbird"
@@ -25,15 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fluid_model.hpp"
-
-CIdealGas::CIdealGas() : CFluidModel() {
-  Gamma = 0.0;
-  Gamma_Minus_One = 0.0;
-  Gas_Constant = 0.0;
-  Cp = 0.0;
-  Cv = 0.0;
-}
+#include "../../include/thermophysical/CIdealGas.hpp"
 
 CIdealGas::CIdealGas(su2double gamma, su2double R) : CFluidModel() {
   Gamma = gamma;
@@ -54,8 +46,6 @@ CIdealGas::CIdealGas(su2double gamma, su2double R, bool CompEntropy) : CFluidMod
 
   ComputeEntropy = CompEntropy;
 }
-
-CIdealGas::~CIdealGas(void) {}
 
 void CIdealGas::SetTDState_rhoe(su2double rho, su2double e) {
   Density = rho;

@@ -1,5 +1,5 @@
 /*!
- * CVanDerWaalsGas.cpp
+ * \file CVanDerWaalsGas.cpp
  * \brief Source of the Polytropic Van der Waals model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
  * \version 7.0.4 "Blackbird"
@@ -25,20 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fluid_model.hpp"
-
-CVanDerWaalsGas::CVanDerWaalsGas() : CIdealGas() {
-  a = 0.0;
-  b = 0.0;
-}
+#include "../../include/thermophysical/CVanDerWaalsGas.hpp"
 
 CVanDerWaalsGas::CVanDerWaalsGas(su2double gamma, su2double R, su2double Pstar, su2double Tstar) : CIdealGas(gamma, R) {
   a = 27.0 / 64.0 * Gas_Constant * Gas_Constant * Tstar * Tstar / Pstar;
   b = 1.0 / 8.0 * Gas_Constant * Tstar / Pstar;
   Zed = 1.0;
 }
-
-CVanDerWaalsGas::~CVanDerWaalsGas(void) {}
 
 void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e) {
   Density = rho;
@@ -85,7 +78,7 @@ void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
     cout << "Compressibility factor  " << Z << " would be substituted with " << Zed << endl;
   }
 
-  // check if the solution is physical otherwise uses previous point  solution
+  // check if the solution is physical otherwise uses previous point solution
   if (Z <= 1.01 && Z >= 0.05 && count < nmax) Zed = Z;
 
   Density = P / (Zed * Gas_Constant * T);
@@ -96,7 +89,6 @@ void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
 
 void CVanDerWaalsGas::SetTDState_Prho(su2double P, su2double rho) {
   SetEnergy_Prho(P, rho);
-
   SetTDState_rhoe(rho, StaticEnergy);
 }
 
@@ -117,7 +109,6 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
         log((h + 2 * a / x2) / Gas_Constant / (1 / Gamma_Minus_One + x2 / (x2 - b))) / Gamma_Minus_One;
 
   // zbrac algorithm NR
-
   for (int j = 1; j <= NTRY; j++) {
     if (fx1 * fx2 > 0.0) {
       if (fabs(fx1) < fabs(fx2)) {
@@ -133,7 +124,6 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
   }
 
   // rtbis algorithm NR
-
   f = fx1;
   fmid = fx2;
   if (f * fmid >= 0.0) {
@@ -199,7 +189,6 @@ void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s) {
   fx2 = Gas_Constant * (log(T2) / Gamma_Minus_One + log(1 / x2 - b)) - s;
 
   // zbrac algorithm NR
-
   for (int j = 1; j <= NTRY; j++) {
     if (fx1 * fx2 > 0.0) {
       if (fabs(fx1) < fabs(fx2)) {
@@ -215,7 +204,6 @@ void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s) {
   }
 
   // rtbis algorithm NR
-
   f = fx1;
   fmid = fx2;
   if (f * fmid >= 0.0) {

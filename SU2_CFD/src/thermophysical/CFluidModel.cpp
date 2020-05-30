@@ -1,5 +1,5 @@
 /*!
- * CFluidModel.cpp
+ * \file CFluidModel.cpp
  * \brief Source of the fluid model base class containing thermo-physical subroutines.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna, T. Economon
  * \version 7.0.4 "Blackbird"
@@ -27,7 +27,7 @@
 
 #include <utility>
 
-#include "../../include/fluid_model.hpp"
+#include "../../include/thermophysical/CFluidModel.hpp"
 #include "../../include/thermophysical/CConstantConductivity.hpp"
 #include "../../include/thermophysical/CConstantConductivityRANS.hpp"
 #include "../../include/thermophysical/CConstantPrandtl.hpp"
@@ -37,27 +37,6 @@
 #include "../../include/thermophysical/CPolynomialConductivityRANS.hpp"
 #include "../../include/thermophysical/CPolynomialViscosity.hpp"
 #include "../../include/thermophysical/CSutherland.hpp"
-
-CFluidModel::CFluidModel(void) {
-  /*--- Attributes initialization ---*/
-
-  StaticEnergy = 0.0;
-  Entropy = 0.0;
-  Density = 0.0;
-  Pressure = 0.0;
-  SoundSpeed2 = 0.0;
-  Temperature = 0.0;
-  dPdrho_e = 0.0;
-  dPde_rho = 0.0;
-  dTdrho_e = 0.0;
-  dTde_rho = 0.0;
-  Cp = 0.0;
-  Cv = 0.0;
-  Mu = 0.0;
-  Mu_Turb = 0.0;
-}
-
-CFluidModel::~CFluidModel(void) {}
 
 void CFluidModel::SetLaminarViscosityModel(CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
