@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,6 +44,7 @@
 #include "../../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/C1DInterpolation.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
@@ -93,8 +94,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Jacobian_jj        = nullptr;
   iPoint_UndLapl     = nullptr;
   jPoint_UndLapl     = nullptr;
-  Smatrix            = nullptr;
-  Cvector            = nullptr;
   Restart_Vars       = nullptr;
   Restart_Data       = nullptr;
   base_nodes         = nullptr;
@@ -139,14 +138,12 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
 CSolver::~CSolver(void) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   unsigned long iMarker, iVertex;
 
   /*--- Public variables, may be accessible outside ---*/
 
-  
-    delete [] OutputHeadingNames;
-  
+  delete [] OutputHeadingNames;
 
   /*--- Private ---*/
 
@@ -227,18 +224,6 @@ CSolver::~CSolver(void) {
     delete [] Jacobian_jj;
   }
 
-  if (Smatrix != nullptr) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      delete [] Smatrix[iDim];
-    delete [] Smatrix;
-  }
-
-  if (Cvector != nullptr) {
-    for (iVar = 0; iVar < nVarGrad; iVar++)
-      delete [] Cvector[iVar];
-    delete [] Cvector;
-  }
-
   if (VertexTraction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
@@ -259,10 +244,10 @@ CSolver::~CSolver(void) {
 
   delete [] nVertex;
 
-  if (Restart_Vars != nullptr) {delete [] Restart_Vars; Restart_Vars = nullptr;}
-  if (Restart_Data != nullptr) {delete [] Restart_Data; Restart_Data = nullptr;}
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
 
-  if (VerificationSolution != nullptr) {delete VerificationSolution; VerificationSolution = nullptr;}
+  delete VerificationSolution;
 
 }
 
@@ -304,6 +289,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
+  su2activematrix Cvector;
 
   string Marker_Tag;
 
@@ -934,9 +920,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Inizialization of variables ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] = 0.0;
+            Cvector.resize(nVar,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -1035,7 +1019,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                   for (iVar = 0; iVar < nVar; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
-                  Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                  Cvector(iVar,iDim) += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
 
                 }
@@ -1069,7 +1053,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset] = Cvector[iVar][iDim];
+                bufDSend[buf_offset] = Cvector(iVar,iDim);
                 buf_offset++;
               }
             }
@@ -1143,9 +1127,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Inizialization of variables ---*/
 
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] = 0.0;
+            Cvector.resize(nPrimVarGrad,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -1244,7 +1226,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
-                  Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                  Cvector(iVar,iDim) += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
 
                 }
@@ -1278,7 +1260,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset] = Cvector[iVar][iDim];
+                bufDSend[buf_offset] = Cvector(iVar,iDim);
                 buf_offset++;
               }
             }
@@ -1538,6 +1520,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   su2double Time_Step, Volume, Solution_Min, Solution_Max, Limiter_Min;
 
+  su2double **Jacobian_i = nullptr;
+  if ((commType == PERIODIC_RESIDUAL) && implicit_periodic) {
+    Jacobian_i = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      Jacobian_i[iVar] = new su2double [nVar];
+  }
+
   /*--- Set some local pointers to make access simpler. ---*/
 
   su2double *bufDRecv = geometry->bufD_PeriodicRecv;
@@ -1625,12 +1614,10 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
             case PERIODIC_RESIDUAL:
 
-              /*--- Access the residual from the donor. ---*/
+              /*--- Add contributions to total residual. ---*/
 
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] = bufDRecv[buf_offset];
-                buf_offset++;
-              }
+              LinSysRes.AddBlock(iPoint, &bufDRecv[buf_offset]);
+              buf_offset += nVar;
 
               /*--- Check the computed time step against the donor
                value and keep the minimum in order to be conservative. ---*/
@@ -1639,21 +1626,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               if (bufDRecv[buf_offset] < Time_Step)
                 base_nodes->SetDelta_Time(iPoint,bufDRecv[buf_offset]);
               buf_offset++;
-
-              /*--- Access the Jacobian from the donor if implicit. ---*/
-
-              if (implicit_periodic) {
-                for (iVar = 0; iVar < nVar; iVar++) {
-                  for (jVar = 0; jVar < nVar; jVar++) {
-                    Jacobian_i[iVar][jVar] = bufDRecv[buf_offset];
-                    buf_offset++;
-                  }
-                }
-              }
-
-              /*--- Add contributions to total residual. ---*/
-
-              LinSysRes.AddBlock(iPoint, Residual);
 
               /*--- For implicit integration, we choose the first
                periodic face of each pair to be the master/owner of
@@ -1664,6 +1636,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                the linear solve. ---*/
 
               if (implicit_periodic) {
+
+                for (iVar = 0; iVar < nVar; iVar++) {
+                  for (jVar = 0; jVar < nVar; jVar++) {
+                    Jacobian_i[iVar][jVar] = bufDRecv[buf_offset];
+                    buf_offset++;
+                  }
+                }
 
                 Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
@@ -1691,19 +1670,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               if ((implicit_periodic) &&
                   (iPeriodic == val_periodic_index + nPeriodic/2)) {
 
-                /*--- Access the solution from the donor. ---*/
-
-                for (iVar = 0; iVar < nVar; iVar++) {
-                  Solution[iVar] = bufDRecv[buf_offset];
-                  buf_offset++;
-                }
-
                 /*--- Directly set the solution on the passive periodic
                  face that is provided from the master. ---*/
 
                 for (iVar = 0; iVar < nVar; iVar++) {
-                  base_nodes->SetSolution(iPoint, iVar, Solution[iVar]);
-                  base_nodes->SetSolution_Old(iPoint, iVar, Solution[iVar]);
+                  base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset]);
+                  base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset]);
+                  buf_offset++;
                 }
 
               }
@@ -1899,6 +1872,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   }
 
   delete [] Diff;
+
+  if (Jacobian_i)
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
 
 }
 
@@ -2727,80 +2705,57 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
-  unsigned long iVertex, iEdge;
-  su2double ProjGridVel;
-  const su2double* Normal;
+  /*--- Loop interior points ---*/
 
-  /*--- Loop interior edges ---*/
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    const su2double* GridVel_i = geometry->nodes->GetGridVel(iPoint);
+    const su2double* Solution_i = base_nodes->GetSolution(iPoint);
 
-    const unsigned long iPoint = geometry->edges->GetNode(iEdge,0);
-    const unsigned long jPoint = geometry->edges->GetNode(iEdge,1);
+    for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
 
-    /*--- Solution at each edge point ---*/
+      const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+      const su2double* Normal = geometry->edges->GetNormal(iEdge);
 
-    su2double *Solution_i = base_nodes->GetSolution(iPoint);
-    su2double *Solution_j = base_nodes->GetSolution(jPoint);
+      const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      const su2double* GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = 0.5* (Solution_i[iVar] + Solution_j[iVar]);
+      /*--- Determine whether to consider the normal outward or inward. ---*/
+      su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
 
-    /*--- Grid Velocity at each edge point ---*/
+      su2double Flux = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Flux += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
-    su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
-    su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
-
-    Normal = geometry->edges->GetNormal(iEdge);
-
-    ProjGridVel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      ProjGridVel += Vector[iDim]*Normal[iDim];
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      Residual[iVar] = ProjGridVel*Solution_i[iVar];
-
-    LinSysRes.AddBlock(iPoint, Residual);
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      Residual[iVar] = ProjGridVel*Solution_j[iVar];
-
-    LinSysRes.SubtractBlock(jPoint, Residual);
-
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        LinSysRes(iPoint,iVar) += Flux * Solution_i[iVar];
+    }
   }
 
   /*--- Loop boundary edges ---*/
 
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Solution at each edge point ---*/
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        su2double *Solution = base_nodes->GetSolution(Point);
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         /*--- Grid Velocity at each edge point ---*/
 
-        su2double *GridVel = geometry->nodes->GetGridVel(Point);
+        const su2double* GridVel = geometry->nodes->GetGridVel(iPoint);
 
         /*--- Summed normal components ---*/
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        ProjGridVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjGridVel += GridVel[iDim]*Normal[iDim];
+        su2double Flux = GeometryToolbox::DotProduct(nDim, Normal, GridVel);
 
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = ProjGridVel*Solution[iVar];
-
-        LinSysRes.SubtractBlock(Point, Residual);
-
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          LinSysRes(iPoint,iVar) -= Flux * base_nodes->GetSolution(iPoint,iVar);
       }
     }
   }
@@ -2876,6 +2831,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
    *    When "alpha" is 1, i.e. no relaxation, we effectively subtract the old
    *    value and add the new one to the total ("External"). ---*/
 
+  vector<su2double> solution(nVar);
   passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -2885,10 +2841,10 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
       delta = alpha * (new_val - cross_term(iPoint,iVar));
       /*--- Update cross term. ---*/
       cross_term(iPoint,iVar) += delta;
-      Solution[iVar] = delta;
+      solution[iVar] = delta;
     }
     /*--- Update the sum of all cross-terms. ---*/
-    base_nodes->Add_External(iPoint, Solution);
+    base_nodes->Add_External(iPoint, solution.data());
   }
 }
 

@@ -2,7 +2,7 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 #include <memory>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/datatype_structure.hpp"
+#include "../../../Common/include/basic_types/datatype_structure.hpp"
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
 

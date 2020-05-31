@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.4 "Blackbird"
+# \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -59,7 +59,7 @@ lib_sources = \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
   ../src/mpi_structure.cpp \
-  ../src/ad_structure.cpp \
+  ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \
   ../src/geometry/CPhysicalGeometry.cpp \

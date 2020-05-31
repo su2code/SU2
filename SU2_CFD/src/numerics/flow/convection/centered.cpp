@@ -2,7 +2,7 @@
  * \file centered.cpp
  * \brief Implementations of centered schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,7 +76,7 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
   if (preacc) {
     AD::SetPreaccIn(Normal, nDim);
     AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
-    AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
+    AD::SetPreaccIn(Lambda_i, Lambda_j);
     if (dynamic_grid) {
       AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
     }

@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,8 +118,6 @@ protected:
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  su2double **Smatrix,        /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  **Cvector;                  /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
@@ -165,8 +163,8 @@ public:
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
+  CSysMatrix<su2mixedfloat> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<su2mixedfloat>  System;   /*!< \brief Linear solver/smoother. */
 #else
   CSysMatrix<su2double> Jacobian;
   CSysSolve<su2double>  System;

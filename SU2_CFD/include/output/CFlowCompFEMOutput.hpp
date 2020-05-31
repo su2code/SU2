@@ -2,7 +2,7 @@
  * \file CFlowCompFEMOutput.hpp
  * \brief  Headers of the compressible FEM flow output.
  * \author R. Sanchez, T. Albring.
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
