@@ -120,13 +120,11 @@ void computeLimiters_impl(CSolver* solver,
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
         fieldMax(iPoint,iVar) = fieldMin(iPoint,iVar) = field(iPoint,iVar);
 
-    SU2_OMP_MASTER
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
       solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
     }
-    SU2_OMP_BARRIER
   }
 
   /*--- Compute limiter for each point. ---*/
@@ -225,19 +223,19 @@ void computeLimiters_impl(CSolver* solver,
   }
 
   /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
-  if (periodic) {
-    SU2_OMP_MASTER
+  if (periodic)
+  {
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
       solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm2);
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm2);
     }
-    SU2_OMP_BARRIER
   }
 
   /*--- Obtain the limiters at halo points from the MPI ranks that own them.
    *    If no solver was provided we do not communicate. ---*/
-  if (solver != nullptr) {
+  if (solver != nullptr)
+  {
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }

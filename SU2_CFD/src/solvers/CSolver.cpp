@@ -426,6 +426,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
       nSend = (geometry->nPoint_PeriodicSend[iMessage+1] -
                geometry->nPoint_PeriodicSend[iMessage]);
 
+      SU2_OMP_FOR_STAT(32)
       for (iSend = 0; iSend < nSend; iSend++) {
 
         /*--- Get the local index for this communicated data. We need
@@ -1238,7 +1239,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   int source, iMessage, jRecv;
 
-  SU2_MPI::Status status;
+  /*--- Status is global so all threads can see the result of Waitany. ---*/
+  static SU2_MPI::Status status;
 
   su2double *Diff = new su2double[nVar];
 
@@ -1270,13 +1272,16 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 #ifdef HAVE_MPI
       /*--- Once we have recv'd a message, get the source rank. ---*/
       int ind;
+      SU2_OMP_MASTER
       SU2_MPI::Waitany(geometry->nPeriodicRecv,
                        geometry->req_PeriodicRecv,
                        &ind, &status);
+      SU2_OMP_BARRIER
       source = status.MPI_SOURCE;
 #else
       /*--- For serial calculations, we know the rank. ---*/
       source = rank;
+      SU2_OMP_BARRIER
 #endif
 
       /*--- We know the offsets based on the source rank. ---*/
@@ -1292,6 +1297,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       nRecv = (geometry->nPoint_PeriodicRecv[jRecv+1] -
                geometry->nPoint_PeriodicRecv[jRecv]);
 
+      SU2_OMP(for schedule(static,32) nowait)
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
         /*--- Get the local index for this communicated data. ---*/
@@ -1590,11 +1596,12 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
+    SU2_OMP_MASTER
     SU2_MPI::Waitall(geometry->nPeriodicSend,
                      geometry->req_PeriodicSend,
                      MPI_STATUS_IGNORE);
 #endif
-
+    SU2_OMP_BARRIER
   }
 
   delete [] Diff;

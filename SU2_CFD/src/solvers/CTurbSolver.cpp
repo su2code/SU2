@@ -396,12 +396,10 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
    accumulated corectly during the communications. For implicit calculations
    the Jacobians and linear system are also correctly adjusted here. ---*/
 
-  SU2_OMP_MASTER
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
-  SU2_OMP_BARRIER
 
 }
 
@@ -631,13 +629,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
 
-  if (config->GetnMarker_Periodic() > 0) {
-    SU2_OMP_MASTER
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-    SU2_OMP_BARRIER
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
   /*--- MPI solution ---*/

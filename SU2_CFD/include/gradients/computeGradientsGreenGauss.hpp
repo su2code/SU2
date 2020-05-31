@@ -169,13 +169,11 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- Account for periodic contributions. ---*/
 
-  SU2_OMP_MASTER
   for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
   {
     solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
     solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
   }
-  SU2_OMP_BARRIER
 
   /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
 

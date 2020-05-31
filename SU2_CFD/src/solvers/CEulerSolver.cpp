@@ -3603,13 +3603,9 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
   /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
 
-  if (config->GetnMarker_Periodic() > 0) {
-    SU2_OMP_MASTER
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-    }
-    SU2_OMP_BARRIER
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
   }
 
   /*--- MPI parallelization ---*/
@@ -3669,17 +3665,13 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
   if (isPeriodic) {
     /*--- Correct the Laplacian and sensor values across any periodic boundaries. ---*/
 
-    SU2_OMP_MASTER
-    {
-      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
 
-        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-      }
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
     }
-    SU2_OMP_BARRIER
 
     /*--- Set final pressure switch for each point ---*/
 
@@ -4673,13 +4665,9 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
 
-  if (config->GetnMarker_Periodic() > 0) {
-    SU2_OMP_MASTER
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-    SU2_OMP_BARRIER
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
   /*--- MPI solution ---*/
@@ -11115,12 +11103,10 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
    accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
 
-  SU2_OMP_MASTER
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
-  SU2_OMP_BARRIER
 
 }
 
