@@ -901,7 +901,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 
     nRecv = nPoint_P2PRecv[jRecv+1] - nPoint_P2PRecv[jRecv];
 
-    SU2_OMP(for schedule(static,32) nowait)
+    SU2_OMP_FOR_STAT(32)
     for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
       /*--- Get the local index for this communicated data. ---*/
