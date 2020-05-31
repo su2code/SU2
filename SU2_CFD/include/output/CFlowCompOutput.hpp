@@ -81,10 +81,10 @@ private:
                              CAerodynamicsModule,
                              CVortexIdentificationModule,
                              CFlowCoefficientModule,
-                             CConvergenceModule,
                              CResidualModule,
                              CDirectDiffModule,
-                             CUserFunctionModule>;
+                             CUserFunctionModule,
+                             CConvergenceModule>;
 
 //  CModuleManager<Modules> modules;
 
