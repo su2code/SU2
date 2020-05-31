@@ -284,12 +284,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double *rotPrim_j = new su2double[nPrimVar];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
-  su2double *Coord_i, *Coord_j, r11, r12, r13, r22, r23_a, r23_b, r33, weight;
-  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
-  su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-  su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
-  su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
+  const su2double *Coord_i, *Coord_j;
+  su2double r11, r12, r13, r22, r23_a, r23_b, r33, weight;
+  const su2double *center, *angles, *trans;
+  su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
+  su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double rotCoord_i[3] = {0.0}, rotCoord_j[3] = {0.0};
+  su2double translation[3] = {0.0}, distance[3] = {0.0};
+  const su2double zeros[3] = {0.0};
   su2activematrix Cvector;
+
+  auto Rotate = [&](const su2double* origin, const su2double* direction, su2double* rotated) {
+    if(nDim==2) GeometryToolbox::Rotate(rotMatrix2D, origin, direction, rotated);
+    else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
+  };
 
   string Marker_Tag;
 
@@ -432,24 +440,18 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
         /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
 
-        Theta    = angles[0];      Phi = angles[1];     Psi = angles[2];
-        cosTheta = cos(Theta);  cosPhi = cos(Phi);   cosPsi = cos(Psi);
-        sinTheta = sin(Theta);  sinPhi = sin(Phi);   sinPsi = sin(Psi);
+        su2double Theta = angles[0];
+        su2double Phi = angles[1];
+        su2double Psi = angles[2];
 
         /*--- Compute the rotation matrix. Note that the implicit
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
 
-        rotMatrix[0][0] = cosPhi*cosPsi;
-        rotMatrix[1][0] = cosPhi*sinPsi;
-        rotMatrix[2][0] = -sinPhi;
-
-        rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-        rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-        rotMatrix[2][1] = sinTheta*cosPhi;
-
-        rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[2][2] = cosTheta*cosPhi;
+        if (nDim==2) {
+          GeometryToolbox::RotationMatrix(Theta, rotMatrix2D);
+        } else {
+          GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
+        }
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
@@ -504,22 +506,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Rotate the momentum components of the residual array. ---*/
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes(iPoint, 2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes(iPoint, 2));
-              } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes(iPoint, 2) +
-                                          rotMatrix[0][2]*LinSysRes(iPoint, 3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes(iPoint, 2) +
-                                          rotMatrix[1][2]*LinSysRes(iPoint, 3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes(iPoint, 1) +
-                                          rotMatrix[2][1]*LinSysRes(iPoint, 2) +
-                                          rotMatrix[2][2]*LinSysRes(iPoint, 3));
-              }
+              Rotate(zeros, &LinSysRes(iPoint,1), &bufDSend[buf_offset+1]);
             }
             buf_offset += nVar;
 
@@ -545,21 +532,21 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
-                    jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[1][iVar] = (rotMatrix2D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix2D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[2][iVar] = (rotMatrix2D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix2D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
                   } else {
 
-                    jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[3][iVar] = (rotMatrix[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[1][iVar] = (rotMatrix3D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix3D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
+                                         rotMatrix3D[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[2][iVar] = (rotMatrix3D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix3D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
+                                         rotMatrix3D[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[3][iVar] = (rotMatrix3D[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix3D[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
+                                         rotMatrix3D[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
                   }
                 }
               }
@@ -591,22 +578,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Rotate the momentum components of the solution array. ---*/
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2));
-              } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2) +
-                                          rotMatrix[0][2]*base_nodes->GetSolution(iPoint,3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2) +
-                                          rotMatrix[1][2]*base_nodes->GetSolution(iPoint,3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[2][1]*base_nodes->GetSolution(iPoint,2) +
-                                          rotMatrix[2][2]*base_nodes->GetSolution(iPoint,3));
-              }
+              Rotate(zeros, &base_nodes->GetSolution(iPoint)[1], &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -670,28 +642,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Store the components to be communicated in the buffer. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[buf_offset+iVar] = Und_Lapl[iVar];
+              bufDSend[buf_offset+iVar] = Und_Lapl[iVar];
 
             /*--- Rotate the momentum components of the Laplacian. ---*/
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Und_Lapl[1] +
-                                          rotMatrix[0][1]*Und_Lapl[2]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Und_Lapl[1] +
-                                          rotMatrix[1][1]*Und_Lapl[2]);
-              }
-              else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Und_Lapl[1] +
-                                          rotMatrix[0][1]*Und_Lapl[2] +
-                                          rotMatrix[0][2]*Und_Lapl[3]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Und_Lapl[1] +
-                                          rotMatrix[1][1]*Und_Lapl[2] +
-                                          rotMatrix[1][2]*Und_Lapl[3]);
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*Und_Lapl[1] +
-                                          rotMatrix[2][1]*Und_Lapl[2] +
-                                          rotMatrix[2][2]*Und_Lapl[3]);
-              }
+              Rotate(zeros, &Und_Lapl[1], &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -773,30 +729,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 jacBlock[iVar][iDim] = base_nodes->GetGradient(iPoint, iVar, iDim);
-                rotBlock[iVar][iDim] = base_nodes->GetGradient(iPoint, iVar, iDim);
               }
             }
 
             /*--- Rotate the gradients in x,y,z space for all variables. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              if (nDim == 2) {
-                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
-                                     rotMatrix[0][1]*jacBlock[iVar][1]);
-                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
-                                     rotMatrix[1][1]*jacBlock[iVar][1]);
-              } else {
-
-                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
-                                     rotMatrix[0][1]*jacBlock[iVar][1] +
-                                     rotMatrix[0][2]*jacBlock[iVar][2]);
-                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
-                                     rotMatrix[1][1]*jacBlock[iVar][1] +
-                                     rotMatrix[1][2]*jacBlock[iVar][2]);
-                rotBlock[iVar][2] = (rotMatrix[2][0]*jacBlock[iVar][0] +
-                                     rotMatrix[2][1]*jacBlock[iVar][1] +
-                                     rotMatrix[2][2]*jacBlock[iVar][2]);
-              }
+              Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 
             /*--- Store the partial gradient in the buffer. ---*/
@@ -818,29 +757,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++){
                 jacBlock[iVar][iDim] = base_nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-                rotBlock[iVar][iDim] = base_nodes->GetGradient_Primitive(iPoint, iVar, iDim);
               }
             }
 
             /*--- Rotate the partial gradients in space for all variables. ---*/
 
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              if (nDim == 2) {
-                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
-                                     rotMatrix[0][1]*jacBlock[iVar][1]);
-                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
-                                     rotMatrix[1][1]*jacBlock[iVar][1]);
-              } else {
-                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
-                                     rotMatrix[0][1]*jacBlock[iVar][1] +
-                                     rotMatrix[0][2]*jacBlock[iVar][2]);
-                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
-                                     rotMatrix[1][1]*jacBlock[iVar][1] +
-                                     rotMatrix[1][2]*jacBlock[iVar][2]);
-                rotBlock[iVar][2] = (rotMatrix[2][0]*jacBlock[iVar][0] +
-                                     rotMatrix[2][1]*jacBlock[iVar][1] +
-                                     rotMatrix[2][2]*jacBlock[iVar][2]);
-              }
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 
             /*--- Store the partial gradient in the buffer. ---*/
@@ -874,48 +797,19 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get the position vector from rotation center to point. ---*/
 
-            dx = Coord_i[0] - center[0];
-            dy = Coord_i[1] - center[1];
-            if (nDim == 3) dz = Coord_i[2] - center[2];
-            else           dz = 0.0;
+            GeometryToolbox::Distance(nDim, Coord_i, center, distance);
 
             /*--- Compute transformed point coordinates. ---*/
 
-            rotCoord_i[0] = (rotMatrix[0][0]*dx +
-                             rotMatrix[0][1]*dy +
-                             rotMatrix[0][2]*dz + translation[0]);
-
-            rotCoord_i[1] = (rotMatrix[1][0]*dx +
-                             rotMatrix[1][1]*dy +
-                             rotMatrix[1][2]*dz + translation[1]);
-
-            rotCoord_i[2] = (rotMatrix[2][0]*dx +
-                             rotMatrix[2][1]*dy +
-                             rotMatrix[2][2]*dz + translation[2]);
+            Rotate(translation, distance, rotCoord_i);
 
             /*--- Get conservative solution and rotate if necessary. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++)
-            rotPrim_i[iVar] = base_nodes->GetSolution(iPoint, iVar);
+              rotPrim_i[iVar] = base_nodes->GetSolution(iPoint, iVar);
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                rotPrim_i[1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2));
-                rotPrim_i[2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2));
-              }
-              else {
-                rotPrim_i[1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2) +
-                                rotMatrix[0][2]*base_nodes->GetSolution(iPoint,3));
-                rotPrim_i[2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2) +
-                                rotMatrix[1][2]*base_nodes->GetSolution(iPoint,3));
-                rotPrim_i[3] = (rotMatrix[2][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[2][1]*base_nodes->GetSolution(iPoint,2) +
-                                rotMatrix[2][2]*base_nodes->GetSolution(iPoint,3));
-              }
+              Rotate(zeros, &base_nodes->GetSolution(iPoint)[1], &rotPrim_i[1]);
             }
 
             /*--- Inizialization of variables ---*/
@@ -939,48 +833,19 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Get the position vector from rotation center. ---*/
 
-                dx = Coord_j[0] - center[0];
-                dy = Coord_j[1] - center[1];
-                if (nDim == 3) dz = Coord_j[2] - center[2];
-                else           dz = 0.0;
+                GeometryToolbox::Distance(nDim, Coord_j, center, distance);
 
                 /*--- Compute transformed point coordinates. ---*/
 
-                rotCoord_j[0] = (rotMatrix[0][0]*dx +
-                                 rotMatrix[0][1]*dy +
-                                 rotMatrix[0][2]*dz + translation[0]);
-
-                rotCoord_j[1] = (rotMatrix[1][0]*dx +
-                                 rotMatrix[1][1]*dy +
-                                 rotMatrix[1][2]*dz + translation[1]);
-
-                rotCoord_j[2] = (rotMatrix[2][0]*dx +
-                                 rotMatrix[2][1]*dy +
-                                 rotMatrix[2][2]*dz + translation[2]);
+                Rotate(translation, distance, rotCoord_j);
 
                 /*--- Get conservative solution and rotte if necessary. ---*/
 
                 for (iVar = 0; iVar < nVar; iVar++)
-                rotPrim_j[iVar] = base_nodes->GetSolution(jPoint,iVar);
+                  rotPrim_j[iVar] = base_nodes->GetSolution(jPoint,iVar);
 
                 if (rotate_periodic) {
-                  if (nDim == 2) {
-                    rotPrim_j[1] = (rotMatrix[0][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[0][1]*base_nodes->GetSolution(jPoint,2));
-                    rotPrim_j[2] = (rotMatrix[1][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[1][1]*base_nodes->GetSolution(jPoint,2));
-                  }
-                  else {
-                    rotPrim_j[1] = (rotMatrix[0][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[0][1]*base_nodes->GetSolution(jPoint,2) +
-                                    rotMatrix[0][2]*base_nodes->GetSolution(jPoint,3));
-                    rotPrim_j[2] = (rotMatrix[1][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[1][1]*base_nodes->GetSolution(jPoint,2) +
-                                    rotMatrix[1][2]*base_nodes->GetSolution(jPoint,3));
-                    rotPrim_j[3] = (rotMatrix[2][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[2][1]*base_nodes->GetSolution(jPoint,2) +
-                                    rotMatrix[2][2]*base_nodes->GetSolution(jPoint,3));
-                  }
+                  Rotate(zeros, &base_nodes->GetSolution(jPoint)[1], &rotPrim_j[1]);
                 }
 
                 if (weighted) {
@@ -1081,48 +946,19 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get the position vector from rot center to point. ---*/
 
-            dx = Coord_i[0] - center[0];
-            dy = Coord_i[1] - center[1];
-            if (nDim == 3) dz = Coord_i[2] - center[2];
-            else           dz = 0.0;
+            GeometryToolbox::Distance(nDim, Coord_i, center, distance);
 
             /*--- Compute transformed point coordinates. ---*/
 
-            rotCoord_i[0] = (rotMatrix[0][0]*dx +
-                             rotMatrix[0][1]*dy +
-                             rotMatrix[0][2]*dz + translation[0]);
-
-            rotCoord_i[1] = (rotMatrix[1][0]*dx +
-                             rotMatrix[1][1]*dy +
-                             rotMatrix[1][2]*dz + translation[1]);
-
-            rotCoord_i[2] = (rotMatrix[2][0]*dx +
-                             rotMatrix[2][1]*dy +
-                             rotMatrix[2][2]*dz + translation[2]);
+            Rotate(translation, distance, rotCoord_i);
 
             /*--- Get primitives and rotate if necessary. ---*/
 
             for (iVar = 0; iVar < nPrimVar; iVar++)
-            rotPrim_i[iVar] = base_nodes->GetPrimitive(iPoint, iVar);
+              rotPrim_i[iVar] = base_nodes->GetPrimitive(iPoint, iVar);
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                rotPrim_i[1] = (rotMatrix[0][0]*base_nodes->GetPrimitive(iPoint,1) +
-                                rotMatrix[0][1]*base_nodes->GetPrimitive(iPoint,2));
-                rotPrim_i[2] = (rotMatrix[1][0]*base_nodes->GetPrimitive(iPoint,1) +
-                                rotMatrix[1][1]*base_nodes->GetPrimitive(iPoint,2));
-              }
-              else {
-                rotPrim_i[1] = (rotMatrix[0][0]*base_nodes->GetPrimitive(iPoint,1) +
-                                rotMatrix[0][1]*base_nodes->GetPrimitive(iPoint,2) +
-                                rotMatrix[0][2]*base_nodes->GetPrimitive(iPoint,3));
-                rotPrim_i[2] = (rotMatrix[1][0]*base_nodes->GetPrimitive(iPoint,1) +
-                                rotMatrix[1][1]*base_nodes->GetPrimitive(iPoint,2) +
-                                rotMatrix[1][2]*base_nodes->GetPrimitive(iPoint,3));
-                rotPrim_i[3] = (rotMatrix[2][0]*base_nodes->GetPrimitive(iPoint,1) +
-                                rotMatrix[2][1]*base_nodes->GetPrimitive(iPoint,2) +
-                                rotMatrix[2][2]*base_nodes->GetPrimitive(iPoint,3));
-              }
+              Rotate(zeros, &base_nodes->GetPrimitive(iPoint)[1], &rotPrim_i[1]);
             }
 
             /*--- Inizialization of variables ---*/
@@ -1146,48 +982,19 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Get the position vector from rotation center. ---*/
 
-                dx = Coord_j[0] - center[0];
-                dy = Coord_j[1] - center[1];
-                if (nDim == 3) dz = Coord_j[2] - center[2];
-                else           dz = 0.0;
+                GeometryToolbox::Distance(nDim, Coord_j, center, distance);
 
                 /*--- Compute transformed point coordinates. ---*/
 
-                rotCoord_j[0] = (rotMatrix[0][0]*dx +
-                                 rotMatrix[0][1]*dy +
-                                 rotMatrix[0][2]*dz + translation[0]);
-
-                rotCoord_j[1] = (rotMatrix[1][0]*dx +
-                                 rotMatrix[1][1]*dy +
-                                 rotMatrix[1][2]*dz + translation[1]);
-
-                rotCoord_j[2] = (rotMatrix[2][0]*dx +
-                                 rotMatrix[2][1]*dy +
-                                 rotMatrix[2][2]*dz + translation[2]);
+                Rotate(translation, distance, rotCoord_j);
 
                 /*--- Get primitives from CVariable ---*/
 
                 for (iVar = 0; iVar < nPrimVar; iVar++)
-                rotPrim_j[iVar] = base_nodes->GetPrimitive(jPoint,iVar);
+                  rotPrim_j[iVar] = base_nodes->GetPrimitive(jPoint,iVar);
 
                 if (rotate_periodic) {
-                  if (nDim == 2) {
-                    rotPrim_j[1] = (rotMatrix[0][0]*base_nodes->GetPrimitive(jPoint,1) +
-                                    rotMatrix[0][1]*base_nodes->GetPrimitive(jPoint,2));
-                    rotPrim_j[2] = (rotMatrix[1][0]*base_nodes->GetPrimitive(jPoint,1) +
-                                    rotMatrix[1][1]*base_nodes->GetPrimitive(jPoint,2));
-                  }
-                  else {
-                    rotPrim_j[1] = (rotMatrix[0][0]*base_nodes->GetPrimitive(jPoint,1) +
-                                    rotMatrix[0][1]*base_nodes->GetPrimitive(jPoint,2) +
-                                    rotMatrix[0][2]*base_nodes->GetPrimitive(jPoint,3));
-                    rotPrim_j[2] = (rotMatrix[1][0]*base_nodes->GetPrimitive(jPoint,1) +
-                                    rotMatrix[1][1]*base_nodes->GetPrimitive(jPoint,2) +
-                                    rotMatrix[1][2]*base_nodes->GetPrimitive(jPoint,3));
-                    rotPrim_j[3] = (rotMatrix[2][0]*base_nodes->GetPrimitive(jPoint,1) +
-                                    rotMatrix[2][1]*base_nodes->GetPrimitive(jPoint,2) +
-                                    rotMatrix[2][2]*base_nodes->GetPrimitive(jPoint,3));
-                  }
+                  Rotate(zeros, &base_nodes->GetPrimitive(jPoint)[1], &rotPrim_j[1]);
                 }
 
                 if (weighted) {
@@ -1296,38 +1103,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Rotate the momentum components of the min/max. ---*/
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2]);
-
-                bufDSend[buf_offset+nPrimVarGrad+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                                       rotMatrix[0][1]*Sol_Max[2]);
-                bufDSend[buf_offset+nPrimVarGrad+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                                       rotMatrix[1][1]*Sol_Max[2]);
-
-              } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2] +
-                                          rotMatrix[0][2]*Sol_Min[3]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2] +
-                                          rotMatrix[1][2]*Sol_Min[3]);
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*Sol_Min[1] +
-                                          rotMatrix[2][1]*Sol_Min[2] +
-                                          rotMatrix[2][2]*Sol_Min[3]);
-
-                bufDSend[buf_offset+nPrimVarGrad+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                                       rotMatrix[0][1]*Sol_Max[2] +
-                                                       rotMatrix[0][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nPrimVarGrad+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                                       rotMatrix[1][1]*Sol_Max[2] +
-                                                       rotMatrix[1][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nPrimVarGrad+3] = (rotMatrix[2][0]*Sol_Max[1] +
-                                                       rotMatrix[2][1]*Sol_Max[2] +
-                                                       rotMatrix[2][2]*Sol_Max[3]);
-              }
+              Rotate(zeros, &Sol_Min[1], &bufDSend[buf_offset+1]);
+              Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+nPrimVarGrad+1]);
             }
 
             break;
@@ -1343,24 +1120,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetLimiter_Primitive(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetLimiter_Primitive(iPoint,2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetLimiter_Primitive(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetLimiter_Primitive(iPoint,2));
-
-              }
-              else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetLimiter_Primitive(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetLimiter_Primitive(iPoint,2) +
-                                          rotMatrix[0][2]*base_nodes->GetLimiter_Primitive(iPoint,3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetLimiter_Primitive(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetLimiter_Primitive(iPoint,2) +
-                                          rotMatrix[1][2]*base_nodes->GetLimiter_Primitive(iPoint,3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*base_nodes->GetLimiter_Primitive(iPoint,1) +
-                                          rotMatrix[2][1]*base_nodes->GetLimiter_Primitive(iPoint,2) +
-                                          rotMatrix[2][2]*base_nodes->GetLimiter_Primitive(iPoint,3));
-              }
+              Rotate(zeros, &base_nodes->GetLimiter_Primitive(iPoint)[1], &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -1394,41 +1154,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Rotate the momentum components of the min/max. ---*/
 
             if (rotate_periodic) {
-
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2]);
-
-                bufDSend[buf_offset+nVar+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                               rotMatrix[0][1]*Sol_Max[2]);
-                bufDSend[buf_offset+nVar+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                               rotMatrix[1][1]*Sol_Max[2]);
-
-              }
-              else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2] +
-                                          rotMatrix[0][2]*Sol_Min[3]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2] +
-                                          rotMatrix[1][2]*Sol_Min[3]);
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*Sol_Min[1] +
-                                          rotMatrix[2][1]*Sol_Min[2] +
-                                          rotMatrix[2][2]*Sol_Min[3]);
-
-                bufDSend[buf_offset+nVar+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                               rotMatrix[0][1]*Sol_Max[2] +
-                                               rotMatrix[0][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nVar+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                               rotMatrix[1][1]*Sol_Max[2] +
-                                               rotMatrix[1][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nVar+3] = (rotMatrix[2][0]*Sol_Max[1] +
-                                               rotMatrix[2][1]*Sol_Max[2] +
-                                               rotMatrix[2][2]*Sol_Max[3]);
-
-              }
+              Rotate(zeros, &Sol_Min[1], &bufDSend[buf_offset+1]);
+              Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+nVar+1]);
             }
 
             break;
@@ -1444,24 +1171,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             if (rotate_periodic) {
-              if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetLimiter(iPoint,2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetLimiter(iPoint,2));
-
-              }
-              else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetLimiter(iPoint,2) +
-                                          rotMatrix[0][2]*base_nodes->GetLimiter(iPoint,3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetLimiter(iPoint,2) +
-                                          rotMatrix[1][2]*base_nodes->GetLimiter(iPoint,3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[2][1]*base_nodes->GetLimiter(iPoint,2) +
-                                          rotMatrix[2][2]*base_nodes->GetLimiter(iPoint,3));
-              }
+              Rotate(zeros, &base_nodes->GetLimiter(iPoint)[1], &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -1529,9 +1239,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   /*--- Set some local pointers to make access simpler. ---*/
 
-  su2double *bufDRecv = geometry->bufD_PeriodicRecv;
+  const su2double *bufDRecv = geometry->bufD_PeriodicRecv;
 
-  unsigned short *bufSRecv = geometry->bufS_PeriodicRecv;
+  const unsigned short *bufSRecv = geometry->bufS_PeriodicRecv;
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1719,7 +1429,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               for (iVar = 0; iVar < nVar; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
-                  base_nodes->SetGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim] + base_nodes->GetGradient(iPoint, iVar, iDim));
+                  base_nodes->AddGradient(iPoint, iVar, iDim,
+                                          bufDRecv[buf_offset+iVar*nDim+iDim]);
 
               break;
 
@@ -1730,7 +1441,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               for (iVar = 0; iVar < nPrimVarGrad; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
-                  base_nodes->SetGradient_Primitive(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim] + base_nodes->GetGradient_Primitive(iPoint, iVar, iDim));
+                  base_nodes->AddGradient_Primitive(iPoint, iVar, iDim,
+                                                    bufDRecv[buf_offset+iVar*nDim+iDim]);
               break;
 
             case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
@@ -2143,7 +1855,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Set some local pointers to make access simpler. ---*/
 
-  su2double *bufDRecv = geometry->bufD_P2PRecv;
+  const su2double *bufDRecv = geometry->bufD_P2PRecv;
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
