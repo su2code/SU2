@@ -3,11 +3,11 @@
  * \brief Headers of the main subroutines for creating the geometrical structure for the FEM solver.
  *        The subroutines and functions are in the <i>fem_geometry_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -28,52 +28,50 @@
 
 #pragma once
 
-#include "geometry/CGeometry.hpp"
+#include "../geometry/CGeometry.hpp"
 #include "fem_standard_element.hpp"
 #ifdef HAVE_CGNS
 #include "fem_cgns_elements.hpp"
 #endif
-#include "wall_model.hpp"
-#include "blas_structure.hpp"
+#include "../wall_model.hpp"
+#include "../blas_structure.hpp"
 
 using namespace std;
 
 /*!
  * \class CLong3T
  * \brief Help class used to store three longs as one entity.
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
-class CLong3T {
-public:
-  long long0;  /*!< \brief First long to store in this class. */
-  long long1;  /*!< \brief Second long to store in this class. */
-  long long2;  /*!< \brief Third long to store in this class. */
+struct CLong3T {
+  long long0 = 0;  /*!< \brief First long to store in this class. */
+  long long1 = 0;  /*!< \brief Second long to store in this class. */
+  long long2 = 0;  /*!< \brief Third long to store in this class. */
 
-  /* Constructors and destructors. */
-  CLong3T();
-  ~CLong3T();
+  CLong3T() = default;
 
-  CLong3T(const long a, const long b, const long c);
-
-  CLong3T(const CLong3T &other);
-
-  /* Operators. */
-  CLong3T& operator=(const CLong3T &other);
+  CLong3T(const long a, const long b, const long c) {long0 = a; long1 = b; long2 = c;}
 
   bool operator<(const CLong3T &other) const;
-
-private:
-  /* Copy function. */
-  void Copy(const CLong3T &other);
 };
 
 /*!
  * \class CReorderElements
  * \brief Class, used to reorder the owned elements after the partitioning.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CReorderElements {
+private:
+  unsigned long  globalElemID; /*!< \brief Global element ID of the element. */
+  unsigned short timeLevel;    /*!< \brief Time level of the element. Only relevant
+                                           for time accurate local time stepping. */
+  bool           commSolution; /*!< \brief Whether or not the solution must be
+                                           communicated to other ranks. */
+  unsigned short elemType;     /*!< \brief Short hand for the element type, Which
+                                           stored info of the VTK_Type, polynomial
+                                           degree of the solution and whether or
+                                           not the Jacobian is constant. */
 public:
   /*!
    * \brief Constructor of the class, set the member variables to the arguments.
@@ -86,19 +84,9 @@ public:
                    const bool           val_JacConstant);
 
   /*!
-   * \brief Destructor of the class. Nothing to be done.
+   * \brief Default constructor of the class. Disabled.
    */
-  ~CReorderElements(void);
-
-  /*!
-   * \brief Copy constructor of the class.
-   */
-  CReorderElements(const CReorderElements &other);
-
-  /*!
-   * \brief Assignment operator of the class.
-   */
-  CReorderElements& operator=(const CReorderElements &other);
+  CReorderElements(void) = delete;
 
   /*!
    * \brief Less than operator of the class. Needed for the sorting.
@@ -109,53 +97,33 @@ public:
    * \brief Function to make available the variable commSolution.
    * \return Whether or not the solution of the element must be communicated.
    */
-  bool GetCommSolution(void);
+  inline bool GetCommSolution(void) const { return commSolution; }
 
   /*!
    * \brief Function to make available the element type of the element.
    * \return The value of elemType, which stores the VTK type, polynomial degree
              and whether or not the Jacobian is constant.
    */
-  unsigned short GetElemType(void);
+  inline unsigned short GetElemType(void) const { return elemType; }
 
   /*!
    * \brief Function to make available the global element ID.
    * \return The global element ID of the element.
    */
-  unsigned long GetGlobalElemID(void);
+  inline unsigned long GetGlobalElemID(void) const { return globalElemID; }
 
   /*!
    * \brief Function to make available the time level.
    * \return The time level of the element.
    */
-  unsigned short GetTimeLevel(void);
+  inline unsigned short GetTimeLevel(void) const { return timeLevel; }
 
   /*!
    * \brief Function, which sets the value of commSolution.
    * \param[in] val_CommSolution  - value to which commSolution must be set.
    */
-  void SetCommSolution(const bool val_CommSolution);
+  inline void SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
 
-private:
-  unsigned long  globalElemID; /*!< \brief Global element ID of the element. */
-  unsigned short timeLevel;    /*!< \brief Time level of the element. Only relevant
-                                           for time accurate local time stepping. */
-  bool           commSolution; /*!< \brief Whether or not the solution must be
-                                           communicated to other ranks. */
-  unsigned short elemType;     /*!< \brief Short hand for the element type, Which
-                                           stored info of the VTK_Type, polynomial
-                                           degree of the solution and whether or
-                                           not the Jacobian is constant. */
-
-  /*!
-   * \brief Copy function. Needed for the copy constructor and assignment operator.
-   */
-  void Copy(const CReorderElements &other);
-
-  /*!
-   * \brief Default constructor of the class. Disabled.
-   */
-   CReorderElements(void);
 };
 
 /*!
@@ -163,22 +131,32 @@ private:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CFaceOfElement.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class CSortFaces {
+private:
+  unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
+  unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
+
+  const CVolumeElementFEM *volElem; /*!< \brief The locally stored volume elements. */
+
 public:
   /*!
    * \brief Constructor of the class. Set the values of the member variables.
    */
   CSortFaces(unsigned long            val_nVolElemOwned,
              unsigned long            val_nVolElemTot,
-             const CVolumeElementFEM *val_volElem);
+             const CVolumeElementFEM *val_volElem) {
+    nVolElemOwned = val_nVolElemOwned;
+    nVolElemTot = val_nVolElemTot;
+    volElem = val_volElem;
+  }
 
- /*!
-  * \brief Destructor of the class. Nothing to be done.
-  */
-  ~CSortFaces(void);
+  /*!
+   * \brief Default constructor of the class. Disabled.
+   */
+   CSortFaces(void) = delete;
 
  /*!
   * \brief Operator used for the comparison.
@@ -187,16 +165,6 @@ public:
   */
   bool operator()(const CFaceOfElement &f0,
                   const CFaceOfElement &f1);
-private:
-  unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
-  unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
-
-  const CVolumeElementFEM *volElem; /*!< \brief The locally stored volume elements. */
-
-  /*!
-   * \brief Default constructor of the class. Disabled.
-   */
-   CSortFaces(void);
 };
 
 /*!
@@ -204,21 +172,10 @@ private:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CSurfaceElementFEM.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CSurfaceElementFEM;   // Forward declaration to avoid problems.
-class CSortBoundaryFaces {
-public:
-  /*!
-   * \brief Constructor of the class. Nothing to be done.
-   */
-  CSortBoundaryFaces(void);
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CSortBoundaryFaces(void);
-
+struct CSortBoundaryFaces {
  /*!
   * \brief Operator used for the comparison.
   * \param[in] f0 - First boundary face in the comparison.
@@ -232,7 +189,7 @@ public:
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CVolumeElementFEM {
 public:
@@ -310,16 +267,6 @@ public:
                                                         the solution DOFs of this element. */
 
   /*!
-   * \brief Constructor of the class. Initialize the pointers to NULL.
-   */
-  CVolumeElementFEM(void);
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CVolumeElementFEM(void);
-
-  /*!
    * \brief Get all the corner points of all the faces of this element. It must be made sure
             that the numbering of the faces is identical to the numbering used for the
             standard elements.
@@ -336,36 +283,14 @@ public:
  * \class CPointFEM
  * \brief Class to a point for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
-class CPointFEM {
-public:
+struct CPointFEM {
   unsigned long globalID;    /*!< \brief The global ID of this point in the grid. */
   short periodIndexToDonor;  /*!< \brief The index of the periodic transformation to the donor
                                   element. Only for halo elements. A -1 indicates no periodic
                                   transformation. */
-  su2double coor[3];         /*!< \brief Array with the coordinates of the node. */
-
-  /*!
-   * \brief Default constructor of the class. Initialize the coordinates to zero
-            to avoid a valgrind warning in two space dimensions.
-   */
-  CPointFEM(void);
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CPointFEM(void);
-
-  /*!
-   * \brief Copy constructor of the class.
-   */
-  CPointFEM(const CPointFEM &other);
-
-  /*!
-   * \brief Assignment operator of the class.
-   */
-  CPointFEM& operator=(const CPointFEM &other);
+  su2double coor[3] = {0.0}; /*!< \brief Array with the coordinates of the node. */
 
   /*!
    * \brief Less than operator of the class. Needed for the sorting.
@@ -377,21 +302,15 @@ public:
    */
   bool operator==(const CPointFEM &other) const;
 
-private:
-  /*!
-   * \brief Copy function. Needed for the copy constructor and assignment operator.
-   */
-  void Copy(const CPointFEM &other);
 };
 
 /*!
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
-class CInternalFaceElementFEM {
-public:
+struct CInternalFaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard face elements. */
@@ -422,47 +341,21 @@ public:
                                                         the integration points of this face. */
 
   /*!
-   * \brief Constructor of the class. Initialize some pointers to NULL.
-   */
-  CInternalFaceElementFEM(void);
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CInternalFaceElementFEM(void);
-
-  /*!
-   * \brief Copy constructor of the class.
-   */
-  CInternalFaceElementFEM(const CInternalFaceElementFEM &other);
-
-  /*!
-   * \brief Assignment operator of the class.
-   */
-  CInternalFaceElementFEM& operator=(const CInternalFaceElementFEM &other);
-
-  /*!
    * \brief Less than operator of the class. Needed for the sorting.
             The criterion for comparison are the standard element and
             adjacent volume ID's.
    */
   bool operator<(const CInternalFaceElementFEM &other) const;
 
-private:
-  /*!
-   * \brief Copy function. Needed for the copy constructor and assignment operator.
-   */
-  void Copy(const CInternalFaceElementFEM &other);
 };
 
 /*!
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
-class CSurfaceElementFEM {
-public:
+struct CSurfaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
@@ -504,30 +397,10 @@ public:
                                                                 for the donors of the integration points.*/
 
   /*!
-   * \brief Constructor of the class. Initialize some variables.
-   */
-  CSurfaceElementFEM(void);
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CSurfaceElementFEM(void);
-
-  /*!
-   * \brief Copy constructor of the class.
-   */
-  CSurfaceElementFEM(const CSurfaceElementFEM &other);
-
-  /*!
-   * \brief Assignment operator of the class.
-   */
-  CSurfaceElementFEM& operator=(const CSurfaceElementFEM &other);
-
-  /*!
    * \brief Less than operator of the class. Needed for the sorting.
             The criterion for comparison is the corresponding (local) volume ID.
    */
-  bool operator<(const CSurfaceElementFEM &other) const;
+  bool operator<(const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
 
   /*!
    *  \brief Function, which determines the corner points of this surface element.
@@ -536,52 +409,36 @@ public:
    */
   void GetCornerPointsFace(unsigned short &nPointsPerFace,
                            unsigned long  faceConn[]);
-
-private:
-  /*!
-   * \brief Copy function. Needed for the copy constructor and assignment operator.
-   */
-  void Copy(const CSurfaceElementFEM &other);
 };
 
 /*!
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
-class CBoundaryFEM {
-public:
+struct CBoundaryFEM {
   string markerTag;  /*!< \brief Marker tag of this boundary. */
 
-  bool periodicBoundary;     /*!< \brief Whether or not this boundary is a periodic boundary. */
-  bool haloInfoNeededForBC;  /*!< \brief Whether or not information of halo elements
-                                         is needed to impose the boundary conditions. */
+  bool periodicBoundary = false;     /*!< \brief Whether or not this boundary is a periodic boundary. */
+  bool haloInfoNeededForBC = false;  /*!< \brief Whether or not information of halo elements
+                                                 is needed to impose the boundary conditions. */
 
   vector<unsigned long> nSurfElem; /*!< \brief Number of surface elements per time level,
                                                cumulative storage format. */
 
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
 
-  CWallModel *wallModel;     /*!< \brief Wall model for LES. */
+  CWallModel *wallModel = nullptr;     /*!< \brief Wall model for LES. */
 
-  /*!
-   * \brief Constructor of the class. Set the default value for some
-            member variables.
-   */
-  CBoundaryFEM(void);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CBoundaryFEM(void);
+  ~CBoundaryFEM(void) { delete wallModel; }
 };
 
 /*!
  * \class CMeshFEM
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CMeshFEM: public CGeometry {
 protected:
@@ -638,7 +495,7 @@ public:
   /*!
   * \brief Constructor of the class.
   */
- CMeshFEM(void);
+ CMeshFEM(void) : CGeometry() { blasFunctions = nullptr; }
 
   /*!
   * \overload
@@ -651,129 +508,129 @@ public:
   /*!
   * \brief Destructor of the class.
   */
-  ~CMeshFEM(void) override;
+  ~CMeshFEM(void) override { delete blasFunctions; }
 
   /*!
   * \brief Function, which makes available the boundaries of the local FEM mesh.
   * \return  Pointer to the boundaries of the local FEM mesh.
   */
-  CBoundaryFEM *GetBoundaries(void);
+  inline CBoundaryFEM* GetBoundaries(void) {return boundaries.data();}
 
   /*!
   * \brief Function, which makes available the mesh points of the local FEM mesh.
   * \return  Pointer to the mesh points of the local FEM mesh.
   */
-  CPointFEM *GetMeshPoints(void);
+  inline CPointFEM *GetMeshPoints(void) {return meshPoints.data();}
 
   /*!
   * \brief Function, which makes available the number of mesh points of the local FEM mesh.
   * \return  Number of mesh points of the local FEM mesh.
   */
-  unsigned long GetNMeshPoints(void);
+  inline unsigned long GetNMeshPoints(void) {return meshPoints.size();}
 
   /*!
   * \brief Function, which makes available the number of owned volume elements in the local FEM mesh.
   * \return  Number of owned volume elements of the local FEM mesh.
   */
-  unsigned long GetNVolElemOwned(void);
+  inline unsigned long GetNVolElemOwned(void) const {return nVolElemOwned;}
 
   /*!
   * \brief Function, which makes available the total number of volume elements in the local FEM mesh.
   * \return  Total number of volume elements of the local FEM mesh.
   */
-  unsigned long GetNVolElemTot(void);
+  inline unsigned long GetNVolElemTot(void) const {return nVolElemTot;}
 
   /*!
   * \brief Function, which makes available the volume elements in the local FEM mesh.
   * \return  Pointer to the volume elements of the local FEM mesh.
   */
-  CVolumeElementFEM *GetVolElem(void);
+  inline CVolumeElementFEM* GetVolElem(void) {return volElem.data();}
 
   /*!
   * \brief Function, which makes available the number of owned volume elements per time level.
   * \return  The pointer to the data of nVolElemOwnedPerTimeLevel.
   */
-  unsigned long *GetNVolElemOwnedPerTimeLevel(void);
+  inline unsigned long* GetNVolElemOwnedPerTimeLevel(void) {return nVolElemOwnedPerTimeLevel.data();}
 
   /*!
   * \brief Function, which makes available the number of internal volume elements per time level.
   * \return  The pointer to the data of nVolElemInternalPerTimeLevel.
   */
-  unsigned long *GetNVolElemInternalPerTimeLevel(void);
+  inline unsigned long* GetNVolElemInternalPerTimeLevel(void) {return nVolElemInternalPerTimeLevel.data();}
 
   /*!
   * \brief Function, which makes available the number of halo volume elements per time level.
   * \return  The pointer to the data of nVolElemHaloPerTimeLevel.
   */
-  unsigned long *GetNVolElemHaloPerTimeLevel(void);
+  inline unsigned long* GetNVolElemHaloPerTimeLevel(void) {return nVolElemHaloPerTimeLevel.data();}
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the owned element
            IDs adjacent to elements of a lower time level. Note that a copy is made.
   * \return  Copy of ownedElemAdjLowTimeLevel.
   */
-  vector<vector<unsigned long> > GetOwnedElemAdjLowTimeLevel(void);
+  inline vector<vector<unsigned long> > GetOwnedElemAdjLowTimeLevel(void) {return ownedElemAdjLowTimeLevel;}
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the halo element
            IDs adjacent to elements of a lower time level. Note that a copy is made.
   * \return  Copy of haloElemAdjLowTimeLevel.
   */
-  vector<vector<unsigned long> > GetHaloElemAdjLowTimeLevel(void);
+  inline vector<vector<unsigned long> > GetHaloElemAdjLowTimeLevel(void) {return haloElemAdjLowTimeLevel;}
 
   /*!
   * \brief Function, which makes available the number of standard boundary faces of the solution.
   * \return  Number of standard boundary faces of the solution.
   */
-  unsigned short GetNStandardBoundaryFacesSol(void);
+  inline unsigned short GetNStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.size();}
 
   /*!
   * \brief Function, which makes available the standard boundary faces of the solution.
   * \return  Pointer to the standard boundary faces of the solution.
   */
-  CFEMStandardBoundaryFace *GetStandardBoundaryFacesSol(void);
+  inline CFEMStandardBoundaryFace* GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
 
   /*!
   * \brief Function, which makes available the vector of receive ranks as
            a const reference.
   * \return  Const reference to the vector of ranks.
   */
-  const vector<int> &GetRanksRecv(void) const;
+  inline const vector<int>& GetRanksRecv(void) const {return ranksRecv;}
 
   /*!
   * \brief Function, which makes available the vector of send ranks as
            a const reference.
   * \return  Const reference to the vector of ranks.
   */
-  const vector<int> &GetRanksSend(void) const;
+  inline const vector<int>& GetRanksSend(void) const {return ranksSend;}
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the receive
            entities as a const reference.
   * \return  Const reference to the vector of vectors of receive entities.
   */
-  const vector<vector<unsigned long> > &GetEntitiesRecv(void) const;
+  inline const vector<vector<unsigned long> >& GetEntitiesRecv(void) const {return entitiesRecv;}
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the send
            entities as a const reference.
   * \return  Const reference to the vector of vectors of send entities.
   */
-  const vector<vector<unsigned long> > &GetEntitiesSend(void) const;
+  inline const vector<vector<unsigned long> >& GetEntitiesSend(void) const {return entitiesSend;}
 
   /*!
   * \brief Function, which makes available the vector of rotational periodic markers
            as a const reference.
   * \return  Const reference to the vector with rotational periodic markers.
   */
-  const vector<unsigned short> &GetRotPerMarkers(void) const;
+  inline const vector<unsigned short>& GetRotPerMarkers(void) const {return rotPerMarkers;}
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the rotational
            periodic halos as a const reference.
   * \return  Const reference to the vector of vectors with rotational periodic halos.
   */
-  const vector<vector<unsigned long> > &GetRotPerHalos(void) const;
+  inline const vector<vector<unsigned long> >& GetRotPerHalos(void) const {return rotPerHalos;}
 
   /*!
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
@@ -855,7 +712,7 @@ protected:
  * \class CMeshFEM_DG
  * \brief Class which contains all the variables for the DG FEM solver.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CMeshFEM_DG: public CMeshFEM {
 protected:
@@ -888,11 +745,10 @@ protected:
   map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local mapping for the DOFs. */
 
 public:
-
- /*!
-  * \brief Constructor of the class.
-  */
- CMeshFEM_DG(void);
+  /*!
+   * \brief Constructor of the class.
+   */
+  CMeshFEM_DG(void) : CMeshFEM() {}
 
   /*!
   * \overload
@@ -901,11 +757,6 @@ public:
   * \param[in] config   - Definition of the particular problem.
   */
   CMeshFEM_DG(CGeometry *geometry, CConfig *config);
-
- /*!
-  * \brief Destructor of the class.
-  */
-  ~CMeshFEM_DG(void) override;
 
  /*!
   * \brief Function to compute the coordinates of the integration points.
@@ -934,15 +785,14 @@ public:
            iteration matrix of the ADER-DG predictor step.
   * \return  The time coefficients in the iteration matrix of ADER-DG.
   */
-
-  su2double *GetTimeCoefADER_DG(void);
+  inline su2double* GetTimeCoefADER_DG(void) {return timeCoefADER_DG.data();}
 
  /*!
   * \brief Function, which makes available the time interpolation matrix between
            the time DOFs and time integration points for ADER-DG.
   * \return  The time interpolation matrix for ADER-DG.
   */
-  su2double *GetTimeInterpolDOFToIntegrationADER_DG(void);
+  inline su2double* GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
 
  /*!
   * \brief Function, which makes available the time interpolation matrix between
@@ -950,27 +800,27 @@ public:
            integration points for ADER-DG.
   * \return  The time interpolation matrix of adjacent time DOFs for ADER-DG.
   */
-  su2double *GetTimeInterpolAdjDOFToIntegrationADER_DG(void);
+  inline su2double* GetTimeInterpolAdjDOFToIntegrationADER_DG(void) {return timeInterpolAdjDOFToIntegrationADER_DG.data();}
 
  /*!
   * \brief Function, which makes available the number of matching internal faces
            between an owned element and a halo element per time level.
   * \return  The number of matching internal faces between these elements per time level.
   */
-  unsigned long *GetNMatchingFacesWithHaloElem(void);
+  inline unsigned long *GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
 
  /*!
   * \brief Function, which makes available the number of matching internal faces
            between two owned elements per time level.
   * \return  The number of matching internal faces per time level.
   */
-  unsigned long *GetNMatchingFacesInternal(void);
+  inline unsigned long *GetNMatchingFacesInternal(void) {return nMatchingFacesInternal.data();}
 
  /*!
   * \brief Function, which makes available the matching internal faces.
   * \return  Pointer to the matching internal faces.
   */
-  CInternalFaceElementFEM *GetMatchingFaces(void);
+  inline CInternalFaceElementFEM* GetMatchingFaces(void) {return matchingFaces.data();}
 
  /*!
   * \brief Function to compute the grid velocities for static problems.
@@ -986,25 +836,25 @@ public:
   * \brief Function, which makes available the number of standard volume elements of the solution.
   * \return  Number of standard volume elements of the solution.
   */
-  unsigned short GetNStandardElementsSol(void);
+  inline unsigned short GetNStandardElementsSol(void) {return standardElementsSol.size();}
 
  /*!
   * \brief Function, which makes available the standard volume elements of the solution.
   * \return  Pointer to the standard volume elements of the solution.
   */
-  CFEMStandardElement *GetStandardElementsSol(void);
+  inline CFEMStandardElement* GetStandardElementsSol(void) {return standardElementsSol.data();}
 
  /*!
   * \brief Function, which makes available the number of standard internal matching faces of the solution.
   * \return  Number of standard internal matching faces of the solution.
   */
-  unsigned short GetNStandardMatchingFacesSol(void);
+  inline unsigned short GetNStandardMatchingFacesSol(void) {return standardMatchingFacesSol.size();}
 
  /*!
   * \brief Function, which makes available the standard internal matching faces of the solution.
   * \return  Pointer to the standard internal matching faces of the solution.
   */
-  CFEMStandardInternalFace *GetStandardMatchingFacesSol(void);
+  inline CFEMStandardInternalFace* GetStandardMatchingFacesSol(void) {return standardMatchingFacesSol.data();}
 
  /*!
   * \brief Function, which computes a length scale of the volume elements.
@@ -1042,7 +892,12 @@ public:
    * \param[in] val_ipoint - Global point.
    * \return Local index that correspond with the global index, -1 if not found on the current rank.
    */
-  long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override;
+  inline long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override {
+    auto it = Global_to_Local_Point.find(val_ipoint);
+    if (it != Global_to_Local_Point.cend())
+      return it->second;
+    return -1;
+  }
 
   /*!
    * \brief Function, which carries out the preprocessing tasks when wall functions are used.
@@ -1379,27 +1234,25 @@ protected:
   void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
 };
 
-/*! 
+/*!
  * \class CDummyMeshFEM_DG
  * \brief Class for defining a DG geometry that does not contain any points/elements.
- *        Can be used for initializing other classes that depend on the geometry without 
+ *        Can be used for initializing other classes that depend on the geometry without
  *        going through the time-consuming mesh initialization and paritioning.
  * \author T. Albring
  */
 class CDummyMeshFEM_DG : public CMeshFEM_DG {
-  
+
 public:
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
   CDummyMeshFEM_DG(CConfig *config);
-  
-  /*! 
+
+  /*!
 	 * \brief Destructor of the class.
 	 */
   ~CDummyMeshFEM_DG() override;
-  
-};
 
-#include "fem_geometry_structure.inl"
+};

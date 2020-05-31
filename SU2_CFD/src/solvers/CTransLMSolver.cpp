@@ -2,7 +2,7 @@
  * \file CTransLMSolver.cpp
  * \brief Main subrotuines for Transition model solver.
  * \author A. Aranake
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -104,18 +104,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
       }
 
     }
-
-  /*--- Computation of gradients by least squares ---*/
-  if (config->GetLeastSquaresRequired()) {
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-  }
 
     /*--- Read farfield conditions from config ---*/
     Intermittency_Inf = config->GetIntermittency_FreeStream();

@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,33 +38,31 @@ CGridMovement::CGridMovement(void) { }
 
 CGridMovement::~CGridMovement(void) { }
 
-CVolumetricMovement::CVolumetricMovement(void) : CGridMovement() {
-
-
+CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(true) {
 
 }
 
-CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
+CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement(), System(true) {
 
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
-    /*--- Initialize the number of spatial dimensions, length of the state
-     vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
+  /*--- Initialize the number of spatial dimensions, length of the state
+   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-    nDim   = geometry->GetnDim();
-    nVar   = geometry->GetnDim();
-    nPoint = geometry->GetnPoint();
-    nPointDomain = geometry->GetnPointDomain();
+  nDim   = geometry->GetnDim();
+  nVar   = geometry->GetnDim();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 
-    nIterMesh = 0;
+  nIterMesh = 0;
 
-    /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-    if (config->GetVolumetric_Movement()){
-      LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-      LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-      StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-    }
+  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+  if (config->GetVolumetric_Movement()){
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+  }
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) { }
@@ -127,16 +125,13 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
 
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
-  bool Screen_Output;
+  unsigned long Tot_Iter = 0;
+  su2double MinVolume, MaxVolume;
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
 
-  Smoothing_Iter = config->GetDeform_Linear_Solver_Iter();
-  Screen_Output  = config->GetDeform_Output();
-  NumError       = config->GetDeform_Linear_Solver_Error();
-  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+  auto Screen_Output  = config->GetDeform_Output();
+  auto Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
 
   /*--- Disable the screen output if we're running SU2_CFD ---*/
 
@@ -150,7 +145,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
    deformation can be divided into increments to help with stability. In
    particular, the linear elasticity equations hold only for small deformations. ---*/
 
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+  for (auto iNonlinear_Iter = 0ul; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
 
     /*--- Initialize vector and sparse matrix ---*/
 
@@ -178,9 +173,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (Derivative) { SetBoundaryDerivatives(geometry, config); }
 
-    CMatrixVectorProduct<su2double>* mat_vec = nullptr;
-    CPreconditioner<su2double>* precond = nullptr;
-
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
@@ -193,120 +185,18 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
-    /*--- If we want no derivatives or the direct derivatives,
-     * we solve the system using the normal matrix vector product and preconditioner.
-     * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
-     * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
+    /*--- If we want no derivatives or the direct derivatives, we solve the system using the
+     * normal matrix vector product and preconditioner. For the mesh sensitivities using
+     * the discrete adjoint method we solve the system using the transposed matrix. ---*/
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
 
-      if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# LU_SGS preconditioner." << endl;
-    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CLU_SGSPreconditioner<su2double>(StiffMatrix, geometry, config);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
-    		StiffMatrix.BuildILUPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, false);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
-    		StiffMatrix.BuildJacobiPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, false);
-    	}
+      Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
 
-      /*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
-
-      if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
-          (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
-    		StiffMatrix.BuildILUPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, true);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
-    		StiffMatrix.BuildJacobiPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, true);
-    	}
-
+      Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     }
-
-    if (LinSysRes.norm() != 0.0){
-      switch (config->GetKind_Deform_Linear_Solver()) {
-
-        /*--- Solve the linear system (GMRES with restart) ---*/
-
-        case RESTARTED_FGMRES:
-
-          Tot_Iter = 0; MaxIter = RestartIter;
-
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, Residual_Init, false, config);
-
-          if ((rank == MASTER_NODE) && Screen_Output) {
-            cout << "\n# FGMRES (with restart) residual history" << endl;
-            cout << "# Residual tolerance target = " << NumError << endl;
-            cout << "# Initial residual norm     = " << Residual_Init << endl;
-          }
-
-          if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-
-          while (Tot_Iter < Smoothing_Iter) {
-
-            if (IterLinSol + RestartIter > Smoothing_Iter)
-              MaxIter = Smoothing_Iter - IterLinSol;
-
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, Residual, false, config);
-            Tot_Iter += IterLinSol;
-
-            if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-
-            if (Residual < Residual_Init*NumError) { break; }
-
-          }
-
-          if ((rank == MASTER_NODE) && Screen_Output) {
-            cout << "# FGMRES (with restart) final (true) residual:" << endl;
-            cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-          }
-
-          break;
-
-          /*--- Solve the linear system (GMRES) ---*/
-
-        case FGMRES:
-
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
-
-          break;
-
-          /*--- Solve the linear system (BCGSTAB) ---*/
-
-        case BCGSTAB:
-
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
-
-          break;
-
-
-        case CONJUGATE_GRADIENT:
-
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
-
-          break;
-
-      }
-    }
-
-    /*--- Deallocate memory needed by the Krylov linear solver ---*/
-
-    delete mat_vec;
-    delete precond;
+    su2double Residual = System.GetResidual();
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
@@ -414,7 +304,7 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
 
 
 
-void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
+void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) const {
 
   unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
   unsigned short iMarker, iDim;
@@ -1046,7 +936,7 @@ su2double CVolumetricMovement::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2do
 
 }
 
-su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
@@ -1067,7 +957,7 @@ su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
@@ -1099,7 +989,7 @@ su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3
 
 }
 
-su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1126,7 +1016,7 @@ su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1170,7 +1060,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1231,7 +1121,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 
 }
 
-su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) const {
 
   unsigned short iDim;
   su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -4036,7 +3926,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
 
 
 bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-    unsigned short iDV, bool ResetDef) {
+    unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, iFFDBox, iPlane;
@@ -4193,7 +4083,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 }
 
 bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                      unsigned short iDV, bool ResetDef) {
+                                      unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, k, iPlane, iFFDBox;
@@ -4353,7 +4243,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 }
 
 bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                  unsigned short iDV, bool ResetDef) {
+                                  unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, k, iPlane, iFFDBox;
@@ -4409,7 +4299,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
 }
 
 bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                     unsigned short iDV, bool ResetDef) {
+                                     unsigned short iDV, bool ResetDef) const {
 
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, k, iPlane, iFFDBox, Theta, ThetaMax;
@@ -4544,7 +4434,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
 }
 
 bool CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                       unsigned short iDV, bool ResetDef) {
+                                       unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iFFDBox;
@@ -4590,7 +4480,7 @@ bool CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 }
 
 bool CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                          unsigned short iDV, bool ResetDef) {
+                                          unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3]= {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iFFDBox;
@@ -4643,7 +4533,7 @@ bool CSurfaceMovement::SetFFDTwist_2D(CGeometry *geometry, CConfig *config, CFre
 }
 
 bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                    unsigned short iDV, bool ResetDef) {
+                                    unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
@@ -4721,7 +4611,7 @@ void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config,
 }
 
 bool CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                       unsigned short iDV, bool ResetDef) {
+                                       unsigned short iDV, bool ResetDef) const {
 
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
@@ -4789,7 +4679,7 @@ bool CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 }
 
 bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                   unsigned short iDV, bool ResetDef) {
+                                   unsigned short iDV, bool ResetDef) const {
 
   unsigned short iOrder, jOrder, kOrder;
   su2double  x, y, z, movement[3], Segment_P0[3], Segment_P1[3], Plane_P0[3], Plane_Normal[3],
@@ -4924,7 +4814,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
 }
 
 bool CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                      unsigned short iDV, bool ResetDef) {
+                                      unsigned short iDV, bool ResetDef) const {
 
   unsigned short iOrder, jOrder, kOrder;
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
@@ -5002,7 +4892,7 @@ bool CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 }
 
 bool CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                             unsigned short iDV, bool ResetDef) {
+                                             unsigned short iDV, bool ResetDef) const {
 
   unsigned short iOrder, jOrder, kOrder;
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
@@ -7372,7 +7262,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
 CFreeFormDefBox::CFreeFormDefBox(void) : CGridMovement() { }
 
-CFreeFormDefBox::CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending) : CGridMovement() {
+CFreeFormDefBox::CFreeFormDefBox(const unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending) : CGridMovement() {
 
   unsigned short iCornerPoints, iOrder, jOrder, kOrder, iDim;
 
@@ -8057,7 +7947,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
 
 }
 
-su2double *CFreeFormDefBox::GetParametricCoord_Analytical(su2double *cart_coord) {
+su2double *CFreeFormDefBox::GetParametricCoord_Analytical(const su2double *cart_coord) {
   unsigned short iDim;
   su2double *e1, *e2, *e3, *e12, *e23, *e13, *p;
 
@@ -8095,7 +7985,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Analytical(su2double *cart_coord)
   return ParamCoord;
 }
 
-su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
+su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) const {
   unsigned short iDim, iDegree, jDegree, kDegree;
 
   for (iDim = 0; iDim < nDim; iDim++)
@@ -8175,7 +8065,7 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
 
 }
 
-su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *ParamCoordGuess, CConfig *config) {
+su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, const su2double *ParamCoordGuess, CConfig *config) {
 
   su2double *IndepTerm, SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3] = {0.0,0.0,0.0};
   unsigned short iDim, jDim, RandonCounter;
@@ -8309,7 +8199,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
 
 }
 
-bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
+bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) const {
   su2double Coord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar, jVar, iDim;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
@@ -8381,7 +8271,7 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
 }
 
-void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) {
+void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
   su2double *Coord;
   unsigned short iMarker, iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -8427,7 +8317,7 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
   }
 }
 
-su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) {
+su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const {
 
   unsigned short iDim;
   su2double value = 0.0;
@@ -8441,7 +8331,7 @@ su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_dif
 
 }
 
-su2double CFreeFormDefBox::GetDerivative2 (su2double *uvw, unsigned short dim, su2double *xyz, unsigned short *lmn) {
+su2double CFreeFormDefBox::GetDerivative2 (su2double *uvw, unsigned short dim, const su2double *xyz, const unsigned short *lmn) const {
 
   unsigned short iDegree, jDegree, kDegree;
   su2double value = 0.0;
@@ -8481,7 +8371,7 @@ su2double CFreeFormDefBox::GetDerivative3(su2double *uvw, unsigned short dim, un
 }
 
 su2double CFreeFormDefBox::GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-                                       unsigned short *ijk, unsigned short *lmn) {
+                                       unsigned short *ijk, unsigned short *lmn) const {
   unsigned short iDim;
   su2double value = 0.0;
 

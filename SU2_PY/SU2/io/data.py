@@ -3,7 +3,7 @@
 ## \file data.py
 #  \brief python package for data utility functions 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.4 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

@@ -4,11 +4,11 @@
  *        with high order elements.
  *        The functions are in the <i>cgns_elements.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,13 +29,13 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "../mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif
 
-#include "geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../geometry/primal_grid/CPrimalGridFEM.hpp"
 
 /* Forward declaration of CBoundaryFace to avoid problems. */
 class CBoundaryFace;
@@ -47,7 +47,7 @@ class CBoundaryFace;
  * \class CCGNSElementType
  * \brief Class which stores the CGNS element type info for a connectivity
           section.
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 
 class CCGNSElementType {

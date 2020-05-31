@@ -2,7 +2,7 @@
  * \file printing_toolbox.hpp
  * \brief Header file for the printing toolbox.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,7 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include "../datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 namespace PrintingToolbox {
 

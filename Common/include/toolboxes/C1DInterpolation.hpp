@@ -2,7 +2,7 @@
  * \file C1DInterpolation.hpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,6 @@
 #include <cmath>
 #include <vector>
 #include<fstream>
-#include "../datatype_structure.hpp"
 #include "../option_structure.hpp"
 
 using namespace std;

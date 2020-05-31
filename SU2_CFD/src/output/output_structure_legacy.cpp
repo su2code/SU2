@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -6350,7 +6350,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   }
 }
 
-void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) {
+void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const {
 
   char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
@@ -8700,7 +8700,7 @@ void COutputLegacy::SetMesh_Files(CGeometry **geometry, CConfig **config, unsign
   }
 }
 
-void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
@@ -9418,7 +9418,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
 }
 
-void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
@@ -10046,7 +10046,7 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
 
 }
 
-void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   unsigned short iMarker, iDim, iMarker_Analyze;
   unsigned long iPoint, iVertex;
@@ -11751,7 +11751,7 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
   }
 }
 
-void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) {
+void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) const {
 
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
@@ -18095,7 +18095,7 @@ void COutputLegacy::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *g
 
 }
 
-void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
