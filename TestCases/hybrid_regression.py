@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.4 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -276,7 +276,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.589863, 3.922098, -0.001443, 0.099457]
+    harmonic_balance.test_vals = [-1.589755, 3.922207, 0.006725, 0.099455]
     harmonic_balance.new_output = False
     test_list.append(harmonic_balance)
 
@@ -327,7 +327,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977545, 3.481778, -0.001667, -0.007429]
+    sine_gust.test_vals = [-1.977520, 3.481804, -0.012404, -0.007452]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
 
@@ -336,7 +336,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.079009, 0.033187, -0.001665, -0.000156]
+    aeroelastic.test_vals = [0.074525, 0.033127, -0.001650, -0.000127]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -467,7 +467,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777267, 1.134746, 1.224125]
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.777567, 1.134807, 1.224136]
     rotating_cylinders.unsteady  = True
     rotating_cylinders.multizone  = True
     test_list.append(rotating_cylinders)
