@@ -230,7 +230,7 @@ public:
 
   /*--- Data structures for periodic communications. ---*/
 
-  int countPerPeriodicPoint;             /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
+  int maxCountPerPeriodicPoint;          /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
   int nPeriodicSend;                     /*!< \brief Number of sends during periodic comms. */
   int nPeriodicRecv;                     /*!< \brief Number of receives during periodic comms. */
   int *nPoint_PeriodicSend;              /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
@@ -331,8 +331,10 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[in] countPerPeriodicPoint - Number of variables per point.
    */
-  void PostPeriodicRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void PostPeriodicRecvs(CGeometry *geometry, const CConfig *config, unsigned short commType,
+                         unsigned short countPerPeriodicPoint);
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a periodic commucation.
@@ -340,9 +342,11 @@ public:
    * \param[in] geometry     - Geometrical definition of the problem.
    * \param[in] config       - Definition of the particular problem.
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] countPerPeriodicPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage) const;
+  void PostPeriodicSends(CGeometry *geometry, const CConfig *config, unsigned short commType,
+                         unsigned short countPerPeriodicPoint, int val_iMessage) const;
 
   /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.

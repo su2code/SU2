@@ -2744,9 +2744,9 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
             current marker to the donor marker.    ---*/
       unsigned short jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
 
-      su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
-      su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
-      su2double *trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
+      auto center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+      auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      auto trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
 
       /*--- Store (center+trans) as it is constant and will be added on. ---*/
       su2double translation[] = {center[0] + trans[0],

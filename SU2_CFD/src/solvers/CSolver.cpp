@@ -251,58 +251,12 @@ CSolver::~CSolver(void) {
 
 }
 
-void CSolver::InitiatePeriodicComms(CGeometry *geometry,
-                                    CConfig *config,
-                                    unsigned short val_periodic_index,
-                                    unsigned short commType) {
-
-  /*--- Check for dummy communication. ---*/
-
-  if (commType == PERIODIC_NONE) return;
-
-  /*--- Local variables ---*/
-
-  bool boundary_i, boundary_j;
-  bool weighted = true;
-
-  unsigned short iVar, jVar, iDim;
-  unsigned short iNeighbor, nNeighbor = 0;
-  unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
-  unsigned short ICOUNT          = nVar;
-  unsigned short JCOUNT          = nVar;
-
-  int iMessage, iSend, nSend;
-
-  unsigned long iPoint, jPoint, msg_offset, buf_offset, iPeriodic, Neighbor_Point;
-
-  su2double *Diff      = new su2double[nVar];
-  su2double *Und_Lapl  = new su2double[nVar];
-  su2double *Sol_Min   = new su2double[nPrimVarGrad];
-  su2double *Sol_Max   = new su2double[nPrimVarGrad];
-  su2double *rotPrim_i = new su2double[nPrimVar];
-  su2double *rotPrim_j = new su2double[nPrimVar];
-
-  su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
-  const su2double *Coord_i, *Coord_j;
-  su2double r11, r12, r13, r22, r23_a, r23_b, r33, weight;
-  const su2double *center, *angles, *trans;
-  su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
-  su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-  su2double rotCoord_i[3] = {0.0}, rotCoord_j[3] = {0.0};
-  su2double translation[3] = {0.0}, distance[3] = {0.0};
-  const su2double zeros[3] = {0.0};
-  su2activematrix Cvector;
-
-  auto Rotate = [&](const su2double* origin, const su2double* direction, su2double* rotated) {
-    if(nDim==2) GeometryToolbox::Rotate(rotMatrix2D, origin, direction, rotated);
-    else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
-  };
-
-  string Marker_Tag;
-
-  /*--- Set the size of the data packet and type depending on quantity. ---*/
-
+void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
+                                          unsigned short commType,
+                                          unsigned short &COUNT_PER_POINT,
+                                          unsigned short &MPI_TYPE,
+                                          unsigned short &ICOUNT,
+                                          unsigned short &JCOUNT) const {
   switch (commType) {
     case PERIODIC_VOLUME:
       COUNT_PER_POINT  = 1;
@@ -373,6 +327,63 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
+}
+
+void CSolver::InitiatePeriodicComms(CGeometry *geometry,
+                                    const CConfig *config,
+                                    unsigned short val_periodic_index,
+                                    unsigned short commType) {
+
+  /*--- Check for dummy communication. ---*/
+
+  if (commType == PERIODIC_NONE) return;
+
+  /*--- Local variables ---*/
+
+  bool boundary_i, boundary_j;
+  bool weighted = true;
+
+  unsigned short iVar, jVar, iDim;
+  unsigned short iNeighbor, nNeighbor = 0;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+  unsigned short ICOUNT          = nVar;
+  unsigned short JCOUNT          = nVar;
+
+  int iMessage, iSend, nSend;
+
+  unsigned long iPoint, jPoint, msg_offset, buf_offset, iPeriodic, Neighbor_Point;
+
+  su2double *Diff      = new su2double[nVar];
+  su2double *Und_Lapl  = new su2double[nVar];
+  su2double *Sol_Min   = new su2double[nPrimVarGrad];
+  su2double *Sol_Max   = new su2double[nPrimVarGrad];
+  su2double *rotPrim_i = new su2double[nPrimVar];
+  su2double *rotPrim_j = new su2double[nPrimVar];
+
+  su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
+  const su2double *Coord_i, *Coord_j;
+  su2double r11, r12, r13, r22, r23_a, r23_b, r33, weight;
+  const su2double *center, *angles, *trans;
+  su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
+  su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double rotCoord_i[3] = {0.0}, rotCoord_j[3] = {0.0};
+  su2double translation[3] = {0.0}, distance[3] = {0.0};
+  const su2double zeros[3] = {0.0};
+  su2activematrix Cvector;
+
+  auto Rotate = [&](const su2double* origin, const su2double* direction, su2double* rotated) {
+    if(nDim==2) GeometryToolbox::Rotate(rotMatrix2D, origin, direction, rotated);
+    else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
+  };
+
+  string Marker_Tag;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetPeriodicCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE, ICOUNT, JCOUNT);
+
+  /*--- Allocate buffers for matrices that need rotation. ---*/
 
   su2double **jacBlock = new su2double*[ICOUNT];
   su2double **rotBlock = new su2double*[ICOUNT];
@@ -386,9 +397,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
    we find a larger count per point than currently exists. After the
    first cycle of comms, this should be inactive. ---*/
 
-  if (COUNT_PER_POINT > geometry->countPerPeriodicPoint) {
-    geometry->AllocatePeriodicComms(COUNT_PER_POINT);
-  }
+  geometry->AllocatePeriodicComms(COUNT_PER_POINT);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -403,7 +412,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
     /*--- Post all non-blocking recvs first before sends. ---*/
 
-    geometry->PostPeriodicRecvs(geometry, config, MPI_TYPE);
+    geometry->PostPeriodicRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT);
 
     for (iMessage = 0; iMessage < geometry->nPeriodicSend; iMessage++) {
 
@@ -455,7 +464,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
-        buf_offset = (msg_offset + iSend)*geometry->countPerPeriodicPoint;
+        buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
         /*--- Load the send buffers depending on the particular value
          that has been requested for communication. ---*/
@@ -1185,7 +1194,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
-      geometry->PostPeriodicSends(geometry, config, MPI_TYPE, iMessage);
+      geometry->PostPeriodicSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage);
 
     }
   }
@@ -1207,13 +1216,18 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 }
 
 void CSolver::CompletePeriodicComms(CGeometry *geometry,
-                                    CConfig *config,
+                                    const CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
 
   /*--- Check for dummy communication. ---*/
 
   if (commType == PERIODIC_NONE) return;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  unsigned short COUNT_PER_POINT = 0, MPI_TYPE = 0, ICOUNT = 0, JCOUNT = 0;
+  GetPeriodicCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE, ICOUNT, JCOUNT);
 
   /*--- Local variables ---*/
 
@@ -1295,7 +1309,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
           /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          buf_offset = (msg_offset + iRecv)*geometry->countPerPeriodicPoint;
+          buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
           /*--- Store the data correctly depending on the quantity. ---*/
 

@@ -1982,9 +1982,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
                                       IDsPoints.data(), false);
 
       /* Get the data for the periodic transformation to the donor. */
-      su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(perIndex));
-      su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(perIndex));
-      su2double *trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(perIndex));
+      auto center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(perIndex));
+      auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(perIndex));
+      auto trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(perIndex));
 
       /*--- Compute the rotation matrix and translation vector for the
             transformation from the donor. This is the transpose of the
@@ -3595,7 +3595,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     if(config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
 
-      su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
       if(fabs(angles[0]) > 1.e-5 || fabs(angles[1]) > 1.e-5 || fabs(angles[2]) > 1.e-5) {
 
         unsigned short curSize = mapRotationalPeriodicToInd.size();
@@ -6944,7 +6944,7 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   nPeriodicSend = 0;
   nPeriodicRecv = 0;
 
-  countPerPeriodicPoint = 0;
+  maxCountPerPeriodicPoint = 0;
 
   bufD_PeriodicSend = nullptr;
   bufD_PeriodicRecv = nullptr;

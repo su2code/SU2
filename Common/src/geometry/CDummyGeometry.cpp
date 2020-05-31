@@ -104,7 +104,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   nPeriodicSend = 0;
   nPeriodicRecv = 0;
 
-  countPerPeriodicPoint = 0;
+  maxCountPerPeriodicPoint = 0;
 
   bufD_PeriodicSend = nullptr;
   bufD_PeriodicRecv = nullptr;

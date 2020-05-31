@@ -7697,7 +7697,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   string Marker_Tag;
 
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist_local, maxdist_global;
-  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
+  const su2double *center, *angles, *trans;
+  su2double translation[3]={0.0,0.0,0.0}, dx, dy, dz;
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};

@@ -116,7 +116,7 @@ CGeometry::CGeometry(void) {
   nPeriodicSend = 0;
   nPeriodicRecv = 0;
 
-  countPerPeriodicPoint = 0;
+  maxCountPerPeriodicPoint = 0;
 
   bufD_PeriodicSend = nullptr;
   bufD_PeriodicRecv = nullptr;
@@ -1290,7 +1290,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 
 }
 
-void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) {
+void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
 
   /*--- This routine is activated whenever we attempt to perform
    a periodic MPI communication with our neighbors but the
@@ -1299,48 +1299,41 @@ void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) 
    reallocate a large enough array. Note that after the first set
    communications, this routine will not need to be called again. ---*/
 
-  int iSend, iRecv, nSend, nRecv;
+  if (countPerPeriodicPoint <= maxCountPerPeriodicPoint) return;
+
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER {
 
   /*--- Store the larger packet size to the class data. ---*/
 
-  countPerPeriodicPoint = val_countPerPeriodicPoint;
+  maxCountPerPeriodicPoint = countPerPeriodicPoint;
 
   /*--- Store the total size of the send/recv arrays for clarity. ---*/
 
-  nSend = countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend];
-  nRecv = countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv];
+  auto nSend = countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend];
+  auto nRecv = countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv];
 
   /*-- Deallocate and reallocate our cummunication memory. ---*/
 
   delete [] bufD_PeriodicSend;
-
-  bufD_PeriodicSend = new su2double[nSend];
-  for (iSend = 0; iSend < nSend; iSend++)
-    bufD_PeriodicSend[iSend] = 0.0;
+  bufD_PeriodicSend = new su2double[nSend] ();
 
   delete [] bufD_PeriodicRecv;
-
-  bufD_PeriodicRecv = new su2double[nRecv];
-  for (iRecv = 0; iRecv < nRecv; iRecv++)
-    bufD_PeriodicRecv[iRecv] = 0.0;
+  bufD_PeriodicRecv = new su2double[nRecv] ();
 
   delete [] bufS_PeriodicSend;
-
-  bufS_PeriodicSend = new unsigned short[nSend];
-  for (iSend = 0; iSend < nSend; iSend++)
-    bufS_PeriodicSend[iSend] = 0;
+  bufS_PeriodicSend = new unsigned short[nSend] ();
 
   delete [] bufS_PeriodicRecv;
+  bufS_PeriodicRecv = new unsigned short[nRecv] ();
 
-  bufS_PeriodicRecv = new unsigned short[nRecv];
-  for (iRecv = 0; iRecv < nRecv; iRecv++)
-    bufS_PeriodicRecv[iRecv] = 0;
-
+  } SU2_OMP_BARRIER
 }
 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
-                                  CConfig *config,
-                                  unsigned short commType) {
+                                  const CConfig *config,
+                                  unsigned short commType,
+                                  unsigned short countPerPeriodicPoint) {
 
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
@@ -1405,8 +1398,9 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
 }
 
 void CGeometry::PostPeriodicSends(CGeometry *geometry,
-                                  CConfig *config,
+                                  const CConfig *config,
                                   unsigned short commType,
+                                  unsigned short countPerPeriodicPoint,
                                   int val_iSend) const {
 
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
