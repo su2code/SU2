@@ -55,11 +55,11 @@ protected:
 
   /*--- Primitive variable definition ---*/
   MatrixType Primitive;	              /*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
-  VectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
+  CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
   
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  VectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  CVectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   
   /*--- New solution container for Classical RK4 ---*/
   MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */

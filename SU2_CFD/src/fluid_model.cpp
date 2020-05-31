@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,14 +47,14 @@ CFluidModel::CFluidModel(void) {
   Mu       = 0.0;
   Mu_Turb  = 0.0;
 
-  LaminarViscosity = NULL;
-  ThermalConductivity = NULL;
+  LaminarViscosity = nullptr;
+  ThermalConductivity = nullptr;
 
 }
 
 CFluidModel::~CFluidModel(void) {
-  if (LaminarViscosity!= NULL) delete LaminarViscosity;
-  if (ThermalConductivity!= NULL) delete ThermalConductivity;
+  delete LaminarViscosity;
+  delete ThermalConductivity;
 }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {

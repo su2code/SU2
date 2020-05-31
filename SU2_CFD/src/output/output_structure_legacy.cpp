@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,11 +56,11 @@ COutputLegacy::COutputLegacy(CConfig *config) {
 
   /*--- Initialize pointers to NULL ---*/
 
-  Coords = NULL;
-  Conn_Line = NULL;     Conn_BoundTria = NULL;  Conn_BoundQuad = NULL;
-  Conn_Tria = NULL;     Conn_Quad = NULL;       Conn_Tetr = NULL;
-  Conn_Hexa = NULL;     Conn_Pris = NULL;       Conn_Pyra = NULL;
-  Data = NULL;
+  Coords = nullptr;
+  Conn_Line = nullptr;     Conn_BoundTria = nullptr;  Conn_BoundQuad = nullptr;
+  Conn_Tria = nullptr;     Conn_Quad = nullptr;       Conn_Tetr = nullptr;
+  Conn_Hexa = nullptr;     Conn_Pris = nullptr;       Conn_Pyra = nullptr;
+  Data = nullptr;
 
   /*--- Initialize parallel pointers to NULL ---*/
 
@@ -82,14 +82,14 @@ COutputLegacy::COutputLegacy(CConfig *config) {
 
   /*--- Initialize pointers to NULL ---*/
 
-  Conn_BoundLine_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
-  Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
-  Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
+  Conn_BoundLine_Par = nullptr;  Conn_BoundTria_Par = nullptr;  Conn_BoundQuad_Par = nullptr;
+  Conn_Tria_Par = nullptr;  Conn_Quad_Par = nullptr;       Conn_Tetr_Par = nullptr;
+  Conn_Hexa_Par = nullptr;  Conn_Pris_Par = nullptr;       Conn_Pyra_Par = nullptr;
 
-  Local_Data         = NULL;
-  Local_Data_Copy    = NULL;
-  Parallel_Data      = NULL;
-  Parallel_Surf_Data = NULL;
+  Local_Data         = nullptr;
+  Local_Data_Copy    = nullptr;
+  Parallel_Data      = nullptr;
+  Parallel_Surf_Data = nullptr;
 
   /*--- Initialize structures for storing linear partitioning offsets ---*/
 
@@ -97,13 +97,13 @@ COutputLegacy::COutputLegacy(CConfig *config) {
   nLocalPoint_Sort  = 0;
   nPoint_Restart    = 0;
 
-  Local_Halo_Sort = NULL;
+  Local_Halo_Sort = nullptr;
 
-  beg_node = NULL;
-  end_node = NULL;
+  beg_node = nullptr;
+  end_node = nullptr;
 
-  nPointLinear     = NULL;
-  nPointCumulative = NULL;
+  nPointLinear     = nullptr;
+  nPointCumulative = nullptr;
 
   /*--- Initialize CGNS write flag ---*/
 
@@ -312,7 +312,7 @@ COutputLegacy::~COutputLegacy(void) {
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
 
-  if (RhoRes_Old != NULL) delete [] RhoRes_Old;
+  delete [] RhoRes_Old;
 
   /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
   unsigned short iMarker, iSpan;
@@ -485,10 +485,10 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if (config->GetMarker_All_Plotting(iMarker) == YES) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-        xCoord = geometry->node[iPoint]->GetCoord(0);
-        yCoord = geometry->node[iPoint]->GetCoord(1);
-        if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
+        xCoord = geometry->nodes->GetCoord(iPoint, 0);
+        yCoord = geometry->nodes->GetCoord(iPoint, 1);
+        if (nDim == 3) zCoord = geometry->nodes->GetCoord(iPoint, 2);
 
         /*--- The output should be in inches ---*/
 
@@ -541,7 +541,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if (config->GetMarker_All_Plotting(iMarker) == YES)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface++;
+        if (geometry->nodes->GetDomain(iPoint)) nLocalVertex_Surface++;
       }
 
   /*--- Communicate the number of local vertices on each partition
@@ -613,12 +613,12 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if (config->GetMarker_All_Plotting(iMarker) == YES)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Buffer_Send_Press[nVertex_Surface] = FlowSolver->GetNodes()->GetPressure(iPoint);
           Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker, iVertex);
-          Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
-          Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
-          if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
+          Buffer_Send_Coord_x[nVertex_Surface] = geometry->nodes->GetCoord(iPoint, 0);
+          Buffer_Send_Coord_y[nVertex_Surface] = geometry->nodes->GetCoord(iPoint, 1);
+          if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->nodes->GetCoord(iPoint, 2); }
 
           /*--- If US system, the output should be in inches ---*/
 
@@ -628,7 +628,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
           }
 
-          Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
+          Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->nodes->GetGlobalIndex(iPoint);
 
           if (solver == EULER || solver == FEM_EULER || solver == INC_EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->GetNodes()->GetVelocity2(iPoint)) / FlowSolver->GetNodes()->GetSoundSpeed(iPoint);
@@ -831,10 +831,10 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+          Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
           Solution = AdjSolver->GetNodes()->GetSolution(iPoint);
-          xCoord = geometry->node[iPoint]->GetCoord(0);
-          yCoord = geometry->node[iPoint]->GetCoord(1);
+          xCoord = geometry->nodes->GetCoord(iPoint, 0);
+          yCoord = geometry->nodes->GetCoord(iPoint, 1);
 
           /*--- If US system, the output should be in inches ---*/
 
@@ -870,12 +870,12 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+          Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
           Solution = AdjSolver->GetNodes()->GetSolution(iPoint);
 
-          xCoord = geometry->node[iPoint]->GetCoord(0);
-          yCoord = geometry->node[iPoint]->GetCoord(1);
-          zCoord = geometry->node[iPoint]->GetCoord(2);
+          xCoord = geometry->nodes->GetCoord(iPoint, 0);
+          yCoord = geometry->nodes->GetCoord(iPoint, 1);
+          zCoord = geometry->nodes->GetCoord(iPoint, 2);
 
           /*--- If US system, the output should be in inches ---*/
 
@@ -917,7 +917,7 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
     if (config->GetMarker_All_Plotting(iMarker) == YES)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface ++;
+        if (geometry->nodes->GetDomain(iPoint)) nLocalVertex_Surface ++;
       }
 
   if (rank == MASTER_NODE)
@@ -957,12 +957,12 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
     if (config->GetMarker_All_Plotting(iMarker) == YES)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
           Solution = AdjSolver->GetNodes()->GetSolution(iPoint);
           //Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Coord = geometry->node[iPoint]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
           //d = AdjSolver->GetNodes()->GetForceProj_Vector(iPoint);
-          Buffer_Send_GlobalPoint[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
+          Buffer_Send_GlobalPoint[nVertex_Surface] = geometry->nodes->GetGlobalIndex(iPoint);
           Buffer_Send_Coord_x[nVertex_Surface] = Coord[0];
           Buffer_Send_Coord_y[nVertex_Surface] = Coord[1];
           Buffer_Send_Sensitivity[nVertex_Surface] =  AdjSolver->GetCSensitivity(iMarker, iVertex);
@@ -1282,7 +1282,7 @@ void COutputLegacy::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- First, create a structure to locate any periodic halo nodes ---*/
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -1334,10 +1334,10 @@ void COutputLegacy::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 
       /*--- Retrieve the current coordinates at this node. ---*/
 
-      unsigned long iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
+      unsigned long iGlobal_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        Coords[iDim][iGlobal_Index] = geometry->node[iPoint]->GetCoord(iDim);
+        Coords[iDim][iGlobal_Index] = geometry->nodes->GetCoord(iPoint, iDim);
 
         /*--- If US system, the output should be in inches ---*/
 
@@ -1372,7 +1372,7 @@ void COutputLegacy::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -1476,7 +1476,7 @@ void COutputLegacy::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     if (!Local_Halo[iPoint] || Wrt_Halo) {
 
       /*--- Retrieve local coordinates at this node. ---*/
-      Coords_Local = geometry->node[iPoint]->GetCoord();
+      Coords_Local = geometry->nodes->GetCoord(iPoint);
 
       /*--- Load local coords into the temporary send buffer. ---*/
       Buffer_Send_X[jPoint] = Coords_Local[0];
@@ -1492,7 +1492,7 @@ void COutputLegacy::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       }
 
       /*--- Store the global index for this local node. ---*/
-      Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
+      Buffer_Send_GlobalIndex[jPoint] = geometry->nodes->GetGlobalIndex(iPoint);
 
       /*--- Increment jPoint as the counter. We need this because iPoint
        may include halo nodes that we skip over during this loop. ---*/
@@ -1561,17 +1561,17 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
   unsigned long jElem;
   int SendRecv, RecvFrom;
 
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = nullptr;
   unsigned long nBuffer_Scalar = 0;
   unsigned long kNode = 0, kElem = 0;
   unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
 
   bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
+  bool *Write_Elem = nullptr, notPeriodic, notHalo, addedPeriodic, isPeriodic;
 
   unsigned short kind_SU2 = config->GetKind_SU2();
 
-  int *Conn_Elem = NULL;
+  int *Conn_Elem = nullptr;
 
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -1626,10 +1626,10 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
   /*--- Send and Recv buffers ---*/
 
   unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
+  unsigned long *Buffer_Recv_Elem = nullptr;
 
   unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
+  unsigned short *Buffer_Recv_Halo = nullptr;
 
   /*--- Prepare the receive buffers on the master node only. ---*/
 
@@ -1657,7 +1657,7 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
           if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
               (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
               (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+            Added_Periodic.push_back(geometry->nodes->GetGlobalIndex(iPoint));
           }
         }
       }
@@ -1671,7 +1671,7 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
 
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
+  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = nullptr;
   Buffer_Recv_nAddedPeriodic = new unsigned long[size];
 
   nAddedPeriodic = Added_Periodic.size();
@@ -1715,7 +1715,7 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
 
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -1724,7 +1724,7 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
+        iGlobal_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- We need to keep one copy of overlapping halo cells. ---*/
         notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
@@ -1779,7 +1779,7 @@ void COutputLegacy::MergeVolumetricConnectivity(CConfig *config, CGeometry *geom
         /*--- Store the global index values directly. ---*/
 
         iPoint = geometry->elem[iElem]->GetNode(iNode);
-        Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
+        Buffer_Send_Elem[jNode] = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Check if this is a halo node. If so, flag this element
          as a halo cell. We will use this later to sort and remove
@@ -1936,16 +1936,16 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
 
   int SendRecv, RecvFrom;
 
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = nullptr;
   unsigned long nBuffer_Scalar = 0;
   unsigned long kNode = 0, kElem = 0;
   unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
 
   bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
+  bool *Write_Elem = nullptr, notPeriodic, notHalo, addedPeriodic;
 
 
-  int *Conn_Elem = NULL;
+  int *Conn_Elem = nullptr;
 
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -1999,10 +1999,10 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
   /*--- Send and Recv buffers ---*/
 
   unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
+  unsigned long *Buffer_Recv_Elem = nullptr;
 
   unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
+  unsigned short *Buffer_Recv_Halo = nullptr;
 
   /*--- Prepare the receive buffers on the master node only. ---*/
 
@@ -2027,7 +2027,7 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
         if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
             (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
             (SendRecv < 0)) {
-          Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          Added_Periodic.push_back(geometry->nodes->GetGlobalIndex(iPoint));
         }
       }
     }
@@ -2040,7 +2040,7 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
 
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
+  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = nullptr;
   Buffer_Recv_nAddedPeriodic = new unsigned long[size];
 
   nAddedPeriodic = Added_Periodic.size();
@@ -2084,7 +2084,7 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
 
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -2093,7 +2093,7 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
+        iGlobal_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- We need to keep one copy of overlapping halo cells. ---*/
         notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
@@ -2143,7 +2143,7 @@ void COutputLegacy::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometr
             /*--- Store the global index values directly. ---*/
 
             iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-            Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
+            Buffer_Send_Elem[jNode] = geometry->nodes->GetGlobalIndex(iPoint);
 
             /*--- Check if this is a halo node. If so, flag this element
              as a halo cell. We will use this later to sort and remove
@@ -2283,11 +2283,11 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
 
-  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
+  su2double *Aux_Frict_x = nullptr, *Aux_Frict_y = nullptr, *Aux_Frict_z = nullptr, *Aux_Heat = nullptr, *Aux_yPlus = nullptr, *Aux_Sens = nullptr;
 
   unsigned short CurrentIndex;
   int *Local_Halo;
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
+  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
@@ -2466,7 +2466,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -2516,16 +2516,16 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
   /*--- Send and Recv buffers. ---*/
 
   su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Var = NULL;
+  su2double *Buffer_Recv_Var = nullptr;
 
   su2double *Buffer_Send_Res = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Res = NULL;
+  su2double *Buffer_Recv_Res = nullptr;
 
   su2double *Buffer_Send_Vol = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Vol = NULL;
+  su2double *Buffer_Recv_Vol = nullptr;
 
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+  unsigned long *Buffer_Recv_GlobalIndex = nullptr;
 
   /*--- Auxiliary vectors for surface coefficients ---*/
 
@@ -2623,7 +2623,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
 
         if (iVar == 0) {
-          Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
+          Buffer_Send_GlobalIndex[jPoint] = geometry->nodes->GetGlobalIndex(iPoint);
         }
 
         jPoint++;
@@ -2719,7 +2719,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
 
           /*--- Load buffers with the three grid velocity components. ---*/
 
-          Grid_Vel = geometry->node[iPoint]->GetGridVel();
+          Grid_Vel = geometry->nodes->GetGridVel(iPoint);
           Buffer_Send_Var[jPoint] = Grid_Vel[0];
           Buffer_Send_Res[jPoint] = Grid_Vel[1];
           if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Grid_Vel[2];
@@ -3178,7 +3178,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
 
             /*--- Load buffers with the pressure and mach variables. ---*/
 
-            Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
+            Buffer_Send_Var[jPoint] = geometry->nodes->GetSharpEdge_Distance(iPoint);
             jPoint++;
           }
         }
@@ -3661,64 +3661,6 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       }
     }
 
-    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())) {
-      /*--- Loop over this partition to collect the current variable ---*/
-
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-        /*--- Check for halos & write only if requested ---*/
-
-        if (!Local_Halo[iPoint] || Wrt_Halo) {
-
-          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
-
-          Buffer_Send_Var[jPoint] = solver[ADJFEA_SOL]->GetNodes()->GetGeometry_CrossTerm_Derivative(iPoint, 0);
-          Buffer_Send_Res[jPoint] = solver[ADJFEA_SOL]->GetNodes()->GetGeometry_CrossTerm_Derivative(iPoint, 1);
-          if (geometry->GetnDim() == 3)
-            Buffer_Send_Vol[jPoint] = solver[ADJFEA_SOL]->GetNodes()->GetGeometry_CrossTerm_Derivative(iPoint, 2);
-          jPoint++;
-        }
-      }
-
-      /*--- Gather the data on the master node. ---*/
-
-#ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      if (nDim == 3)
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
-      if (nDim == 3)
-        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
-#endif
-
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-
-      if (rank == MASTER_NODE) {
-        jPoint = 0; iVar = iVar_FEA_Extra;
-        for (iProcessor = 0; iProcessor < size; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-
-            /*--- Get global index, then loop over each variable and store ---*/
-
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-            if (nDim == 3)
-              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
-            jPoint++;
-          }
-
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-
     if (config->GetExtraOutput()) {
 
       for (jVar = 0; jVar < nVar_Extra; jVar++) {
@@ -3834,7 +3776,7 @@ void COutputLegacy::MergeBaselineSolution(CConfig *config, CGeometry *geometry, 
   /*--- First, create a structure to locate any periodic halo nodes ---*/
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -3900,7 +3842,7 @@ void COutputLegacy::MergeBaselineSolution(CConfig *config, CGeometry *geometry, 
 
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
 
@@ -3988,7 +3930,7 @@ void COutputLegacy::MergeBaselineSolution(CConfig *config, CGeometry *geometry, 
 
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
         if (iVar == 0) {
-          Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
+          Buffer_Send_GlobalIndex[jPoint] = geometry->nodes->GetGlobalIndex(iPoint);
         }
         jPoint++;
       }
@@ -4199,13 +4141,13 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
 
 
   if (config->GetExtraOutput()) {
-    string *headings = NULL;
+    string *headings = nullptr;
     //if (Kind_Solver == RANS) {
     headings = solver[TURB_SOL]->OutputHeadingNames;
     //}
 
     for (iVar = 0; iVar < nVar_Extra; iVar++) {
-      if (headings == NULL) {
+      if (headings == nullptr) {
         restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
       } else {
         restart_file << "\t\""<< headings[iVar] <<"\"";
@@ -4220,10 +4162,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
 
   /*--- Determine whether or not the FEM solver is used, which decides the
    type of geometry classes that are instantiated. ---*/
-  bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
-                (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                (config->GetKind_Solver() == FEM_RANS)          ||
-                (config->GetKind_Solver() == FEM_LES));
+  const bool fem_solver = config->GetFEMSolver();
 
   unsigned long nPointTotal = 0;
   if ( fem_solver ) {
@@ -4294,17 +4233,17 @@ void COutputLegacy::DeallocateConnectivity(CConfig *config, CGeometry *geometry,
 
     /*--- Deallocate memory for connectivity data ---*/
     if (surf_sol) {
-      if (nGlobal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
-      if (nGlobal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
-      if (nGlobal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
+      if (nGlobal_Line > 0      && Conn_Line      != nullptr) delete [] Conn_Line;
+      if (nGlobal_BoundTria > 0 && Conn_BoundTria != nullptr) delete [] Conn_BoundTria;
+      if (nGlobal_BoundQuad > 0 && Conn_BoundQuad != nullptr) delete [] Conn_BoundQuad;
     }
     else {
-      if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-      if (nGlobal_Quad > 0 && Conn_Quad != NULL) delete [] Conn_Quad;
-      if (nGlobal_Tetr > 0 && Conn_Tetr != NULL) delete [] Conn_Tetr;
-      if (nGlobal_Hexa > 0 && Conn_Hexa != NULL) delete [] Conn_Hexa;
-      if (nGlobal_Pris > 0 && Conn_Pris != NULL) delete [] Conn_Pris;
-      if (nGlobal_Pyra > 0 && Conn_Pyra != NULL) delete [] Conn_Pyra;
+      if (nGlobal_Tria > 0 && Conn_Tria != nullptr) delete [] Conn_Tria;
+      if (nGlobal_Quad > 0 && Conn_Quad != nullptr) delete [] Conn_Quad;
+      if (nGlobal_Tetr > 0 && Conn_Tetr != nullptr) delete [] Conn_Tetr;
+      if (nGlobal_Hexa > 0 && Conn_Hexa != nullptr) delete [] Conn_Hexa;
+      if (nGlobal_Pris > 0 && Conn_Pris != nullptr) delete [] Conn_Pris;
+      if (nGlobal_Pyra > 0 && Conn_Pyra != nullptr) delete [] Conn_Pyra;
 
     }
 
@@ -4811,31 +4750,31 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         D_Surface_Uniformity = 0.0, D_Surface_SecondaryStrength = 0.0, D_Surface_MomentumDistortion = 0.0, D_Surface_SecondOverUniform = 0.0, D_Surface_PressureDrop = 0.0;
 
     /*--- Residual arrays ---*/
-    su2double *residual_flow         = NULL,
-    *residual_turbulent    = NULL,
-    *residual_transition   = NULL;
-    su2double *residual_adjflow      = NULL,
-    *residual_adjturbulent = NULL,
-    *residual_adjheat = NULL;
-    su2double *residual_fea          = NULL;
-    su2double *residual_fem          = NULL;
-    su2double *residual_heat         = NULL;
-    su2double *residual_rad          = NULL;
+    su2double *residual_flow         = nullptr,
+    *residual_turbulent    = nullptr,
+    *residual_transition   = nullptr;
+    su2double *residual_adjflow      = nullptr,
+    *residual_adjturbulent = nullptr,
+    *residual_adjheat = nullptr;
+    su2double *residual_fea          = nullptr;
+    su2double *residual_fem          = nullptr;
+    su2double *residual_heat         = nullptr;
+    su2double *residual_rad          = nullptr;
 
     /*--- Coefficients Monitored arrays ---*/
-    su2double *aeroelastic_plunge = NULL,
-    *aeroelastic_pitch     = NULL,
-    *Surface_CL            = NULL,
-    *Surface_CD            = NULL,
-    *Surface_CSF           = NULL,
-    *Surface_CEff          = NULL,
-    *Surface_CFx           = NULL,
-    *Surface_CFy           = NULL,
-    *Surface_CFz           = NULL,
-    *Surface_CMx           = NULL,
-    *Surface_CMy           = NULL,
-    *Surface_CMz           = NULL,
-    *Surface_Buffet_Metric = NULL;
+    su2double *aeroelastic_plunge = nullptr,
+    *aeroelastic_pitch     = nullptr,
+    *Surface_CL            = nullptr,
+    *Surface_CD            = nullptr,
+    *Surface_CSF           = nullptr,
+    *Surface_CEff          = nullptr,
+    *Surface_CFx           = nullptr,
+    *Surface_CFy           = nullptr,
+    *Surface_CFz           = nullptr,
+    *Surface_CMx           = nullptr,
+    *Surface_CMy           = nullptr,
+    *Surface_CMz           = nullptr,
+    *Surface_Buffet_Metric = nullptr;
 
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
@@ -6411,7 +6350,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   }
 }
 
-void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) {
+void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const {
 
   char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
@@ -6458,25 +6397,25 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     0.0, Visc_CL = 0.0,
     Visc_CD = 0.0, Visc_CSF = 0.0, Visc_CMx = 0.0, Visc_CMy = 0.0,
     Visc_CMz = 0.0, Visc_CEff = 0.0, Visc_CFx = 0.0, Visc_CFy = 0.0, Visc_CFz =
-    0.0, *Surface_CL = NULL, *Surface_CD = NULL,
-    *Surface_CSF = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL,
-    *Surface_CFy = NULL, *Surface_CFz = NULL,
-    *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
-    *Surface_CL_Inv = NULL,
-    *Surface_CD_Inv = NULL, *Surface_CSF_Inv = NULL,
-    *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv =
-    NULL, *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL,
-    *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL,
-    *Surface_CL_Visc = NULL,
-    *Surface_CD_Visc = NULL, *Surface_CSF_Visc = NULL,
-    *Surface_CEff_Visc = NULL, *Surface_CFx_Visc = NULL, *Surface_CFy_Visc =
-    NULL, *Surface_CFz_Visc = NULL, *Surface_CMx_Visc = NULL,
-    *Surface_CMy_Visc = NULL, *Surface_CMz_Visc = NULL,
-    *Surface_CL_Mnt = NULL,
-    *Surface_CD_Mnt = NULL, *Surface_CSF_Mnt = NULL,
-    *Surface_CEff_Mnt = NULL, *Surface_CFx_Mnt = NULL, *Surface_CFy_Mnt =
-    NULL, *Surface_CFz_Mnt = NULL, *Surface_CMx_Mnt = NULL,
-    *Surface_CMy_Mnt = NULL, *Surface_CMz_Mnt = NULL;
+    0.0, *Surface_CL = nullptr, *Surface_CD = nullptr,
+    *Surface_CSF = nullptr, *Surface_CEff = nullptr, *Surface_CFx = nullptr,
+    *Surface_CFy = nullptr, *Surface_CFz = nullptr,
+    *Surface_CMx = nullptr, *Surface_CMy = nullptr, *Surface_CMz = nullptr,
+    *Surface_CL_Inv = nullptr,
+    *Surface_CD_Inv = nullptr, *Surface_CSF_Inv = nullptr,
+    *Surface_CEff_Inv = nullptr, *Surface_CFx_Inv = nullptr, *Surface_CFy_Inv =
+    nullptr, *Surface_CFz_Inv = nullptr, *Surface_CMx_Inv = nullptr,
+    *Surface_CMy_Inv = nullptr, *Surface_CMz_Inv = nullptr,
+    *Surface_CL_Visc = nullptr,
+    *Surface_CD_Visc = nullptr, *Surface_CSF_Visc = nullptr,
+    *Surface_CEff_Visc = nullptr, *Surface_CFx_Visc = nullptr, *Surface_CFy_Visc =
+    nullptr, *Surface_CFz_Visc = nullptr, *Surface_CMx_Visc = nullptr,
+    *Surface_CMy_Visc = nullptr, *Surface_CMz_Visc = nullptr,
+    *Surface_CL_Mnt = nullptr,
+    *Surface_CD_Mnt = nullptr, *Surface_CSF_Mnt = nullptr,
+    *Surface_CEff_Mnt = nullptr, *Surface_CFx_Mnt = nullptr, *Surface_CFy_Mnt =
+    nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
+    *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
 
     /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
      the two lines below that use the dt variable. ---*/
@@ -8761,7 +8700,7 @@ void COutputLegacy::SetMesh_Files(CGeometry **geometry, CConfig **config, unsign
   }
 }
 
-void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
@@ -9181,7 +9120,7 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
 
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
@@ -9215,7 +9154,7 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
 #ifndef HAVE_MPI
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 #else
-        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+        iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
 #endif
 
         if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
@@ -9332,7 +9271,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, PressureCoeff, HeatFlux = 0.0, HeatFluxDiff, HeatFluxTarget, *Normal = NULL, Area,
+  su2double XCoord, YCoord, ZCoord, PressureCoeff, HeatFlux = 0.0, HeatFluxDiff, HeatFluxTarget, *Normal = nullptr, Area,
   Pressure, Cf;
   bool *PointInDomain;
   string text_line, surfHeatFlux_filename;
@@ -9367,7 +9306,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 #ifndef HAVE_MPI
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 #else
-        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+        iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
 #endif
 
         if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
@@ -9479,18 +9418,18 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
 }
 
-void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
-  short *AzimuthalAngle = NULL;
-  su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = NULL, MeanFuntion,
-  *Face_Normal = NULL, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
-  ModVelocity_Inf, Velocity_Inf[3], factor, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL,
-  *Pressure = NULL, *FaceArea = NULL, *EquivArea = NULL, *TargetArea = NULL, *NearFieldWeight = NULL,
-  *Weight = NULL, jFunction, jp1Function;
+  short *AzimuthalAngle = nullptr;
+  su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
+  *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
+  ModVelocity_Inf, Velocity_Inf[3], factor, *Xcoord = nullptr, *Ycoord = nullptr, *Zcoord = nullptr,
+  *Pressure = nullptr, *FaceArea = nullptr, *EquivArea = nullptr, *TargetArea = nullptr, *NearFieldWeight = nullptr,
+  *Weight = nullptr, jFunction, jp1Function;
   unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
-  *IdPoint = NULL, *IdDomain = NULL, auxDomain;
+  *IdPoint = nullptr, *IdDomain = nullptr, auxDomain;
   unsigned short iPhiAngle;
   ofstream NearFieldEA_file; ifstream TargetEA_file;
 
@@ -9527,7 +9466,7 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->node[iPoint]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
 
         /*--- Using Face_Normal(z), and Coord(z) we identify only a surface,
          note that there are 2 NEARFIELD_BOUNDARY surfaces ---*/
@@ -9559,20 +9498,20 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->node[iPoint]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
 
         if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) {
 
           IdPoint[nVertex_NearField] = iPoint;
-          Xcoord[nVertex_NearField] = geometry->node[iPoint]->GetCoord(0);
-          Ycoord[nVertex_NearField] = geometry->node[iPoint]->GetCoord(1);
+          Xcoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 0);
+          Ycoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 1);
 
           if (nDim ==2) {
             AzimuthalAngle[nVertex_NearField] = 0;
           }
 
           if (nDim == 3) {
-            Zcoord[nVertex_NearField] = geometry->node[iPoint]->GetCoord(2);
+            Zcoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
 
             /*--- Rotate the nearfield cylinder (AoA) only 3D ---*/
 
@@ -9625,9 +9564,9 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->node[iPoint]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
 
-        if (geometry->node[iPoint]->GetDomain())
+        if (geometry->nodes->GetDomain(iPoint))
           if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0))
             nLocalVertex_NearField ++;
       }
@@ -9686,14 +9625,14 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->node[iPoint]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
 
-        if (geometry->node[iPoint]->GetDomain())
+        if (geometry->nodes->GetDomain(iPoint))
           if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) {
             Buffer_Send_IdPoint[nLocalVertex_NearField] = iPoint;
-            Buffer_Send_Xcoord[nLocalVertex_NearField] = geometry->node[iPoint]->GetCoord(0);
-            Buffer_Send_Ycoord[nLocalVertex_NearField] = geometry->node[iPoint]->GetCoord(1);
-            Buffer_Send_Zcoord[nLocalVertex_NearField] = geometry->node[iPoint]->GetCoord(2);
+            Buffer_Send_Xcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 0);
+            Buffer_Send_Ycoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 1);
+            Buffer_Send_Zcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
             Buffer_Send_Pressure[nLocalVertex_NearField] = solver->GetNodes()->GetPressure(iPoint);
             Buffer_Send_FaceArea[nLocalVertex_NearField] = fabs(Face_Normal[nDim-1]);
             nLocalVertex_NearField++;
@@ -10107,7 +10046,7 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
 
 }
 
-void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   unsigned short iMarker, iDim, iMarker_Analyze;
   unsigned long iPoint, iVertex;
@@ -10122,7 +10061,7 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
   unsigned short nDim = geometry->GetnDim();
   unsigned short Theta, nStation;
   unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
-  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
+  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = nullptr;
   unsigned long Total_Index;
   unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
   su2double PT_Mean, Mach_Mean, q_Mean, PT, q, *PT_Sector, PT_Sector_Min, DC60, *PT_Station, *PT_Station_Min, *Mach_Station, *Mach_Station_Min, IDR, IDC, IDC_Mach;
@@ -10185,7 +10124,7 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
       if (Marker_TagBound == Analyze_TagBound) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface++;
+          if (geometry->nodes->GetDomain(iPoint)) nLocalVertex_Surface++;
         }
       }
     }
@@ -10206,43 +10145,43 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
 
     /*--- Send and Recv buffers ---*/
 
-    su2double *Buffer_Send_Coord_x = NULL, *Buffer_Recv_Coord_x = NULL;
+    su2double *Buffer_Send_Coord_x = nullptr, *Buffer_Recv_Coord_x = nullptr;
     Buffer_Send_Coord_x = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Coord_y = NULL, *Buffer_Recv_Coord_y = NULL;
+    su2double *Buffer_Send_Coord_y = nullptr, *Buffer_Recv_Coord_y = nullptr;
     Buffer_Send_Coord_y = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Coord_z = NULL, *Buffer_Recv_Coord_z = NULL;
+    su2double *Buffer_Send_Coord_z = nullptr, *Buffer_Recv_Coord_z = nullptr;
     if (nDim == 3)  Buffer_Send_Coord_z = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_PT = NULL, *Buffer_Recv_PT = NULL;
+    su2double *Buffer_Send_PT = nullptr, *Buffer_Recv_PT = nullptr;
     Buffer_Send_PT = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_TT = NULL, *Buffer_Recv_TT = NULL;
+    su2double *Buffer_Send_TT = nullptr, *Buffer_Recv_TT = nullptr;
     Buffer_Send_TT = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_P = NULL, *Buffer_Recv_P = NULL;
+    su2double *Buffer_Send_P = nullptr, *Buffer_Recv_P = nullptr;
     Buffer_Send_P = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_T = NULL, *Buffer_Recv_T = NULL;
+    su2double *Buffer_Send_T = nullptr, *Buffer_Recv_T = nullptr;
     Buffer_Send_T = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Mach = NULL, *Buffer_Recv_Mach = NULL;
+    su2double *Buffer_Send_Mach = nullptr, *Buffer_Recv_Mach = nullptr;
     Buffer_Send_Mach = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Vel_x = NULL, *Buffer_Recv_Vel_x = NULL;
+    su2double *Buffer_Send_Vel_x = nullptr, *Buffer_Recv_Vel_x = nullptr;
     Buffer_Send_Vel_x = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Vel_y = NULL, *Buffer_Recv_Vel_y = NULL;
+    su2double *Buffer_Send_Vel_y = nullptr, *Buffer_Recv_Vel_y = nullptr;
     Buffer_Send_Vel_y = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Vel_z = NULL, *Buffer_Recv_Vel_z = NULL;
+    su2double *Buffer_Send_Vel_z = nullptr, *Buffer_Recv_Vel_z = nullptr;
     if (nDim == 3) Buffer_Send_Vel_z = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_q = NULL, *Buffer_Recv_q = NULL;
+    su2double *Buffer_Send_q = nullptr, *Buffer_Recv_q = nullptr;
     Buffer_Send_q = new su2double [MaxLocalVertex_Surface];
 
-    su2double *Buffer_Send_Area = NULL, *Buffer_Recv_Area = NULL;
+    su2double *Buffer_Send_Area = nullptr, *Buffer_Recv_Area = nullptr;
     Buffer_Send_Area = new su2double [MaxLocalVertex_Surface];
 
     /*--- Prepare the receive buffers on the master node only. ---*/
@@ -10277,11 +10216,11 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
-            Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
-            Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
-            if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
+            Buffer_Send_Coord_x[nVertex_Surface] = geometry->nodes->GetCoord(iPoint, 0);
+            Buffer_Send_Coord_y[nVertex_Surface] = geometry->nodes->GetCoord(iPoint, 1);
+            if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->nodes->GetCoord(iPoint, 2); }
 
             Pressure         = solver->GetNodes()->GetPressure(iPoint);
             Density          = solver->GetNodes()->GetDensity(iPoint);
@@ -11210,313 +11149,6 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
 
 }
 
-void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container,
-                                CConfig **config, CIntegration ****integration, unsigned long iExtIter,
-                                unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header) {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Output only using the Master Node ---*/
-
-  if ((rank == MASTER_NODE) && (header)){
-
-    char cstr[200], buffer[50], turb_resid[1000];
-    string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
-
-    bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
-                       (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
-
-    unsigned short direct_diff = config[ZONE_FLOW]->GetDirectDiff();
-
-    /*--- Write file name with extension ---*/
-//    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
-//    strcpy (cstr, filename.data());
-
-    if (config[ZONE_FLOW]->GetTime_Domain() && config[ZONE_FLOW]->GetRestart()) {
-      long iExtIter = config[ZONE_FLOW]->GetRestart_Iter();
-      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-      strcat(cstr, buffer);
-    }
-
-    if ((config[ZONE_FLOW]->GetTabular_FileFormat() == TAB_TECPLOT)) SPRINTF (buffer, ".dat");
-    else if ((config[ZONE_FLOW]->GetTabular_FileFormat() == TAB_CSV))  SPRINTF (buffer, ".vtk");
-    strcat(cstr, buffer);
-
-    FSIHist_file->open(cstr, ios::out);
-    FSIHist_file->precision(15);
-
-    /*--- Begin of the header ---*/
-
-    char begin[]= "\"ExtIter\",\"BGSIter\"";
-
-    /*--- Header for the coefficients ---*/
-
-    char flow_coeff[]= ",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CL/CD\"";
-    char fem_coeff[]= ",\"VM_Stress\"";
-    char of_1[] = ",\"TgtGeom\"";
-    char of_2[] = ",\"TgtNode\"";
-
-    char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
-
-     /*--- Header for the residuals ---*/
-
-    char fsi_resid[]= ",\"Res_FSI\",\"RelaxCoeff\",\"ForceCoeff\"";
-
-    char flow_resid[]= ",\"Res_BGS[F0]\",\"Res_BGS[F1]\",\"Res_BGS[F2]\",\"Res_BGS[F3]\",\"Res_BGS[F4]\"";
-    char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
-    char fem_resid[]= ",\"Res_BGS[S0]\",\"Res_BGS[S1]\",\"Res_BGS[S2]\"";
-
-    /*--- End of the header ---*/
-
-    char end[]= ",\"Time(min)\"\n";
-
-    if ((config[ZONE_FLOW]->GetTabular_FileFormat() == TECPLOT) ||
-        (config[ZONE_FLOW]->GetTabular_FileFormat() == TECPLOT_BINARY)) {
-        FSIHist_file[0] << "TITLE = \"SU2 FSI Simulation\"" << endl;
-        FSIHist_file[0] << "VARIABLES = ";
-    }
-
-    /*--- Write the header, case depending ---*/
-
-    FSIHist_file[0] << begin;
-
-    FSIHist_file[0] << fsi_resid;
-
-    switch (config[ZONE_FLOW]->GetKind_Solver()) {
-
-      /*--- Flow residual output ---*/
-
-      case EULER : case NAVIER_STOKES: case RANS :
-      case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS :
-        FSIHist_file[0] << flow_resid;
-        if (turbulent) FSIHist_file[0] << turb_resid;
-      break;
-
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        FSIHist_file[0] << adj_flow_resid;
-        break;
-
-     }
-
-    /*--- FEA residual output ---*/
-
-     switch (config[ZONE_STRUCT]->GetKind_Solver()) {
-
-       case FEM_ELASTICITY:
-         FSIHist_file[0] << fem_resid;
-         break;
-
-       case DISC_ADJ_FEM:
-         FSIHist_file[0] << fem_resid ;
-         break;
-
-     }
-
-     /*--- Flow coefficients output ---*/
-     switch (config[ZONE_FLOW]->GetKind_Solver()) {
-
-       case EULER : case NAVIER_STOKES: case RANS :
-       case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS :
-       FSIHist_file[0] << flow_coeff;
-       if (turbulent) FSIHist_file[0] << turb_resid;
-       if (direct_diff != NO_DERIVATIVE) {
-         FSIHist_file[0] << d_flow_coeff;
-       }
-       break;
-
-       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-         FSIHist_file[0] << adj_flow_resid;
-         break;
-
-      }
-
-      switch (config[ZONE_STRUCT]->GetKind_Solver()) {
-
-        case FEM_ELASTICITY:
-          FSIHist_file[0] << fem_coeff;
-          break;
-
-        case DISC_ADJ_FEM:
-          FSIHist_file[0] << fem_coeff;
-          break;
-
-      }
-
-      switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
-        case REFERENCE_GEOMETRY:
-          FSIHist_file[0] << of_1;
-          break;
-        case REFERENCE_NODE:
-          FSIHist_file[0] << of_2;
-          break;
-        default:
-          break;
-      }
-
-     FSIHist_file[0] << end;
-
-
-  }
-
-  if ((rank == MASTER_NODE) && (!header)){
-
-      unsigned short nDim = geometry[ZONE_STRUCT][INST_0][MESH_0]->GetnDim();
-
-      unsigned long iExtIter = config[ZONE_STRUCT]->GetInnerIter();
-      unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
-      unsigned long iOuterIter = config[ZONE_STRUCT]->GetOuterIter();
-      su2double dummy = 0.0;
-
-      bool first_iter = ((iExtIter==0) && (iOuterIter == 0));
-
-
-      bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
-      bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
-
-
-      bool fem = ((config[ZONE_STRUCT]->GetKind_Solver() == FEM_ELASTICITY) ||
-              (config[ZONE_STRUCT]->GetKind_Solver() == DISC_ADJ_FEM));
-      bool linear_analysis = (config[ZONE_STRUCT]->GetGeometricConditions() == SMALL_DEFORMATIONS);
-      bool nonlinear_analysis = (config[ZONE_STRUCT]->GetGeometricConditions() == LARGE_DEFORMATIONS);
-
-      bool disc_adj_flow = config[ZONE_FLOW]->GetDiscrete_Adjoint();
-      bool disc_adj_fem = config[ZONE_STRUCT]->GetDiscrete_Adjoint();
-
-
-      /*--- WARNING: These buffers have hard-coded lengths. Note that you
-       may have to adjust them to be larger if adding more entries. ---*/
-
-      char begin[1000], direct_coeff[1000],
-      fsi_resid[1000], fsi_coeffs[1000],
-      flow_resid[1000], fem_resid[1000],
-      objective_function[1000], end[1000];
-
-      su2double *residual_flow         = NULL;
-      su2double *residual_fem          = NULL;
-      su2double *residual_fsi          = NULL;
-      su2double *coeffs_fsi            = NULL;
-
-      /*--- Initialize number of variables ---*/
-      unsigned short nVar_FSI = 1, nCoeff_FSI = 2, nVar_Flow = 0, nVar_FEM = 0;
-
-      unsigned short iVar;
-
-      /*--- Direct problem variables ---*/
-      if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
-
-      if (fem) {
-        if (linear_analysis) nVar_FEM = nDim;
-        if (nonlinear_analysis) nVar_FEM = 3;
-        if (disc_adj_fem) nVar_FEM = nDim;
-      }
-
-      residual_flow       = new su2double[nVar_Flow];
-      residual_fem        = new su2double[nVar_FEM];
-      residual_fsi        = new su2double[nVar_FSI];
-      coeffs_fsi          = new su2double[nCoeff_FSI];
-
-      /*--- Initialize variables to store information from all domains (direct solution) ---*/
-
-      su2double Total_CL = 0.0, Total_CD = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
-                Total_OF = 0.0;
-
-      Total_CL       = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL();
-      Total_CD       = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
-      Total_CEff     = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CEff();
-      Total_CMx      = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMx();
-      Total_CMy      = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMy();
-      Total_CMz      = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMz();
-
-      bool print_of = false;
-
-      switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
-        case REFERENCE_GEOMETRY:
-          Total_OF = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
-          print_of = true;
-          break;
-        case REFERENCE_NODE:
-          Total_OF = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
-          print_of = true;
-          break;
-        default:
-          break;
-      }
-
-      if ((!disc_adj_flow) && (!disc_adj_fem)){
-        /*--- Flow Residuals ---*/
-        for (iVar = 0; iVar < nVar_Flow; iVar++)
-          residual_flow[iVar] = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetRes_BGS(iVar);
-
-        /*--- FEA Residuals ---*/
-        for (iVar = 0; iVar < nVar_FEM; iVar++)
-          residual_fem[iVar] = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetRes_BGS(iVar);
-
-        residual_fsi[0] = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetFSI_Residual();
-        coeffs_fsi[0]  = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetRelaxCoeff();
-        coeffs_fsi[1]  = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetForceCoeff();
-
-      }
-      else{
-          /*--- Flow Residuals ---*/
-          for (iVar = 0; iVar < nVar_Flow; iVar++)
-            residual_flow[iVar] = solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iVar);
-          /*--- FEA Residuals ---*/
-          for (iVar = 0; iVar < nVar_FEM; iVar++)
-            residual_fem[iVar] = solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_BGS(iVar);
-      }
-
-      /*--- Write the begining of the history file ---*/
-      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iOuterIter));
-      /*--- Write the end of the history file ---*/
-      SPRINTF (end, "\n");
-
-      SPRINTF (fsi_resid, ", %14.8e", log10 (residual_fsi[0]));
-      SPRINTF (fsi_coeffs, ", %14.8e,  %14.8e", coeffs_fsi[0], coeffs_fsi[1]);
-
-      /*--- Flow residual ---*/
-      if (nDim == 2) {
-        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
-      }
-      else {
-        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-      }
-
-      /*--- FEM residual ---*/
-      if (nDim == 2) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
-      else SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[1]));
-
-      /*--- Direct coefficients ---*/
-      SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",Total_CL, Total_CD, Total_CMx, Total_CMy, Total_CMz, Total_CEff);
-
-      if (print_of) SPRINTF (objective_function, ", %14.8e", Total_OF);
-
-      if (!first_iter){
-          if (!print_of) FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << end;
-          else FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << objective_function << end;
-            FSIHist_file[0].flush();
-      }
-
-      delete [] residual_flow;
-      delete [] residual_fem;
-      delete [] residual_fsi;
-      delete [] coeffs_fsi;
-
-
-  }
-
-}
-
 void COutputLegacy::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
 
   unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
@@ -11557,7 +11189,7 @@ void COutputLegacy::SetSensitivity_Files(CGeometry ***geometry, CConfig **config
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver[iZone][INST_0]->GetNodes()->SetSolution(iPoint, iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
+        solver[iZone][INST_0]->GetNodes()->SetSolution(iPoint, iDim, geometry[iZone][INST_0]->nodes->GetCoord(iPoint, iDim));
       }
       for (iVar = 0; iVar < nDim; iVar++) {
         solver[iZone][INST_0]->GetNodes()->SetSolution(iPoint, iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
@@ -12119,14 +11751,14 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
   }
 }
 
-void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) {
+void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) const {
 
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
   ofstream mean_HB_file;
 
   /*--- MPI Send/Recv buffers ---*/
-  su2double *sbuf_var = NULL,  *rbuf_var = NULL;
+  su2double *sbuf_var = nullptr,  *rbuf_var = nullptr;
 
   /*--- Other variables ---*/
   unsigned short iVar, kInst;
@@ -12245,11 +11877,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
   for (iZone = 0; iZone < val_nZone; iZone++) {
 
     /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
-    unsigned short KindSolver = config[iZone]->GetKind_Solver();
-    bool fem_solver = ((KindSolver == FEM_EULER) ||
-                       (KindSolver == FEM_NAVIER_STOKES) ||
-                       (KindSolver == FEM_RANS) ||
-                       (KindSolver == FEM_LES));
+    const bool fem_solver = config[iZone]->GetFEMSolver();
 
     /*--- Get the file output format ---*/
 
@@ -12370,7 +11998,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
         (solver_container[iZone][iInst][MESH_0][FLOW_SOL]->GetEnd_AoA_FD()) &&
         //(iExtIter - solver_container[iZone][iInst][MESH_0][FLOW_SOL]->GetIter_Update_AoA() == config[iZone]->GetIter_dCL_dAlpha()) &&
-        (Local_Data_Copy != NULL)) {
+        (Local_Data_Copy != nullptr)) {
 
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
@@ -12580,8 +12208,8 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
   su2double Gamma = config->GetGamma();
   su2double RefVel2;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
-  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
-  su2double *Grid_Vel = NULL;
+  su2double *Aux_Frict_x = nullptr, *Aux_Frict_y = nullptr, *Aux_Frict_z = nullptr, *Aux_Heat = nullptr, *Aux_yPlus = nullptr, *Aux_Buffet = nullptr;
+  su2double *Grid_Vel = nullptr;
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
@@ -12589,7 +12217,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
   bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
 
-  int *Local_Halo = NULL;
+  int *Local_Halo = nullptr;
 
   stringstream varname;
 
@@ -12911,7 +12539,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -12961,7 +12589,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
       /*--- Load the grid node coordinate values. ---*/
 
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        Local_Data[jPoint][iVar] = geometry->nodes->GetCoord(iPoint, iDim);
         if (config->GetSystemMeasurements() == US)
           Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
@@ -13023,7 +12651,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
         /*--- Load buffers with the three grid velocity components. ---*/
 
         if (dynamic_grid) {
-          Grid_Vel = geometry->node[iPoint]->GetGridVel();
+          Grid_Vel = geometry->nodes->GetGridVel(iPoint);
           Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
           Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
           if (geometry->GetnDim() == 3) {
@@ -13071,7 +12699,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
         /*--- Load data for the distance to the nearest sharp edge. ---*/
 
         if (config->GetWrt_SharpEdges()) {
-          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
+          Local_Data[jPoint][iVar] = geometry->nodes->GetSharpEdge_Distance(iPoint); iVar++;
         }
 
         /*--- Load data for the intermittency of the BC trans. model. ---*/
@@ -13082,7 +12710,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
 
         if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->GetNodes()->GetDES_LengthScale(iPoint); iVar++;
-          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetWall_Distance(); iVar++;
+          Local_Data[jPoint][iVar] = geometry->nodes->GetWall_Distance(iPoint); iVar++;
         }
 
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
@@ -13097,7 +12725,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
             if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
             /* Set the pointers to the coordinates and solution of this DOF. */
-            const su2double *coor = geometry->node[iPoint]->GetCoord();
+            const su2double *coor = geometry->nodes->GetCoord(iPoint);
             su2double *solDOF     = solver[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
             su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
             su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
@@ -13159,7 +12787,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
         /*--- For rotating frame problems, compute the relative velocity. ---*/
 
         if (rotating_frame) {
-          Grid_Vel = geometry->node[iPoint]->GetGridVel();
+          Grid_Vel = geometry->nodes->GetGridVel(iPoint);
           su2double *Solution = solver[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           Local_Data[jPoint][iVar] = Solution[1]/Solution[0] - Grid_Vel[0]; iVar++;
           Local_Data[jPoint][iVar] = Solution[2]/Solution[0] - Grid_Vel[1]; iVar++;
@@ -13216,8 +12844,8 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
   su2double RefVel2 = 0.0;
   su2double factor = 0.0;
   su2double RefDensity = 0.0, RefPressure = 0.0;
-  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
-  su2double *Grid_Vel = NULL;
+  su2double *Aux_Frict_x = nullptr, *Aux_Frict_y = nullptr, *Aux_Frict_z = nullptr, *Aux_Heat = nullptr, *Aux_yPlus = nullptr;
+  su2double *Grid_Vel = nullptr;
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
@@ -13231,7 +12859,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
   bool wrt_kt           = ((config->GetKind_ConductivityModel() != CONSTANT_CONDUCTIVITY) &&
                            (config->GetViscous()));
   bool p1_radiation = (config->GetKind_RadiationModel() == P1_MODEL);
-  int *Local_Halo = NULL;
+  int *Local_Halo = nullptr;
 
   stringstream varname;
 
@@ -13554,7 +13182,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -13604,7 +13232,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
       /*--- Load the grid node coordinate values. ---*/
 
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim); iVar++;
+        Local_Data[jPoint][iVar] = geometry->nodes->GetCoord(iPoint, iDim); iVar++;
       }
 
       /*--- Load the conservative variable states for the mean flow variables. ---*/
@@ -13676,7 +13304,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
       /*--- Load buffers with the three grid velocity components. ---*/
 
       if (dynamic_grid) {
-        Grid_Vel = geometry->node[iPoint]->GetGridVel();
+        Grid_Vel = geometry->nodes->GetGridVel(iPoint);
         Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
         Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
         if (geometry->GetnDim() == 3) {
@@ -13720,7 +13348,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
       /*--- Load data for the distance to the nearest sharp edge. ---*/
 
       if (config->GetWrt_SharpEdges()) {
-        Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
+        Local_Data[jPoint][iVar] = geometry->nodes->GetSharpEdge_Distance(iPoint); iVar++;
       }
 
       /*--- Load data for the intermittency of the BC trans. model. ---*/
@@ -13752,7 +13380,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
           if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
           /* Set the pointers to the coordinates and solution of this DOF. */
-          const su2double *coor = geometry->node[iPoint]->GetCoord();
+          const su2double *coor = geometry->nodes->GetCoord(iPoint);
           su2double *solDOF     = solver[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
           su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
           su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
@@ -13852,8 +13480,8 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
   unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
   unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
 
-  su2double *Aux_Sens = NULL;
-  su2double *Grid_Vel = NULL;
+  su2double *Aux_Sens = nullptr;
+  su2double *Grid_Vel = nullptr;
   su2double *Normal, Area;
 
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -14076,7 +13704,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -14126,7 +13754,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
       /*--- Load the grid node coordinate values. ---*/
 
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        Local_Data[jPoint][iVar] = geometry->nodes->GetCoord(iPoint, iDim);
         if (config->GetSystemMeasurements() == US)
         	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
@@ -14207,7 +13835,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
       /*--- Load buffers with the three grid velocity components. ---*/
 
       if (dynamic_grid) {
-        Grid_Vel = geometry->node[iPoint]->GetGridVel();
+        Grid_Vel = geometry->nodes->GetGridVel(iPoint);
         Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
         Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
         if (geometry->GetnDim() == 3) {
@@ -14259,11 +13887,11 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
   unsigned long iPoint, jPoint, FirstIndex = NONE, iMarker, iVertex;
   unsigned long nVar_First = 0, nVar_Consv_Par = 0;
 
-  su2double *Node_Vel = NULL, *Node_Accel = NULL;
-  const su2double *Stress = NULL;
+  su2double *Node_Vel = nullptr, *Node_Accel = nullptr;
+  const su2double *Stress = nullptr;
 
   bool Wrt_Halo   = config->GetWrt_Halo(), isPeriodic;
-  int *Local_Halo = NULL;
+  int *Local_Halo = nullptr;
 
   stringstream varname;
 
@@ -14383,7 +14011,7 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -14433,7 +14061,7 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
       /*--- Load the grid node coordinate values. ---*/
 
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        Local_Data[jPoint][iVar] = geometry->nodes->GetCoord(iPoint, iDim);
         if (config->GetSystemMeasurements() == US)
         	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
@@ -14609,7 +14237,7 @@ void COutputLegacy::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSo
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -14659,7 +14287,7 @@ void COutputLegacy::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSo
       /*--- Load the grid node coordinate values. ---*/
 
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        Local_Data[jPoint][iVar] = geometry->nodes->GetCoord(iPoint, iDim);
         if (config->GetSystemMeasurements() == US)
         	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
@@ -14764,8 +14392,8 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
 
   bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
 
-  int *Local_Halo = NULL;
-  int *Conn_Elem  = NULL;
+  int *Local_Halo = nullptr;
+  int *Conn_Elem  = nullptr;
 
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
@@ -14819,7 +14447,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
           if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
               (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
               (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+            Added_Periodic.push_back(geometry->nodes->GetGlobalIndex(iPoint));
           }
         }
       }
@@ -14834,7 +14462,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
   /*--- First communicate the number of points that each rank has found. ---*/
 
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
+  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = nullptr;
   Buffer_Recv_nAddedPeriodic = new unsigned long[size];
 
   nAddedPeriodic = Added_Periodic.size();
@@ -14879,7 +14507,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -14888,7 +14516,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- We need to keep one copy of overlapping halo cells. ---*/
 
@@ -15007,7 +14635,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
         /*--- Get the index of the current point. ---*/
 
         iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Search for the lowest global index in this element. We
          send the element to the processor owning the range that includes
@@ -15015,7 +14643,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
 
         for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
           jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
           if (newID < Global_Index) Global_Index = newID;
         }
 
@@ -15071,7 +14699,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
     connSend[ii] = 0;
@@ -15101,7 +14729,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
         /*--- Get the index of the current point. ---*/
 
         iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- Search for the lowest global index in this element. We
          send the element to the processor owning the range that includes
@@ -15109,7 +14737,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
 
         for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
           jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
           if (newID < Global_Index) Global_Index = newID;
         }
 
@@ -15135,7 +14763,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
 
           for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
             iPoint = geometry->elem[ii]->GetNode(kk);
-            connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+            connSend[nn] = geometry->nodes->GetGlobalIndex(iPoint); nn++;
 
             /*--- Check if this is a halo node. If so, flag this element
              as a halo cell. We will use this later to sort and remove
@@ -15165,7 +14793,7 @@ void COutputLegacy::SortVolumetricConnectivity(CConfig *config, CGeometry *geome
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
     connRecv[ii] = 0;
@@ -15357,8 +14985,8 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
 
   bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
 
-  int *Local_Halo = NULL;
-  int *Conn_Elem  = NULL;
+  int *Local_Halo = nullptr;
+  int *Conn_Elem  = nullptr;
 
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
@@ -15405,7 +15033,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
           if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
               (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
               (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+            Added_Periodic.push_back(geometry->nodes->GetGlobalIndex(iPoint));
           }
         }
       }
@@ -15420,7 +15048,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
   /*--- First communicate the number of points that each rank has found. ---*/
 
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
+  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = nullptr;
   Buffer_Recv_nAddedPeriodic = new unsigned long[size];
 
   nAddedPeriodic = Added_Periodic.size();
@@ -15465,7 +15093,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -15474,7 +15102,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- We need to keep one copy of overlapping halo cells. ---*/
 
@@ -15597,7 +15225,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
             /*--- Get the index of the current point. ---*/
 
             iPoint = geometry->bound[iMarker][ii]->GetNode(jj);
-            Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+            Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
             /*--- Search for the lowest global index in this element. We
              send the element to the processor owning the range that includes
@@ -15605,7 +15233,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
 
             for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
               jPoint = geometry->bound[iMarker][ii]->GetNode(kk);
-              unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+              unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
               if (newID < Global_Index) Global_Index = newID;
             }
 
@@ -15663,7 +15291,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend = nullptr;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
     connSend[ii] = 0;
@@ -15697,7 +15325,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
             /*--- Get the index of the current point. ---*/
 
             iPoint = geometry->bound[iMarker][ii]->GetNode(jj);
-            Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+            Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
             /*--- Search for the lowest global index in this element. We
              send the element to the processor owning the range that includes
@@ -15705,7 +15333,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
 
             for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
               jPoint = geometry->bound[iMarker][ii]->GetNode(kk);
-              unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+              unsigned long newID = geometry->nodes->GetGlobalIndex(jPoint);
               if (newID < Global_Index) Global_Index = newID;
             }
 
@@ -15731,7 +15359,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
 
               for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
                 iPoint = geometry->bound[iMarker][ii]->GetNode(kk);
-                connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+                connSend[nn] = geometry->nodes->GetGlobalIndex(iPoint); nn++;
 
                 /*--- Check if this is a halo node. If so, flag this element
                  as a halo cell. We will use this later to sort and remove
@@ -15763,7 +15391,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = NULL;
+  unsigned long *connRecv = nullptr;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
     connRecv[ii] = 0;
@@ -15938,7 +15566,7 @@ void COutputLegacy::SortOutputData(CConfig *config, CGeometry *geometry) {
   unsigned long iPoint, Global_Index, nLocalPoint, nTotalPoint, iVertex;
 
   int VARS_PER_POINT = nVar_Par;
-  int *Local_Halo = NULL;
+  int *Local_Halo = nullptr;
 
   bool isPeriodic;
 
@@ -15954,7 +15582,7 @@ void COutputLegacy::SortOutputData(CConfig *config, CGeometry *geometry) {
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -16046,7 +15674,7 @@ void COutputLegacy::SortOutputData(CConfig *config, CGeometry *geometry) {
 
       /*--- Get the global index of the current point. ---*/
 
-      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+      Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
       /*--- Search for the processor that owns this point ---*/
 
@@ -16099,7 +15727,7 @@ void COutputLegacy::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  su2double *connSend = NULL;
+  su2double *connSend = nullptr;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
   for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
     connSend[ii] = 0;
@@ -16130,7 +15758,7 @@ void COutputLegacy::SortOutputData(CConfig *config, CGeometry *geometry) {
 
       /*--- Get the index of the current point. ---*/
 
-      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+      Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
       /*--- Search for the processor that owns this point. ---*/
 
@@ -16180,7 +15808,7 @@ void COutputLegacy::SortOutputData(CConfig *config, CGeometry *geometry) {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  su2double *connRecv = NULL;
+  su2double *connRecv = nullptr;
   connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]];
   for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
     connRecv[ii] = 0;
@@ -16344,7 +15972,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
   unsigned long Global_Index, nLocalPoint, nTotalPoint, iVertex;
 
   int VARS_PER_POINT = nVar_Par;
-  int *Local_Halo = NULL;
+  int *Local_Halo = nullptr;
   int iNode, count;
   int SendRecv, RecvFrom;
 
@@ -16375,7 +16003,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
 
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -16721,7 +16349,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *idRecv = NULL;
+  unsigned long *idRecv = nullptr;
   idRecv = new unsigned long[nElem_Recv[size]];
   for (int ii = 0; ii < nElem_Recv[size]; ii++)
     idRecv[ii] = 0;
@@ -16918,7 +16546,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
           if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
               (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
               (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+            Added_Periodic.push_back(geometry->nodes->GetGlobalIndex(iPoint));
           }
         }
       }
@@ -16933,7 +16561,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
   /*--- First communicate the number of points that each rank has found. ---*/
 
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
+  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = nullptr;
   Buffer_Recv_nAddedPeriodic = new unsigned long[size];
 
   nAddedPeriodic = Added_Periodic.size();
@@ -16977,7 +16605,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
    domain. We will check the communicated list of added periodic points. ---*/
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -16986,7 +16614,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        Global_Index = geometry->nodes->GetGlobalIndex(iPoint);
 
         /*--- We need to keep one copy of overlapping halo cells. ---*/
 
@@ -17141,7 +16769,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
   /*--- Allocate memory to hold the globals that we are
    sending. ---*/
 
-  unsigned long *globalSend = NULL;
+  unsigned long *globalSend = nullptr;
   globalSend = new unsigned long[nElem_Send[size]];
   for (int ii = 0; ii < nElem_Send[size]; ii++)
     globalSend[ii] = 0;
@@ -17149,7 +16777,7 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
   /*--- Allocate memory to hold the renumbering that we are
    sending. ---*/
 
-  unsigned long *renumbSend = NULL;
+  unsigned long *renumbSend = nullptr;
   renumbSend = new unsigned long[nElem_Send[size]];
   for (int ii = 0; ii < nElem_Send[size]; ii++)
     renumbSend[ii] = 0;
@@ -17202,12 +16830,12 @@ void COutputLegacy::SortOutputData_Surface(CConfig *config, CGeometry *geometry)
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *globalRecv = NULL;
+  unsigned long *globalRecv = nullptr;
   globalRecv = new unsigned long[nElem_Recv[size]];
   for (int ii = 0; ii < nElem_Recv[size]; ii++)
     globalRecv[ii] = 0;
 
-  unsigned long *renumbRecv = NULL;
+  unsigned long *renumbRecv = nullptr;
   renumbRecv = new unsigned long[nElem_Recv[size]];
   for (int ii = 0; ii < nElem_Recv[size]; ii++)
     renumbRecv[ii] = 0;
@@ -17973,11 +17601,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   /*--- Set a timer for the binary file writing. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
 #ifndef HAVE_MPI
 
@@ -18140,11 +17764,8 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   /*--- Compute and store the write time. ---*/
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime-StartTime;
 
   /*--- Communicate the total file size for the restart ---*/
@@ -18201,7 +17822,7 @@ void COutputLegacy::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
 
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+    Local_Halo[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -18257,7 +17878,7 @@ void COutputLegacy::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   }
   nPoint_Linear[nProcessor] = nTotalPoint;
 
-  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
+  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = nullptr;
   unsigned long nLocalVertex_Surface = 0;
   unsigned long MaxLocalVertex_Surface = 0;
 
@@ -18300,10 +17921,10 @@ void COutputLegacy::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   /*--- Send and Recv buffers ---*/
 
   su2double *Buffer_Send_Data = new su2double [MaxLocalVertex_Surface*nVar_Par];
-  su2double *Buffer_Recv_Data = NULL;
+  su2double *Buffer_Recv_Data = nullptr;
 
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+  unsigned long *Buffer_Recv_GlobalIndex = nullptr;
 
   /*--- Prepare the receive buffers on the master node only. ---*/
 
@@ -18427,17 +18048,17 @@ void COutputLegacy::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *
   /*--- Deallocate memory for connectivity data on each processor. ---*/
 
   if (surf_sol) {
-    if (Conn_BoundLine_Par != NULL) delete [] Conn_BoundLine_Par;
-    if (Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
-    if (Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
+    delete [] Conn_BoundLine_Par;
+    delete [] Conn_BoundTria_Par;
+    delete [] Conn_BoundQuad_Par;
   }
   else {
-    if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    delete [] Conn_Tria_Par;
+    delete [] Conn_Quad_Par;
+    delete [] Conn_Tetr_Par;
+    delete [] Conn_Hexa_Par;
+    delete [] Conn_Pris_Par;
+    delete [] Conn_Pyra_Par;
   }
 
 }
@@ -18447,19 +18068,19 @@ void COutputLegacy::DeallocateData_Parallel(CConfig *config, CGeometry *geometry
   /*--- Deallocate memory for solution data ---*/
 
   for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
-    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+    if (Parallel_Data[iVar] != nullptr) delete [] Parallel_Data[iVar];
   }
-  if (Parallel_Data != NULL) delete [] Parallel_Data;
+  delete [] Parallel_Data;
 
   /*--- Deallocate the structures holding the linear partitioning ---*/
 
-  if (Local_Halo_Sort != NULL) delete [] Local_Halo_Sort;
+  delete [] Local_Halo_Sort;
 
-  if (beg_node != NULL) delete [] beg_node;
-  if (end_node != NULL) delete [] end_node;
+  delete [] beg_node;
+  delete [] end_node;
 
-  if (nPointLinear     != NULL) delete [] nPointLinear;
-  if (nPointCumulative != NULL) delete [] nPointCumulative;
+  delete [] nPointLinear;
+  delete [] nPointCumulative;
 
 }
 
@@ -18468,13 +18089,13 @@ void COutputLegacy::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *g
   /*--- Deallocate memory for surface solution data ---*/
 
   for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
-    if (Parallel_Surf_Data[iVar] != NULL) delete [] Parallel_Surf_Data[iVar];
+    if (Parallel_Surf_Data[iVar] != nullptr) delete [] Parallel_Surf_Data[iVar];
   }
-  if (Parallel_Surf_Data != NULL) delete [] Parallel_Surf_Data;
+  delete [] Parallel_Surf_Data;
 
 }
 
-void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
+void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
 
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
@@ -18536,13 +18157,13 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
           if (axisymmetric) {
-            if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
             else
               AxiFactor = 1.0;
           } else {
@@ -19294,15 +18915,15 @@ void COutputLegacy::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *
 
   unsigned long jElem;
 
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = nullptr;
   unsigned long nBuffer_Scalar = 0;
   unsigned long kNode = 0, kElem = 0;
   unsigned long MaxLocalElem = 0;
 
   bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL;
+  bool *Write_Elem = nullptr;
 
-  int *Conn_Elem = NULL;
+  int *Conn_Elem = nullptr;
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -19422,10 +19043,10 @@ void COutputLegacy::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *
   /*--- Send and Recv buffers ---*/
 
   unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
+  unsigned long *Buffer_Recv_Elem = nullptr;
 
   unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
+  unsigned short *Buffer_Recv_Halo = nullptr;
 
   /*--- Prepare the receive buffers on the master node only. ---*/
 
@@ -19586,15 +19207,15 @@ void COutputLegacy::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geo
   int iProcessor;
   unsigned long jElem;
 
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = nullptr;
   unsigned long nBuffer_Scalar = 0;
   unsigned long kNode = 0, kElem = 0;
   unsigned long MaxLocalElem = 0;
 
   bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL;
+  bool *Write_Elem = nullptr;
 
-  int *Conn_Elem = NULL;
+  int *Conn_Elem = nullptr;
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -19697,10 +19318,10 @@ void COutputLegacy::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geo
   /*--- Send and Recv buffers ---*/
 
   unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
+  unsigned long *Buffer_Recv_Elem = nullptr;
 
   unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
+  unsigned short *Buffer_Recv_Halo = nullptr;
 
   /*--- Prepare the receive buffers on the master node only. ---*/
 
@@ -19841,7 +19462,7 @@ void COutputLegacy::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSol
 
   unsigned long iPoint = 0, jPoint = 0;
 
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
+  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
 
@@ -19914,10 +19535,10 @@ void COutputLegacy::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSol
   /*--- Send and Recv buffers. ---*/
 
   su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Var = NULL;
+  su2double *Buffer_Recv_Var = nullptr;
 
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+  unsigned long *Buffer_Recv_GlobalIndex = nullptr;
 
   /*--- Prepare the receive buffers in the master node only. ---*/
 
@@ -20021,7 +19642,7 @@ void COutputLegacy::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geomet
   unsigned short iVar;
   unsigned long iPoint = 0, jPoint = 0;
 
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
+  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
 
@@ -20082,10 +19703,10 @@ void COutputLegacy::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geomet
   /*--- Send and Recv buffers. ---*/
 
   su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Var = NULL;
+  su2double *Buffer_Recv_Var = nullptr;
 
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+  unsigned long *Buffer_Recv_GlobalIndex = nullptr;
 
   /*--- Prepare the receive buffers in the master node only. ---*/
 
@@ -20758,11 +20379,7 @@ void COutputLegacy::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
   /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
 
-  unsigned short KindSolver = config->GetKind_Solver();
-  bool fem_solver = ((KindSolver == FEM_EULER) ||
-                     (KindSolver == FEM_NAVIER_STOKES) ||
-                     (KindSolver == FEM_RANS) ||
-                     (KindSolver == FEM_LES));
+  const bool fem_solver = config->GetFEMSolver();
 
   /*--- Reset point sorting counters ---*/
 
@@ -20782,7 +20399,7 @@ void COutputLegacy::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
     Local_Halo_Sort = new int[geometry->GetnPoint()];
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-      Local_Halo_Sort[iPoint] = !geometry->node[iPoint]->GetDomain();
+      Local_Halo_Sort[iPoint] = !geometry->nodes->GetDomain(iPoint);
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
@@ -21005,7 +20622,7 @@ void COutputLegacy::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *g
 
   /* Allocate the memory to store the connectivity if the size is
      larger than zero. */
-  int *Conn_SubElem = NULL;
+  int *Conn_SubElem = nullptr;
   if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Loop again over the local volume elements and store the global
@@ -21140,7 +20757,7 @@ void COutputLegacy::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geom
 
   /* Allocate the memory to store the connectivity if the size is
      larger than zero. */
-  int *Conn_SubElem = NULL;
+  int *Conn_SubElem = nullptr;
   if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Repeat the loop over the surface elements of the boundary markers
@@ -21306,7 +20923,7 @@ void COutputLegacy::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 
   /*--- Allocate memory to hold the connectivity that we are sending. ---*/
 
-  su2double *connSend = NULL;
+  su2double *connSend = nullptr;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
   for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
     connSend[ii] = 0;
@@ -21383,7 +21000,7 @@ void COutputLegacy::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  su2double *connRecv = NULL;
+  su2double *connRecv = nullptr;
   connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]];
   for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
     connRecv[ii] = 0;

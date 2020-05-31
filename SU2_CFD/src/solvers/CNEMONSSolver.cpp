@@ -31,28 +31,28 @@
 CNEMONSSolver::CNEMONSSolver(void) : CNEMOEulerSolver() {
 
   /*--- Array initialization ---*/
-  CD_Visc   = NULL; CL_Visc   = NULL; CSF_Visc  = NULL; CEff_Visc = NULL;
-  CFx_Visc  = NULL; CFy_Visc  = NULL; CFz_Visc  = NULL;
-  CMx_Visc  = NULL; CMy_Visc  = NULL; CMz_Visc  = NULL;
-  CoPx_Visc = NULL; CoPy_Visc = NULL; CoPz_Visc = NULL;
+  CD_Visc   = nullptr; CL_Visc   = nullptr; CSF_Visc  = nullptr; CEff_Visc = nullptr;
+  CFx_Visc  = nullptr; CFy_Visc  = nullptr; CFz_Visc  = nullptr;
+  CMx_Visc  = nullptr; CMy_Visc  = nullptr; CMz_Visc  = nullptr;
+  CoPx_Visc = nullptr; CoPy_Visc = nullptr; CoPz_Visc = nullptr;
 
-  ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
+  ForceViscous = nullptr; MomentViscous = nullptr; CSkinFriction = nullptr;
 
-  Buffet_Sensor = NULL; Buffet_Metric = NULL;
+  Buffet_Sensor = nullptr; Buffet_Metric = nullptr;
 
   /*--- Surface based array initialization ---*/
-  Surface_CL_Visc  = NULL; Surface_CD_Visc    = NULL; Surface_CSF_Visc      = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL; Surface_CFy_Visc   = NULL; Surface_CFz_Visc      = NULL;
-  Surface_CMx_Visc = NULL; Surface_CMy_Visc   = NULL; Surface_CMz_Visc      = NULL;
-  Surface_HF_Visc  = NULL; Surface_MaxHF_Visc = NULL; Surface_Buffet_Metric = NULL;
+  Surface_CL_Visc  = nullptr; Surface_CD_Visc    = nullptr; Surface_CSF_Visc      = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr; Surface_CFy_Visc   = nullptr; Surface_CFz_Visc      = nullptr;
+  Surface_CMx_Visc = nullptr; Surface_CMy_Visc   = nullptr; Surface_CMz_Visc      = nullptr;
+  Surface_HF_Visc  = nullptr; Surface_MaxHF_Visc = nullptr; Surface_Buffet_Metric = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
-  CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  CMerit_Visc = nullptr; CT_Visc = nullptr; CQ_Visc = nullptr;
 
   /*--- Inlet Variables ---*/
-  Inlet_Ttotal = NULL;
-  Inlet_Ptotal = NULL;
-  Inlet_FlowDir = NULL;
+  Inlet_Ttotal = nullptr;
+  Inlet_Ptotal = nullptr;
+  Inlet_FlowDir = nullptr;
 
 }
 
@@ -109,45 +109,45 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*--- Array initialization ---*/
-  CD_Visc   = NULL; CL_Visc   = NULL; CSF_Visc  = NULL; CEff_Visc = NULL;
-  CFx_Visc  = NULL; CFy_Visc  = NULL; CFz_Visc  = NULL;
-  CMx_Visc  = NULL; CMy_Visc  = NULL; CMz_Visc  = NULL;
-  CoPx_Visc = NULL; CoPy_Visc = NULL; CoPz_Visc = NULL;
+  CD_Visc   = nullptr; CL_Visc   = nullptr; CSF_Visc  = nullptr; CEff_Visc = nullptr;
+  CFx_Visc  = nullptr; CFy_Visc  = nullptr; CFz_Visc  = nullptr;
+  CMx_Visc  = nullptr; CMy_Visc  = nullptr; CMz_Visc  = nullptr;
+  CoPx_Visc = nullptr; CoPy_Visc = nullptr; CoPz_Visc = nullptr;
 
-  Buffet_Sensor = NULL; Buffet_Metric = NULL;
+  Buffet_Sensor = nullptr; Buffet_Metric = nullptr;
 
-  Surface_CL_Visc  = NULL; Surface_CD_Visc    = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL; Surface_CFy_Visc   = NULL; Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL; Surface_CMy_Visc   = NULL; Surface_CMz_Visc = NULL;
-  Surface_HF_Visc  = NULL; Surface_MaxHF_Visc = NULL;
+  Surface_CL_Visc  = nullptr; Surface_CD_Visc    = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr; Surface_CFy_Visc   = nullptr; Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr; Surface_CMy_Visc   = nullptr; Surface_CMz_Visc = nullptr;
+  Surface_HF_Visc  = nullptr; Surface_MaxHF_Visc = nullptr;
 
-  Surface_Buffet_Metric = NULL;
+  Surface_Buffet_Metric = nullptr;
 
-  CMerit_Visc      = NULL; CT_Visc      = NULL; CQ_Visc       = NULL;
-  MaxHF_Visc       = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction    = NULL; Cauchy_Serie = NULL; HF_Visc       = NULL;
-  HeatConjugateVar = NULL;
+  CMerit_Visc      = nullptr; CT_Visc      = nullptr; CQ_Visc       = nullptr;
+  MaxHF_Visc       = nullptr; ForceViscous = nullptr; MomentViscous = nullptr;
+  CSkinFriction    = nullptr; Cauchy_Serie = nullptr; HF_Visc       = nullptr;
+  HeatConjugateVar = nullptr;
 
   /*--- Initialize quantities for the average process for internal flow ---*/
-  AverageVelocity 		    = NULL;
-  AverageTurboVelocity 	    = NULL;
-  OldAverageTurboVelocity   = NULL;
-  ExtAverageTurboVelocity   = NULL;
-  AverageFlux 			    = NULL;
-  SpanTotalFlux 		    = NULL;
-  AveragePressure  			= NULL;
-  OldAveragePressure        = NULL;
-  RadialEquilibriumPressure = NULL;
-  ExtAveragePressure  		= NULL;
-  AverageDensity   			= NULL;
-  OldAverageDensity         = NULL;
-  ExtAverageDensity   		= NULL;
-  AverageNu                 = NULL;
-  AverageKine               = NULL;
-  AverageOmega              = NULL;
-  ExtAverageNu              = NULL;
-  ExtAverageKine            = NULL;
-  ExtAverageOmega           = NULL;
+  AverageVelocity 		    = nullptr;
+  AverageTurboVelocity 	    = nullptr;
+  OldAverageTurboVelocity   = nullptr;
+  ExtAverageTurboVelocity   = nullptr;
+  AverageFlux 			    = nullptr;
+  SpanTotalFlux 		    = nullptr;
+  AveragePressure  			= nullptr;
+  OldAveragePressure        = nullptr;
+  RadialEquilibriumPressure = nullptr;
+  ExtAveragePressure  		= nullptr;
+  AverageDensity   			= nullptr;
+  OldAverageDensity         = nullptr;
+  ExtAverageDensity   		= nullptr;
+  AverageNu                 = nullptr;
+  AverageKine               = nullptr;
+  AverageOmega              = nullptr;
+  ExtAverageNu              = nullptr;
+  ExtAverageKine            = nullptr;
+  ExtAverageOmega           = nullptr;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -262,20 +262,6 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No jacobian structure (NEMO Navier-Stokes). MG level: "
            << iMesh <<"." << endl;
-  }
-
-  /*--- Computation of gradients by least squares ---*/
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -778,27 +764,27 @@ CNEMONSSolver::~CNEMONSSolver(void) {
 
   unsigned long iVertex;
 
-  if (CD_Visc != NULL)          delete [] CD_Visc;
-  if (CL_Visc != NULL)          delete [] CL_Visc;
-  if (CSF_Visc != NULL)         delete [] CSF_Visc;
-  if (CFx_Visc != NULL)         delete [] CFx_Visc;
-  if (CFy_Visc != NULL)         delete [] CFy_Visc;
-  if (CFz_Visc != NULL)         delete [] CFz_Visc;
-  if (CMx_Visc != NULL)         delete [] CMx_Visc;
-  if (CMy_Visc != NULL)         delete [] CMy_Visc;
-  if (CMz_Visc != NULL)         delete [] CMz_Visc;
-  if (CoPx_Visc != NULL)        delete [] CoPx_Visc;
-  if (CoPy_Visc != NULL)        delete [] CoPy_Visc;
-  if (CoPz_Visc != NULL)        delete [] CoPz_Visc;
-  if (CEff_Visc != NULL)        delete [] CEff_Visc;
-  if (CMerit_Visc != NULL)      delete [] CMerit_Visc;
-  if (Buffet_Metric != NULL)    delete [] Buffet_Metric;
-  if (CT_Visc != NULL)          delete [] CT_Visc;
-  if (CQ_Visc != NULL)          delete [] CQ_Visc;
-  if (HF_Visc != NULL)          delete [] HF_Visc;
-  if (MaxHF_Visc != NULL)       delete [] MaxHF_Visc;
-  if (ForceViscous != NULL)     delete [] ForceViscous;
-  if (MomentViscous != NULL)    delete [] MomentViscous;
+  if (CD_Visc != nullptr)          delete [] CD_Visc;
+  if (CL_Visc != nullptr)          delete [] CL_Visc;
+  if (CSF_Visc != nullptr)         delete [] CSF_Visc;
+  if (CFx_Visc != nullptr)         delete [] CFx_Visc;
+  if (CFy_Visc != nullptr)         delete [] CFy_Visc;
+  if (CFz_Visc != nullptr)         delete [] CFz_Visc;
+  if (CMx_Visc != nullptr)         delete [] CMx_Visc;
+  if (CMy_Visc != nullptr)         delete [] CMy_Visc;
+  if (CMz_Visc != nullptr)         delete [] CMz_Visc;
+  if (CoPx_Visc != nullptr)        delete [] CoPx_Visc;
+  if (CoPy_Visc != nullptr)        delete [] CoPy_Visc;
+  if (CoPz_Visc != nullptr)        delete [] CoPz_Visc;
+  if (CEff_Visc != nullptr)        delete [] CEff_Visc;
+  if (CMerit_Visc != nullptr)      delete [] CMerit_Visc;
+  if (Buffet_Metric != nullptr)    delete [] Buffet_Metric;
+  if (CT_Visc != nullptr)          delete [] CT_Visc;
+  if (CQ_Visc != nullptr)          delete [] CQ_Visc;
+  if (HF_Visc != nullptr)          delete [] HF_Visc;
+  if (MaxHF_Visc != nullptr)       delete [] MaxHF_Visc;
+  if (ForceViscous != nullptr)     delete [] ForceViscous;
+  if (MomentViscous != nullptr)    delete [] MomentViscous;
 
   if (Surface_CL_Visc != NULL)      delete [] Surface_CL_Visc;
   if (Surface_CD_Visc != NULL)      delete [] Surface_CD_Visc;
@@ -814,7 +800,7 @@ CNEMONSSolver::~CNEMONSSolver(void) {
   if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
   if (Surface_Buffet_Metric != NULL) delete [] Surface_Buffet_Metric;
 
-  if (CSkinFriction != NULL) {
+  if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete [] CSkinFriction[iMarker][iDim];
@@ -824,7 +810,7 @@ CNEMONSSolver::~CNEMONSSolver(void) {
     delete [] CSkinFriction;
   }
 
-  if (HeatConjugateVar != NULL) {
+  if (HeatConjugateVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         delete [] HeatConjugateVar[iMarker][iVertex];
@@ -834,12 +820,14 @@ CNEMONSSolver::~CNEMONSSolver(void) {
     delete [] HeatConjugateVar;
   }
 
-  if (Buffet_Sensor != NULL) {
+  if (Buffet_Sensor != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++){
       delete [] Buffet_Sensor[iMarker];
     }
     delete [] Buffet_Sensor;
   }
+
+  if (primitives_aux != nullptr) delete [] primitives_aux;
 
 }
 
@@ -1005,9 +993,9 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Calculate geometric quantities ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    Normal = geometry->edge[iEdge]->GetNormal();
+    iPoint = geometry->edges->GetNode(iEdge, 0);
+    jPoint = geometry->edges->GetNode(iEdge, 1);
+    const auto* Normal = geometry->edges->GetNormal(iEdge);
     Area   = 0;
     for (iDim = 0; iDim < nDim; iDim++)
       Area += Normal[iDim]*Normal[iDim];
@@ -1027,9 +1015,9 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
     Mean_Density        = 0.5*(V_i[RHO_INDEX] + V_j[RHO_INDEX]);
 
     /*--- Calculate the maximum spectral radius from convection ---*/
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
+    Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;//fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
 
     /*--- Calculate mean viscous quantities ---*/
     Mean_LaminarVisc    = 0.5*(nodes->GetLaminarViscosity(iPoint) +
@@ -1048,8 +1036,8 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
     Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
     Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
   }
 
   /*--- Loop boundary edges ---*/
@@ -1079,7 +1067,7 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
 
       /*--- Calculate the maximum spectral radius from convection ---*/
       Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;
-      if (geometry->node[iPoint]->GetDomain())
+      if (geometry->nodes->GetDomain(iPoint))
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
       /*--- Calculate viscous mean quantities ---*/
@@ -1094,14 +1082,14 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
       Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
       Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-      if (geometry->node[iPoint]->GetDomain())
+      if (geometry->nodes->GetDomain(iPoint))
         nodes->AddMax_Lambda_Visc(iPoint,Lambda);
     }
   }
 
   /*--- Each element uses their own speed ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
     Local_Delta_Time      = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
@@ -1136,7 +1124,7 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
   /*--- Check if there is any element with only one neighbor...
    a CV that is inside another CV ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->node[iPoint]->GetnPoint() == 1)
+    if (geometry->nodes->GetnPoint(iPoint) == 1)
       nodes->SetDelta_Time(iPoint,Min_Delta_Time);
   }
 
@@ -1174,7 +1162,7 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
         Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
         /*--- Check if there is any element with only one neighbor...
          a CV that is inside another CV ---*/
-        if (geometry->node[iPoint]->GetnPoint() == 1) Local_Delta_Time = 0.0;
+        if (geometry->nodes->GetnPoint(iPoint) == 1) Local_Delta_Time = 0.0;
         nodes->SetDelta_Time(iPoint, Local_Delta_Time);
       }
     }
@@ -1209,11 +1197,11 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points, coordinates and normal vector in edge ---*/
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord() );
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge, 0);
+    jPoint = geometry->edges->GetNode(iEdge, 1);
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                       geometry->nodes->GetCoord(jPoint) );
+    numerics->SetNormal(geometry->edges->GetNormal(iPoint));
 
     /*--- Primitive variables, and gradient ---*/
     numerics->SetConservative   (nodes->GetSolution(iPoint),
@@ -1706,8 +1694,8 @@ void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Acquire & calculate geometric parameters ---*/
         iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
         iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        Coord        = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+        Coord        = geometry->nodes->GetCoord(iPoint);
+        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
         Normal       = geometry->vertex[iMarker][iVertex]->GetNormal();
 
         Area         = 0.0;
@@ -1783,7 +1771,7 @@ void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], pnorm)*Area;
 
         /*--- Compute viscous forces, and moment using the stress tensor ---*/
-        if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
+        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
 
           for (iDim = 0; iDim < nDim; iDim++) {
             Force[iDim] = TauElem[iDim]*Area*factor;
@@ -2081,7 +2069,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -2293,7 +2281,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -2461,7 +2449,9 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -2476,8 +2466,8 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Compute distance between wall & normal neighbor ---*/
-      Coord_i = geometry->node[iPoint]->GetCoord();
-      Coord_j = geometry->node[jPoint]->GetCoord();
+      Coord_i = geometry->nodes->GetCoord(iPoint);
+      Coord_j = geometry->nodes->GetCoord(jPoint);
 
       dij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -2614,7 +2604,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute closest normal neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -2622,10 +2612,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       /*--- Compute distance between wall & normal neighbor ---*/
       dij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        dij += (geometry->node[jPoint]->GetCoord(iDim) -
-                geometry->node[iPoint]->GetCoord(iDim))
-            * (geometry->node[jPoint]->GetCoord(iDim) -
-               geometry->node[iPoint]->GetCoord(iDim));
+        dij += (geometry->nodes->GetCoord(jPoint, iDim) -
+                geometry->nodes->GetCoord(iPoint, iDim))
+            * (geometry->nodes->GetCoord(jPoint, iDim) -
+               geometry->nodes->GetCoord(iPoint, iDim));
       }
       dij = sqrt(dij);
 

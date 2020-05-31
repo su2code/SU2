@@ -2,7 +2,7 @@
  * \file CCSVFileWriter.cpp
  * \brief CSV Writer output class
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,7 +51,7 @@ void CCSVFileWriter::Write_Data(){
   int iProcessor, nProcessor = size;
 
   unsigned long iPoint, index;
-  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
+  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = nullptr;
   unsigned long nLocalVertex_Surface = 0, MaxLocalVertex_Surface = 0;
 
   const vector<string> fieldNames = dataSorter->GetFieldNames();
@@ -80,10 +80,10 @@ void CCSVFileWriter::Write_Data(){
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
 
   su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldNames.size()]();
-  su2double *bufD_Recv = NULL;
+  su2double *bufD_Recv = nullptr;
 
   unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
-  unsigned long *bufL_Recv = NULL;
+  unsigned long *bufL_Recv = nullptr;
 
   /*--- Load send buffers with the local data on this rank. ---*/
 

@@ -2,7 +2,7 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving generic radiation problems (P1, M1, discrete ordinates...)
  * \author Ruben Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,7 +58,7 @@ void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
   // Loop over all points and determine whether they are inside
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     check = 0;
-    OP = geometry->node[iPoint]->GetCoord();
+    OP = geometry->nodes->GetCoord(iPoint);
     // Reference point with respect to center of the ellipse
     for (iDim = 0; iDim < nDim; iDim++) CP[iDim] = OP[iDim]-OC[iDim];
     // Rotate point with respect to Z axis
@@ -160,8 +160,8 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

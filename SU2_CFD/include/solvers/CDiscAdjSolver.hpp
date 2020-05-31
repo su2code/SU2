@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -89,7 +89,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSolver(void);
+  ~CDiscAdjSolver(void) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -139,30 +139,6 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Sets the adjoint values of the flow variables due to cross term contributions
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,  CConfig *config) override;
 
   /*!
    * \brief Register the objective function as output.
@@ -320,12 +296,5 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
-
-  /*!
-   * \brief Compute the multizone residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
 };

@@ -2,7 +2,7 @@
  * \file CSysVector.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -106,8 +106,7 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
 template<class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
 
-  if (vec_val != nullptr)
-    MemoryAllocation::aligned_free(vec_val);
+  MemoryAllocation::aligned_free(vec_val);
 }
 
 template<class ScalarType>
@@ -229,7 +228,8 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
   SU2_OMP_MASTER
   {
     sum = dotRes;
-    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    const auto mpi_type = (sizeof(ScalarType) < sizeof(double))? MPI_FLOAT : MPI_DOUBLE;
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, MPI_COMM_WORLD);
   }
 #endif
   /*--- Make view of result consistent across threads. ---*/
@@ -239,11 +239,12 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 }
 
 /*--- Explicit instantiations ---*/
+/*--- We allways need su2double (regardless if it is passive or active). ---*/
 template class CSysVector<su2double>;
-template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
-
-#ifdef CODI_REVERSE_TYPE
-template class CSysVector<passivedouble>;
-template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
-template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+/*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors,
+ *    and copy operations between them and active (or double) vectors, respectively. ---*/
+template class CSysVector<su2mixedfloat>;
+template void CSysVector<su2mixedfloat>::PassiveCopy(const CSysVector<su2double>&);
+template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2mixedfloat>&);
 #endif
