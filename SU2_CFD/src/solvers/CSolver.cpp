@@ -2453,7 +2453,7 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
+void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
 
   /*--- Loop interior points ---*/
 
@@ -2512,7 +2512,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) {
 
   const auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
@@ -2521,7 +2521,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
                              *config, solution, 0, 1, gradient);
 }
 
-void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
 
   bool weighted = true;
   const auto solution = base_nodes->GetAuxVar();
@@ -2532,7 +2532,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
                                weighted, solution, 0, 1, gradient, rmatrix);
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
@@ -2541,7 +2541,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool
                              *config, solution, 0, nVar, gradient);
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -2598,7 +2598,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
   }
 }
 
-void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
 
   /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
@@ -2610,7 +2610,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
                                true, gridVel, 0, nDim, gridVelGrad, rmatrix);
 }
 
-void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config) {
 
   unsigned short iDim, jDim, iNeigh, iMarker;
   unsigned short nDim = geometry->GetnDim();
@@ -2722,7 +2722,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
   delete [] Smatrix;
 }
 
-void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
   const auto& solution = base_nodes->GetSolution();

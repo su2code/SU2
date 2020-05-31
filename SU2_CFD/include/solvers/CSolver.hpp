@@ -567,27 +567,27 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config);
+  void SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Add External to Solution vector.
@@ -612,7 +612,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the solution.
@@ -620,28 +620,28 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry *geometry, CConfig *config);
+  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute slope limiter.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
+  void SetSolution_Limiter(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -1655,7 +1655,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   inline virtual void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                               CConfig *config,
+                                               const CConfig *config,
                                                bool reconstruction = false) { }
 
   /*!
@@ -1664,14 +1664,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry,
+                                               const CConfig *config,
+                                               bool reconstruction = false) { }
 
   /*!
    * \brief A virtual member.
