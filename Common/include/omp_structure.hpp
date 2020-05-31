@@ -110,6 +110,11 @@ inline void omp_destroy_lock(omp_lock_t*){}
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
 
+/*--- Disable some unsupported features on MSVC. ---*/
+#if defined(_MSC_VER)
+#undef SU2_OMP_SIMD
+#define SU2_OMP_SIMD
+#endif
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 

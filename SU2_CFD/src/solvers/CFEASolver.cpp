@@ -1959,7 +1959,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
     SU2_OMP_PARALLEL
     {
-#if !defined(CODI_REVERSE_TYPE) && !defined(USE_MIXED_PRECISION)
+#if !(defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)) || defined(CODI_FORWARD_TYPE)
     Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
 #else
     sol.PassiveCopy(LinSysSol);
