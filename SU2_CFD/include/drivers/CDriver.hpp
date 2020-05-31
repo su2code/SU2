@@ -1080,4 +1080,5 @@ public:
   /*!
    * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
    */
+  void ResetConvergence() override;
 };

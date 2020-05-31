@@ -54,6 +54,14 @@ protected:
   VectorType Velocity2;		/*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
+  //cat
+
+  //VectorOfMatrix  Gradient;       /*!< \brief Gradient of the conservative variables (rho_1, ..., rho_s, u, v, w, E, Eve). */
+  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  
+  //cat
+
   /*--- Primitive variable definition ---*/
   MatrixType Primitive;	              /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
   MatrixType Primitive_Aux;           /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
@@ -249,7 +257,7 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
@@ -334,7 +342,7 @@ public:
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline VectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
 
   /*!
    * \brief Set all the primitive variables for compressible flows.

@@ -953,8 +953,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
     /*--- Inviscid contribution ---*/
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
 
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
 
     /*--- Viscous contribution ---*/
 
@@ -977,8 +977,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
     Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
     Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
 
 
 
@@ -1030,7 +1030,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
   
-        if (geometry->node[iPoint]->GetDomain())
+        if (geometry->nodes->GetDomain(iPoint))
           nodes->AddMax_Lambda_Visc(iPoint,Lambda);
   
         }
@@ -1455,6 +1455,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Compute the upwind residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+   // exit(0);
 
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
@@ -2575,8 +2576,8 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 //    
 //    /*--- Point identification, Normal vector and area ---*/
-//    iPoint = geometry->edge[iEdge]->GetNode(0);
-//    jPoint = geometry->edge[iEdge]->GetNode(1);
+//    iPoint = geometry->edges->GetNode(0);
+//    jPoint = geometry->edges->GetNode(1);
 //    
 //    /*--- Get the conserved variables ---*/
 //    Solution_i = nodes->GetSolution(iPoint);
@@ -2600,13 +2601,13 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 //    //  
 //    //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 //    //    
-//    //    iPoint     = geometry->edge[iEdge]->GetNode(0);
-//    //    jPoint     = geometry->edge[iEdge]->GetNode(1);
-//    //    Coord_i    = geometry->node[iPoint]->GetCoord();
+//    //    iPoint     = geometry->edges->GetNode(0);
+//    //    jPoint     = geometry->edges->GetNode(1);
+//    //    Coord_i    = geometry->nodes->GetCoord();
 //    //    Coord_j    = geometry->node[jPoint]->GetCoord();
-//    //    Solution_i = node[iPoint]->GetSolution();
+//    //    Solution_i = nodes->GetSolution();
 //    //    Solution_j = node[jPoint]->GetSolution();
-//    //    Gradient_i = node[iPoint]->GetGradient();
+//    //    Gradient_i = nodes->GetGradient();
 //    //    Gradient_j = node[jPoint]->GetGradient();
 ////
 //    //    
@@ -2618,14 +2619,14 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 //    //        dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
 //    //      
 //    //      /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-//    //      if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
-//    //      else            dp = node[iPoint]->GetSolution_Min(iVar);
+//    //      if ( dm > 0.0 ) dp = nodes->GetSolution_Max(iVar);
+//    //      else            dp = nodes->GetSolution_Min(iVar);
 //    //      
 //    //      limiter = max(0.0, min(1.0,dp/dm));
 //    //      
-//    //      if (limiter < node[iPoint]->GetLimiter(iVar))
-//    //        if (geometry->node[iPoint]->GetDomain())
-//    //          node[iPoint]->SetLimiter(iVar, limiter);
+//    //      if (limiter < nodes->GetLimiter(iVar))
+//    //        if (geometry->nodes->GetDomain())
+//    //          nodes->SetLimiter(iVar, limiter);
 //    //      
 //    //      /*-- Repeat for point j on the edge ---*/
 //    //      dm = 0.0;
@@ -2653,9 +2654,9 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 //      
 //      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 //        
-//        iPoint     = geometry->edge[iEdge]->GetNode(0);
-//        jPoint     = geometry->edge[iEdge]->GetNode(1);
-//        Coord_i    = geometry->node[iPoint]->GetCoord();
+//        iPoint     = geometry->edges->GetNode(0);
+//        jPoint     = geometry->edges->GetNode(1);
+//        Coord_i    = geometry->nodes->GetCoord();
 //        Coord_j    = geometry->node[jPoint]->GetCoord();
 //        Solution_i = nodes->GetSolution(iPoint);
 //        Solution_j = nodes->GetSolution(jPoint);
@@ -2676,7 +2677,7 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 //          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
 //          
 //          if (limiter < nodes->GetLimiter(iPoint,iVar)){
-//            //if (geometry->node[iPoint]->GetDomain()) {
+//            //if (geometry->nodes->GetDomain()) {
 //              nodes->SetLimiter(iPoint, iVar, limiter);}
 //              
 //              //              if (iEdge == 0) {
@@ -4053,7 +4054,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -4081,7 +4082,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
+      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
       else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
 
       /*--- Non-dim. the inputs if necessary. ---*/
@@ -4266,7 +4267,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       conv_numerics->SetPrimitive(V_domain,V_outlet);
 
       if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Passing supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
@@ -4286,11 +4287,11 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
 //        /*--- Set the normal vector and the coordinates ---*/
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
 //        /*--- Primitive variables, and gradient ---*/
 //        visc_numerics->SetPrimitive(V_domain, V_outlet);
-//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), nodes->GetGradient_Primitive());
+//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(), nodes->GetGradient_Primitive());
 
 //        /*--- Conservative variables, and gradient ---*/
 //        visc_numerics->SetConservative(U_domain, U_outlet);

@@ -9528,9 +9528,10 @@ public:
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
   /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   * \brief Find the marker index (if any) that is part of a given interface pair.
+   * \param[in] iInterface - Number of the interface pair being tested, starting at 0.
+   * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
-  su2double GetRelaxation_Factor_Flow(void) const { return Relaxation_Factor_Flow; }
+  short FindInterfaceMarker(unsigned short iInterface) const;
 
 };
