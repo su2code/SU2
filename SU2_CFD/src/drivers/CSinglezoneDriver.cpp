@@ -136,9 +136,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter, unsigned long Iter_dC
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
       /*--- Specifically in case of fixed CL  approach-*/
       if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+      std::cout << "Buckle 1 \n"<< std::endl;    
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->ResetAoA_FD();
+      std::cout << "Buckle 2 \n"<< std::endl; 
       config_container[ZONE_0]->SetFinite_Difference_Mode(false);
+      std::cout << "Buckle 3 \n"<< std::endl; 
       output_container[ZONE_0]->ResetLastInnerIter_Output();
+      std::cout << "Buckle 4 \n"<< std::endl; 
       if (Iter_dCL_dAlpha_in != 0) {config_container[ZONE_0]->SetIter_dCL_dAlpha(Iter_dCL_dAlpha_in);}
       }
   }
