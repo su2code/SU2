@@ -122,7 +122,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         
     # constraints handling
     
-    print(project.config['OPT_CONSTRAINT'])
+
     if project.config['OPT_CONSTRAINT'] == None:
        f_eqcons       = None
        f_ieqcons      = None 
