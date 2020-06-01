@@ -2002,17 +2002,13 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
     factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-    if (CDkw > 0.) {
-      factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
-              + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    }
+    factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+            + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   TmpWeights[nVarFlo+0] += omegalim*factor;
   TmpWeights[nVarFlo+1] += -lim*k/pow(omega,2.)*factor;
-//  if ((walldist > 1.0e-10) && (CDkw > 0.)) {
   if (CDkw > 0.) {
-//  if (walldist > 1.0e-10) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
       TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
