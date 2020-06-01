@@ -6041,8 +6041,9 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   
   //--- k weight
   if (sst) {
+    weights[1][nVarFlo] += factor;
     for (iDim = 0; iDim < nDim; ++iDim) {
-      weights[1][nVarFlo] += factor -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+      weights[1][nVarFlo] += -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
                                      + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
   }
