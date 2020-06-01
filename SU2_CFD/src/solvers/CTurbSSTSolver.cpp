@@ -1915,7 +1915,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   omega = varTur->GetPrimitive(iPoint, 1);
   
   mu  = varFlo->GetLaminarViscosity(iPoint);
-  mut = max(varFlo->GetEddyViscosity(iPoint), eps);
+//  mut = max(varFlo->GetEddyViscosity(iPoint), eps);
+  mut = max(r*k/omega, eps);
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
