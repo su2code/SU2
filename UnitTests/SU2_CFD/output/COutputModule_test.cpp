@@ -21,7 +21,10 @@ struct __TestCase__ {
                                      "MACH_NUMBER=0.5\n"
                                      "MARKER_CUSTOM= ( x_minus, x_plus, y_minus, y_plus,z_plus, z_minus)\n"
                                      "VISCOSITY_MODEL= CONSTANT_VISCOSITY\n"
-                                     "CONV_FIELD=RMS_DENSITY\n"
+                                     "CONV_FIELD=RMS_DENSITY, DRAG\n"
+                                     "CONV_STARTITER=5\n"
+                                     "CONV_CAUCHY_ELEMS=3\n"
+                                     "CONV_CAUCHY_EPS=1e-3\n"
                                      "MESH_BOX_SIZE=5,5,5\n"
                                      "MESH_BOX_LENGTH=1,1,1\n"
                                      "MESH_BOX_OFFSET=0,0,0\n"
@@ -123,16 +126,37 @@ TEST_CASE("Convergence Module", "[Output Module]"){
   modules.Clear();
 
   modules.GetHistoryFields().AddItem("RMS_DENSITY", COutputField("", ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "", FieldType::RESIDUAL));
+  modules.GetHistoryFields().AddItem("DRAG", COutputField("", ScreenOutputFormat::SCIENTIFIC, "DRAG", "", FieldType::AUTO_COEFFICIENT));
 
   modules.Init(TestCase->config);
 
+  REQUIRE(modules.GetHistoryFields().CheckKey("CAUCHY_DRAG"));
+
   modules.GetHistoryFields().GetItemByKey("RMS_DENSITY").value = -15.0;
+  auto val1 = modules.GetHistoryFields().GetItemByKey("DRAG").value = 1.001;
+
+  modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{0,0});
+
+  CHECK(modules.GetHistoryFields()["CAUCHY_DRAG"].value == 1.0);
+  auto val2 = modules.GetHistoryFields().GetItemByKey("DRAG").value = 1.002;
 
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{1,0});
 
+  CHECK(modules.GetHistoryFields()["CAUCHY_DRAG"].value == Approx((0 + 0 + abs(val2-val1)/abs(val2))/3));
+
   CHECK(modules.GetHistoryFields().GetValueByKey("CONVERGENCE") == 0.0);
 
+  auto val3 = modules.GetHistoryFields().GetItemByKey("DRAG").value = 1.003;
+
   modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{50,0});
+
+  auto val4 = modules.GetHistoryFields().GetItemByKey("DRAG").value = 1.004;
+
+  modules.LoadData({TestCase->config, TestCase->geometry, TestCase->solver},{51,0});
+
+  CHECK(modules.GetHistoryFields()["CAUCHY_DRAG"].value == Approx((abs(val4-val3)/abs(val4) +
+                                                                   abs(val3-val2)/abs(val3) +
+                                                                   abs(val2-val1)/abs(val2))/3));
 
   CHECK(modules.GetHistoryFields().GetValueByKey("CONVERGENCE") == 1.0);
 

@@ -41,7 +41,7 @@ void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &his
 
   /*--- Filter convergence fields which are coefficients ---*/
 
-  const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT},
+  const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT, FieldType::AUTO_COEFFICIENT, FieldType::PER_SURFACE_COEFFICIENT},
                                                                        historyFields.GetCollection().GetFieldsByKey(convFields));
   for (const auto& field : convergenceFields){
 
@@ -75,7 +75,9 @@ void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& histor
 
       /*--- Cauchy based convergence criteria ---*/
 
-      if (outField.fieldType == FieldType::COEFFICIENT) {
+      if (outField.fieldType == FieldType::COEFFICIENT ||
+          outField.fieldType == FieldType::AUTO_COEFFICIENT ||
+          outField.fieldType == FieldType::PER_SURFACE_COEFFICIENT) {
 
         if (Iter == 0){
           for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
