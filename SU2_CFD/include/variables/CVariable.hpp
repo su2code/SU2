@@ -2686,6 +2686,10 @@ public:
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
 
+  inline virtual void SetTauWallDir(unsigned long iPoint, unsigned long iDim, su2double val_tau_wall) {}
+
+  inline virtual su2double GetTauWallDir(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
   inline virtual void SetTauWall_Flag(unsigned long iPoint, bool val_tau_wall_flag) { }
 
   inline virtual bool GetTauWall_Flag(unsigned long iPoint) const { return false; }

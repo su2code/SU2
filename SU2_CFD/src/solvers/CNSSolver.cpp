@@ -2861,6 +2861,10 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
          nodes->SetTauWall_Flag(iPoint,true);
          nodes->SetTauWall(iPoint, tauWall);
 
+         /*--- Set tau wall projected to the flow direction for pos-processing only---*/
+         for(iDim = 0; iDim<nDim; iDim++)
+           nodes->SetTauWallDir(iPoint, iDim, tauWall*dirTan[iDim]);
+
          /*--- Set tau wall value and heat flux for boundary conditions---*/
          TauWall_WMLES[iMarker][iVertex] = tauWall;
          HeatFlux_WMLES[iMarker][iVertex] = qWall;
