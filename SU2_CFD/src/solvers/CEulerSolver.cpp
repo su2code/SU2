@@ -2274,7 +2274,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == DT_STEPPING_2ND));
   const bool SubsonicEngine = config->GetSubsonicEngine();
-
+  std::cout << "CEulerSolver::SetInitialCondition => bools \n"<< std::endl;  
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL
@@ -2308,7 +2308,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
-
+ std::cout << "CEulerSolver::SetInitialCondition => check verification solution \n"<< std::endl; 
   /*--- Set subsonic initial condition for engine intakes ---*/
 
   if (SubsonicEngine) {
@@ -2484,7 +2484,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
-
+  std::cout << "CEulerSolver::SetInitialCondition => solution initialization \n"<< std::endl; 
   } // end SU2_OMP_PARALLEL
 
 }
