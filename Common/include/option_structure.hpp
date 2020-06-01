@@ -136,6 +136,8 @@ const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK
 
 const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
 
+constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */;          /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
+
 /*!
  * \brief Boolean answers
  */
