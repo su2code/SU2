@@ -6997,6 +6997,11 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
                                       nodes->GetVorticity(iPoint));
         }
+        
+        /*--- Set values for gradient Jacobian ---*/
+
+        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                                 geometry->node[iPoint]->GetVolume());
 
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
               following routine based upon the velocity-component gradients. ---*/
