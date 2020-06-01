@@ -5943,6 +5943,8 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   unsigned short iDim, jDim, iVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
   
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+  
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], e, k,
             T, mu, mut, lam, lamt, dmudT, 
