@@ -130,8 +130,7 @@ class Design:
         # before running the command the new DV_VALUE needs to be specified inside the deformation config
         ConfigFileName = deform_folder + '/' + self.config['CONFIG_DEF']
         # It includes the relaxation prameter as done in SU2
-        print('design.SU2_DEF x_in = {}'.format(self.__dv))
-        UpdateConfig(ConfigFileName, 'DV_VALUE', self.__dv/float ( self.config['OPT_RELAX_FACTOR'] ))
+        UpdateConfig(ConfigFileName, 'DV_VALUE', self.__dv*float ( self.config['OPT_RELAX_FACTOR'] ))
         
         # performing SU2_DEF
         DeformMesh(deform_folder,self.config['CONFIG_DEF'])

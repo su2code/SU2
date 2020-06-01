@@ -33,7 +33,7 @@ import sys
 
 from .. import eval as su2eval
 from numpy import array, zeros
-
+from datetime import datetime
 
 # -------------------------------------------------------------------
 #  Scipy SLSQP
@@ -406,6 +406,14 @@ def obj_df(x,project):
             dobj[idv] = dobj[idv]+this_dv_dobj;
             idv+=1
     dobj = array( dobj )
+
+    # print objective function derivative in output
+    now = datetime.now()
+    current_time = now.strftime("%H_%M_%S")  
+    with open('boj_df'+ current_time +'.txt', 'w') as f:
+       for item in dobj:
+          f.write("%s\n" % item)    
+    f.close()
     
     return dobj
 

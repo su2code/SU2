@@ -64,7 +64,7 @@ class Project:
         self.primal_folder = ''
         self.adjoint_folder = ''
         
-        self.design_toll = 10**(-8)  # allowable difference into design variable vector to consider the same design
+        self.design_toll = 10**(-20)  # allowable difference into design variable vector to consider the same design
         
         # config objects for primal and adjoint simulations with structural and fluid config files and options
         self.configFSIPrimal = None
