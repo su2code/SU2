@@ -400,8 +400,7 @@ def ReadPointInversion(configDef,MeshFile):
             PointInv_arr.append(a)
     PointInv = np.array(PointInv_arr) 
     # Sorting according to first column index
-    # In case nodes on the boundary are not numbered from 0 to the maximum a argsort is required for PointInv[:,0]
-    PointInv[:,0] = np.argsort(PointInv[:,0]) 
+    # In case nodes on the boundary are not numbered from 0 to the maximum a argsort is required for PointInv[:,0] 
     PointInv = PointInv[PointInv[:,0].argsort()]
     
     return PointInv
@@ -497,7 +496,7 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):
     
     # DEBUGGING
     print('adj_folder = '+adj_folder)
-    print('ffd_degree = '+ffd_degree)
+    scipy.io.savemat( './PointInvpy.mat', mdict={'PointInvpy': PointInv}) 
     scipy.io.savemat( './chainpy.mat', mdict={'chainpy': chain})    
     scipy.io.savemat( './GridSensitivitiespy.mat', mdict={'GridSensitivitiespy': GridSensitivities}) 
     scipy.io.savemat( './FFD_indexespy.mat', mdict={'FFD_indexespy': FFD_indexes})

@@ -450,7 +450,7 @@ class AdjointInterface:
         # Store the global fluid coordinates
         if myid == self.rootProcess:
             # In case nodes on the boundary are not numbered from 0 to the maximum a argsort is required as globalFluidIndex
-            self.globalFluidIndex = np.argsort(self.globalFluidIndex)            
+            self.globalFluidIndex = np.argsort(self.globalFluidIndex).argsort()            
             self.globalFluidCoordinates = np.zeros((self.nFluidInterfacePhysicalNodes, 3))
             for i in range(0, self.nFluidInterfacePhysicalNodes):
                 GlobalIndex = int(self.globalFluidIndex[i])
