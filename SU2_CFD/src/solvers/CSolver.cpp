@@ -5724,6 +5724,7 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
         }
       }
       //--- Dependence of pressure on TKE
+      //--- Momentum equation
       for (iVar = 1; iVar < nDim+1; iVar++) {
         const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
                         adjy = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 1);
@@ -5732,6 +5733,14 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
           const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 2);
           weights[1][nVarFlo+0] += (g-1.)*adjz;
         }
+      }
+      //--- Energy equation
+      const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 0),
+                      adjy = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 1);
+      weights[1][nVarFlo+0] += (g-1.)*(u*adjx+v*adjy);
+      if (nDim == 3) {
+        const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 2);
+        weights[1][nVarFlo+0] += (g-1.)*w*adjz;
       }
     }
     else {
