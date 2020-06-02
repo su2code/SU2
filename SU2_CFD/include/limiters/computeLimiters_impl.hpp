@@ -98,12 +98,9 @@ void computeLimiters_impl(CSolver* solver,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  bool tapeActive = false;
-
+  /*--- If limiters are frozen do not record the computation ---*/
   if (config.GetDiscrete_Adjoint() && config.GetFrozen_Limiter_Disc()) {
-    /*--- If limiters are frozen do not record the computation ---*/
-    tapeActive = AD::TapeActive();
-    AD::StopRecording();
+    AD::BeginPassive();
   }
 
   CLimiterDetails<LimiterKind> limiterDetails;
@@ -240,6 +237,6 @@ void computeLimiters_impl(CSolver* solver,
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
 
-  if (tapeActive) AD::StartRecording();
+  AD::EndPassive();
 
 }

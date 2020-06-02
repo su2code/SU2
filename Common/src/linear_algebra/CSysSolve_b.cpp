@@ -25,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/CConfig.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysMatrix.hpp"

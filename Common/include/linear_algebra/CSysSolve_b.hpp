@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include "../basic_types/datatype_structure.hpp"
+
 #ifdef CODI_REVERSE_TYPE
 template<class ScalarType>
 struct CSysSolve_b {

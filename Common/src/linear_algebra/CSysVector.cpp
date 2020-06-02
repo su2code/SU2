@@ -40,7 +40,12 @@
  * CSysVector and do not have the same work scheduling must use a
  * SU2_OMP_BARRIER before using the vector.
  */
+#ifndef _MSC_VER
+#define PARALLEL_FOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
+#else
+/*--- MSVC does not support SIMD by default. ---*/
 #define PARALLEL_FOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#endif
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {

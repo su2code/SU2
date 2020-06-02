@@ -155,7 +155,9 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   }
 
   /*--- Compute the element volumes using the reference coordinates ---*/
-  SetMinMaxVolume(geometry, config, false);
+  SU2_OMP_PARALLEL {
+    SetMinMaxVolume(geometry, config, false);
+  }
 
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
@@ -177,97 +179,99 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
 
-  /*--- Shared reduction variables. ---*/
+  /*--- This routine is for post processing, it does not need to be recorded. ---*/
+  AD::BeginPassive();
 
-  unsigned long ElemCounter = 0;
-  su2double MaxVolume = -1E22, MinVolume = 1E22;
+  /*--- Initialize shared reduction variables. ---*/
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER {
+    MaxVolume = -1E22; MinVolume = 1E22;
+    ElemCounter = 0;
+  }
 
-  SU2_OMP_PARALLEL
+  /*--- Local min/max, final reduction outside loop. ---*/
+  su2double maxVol = -1E22, minVol = 1E22;
+  unsigned long elCount = 0;
+
+  /*--- Loop over the elements in the domain. ---*/
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+
+    int thread = omp_get_thread_num();
+
+    int EL_KIND;
+    unsigned short iNode, nNodes, iDim;
+
+    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+
+    CElement* fea_elem = element_container[FEA_TERM][EL_KIND + thread*MAX_FE_KINDS];
+
+    /*--- For the number of nodes, we get the coordinates from
+     *    the connectivity matrix and the geometry structure. ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      auto indexNode = geometry->elem[iElem]->GetNode(iNode);
+
+      /*--- Compute the volume with the reference or current coordinates. ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        su2double val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
+        if (updated)
+          val_Coord += nodes->GetSolution(indexNode,iDim);
+
+        fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
+      }
+    }
+
+    /*--- Compute the volume of the element (or the area in 2D cases ). ---*/
+
+    su2double ElemVolume;
+    if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
+    else           ElemVolume = fea_elem->ComputeVolume();
+
+    maxVol = max(maxVol, ElemVolume);
+    minVol = min(minVol, ElemVolume);
+
+    if (updated) element[iElem].SetCurr_Volume(ElemVolume);
+    else element[iElem].SetRef_Volume(ElemVolume);
+
+    /*--- Count distorted elements. ---*/
+    if (ElemVolume <= 0.0) elCount++;
+  }
+  SU2_OMP_CRITICAL
   {
-    /*--- Local min/max, final reduction outside loop. ---*/
-    su2double maxVol = -1E22, minVol = 1E22;
+    MaxVolume = max(MaxVolume, maxVol);
+    MinVolume = min(MinVolume, minVol);
+    ElemCounter += elCount;
+  }
+  SU2_OMP_BARRIER
 
-    /*--- Loop over the elements in the domain. ---*/
+  SU2_OMP_MASTER
+  {
+    elCount = ElemCounter; maxVol = MaxVolume; minVol = MinVolume;
+    SU2_MPI::Allreduce(&elCount, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  }
+  SU2_OMP_BARRIER
 
-    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(+:ElemCounter) nowait)
-    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+  /*--- Volume from 0 to 1 ---*/
 
-      int thread = omp_get_thread_num();
-
-      int EL_KIND;
-      unsigned short iNode, nNodes, iDim;
-
-      GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
-
-      CElement* fea_elem = element_container[FEA_TERM][EL_KIND + thread*MAX_FE_KINDS];
-
-      /*--- For the number of nodes, we get the coordinates from
-       *    the connectivity matrix and the geometry structure. ---*/
-
-      for (iNode = 0; iNode < nNodes; iNode++) {
-
-        auto indexNode = geometry->elem[iElem]->GetNode(iNode);
-
-        /*--- Compute the volume with the reference or current coordinates. ---*/
-        for (iDim = 0; iDim < nDim; iDim++) {
-          su2double val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
-          if (updated)
-            val_Coord += nodes->GetSolution(indexNode,iDim);
-
-          fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
-        }
-      }
-
-      /*--- Compute the volume of the element (or the area in 2D cases ). ---*/
-
-      su2double ElemVolume;
-      if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
-      else           ElemVolume = fea_elem->ComputeVolume();
-
-      maxVol = max(maxVol, ElemVolume);
-      minVol = min(minVol, ElemVolume);
-
-      if (updated) element[iElem].SetCurr_Volume(ElemVolume);
-      else element[iElem].SetRef_Volume(ElemVolume);
-
-      /*--- Count distorted elements. ---*/
-      if (ElemVolume <= 0.0) ElemCounter++;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+    if (updated) {
+      su2double ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
+      element[iElem].SetCurr_Volume(ElemVolume);
     }
-    SU2_OMP_CRITICAL
-    {
-      MaxVolume = max(MaxVolume, maxVol);
-      MinVolume = min(MinVolume, minVol);
+    else {
+      su2double ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
+      element[iElem].SetRef_Volume(ElemVolume);
     }
-    SU2_OMP_BARRIER
-
-    SU2_OMP_MASTER
-    {
-      unsigned long ElemCounter_Local = ElemCounter;
-      su2double MaxVolume_Local = MaxVolume;
-      su2double MinVolume_Local = MinVolume;
-      SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    }
-    SU2_OMP_BARRIER
-
-    /*--- Volume from  0 to 1 ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
-      if (updated) {
-        su2double ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
-        element[iElem].SetCurr_Volume(ElemVolume);
-      }
-      else {
-        su2double ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
-        element[iElem].SetRef_Volume(ElemVolume);
-      }
-    }
-
-  } // end SU2_OMP_PARALLEL
+  }
 
   /*--- Store the maximum and minimum volume. ---*/
+  SU2_OMP_MASTER {
   if (updated) {
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
@@ -280,6 +284,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
+  } SU2_OMP_BARRIER
+
+  AD::EndPassive();
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
@@ -480,12 +487,11 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  AD::BeginPassive();
 
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive();
 
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
@@ -513,13 +519,10 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);
 
-  } // end parallel
-
   /*--- Check for failed deformation (negative volumes). ---*/
-  /*--- This is not recorded as it does not influence the solution. ---*/
-  AD::StopRecording();
   SetMinMaxVolume(geometry[MESH_0], config, true);
-  if (ActiveTape) AD::StartRecording();
+
+  } // end parallel
 
 }
 
