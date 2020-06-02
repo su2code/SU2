@@ -33,6 +33,7 @@ import os, sys, shutil
 import subprocess
 import numpy as np
 from math import pow, factorial
+import scipy.io
 
 def SaveSplineMatrix(config):
     """
@@ -495,13 +496,14 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):
     np.savetxt(Output, obj_df, delimiter =', ')
     
     # DEBUGGING
+    '''
     print('adj_folder = '+adj_folder)
     scipy.io.savemat( './PointInvpy.mat', mdict={'PointInvpy': PointInv}) 
     scipy.io.savemat( './chainpy.mat', mdict={'chainpy': chain})    
     scipy.io.savemat( './GridSensitivitiespy.mat', mdict={'GridSensitivitiespy': GridSensitivities}) 
     scipy.io.savemat( './FFD_indexespy.mat', mdict={'FFD_indexespy': FFD_indexes})
     scipy.io.savemat( './obj_dfpy.mat', mdict={'obj_dfpy': obj_df})
-    
+    '''
     return obj_df  
     
     
