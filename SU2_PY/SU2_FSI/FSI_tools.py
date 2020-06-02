@@ -495,6 +495,14 @@ def ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree):
     Output = adj_folder + '/' + 'Control_Points_Sensitivity.dat'
     np.savetxt(Output, obj_df, delimiter =', ')
     
+    # DEBUGGING
+    print('adj_folder = '+adj_folder)
+    print('ffd_degree = '+ffd_degree)
+    scipy.io.savemat( './chainpy.mat', mdict={'chainpy': chain})    
+    scipy.io.savemat( './GridSensitivitiespy.mat', mdict={'GridSensitivitiespy': GridSensitivities}) 
+    scipy.io.savemat( './FFD_indexespy.mat', mdict={'FFD_indexespy': FFD_indexes})
+    scipy.io.savemat( './obj_dfpy.mat', mdict={'obj_dfpy': obj_df})
+    
     return obj_df  
     
     
