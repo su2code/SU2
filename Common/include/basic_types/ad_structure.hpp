@@ -251,13 +251,15 @@ namespace AD{
 
   /*!
    * \brief Start a passive region, i.e. stop recording.
+   * \return True is tape was active.
    */
-  inline void BeginPassive() {}
+  inline bool BeginPassive() { return false; }
 
   /*!
    * \brief End a passive region, i.e. start recording if we were recording before.
+   * \param[in] wasActive - Whether we were recording before entering the passive region.
    */
-  inline void EndPassive() {}
+  inline void EndPassive(bool wasActive) {}
 
 #else
   using CheckpointHandler = codi::DataStore;
@@ -498,19 +500,15 @@ namespace AD{
 
   FORCEINLINE void EndExtFunc() { delete FuncHelper; }
 
-  FORCEINLINE void BeginPassive() {
+  FORCEINLINE bool BeginPassive() {
     if(AD::globalTape.isActive()) {
-      AD::globalTape.setPassive();
-      AD::Status = true;
+      StopRecording();
+      return true;
     }
+    return false;
   }
 
-  FORCEINLINE void EndPassive() {
-    if(AD::Status) {
-     AD::globalTape.setActive();
-     AD::Status = false;
-    }
-  }
+  FORCEINLINE void EndPassive(bool wasActive) { if(wasActive) StartRecording(); }
 
 #endif // CODI_REVERSE_TYPE
 

@@ -7264,7 +7264,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
      * neighbor, then enable it again and recompute the distance.
      * This reduces the overhead of storing irrelevant computations. ---*/
 
-    AD::BeginPassive();
+    const bool wasActive = AD::BeginPassive();
 
     su2double max_delta=0;
     auto max_neighbor = iPoint;
@@ -7285,7 +7285,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
       }
     }
 
-    AD::EndPassive();
+    AD::EndPassive(wasActive);
 
     /*--- Recompute and set. ---*/
     const su2double* Coord_j = nodes->GetCoord(max_neighbor);

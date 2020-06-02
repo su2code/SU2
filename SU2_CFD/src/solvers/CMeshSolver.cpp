@@ -180,7 +180,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
 
   /*--- This routine is for post processing, it does not need to be recorded. ---*/
-  AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   /*--- Initialize shared reduction variables. ---*/
   SU2_OMP_BARRIER
@@ -286,7 +286,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
   } SU2_OMP_BARRIER
 
-  AD::EndPassive();
+  AD::EndPassive(wasActive);
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
@@ -487,11 +487,11 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
-  AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  AD::EndPassive();
+  AD::EndPassive(wasActive);
 
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {

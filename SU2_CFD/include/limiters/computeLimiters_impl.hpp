@@ -99,8 +99,9 @@ void computeLimiters_impl(CSolver* solver,
 #endif
 
   /*--- If limiters are frozen do not record the computation ---*/
+  bool wasActive = false;
   if (config.GetDiscrete_Adjoint() && config.GetFrozen_Limiter_Disc()) {
-    AD::BeginPassive();
+    wasActive = AD::BeginPassive();
   }
 
   CLimiterDetails<LimiterKind> limiterDetails;
@@ -237,6 +238,6 @@ void computeLimiters_impl(CSolver* solver,
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
 
-  AD::EndPassive();
+  AD::EndPassive(wasActive);
 
 }

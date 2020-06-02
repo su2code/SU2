@@ -1081,7 +1081,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   /*--- Never record this method as the mass matrix is passive (but the mass residual is not). ---*/
-  AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1156,7 +1156,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
 
   } // end SU2_OMP_PARALLEL
 
-  AD::EndPassive();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1329,7 +1329,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Never record this method as atm it is not differentiable. ---*/
-  AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   const bool prestretch_fem = config->GetPrestretch();
 
@@ -1608,7 +1608,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   }
 
-  AD::EndPassive();
+  AD::EndPassive(wasActive);
 
 }
 

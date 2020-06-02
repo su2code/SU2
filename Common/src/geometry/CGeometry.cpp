@@ -1890,7 +1890,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
 
-  AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
@@ -2609,7 +2609,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
   }
 
-  AD::EndPassive();
+  AD::EndPassive(wasActive);
 
 }
 
