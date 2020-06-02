@@ -5671,6 +5671,7 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
     B[1][1] = v; B[1][2] = -(g-1.)*u; B[1][3] = -(g-1.)*u*v;
     B[2][0] = 1.; B[2][1] = u; B[2][2] = (3.-g)*v; B[2][3] = g*e-(g-1.)/2.*(v2+2*v*v);
     B[3][2] = g-1.; B[3][3] = g*v;
+
   }
   else{
     A[0][1] = -u*u + (g-1.)/2.*v2; A[0][2] = -u*v; A[0][3] = -u*w; A[0][4] = -u*(g*e-(g-1)*v2);
@@ -5690,6 +5691,28 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
     C[2][2] = w; C[2][3] = -(g-1.)*v; C[2][4] = -(g-1.)*v*w;
     C[3][0] = 1.; C[3][1] = u; C[3][2] = v; C[3][3] = (3.-g)*w; C[3][4] = g*e-(g-1.)/2.*(v2+2*w*w);
     C[4][3] = (g-1.); C[4][4] = g*w;
+  }
+  
+  //--- Contribution of k to dp/dr and dp/d(re)
+  if (sst) {
+    const su2double k = varTur->GetPrimitive(iPoint,0);
+    if (nDim == 2) {
+      A[0][3] += (g-1.)*k*u;
+      A[1][3] += -(g-1.)*k;
+      
+      B[0][3] += (g-1.)*k*v;
+      B[2][3] += -(g-1.)*k;
+    }
+    else {
+      A[0][4] += (g-1.)*k*u;
+      A[1][4] += -(g-1.)*k;
+      
+      B[0][4] += (g-1.)*k*v;
+      B[2][4] += -(g-1.)*k;
+      
+      C[0][4] += (g-1.)*k*w;
+      C[3][4] += -(g-1.)*k;
+    }
   }
 
   for (iVar = 0; iVar < nVarFlo; ++iVar) {
@@ -5723,7 +5746,8 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
           weights[1][3]            += - val*adjz;
         }
       }
-      //--- Dependence of pressure on TKE
+      
+      //--- Contribution of k to dp/d(rk)
       //--- Momentum equation
       for (iVar = 1; iVar < nDim+1; iVar++) {
         const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
