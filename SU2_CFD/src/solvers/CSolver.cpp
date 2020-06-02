@@ -5997,7 +5997,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   T   = varFlo->GetTemperature(iPoint);
   mu  = varFlo->GetLaminarViscosity(iPoint);
   mut = varFlo->GetEddyViscosity(iPoint);
-  if (sst) mut = max(r*k/varTur->GetPrimitive(iPoint,1), eps);
+//  if (sst) mut = max(r*k/varTur->GetPrimitive(iPoint,1), eps);
 
   Tref  = config->GetMu_Temperature_RefND();
   S     = config->GetMu_SND();
@@ -6049,9 +6049,6 @@ void CSolver::ViscousMetric(CSolver                    **solver,
     }
     factor += cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
     if (sst) {
-//      factor += gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
-//                            +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
-//              + gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
       factor += gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
               + gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
