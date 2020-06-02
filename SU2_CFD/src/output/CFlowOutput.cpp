@@ -200,7 +200,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
                 if (geometry->node[jPoint]->GetVertex(iMarker) >= 0) {
                   /*--- Not multiplied by two since we need to half the y coordinate. ---*/
                   AxiFactor = PI_NUMBER * geometry->node[jPoint]->GetCoord(1);
-                  break;    
+                  break;
                 }
               }
             }
@@ -2900,7 +2900,10 @@ void CFlowOutput::SetTimeAveragedFields(CConfig *config){
   }
 
   if (config->GetWall_Models() || config->GetWall_Functions()){
-    AddVolumeOutput("MEAN_TAUWALL_WM",  "MeanTauWall_WM",   "TIME_AVERAGE", "Shear stress at the wall as predicted by the wall function/model");
+    AddVolumeOutput("MEAN_TAUWALL-X",  "MeanTauWall_x",   "TIME_AVERAGE", "Wall Model Shear Stress projected in x-direction");
+    AddVolumeOutput("MEAN_TAUWALL-Y",  "MeanTauWall_y",   "TIME_AVERAGE", "Wall Model Shear Stress projected in y-direction");
+    if (nDim == 3)
+      AddVolumeOutput("MEAN_TAUWALL-Z",  "MeanTauWall_z",   "TIME_AVERAGE", "Wall Model Shear Stress projected in z-direction");
   }
 }
 
@@ -2946,6 +2949,9 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
   }
 
   if (config->GetWall_Models() || config->GetWall_Functions()){
-    SetAvgVolumeOutputValue("MEAN_TAUWALL_WM", iPoint, Node_Flow->GetTauWall(iPoint));
+    SetAvgVolumeOutputValue("MEAN_TAUWALL-X", iPoint, Node_Flow->GetTauWallDir(iPoint,0));
+    SetAvgVolumeOutputValue("MEAN_TAUWALL-Y", iPoint, Node_Flow->GetTauWallDir(iPoint,1));
+    if (nDim == 3)
+      SetAvgVolumeOutputValue("MEAN_TAUWALL-Z", iPoint, Node_Flow->GetTauWallDir(iPoint,2));
   }
 }
