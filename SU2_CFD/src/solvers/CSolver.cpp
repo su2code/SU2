@@ -5639,7 +5639,7 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
   const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
-  unsigned short iVar, jVar;
+  unsigned short iDim, iVar, jVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   vector<vector<su2double> > A(nDim+2, vector<su2double>(nDim+2, 0.0)),
@@ -5749,14 +5749,9 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
       
       //--- Contribution of k to dp/d(rk)
       //--- Momentum equation
-      for (iVar = 1; iVar < nDim+1; iVar++) {
-        const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
-                        adjy = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 1);
-        weights[1][nVarFlo+0] += (g-1.)*(adjx+adjy);
-        if (nDim == 3) {
-          const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 2);
-          weights[1][nVarFlo+0] += (g-1.)*adjz;
-        }
+      for (iDim = 0; iDim < nDim; iDim++) {
+        const su2double adj = varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim);
+        weights[1][nVarFlo+0] += (g-1.)*adj;
       }
       //--- Energy equation
       const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 0),
