@@ -115,4 +115,6 @@ CIteration* CIterationFactory::createIteration(ENUM_MAIN_SOLVER kindSolver, cons
       SU2_MPI::Error("No iteration found for specified solver.", CURRENT_FUNCTION);
       break;
   }
+
+  return iteration;
 }
