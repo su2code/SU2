@@ -30,7 +30,6 @@
 #include <string>
 
 #include "../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../SU2_CFD/include/solvers/CNSSolver.hpp"
 #include "../SU2_CFD/include/solvers/CSolverFactory.hpp"
 
 struct UnitQuadTestCase {
@@ -57,19 +56,34 @@ struct UnitQuadTestCase {
   streambuf* orig_buf{nullptr};
   UnitQuadTestCase() : ss(config_options), orig_buf(cout.rdbuf()) {}
 
+  /*!
+   * \brief Add a line to the base config string stream
+   * \param[in] optionLine - String containing the option(s)
+   */
+  void AddOption(const std::string& optionLine) { ss << optionLine << "\n"; }
+
+  /*!
+   * \brief Initialize the config structure
+   */
   void InitConfig() {
     cout.rdbuf(nullptr);
     config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_CFD, false));
     cout.rdbuf(orig_buf);
   }
 
+  /*!
+   * \brief Initialize the solver array
+   */
   void InitSolver() {
     cout.rdbuf(nullptr);
-    solver = new CSolver*[MAX_SOLS];
-    solver[FLOW_SOL] = new CNSSolver(geometry.get(), config.get(), 0);
+    solver = CSolverFactory::createSolverContainer(static_cast<ENUM_MAIN_SOLVER>(config.get()->GetKind_Solver()),
+                                                   config.get(), geometry.get(), 0);
     cout.rdbuf(orig_buf);
   }
 
+  /*!
+   * \brief Initialize the geometry
+   */
   void InitGeometry() {
     cout.rdbuf(nullptr);
     {
@@ -94,8 +108,11 @@ struct UnitQuadTestCase {
     cout.rdbuf(orig_buf);
   }
 
+  /*!
+   * \brief Desctructor
+   */
   ~UnitQuadTestCase() {
     delete solver;
-    delete [] solver;
+    delete[] solver;
   }
 };
