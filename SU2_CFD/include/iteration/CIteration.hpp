@@ -33,9 +33,10 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/mpi_structure.hpp"
 #include "../include/integration/CIntegration.hpp"
-#include "output/COutput.hpp"
 
 using namespace std;
+
+class COutput;
 
 /*!
  * \class CIteration
@@ -59,7 +60,7 @@ class CIteration {
   /*!
    * \brief Constructor of the class.
    */
-  CIteration(CConfig* config);
+  CIteration(const CConfig *config);
 
   /*!
    * \brief Destructor of the class.

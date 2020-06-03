@@ -48,7 +48,7 @@ class CDiscAdjFluidIteration : public CIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFluidIteration(CConfig* config);
+  CDiscAdjFluidIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

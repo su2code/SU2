@@ -27,6 +27,8 @@
 
 #include "../../include/drivers/CSinglezoneDriver.hpp"
 #include "../../include/definition_structure.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIteration.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -311,4 +313,8 @@ void CSinglezoneDriver::Runtime_Options(){
     delete runtime;
   }
 
+}
+
+bool CSinglezoneDriver::GetTimeConvergence() const{
+  return output_container[ZONE_0]->GetTimeConvergence();
 }

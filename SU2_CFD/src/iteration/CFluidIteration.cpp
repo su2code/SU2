@@ -26,8 +26,9 @@
  */
 
 #include "../include/iteration/CFluidIteration.hpp"
+#include "../include/output/COutput.hpp"
 
-CFluidIteration::CFluidIteration(CConfig* config) : CIteration(config) {}
+CFluidIteration::CFluidIteration(const CConfig* config) : CIteration(config) {}
 CFluidIteration::~CFluidIteration(void) {}
 
 void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,

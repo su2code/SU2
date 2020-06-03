@@ -42,7 +42,7 @@ class CFEAIteration : public CIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAIteration(CConfig* config);
+  CFEAIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

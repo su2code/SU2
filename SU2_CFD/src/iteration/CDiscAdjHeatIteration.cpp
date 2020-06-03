@@ -26,8 +26,9 @@
  */
 
 #include "../include/iteration/CDiscAdjHeatIteration.hpp"
+#include "../include/output/COutput.hpp"
 
-CDiscAdjHeatIteration::CDiscAdjHeatIteration(CConfig* config) : CIteration(config) {}
+CDiscAdjHeatIteration::CDiscAdjHeatIteration(const CConfig *config) : CIteration(config) {}
 
 CDiscAdjHeatIteration::~CDiscAdjHeatIteration(void) {}
 

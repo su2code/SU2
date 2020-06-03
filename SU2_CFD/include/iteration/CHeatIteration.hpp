@@ -41,7 +41,7 @@ class CHeatIteration : public CFluidIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatIteration(CConfig* config);
+  CHeatIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

@@ -29,6 +29,9 @@
 #include "../../include/output/tools/CWindowingTools.hpp"
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutputLegacy.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIterationFactory.hpp"
+#include "../../include/iteration/CTurboIteration.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -72,7 +75,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       direct_iteration = new CTurboIteration(config);
       output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
     }
-    else       direct_iteration = new CFluidIteration(config);
+    else       direct_iteration = CIterationFactory::createIteration(EULER, config);
     if (compressible) direct_output = COutputFactory::createOutput(EULER, config, nDim);
     else direct_output =  COutputFactory::createOutput(INC_EULER, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
@@ -83,7 +86,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    direct_iteration = new CFEMFluidIteration(config);
+    direct_iteration = CIterationFactory::createIteration(FEM_EULER, config);
     direct_output = COutputFactory::createOutput(FEM_EULER, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
@@ -92,7 +95,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_FEM:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
-    direct_iteration = new CFEAIteration(config);
+    direct_iteration =  CIterationFactory::createIteration(FEM_ELASTICITY, config);
     direct_output = COutputFactory::createOutput(FEM_ELASTICITY, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
@@ -101,7 +104,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_HEAT:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
-    direct_iteration = new CHeatIteration(config);
+    direct_iteration = CIterationFactory::createIteration(HEAT_EQUATION, config);
     direct_output = COutputFactory::createOutput(HEAT_EQUATION, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;

@@ -26,8 +26,9 @@
  */
 
 #include "../include/iteration/CTurboIteration.hpp"
+#include "../include/output/COutput.hpp"
 
-CTurboIteration::CTurboIteration(CConfig* config) : CFluidIteration(config) {}
+CTurboIteration::CTurboIteration(const CConfig *config) : CFluidIteration(config) {}
 
 CTurboIteration::~CTurboIteration(void) {}
 

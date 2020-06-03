@@ -42,7 +42,7 @@ class CFEMFluidIteration : public CFluidIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEMFluidIteration(CConfig* config);
+  CFEMFluidIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

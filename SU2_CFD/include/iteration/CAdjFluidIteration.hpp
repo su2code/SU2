@@ -41,7 +41,7 @@ class CAdjFluidIteration : public CFluidIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjFluidIteration(CConfig* config);
+  CAdjFluidIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

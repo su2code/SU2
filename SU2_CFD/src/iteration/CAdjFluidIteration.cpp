@@ -26,8 +26,9 @@
  */
 
 #include "../include/iteration/CAdjFluidIteration.hpp"
+#include "../include/output/COutput.hpp"
 
-CAdjFluidIteration::CAdjFluidIteration(CConfig* config) : CFluidIteration(config) {}
+CAdjFluidIteration::CAdjFluidIteration(const CConfig *config) : CFluidIteration(config) {}
 CAdjFluidIteration::~CAdjFluidIteration(void) {}
 void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,

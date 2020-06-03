@@ -29,6 +29,8 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutputLegacy.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIterationFactory.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -62,16 +64,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
       switch (config_container[iZone]->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(EULER, config_container[iZone]);
           break;
         case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-          direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(INC_EULER, config_container[iZone]);
           break;
         case DISC_ADJ_HEAT:
-          direct_iteration[iZone][iInst] = new CHeatIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(HEAT_EQUATION, config_container[iZone]);
           break;
         case DISC_ADJ_FEM:
-          direct_iteration[iZone][iInst] = new CFEAIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(FEM_ELASTICITY, config_container[iZone]);
           break;
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.",

@@ -26,8 +26,9 @@
  */
 
 #include "../include/iteration/CHeatIteration.hpp"
+#include "../include/output/COutput.hpp"
 
-CHeatIteration::CHeatIteration(CConfig* config) : CFluidIteration(config) {}
+CHeatIteration::CHeatIteration(const CConfig* config) : CFluidIteration(config) {}
 
 CHeatIteration::~CHeatIteration(void) {}
 

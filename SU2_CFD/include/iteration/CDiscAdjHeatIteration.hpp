@@ -47,7 +47,7 @@ class CDiscAdjHeatIteration : public CIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjHeatIteration(CConfig* config);
+  CDiscAdjHeatIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

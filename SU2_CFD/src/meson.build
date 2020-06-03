@@ -2,7 +2,6 @@ su2_cfd_include = include_directories('./')
 su2_cfd_src = files(['transport_model.cpp',
                      'fluid_model_pvdw.cpp',
                      'fluid_model_pig.cpp',
-                     'iteration_structure.cpp',
                      'fluid_model_inc.cpp',
                      'definition_structure.cpp',
                      'fluid_model.cpp',
@@ -146,6 +145,18 @@ su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CMultiGridIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
                       'integration/CFEM_DG_Integration.cpp'])
+
+su2_cfd_src += files(['iteration/CIteration.cpp',
+                      'iteration/CIterationFactory.cpp',
+                      'iteration/CAdjFluidIteration.cpp',
+                      'iteration/CDiscAdjFluidIteration.cpp',
+                      'iteration/CDiscAdjHeatIteration.cpp',
+                      'iteration/CDiscAdjFEAIteration.cpp',
+                      'iteration/CFEAIteration.cpp',
+                      'iteration/CFEMFluidIteration.cpp',
+                      'iteration/CFluidIteration.cpp',
+                      'iteration/CHeatIteration.cpp',
+                      'iteration/CTurboIteration.cpp'])
 
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 

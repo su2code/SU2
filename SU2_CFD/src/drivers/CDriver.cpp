@@ -36,6 +36,8 @@
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 
 #include "../../include/output/COutputFactory.hpp"
+#include "../../include/output/COutput.hpp"
+
 #include "../../include/output/COutputLegacy.hpp"
 
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
@@ -74,6 +76,8 @@
 #include "../../include/numerics/elasticity/nonlinear_models.hpp"
 
 #include "../../include/integration/CIntegrationFactory.hpp"
+
+#include "../../include/iteration/CIterationFactory.hpp"
 
 #include "../../../Common/include/omp_structure.hpp"
 
@@ -2338,74 +2342,8 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  /*--- Loop over all zones and instantiate the physics iteration. ---*/
+  iteration = CIterationFactory::createIteration(static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver()), config);
 
-  switch (config->GetKind_Solver()) {
-
-    case EULER: case NAVIER_STOKES: case RANS:
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-      if(config->GetBoolTurbomachinery()){
-        if (rank == MASTER_NODE)
-          cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
-        iteration = new CTurboIteration(config);
-
-      }
-      else{
-        if (rank == MASTER_NODE)
-          cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
-        iteration = new CFluidIteration(config);
-      }
-      break;
-
-    case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
-      if (rank == MASTER_NODE)
-        cout << "Finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
-      iteration = new CFEMFluidIteration(config);
-      break;
-
-    case HEAT_EQUATION:
-      if (rank == MASTER_NODE)
-        cout << "Heat iteration (finite volume method)." << endl;
-      iteration = new CHeatIteration(config);
-      break;
-
-    case FEM_ELASTICITY:
-      if (rank == MASTER_NODE)
-        cout << "FEM iteration." << endl;
-      iteration = new CFEAIteration(config);
-      break;
-
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CAdjFluidIteration(config);
-      break;
-
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CDiscAdjFluidIteration(config);
-      break;
-
-    case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CDiscAdjFluidIteration(config);
-      break;
-
-    case DISC_ADJ_FEM:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint FEM structural iteration." << endl;
-      iteration = new CDiscAdjFEAIteration(config);
-      break;
-
-    case DISC_ADJ_HEAT:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint heat iteration." << endl;
-      iteration = new CDiscAdjHeatIteration(config);
-      break;
-  }
 }
 
 void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration* iteration,

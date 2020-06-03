@@ -26,8 +26,9 @@
  */
 
 #include "../include/iteration/CDiscAdjFluidIteration.hpp"
+#include "../include/output/COutput.hpp"
 
-CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig* config) : CIteration(config) {
+CDiscAdjFluidIteration::CDiscAdjFluidIteration(const CConfig *config) : CIteration(config) {
   turbulent = (config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 }
 
