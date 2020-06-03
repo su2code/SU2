@@ -424,7 +424,10 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   // Wall functions
   if(config->GetWall_Functions()||config->GetWall_Models()){
-    AddVolumeOutput("TAU_WALL", "Tau_Wall", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+    AddVolumeOutput("TAU_WALL-X", "Tau_Wall_x", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+    AddVolumeOutput("TAU_WALL-Y", "Tau_Wall_y", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+    if (nDim == 3)
+      AddVolumeOutput("TAU_WALL-Z", "Tau_Wall_z", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
   }
 
   if (config->GetTime_Domain()){
@@ -579,7 +582,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if(config->GetWall_Functions() || config->GetWall_Models()){
-    SetVolumeOutputValue("TAU_WALL", iPoint, Node_Flow->GetTauWall(iPoint));
+    SetVolumeOutputValue("TAU_WALL-X", iPoint, Node_Flow->GetTauWallDir(iPoint,0));
+    SetVolumeOutputValue("TAU_WALL-Y", iPoint, Node_Flow->GetTauWallDir(iPoint,1));
+    if (nDim == 3)
+      SetVolumeOutputValue("TAU_WALL-Z", iPoint, Node_Flow->GetTauWallDir(iPoint,2));
   }
 
   if (config->GetTime_Domain()){
