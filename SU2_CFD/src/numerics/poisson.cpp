@@ -92,11 +92,9 @@ CNumerics::ResidualType<> CAvgGradCorrected_Poisson::ComputeResidual(const CConf
   su2double Coeff_Mean;
   su2double *MomCoeffxNormal = new su2double[nDim];
   su2double *MomCoeffxNormalCorrected = new su2double[nDim];
-  su2double  Mean_GradPoissonVar_Edge[3], GradPoisson[3];
-  su2double  Mean_GradPoissonVar_Face[3][3];
-  
-  
-  
+  su2double  Mean_GradPoissonVar_Edge[MAXNDIM], GradPoisson[MAXNDIM];
+  su2double  Mean_GradPoissonVar_Face[MAXNDIM][MAXNDIM];
+   
   Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
 
  /*--- Multiply the normal with the coefficients of the momentum equation
@@ -229,8 +227,8 @@ CNumerics::ResidualType<> CAvgGrad_Poisson::ComputeResidual(const CConfig *confi
 
   su2double Coeff_Mean;
   su2double *MomCoeffxNormal = new su2double[nDim];
-  su2double  Mean_GradPoissonVar_Edge[3], GradPoisson[3];
-  su2double  Mean_GradPoissonVar_Face[3][3];
+  su2double  Mean_GradPoissonVar_Edge[MAXNDIM], GradPoisson[MAXNDIM];
+  su2double  Mean_GradPoissonVar_Face[MAXNDIM][MAXNDIM];
   
   
   
@@ -331,7 +329,7 @@ void CPressure_Poisson::ComputeResidual(su2double *val_residual, su2double **Jac
 
   
   su2double Area;
-  su2double UnitNormal[3];
+  su2double UnitNormal[MAXNDIM];
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 

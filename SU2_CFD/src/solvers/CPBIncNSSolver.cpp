@@ -141,6 +141,7 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+  nEdge        = geometry->GetnEdge();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 

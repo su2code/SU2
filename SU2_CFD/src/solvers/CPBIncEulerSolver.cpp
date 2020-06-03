@@ -161,6 +161,8 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
   ForceInviscid = NULL; MomentInviscid = NULL;
   ForceMomentum = NULL;  MomentMomentum = NULL;
+  
+  FaceVelocity = NULL;
 
   /*--- Surface based array initialization ---*/
 
@@ -558,6 +560,7 @@ CPBIncEulerSolver::~CPBIncEulerSolver(void) {
 
   unsigned short iMarker;
   unsigned long iVertex;
+  unsigned long iEdge;
 
   /*--- Array deallocation ---*/
 
@@ -689,8 +692,9 @@ CPBIncEulerSolver::~CPBIncEulerSolver(void) {
   if (FluidModel != NULL) delete FluidModel;
 
   if (FaceVelocity != NULL) {
-    for (unsigned long iEdge = 0; iEdge < nEdge; iEdge++)
+    for (iEdge = 0; iEdge < nEdge; iEdge++) {
       delete [] FaceVelocity[iEdge];
+    }
     delete [] FaceVelocity;
   }
 
