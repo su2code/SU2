@@ -128,12 +128,12 @@ public:
   /*!
    * \brief Returns the current order of the function.
    */
-  su2double GetOrder();
+  su2double GetOrder() const;
 
   /*!
    * \brief Returns the current degree of the function.
    */
-  su2double GetDegree();
+  su2double GetDegree() const;
 };
 
 /*!
@@ -318,7 +318,7 @@ public:
    * \param[in] val_mDegree - Degree of the FFDBox in the j direction.
    * \param[in] val_nDegree - Degree of the FFDBox in the k direction.
    */
-  CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending);
+  CFreeFormDefBox(const unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending);
 
   /*!
    * \brief Destructor of the class.
@@ -365,19 +365,19 @@ public:
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
-  unsigned short Get_nFix_IPlane(void);
+  unsigned short Get_nFix_IPlane(void) const;
   
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
-  unsigned short Get_nFix_JPlane(void);
+  unsigned short Get_nFix_JPlane(void) const;
   
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
-  unsigned short Get_nFix_KPlane(void);
+  unsigned short Get_nFix_KPlane(void) const;
   
   /*!
    * \brief Add to the vector of markers a new marker.
@@ -408,7 +408,7 @@ public:
    * \param[in] val_coord - New coord inside FFD box.
    * \param[in] val_iSurfacePoints - Surface points of FFD box.
    */
-  void Set_CartesianCoord(su2double *val_coord, unsigned long val_iSurfacePoints);
+  void Set_CartesianCoord(const su2double *val_coord, unsigned long val_iSurfacePoints);
 
   /*!
    * \brief Add to the vector of parametric coordinates a new coordinate.
@@ -433,7 +433,7 @@ public:
    * \param[in] val_coord - New coord inside FFD box.
    * \param[in] val_iSurfacePoints - Surface points of FFD box.
    */
-  void Set_ParametricCoord(su2double *val_coord, unsigned long val_iSurfacePoints);
+  void Set_ParametricCoord(const su2double *val_coord, unsigned long val_iSurfacePoints);
 
   /*!
    * \brief Get index of the marker.
@@ -468,17 +468,17 @@ public:
   /*!
    * \brief Get number of surface points.
    */
-  unsigned long GetnSurfacePoint(void);
+  unsigned long GetnSurfacePoint(void) const;
 
   /*!
    * \brief Get number of parent FFD boxes.
   */
-  unsigned short GetnParentFFDBox(void);
+  unsigned short GetnParentFFDBox(void) const;
 
   /*!
    * \brief Get number of child FFD boxes.
    */
-  unsigned short GetnChildFFDBox(void);
+  unsigned short GetnChildFFDBox(void) const;
 
   /*!
    * \brief Get tag of parent FFD box.
@@ -509,13 +509,13 @@ public:
    * \brief Get the number of corner points.
    * \return Number of corner points.
    */
-  unsigned short GetnCornerPoints(void);
+  unsigned short GetnCornerPoints(void) const;
 
   /*!
    * \brief Get the number of control points.
    * \return Number of control points.
    */
-  unsigned short GetnControlPoints(void);
+  unsigned short GetnControlPoints(void) const;
   
   /*!
    * \brief Get the number of control points.
@@ -539,7 +539,7 @@ public:
    * \param[in] val_coord - Coordinates of the corner point with index <i>val_icornerpoints</i>.
    * \param[in] val_icornerpoints - Index of the corner point.
    */
-  void SetCoordCornerPoints(su2double *val_coord, unsigned short val_icornerpoints);
+  void SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints);
 
   /*!
    * \overload
@@ -557,7 +557,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetCoordControlPoints(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
+  void SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -566,7 +566,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetCoordControlPoints_Copy(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
+  void SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -575,7 +575,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetParCoordControlPoints(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
+  void SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Get the coordinates of the corner points.
@@ -583,14 +583,14 @@ public:
    * \param[in] val_icornerpoints - Index of the corner point.
    * \return Coordinate <i>val_dim</i> of the corner point <i>val_icornerpoints</i>.
    */
-  su2double GetCoordCornerPoints(unsigned short val_dim, unsigned short val_icornerpoints);
+  su2double GetCoordCornerPoints(unsigned short val_dim, unsigned short val_icornerpoints) const;
 
   /*!
    * \brief Get the coordinates of the corner points.
    * \param[in] val_icornerpoints - Index of the corner point.
    * \return Pointer to the coordinate vector of the corner point <i>val_icornerpoints</i>.
    */
-  su2double *GetCoordCornerPoints(unsigned short val_icornerpoints);
+  su2double *GetCoordCornerPoints(unsigned short val_icornerpoints) const;
 
   /*!
    * \brief Get the coordinates of the control point.
@@ -599,7 +599,7 @@ public:
    * \param[in] val_kindex - Value of the local k index of the control point.
    * \return Pointer to the coordinate vector of the control point with local index (i, j, k).
    */
-  su2double *GetCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex);
+  su2double *GetCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex) const;
 
   /*!
    * \brief Get the parametric coordinates of the control point.
@@ -608,7 +608,7 @@ public:
    * \param[in] val_kindex - Value of the local k index of the control point.
    * \return Pointer to the coordinate vector of the control point with local index (i, j, k).
    */
-  su2double *GetParCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex);
+  su2double *GetParCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex) const;
 
   /*!
    * \brief Set the control points in a parallelepiped (hexahedron).
@@ -626,7 +626,7 @@ public:
    * \param[in] val_index - Local index (i, j, k) of the control point.
    * \param[in] movement - Movement of the control point.
    */
-  void SetControlPoints(unsigned short *val_index, su2double *movement);
+  void SetControlPoints(const unsigned short *val_index, const su2double *movement);
 
   /*!
    * \brief Set the original value of the control points.
@@ -709,7 +709,7 @@ public:
    * \param[in] cart_coord - Cartesian coordinates of a point.
    * \return Pointer to the parametric coordinates of a point.
    */
-  su2double *GetParametricCoord_Analytical(su2double *cart_coord);
+  su2double *GetParametricCoord_Analytical(const su2double *cart_coord);
 
   /*!
    * \brief Iterative strategy for computing the parametric coordinates.
@@ -719,7 +719,7 @@ public:
    * \param[in] it_max - Maximal number of iterations.
    * \return Parametric coordinates of the point.
    */
-  su2double *GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *guess, CConfig *config);
+  su2double *GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, const su2double *guess, CConfig *config);
 
   /*!
    * \brief Compute the cross product.
@@ -727,7 +727,7 @@ public:
    * \param[in] v2 - Second input vector.
    * \param[out] v3 - Output vector wuth the cross product.
    */
-  void CrossProduct(su2double *v1, su2double *v2, su2double *v3);
+  void CrossProduct(const su2double *v1, const su2double *v2, su2double *v3);
 
   /*!
    * \brief Compute the doc product.
@@ -735,7 +735,7 @@ public:
    * \param[in] v2 - Sencond input vector.
    * \return Dot product between <i>v1</i>, and <i>v2</i>.
    */
-  su2double DotProduct(su2double *v1, su2double *v2);
+  su2double DotProduct(const su2double *v1, const su2double *v2);
 
   /*!
    * \brief Here we take the parametric coords of a point in the box and we convert them to the
@@ -743,25 +743,25 @@ public:
    * \param[in] ParamCoord - Parametric coordinates of a point.
    * \return Pointer to the cartesian coordinates of a point.
    */
-  su2double *EvalCartesianCoord(su2double *ParamCoord);
+  su2double *EvalCartesianCoord(su2double *ParamCoord) const;
 
   /*!
    * \brief Get the order in the l direction of the FFD FFDBox.
    * \return Order in the l direction of the FFD FFDBox.
    */
-  unsigned short GetlOrder(void);
+  unsigned short GetlOrder(void) const;
 
   /*!
    * \brief Get the order in the m direction of the FFD FFDBox.
    * \return Order in the m direction of the FFD FFDBox.
    */
-  unsigned short GetmOrder(void);
+  unsigned short GetmOrder(void) const;
 
   /*!
    * \brief Get the order in the n direction of the FFD FFDBox.
    * \return Order in the n direction of the FFD FFDBox.
    */
-  unsigned short GetnOrder(void);
+  unsigned short GetnOrder(void) const;
   
   /*!
    * \brief Get the order in the l direction of the FFD FFDBox.
@@ -787,7 +787,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iFFDBox - Index of the FFDBox.
    */
-  bool GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint);
+  bool GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) const;
 
   /*!
    * \brief Set the zone of the computational domain that is going to be deformed.
@@ -795,7 +795,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iFFDBox - Index of the FFDBox.
    */
-  void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox);
+  void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const;
 
   /*!
    * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
@@ -828,7 +828,7 @@ public:
    * \param[in] lmn - Degree of the FFD box.
    * \return __________.
    */
-  su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
+  su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -842,7 +842,7 @@ public:
    * \param[in] lmn - Degree of the FFD box.
    * \return __________.
    */
-  su2double GetDerivative2(su2double *uvw, unsigned short dim, su2double *xyz, unsigned short *lmn);
+  su2double GetDerivative2(su2double *uvw, unsigned short dim, const su2double *xyz, const unsigned short *lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -874,7 +874,7 @@ public:
    * \return __________.
    */
   su2double GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-                           unsigned short *ijk, unsigned short *lmn);
+                           unsigned short *ijk, unsigned short *lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -900,7 +900,7 @@ public:
    * \param[in] a - _______.
    * \return __________.
    */
-  su2double GetNorm(su2double *a);
+  su2double GetNorm(const su2double *a);
 
   /*!
    * \brief Set the tag that identify a FFDBox.
@@ -912,7 +912,7 @@ public:
    * \brief Get the tag that identify a FFDBox.
    * \return Value of the tag that identigy the FFDBox.
    */
-  string GetTag(void);
+  string GetTag(void) const;
 
   /*!
    * \brief Set the nested level of the FFDBox.
@@ -924,7 +924,7 @@ public:
    * \brief Get the nested level of the FFDBox.
    * \return Value of the nested level of the the FFDBox.
    */
-  unsigned short GetLevel(void);
+  unsigned short GetLevel(void) const;
   
   /*!
    * \brief Compute the determinant of a 3 by 3 matrix.
@@ -947,13 +947,18 @@ protected:
   unsigned short nDim;		/*!< \brief Number of dimensions. */
   unsigned short nVar;		/*!< \brief Number of variables. */
   
-  unsigned long nPoint;		   /*!< \brief Number of points. */
+  unsigned long nPoint;		     /*!< \brief Number of points. */
   unsigned long nPointDomain;  /*!< \brief Number of points in the domain. */
 
   unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
+#ifndef CODI_FORWARD_TYPE
+  CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
+  CSysSolve<su2mixedfloat>  System;      /*!< \brief Linear solver/smoother. */
+#else
+  CSysMatrix<su2double> StiffMatrix;
   CSysSolve<su2double>  System;
-  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+#endif
   CSysVector<su2double> LinSysSol;
   CSysVector<su2double> LinSysRes;
 
@@ -1091,37 +1096,37 @@ public:
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetHexa_Volume(su2double CoordCorners[8][3]);
+  su2double GetHexa_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetTetra_Volume(su2double CoordCorners[8][3]);
+  su2double GetTetra_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetPrism_Volume(su2double CoordCorners[8][3]);
+  su2double GetPrism_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetPyram_Volume(su2double CoordCorners[8][3]);
+  su2double GetPyram_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetTriangle_Area(su2double CoordCorners[8][3]);
+  su2double GetTriangle_Area(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetQuadrilateral_Area(su2double CoordCorners[8][3]);
+  su2double GetQuadrilateral_Area(su2double CoordCorners[8][3]) const;
 
   /*!
    * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
@@ -1144,7 +1149,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) const;
 
   /*!
    * \brief Check the boundary vertex that are going to be moved.
@@ -1279,7 +1284,7 @@ public:
    * \brief Retrieve the number of iterations when moving the mesh.
    * \param[out] Number of iterations.
    */
-  unsigned long Get_nIterMesh(void);
+  unsigned long Get_nIterMesh(void) const;
 
   /*!
    * \brief Set the boundary dependencies in the mesh side of the problem
@@ -1544,7 +1549,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1554,7 +1559,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1564,7 +1569,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1574,7 +1579,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1584,7 +1589,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1604,7 +1609,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1614,7 +1619,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1624,7 +1629,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1644,7 +1649,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a rotation angle deformation of the Free From box using the control point position.
@@ -1654,7 +1659,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
@@ -1664,7 +1669,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
 
   /*!
    * \brief Read the free form information from the grid input file.
@@ -1708,7 +1713,7 @@ public:
    *        compute the parametric coordinates.
    * \return <code>TRUE</code> if the input grid file has a complete information; otherwise <code>FALSE</code>.
    */
-  bool GetFFDBoxDefinition(void);
+  bool GetFFDBoxDefinition(void) const;
 
   /*!
    * \brief Check if the design variable definition matches the FFD box definition.
@@ -1723,13 +1728,13 @@ public:
    * \brief Obtain the number of FFDBoxes.
    * \return Number of FFD FFDBoxes.
    */
-  unsigned short GetnFFDBox(void);
+  unsigned short GetnFFDBox(void) const;
 
   /*!
    * \brief Obtain the number of levels.
    * \return Number of FFD levels.
    */
-  unsigned short GetnLevel(void);
+  unsigned short GetnLevel(void) const;
 
   /*!
    * \brief Set derivatives of the surface/boundary deformation.

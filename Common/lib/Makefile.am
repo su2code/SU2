@@ -45,22 +45,22 @@ noinst_LIBRARIES += libSU2_AD.a
 endif
 
 lib_sources = \
-  ../src/fem_cgns_elements.cpp \
+  ../src/fem/fem_cgns_elements.cpp \
   ../src/CConfig.cpp \
   ../src/blas_structure.cpp \
-  ../src/fem_geometry_structure.cpp \
-  ../src/fem_integration_rules.cpp \
-  ../src/fem_standard_element.cpp \
-  ../src/fem_wall_distance.cpp \
-  ../src/fem_work_estimate_metis.cpp \
+  ../src/fem/fem_geometry_structure.cpp \
+  ../src/fem/fem_integration_rules.cpp \
+  ../src/fem/fem_standard_element.cpp \
+  ../src/fem/fem_wall_distance.cpp \
+  ../src/fem/fem_work_estimate_metis.cpp \
   ../src/CMultiGridQueue.cpp \
-  ../src/geometry_structure_fem_part.cpp \
+  ../src/fem/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
   ../src/mpi_structure.cpp \
-  ../src/ad_structure.cpp \
-  ../src/fem_gauss_jacobi_quadrature.cpp \
+  ../src/basic_types/ad_structure.cpp \
+  ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \
   ../src/geometry/CPhysicalGeometry.cpp \
   ../src/geometry/CMultiGridGeometry.cpp \

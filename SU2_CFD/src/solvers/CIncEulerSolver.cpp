@@ -74,7 +74,6 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   jPoint_UndLapl = nullptr;
   Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
   CharacPrimVar = nullptr;
-  Smatrix = nullptr; Cvector = nullptr;
   Preconditioner = nullptr;
 
   FluidModel = nullptr;
@@ -183,7 +182,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   jPoint_UndLapl = nullptr;
   Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
   CharacPrimVar = nullptr;
-  Smatrix = nullptr; Cvector = nullptr;
   Preconditioner = nullptr;
 
   /*--- Fluid model pointer initialization ---*/
@@ -308,22 +306,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   else {
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/

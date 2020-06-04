@@ -1060,7 +1060,7 @@ public:
    * \brief Set gradients of coefficients for fixed CL mode
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCoefficient_Gradients(CConfig *config);
+  void SetCoefficient_Gradients(CConfig *config) const;
 
   /*!
    * \brief Update the solution using the explicit Euler scheme.

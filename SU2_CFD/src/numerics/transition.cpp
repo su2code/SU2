@@ -554,7 +554,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, 
 }
 
 
-void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config)
+void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(const su2double *TransVar_i, const su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config)
 {
   su2double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset,
   f_turb, tu;

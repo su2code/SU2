@@ -37,7 +37,12 @@
 
 #include <limits>
 
-const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
+/*!< \brief machine epsilon */
+#ifndef USE_MIXED_PRECISION
+const passivedouble eps = numeric_limits<passivedouble>::epsilon();
+#else
+const passivedouble eps = 1e-12;
+#endif
 
 template<class ScalarType>
 CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),
@@ -597,9 +602,11 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     precond(r, z);
     mat_vec(z, A_x);
 
-    /*--- Calculate step-length omega ---*/
+    /*--- Calculate step-length omega, avoid division by 0. ---*/
 
-    omega = A_x.dot(r) / A_x.squaredNorm();
+    omega = A_x.squaredNorm();
+    if (omega == ScalarType(0)) break;
+    omega = A_x.dot(r) / omega;
 
     /*--- Update solution and residual: ---*/
 
@@ -780,9 +787,9 @@ void CSysSolve<su2double>::HandleTemporariesOut(CSysVector<su2double> & LinSysSo
   SU2_OMP_BARRIER
 }
 
-#ifdef CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
 template<>
-void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
+void CSysSolve<su2mixedfloat>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is different we need to copy data to the temporaries ---*/
   /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
@@ -799,7 +806,7 @@ void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> &
 }
 
 template<>
-void CSysSolve<passivedouble>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
+void CSysSolve<su2mixedfloat>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is different we need to copy data from the temporaries ---*/
   /*--- Copy data, only the solution needs to be copied ---*/
@@ -937,13 +944,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
   }
 
   SU2_OMP_MASTER
-  Residual = residual;
+  {
+    Residual = residual;
+    Iterations = IterLinSol;
+  }
 
   HandleTemporariesOut(LinSysSol);
 
@@ -997,7 +1008,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
                                              CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
-#ifdef CODI_REVERSE_TYPE
 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
@@ -1028,6 +1038,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     ScreenOutput = config->GetDeform_Output();
   }
 
+  /*--- To keep the behavior of SU2_DOT even though it should not be strictly required. ---*/
+  if (config->GetKind_SU2() == SU2_DOT) RequiresTranspose = true;
+
   /*--- Set up preconditioner and matrix-vector product ---*/
 
   CPreconditioner<ScalarType>* precond  = nullptr;
@@ -1043,6 +1056,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, RequiresTranspose);
       break;
   }
+
+  /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
+  if (config->GetKind_SU2() == SU2_DOT) precond->Build();
 
   auto mat_vec = CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
 
@@ -1074,6 +1090,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      Residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -1084,15 +1101,15 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
+  Iterations = IterLinSol;
   return IterLinSol;
-#else
-  return 0;
-#endif
+
 }
 
 /*--- Explicit instantiations ---*/
-template class CSysSolve<su2double>;
 
-#ifdef CODI_REVERSE_TYPE
-template class CSysSolve<passivedouble>;
+#ifdef CODI_FORWARD_TYPE
+template class CSysSolve<su2double>;
+#else
+template class CSysSolve<su2mixedfloat>;
 #endif

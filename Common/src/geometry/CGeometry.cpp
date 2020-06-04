@@ -513,7 +513,7 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
 void CGeometry::PostP2PRecvs(CGeometry *geometry,
                              CConfig *config,
                              unsigned short commType,
-                             bool val_reverse) {
+                             bool val_reverse) const {
 
   /*--- Local variables ---*/
 
@@ -623,7 +623,7 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
                              CConfig *config,
                              unsigned short commType,
                              int val_iSend,
-                             bool val_reverse) {
+                             bool val_reverse) const {
 
   /*--- Local variables ---*/
 
@@ -722,7 +722,7 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
 
 void CGeometry::InitiateComms(CGeometry *geometry,
                               CConfig *config,
-                              unsigned short commType) {
+                              unsigned short commType) const {
 
   /*--- Local variables ---*/
 
@@ -1408,7 +1408,7 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
 void CGeometry::PostPeriodicSends(CGeometry *geometry,
                                   CConfig *config,
                                   unsigned short commType,
-                                  int val_iSend) {
+                                  int val_iSend) const {
 
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
@@ -1489,7 +1489,7 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
 
 }
 
-su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord) {
+su2double CGeometry::Point2Plane_Distance(const su2double *Coord, const su2double *iCoord, const su2double *jCoord, const su2double *kCoord) {
   su2double CrossProduct[3], iVector[3], jVector[3], distance, modulus;
   unsigned short iDim;
 
@@ -1513,7 +1513,7 @@ su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, s
 
 }
 
-long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) {
+long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) const {
 
   for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
     auto iPoint = nodes->GetPoint(first_point, iNode);
@@ -1526,7 +1526,7 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
   return 0;
 }
 
-bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) {
+bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) const {
 
   for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
     auto iPoint = nodes->GetPoint(first_point, iNode);
@@ -1599,7 +1599,7 @@ void CGeometry::SetFaces(void) {
   //    }
 }
 
-void CGeometry::TestGeometry(void) {
+void CGeometry::TestGeometry(void) const {
 
   ofstream para_file;
 
@@ -1705,8 +1705,8 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
   return y;
 }
 
-bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                                                           su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
+bool CGeometry::SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
+                                                           const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
   su2double epsilon = 1E-6; // An epsilon is added to eliminate, as much as possible, the posibility of a line that intersects a point
   unsigned short iDim;
@@ -1751,8 +1751,8 @@ bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment
 
 }
 
-bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
-                                      su2double vert0[3], su2double vert1[3], su2double vert2[3],
+bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double dir[3],
+                                      const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
                                       su2double *intersect) {
 
   const passivedouble epsilon = 0.000001;
@@ -1811,7 +1811,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
 
 }
 
-bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]) {
+bool CGeometry::SegmentIntersectsLine(const su2double point0[2], const su2double point1[2], const su2double vert0[2], const su2double vert1[2]) {
 
   su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
 
@@ -1854,7 +1854,7 @@ bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], 
   return true;
 }
 
-bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
+bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3],
                                           su2double vert0[3], su2double vert1[3], su2double vert2[3]) {
 
   su2double dir[3], intersect[3], u[3], v[3], edge1[3], edge2[3], Plane_Normal[3], Denominator, Numerator, Aux;
@@ -1900,7 +1900,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                                        su2double MinXCoord, su2double MaxXCoord,
                                        su2double MinYCoord, su2double MaxYCoord,
                                        su2double MinZCoord, su2double MaxZCoord,
-                                       su2double *FlowVariable,
+                                       const su2double *FlowVariable,
                                        vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
@@ -2628,7 +2628,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(CConfig *config) {
+void CGeometry::RegisterCoordinates(CConfig *config) const {
   unsigned short iDim;
   unsigned long iPoint;
   bool input = true;
@@ -2644,7 +2644,7 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   }
 }
 
-void CGeometry::RegisterOutput_Coordinates(CConfig *config){
+void CGeometry::RegisterOutput_Coordinates(CConfig *config) const{
   unsigned short iDim;
   unsigned long iPoint;
 
