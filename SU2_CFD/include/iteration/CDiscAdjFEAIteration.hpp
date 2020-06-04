@@ -47,7 +47,7 @@ class CDiscAdjFEAIteration : public CIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEAIteration(const CConfig* config);
+  explicit CDiscAdjFEAIteration(const CConfig* config);
 
   /*!
    * \brief Destructor of the class.

@@ -28,8 +28,6 @@
 #include "../include/iteration/CAdjFluidIteration.hpp"
 #include "../include/output/COutput.hpp"
 
-CAdjFluidIteration::CAdjFluidIteration(const CConfig *config) : CFluidIteration(config) {}
-CAdjFluidIteration::~CAdjFluidIteration(void) {}
 void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,

@@ -42,19 +42,7 @@ class CFEAIteration : public CIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAIteration(const CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAIteration(void) override;
-
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess();
-  using CIteration::Preprocess;
+  explicit CFEAIteration(const CConfig* config) : CIteration(config) {}
 
   /*!
    * \brief Perform a single iteration for structural analysis using the Finite Element Method.

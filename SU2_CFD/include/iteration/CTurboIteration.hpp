@@ -41,12 +41,7 @@ class CTurboIteration : public CFluidIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurboIteration(const CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurboIteration(void) override;
+  explicit CTurboIteration(const CConfig *config) : CFluidIteration(config) {}
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

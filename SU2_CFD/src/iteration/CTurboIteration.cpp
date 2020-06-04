@@ -28,10 +28,6 @@
 #include "../include/iteration/CTurboIteration.hpp"
 #include "../include/output/COutput.hpp"
 
-CTurboIteration::CTurboIteration(const CConfig *config) : CFluidIteration(config) {}
-
-CTurboIteration::~CTurboIteration(void) {}
-
 void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,

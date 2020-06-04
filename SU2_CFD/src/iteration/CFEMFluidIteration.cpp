@@ -28,9 +28,6 @@
 #include "../include/iteration/CFEMFluidIteration.hpp"
 #include "../include/output/COutput.hpp"
 
-CFEMFluidIteration::CFEMFluidIteration(const CConfig* config) : CFluidIteration(config) {}
-CFEMFluidIteration::~CFEMFluidIteration(void) {}
-
 void CFEMFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,

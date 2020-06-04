@@ -28,10 +28,6 @@
 #include "../include/iteration/CHeatIteration.hpp"
 #include "../include/output/COutput.hpp"
 
-CHeatIteration::CHeatIteration(const CConfig* config) : CFluidIteration(config) {}
-
-CHeatIteration::~CHeatIteration(void) {}
-
 void CHeatIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                              CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                              CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,

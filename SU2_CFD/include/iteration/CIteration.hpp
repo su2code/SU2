@@ -45,27 +45,33 @@ class COutput;
  */
 class CIteration {
  protected:
-  int rank,             /*!< \brief MPI Rank. */
-      size;             /*!< \brief MPI Size. */
-  unsigned short nZone; /*!< \brief Total number of zones in the problem. */
-  unsigned short nInst; /*!< \brief Total number of instances in the problem. */
+  const int rank,             /*!< \brief MPI Rank. */
+      size;                   /*!< \brief MPI Size. */
+  const unsigned short nZone; /*!< \brief Total number of zones in the problem. */
+  const unsigned short nInst; /*!< \brief Total number of instances in the problem. */
 
-  bool multizone, /*!< \brief Flag for multizone problems. */
-      singlezone; /*!< \brief Flag for singlezone problems. */
+  const bool multizone, /*!< \brief Flag for multizone problems. */
+      singlezone;       /*!< \brief Flag for singlezone problems. */
 
-  su2double StartTime, /*!< \brief Tracking wall time. */
-      StopTime, UsedTime;
+  su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
+      StopTime{0.0}, UsedTime{0.0};
 
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CIteration(const CConfig *config);
+  explicit CIteration(const CConfig* config)
+      : rank(SU2_MPI::GetRank()),
+        size(SU2_MPI::GetSize()),
+        nZone(config->GetnZone()),
+        nInst(config->GetnTimeInstances()),
+        multizone(config->GetMultizone_Problem()),
+        singlezone(!multizone) {}
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIteration(void);
+  virtual ~CIteration(void) = default;
 
   /*!
    * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
@@ -110,7 +116,7 @@ class CIteration {
   virtual void Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                          unsigned short val_iInst);
+                          unsigned short val_iInst){};
 
   /*!
    * \brief A virtual member.
@@ -127,7 +133,7 @@ class CIteration {
   virtual void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                       unsigned short val_iInst);
+                       unsigned short val_iInst){};
 
   /*!
    * \brief A virtual member.
@@ -144,7 +150,7 @@ class CIteration {
   virtual void Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                      CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                      CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                     unsigned short val_iInst);
+                     unsigned short val_iInst){};
 
   /*!
    * \brief A virtual member.
@@ -161,7 +167,7 @@ class CIteration {
   virtual void Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                       CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                       CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                      unsigned short val_iInst);
+                      unsigned short val_iInst){};
 
   /*!
    * \brief A virtual member.
@@ -178,7 +184,7 @@ class CIteration {
   virtual void Predictor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                          CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                          CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                         unsigned short val_iInst);
+                         unsigned short val_iInst){};
 
   /*!
    * \brief A virtual member.
@@ -195,7 +201,7 @@ class CIteration {
   virtual void Relaxation(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                          unsigned short val_iInst);
+                          unsigned short val_iInst){};
 
   /*!
    * \brief A virtual member.
@@ -204,7 +210,9 @@ class CIteration {
   virtual bool Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                       unsigned short val_iInst);
+                       unsigned short val_iInst) {
+    return false;
+  };
 
   /*!
    * \brief A virtual member.
@@ -228,7 +236,7 @@ class CIteration {
   virtual void Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                           unsigned short val_iInst);
+                           unsigned short val_iInst){};
 
   virtual void InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
                                  unsigned short iInst) {}

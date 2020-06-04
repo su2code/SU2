@@ -30,19 +30,6 @@
 #include "../include/output/COutput.hpp"
 #include "../include/solvers/CFEASolver.hpp"
 
-CIteration::CIteration(const CConfig* config) {
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
-  nInst = config->GetnTimeInstances();
-  nZone = config->GetnZone();
-
-  multizone = config->GetMultizone_Problem();
-  singlezone = !(config->GetMultizone_Problem());
-}
-
-CIteration::~CIteration(void) {}
-
 void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surface_movement,
                                   CVolumetricMovement* grid_movement, CSolver*** solver, CConfig* config,
                                   unsigned long IntIter, unsigned long TimeIter) {
@@ -218,43 +205,8 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
   if (ActiveTape) AD::StartRecording();
 }
 
-void CIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                            unsigned short val_iInst) {}
-void CIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                         CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                         CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                         unsigned short val_iInst) {}
-void CIteration::Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                       CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                       CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                       unsigned short val_iInst) {}
-void CIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                        unsigned short val_iInst) {}
-void CIteration::Predictor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                           unsigned short val_iInst) {}
-void CIteration::Relaxation(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                            unsigned short val_iInst) {}
-bool CIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                         CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                         CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                         unsigned short val_iInst) {
-  return false;
-}
-
 void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
                         unsigned long InnerIter, bool StopCalc, unsigned short val_iZone, unsigned short val_iInst) {
   output->SetResult_Files(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
                           InnerIter);
 }
-void CIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                             unsigned short val_iInst) {}

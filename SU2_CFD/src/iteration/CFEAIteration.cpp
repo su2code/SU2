@@ -28,9 +28,6 @@
 #include "../include/iteration/CFEAIteration.hpp"
 #include "../include/output/COutput.hpp"
 
-CFEAIteration::CFEAIteration(const CConfig* config) : CIteration(config) {}
-CFEAIteration::~CFEAIteration(void) {}
-void CFEAIteration::Preprocess() {}
 void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,

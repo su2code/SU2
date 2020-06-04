@@ -41,12 +41,7 @@ class CFluidIteration : public CIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFluidIteration(const CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFluidIteration(void) override;
+  explicit CFluidIteration(const CConfig* config) : CIteration(config) {}
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

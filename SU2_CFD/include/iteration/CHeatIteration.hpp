@@ -41,12 +41,7 @@ class CHeatIteration : public CFluidIteration {
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatIteration(const CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatIteration(void) override;
+  explicit CHeatIteration(const CConfig* config) : CFluidIteration(config) {}
 
   /*!
    * \brief Perform a single iteration of the heat system.

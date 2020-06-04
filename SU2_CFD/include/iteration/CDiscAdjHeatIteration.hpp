@@ -30,24 +30,18 @@
 
 #include "CIteration.hpp"
 
-class CHeatIteration;
-
 /*!
  * \class CDiscAdjHeatIteration
  * \brief Class for driving an iteration of the discrete adjoint heat equation.
  * \author O. Burghardt
  */
 class CDiscAdjHeatIteration : public CIteration {
- private:
-  CHeatIteration* mean_iteration;  /*!< \brief Pointer to the mean flow iteration class. */
-  unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
-
  public:
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjHeatIteration(const CConfig* config);
+  explicit CDiscAdjHeatIteration(const CConfig *config) : CIteration(config) {}
 
   /*!
    * \brief Destructor of the class.
@@ -177,38 +171,6 @@ class CDiscAdjHeatIteration : public CIteration {
    */
   void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
                       unsigned short iZone, unsigned short iInst) override;
-
-  /*!
-   * \brief Record a single iteration of the direct heat system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] kind_recording - The kind of recording.
-   */
-  void SetRecording(COutput* output, CIntegration*** integration, CGeometry*** geometry, CSolver**** solver,
-                    CNumerics***** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                    CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                    unsigned short kind_recording);
-
-  /*!
-   * \brief Record a single iteration of the direct heat system.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iZone - Index of the instance.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-
-  void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, unsigned short kind_recording) override {}
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions

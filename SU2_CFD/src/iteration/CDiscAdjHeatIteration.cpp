@@ -28,8 +28,6 @@
 #include "../include/iteration/CDiscAdjHeatIteration.hpp"
 #include "../include/output/COutput.hpp"
 
-CDiscAdjHeatIteration::CDiscAdjHeatIteration(const CConfig *config) : CIteration(config) {}
-
 CDiscAdjHeatIteration::~CDiscAdjHeatIteration(void) {}
 
 void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,

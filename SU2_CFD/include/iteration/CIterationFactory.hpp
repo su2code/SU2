@@ -31,19 +31,16 @@
 #include "CIteration.hpp"
 
 class CIterationFactory {
-
-public:
-
+ public:
   /*!
    * \brief Deleted constructor to avoid creating instances of this class
    */
   CIterationFactory() = delete;
 
   /*!
-   * \brief Create a new integration instance based on the current sub solver
-   * \param[in] integrationType  - The integration type
-   * \return                     - Pointer to the allocated integration instance
+   * \brief Create a new iteration instance based on the current main solver
+   * \param[in] kindSolver - The kind of main solver we are running
+   * \return               - Pointer to the allocated iteration instance
    */
-  static CIteration* createIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig *config);
-
+  static CIteration* CreateIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config);
 };
