@@ -2,7 +2,7 @@
  * transport_model.cpp
  * \brief Source of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -100,7 +100,7 @@ CPolynomialViscosity::CPolynomialViscosity(void) : CViscosityModel() {
   b           = nullptr;
 }
 
-CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b) : CViscosityModel() {
+CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, const su2double* val_b) : CViscosityModel() {
   
   /*--- Attributes initialization ---*/
   
@@ -227,7 +227,7 @@ CPolynomialConductivity::CPolynomialConductivity(void) : CConductivityModel() {
   b           = nullptr;
 }
 
-CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b) : CConductivityModel() {
+CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, const su2double* val_b) : CConductivityModel() {
   
   /*--- Attributes initialization ---*/
   
@@ -253,7 +253,7 @@ void CPolynomialConductivity::SetConductivity(su2double T, su2double rho, su2dou
   
 }
 
-CPolynomialConductivityRANS::CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb) : CConductivityModel() {
+CPolynomialConductivityRANS::CPolynomialConductivityRANS(unsigned short val_nCoeffs, const su2double* val_b, su2double pr_turb) : CConductivityModel() {
   
   /*--- Attributes initialization ---*/
   

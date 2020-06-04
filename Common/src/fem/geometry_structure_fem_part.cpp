@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,16 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry/CPhysicalGeometry.hpp"
-#include "../include/fem_standard_element.hpp"
-#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
-#include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
+#include "../../include/geometry/CPhysicalGeometry.hpp"
+#include "../../include/fem/fem_standard_element.hpp"
+#include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
 #ifdef HAVE_CGNS
-#include "../include/fem_cgns_elements.hpp"
+#include "../../include/fem/fem_cgns_elements.hpp"
 #endif
-#include "../include/adt_structure.hpp"
-#include "../include/blas_structure.hpp"
+#include "../../include/adt_structure.hpp"
+#include "../../include/blas_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>

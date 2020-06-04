@@ -4,7 +4,7 @@
  *        basic functionality, this also serves as a regression test
  *        to make sure that DD works within unit testing.
  * \author C. Pederson
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #include "catch.hpp"
 
-#include "../../Common/include/datatype_structure.hpp"
+#include "../../Common/include/basic_types/datatype_structure.hpp"
 
 su2double func(const su2double& x) {
   return x * x * x;

@@ -1,8 +1,8 @@
 /*!
- * \file codi_forward_structure.hpp
- * \brief Header for codi forward type definition.
+ * \file ad_structure.cpp
+ * \brief Main subroutines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,9 +25,29 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../../include/basic_types/datatype_structure.hpp"
 
-#include "codi.hpp"
+namespace AD {
+#ifdef CODI_REVERSE_TYPE
+  /*--- Initialization of the global variables ---*/
 
-typedef codi::RealForward su2double;
+  int adjointVectorPosition = 0;
 
+  std::vector<su2double::GradientData> inputValues;
+  std::vector<su2double::GradientData> localInputValues;
+  std::vector<su2double*> localOutputValues;
+
+  su2double::TapeType& globalTape = su2double::getGlobalTape();
+  su2double::TapeType::Position StartPosition, EndPosition;
+  std::vector<su2double::TapeType::Position> TapePositions;
+
+  bool Status = false;
+  bool PreaccActive = false;
+  bool PreaccEnabled = true;
+
+  codi::PreaccumulationHelper<su2double> PreaccHelper;
+
+  ExtFuncHelper* FuncHelper;
+
+#endif
+}

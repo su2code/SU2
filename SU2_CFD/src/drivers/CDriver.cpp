@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1069,7 +1069,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 }
 
 void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                  CConfig *config) {
+                                  CConfig *config) const {
 
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
@@ -1364,7 +1364,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
 
 }
 
-void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) {
+void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -1385,7 +1385,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
 
 }
 
-void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) {
+void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
@@ -2333,7 +2333,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics, CSolver***, CGeom
 
 }
 
-void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
+void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -2409,7 +2409,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
 }
 
 void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration* iteration,
-                                        CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement){
+                                        CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement) const{
 
   /*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically

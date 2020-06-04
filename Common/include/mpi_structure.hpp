@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 #include <map>
 #endif
 
-#include "./datatype_structure.hpp"
+#include "basic_types/datatype_structure.hpp"
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -78,6 +78,9 @@ template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
 #if defined CODI_REVERSE_TYPE
 class CBaseMPIWrapper;
 template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#if defined USE_MIXED_PRECISION
+template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
+#endif
 #endif
 
 /*!

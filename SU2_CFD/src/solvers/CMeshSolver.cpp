@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -603,7 +603,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
 }
 
-void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
+void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
 
   /*--- Update the multigrid structure after moving the finest grid,
    including computing the grid velocities on the coarser levels

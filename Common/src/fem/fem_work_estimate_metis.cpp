@@ -3,11 +3,11 @@
  * \brief This file contains the implementation of the member functions WorkEstimateMetis
           for the FEM standard elements.
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/fem_standard_element.hpp"
+#include "../../include/fem/fem_standard_element.hpp"
 
 su2double CFEMStandardElement::WorkEstimateMetis(CConfig *config) {
 

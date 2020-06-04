@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -241,13 +241,4 @@ public:
    */
   inline bool GetHasHybridParallel() const override { return false; }
 
-  // Another set of matrix structures for the Lm equations
-  CSysMatrix<su2double> JacobianItmc;  /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  su2double *LinSysSolItmc;            /*!< \brief vector to store iterative solution of implicit linear system. */
-  su2double *LinSysResItmc;            /*!< \brief vector to store iterative residual of implicit linear system. */
-  su2double *rhsItmc;                  /*!< \brief right hand side of implicit linear system. */
-  CSysMatrix<su2double> JacobianReth;  /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  su2double *LinSysSolReth;            /*!< \brief vector to store iterative solution of implicit linear system. */
-  su2double *LinSysResReth;            /*!< \brief vector to store iterative residual of implicit linear system. */
-  su2double *rhsReth;                  /*!< \brief right hand side of implicit linear system. */
 };

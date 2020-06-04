@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -668,6 +668,9 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   }
 
   SetResidual_RMS(geometry, config);
+
+  SetIterLinSolver(direct_solver->System.GetIterations());
+  SetResLinSolver(direct_solver->System.GetResidual());
 
 }
 
