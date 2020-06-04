@@ -372,8 +372,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   const su2double zeros[3] = {0.0};
   su2activematrix Cvector;
 
-  auto Rotate = [nDim,&rotMatrix2D,&rotMatrix3D](const su2double* origin,
-                const su2double* direction, su2double* rotated) {
+  auto Rotate = [&](const su2double* origin, const su2double* direction, su2double* rotated) {
     if(nDim==2) GeometryToolbox::Rotate(rotMatrix2D, origin, direction, rotated);
     else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
   };
