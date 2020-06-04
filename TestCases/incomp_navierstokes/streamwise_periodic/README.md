@@ -1,6 +1,7 @@
 # Streamwise Periodicity testcases
 
 All Testcases use the incompressible solver implemented by Thomas Economon.
+For all Testcases the respective gmsh geo file has to be provided.
 
 ## `pipe_slice_3D`
 

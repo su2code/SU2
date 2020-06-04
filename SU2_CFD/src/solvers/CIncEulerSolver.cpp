@@ -2145,7 +2145,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         } // loop periodic boundaries
       } // loop MarkerAll
 
-      // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflwo
+      // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflow
       SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(&Temperature_Local, &Temperature_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       Temperature_Global /= Area_Global;
@@ -6092,7 +6092,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
       } // loop Heatflux marker
     } // loop AllMarker
 
-    // Mpi Communication sum up integrated Heatfdlux from all processes
+    // Mpi Communication sum up integrated Heatflux from all processes
     SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Set the Integrated Heatflux ---*/

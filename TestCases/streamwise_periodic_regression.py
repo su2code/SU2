@@ -52,7 +52,7 @@ def main():
     test_list.append(streamwise_periodic_cylinder)
 
     # 3D laminar channnel with 1 cell in flow direction, streamwise periodic
-    sp_pipeSlice_3d_dp_hf_tp     = TestCase('sp_pipeSlice_3d_dp_hf_tp')
+    sp_pipeSlice_3d_dp_hf_tp           = TestCase('sp_pipeSlice_3d_dp_hf_tp')
     sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pipeSlice_3d_dp_hf_tp"
     sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
     sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
