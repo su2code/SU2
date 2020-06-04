@@ -97,6 +97,9 @@ namespace AD{
     }
   }
 
+  inline void ComputeAdjointForward() {AD::globalTape.evaluateForward();
+                                      adjointVectorPosition = 0;}
+
   inline void Reset() {
     globalTape.reset();
     if (inputValues.size() != 0) {
@@ -278,6 +281,8 @@ namespace AD{
   inline void ComputeAdjoint() {}
 
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
+
+  inline void ComputeAdjointForward() {}
 
   inline void SetIndex(int &index, const su2double &data) {}
 

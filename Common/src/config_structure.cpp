@@ -1686,7 +1686,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
   addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
   /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
-  addBoolOption("DEBUG_MODE",DebugMode, false);
+  addEnumOption("SOBOLEV_MODE",NumMode, Sobolev_Modus_Map,NO_MODUS);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/

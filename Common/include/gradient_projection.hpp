@@ -44,7 +44,7 @@
  * \param surface_movement
  * \param Jacobian of the parameterization
  */
-void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Jacobian);
+void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian);
 
 /*!
  * \brief GetParameterizationJacobianReverse
@@ -55,6 +55,14 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian);
 
+/*!
+ * \brief GetParameterizationJacobianPreaccumulation
+ * \param geometry
+ * \param config
+ * \param surface_movement
+ * \param Jacobian of the parameterization
+ */
+void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian);
 
 /*!
  * \brief Cast2Eigenmatrix

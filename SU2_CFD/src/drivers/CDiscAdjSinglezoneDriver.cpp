@@ -27,6 +27,8 @@
 
 #include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
 
+#include <chrono>
+
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
@@ -551,24 +553,65 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
  */
 void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
-  /// variable declarations
-  unsigned iDV, nDVtotal=0;
-  unsigned nPoint = geometry->GetnPoint();
-  nDVtotal = config->GetnDV_Total();
-
-  // vector to store the Gradient
-  su2double* param_jacobi;
-  param_jacobi =  new su2double[nDVtotal*nPoint*nDim];
-
-  /// get the sensitivities from the adjoint solver to work with
+  /*--- get the sensitivities from the adjoint solver to work with ---*/
   solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
 
-  /// get the Jacobian of the parametrization for simplicity in the rest of the function
+  /*--- Apply the smoothing procedure on the mesh level. ---*/
+  if (config->GetSobMode()==MESH_LEVEL || config->GetSobMode()==DEBUG ) {
+
+    if (config->GetSmoothOnSurface()) {
+
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ( config->GetMarker_All_DV(iMarker) == YES ) {
+          solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingOnSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, iMarker);
+        }
+      }
+
+    } else {
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
+    }
+
+    /// After appling the solver write the results back
+    solver[GRADIENT_SMOOTHING]->OutputSensitivity(geometry,solver,config);
+
+  /*--- Apply the smoothing procedure on the DV level. ---*/
+  } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE || config->GetSobMode()==PARAM_LEVEL_SEQUENTIAL) {
+
+    /// variable declarations
+    unsigned iDV, nDVtotal=0;
+    unsigned nPoint = geometry->GetnPoint();
+    nDVtotal = config->GetnDV_Total();
+
+    /// vector to store the Gradient
+    su2double* param_jacobi;
+    param_jacobi =  new su2double[nDVtotal*nPoint*nDim];
+
+    /// get the Jacobian of the parametrization for simplicity in the rest of the function
+    GetParameterizationJacobianPreaccumulation(geometry, config, surface_movement[ZONE_0], param_jacobi);
+
+  /* for debuging and speed tests
+  // some temporary test stuff
+  auto start = std::chrono::high_resolution_clock::now();
   GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  std::cout << "Execution required: " << duration.count() << std::endl;
+  std::ofstream file("jac1.txt");
+  if (file.is_open()) {
+      file << Cast2Eigenmatrix(geometry, config, param_jacobi) << '\n';
+  }
 
-  /// calculate the normal output gradient similar to SU2_DOT
-  solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, grid_movement[ZONE_0][INST_0], param_jacobi);
-
+  su2double* param_jacobi2;
+  param_jacobi2 =  new su2double[nDVtotal*nPoint*nDim];
+  start = std::chrono::high_resolution_clock::now();
+  GetParameterizationJacobianPreaccumulation(geometry, config, surface_movement[ZONE_0], param_jacobi2);
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  std::cout << "Execution required: " << duration.count() << std::endl;
+  std::ofstream file2("jac2.txt");
+  if (file2.is_open()) {
+      file2 << Cast2Eigenmatrix(geometry, config, param_jacobi2) << '\n';
+  }
 
   ofstream DV_Jacobian ("DV_Jacobian.txt");
   DV_Jacobian.precision(17);
@@ -594,31 +637,26 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
     }
   }
   DV_Jacobian.close();
+  */
 
+    /// calculate the normal output gradient similar to SU2_DOT
+    solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, grid_movement[ZONE_0][INST_0], param_jacobi);
 
-  if (false) {
+    /// calculate the whole equation system.
+    if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
+      solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, grid_movement[ZONE_0][INST_0], param_jacobi);
 
-    solver[GRADIENT_SMOOTHING]->SmoothConsecutive(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, param_jacobi);
-
-  } else if (true) {
-
-    solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, grid_movement[ZONE_0][INST_0], param_jacobi);
-
-  } else {
-
-    /// smooth the gradient in several steps
-    while (false) {
-      /// multiply by the transposed parameter Jacobian to go back to the surface level
-      solver[GRADIENT_SMOOTHING]->MultiplyParameterJacobian(param_jacobi, true);
-
-      /// smooth the stuff on a surface level
-      //solver[GRADIENT_SMOOTHING]->MultiplyByVolumeDeformationStiffness();
-
-      /// multiply by the parameter Jacobi to go to parameter level
-      solver[GRADIENT_SMOOTHING]->MultiplyParameterJacobian(param_jacobi, false);
+      /// assemble the system sequentially.
+    } else if (config->GetSobMode()==PARAM_LEVEL_SEQUENTIAL) {
+      solver[GRADIENT_SMOOTHING]->SmoothConsecutive(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, param_jacobi);
     }
-  }
 
-  delete [] param_jacobi;
+    /// Free used memory.
+    delete [] param_jacobi;
+
+  /*--- warning if choose mode is unsupported. ---*/
+  } else {
+    if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
+  }
 
 }

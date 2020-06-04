@@ -104,6 +104,11 @@ namespace AD{
   void ComputeAdjoint(unsigned short enter, unsigned short leave);
 
   /*!
+   * \brief Computes the sensitivites using forward tape evaluation.
+   */
+  void ComputeAdjointForward();
+
+  /*!
    * \brief Reset the tape structure to be ready for a new recording.
    */
   void Reset();

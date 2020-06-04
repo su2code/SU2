@@ -429,7 +429,7 @@ private:
   bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
   bool SmoothOnSurface; /*!< \brief Flag for assembling the system only on the surface. */
   bool DirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
-  bool DebugMode; /*!< \brief temporary flag for some debuging stuff */
+  unsigned short NumMode; /*!< \brief temporary flag for some debuging stuff */
 
   bool AddIndNeighbor;		   /*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		           /*!< \brief Number of design variables. */
@@ -2855,10 +2855,10 @@ public:
   bool GetDirichletSurfaceBound(void);
 
   /*!
-   * \brief Check if we want some simplified debugging stuff
-   * \return true means that smoothing is for each dimension separate
+   * \brief The modus of operation for the solver
+   * \return returns on what level we operate
    */
-  bool GetSobDebugMode(void);
+  unsigned short GetSobMode(void);
 
   /*!
    * \brief Check if we use second order numerical integration in FE
@@ -5787,6 +5787,12 @@ public:
    * \return Design variable step.
    */
   su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0);
+
+  /*!
+   * \brief Pointer to the design variables.
+   * \return Design variable array.
+   */
+  su2double** GetDV_Pointer();
   
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.

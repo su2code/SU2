@@ -458,7 +458,9 @@ def scipy_redsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
                           fprime_ieqcons = fprime_ieqcons ,
                           fdotdot        = fdotdot        ,
                           project        = project        ,
-                          acc            = accu           )
+                          iter           = its            ,
+                          acc            = accu           ,
+                          xb             = xb             )
 
     # Done
     return outputs

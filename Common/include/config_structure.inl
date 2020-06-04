@@ -332,7 +332,7 @@ inline bool CConfig::GetSmoothOnSurface(void) { return SmoothOnSurface; }
 
 inline bool CConfig::GetDirichletSurfaceBound(void) { return DirichletSurfaceBound; }
 
-inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
+inline unsigned short CConfig::GetSobMode(void) { return NumMode; }
 
 inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }
 
@@ -778,12 +778,13 @@ inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 inline unsigned short CConfig::GetnDV_Value(unsigned short iDV) {	return nDV_Value[iDV]; }
 
 inline unsigned short CConfig::GetnDV_Total(void) {
+  if(!nDV_Value) return 0;
   unsigned short sum=0;
   for (unsigned short iDV=0; iDV<nDV; iDV++) {
     sum += nDV_Value[iDV];
   }
   return sum;
-  }
+}
 
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 
@@ -1568,6 +1569,8 @@ inline bool CConfig::GetEngine_HalfModel(void) { return Engine_HalfModel; }
 inline bool CConfig::GetActDisk_SU2_DEF(void) { return ActDisk_SU2_DEF; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
+
+inline su2double** CConfig::GetDV_Pointer() { return DV_Value; }
 
 inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 

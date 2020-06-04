@@ -4493,6 +4493,11 @@ public:
   virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
+   * \brief calculate the original DV gradient similar to SU2_DOT_AD
+   */
+  virtual void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
@@ -4505,53 +4510,11 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
-   * \param[in] grid_movement - the grid movement to get the stiffness matrix from.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Transpose - wether or not we multiply by the transposed matrix.
-   *
-   */
-  virtual void MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
    * \param[in] numerics - the numerics for this problem.
    * \param[in] config - Definition of the particular problem.
    *
    */
   virtual void ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
-
-  /*!
-   * \brief A virtual member
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void WriteSens2Geometry(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void ReadSens2Geometry(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief multiply the surface sensitivities with the parametrization Jacobian
-   * \param Jacobian of the parameterization
-   * \param bool to clarify if we multiply by transposed or not
-   */
-  virtual void MultiplyParameterJacobian(su2double *Jacobian, bool transposed);
-
-  /*!
-   * \brief write the DV gradient into a file
-   */
-  virtual void OutputDVGradient();
-
-  /*!
-   * \brief calculate the original DV gradient similar to SU2_DOT_AD
-   */
-  virtual void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
 
   /*!
    * \brief Smooth the system by solving each LES in consecutive order
@@ -4562,6 +4525,14 @@ public:
    * \brief Smooth the system by multiplying out the whole system matrix and solving it
    */
   virtual void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -12511,7 +12482,7 @@ public:
   /*!
    * \brief write the DV gradient into a file
    */
-  void OutputDVGradient();
+  void OutputDVGradient(string out_file="delta_p.txt");
 
   /*!
    * \brief calculate the original DV gradient similar to SU2_DOT_AD
