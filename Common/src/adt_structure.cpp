@@ -1304,10 +1304,10 @@ bool CADTElemClass::CoorInTetrahedron(const unsigned long elemID,
      ((parCoor[0]+parCoor[1]+parCoor[2]) <= paramLowerBound)) {
     coorIsInside = true;
 
-    parCoor[0] = -0.5*(parCoor[0] + parCoor[1] + parCoor[2] + 1.0);
-    parCoor[1] =  0.5*(parCoor[0] + 1.0);
-    parCoor[2] =  0.5*(parCoor[1] + 1.0);
-    parCoor[3] =  0.5*(parCoor[2] + 1.0);
+    weightsInterpol[0] = -0.5*(parCoor[0] + parCoor[1] + parCoor[2] + 1.0);
+    weightsInterpol[1] =  0.5*(parCoor[0] + 1.0);
+    weightsInterpol[2] =  0.5*(parCoor[1] + 1.0);
+    weightsInterpol[3] =  0.5*(parCoor[2] + 1.0);
   }
 
   /* Return the value of coorIsInside. */
