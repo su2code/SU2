@@ -60,6 +60,8 @@ using namespace std;
 
 class CSolver {
 protected:
+  enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
+
   int rank,       /*!< \brief MPI Rank. */
   size;           /*!< \brief MPI Size. */
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */

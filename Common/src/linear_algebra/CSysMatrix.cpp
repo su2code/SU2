@@ -307,7 +307,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
         nSend = (geometry->nPoint_P2PSend[iMessage+1] -
                  geometry->nPoint_P2PSend[iMessage]);
 
-        SU2_OMP_FOR_STAT(32)
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
         for (iSend = 0; iSend < nSend; iSend++) {
 
           /*--- Get the local index for this communicated data. ---*/
@@ -344,7 +344,7 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
         nSend = (geometry->nPoint_P2PRecv[iMessage+1] -
                  geometry->nPoint_P2PRecv[iMessage]);
 
-        SU2_OMP_FOR_STAT(32)
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
         for (iSend = 0; iSend < nSend; iSend++) {
 
           /*--- Get the local index for this communicated data. Here we
@@ -393,16 +393,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
   unsigned short iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
-  unsigned short COUNT_PER_POINT = 0;
-
-  switch (commType) {
-    case SOLUTION_MATRIX:
-      COUNT_PER_POINT  = nVar;
-      break;
-    case SOLUTION_MATRIXTRANS:
-      COUNT_PER_POINT  = nEqn;
-      break;
-  }
+  const auto COUNT_PER_POINT = (commType == SOLUTION_MATRIX)? nVar : nEqn;
 
   int ind, source, iMessage, jRecv;
 
@@ -445,7 +436,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
         nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
                  geometry->nPoint_P2PRecv[jRecv]);
 
-        SU2_OMP_FOR_STAT(32)
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
         for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
           /*--- Get the local index for this communicated data. ---*/
@@ -484,7 +475,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
         nRecv = (geometry->nPoint_P2PSend[jRecv+1] -
                  geometry->nPoint_P2PSend[jRecv]);
 
-        SU2_OMP_FOR_STAT(32)
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
         for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
           /*--- Get the local index for this communicated data. ---*/

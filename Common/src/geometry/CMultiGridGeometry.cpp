@@ -669,11 +669,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
 }
 
-
-CMultiGridGeometry::~CMultiGridGeometry(void) {
-
-}
-
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config) {
 
   bool agglomerate_CV = false;

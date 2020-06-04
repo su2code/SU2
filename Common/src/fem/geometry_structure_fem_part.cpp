@@ -508,8 +508,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       }
 
       /*--- Allocate space for elements ---*/
-      elem = new CPrimalGrid*[nElem];
-      for (unsigned long i = 0; i < nElem; i++) elem[i] = nullptr;
+      elem = new CPrimalGrid*[nElem] ();
 
       /*--- Loop over all the elements and store the elements to be stored on
             this rank. Furthermore, determine the total amount of DOFs for
@@ -984,8 +983,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   }
 
   /*--- Allocate space for elements ---*/
-  elem = new CPrimalGrid*[nElem];
-  for(unsigned long i=0; i<nElem; ++i) elem[i] = NULL;
+  elem = new CPrimalGrid*[nElem] ();
 
   /*--- Loop over over the connectivities and read the elements to be stored on
         this rank. Furthermore, determine the local amount of DOFs for the

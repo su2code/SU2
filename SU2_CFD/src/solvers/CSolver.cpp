@@ -372,7 +372,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   const su2double zeros[3] = {0.0};
   su2activematrix Cvector;
 
-  auto Rotate = [&](const su2double* origin, const su2double* direction, su2double* rotated) {
+  auto Rotate = [nDim,&rotMatrix2D,&rotMatrix3D](const su2double* origin,
+                const su2double* direction, su2double* rotated) {
     if(nDim==2) GeometryToolbox::Rotate(rotMatrix2D, origin, direction, rotated);
     else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
   };
@@ -426,7 +427,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
       nSend = (geometry->nPoint_PeriodicSend[iMessage+1] -
                geometry->nPoint_PeriodicSend[iMessage]);
 
-      SU2_OMP_FOR_STAT(32)
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iSend = 0; iSend < nSend; iSend++) {
 
         /*--- Get the local index for this communicated data. We need
@@ -1297,7 +1298,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       nRecv = (geometry->nPoint_PeriodicRecv[jRecv+1] -
                geometry->nPoint_PeriodicRecv[jRecv]);
 
-      SU2_OMP_FOR_STAT(32)
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
         /*--- Get the local index for this communicated data. ---*/
@@ -1737,7 +1738,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       nSend = (geometry->nPoint_P2PSend[iMessage+1] -
                geometry->nPoint_P2PSend[iMessage]);
 
-      SU2_OMP_FOR_STAT(32)
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iSend = 0; iSend < nSend; iSend++) {
 
         /*--- Get the local index for this communicated data. ---*/
@@ -1909,7 +1910,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
       nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
                geometry->nPoint_P2PRecv[jRecv]);
 
-      SU2_OMP_FOR_STAT(32)
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
         /*--- Get the local index for this communicated data. ---*/
@@ -2489,7 +2490,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
-      SU2_OMP_FOR_STAT(32)
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();

@@ -55,105 +55,11 @@
 #endif
 
 
-CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  Local_to_Global_Point  = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-  SpanWiseValue           = nullptr;
-
-}
+CPhysicalGeometry::CPhysicalGeometry() : CGeometry() { }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
 
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  Local_to_Global_Point = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
-
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-  SpanWiseValue           = nullptr;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -201,7 +107,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
 
-  assert((nDim == 2) || (nDim == 3));
+  assert(((nDim == 2) || (nDim == 3)) && "There shall be bugs.");
 
   /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
 
@@ -276,120 +182,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
-                                     CConfig *config) {
-
-  /*--- Get rank and size. ---*/
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  /*--- Initialize several class data members for later. ---*/
-
-  Local_to_Global_Point  = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  /*--- Arrays for defining the linear partitioning. ---*/
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
+                                     CConfig *config) : CGeometry() {
 
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-
-  /*--- Initialize counters for the points/elements local to a rank. ---*/
-
-  nLocal_Point         = 0;
-  nLocal_PointDomain   = 0;
-  nLocal_PointGhost    = 0;
-  nLocal_PointPeriodic = 0;
-  nLocal_Line          = 0;
-  nLocal_BoundTria     = 0;
-  nLocal_BoundQuad     = 0;
-  nLocal_Tria          = 0;
-  nLocal_Quad          = 0;
-  nLocal_Tetr          = 0;
-  nLocal_Hexa          = 0;
-  nLocal_Pris          = 0;
-  nLocal_Pyra          = 0;
-
-  Local_Coords = nullptr;
-  Local_Points = nullptr;
-  Local_Colors = nullptr;
-
-  /*--- Arrays for holding the element connectivity. ---*/
-
-  Conn_Line      = nullptr;
-  Conn_BoundTria = nullptr;
-  Conn_BoundQuad = nullptr;
-
-  Conn_Line_Linear      = nullptr;
-  Conn_BoundTria_Linear = nullptr;
-  Conn_BoundQuad_Linear = nullptr;
-
-  Conn_Tria = nullptr;
-  Conn_Quad = nullptr;
-  Conn_Tetr = nullptr;
-  Conn_Hexa = nullptr;
-  Conn_Pris = nullptr;
-  Conn_Pyra = nullptr;
-
-  /*--- Arrays for holding the element IDs. ---*/
-
-  ID_Line             = nullptr;
-  ID_BoundTria        = nullptr;
-  ID_BoundQuad        = nullptr;
-  ID_Line_Linear      = nullptr;
-  ID_BoundTria_Linear = nullptr;
-  ID_BoundQuad_Linear = nullptr;
-
-  ID_Tria = nullptr;
-  ID_Quad = nullptr;
-  ID_Tetr = nullptr;
-  ID_Hexa = nullptr;
-  ID_Pris = nullptr;
-  ID_Pyra = nullptr;
-
-  Elem_ID_Line             = nullptr;
-  Elem_ID_BoundTria        = nullptr;
-  Elem_ID_BoundQuad        = nullptr;
-  Elem_ID_Line_Linear      = nullptr;
-  Elem_ID_BoundTria_Linear = nullptr;
-  Elem_ID_BoundQuad_Linear = nullptr;
 
   /*--- The new geometry class has the same problem dimension/zone. ---*/
 
@@ -475,29 +270,26 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
-  Neighbors.clear();
-  Color_List.clear();
+  decltype(Neighbors)().swap(Neighbors);
+  decltype(Color_List)().swap(Color_List);
 
   delete [] Local_Points;
   delete [] Local_Colors;
   delete [] Local_Coords;
 
-  if (nLinear_Line > 0      && Conn_Line_Linear      != nullptr)
-    delete [] Conn_Line_Linear;
-  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != nullptr)
-    delete [] Conn_BoundTria_Linear;
-  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != nullptr)
-    delete [] Conn_BoundQuad_Linear;
+  delete [] Conn_Line_Linear;
+  delete [] Conn_BoundTria_Linear;
+  delete [] Conn_BoundQuad_Linear;
 
-  if (nLocal_Line > 0      && Conn_Line      != nullptr) delete [] Conn_Line;
-  if (nLocal_BoundTria > 0 && Conn_BoundTria != nullptr) delete [] Conn_BoundTria;
-  if (nLocal_BoundQuad > 0 && Conn_BoundQuad != nullptr) delete [] Conn_BoundQuad;
-  if (nLocal_Tria > 0      && Conn_Tria      != nullptr) delete [] Conn_Tria;
-  if (nLocal_Quad > 0      && Conn_Quad      != nullptr) delete [] Conn_Quad;
-  if (nLocal_Tetr > 0      && Conn_Tetr      != nullptr) delete [] Conn_Tetr;
-  if (nLocal_Hexa > 0      && Conn_Hexa      != nullptr) delete [] Conn_Hexa;
-  if (nLocal_Pris > 0      && Conn_Pris      != nullptr) delete [] Conn_Pris;
-  if (nLocal_Pyra > 0      && Conn_Pyra      != nullptr) delete [] Conn_Pyra;
+  delete [] Conn_Line;
+  delete [] Conn_BoundTria;
+  delete [] Conn_BoundQuad;
+  delete [] Conn_Tria;
+  delete [] Conn_Quad;
+  delete [] Conn_Tetr;
+  delete [] Conn_Hexa;
+  delete [] Conn_Pris;
+  delete [] Conn_Pyra;
 
   delete [] ID_Line;
   delete [] ID_BoundTria;
@@ -2497,7 +2289,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   jElem = 0;
   nElem = Local_Elem;
-  elem  = new CPrimalGrid*[nElem];
+  elem  = new CPrimalGrid*[nElem] ();
 
   /*--- Store the elements of each type in the proper containers. ---*/
 
@@ -4021,7 +3813,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
   /*--- Allocate space for the CGNS interior elements in our SU2 data
    structure. Note that we only instantiate our rank's local set. ---*/
 
-  elem = new CPrimalGrid*[nElem];
+  elem = new CPrimalGrid*[nElem] ();
 
   /*--- Some temporaries for the loop below. ---*/
 
