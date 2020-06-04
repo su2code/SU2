@@ -1974,11 +1974,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   
   const su2double lim      = (mut > eps) ? 1.0 : 0.0;
   const su2double omegalim = 1./omega;
-  
-  mut = max(mut,eps);
-  
-//  const su2double lim = 1.0;
-//  const su2double omegalim = 1./omega;
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
@@ -2036,9 +2031,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
                                                 +varAdjTur->GetHessian(iPoint, rki, yyi)
                                                 +varAdjTur->GetHessian(iPoint, rki, zzi))
-                                                +(lam+sigmak*lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                                                          +varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                                                          +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
+                             +(lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                                 +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                                 +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, yyi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
@@ -2048,8 +2043,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     const unsigned short rki = 0, romegai = 1, rei = (nVarFlo - 1), xxi = 0, yyi = 2;
     TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
                                                 +varAdjTur->GetHessian(iPoint, rki, yyi))
-                             +(lam+sigmak*lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
+                             +(lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                                 +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
   }
