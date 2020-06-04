@@ -1048,7 +1048,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   solver = new CSolver**[config->GetnMGLevels()+1];
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
-    solver[iMesh] = CSolverFactory::createSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
+    solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
   }
 
   /*--- Count the number of DOFs per solution point. ---*/
@@ -1375,7 +1375,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CInte
 
   ENUM_MAIN_SOLVER kindMainSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
-  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, solver);
+  integration = CIntegrationFactory::CreateIntegrationContainer(kindMainSolver, solver);
 
 }
 
@@ -2342,7 +2342,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  iteration = CIterationFactory::createIteration(static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver()), config);
+  iteration = CIterationFactory::CreateIteration(static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver()), config);
 
 }
 
@@ -2616,7 +2616,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 
     ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config[iZone]->GetKind_Solver());
 
-    output[iZone] = COutputFactory::createOutput(kindSolver, config[iZone], nDim);
+    output[iZone] = COutputFactory::CreateOutput(kindSolver, config[iZone], nDim);
 
     /*--- If dry-run is used, do not open/overwrite history file. ---*/
     output[iZone]->PreprocessHistoryOutput(config[iZone], !dry_run);
@@ -2629,7 +2629,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     if (rank == MASTER_NODE)
       cout << endl <<"------------------- Output Preprocessing ( Multizone ) ------------------" << endl;
 
-    driver_output = COutputFactory::createMultizoneOutput(driver_config, config, nDim);
+    driver_output = COutputFactory::CreateMultizoneOutput(driver_config, config, nDim);
 
     driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
@@ -3053,7 +3053,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
                                              SU2_Comm MPICommunicator):
                                              CFluidDriver(confFile, val_nZone, MPICommunicator) {
 
-  output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
+  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
 
   /*--- LEGACY OUTPUT (going to be removed soon) --- */
 
@@ -3299,7 +3299,7 @@ CHBDriver::CHBDriver(char* confFile,
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
   D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 
-  output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
+  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
 
   /*--- Open the convergence history file ---*/
   ConvHist_file = nullptr;

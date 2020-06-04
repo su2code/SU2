@@ -37,7 +37,7 @@
 #include "../include/iteration/CHeatIteration.hpp"
 #include "../include/iteration/CFEAIteration.hpp"
 
-CIteration* CIterationFactory::createIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config){
+CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config){
 
   CIteration *iteration;
 

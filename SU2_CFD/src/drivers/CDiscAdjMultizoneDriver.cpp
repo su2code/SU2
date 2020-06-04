@@ -64,16 +64,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
       switch (config_container[iZone]->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(EULER, config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(EULER, config_container[iZone]);
           break;
         case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(INC_EULER, config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(INC_EULER, config_container[iZone]);
           break;
         case DISC_ADJ_HEAT:
-          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(HEAT_EQUATION, config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(HEAT_EQUATION, config_container[iZone]);
           break;
         case DISC_ADJ_FEM:
-          direct_iteration[iZone][iInst] = CIterationFactory::createIteration(FEM_ELASTICITY, config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(FEM_ELASTICITY, config_container[iZone]);
           break;
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.",
@@ -86,16 +86,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
     switch (config_container[iZone]->GetKind_Solver()) {
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        direct_output[iZone] = COutputFactory::createOutput(EULER, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        direct_output[iZone] = COutputFactory::createOutput(INC_EULER, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(INC_EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_HEAT:
-        direct_output[iZone] = COutputFactory::createOutput(HEAT_EQUATION, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(HEAT_EQUATION, config_container[iZone], nDim);
         break;
       case DISC_ADJ_FEM:
-        direct_output[iZone] = COutputFactory::createOutput(FEM_ELASTICITY, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(FEM_ELASTICITY, config_container[iZone], nDim);
         break;
       default:
         direct_output[iZone] = nullptr;
