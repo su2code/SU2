@@ -87,134 +87,136 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, 
   std::fill(std::begin(SkinFriction), std::end(SkinFriction), 0.0);
   Heatflux = 0.0;
 
-  const su2double RefDensity     = config->GetDensity_FreeStreamND();
-  const su2double RefTemperature = config->GetTemperature_FreeStreamND();
-  const su2double* RefVelocity   = config->GetVelocity_FreeStreamND();
-  const su2double RefArea        = config->GetRefArea();
+  if (config->GetSolid_Wall(iMarker)){
+    const su2double RefDensity     = config->GetDensity_FreeStreamND();
+    const su2double RefTemperature = config->GetTemperature_FreeStreamND();
+    const su2double* RefVelocity   = config->GetVelocity_FreeStreamND();
+    const su2double RefArea        = config->GetRefArea();
 
-  su2double RefVel2;
-  if (config->GetDynamic_Grid()) {
-    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemperature);
-    const su2double Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (int iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += RefVelocity[iDim]*RefVelocity[iDim];
-  }
-  const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
-  const unsigned long iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-  const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-  const su2double* Coord = geometry->nodes->GetCoord(iPoint);
-  const su2double* Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-  const su2double Pressure_Inf = solver->GetPressure_Inf();
-
-  // TODO: Get ref origin from config
-  su2double MomentDist[3] = {0.0}, Origin[3] = {0.0};
-
-//  Origin[0] = data.config->GetRefOriginMoment_X(0);
-//  Origin[1] = data.config->GetRefOriginMoment_Y(0);
-//  Origin[2] = data.config->GetRefOriginMoment_Z(0);
-
-  for (int iDim = 0; iDim < nDim; iDim++) {
-    MomentDist[iDim] = Coord[iDim] - Origin[iDim];
-  }
-
-  /*--- Axisymmetric simulations ---*/
-  su2double AxiFactor = 0.0;
-  if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*Coord[1];
-  else AxiFactor = 1.0;
-
-  const su2double Pressure = solver->GetNodes()->GetPressure(iPoint);
-
-  for (int iDim = 0; iDim < nDim; iDim++) {
-    Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
-  }
-
-  if (config->GetViscous()){
-
-    const auto& Grad_Primitive = solver->GetNodes()->GetGradient_Primitive(iPoint);
-    su2double div_vel = 0.0; for (int iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Primitive[iDim+1][iDim];
-    const su2double Viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
-    const su2double Density = solver->GetNodes()->GetDensity(iPoint);
-    constexpr passivedouble delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-    su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-    su2double UnitNormal[3];
-    for (int iDim = 0; iDim < nDim; iDim++) {
-      UnitNormal[iDim] = Normal[iDim]/Area;
+    su2double RefVel2;
+    if (config->GetDynamic_Grid()) {
+      const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemperature);
+      const su2double Mach_Motion = config->GetMach_Motion();
+      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
     }
-    su2double Tau[3][3] = {{0.0}};
+    else {
+      RefVel2 = 0.0;
+      for (int iDim = 0; iDim < nDim; iDim++)
+        RefVel2  += RefVelocity[iDim]*RefVelocity[iDim];
+    }
+    const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
+    const unsigned long iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+    const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+    const su2double* Coord = geometry->nodes->GetCoord(iPoint);
+    const su2double* Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+    const su2double Pressure_Inf = solver->GetPressure_Inf();
+
+    // TODO: Get ref origin from config
+    su2double MomentDist[3] = {0.0}, Origin[3] = {0.0};
+
+    //  Origin[0] = data.config->GetRefOriginMoment_X(0);
+    //  Origin[1] = data.config->GetRefOriginMoment_Y(0);
+    //  Origin[2] = data.config->GetRefOriginMoment_Z(0);
 
     for (int iDim = 0; iDim < nDim; iDim++) {
-      for (int jDim = 0; jDim < nDim; jDim++) {
-        Tau[iDim][jDim] = Viscosity*(Grad_Primitive[jDim+1][iDim] + Grad_Primitive[iDim+1][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
+      MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+    }
+
+    /*--- Axisymmetric simulations ---*/
+    su2double AxiFactor = 0.0;
+    if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*Coord[1];
+    else AxiFactor = 1.0;
+
+    const su2double Pressure = solver->GetNodes()->GetPressure(iPoint);
+
+    for (int iDim = 0; iDim < nDim; iDim++) {
+      Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
+    }
+
+    if (config->GetViscous()){
+
+      const auto& Grad_Primitive = solver->GetNodes()->GetGradient_Primitive(iPoint);
+      su2double div_vel = 0.0; for (int iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Primitive[iDim+1][iDim];
+      const su2double Viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
+      const su2double Density = solver->GetNodes()->GetDensity(iPoint);
+      constexpr passivedouble delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+      su2double Area = 0.0; for (int iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      su2double UnitNormal[3];
+      for (int iDim = 0; iDim < nDim; iDim++) {
+        UnitNormal[iDim] = Normal[iDim]/Area;
       }
-    }
+      su2double Tau[3][3] = {{0.0}};
 
-    if (config->GetQCR()) {
-      su2double den_aux, c_cr1=0.3, O_ik, O_jk;
-      unsigned short kDim;
+      for (int iDim = 0; iDim < nDim; iDim++) {
+        for (int jDim = 0; jDim < nDim; jDim++) {
+          Tau[iDim][jDim] = Viscosity*(Grad_Primitive[jDim+1][iDim] + Grad_Primitive[iDim+1][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
+        }
+      }
 
-      /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+      if (config->GetQCR()) {
+        su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+        unsigned short kDim;
 
-      den_aux = 0.0;
-      for (int iDim = 0 ; iDim < nDim; iDim++)
-        for (int jDim = 0 ; jDim < nDim; jDim++)
-          den_aux += Grad_Primitive[iDim+1][jDim] * Grad_Primitive[iDim+1][jDim];
-      den_aux = sqrt(max(den_aux,1E-10));
+        /*--- Denominator Antisymmetric normalized rotation tensor ---*/
 
-      /*--- Adding the QCR contribution ---*/
+        den_aux = 0.0;
+        for (int iDim = 0 ; iDim < nDim; iDim++)
+          for (int jDim = 0 ; jDim < nDim; jDim++)
+            den_aux += Grad_Primitive[iDim+1][jDim] * Grad_Primitive[iDim+1][jDim];
+        den_aux = sqrt(max(den_aux,1E-10));
 
-      for (int iDim = 0 ; iDim < nDim; iDim++){
-        for (int jDim = 0 ; jDim < nDim; jDim++){
-          for (kDim = 0 ; kDim < nDim; kDim++){
-            O_ik = (Grad_Primitive[iDim+1][kDim] - Grad_Primitive[kDim+1][iDim])/ den_aux;
-            O_jk = (Grad_Primitive[jDim+1][kDim] - Grad_Primitive[kDim+1][jDim])/ den_aux;
-            Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
+        /*--- Adding the QCR contribution ---*/
+
+        for (int iDim = 0 ; iDim < nDim; iDim++){
+          for (int jDim = 0 ; jDim < nDim; jDim++){
+            for (kDim = 0 ; kDim < nDim; kDim++){
+              O_ik = (Grad_Primitive[iDim+1][kDim] - Grad_Primitive[kDim+1][iDim])/ den_aux;
+              O_jk = (Grad_Primitive[jDim+1][kDim] - Grad_Primitive[kDim+1][jDim])/ den_aux;
+              Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
+            }
           }
         }
       }
-    }
 
-    su2double TauElem[3] = {0.0};
-    for (int iDim = 0; iDim < nDim; iDim++) {
-      for (int jDim = 0; jDim < nDim; jDim++) {
-        TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+      su2double TauElem[3] = {0.0};
+      for (int iDim = 0; iDim < nDim; iDim++) {
+        for (int jDim = 0; jDim < nDim; jDim++) {
+          TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+        }
+      }
+      su2double TauNormal = 0.0; for (int iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+      su2double WallShearStress = 0.0;
+      su2double TauTangent[3] = {0.0};
+      for (int iDim = 0; iDim < nDim; iDim++) {
+        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+        SkinFriction[iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+        WallShearStress += TauTangent[iDim] * TauTangent[iDim];
+      }
+      WallShearStress = sqrt(WallShearStress);
+
+      su2double WallDist[3];
+      for (int iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+      su2double WallDistMod = 0.0; for (int iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim];
+      WallDistMod = sqrt(WallDistMod);
+
+      /*--- Compute y+ and non-dimensional velocity ---*/
+
+      const su2double FrictionVel = sqrt(fabs(WallShearStress)/Density);
+      Y_Plus = WallDistMod*FrictionVel/(Viscosity/Density);
+
+      for(int iDim = 0; iDim < nDim; iDim++){
+        Force[iDim] += TauElem[iDim]*Area*factor*AxiFactor;
       }
     }
-    su2double TauNormal = 0.0; for (int iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-    su2double WallShearStress = 0.0;
-    su2double TauTangent[3] = {0.0};
-    for (int iDim = 0; iDim < nDim; iDim++) {
-      TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-      SkinFriction[iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
-      WallShearStress += TauTangent[iDim] * TauTangent[iDim];
+
+
+    if (nDim == 3){
+      Moment[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
+      Moment[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLength;
     }
-    WallShearStress = sqrt(WallShearStress);
-
-    su2double WallDist[3];
-    for (int iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-    su2double WallDistMod = 0.0; for (int iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim];
-    WallDistMod = sqrt(WallDistMod);
-
-    /*--- Compute y+ and non-dimensional velocity ---*/
-
-    const su2double FrictionVel = sqrt(fabs(WallShearStress)/Density);
-    Y_Plus = WallDistMod*FrictionVel/(Viscosity/Density);
-
-    for(int iDim = 0; iDim < nDim; iDim++){
-      Force[iDim] += TauElem[iDim]*Area*factor*AxiFactor;
-    }
+    Moment[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
   }
-
-
-  if (nDim == 3){
-    Moment[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
-    Moment[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLength;
-  }
-  Moment[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
 
   volumeFields.SetFieldValue("MOMENT_X", Moment[0]);
   volumeFields.SetFieldValue("MOMENT_Y", Moment[1]);
