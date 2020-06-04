@@ -7458,7 +7458,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       case STATIC_PRESSURE:
 
-        /*--- Retrieve the staic pressure for this boundary. ---*/
+        /*--- Retrieve the static pressure for this boundary. ---*/
         Pressure_e = config->GetRiemann_Var1(Marker_Tag);
         Pressure_e /= config->GetPressure_Ref();
         Density_e = Density_i;
@@ -7937,7 +7937,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           case MIXING_OUT:
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
+            /*--- Retrieve the static pressure for this boundary. ---*/
             Pressure_e = ExtAveragePressure[val_marker][iSpan];
             Density_e = Density_i;
 
@@ -7953,7 +7953,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           case STATIC_PRESSURE:
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
+            /*--- Retrieve the static pressure for this boundary. ---*/
             Pressure_e = config->GetRiemann_Var1(Marker_Tag);
             Pressure_e /= config->GetPressure_Ref();
             Density_e = Density_i;
@@ -7971,7 +7971,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           case RADIAL_EQUILIBRIUM:
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
+            /*--- Retrieve the static pressure for this boundary. ---*/
             Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
             Density_e = Density_i;
 
