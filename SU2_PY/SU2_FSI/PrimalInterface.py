@@ -817,15 +817,17 @@ class Interface:
         cd = FluidSolver.Get_DragCoeff()
         
         # --- Fluid solver call for FSI subiteration --- #
-        self.MPIPrint('\n##### If fixed Cl mode, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
-        self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
-        FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
-        FluidSolver.Preprocess(0,200)          # Time iteration pre-processing
-        FluidSolver.Run()                  # Run one time-step (static: one simulation)
-        FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
-        FluidSolver.Update()               # Update the solver for the next time iteration
-        FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
-        FluidSolver.Output(0)              # Output the solution to file
+        print('TO add a check:  if rigid (fsi iter =1)or if not fixed cl mode this part needs not to be executes')
+        if nFSIIter ==1:
+           self.MPIPrint('\n##### If fixed Cl mode and not rigid case, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
+           self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
+           FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
+           FluidSolver.Preprocess(0,200)          # Time iteration pre-processing
+           FluidSolver.Run()                  # Run one time-step (static: one simulation)
+           FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
+           FluidSolver.Update()               # Update the solver for the next time iteration
+           FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
+           FluidSolver.Output(0)              # Output the solution to file
 
         self.MPIPrint('\nBGS is converged (strong coupling)')
         self.MPIPrint(' ')
