@@ -144,18 +144,37 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
+#include <Eigen/Dense>
+
 void CDiscAdjSinglezoneDriver::Run() {
 
-  bool steady = !config->GetTime_Domain();
-  unsigned long Adjoint_Iter;
+  using namespace Eigen;
 
-  for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+  const bool steady = !config->GetTime_Domain();
+
+  const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+  size_t nRows = 0;
+  const size_t nCols = 20;
+
+  for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    if (solver && solver->GetAdjoint())
+      nRows += nPoint*solver->GetnVar();
+  }
+
+  const auto nVar = nRows/nPoint;
+
+  MatrixXd X(nRows, nCols), Y(nRows, nCols), H;
+  X.col(0).setZero(); // initial solution
+  VectorXd R(nRows);
+
+  for (size_t iter = 0; iter < nAdjoint_Iter; iter++) {
 
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
      *--- of the previous iteration. The values are passed to the AD tool.
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetInnerIter(Adjoint_Iter);
+    config->SetInnerIter(iter);
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
@@ -187,10 +206,65 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     if (steady) {
       iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
-                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
+                        config_container, iter, false, ZONE_0, INST_0);
     }
 
     if (StopCalc) break;
+
+    auto iCol = min<int>(iter-1, nCols-1);
+
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+      if (!(solver && solver->GetAdjoint())) continue;
+
+      const auto& sol = solver->GetNodes()->GetSolution();
+      auto& dst = (iCol >= 0)? Y : X;
+
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < sol.cols(); ++iVar)
+          dst(iPoint*nVar+offset+iVar, max(iCol,0)) = SU2_TYPE::GetValue(sol(iPoint,iVar));
+      }
+      offset += sol.cols();
+    }
+
+    if (iCol <= 0) continue;
+
+    /*--- Current residual. ---*/
+    R = Y.col(iCol) - X.col(iCol);
+
+    /*--- Use history to "predict" the interface values. ---*/
+    /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1). ---*/
+    H = (Y-X).block(0,1,nRows,iCol)-(Y-X).leftCols(iCol);
+
+    /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration. ---*/
+    VectorXd C = H.colPivHouseholderQr().solve(-R);
+
+    /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1). ---*/
+    H = Y.block(0,1,nRows,iCol)-Y.leftCols(iCol);
+
+    /*--- Check if we need to discard data (shift left to delete oldest data). ---*/
+    if (iCol == nCols-1) {
+      X.leftCols(nCols-1) = X.rightCols(nCols-1);
+      Y.leftCols(nCols-1) = Y.rightCols(nCols-1);
+      iCol--;
+    }
+
+    /*--- Improved estimate for the solution. ---*/
+    X.col(iCol+1) = Y.col(iCol) + H*C;
+
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+      if (!(solver && solver->GetAdjoint())) continue;
+
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solver->GetNodes()->SetSolution(iPoint, iVar, X(iPoint*nVar+offset+iVar, iCol+1));
+      }
+      offset += solver->GetnVar();
+
+      solver->InitiateComms(geometry_container[ZONE_0][INST_0][MESH_0], config, SOLUTION);
+      solver->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0], config, SOLUTION);
+    }
 
   }
 
