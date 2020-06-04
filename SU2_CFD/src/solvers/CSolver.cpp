@@ -5992,7 +5992,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   T   = varFlo->GetTemperature(iPoint);
   mu  = varFlo->GetLaminarViscosity(iPoint);
   mut = varFlo->GetEddyViscosity(iPoint);
-  if (sst) mut = max(r*k/varTur->GetPrimitive(iPoint,1), eps);
+//  if (sst) mut = max(r*k/varTur->GetPrimitive(iPoint,1), eps);
 
   Tref  = config->GetMu_Temperature_RefND();
   S     = config->GetMu_SND();
