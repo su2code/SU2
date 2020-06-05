@@ -9513,7 +9513,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Primitive variables, and gradient ---*/
 
-        visc_numerics->SetPrimitive(V_domain, V_inlet);
+        visc_numerics->SetPrimitive(V_domain, V_domain);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
         /*--- Turbulent kinetic energy ---*/
