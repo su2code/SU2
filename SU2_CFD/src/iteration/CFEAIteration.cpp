@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/iteration/CFEAIteration.hpp"
-#include "../include/output/COutput.hpp"
+#include "../../include/iteration/CFEAIteration.hpp"
+#include "../../include/output/COutput.hpp"
 
 void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,

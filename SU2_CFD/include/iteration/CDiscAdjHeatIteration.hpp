@@ -44,11 +44,6 @@ class CDiscAdjHeatIteration : public CIteration {
   explicit CDiscAdjHeatIteration(const CConfig *config) : CIteration(config) {}
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjHeatIteration(void) override;
-
-  /*!
    * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.

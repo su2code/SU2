@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/iteration/CFEMFluidIteration.hpp"
-#include "../include/output/COutput.hpp"
+#include "../../include/iteration/CFEMFluidIteration.hpp"
+#include "../../include/output/COutput.hpp"
 
 void CFEMFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,

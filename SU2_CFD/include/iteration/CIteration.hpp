@@ -28,11 +28,11 @@
 
 #pragma once
 
-#include "../../Common/include/CConfig.hpp"
-#include "../../Common/include/geometry/CGeometry.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/mpi_structure.hpp"
-#include "../include/integration/CIntegration.hpp"
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/grid_movement_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
+#include "../integration/CIntegration.hpp"
 
 using namespace std;
 

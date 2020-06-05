@@ -25,21 +25,21 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/iteration/CIterationFactory.hpp"
-#include "../include/iteration/CIteration.hpp"
-#include "../include/iteration/CAdjFluidIteration.hpp"
-#include "../include/iteration/CDiscAdjFEAIteration.hpp"
-#include "../include/iteration/CDiscAdjFluidIteration.hpp"
-#include "../include/iteration/CDiscAdjHeatIteration.hpp"
-#include "../include/iteration/CFluidIteration.hpp"
-#include "../include/iteration/CFEMFluidIteration.hpp"
-#include "../include/iteration/CTurboIteration.hpp"
-#include "../include/iteration/CHeatIteration.hpp"
-#include "../include/iteration/CFEAIteration.hpp"
+#include "../../include/iteration/CIterationFactory.hpp"
+#include "../../include/iteration/CIteration.hpp"
+#include "../../include/iteration/CAdjFluidIteration.hpp"
+#include "../../include/iteration/CDiscAdjFEAIteration.hpp"
+#include "../../include/iteration/CDiscAdjFluidIteration.hpp"
+#include "../../include/iteration/CDiscAdjHeatIteration.hpp"
+#include "../../include/iteration/CFluidIteration.hpp"
+#include "../../include/iteration/CFEMFluidIteration.hpp"
+#include "../../include/iteration/CTurboIteration.hpp"
+#include "../../include/iteration/CHeatIteration.hpp"
+#include "../../include/iteration/CFEAIteration.hpp"
 
 CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config){
 
-  CIteration *iteration;
+  CIteration *iteration = nullptr;
 
   const auto rank = SU2_MPI::GetRank();
 

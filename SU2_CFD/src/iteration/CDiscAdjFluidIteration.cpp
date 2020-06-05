@@ -25,10 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/iteration/CDiscAdjFluidIteration.hpp"
-#include "../include/output/COutput.hpp"
-
-CDiscAdjFluidIteration::~CDiscAdjFluidIteration(void) {}
+#include "../../include/iteration/CDiscAdjFluidIteration.hpp"
+#include "../../include/output/COutput.hpp"
 
 void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                         CSolver***** solver, CNumerics****** numerics, CConfig** config,

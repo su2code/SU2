@@ -25,10 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/iteration/CDiscAdjFEAIteration.hpp"
-#include "../include/iteration/CFEAIteration.hpp"
-#include "../include/solvers/CFEASolver.hpp"
-#include "../include/output/COutput.hpp"
+#include "../../include/iteration/CDiscAdjFEAIteration.hpp"
+#include "../../include/iteration/CFEAIteration.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
+#include "../../include/output/COutput.hpp"
 
 CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(config), CurrentRecording(NONE) {
   fem_iteration = new CFEAIteration(config);

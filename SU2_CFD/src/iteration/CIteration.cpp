@@ -25,10 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/iteration/CIteration.hpp"
+#include "../../include/iteration/CIteration.hpp"
 
-#include "../include/output/COutput.hpp"
-#include "../include/solvers/CFEASolver.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
 
 void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surface_movement,
                                   CVolumetricMovement* grid_movement, CSolver*** solver, CConfig* config,

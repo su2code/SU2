@@ -50,11 +50,6 @@ class CDiscAdjFluidIteration : public CIteration {
     turbulent(config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS) {}
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjFluidIteration(void) override;
-
-  /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
