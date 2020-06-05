@@ -152,10 +152,11 @@ void CDiscAdjSinglezoneDriver::Run() {
 
   const bool steady = !config->GetTime_Domain();
 
-  const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
-  size_t nRows = 0;
+  const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+  const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
   const size_t nCols = 20;
 
+  size_t nRows = 0;
   for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
@@ -163,6 +164,7 @@ void CDiscAdjSinglezoneDriver::Run() {
   }
 
   const auto nVar = nRows/nPoint;
+  const auto nRowsDomain = nPointDomain*nVar;
 
   MatrixXd X(nRows, nCols), Y(nRows, nCols), H;
   X.col(0).setZero(); // initial solution
@@ -211,23 +213,22 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     if (StopCalc) break;
 
-    auto iCol = min<int>(iter-1, nCols-1);
+    auto iCol = min<int>(iter, nCols-1);
 
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
       if (!(solver && solver->GetAdjoint())) continue;
 
       const auto& sol = solver->GetNodes()->GetSolution();
-      auto& dst = (iCol >= 0)? Y : X;
 
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
         for (auto iVar = 0ul; iVar < sol.cols(); ++iVar)
-          dst(iPoint*nVar+offset+iVar, max(iCol,0)) = SU2_TYPE::GetValue(sol(iPoint,iVar));
+          Y(iPoint*nVar+offset+iVar, iCol) = SU2_TYPE::GetValue(sol(iPoint,iVar));
       }
       offset += sol.cols();
     }
 
-    if (iCol <= 0) continue;
+    if (!iCol) continue;
 
     /*--- Current residual. ---*/
     R = Y.col(iCol) - X.col(iCol);
@@ -236,8 +237,13 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1). ---*/
     H = (Y-X).block(0,1,nRows,iCol)-(Y-X).leftCols(iCol);
 
-    /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration. ---*/
-    VectorXd C = H.colPivHouseholderQr().solve(-R);
+    MatrixXd tmp = H.topRows(nRowsDomain).transpose()*H.topRows(nRowsDomain), HTH(iCol,iCol);
+    VectorXd C = H.topRows(nRowsDomain).transpose()*R.topRows(nRowsDomain), HTR(iCol);
+    SelectMPIWrapper<double>::W::Allreduce(tmp.data(), HTH.data(), iCol*iCol,
+                                           MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SelectMPIWrapper<double>::W::Allreduce(C.data(), HTR.data(), iCol,
+                                           MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    C = HTH.ldlt().solve(-HTR);
 
     /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1). ---*/
     H = Y.block(0,1,nRows,iCol)-Y.leftCols(iCol);
@@ -261,9 +267,6 @@ void CDiscAdjSinglezoneDriver::Run() {
           solver->GetNodes()->SetSolution(iPoint, iVar, X(iPoint*nVar+offset+iVar, iCol+1));
       }
       offset += solver->GetnVar();
-
-      solver->InitiateComms(geometry_container[ZONE_0][INST_0][MESH_0], config, SOLUTION);
-      solver->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0], config, SOLUTION);
     }
 
   }
