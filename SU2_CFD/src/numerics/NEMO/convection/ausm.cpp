@@ -101,7 +101,6 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
- 
   /*--- Compute geometric quantities ---*/
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -156,7 +155,6 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -206,7 +204,7 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
 
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-
+  
 
   if (implicit) {
 

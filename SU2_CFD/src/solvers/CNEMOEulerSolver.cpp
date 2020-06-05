@@ -1218,7 +1218,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
     iPoint = geometry->edges->GetNode(iEdge, 0);
     jPoint = geometry->edges->GetNode(iEdge, 1);
-    numerics->SetNormal(geometry->edges->GetNormal(iPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
     numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint),
                           geometry->nodes->GetnNeighbor(jPoint));
 
@@ -1318,8 +1318,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
     iPoint = geometry->edges->GetNode(iEdge, 0);
     jPoint = geometry->edges->GetNode(iEdge, 1);
-    numerics->SetNormal(geometry->edges->GetNormal(iPoint));
-    
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+     
     /*--- Get conserved & primitive variables from CVariable ---*/
     U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
     V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
@@ -1453,11 +1453,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
       numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
     }
-    
+
     /*--- Compute the upwind residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-   // exit(0);
-
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
@@ -2396,7 +2394,6 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-
  
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {

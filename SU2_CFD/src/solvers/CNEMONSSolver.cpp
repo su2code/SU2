@@ -1316,7 +1316,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     jPoint = geometry->edges->GetNode(iEdge, 1);
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                        geometry->nodes->GetCoord(jPoint) );
-    numerics->SetNormal(geometry->edges->GetNormal(iPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive variables, and gradient ---*/
     numerics->SetConservative   (nodes->GetSolution(iPoint),

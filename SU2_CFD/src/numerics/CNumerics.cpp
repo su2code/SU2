@@ -44,9 +44,6 @@ CNumerics::CNumerics(void) {
   delta  = nullptr;
   delta3 = nullptr;
 
-  Diffusion_Coeff_i = nullptr;
-  Diffusion_Coeff_j = nullptr;
-
   Vector = nullptr;
 
   l = nullptr;
@@ -62,9 +59,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   unsigned short iVar, iDim;
 
   Normal = nullptr;
-
-  Diffusion_Coeff_i = nullptr;
-  Diffusion_Coeff_j = nullptr;
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -156,8 +150,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     sumdFdYieve = new su2double[nSpecies];
     sumdFdYjeve = new su2double[nSpecies];
 
-    Diffusion_Coeff_i = new su2double[nSpecies];
-    Diffusion_Coeff_j = new su2double[nSpecies];
     unsigned short nPrimVar     = nSpecies+nDim+8;
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
     unsigned long nPoint = 1;
@@ -208,10 +200,6 @@ CNumerics::~CNumerics(void) {
   delete [] UnitNormal;
   delete [] UnitNormald;
 
-
-  //if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
-  //if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
-
   // visc
   delete [] Proj_Flux_Tensor;
 
@@ -239,8 +227,6 @@ CNumerics::~CNumerics(void) {
     delete [] delta3;
   }
 
-  delete [] Diffusion_Coeff_i;
-  delete [] Diffusion_Coeff_j;
   delete [] Vector;
 
   delete [] l;
