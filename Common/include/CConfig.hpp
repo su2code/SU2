@@ -6339,17 +6339,17 @@ public:
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotCenter(string val_marker);
+  const su2double *GetPeriodicRotCenter(string val_marker) const;
 
   /*!
    * \brief Angles of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotAngles(string val_marker);
+  const su2double *GetPeriodicRotAngles(string val_marker) const;
 
   /*!
    * \brief Translation vector for a rotational periodic boundary.
    */
-  su2double *GetPeriodicTranslation(string val_marker);
+  const su2double *GetPeriodicTranslation(string val_marker) const;
 
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
