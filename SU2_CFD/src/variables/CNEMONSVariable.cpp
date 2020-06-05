@@ -38,8 +38,10 @@
 #include "../../include/variables/CNEMONSVariable.hpp"
 #include <math.h>
 
-CNEMONSVariable::CNEMONSVariable(su2double val_pressure, su2double *val_massfrac,
-                                 su2double *val_mach, su2double val_temperature,
+CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
+                                 const su2double *val_massfrac,
+                                 su2double *val_mach, 
+                                 su2double val_temperature,
                                  su2double val_temperature_ve,
                                  unsigned long npoint,
                                  unsigned long val_ndim,
@@ -78,14 +80,14 @@ void CNEMONSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
 
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
   su2double rho, T, Tve, P;
-  su2double *Ms, Mi, Mj, pi, RuSI, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
+  su2double Mi, Mj, pi, RuSI, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
   su2double denom, d1_ij, D_ij;
-  su2double ***Omega00, Omega_ij;
+  su2double Omega_ij;
 
   for (unsigned long iPoint =0; iPoint<nPoint; iPoint++){
     /*--- Acquire gas parameters from CConfig ---*/
-    Omega00 = config->GetCollisionIntegral00();
-    Ms      = config->GetMolar_Mass();
+    const auto& Omega00 = config->GetCollisionIntegral00();
+    const su2double *Ms      = config->GetMolar_Mass();
     if (ionization) {nHeavy = nSpecies-1;  nEl = 1;}
     else            {nHeavy = nSpecies;    nEl = 0;}
 
@@ -123,10 +125,10 @@ void CNEMONSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
           gam_j = Primitive(iPoint,RHOS_INDEX+iSpecies) / (rho*Mj);
 
           /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-          Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-              * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
-              + Omega00[iSpecies][jSpecies][1]*log(T)
-              + Omega00[iSpecies][jSpecies][2]);
+          Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+              * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+              + Omega00(iSpecies,jSpecies,1)*log(T)
+              + Omega00(iSpecies,jSpecies,2));
 
           /*--- Calculate "delta1_ij" ---*/
           d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
@@ -143,10 +145,10 @@ void CNEMONSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
         gam_j    = Primitive(iPoint,RHOS_INDEX+iSpecies) / (rho*Mj);
 
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-            * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
-            + Omega00[iSpecies][jSpecies][1]*log(Tve)
-            + Omega00[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+            * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+            + Omega00(iSpecies,jSpecies,1)*log(Tve)
+            + Omega00(iSpecies,jSpecies,2));
 
         /*--- Calculate "delta1_ij" ---*/
         d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
@@ -171,10 +173,10 @@ void CNEMONSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
           gam_j = Primitive(iPoint,RHOS_INDEX+iSpecies) / (rho*Mj);
 
           /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-          Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-              * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
-              + Omega00[iSpecies][jSpecies][1]*log(Tve)
-              + Omega00[iSpecies][jSpecies][2]);
+          Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+              * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+              + Omega00(iSpecies,jSpecies,1)*log(Tve)
+              + Omega00(iSpecies,jSpecies,2));
 
           /*--- Calculate "delta1_ij" ---*/
           d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
@@ -194,12 +196,12 @@ void CNEMONSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
 
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
   su2double rho, T, Tve;
-  su2double *Ms, Mi, Mj, pi, Ru, RuSI, Na, gam_i, gam_j, denom;
-  su2double ***Omega11, Omega_ij, d2_ij;
+  su2double Mi, Mj, pi, Ru, RuSI, Na, gam_i, gam_j, denom;
+  su2double Omega_ij, d2_ij;
 
   /*--- Acquire gas parameters from CConfig ---*/
-  Omega11 = config->GetCollisionIntegral11();
-  Ms      = config->GetMolar_Mass();
+  const auto& Omega11 = config->GetCollisionIntegral11();
+  const su2double *Ms      = config->GetMolar_Mass();
   if (ionization) {nHeavy = nSpecies-1;  nEl = 1;}
   else            {nHeavy = nSpecies;    nEl = 0;}
 
@@ -229,10 +231,10 @@ void CNEMONSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
         gam_j = Primitive(iPoint,RHOS_INDEX+jSpecies) / (rho*Mj);
 
         /*--- Calculate "delta" quantities ---*/
-        Omega_ij = 1E-20 * Omega11[iSpecies][jSpecies][3]
-            * pow(T, Omega11[iSpecies][jSpecies][0]*log(T)*log(T)
-            + Omega11[iSpecies][jSpecies][1]*log(T)
-            + Omega11[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+            * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
+            + Omega11(iSpecies,jSpecies,1)*log(T)
+            + Omega11(iSpecies,jSpecies,2));
         d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
 
         /*--- Add to denominator of viscosity ---*/
@@ -244,10 +246,10 @@ void CNEMONSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
         gam_j = Primitive(iPoint,RHOS_INDEX+jSpecies) / (rho*Mj);
 
         /*--- Calculate "delta" quantities ---*/
-        Omega_ij = 1E-20 * Omega11[iSpecies][jSpecies][3]
-            * pow(Tve, Omega11[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
-            + Omega11[iSpecies][jSpecies][1]*log(Tve)
-            + Omega11[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+            * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+            + Omega11(iSpecies,jSpecies,1)*log(Tve)
+            + Omega11(iSpecies,jSpecies,2));
         d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
 
         denom += gam_j*d2_ij;
@@ -268,10 +270,10 @@ void CNEMONSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
         gam_j = Primitive(iPoint,RHOS_INDEX+jSpecies) / (rho*Mj);
 
         /*--- Calculate "delta" quantities ---*/
-        Omega_ij = 1E-20 * Omega11[iSpecies][jSpecies][3]
-            * pow(Tve, Omega11[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
-            + Omega11[iSpecies][jSpecies][1]*log(Tve)
-            + Omega11[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+            * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+            + Omega11(iSpecies,jSpecies,1)*log(Tve)
+            + Omega11(iSpecies,jSpecies,2));
         d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
 
         /*--- Add to denominator of viscosity ---*/
@@ -285,9 +287,9 @@ void CNEMONSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
 void CNEMONSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
   su2double rho, T, Tve, Cvve;
-  su2double *xi, *Ms, Mi, Mj, mi, mj, pi, R, RuSI, Ru, Na, kb, gam_i, gam_j, Theta_v;
+  su2double Mi, Mj, mi, mj, pi, R, RuSI, Ru, Na, kb, gam_i, gam_j, Theta_v;
   su2double denom_t, denom_r, d1_ij, d2_ij, a_ij;
-  su2double ***Omega00, ***Omega11, Omega_ij;
+  su2double Omega_ij;
 
   if (ionization) {
     cout << "SetThermalConductivity: NEEDS REVISION w/ IONIZATION" << endl;
@@ -295,10 +297,10 @@ void CNEMONSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
   }
 
   /*--- Acquire gas parameters from CConfig ---*/
-  Omega00 = config->GetCollisionIntegral00();
-  Omega11 = config->GetCollisionIntegral11();
-  Ms      = config->GetMolar_Mass();
-  xi      = config->GetRotationModes();
+  const auto&      Omega00 = config->GetCollisionIntegral00();
+  const auto&      Omega11 = config->GetCollisionIntegral11();
+  const su2double *Ms      = config->GetMolar_Mass();
+  const su2double *xi      = config->GetRotationModes();
   if (ionization) {nHeavy = nSpecies-1;  nEl = 1;}
   else            {nHeavy = nSpecies;    nEl = 0;}
 
@@ -343,19 +345,19 @@ void CNEMONSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
         a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-            * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
-            + Omega00[iSpecies][jSpecies][1]*log(T)
-            + Omega00[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+            * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+            + Omega00(iSpecies,jSpecies,1)*log(T)
+            + Omega00(iSpecies,jSpecies,2));
 
         /*--- Calculate "delta1_ij" ---*/
         d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
 
         /*--- Calculate the Omega^(1,1)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega11[iSpecies][jSpecies][3]
-            * pow(T, Omega11[iSpecies][jSpecies][0]*log(T)*log(T)
-            + Omega11[iSpecies][jSpecies][1]*log(T)
-            + Omega11[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+            * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
+            + Omega11(iSpecies,jSpecies,1)*log(T)
+            + Omega11(iSpecies,jSpecies,2));
 
         /*--- Calculate "delta2_ij" ---*/
         d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
@@ -380,29 +382,29 @@ void CNEMONSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
 void CNEMONSVariable::SetTransportCoefficients_WBE(CConfig *config) {
 
   unsigned short iSpecies, jSpecies;
-  su2double *Ms, Mi, Mj, M;
-  su2double rho, T, Tve, RuSI, Ru, *xi;
+  su2double Mi, Mj, M;
+  su2double rho, T, Tve, RuSI, Ru;
   su2double Xs[nSpecies], conc;
   su2double Cves;
   su2double phis[nSpecies], mus[nSpecies], ks[nSpecies], kves[nSpecies];
   su2double denom, tmp1, tmp2;
-  su2double **Blottner;
-  su2double ***Omega00, Omega_ij;
+  su2double Omega_ij;
 
   /*-- Loop over all points ---*/
   for (unsigned long iPoint=0; iPoint<nPoint; iPoint++){
+
+    const su2double *Ms   = config->GetMolar_Mass();
+    const su2double *xi   = config->GetRotationModes();
 
     /*--- Rename for convenience ---*/
     rho  = Primitive(iPoint,RHO_INDEX);
     T    = Primitive(iPoint,T_INDEX);
     Tve  = Primitive(iPoint,TVE_INDEX);
-    Ms   = config->GetMolar_Mass();
-    xi   = config->GetRotationModes();
     RuSI = UNIVERSAL_GAS_CONSTANT;
     Ru   = 1000.0*RuSI;
 
     /*--- Acquire collision integral information ---*/
-    Omega00 = config->GetCollisionIntegral00();
+    const auto& Omega00 = config->GetCollisionIntegral00();
 
     /*--- Calculate species mole fraction ---*/
     conc = 0.0;
@@ -433,10 +435,10 @@ void CNEMONSVariable::SetTransportCoefficients_WBE(CConfig *config) {
         Mj = Ms[jSpecies]*1E-3;
 
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20/PI_NUMBER * Omega00[iSpecies][jSpecies][3]
-            * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
-            +  Omega00[iSpecies][jSpecies][1]*log(T)
-            +  Omega00[iSpecies][jSpecies][2]);
+        Omega_ij = 1E-20/PI_NUMBER * Omega00(iSpecies,jSpecies,3)
+            * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+            +  Omega00(iSpecies,jSpecies,1)*log(T)
+            +  Omega00(iSpecies,jSpecies,2));
 
         Dij(iPoint,iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(rho*Omega_ij);
         Dij(iPoint,jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(rho*Omega_ij);
@@ -461,7 +463,7 @@ void CNEMONSVariable::SetTransportCoefficients_WBE(CConfig *config) {
     /*---+++             +++---*/
 
     /*--- Get Blottner coefficients ---*/
-    Blottner = config->GetBlottnerCoeff();
+    const auto& Blottner = config->GetBlottnerCoeff();
 
     /*--- Use Blottner's curve fits for species viscosity ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

@@ -38,7 +38,7 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
                                                                       config) {
 
   /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -135,7 +135,8 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j;
+  const su2double *Ms, *xi;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double fact, gam, dV2L, dV2R;

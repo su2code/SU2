@@ -39,7 +39,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
 
   /*--- Set booleans from CConfig settings ---*/
   ionization = config->GetIonization();
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Set iterator size ---*/
   nVar         = val_nVar;

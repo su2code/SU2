@@ -36,7 +36,7 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
                                                           config) {
 
   /*--- Read configuration parameters ---*/
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -48,7 +48,7 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
 
   /*--- Artifical dissipation part ---*/
   Param_p = 0.3;
-  Param_Kappa_0 = config->GetKappa_1st_NEMO();
+  Param_Kappa_0 = config->GetKappa_1st_Flow();
 
   /*--- Allocate some structures ---*/
   Diff_U   = new su2double[nVar];

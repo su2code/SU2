@@ -95,7 +95,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
 
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
-                                       su2double *val_massfrac,
+                                       const su2double *val_massfrac,
                                        su2double *val_mach,
                                        su2double val_temperature,
                                        su2double val_temperature_ve,
@@ -112,8 +112,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
  
   unsigned short iEl, iDim, iSpecies, iVar, nEl, nHeavy, nMGSmooth;
-  unsigned short *nElStates;
-  su2double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   su2double rhoE, rhoEve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr, rhos;
   su2double RuSI, Ru, sqvel, num, denom, conc, soundspeed;
 
@@ -215,14 +213,14 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Load variables from the config class --*/
-  xi        = config->GetRotationModes();      // Rotational modes of energy storage
-  Ms        = config->GetMolar_Mass();         // Species molar mass
-  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-  thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-  g         = config->GetElDegeneracy();       // Degeneracy of electron states
-  nElStates = config->GetnElStates();          // Number of electron states
-  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  const su2double      *xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  const su2double      *Ms        = config->GetMolar_Mass();         // Species molar mass
+  const su2double      *thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  const su2double      *Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  const su2double      *hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  const auto&           thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+  const auto&           g         = config->GetElDegeneracy();       // Degeneracy of electron states
+  const unsigned short *nElStates = config->GetnElStates();          // Number of electron states
 
   /*--- Rename & initialize for convenience ---*/
   RuSI      = UNIVERSAL_GAS_CONSTANT;          // Universal gas constant [J/(mol*K)]
@@ -359,8 +357,7 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
 bool CNEMOEulerVariable::SetTemperature(unsigned long iPoint, CConfig *config) {
 
   // Note: Requires previous call to SetDensity()
-  unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter, *nElStates;
-  su2double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
+  unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter;
   su2double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   su2double evs, eels;
   su2double RuSI, Ru, sqvel, rhoCvtr, rhoCvve;
@@ -385,14 +382,14 @@ bool CNEMOEulerVariable::SetTemperature(unsigned long iPoint, CConfig *config) {
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Load variables from the config class --*/
-  xi        = config->GetRotationModes();      // Rotational modes of energy storage
-  Ms        = config->GetMolar_Mass();         // Species molar mass
-  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-  thetae    = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
-  nElStates = config->GetnElStates();
+  const su2double     *xi            = config->GetRotationModes();      // Rotational modes of energy storage
+  const su2double     *Ms            = config->GetMolar_Mass();         // Species molar mass
+  const su2double     *thetav        = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  const su2double     *Tref          = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  const su2double     *hf            = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  const auto&          thetae        = config->GetCharElTemp();
+  const auto&          g             = config->GetElDegeneracy();
+  const unsigned short *nElStates     = config->GetnElStates();
 
   /*--- Rename & initialize for convenience ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;           // Universal gas constant [J/(mol*K)]
@@ -536,7 +533,6 @@ bool CNEMOEulerVariable::SetPressure(unsigned long iPoint, CConfig *config) {
   // NOTE: Requires computation of trans-rot & vib-el temperatures.
 
   unsigned short iSpecies, nHeavy, nEl;
-  su2double *Ms;
   su2double P, RuSI, Ru;
 
   /*--- Determine the number of heavy species ---*/
@@ -544,7 +540,7 @@ bool CNEMOEulerVariable::SetPressure(unsigned long iPoint, CConfig *config) {
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Read gas mixture properties from config ---*/
-  Ms = config->GetMolar_Mass();
+  const su2double *Ms = config->GetMolar_Mass();
 
   /*--- Rename for convenience ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
@@ -589,8 +585,7 @@ void CNEMOEulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
   // Note: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties()
   // Note: Electron energy not included properly.
 
-  unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
-  su2double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
+  unsigned short iDim, iSpecies, iEl, nHeavy, nEl;
   su2double RuSI, Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
   su2double rho, rhos, T, Tve, ef;
   su2double num, denom;
@@ -612,14 +607,14 @@ void CNEMOEulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
   }
 
   /*--- Read gas mixture properties from config ---*/
-  Ms        = config->GetMolar_Mass();
-  Tref      = config->GetRefTemperature();
-  hf        = config->GetEnthalpy_Formation();
-  xi        = config->GetRotationModes();
-  thetav    = config->GetCharVibTemp();
-  thetae    = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
-  nElStates = config->GetnElStates();
+  const su2double      *Ms            = config->GetMolar_Mass();
+  const su2double      *Tref          = config->GetRefTemperature();
+  const su2double      *hf            = config->GetEnthalpy_Formation();
+  const su2double      *xi            = config->GetRotationModes();
+  const su2double      *thetav        = config->GetCharVibTemp();
+  const unsigned short *nElStates     = config->GetnElStates();
+  const auto&           thetae        = config->GetCharElTemp();
+  const auto&           g             = config->GetElDegeneracy();
 
   /*--- Rename for convenience ---*/
   RuSI    = UNIVERSAL_GAS_CONSTANT;
@@ -686,12 +681,12 @@ su2double CNEMOEulerVariable::CalcEve(CConfig *config, su2double val_Tve,
                                       unsigned short val_Species) {
 
   unsigned short iEl, *nElStates;
-  su2double *Ms, *thetav, **thetae, **g, *hf, *Tref, RuSI, Ru;
+  su2double RuSI, Ru;
   su2double Tve, Ev, Eel, Ef;
   su2double num, denom;
 
   /*--- Read gas mixture properties from config ---*/
-  Ms        = config->GetMolar_Mass();
+  const su2double *Ms        = config->GetMolar_Mass();
 
   /*--- Rename for convenience ---*/
   RuSI  = UNIVERSAL_GAS_CONSTANT;
@@ -702,8 +697,8 @@ su2double CNEMOEulerVariable::CalcEve(CConfig *config, su2double val_Tve,
   if ((ionization) && (val_Species == nSpecies-1)) {
 
     /*--- Get quantities from CConfig ---*/
-    Tref = config->GetRefTemperature();
-    hf   = config->GetEnthalpy_Formation();
+    const su2double *Tref = config->GetRefTemperature();
+    const su2double *hf   = config->GetEnthalpy_Formation();
 
     /*--- Calculate formation energy ---*/
     Ef = hf[val_Species] - Ru/Ms[val_Species] * Tref[val_Species];
@@ -718,10 +713,10 @@ su2double CNEMOEulerVariable::CalcEve(CConfig *config, su2double val_Tve,
   else {
 
     /*--- Read from CConfig ---*/
-    thetav    = config->GetCharVibTemp();
-    thetae    = config->GetCharElTemp();
-    g         = config->GetElDegeneracy();
-    nElStates = config->GetnElStates();
+    const su2double      *thetav    = config->GetCharVibTemp();
+    const unsigned short *nElStates = config->GetnElStates();
+    const auto&           thetae    = config->GetCharElTemp();
+    const auto&           g         = config->GetElDegeneracy();
 
     /*--- Calculate vibrational energy (harmonic-oscillator model) ---*/
     if (thetav[val_Species] != 0.0)
@@ -745,13 +740,13 @@ su2double CNEMOEulerVariable::CalcEve(CConfig *config, su2double val_Tve,
 su2double CNEMOEulerVariable::CalcHs(CConfig *config, su2double val_T,
                                      su2double val_eves, unsigned short val_Species) {
 
-  su2double RuSI, Ru, *xi, *Ms, *hf, *Tref, T, eve, ef, hs;
+  su2double RuSI, Ru, T, eve, ef, hs;
 
   /*--- Read from config ---*/
-  xi   = config->GetRotationModes();
-  Ms   = config->GetMolar_Mass();
-  hf   = config->GetEnthalpy_Formation();
-  Tref = config->GetRefTemperature();
+  const su2double *xi   = config->GetRotationModes();
+  const su2double *Ms   = config->GetMolar_Mass();
+  const su2double *hf   = config->GetEnthalpy_Formation();
+  const su2double *Tref = config->GetRefTemperature();
 
   /*--- Rename for convenience ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
@@ -773,18 +768,18 @@ su2double CNEMOEulerVariable::CalcHs(CConfig *config, su2double val_T,
 
 su2double CNEMOEulerVariable::CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) {
 
-  unsigned short iEl, *nElStates;
-  su2double *Ms, *thetav, **thetae, **g, RuSI, Ru;
+  unsigned short iEl;
+  su2double RuSI, Ru;
   su2double thoTve, exptv, thsqr, Cvvs, Cves;
   su2double Tve;
   su2double num, num2, num3, denom;
 
   /*--- Read from config ---*/
-  thetav    = config->GetCharVibTemp();
-  thetae    = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
-  Ms        = config->GetMolar_Mass();
-  nElStates = config->GetnElStates();
+  const su2double      *thetav    = config->GetCharVibTemp();
+  const su2double      *Ms        = config->GetMolar_Mass();
+  const unsigned short *nElStates = config->GetnElStates();
+  const auto&           thetae         = config->GetCharElTemp();
+  const auto&           g              = config->GetElDegeneracy();
 
   /*--- Rename for convenience ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
@@ -837,17 +832,16 @@ void CNEMOEulerVariable::CalcdTdU(su2double *V, CConfig *config,
                                   su2double *val_dTdU) {
 
   unsigned short iDim, iSpecies, nHeavy, nEl;
-  su2double *Ms, *xi, *Tref, *hf;
   su2double v2, ef, T, Cvtrs, rhoCvtr, RuSI, Ru;
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Get gas properties from config settings ---*/
-  Ms   = config->GetMolar_Mass();
-  xi   = config->GetRotationModes();
-  hf   = config->GetEnthalpy_Formation();
-  Tref = config->GetRefTemperature();
+  const su2double *Ms   = config->GetMolar_Mass();
+  const su2double *xi   = config->GetRotationModes();
+  const su2double *hf   = config->GetEnthalpy_Formation();
+  const su2double *Tref = config->GetRefTemperature();
 
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
@@ -938,7 +932,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   su2double f, df, NRtol, Btol, scale;
   su2double Tmin, Tmax, Tvemin, Tvemax;
   su2double radical2;
-  su2double *xi, *Ms, *hf, *Tref;
 
   /*--- Conserved & primitive vector layout ---*/
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -962,11 +955,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
 
   /*--- Read parameters from config ---*/
-  xi         = config->GetRotationModes();      // Rotational modes of energy storage
-  Ms         = config->GetMolar_Mass();         // Species molar mass
-  Tref       = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf         = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-  ionization = config->GetIonization();         // Molecule Ionization
+  const su2double *xi         = config->GetRotationModes();      // Rotational modes of energy storage
+  const su2double *Ms         = config->GetMolar_Mass();         // Species molar mass
+  const su2double *Tref       = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  const su2double *hf         = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  ionization                  = config->GetIonization();         // Molecule Ionization
 
   /*--- Rename variables for convenience ---*/
   RuSI   = UNIVERSAL_GAS_CONSTANT;    // Universal gas constant [J/(mol*K)]
@@ -1196,11 +1189,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 }
 
 void CNEMOEulerVariable::Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) {
+
   unsigned short iDim, iEl, iSpecies, nEl, nHeavy;
-  unsigned short *nElStates;
   su2double Ru, RuSI, Tve, T, sqvel, rhoE, rhoEve, Ef, Ev, Ee, rhos, rhoCvtr, num, denom;
-  su2double *thetav, *Ms, *xi, *hf, *Tref;
-  su2double **thetae, **g;
 
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
@@ -1208,14 +1199,14 @@ void CNEMOEulerVariable::Prim2ConsVar(CConfig *config, unsigned long iPoint, su2
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Load variables from the config class --*/
-  xi        = config->GetRotationModes();      // Rotational modes of energy storage
-  Ms        = config->GetMolar_Mass();         // Species molar mass
-  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-  thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-  g         = config->GetElDegeneracy();       // Degeneracy of electron states
-  nElStates = config->GetnElStates();          // Number of electron states
-  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  const su2double      *xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  const su2double      *Ms        = config->GetMolar_Mass();         // Species molar mass
+  const su2double      *thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  const su2double      *Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  const su2double      *hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  const auto&           thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+  const auto&           g         = config->GetElDegeneracy();       // Degeneracy of electron states
+  const unsigned short *nElStates = config->GetnElStates();          // Number of electron states
 
   /*--- Rename & initialize for convenience ---*/
   RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)] (SI units)
@@ -1287,14 +1278,12 @@ bool CNEMOEulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
                                               su2double *V, su2double **GradU,
                                               su2double **GradV) {
 
-  unsigned short iSpecies, iEl, iDim, jDim, iVar, nHeavy, *nElStates;
+  unsigned short iSpecies, iEl, iDim, jDim, iVar, nHeavy;
   su2double rho, rhoCvtr, rhoCvve, T, Tve, eve, ef, eref, RuSI, Ru;
   su2double Cvvs, Cves, dCvvs, dCves;
   su2double thoTve, exptv;
   su2double An1, Bd1, Bn1, Bn2, Bn3, Bn4, A, B;
   su2double *rhou, *Grhou2;
-  su2double *xi, *Ms, *Tref, *hf, *thetav;
-  su2double **thetae, **g;
 
   /*--- Conserved & primitive vector layout ---*/
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -1309,21 +1298,21 @@ bool CNEMOEulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
   else                         nHeavy = nSpecies;
 
   /*--- Rename for convenience ---*/
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
   rho     = V[RHO_INDEX];
   rhoCvtr = V[RHOCVTR_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
   T       = V[T_INDEX];
   Tve     = V[TVE_INDEX];
-  xi      = config->GetRotationModes();
-  Ms      = config->GetMolar_Mass();
-  Tref    = config->GetRefTemperature();
-  hf      = config->GetEnthalpy_Formation();
-  RuSI    = UNIVERSAL_GAS_CONSTANT;
-  Ru      = 1000.0*RuSI;
-  thetav  = config->GetCharVibTemp();
-  g       = config->GetElDegeneracy();
-  thetae  = config->GetCharElTemp();
-  nElStates = config->GetnElStates();
+  const su2double      *xi      = config->GetRotationModes();
+  const su2double      *Ms      = config->GetMolar_Mass();
+  const su2double      *Tref    = config->GetRefTemperature();
+  const su2double      *hf      = config->GetEnthalpy_Formation();
+  const su2double      *thetav  = config->GetCharVibTemp();
+  const auto&           g       = config->GetElDegeneracy();
+  const auto&           thetae  = config->GetCharElTemp();
+  const unsigned short *nElStates = config->GetnElStates();
 
   for (iDim = 0; iDim < nDim; iDim++)
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)

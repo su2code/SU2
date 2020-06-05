@@ -36,7 +36,7 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                                                           val_nVar,
                                                           config) {
 
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Rename for convenience ---*/
   nDim         = val_nDim;
@@ -317,7 +317,8 @@ void CAvgGrad_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
   bool ionization;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, nHeavy, nEl;
-  su2double rho, rho_i, rho_j, vel[3], T, Tve, *xi, *Ms;
+  su2double rho, rho_i, rho_j, vel[3], T, Tve;
+  const su2double *xi, *Ms;
   su2double mu, ktr, kve, *Ds, dij, Ru, RuSI;
   su2double theta, thetax, thetay, thetaz;
   su2double etax, etay, etaz;
@@ -608,7 +609,7 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
                                                                             val_nVar,
                                                                             config) {
 
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Rename for convenience ---*/
   nDim         = val_nDim;
@@ -794,7 +795,8 @@ void CAvgGradCorrected_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
   bool ionization;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, nHeavy, nEl;
-  su2double rho, rho_i, rho_j, vel[3], T, Tve, *xi, *Ms;
+  su2double rho, rho_i, rho_j, vel[3], T, Tve;
+  const su2double *xi, *Ms;
   su2double mu, ktr, kve, *Ds, dij, Ru, RuSI;
   su2double theta, thetax, thetay, thetaz;
   su2double etax, etay, etaz;

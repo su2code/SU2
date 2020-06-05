@@ -44,6 +44,7 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
+#include "./toolboxes/C2DContainer.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -495,7 +496,6 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_NEMO,         /*!< \brief Slope limiter for NEMO flow equations.*/
   Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,      /*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
@@ -504,7 +504,6 @@ private:
   Kind_TimeIntScheme_Turb,      /*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeIntScheme_NEMO,      /*!< \brief Time integration for the NEMO flow equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   Kind_TimeIntScheme_FEA,       /*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,      /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -515,7 +514,6 @@ private:
   Kind_ConvNumScheme_Heat,      /*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_AdjFlow,   /*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_Turb,      /*!< \brief Centered or upwind scheme for the turbulence model. */
-  Kind_ConvNumScheme_NEMO,      /*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
   Kind_Centered,                /*!< \brief Centered scheme. */
@@ -523,14 +521,12 @@ private:
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
-  Kind_Centered_NEMO,     /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_Template,       /*!< \brief Centered scheme for the template model. */
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
-  Kind_Upwind_NEMO,     /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
@@ -548,7 +544,6 @@ private:
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  MUSCL_NEMO,    /*!< \brief MUSCL scheme for the NEMO equations. */
   Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
@@ -606,7 +601,6 @@ private:
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
-  Kappa_1st_NEMO,     /*!< \brief JST 1st order dissipation coefficient for NEMO equations (coarse multigrid levels). */
   Cent_Jac_Fix_Factor;              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
@@ -1160,34 +1154,33 @@ private:
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /* other NEMO configure options*/
-  unsigned short nSpecies;    /*!< \brief No of species present in flow */
+  unsigned short nSpecies;                  /*!< \brief No of species present in flow */
   su2double *ArrheniusCoefficient,          /*!< \brief Arrhenius reaction coefficient */
-  *ArrheniusEta,                /*!< \brief Arrhenius reaction temperature exponent */
-  *ArrheniusTheta,              /*!< \brief Arrhenius reaction characteristic temperature */
-  *CharVibTemp,                 /*!< \brief Characteristic vibrational temperature for e_vib */
-  *RotationModes,     /*!< \brief Rotational modes of energy storage */
-  *Ref_Temperature,         /*!< \brief Reference temperature for thermodynamic relations */
-  *Tcf_a,   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcf_b,   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Diss;                /*!< \brief Dissociation potential. */
-  su2double pnorm_heat; /*! brief pnorm for heat-flux. */
-  int ***Reactions;     /*!</brief reaction map for chemically reacting flows */
-  su2double ***Omega00;        /*!< \brief Collision integrals (Omega(0,0)) */
-  su2double ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-  unsigned short nTemp;            /*!< \brief No of freestream temperatures specified */
-  su2double *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
-  *Gas_Composition,          /*!< \brief Initial mass fractions of flow [dimensionless] */
-  *Enthalpy_Formation,     /*!< \brief Enthalpy of formation */
-  **Blottner,               /*!< \brief Blottner viscosity coefficients */
-  *Species_Ref_Temperature;  /*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
-  unsigned short *nElStates; /*!< \brief Number of electron states. */
-  su2double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
-  **degen; /*!< \brief Degeneracy of electron states. */
-  unsigned short nReactions;                 /*!< \brief Number of reactions in chemical model. */
-  bool ionization;                  /*!< \brief Flag for determining if free electron gas is in the mixture. */
-  bool frozen;                  /*!< \brief Flag for determining if mixture is frozen. */
+  *ArrheniusEta,                            /*!< \brief Arrhenius reaction temperature exponent */
+  *ArrheniusTheta,                          /*!< \brief Arrhenius reaction characteristic temperature */
+  *CharVibTemp,                             /*!< \brief Characteristic vibrational temperature for e_vib */
+  *RotationModes,                           /*!< \brief Rotational modes of energy storage */
+  *Ref_Temperature,                         /*!< \brief Reference temperature for thermodynamic relations */
+  *Tcf_a,                                   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcf_b,                                   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcb_a,                                   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Tcb_b,                                   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Diss;                                    /*!< \brief Dissociation potential. */
+  su2double pnorm_heat;                     /*! brief pnorm for heat-flux. */
+  C3DIntMatrix Reactions;                   /*!</brief reaction map for chemically reacting flows */
+  C3DDoubleMatrix Omega00,                  /*!< \brief Collision integrals (Omega(0,0)) */
+  Omega11;                                  /*!< \brief Collision integrals (Omega(1,1)) */
+  unsigned short nTemp;                     /*!< \brief No of freestream temperatures specified */
+  su2double *Molar_Mass,                    /*!< \brief Molar mass of species in the plasma [kg/kmol] */
+  *Gas_Composition,                         /*!< \brief Initial mass fractions of flow [dimensionless] */
+  *Enthalpy_Formation;                      /*!< \brief Enthalpy of formation */
+  unsigned short *nElStates;                /*!< \brief Number of electron states. */
+  su2activematrix CharElTemp,               /*!< \brief Characteristic temperature of electron states. */
+  degen,                                    /*!< \brief Degeneracy of electron states. */
+  Blottner;                                 /*!< \brief Blottner viscosity coefficients */
+  unsigned short nReactions;                /*!< \brief Number of reactions in chemical model. */
+  bool ionization;                          /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  bool frozen;                              /*!< \brief Flag for determining if mixture is frozen. */
 
 
   /*!
@@ -1720,7 +1713,7 @@ public:
    * \brief Get the vector of free stream mass fraction values.
    * \return Ratio of species mass to mixture mass.
    */
-  su2double* GetMassFrac_FreeStream(void) const { return MassFrac_FreeStream; }
+  const su2double* GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
 
   /*!
    * \brief Get the value of the solid density.
@@ -4339,15 +4332,6 @@ public:
    *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
-  bool GetMUSCL_NEMO(void) const { return MUSCL_NEMO; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
-   * \return MUSCL scheme.
-   */
   bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
 
   /*!
@@ -4409,15 +4393,6 @@ public:
   unsigned short GetKind_TimeIntScheme_Heat(void) const { return Kind_TimeIntScheme_Heat; }
 
   /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the NEMO equations.
-   */
-  unsigned short GetKind_TimeIntScheme_NEMO(void) const { return Kind_TimeIntScheme_NEMO; }
-
-  /*!
    * \brief Get the kind of time stepping
    *        for the heat equation.
    * \note This value is obtained from the config file, and it is constant
@@ -4471,15 +4446,6 @@ public:
    */
   unsigned short GetKind_ConvNumScheme_Flow(void) const { return Kind_ConvNumScheme_Flow; }
 
-   /*!
-   * \brief Get the kind of convective numerical scheme for the NEMO
-   *        equations (centered or upwind).
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of convective numerical scheme for the NEMO equations.
-   */
-  unsigned short GetKind_ConvNumScheme_NEMO(void) const { return Kind_ConvNumScheme_NEMO; }
-
   /*!
    * \brief Get the kind of convective numerical scheme for the flow
    *        equations (finite element).
@@ -4507,14 +4473,6 @@ public:
   unsigned short GetKind_Centered_Flow(void) const { return Kind_Centered_Flow; }
 
   /*!
-   * \brief Get the kind of center convective numerical scheme for the NEMO equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of center convective numerical scheme for the NEMO equations.
-   */
-  unsigned short GetKind_Centered_NEMO(void) const { return Kind_Centered_NEMO; }
-
-  /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.
    * \note This value is obtained from the config file, and it is constant
    *       during the computation.
@@ -4529,14 +4487,6 @@ public:
    * \return Kind of upwind convective numerical scheme for the flow equations.
    */
   unsigned short GetKind_Upwind_Flow(void) const { return Kind_Upwind_Flow; }
-
-  /*!
-   * \brief Get the kind of upwind convective numerical scheme for the NEMO equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of upwind convective numerical scheme for the NEMO equations.
-   */
-  unsigned short GetKind_Upwind_NEMO(void) const { return Kind_Upwind_NEMO; }
 
   /*!
    * \brief Get the kind of finite element convective numerical scheme for the flow equations.
@@ -4593,12 +4543,6 @@ public:
   unsigned short GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
 
   /*!
-  * \brief Get the method for limiting the spatial gradients.
-   * \return Method for limiting the spatial gradients solving the NEMO equations.
-   */
-  unsigned short GetKind_SlopeLimit_NEMO(void) const { return Kind_SlopeLimit_NEMO; }
-
-  /*!
    * \brief Value of the calibrated constant for the Lax method (center scheme).
    * \note This constant is used in coarse levels and with first order methods.
    * \return Calibrated constant for the Lax method.
@@ -4628,12 +4572,6 @@ public:
    * \return Calibrated constant for the JST-like method for the heat equation.
    */
   su2double GetKappa_4th_Heat(void) const { return Kappa_4th_Heat; }
-
-  /*!
-   * \brief Value of the calibrated constant for the JST method (center scheme).
-   * \return Calibrated constant for the JST method for the flow equations.
-   */
-  su2double GetKappa_1st_NEMO(void) const { return Kappa_1st_NEMO; }
 
   /*!
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
@@ -5220,7 +5158,7 @@ public:
    * \brief Get the array that maps chemical consituents to each chemical reaction.
    * \return Memory location of the triple pointer to the 3-D reaction map array.
    */
-  int ***GetReaction_Map(void) const { return Reactions; }
+  const C3DIntMatrix& GetReaction_Map(void) const { return Reactions; }
 
   /*!
    * \brief Provides the number of chemical reactions in the chemistry model
@@ -5244,25 +5182,25 @@ public:
    * \brief Provides the rate controlling temperature exponents for chemistry.
    * \return: Rate controlling temperature exponents.
    */
-  su2double* GetRxnTcf_a(void) const { return Tcf_a; }
+  const su2double* GetRxnTcf_a(void) const { return Tcf_a; }
 
   /*!
    * \brief Provides the rate controlling temperature exponents for chemistry.
    * \return: Rate controlling temperature exponents.
    */
-  su2double* GetRxnTcf_b(void) const { return Tcf_b; }
+  const su2double* GetRxnTcf_b(void) const { return Tcf_b; }
 
   /*!
    * \brief Provides the rate controlling temperature exponents for chemistry.
    * \return: Rate controlling temperature exponents.
    */
-  su2double* GetRxnTcb_a(void) const { return Tcb_a; }
+  const su2double* GetRxnTcb_a(void) const { return Tcb_a; }
 
   /*!
    * \brief Provides the rate controlling temperature exponents for chemistry.
    * \return: Rate controlling temperature exponents.
    */
-  su2double* GetRxnTcb_b(void) const { return Tcb_b; }
+  const su2double* GetRxnTcb_b(void) const { return Tcb_b; }
 
   /*!
    * \brief Provides a table of equilibrium constants for a particular chemical reaction for a supplied gas model.
@@ -5274,50 +5212,50 @@ public:
    * \brief Dissociation potential of species.
    * \return: Dissociation potential.
    */
-  su2double* GetDissociationPot(void) const { return Diss; }
+  const su2double* GetDissociationPot(void) const { return Diss; }
 
    /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.
    * \return The heat flux.
    */
-  su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
+  const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
 
   /*!
    * \brief Provides the number of rotational modes of energy storage
    * \return: Vector of rotational mode count
    */
-  su2double* GetRotationModes(void) const { return RotationModes; }
+  const su2double* GetRotationModes(void) const { return RotationModes; }
 
   /*!
    * \brief Provides the characteristic vibrational temperature for calculating e_vib
    * \return: Vector of characteristic vibrational temperatures [K]
    */
-  su2double* GetCharVibTemp(void) const { return CharVibTemp; }
+  const su2double* GetCharVibTemp(void) const { return CharVibTemp; }
 
   /*!
    * \brief Provides the characteristic electronic temperature for calculating e_el
    * \return: Vector of characteristic vibrational temperatures [K]
    */
-  su2double** GetCharElTemp(void) const { return CharElTemp; }
+  const su2activematrix& GetCharElTemp(void) const { return CharElTemp; }
 
   /*!
    * \brief Provides the degeneracy of electron states for calculating e_el
    * \return: Vector of characteristic vibrational temperatures [K]
    */
-  su2double** GetElDegeneracy(void) const { return degen; }
+  const su2activematrix& GetElDegeneracy(void) const { return degen; }
 
   /*!
    * \brief Provides number electron states for calculating e_el
    * \return: Vector of number of electron states for each species
    */
-  unsigned short* GetnElStates(void) const { return nElStates; }
+  const unsigned short* GetnElStates(void) const { return nElStates; }
 
 
   /*!
    * \brief Provides the thermodynamic reference temperatures from the JANAF tables
    * \return: Vector of reference temperatures [K]
    */
-  su2double* GetRefTemperature(void) const { return Ref_Temperature; }
+  const su2double* GetRefTemperature(void) const { return Ref_Temperature; }
 
   /*!
    * \brief Provides the characteristic vibrational temperature for calculating e_vib
@@ -5329,7 +5267,7 @@ public:
    * \brief Provides the molar mass of each species present in multi species fluid
    * \return: Vector of molar mass of each species in kg/kmol
    */
-  su2double* GetMolar_Mass(void) const { return Molar_Mass; }
+  const su2double* GetMolar_Mass(void) const { return Molar_Mass; }
 
   /*!
    * \brief Provides the molar mass of each species present in multi species fluid
@@ -5341,7 +5279,7 @@ public:
    * \brief Provides the gas mass fractions of the flow
    * \return: Gas Mass fractions
    */
-  su2double *GetGas_Composition(void) const { return Gas_Composition; }
+  const su2double *GetGas_Composition(void) const { return Gas_Composition; }
 
   /*!
    * \brief Provides the molar mass of each species present in multi species fluid
@@ -5353,7 +5291,7 @@ public:
    * \brief Provides the formation enthalpy of the specified species at standard conditions
    * \return: Enthalpy of formation
    */
-  su2double* GetEnthalpy_Formation(void) const { return Enthalpy_Formation; }
+  const su2double* GetEnthalpy_Formation(void) const { return Enthalpy_Formation; }
 
   /*!
    * \brief Provides the formation enthalpy of the specified species at standard conditions
@@ -5365,13 +5303,13 @@ public:
    * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
    * \return Memory location of the triple pointer to the 3-D collision integral array.
    */
-  su2double ***GetCollisionIntegral00(void) const { return Omega00; }
+  const C3DDoubleMatrix& GetCollisionIntegral00(void) const { return Omega00; }
 
   /*!
    * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
    * \return Memory location of the triple pointer to the 3-D collision integral array.
    */
-  su2double ***GetCollisionIntegral11(void) const { return Omega11; }
+  const C3DDoubleMatrix& GetCollisionIntegral11(void) const { return Omega11; }
 
   /*!
    * \brief Get the coefficients of the Blottner viscosity model
@@ -5379,7 +5317,7 @@ public:
    * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
    * \return Value of the Blottner coefficient
    */
-  su2double **GetBlottnerCoeff(void) const { return Blottner; }
+  const su2activematrix& GetBlottnerCoeff(void) const { return Blottner; }
 
   /*!
    * \brief Provides the restart information.

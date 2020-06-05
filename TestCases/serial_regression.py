@@ -72,7 +72,7 @@ def main():
     invwedge.test_vals = [-0.954130,   -1.478893,  -16.737310,  -17.063693,  -17.010416,    2.374072,    1.733626,   5.401966,    0.955538] #last 4 columns
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
-    invwedge.new_output = True
+    invwedge.new_output = False
     invwedge.tol       = 0.00001
     test_list.append(invwedge)
     

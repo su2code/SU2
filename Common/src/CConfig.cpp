@@ -1062,14 +1062,12 @@ void CConfig::SetPointersNull(void) {
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
-  Reactions               = nullptr; Omega00               = nullptr; Omega11        = nullptr;
-  Gas_Composition         = nullptr; Enthalpy_Formation    = nullptr; Blottner       = nullptr;
-  Species_Ref_Temperature = nullptr; nElStates      = nullptr;
-  CharElTemp              = nullptr; degen                 = nullptr;
-  Molar_Mass              = nullptr; 
+  
+  Gas_Composition         = nullptr; Enthalpy_Formation    = nullptr;
+  Molar_Mass              = nullptr; nElStates             = nullptr;
   ArrheniusCoefficient    = nullptr; ArrheniusEta          = nullptr; ArrheniusTheta  = nullptr;
   CharVibTemp             = nullptr; RotationModes         = nullptr; Ref_Temperature = nullptr;
-  Tcf_a=nullptr;    Tcf_b=nullptr;    Tcb_a=nullptr;    Tcb_b=nullptr;
+  Tcf_a=nullptr;    Tcf_b=nullptr;   Tcb_a=nullptr;                   Tcb_b=nullptr;
   Diss=nullptr;
 }
 
@@ -1696,8 +1694,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_NEMO", Kind_TimeIntScheme_NEMO, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
@@ -1843,16 +1839,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
-
-  /*!\brief CONV_NUM_METHOD_NEMO
-   *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
-  addConvectOption("CONV_NUM_METHOD_NEMO", Kind_ConvNumScheme_NEMO, Kind_Centered_NEMO, Kind_Upwind_NEMO);
-  /*!\brief MUSCL_NEMO \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
-  addBoolOption("MUSCL_NEMO", MUSCL_NEMO, true);
-  /*!\brief SLOPE_LIMITER_NEMO
-   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_NEMO", Kind_SlopeLimit_NEMO, Limiter_Map, VENKATAKRISHNAN);
-  default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
   
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -3332,7 +3318,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set limiter for no MUSCL reconstructions ---*/
 
   if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
-  if ((!MUSCL_NEMO) || (Kind_ConvNumScheme_NEMO == SPACE_CENTERED)) Kind_SlopeLimit_NEMO = NO_LIMITER;
   if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
   if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
   if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
@@ -4366,8 +4351,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Reacting flows iniatilization ---*/
   if (( Kind_Solver == NEMO_EULER             ) ||
-      ( Kind_Solver == NEMO_NAVIER_STOKES     ) )
-      /*( Kind_Solver == NEMO_RANS              )) */{
+      ( Kind_Solver == NEMO_NAVIER_STOKES     )) {
 
     bool init_err;
     unsigned short maxEl = 0;
@@ -4455,28 +4439,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Tcb_a                = new su2double[nReactions];
       Tcb_b                = new su2double[nReactions];
       nElStates            = new unsigned short[nSpecies];
-      Reactions = new int**[nReactions];
-      for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-        Reactions[iRxn] = new int*[2];
-        for (unsigned short ii = 0; ii < 2; ii++)
-          Reactions[iRxn][ii] = new int[6];
-      }
-
-      Blottner  = new su2double*[nSpecies];
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Blottner[iSpecies] = new su2double[3];
-
-      // Omega[iSpecies][jSpecies][iCoeff]
-      Omega00 = new su2double**[nSpecies];
-      Omega11 = new su2double**[nSpecies];
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Omega00[iSpecies] = new su2double*[nSpecies];
-        Omega11[iSpecies] = new su2double*[nSpecies];
-        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-          Omega00[iSpecies][jSpecies] = new su2double[4];
-          Omega11[iSpecies][jSpecies] = new su2double[4];
-        }
-      }
+    
+      Reactions.resize(nReactions,2,6,0.0);
+      Blottner.resize(nSpecies,3) = su2double(0.0);
+      Omega00.resize(nSpecies,nSpecies,4,0.0);
+      Omega11.resize(nSpecies,nSpecies,4,0.0);
 
       MassFrac_FreeStream = new su2double[nSpecies];
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -4511,8 +4478,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       // Blottner viscosity coefficients
       // A                        // B                        // C
-      Blottner[0][0] = 2.68E-2;   Blottner[0][1] = 3.18E-1;   Blottner[0][2] = -1.13E1;  // N2
-      Blottner[1][0] = 1.16E-2;   Blottner[1][1] = 6.03E-1;   Blottner[1][2] = -1.24E1;  // N
+      Blottner(0,0) = 2.68E-2;   Blottner(0,1) = 3.18E-1;   Blottner(0,2) = -1.13E1;  // N2
+      Blottner(1,0) = 1.16E-2;   Blottner(1,1) = 6.03E-1;   Blottner(1,2) = -1.24E1;  // N
 
       // Number of electron states
       nElStates[0] = 15;                    // N2
@@ -4520,61 +4487,49 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         maxEl = max(maxEl, nElStates[iSpecies]);
 
-      /*--- Allocate electron data arrays ---*/
-      CharElTemp = new su2double*[nSpecies];
-      degen      = new su2double*[nSpecies];
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        CharElTemp[iSpecies] = new su2double[maxEl];
-        degen[iSpecies]      = new su2double[maxEl];
-      }
-
-      /*--- Initialize the arrays ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        for (iEl = 0; iEl < maxEl; iEl++) {
-          CharElTemp[iSpecies][iEl] = 0.0;
-          degen[iSpecies][iEl] = 0.0;
-        }
-      }
+      /*--- Allocate and initialize electron data arrays ---*/
+      CharElTemp.resize(nSpecies,maxEl) = su2double(0.0);
+      degen.resize(nSpecies,maxEl) = su2double(0.0);
 
       /*--- Assign values to data structures ---*/
       // N2: 15 states
-      CharElTemp[0][0]  = 0.000000000000000E+00;
-      CharElTemp[0][1]  = 7.223156514095200E+04;
-      CharElTemp[0][2]  = 8.577862640384000E+04;
-      CharElTemp[0][3]  = 8.605026716160000E+04;
-      CharElTemp[0][4]  = 9.535118627874400E+04;
-      CharElTemp[0][5]  = 9.805635702203200E+04;
-      CharElTemp[0][6]  = 9.968267656935200E+04;
-      CharElTemp[0][7]  = 1.048976467715200E+05;
-      CharElTemp[0][8]  = 1.116489555200000E+05;
-      CharElTemp[0][9]  = 1.225836470400000E+05;
-      CharElTemp[0][10] = 1.248856873600000E+05;
-      CharElTemp[0][11] = 1.282476158188320E+05;
-      CharElTemp[0][12] = 1.338060936000000E+05;
-      CharElTemp[0][13] = 1.404296391107200E+05;
-      CharElTemp[0][14] = 1.504958859200000E+05;
-      degen[0][0]  = 1;
-      degen[0][1]  = 3;
-      degen[0][2]  = 6;
-      degen[0][3]  = 6;
-      degen[0][4]  = 3;
-      degen[0][5]  = 1;
-      degen[0][6]  = 2;
-      degen[0][7]  = 2;
-      degen[0][8]  = 5;
-      degen[0][9]  = 1;
-      degen[0][10] = 6;
-      degen[0][11] = 6;
-      degen[0][12] = 10;
-      degen[0][13] = 6;
-      degen[0][14] = 6;
+      CharElTemp(0,0)  = 0.000000000000000E+00;
+      CharElTemp(0,1)  = 7.223156514095200E+04;
+      CharElTemp(0,2)  = 8.577862640384000E+04;
+      CharElTemp(0,3)  = 8.605026716160000E+04;
+      CharElTemp(0,4)  = 9.535118627874400E+04;
+      CharElTemp(0,5)  = 9.805635702203200E+04;
+      CharElTemp(0,6)  = 9.968267656935200E+04;
+      CharElTemp(0,7)  = 1.048976467715200E+05;
+      CharElTemp(0,8)  = 1.116489555200000E+05;
+      CharElTemp(0,9)  = 1.225836470400000E+05;
+      CharElTemp(0,10) = 1.248856873600000E+05;
+      CharElTemp(0,11) = 1.282476158188320E+05;
+      CharElTemp(0,12) = 1.338060936000000E+05;
+      CharElTemp(0,13) = 1.404296391107200E+05;
+      CharElTemp(0,14) = 1.504958859200000E+05;
+      degen(0,0)  = 1;
+      degen(0,1)  = 3;
+      degen(0,2)  = 6;
+      degen(0,3)  = 6;
+      degen(0,4)  = 3;
+      degen(0,5)  = 1;
+      degen(0,6)  = 2;
+      degen(0,7)  = 2;
+      degen(0,8)  = 5;
+      degen(0,9)  = 1;
+      degen(0,10) = 6;
+      degen(0,11) = 6;
+      degen(0,12) = 10;
+      degen(0,13) = 6;
+      degen(0,14) = 6;
       // N: 3 states
-      CharElTemp[1][0] = 0.000000000000000E+00;
-      CharElTemp[1][1] = 2.766469645581980E+04;
-      CharElTemp[1][2] = 4.149309313560210E+04;
-      degen[1][0] = 4;
-      degen[1][1] = 10;
-      degen[1][2] = 6;
+      CharElTemp(1,0) = 0.000000000000000E+00;
+      CharElTemp(1,1) = 2.766469645581980E+04;
+      CharElTemp(1,2) = 4.149309313560210E+04;
+      degen(1,0) = 4;
+      degen(1,1) = 10;
+      degen(1,2) = 6;
 
       /*--- Set Arrhenius coefficients for chemical reactions ---*/
       // Note: Data lists coefficients in (cm^3/mol-s) units, need to convert
@@ -4591,11 +4546,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       /*--- Set reaction maps ---*/
       // N2 + N2 -> 2N + N2
-      Reactions[0][0][0]=0;   Reactions[0][0][1]=0;   Reactions[0][0][2]=nSpecies;
-      Reactions[0][1][0]=1;   Reactions[0][1][1]=1;   Reactions[0][1][2] =0;
+      Reactions(0,0,0)=0;   Reactions(0,0,1)=0;   Reactions(0,0,2)=nSpecies;
+      Reactions(0,1,0)=1;   Reactions(0,1,1)=1;   Reactions(0,1,2) =0;
       // N2 + N -> 2N + N
-      Reactions[1][0][0]=0;   Reactions[1][0][1]=1;   Reactions[1][0][2]=nSpecies;
-      Reactions[1][1][0]=1;   Reactions[1][1][1]=1;   Reactions[1][1][2]=1;
+      Reactions(1,0,0)=0;   Reactions(1,0,1)=1;   Reactions(1,0,2)=nSpecies;
+      Reactions(1,1,0)=1;   Reactions(1,1,1)=1;   Reactions(1,1,2)=1;
 
       /*--- Set rate-controlling temperature exponents ---*/
       //  -----------  Tc = Ttr^a * Tve^b  -----------
@@ -4618,15 +4573,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Diss[1] = 0.0;
 
       /*--- Collision integral data ---*/
-      Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-      Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
-      Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
-      Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
-
-      Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-      Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
-      Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
-      Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+      Omega00(0,0,0) = -6.0614558E-03;  Omega00(0,0,1) = 1.2689102E-01;   Omega00(0,0,2) = -1.0616948E+00;  Omega00(0,0,3) = 8.0955466E+02;
+      Omega00(0,1,0) = -1.0796249E-02;  Omega00(0,1,1) = 2.2656509E-01;   Omega00(0,1,2) = -1.7910602E+00;  Omega00(0,1,3) = 4.0455218E+03;
+      Omega00(1,0,0) = -1.0796249E-02;  Omega00(1,0,1) = 2.2656509E-01;   Omega00(1,0,2) = -1.7910602E+00;  Omega00(1,0,3) = 4.0455218E+03;
+      Omega00(1,1,0) = -9.6083779E-03;  Omega00(1,1,1) = 2.0938971E-01;   Omega00(1,1,2) = -1.7386904E+00;  Omega00(1,1,3) = 3.3587983E+03;
+      Omega11(0,0,0) = -7.6303990E-03;  Omega11(0,0,1) = 1.6878089E-01;   Omega11(0,0,2) = -1.4004234E+00;  Omega11(0,0,3) = 2.1427708E+03;
+      Omega11(0,1,0) = -8.3493693E-03;  Omega11(0,1,1) = 1.7808911E-01;   Omega11(0,1,2) = -1.4466155E+00;  Omega11(0,1,3) = 1.9324210E+03;
+      Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
+      Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
 
       break;
 
@@ -4665,28 +4619,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Tcb_a                = new su2double[nReactions];
       Tcb_b                = new su2double[nReactions];
       nElStates            = new unsigned short[nSpecies];
-      Reactions            = new int**[nReactions];
-      for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-        Reactions[iRxn] = new int*[2];
-        for (unsigned short ii = 0; ii < 2; ii++)
-          Reactions[iRxn][ii] = new int[6];
-      }
-
-      Blottner  = new su2double*[nSpecies];
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Blottner[iSpecies] = new su2double[3];
-
-      // Omega[iSpecies][jSpecies][iCoeff]
-      Omega00 = new su2double**[nSpecies];
-      Omega11 = new su2double**[nSpecies];
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Omega00[iSpecies] = new su2double*[nSpecies];
-        Omega11[iSpecies] = new su2double*[nSpecies];
-        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-          Omega00[iSpecies][jSpecies] = new su2double[4];
-          Omega11[iSpecies][jSpecies] = new su2double[4];
-        }
-      }
+      
+      Reactions.resize(nReactions,2,6,0.0);
+      Blottner.resize(nSpecies,3) = su2double(0.0);
+      Omega00.resize(nSpecies,nSpecies,4,0.0);
+      Omega11.resize(nSpecies,nSpecies,4,0.0);
 
       // Wall mass fractions for catalytic boundaries
       Wall_Catalycity[0] = 0.4;
@@ -4741,11 +4678,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       // Blottner viscosity coefficients
       // A                        // B                        // C
-      Blottner[0][0] = 2.68E-2;   Blottner[0][1] =  3.18E-1;  Blottner[0][2] = -1.13E1;  // N2
-      Blottner[1][0] = 4.49E-2;   Blottner[1][1] = -8.26E-2;  Blottner[1][2] = -9.20E0;  // O2
-      Blottner[2][0] = 4.36E-2;   Blottner[2][1] = -3.36E-2;  Blottner[2][2] = -9.58E0;  // NO
-      Blottner[3][0] = 1.16E-2;   Blottner[3][1] =  6.03E-1;  Blottner[3][2] = -1.24E1;  // N
-      Blottner[4][0] = 2.03E-2;   Blottner[4][1] =  4.29E-1;  Blottner[4][2] = -1.16E1;  // O
+      Blottner(0,0) = 2.68E-2;   Blottner(0,1) =  3.18E-1;  Blottner(0,2) = -1.13E1;  // N2
+      Blottner(1,0) = 4.49E-2;   Blottner(1,1) = -8.26E-2;  Blottner(1,2) = -9.20E0;  // O2
+      Blottner(2,0) = 4.36E-2;   Blottner(2,1) = -3.36E-2;  Blottner(2,2) = -9.58E0;  // NO
+      Blottner(3,0) = 1.16E-2;   Blottner(3,1) =  6.03E-1;  Blottner(3,2) = -1.24E1;  // N
+      Blottner(4,0) = 2.03E-2;   Blottner(4,1) =  4.29E-1;  Blottner(4,2) = -1.16E1;  // O
 
       // Number of electron states
       nElStates[0] = 15;                    // N2
@@ -4757,148 +4694,136 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         maxEl = max(maxEl, nElStates[iSpecies]);
 
-      /*--- Allocate electron data arrays ---*/
-      CharElTemp = new su2double*[nSpecies];
-      degen      = new su2double*[nSpecies];
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        CharElTemp[iSpecies] = new su2double[maxEl];
-        degen[iSpecies]      = new su2double[maxEl];
-      }
-
-      /*--- Initialize the arrays ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        for (iEl = 0; iEl < maxEl; iEl++) {
-          CharElTemp[iSpecies][iEl] = 0.0;
-          degen[iSpecies][iEl] = 0.0;
-        }
-      }
+      /*--- Allocate and initialize electron data arrays ---*/
+      CharElTemp.resize(nSpecies,maxEl) = su2double(0.0);
+      degen.resize(nSpecies,maxEl) = su2double(0.0);      
+      
 
       //N2: 15 states
-      CharElTemp[0][0]  = 0.000000000000000E+00;
-      CharElTemp[0][1]  = 7.223156514095200E+04;
-      CharElTemp[0][2]  = 8.577862640384000E+04;
-      CharElTemp[0][3]  = 8.605026716160000E+04;
-      CharElTemp[0][4]  = 9.535118627874400E+04;
-      CharElTemp[0][5]  = 9.805635702203200E+04;
-      CharElTemp[0][6]  = 9.968267656935200E+04;
-      CharElTemp[0][7]  = 1.048976467715200E+05;
-      CharElTemp[0][8]  = 1.116489555200000E+05;
-      CharElTemp[0][9]  = 1.225836470400000E+05;
-      CharElTemp[0][10] = 1.248856873600000E+05;
-      CharElTemp[0][11] = 1.282476158188320E+05;
-      CharElTemp[0][12] = 1.338060936000000E+05;
-      CharElTemp[0][13] = 1.404296391107200E+05;
-      CharElTemp[0][14] = 1.504958859200000E+05;
-      degen[0][0]  = 1;
-      degen[0][1]  = 3;
-      degen[0][2]  = 6;
-      degen[0][3]  = 6;
-      degen[0][4]  = 3;
-      degen[0][5]  = 1;
-      degen[0][6]  = 2;
-      degen[0][7]  = 2;
-      degen[0][8]  = 5;
-      degen[0][9]  = 1;
-      degen[0][10] = 6;
-      degen[0][11] = 6;
-      degen[0][12] = 10;
-      degen[0][13] = 6;
-      degen[0][14] = 6;
+      CharElTemp(0,0)  = 0.000000000000000E+00;
+      CharElTemp(0,1)  = 7.223156514095200E+04;
+      CharElTemp(0,2)  = 8.577862640384000E+04;
+      CharElTemp(0,3)  = 8.605026716160000E+04;
+      CharElTemp(0,4)  = 9.535118627874400E+04;
+      CharElTemp(0,5)  = 9.805635702203200E+04;
+      CharElTemp(0,6)  = 9.968267656935200E+04;
+      CharElTemp(0,7)  = 1.048976467715200E+05;
+      CharElTemp(0,8)  = 1.116489555200000E+05;
+      CharElTemp(0,9)  = 1.225836470400000E+05;
+      CharElTemp(0,10) = 1.248856873600000E+05;
+      CharElTemp(0,11) = 1.282476158188320E+05;
+      CharElTemp(0,12) = 1.338060936000000E+05;
+      CharElTemp(0,13) = 1.404296391107200E+05;
+      CharElTemp(0,14) = 1.504958859200000E+05;
+      degen(0,0)  = 1;
+      degen(0,1)  = 3;
+      degen(0,2)  = 6;
+      degen(0,3)  = 6;
+      degen(0,4)  = 3;
+      degen(0,5)  = 1;
+      degen(0,6)  = 2;
+      degen(0,7)  = 2;
+      degen(0,8)  = 5;
+      degen(0,9)  = 1;
+      degen(0,10) = 6;
+      degen(0,11) = 6;
+      degen(0,12) = 10;
+      degen(0,13) = 6;
+      degen(0,14) = 6;
 
       // O2: 7 states
-      CharElTemp[1][0] = 0.000000000000000E+00;
-      CharElTemp[1][1] = 1.139156019700800E+04;
-      CharElTemp[1][2] = 1.898473947826400E+04;
-      CharElTemp[1][3] = 4.755973576639200E+04;
-      CharElTemp[1][4] = 4.991242097343200E+04;
-      CharElTemp[1][5] = 5.092268575561600E+04;
-      CharElTemp[1][6] = 7.189863255967200E+04;
-      degen[1][0] = 3;
-      degen[1][1] = 2;
-      degen[1][2] = 1;
-      degen[1][3] = 1;
-      degen[1][4] = 6;
-      degen[1][5] = 3;
-      degen[1][6] = 3;
+      CharElTemp(1,0) = 0.000000000000000E+00;
+      CharElTemp(1,1) = 1.139156019700800E+04;
+      CharElTemp(1,2) = 1.898473947826400E+04;
+      CharElTemp(1,3) = 4.755973576639200E+04;
+      CharElTemp(1,4) = 4.991242097343200E+04;
+      CharElTemp(1,5) = 5.092268575561600E+04;
+      CharElTemp(1,6) = 7.189863255967200E+04;
+      degen(1,0) = 3;
+      degen(1,1) = 2;
+      degen(1,2) = 1;
+      degen(1,3) = 1;
+      degen(1,4) = 6;
+      degen(1,5) = 3;
+      degen(1,6) = 3;
 
       // NO: 16 states
-      CharElTemp[2][0]  = 0.000000000000000E+00;
-      CharElTemp[2][1]  = 5.467345760000000E+04;
-      CharElTemp[2][2]  = 6.317139627802400E+04;
-      CharElTemp[2][3]  = 6.599450342445600E+04;
-      CharElTemp[2][4]  = 6.906120960000000E+04;
-      CharElTemp[2][5]  = 7.049998480000000E+04;
-      CharElTemp[2][6]  = 7.491055017560000E+04;
-      CharElTemp[2][7]  = 7.628875293968000E+04;
-      CharElTemp[2][8]  = 8.676188537552000E+04;
-      CharElTemp[2][9]  = 8.714431182368000E+04;
-      CharElTemp[2][10] = 8.886077063728000E+04;
-      CharElTemp[2][11] = 8.981755614528000E+04;
-      CharElTemp[2][12] = 8.988445919208000E+04;
-      CharElTemp[2][13] = 9.042702132000000E+04;
-      CharElTemp[2][14] = 9.064283760000000E+04;
-      CharElTemp[2][15] = 9.111763341600000E+04;
-      degen[2][0]  = 4;
-      degen[2][1]  = 8;
-      degen[2][2]  = 2;
-      degen[2][3]  = 4;
-      degen[2][4]  = 4;
-      degen[2][5]  = 4;
-      degen[2][6]  = 4;
-      degen[2][7]  = 2;
-      degen[2][8]  = 4;
-      degen[2][9]  = 2;
-      degen[2][10] = 4;
-      degen[2][11] = 4;
-      degen[2][12] = 2;
-      degen[2][13] = 2;
-      degen[2][14] = 2;
-      degen[2][15] = 4;
+      CharElTemp(2,0)  = 0.000000000000000E+00;
+      CharElTemp(2,1)  = 5.467345760000000E+04;
+      CharElTemp(2,2)  = 6.317139627802400E+04;
+      CharElTemp(2,3)  = 6.599450342445600E+04;
+      CharElTemp(2,4)  = 6.906120960000000E+04;
+      CharElTemp(2,5)  = 7.049998480000000E+04;
+      CharElTemp(2,6)  = 7.491055017560000E+04;
+      CharElTemp(2,7)  = 7.628875293968000E+04;
+      CharElTemp(2,8)  = 8.676188537552000E+04;
+      CharElTemp(2,9)  = 8.714431182368000E+04;
+      CharElTemp(2,10) = 8.886077063728000E+04;
+      CharElTemp(2,11) = 8.981755614528000E+04;
+      CharElTemp(2,12) = 8.988445919208000E+04;
+      CharElTemp(2,13) = 9.042702132000000E+04;
+      CharElTemp(2,14) = 9.064283760000000E+04;
+      CharElTemp(2,15) = 9.111763341600000E+04;
+      degen(2,0)  = 4;
+      degen(2,1)  = 8;
+      degen(2,2)  = 2;
+      degen(2,3)  = 4;
+      degen(2,4)  = 4;
+      degen(2,5)  = 4;
+      degen(2,6)  = 4;
+      degen(2,7)  = 2;
+      degen(2,8)  = 4;
+      degen(2,9)  = 2;
+      degen(2,10) = 4;
+      degen(2,11) = 4;
+      degen(2,12) = 2;
+      degen(2,13) = 2;
+      degen(2,14) = 2;
+      degen(2,15) = 4;
 
       // N: 3 states
-      CharElTemp[3][0] = 0.000000000000000E+00;
-      CharElTemp[3][1] = 2.766469645581980E+04;
-      CharElTemp[3][2] = 4.149309313560210E+04;
-      degen[3][0] = 4;
-      degen[3][1] = 10;
-      degen[3][2] = 6;
+      CharElTemp(3,0) = 0.000000000000000E+00;
+      CharElTemp(3,1) = 2.766469645581980E+04;
+      CharElTemp(3,2) = 4.149309313560210E+04;
+      degen(3,0)= 4;
+      degen(3,1)= 10;
+      degen(3,2)= 6;
 
       // O: 5 states
-      CharElTemp[4][0] = 0.000000000000000E+00;
-      CharElTemp[4][1] = 2.277077570280000E+02;
-      CharElTemp[4][2] = 3.265688785704000E+02;
-      CharElTemp[4][3] = 2.283028632262240E+04;
-      CharElTemp[4][4] = 4.861993036434160E+04;
-      degen[4][0] = 5;
-      degen[4][1] = 3;
-      degen[4][2] = 1;
-      degen[4][3] = 5;
-      degen[4][4] = 1;
+      CharElTemp(4,0) = 0.000000000000000E+00;
+      CharElTemp(4,1) = 2.277077570280000E+02;
+      CharElTemp(4,2) = 3.265688785704000E+02;
+      CharElTemp(4,3) = 2.283028632262240E+04;
+      CharElTemp(4,4) = 4.861993036434160E+04;
+      degen(4,0) = 5;
+      degen(4,1) = 3;
+      degen(4,2) = 1;
+      degen(4,3) = 5;
+      degen(4,4) = 1;
 
       /*--- Set reaction maps ---*/
       // N2 dissociation
-      Reactions[0][0][0]=0;   Reactions[0][0][1]=0;   Reactions[0][0][2]=nSpecies;    Reactions[0][1][0]=3;   Reactions[0][1][1]=3;   Reactions[0][1][2] =0;
-      Reactions[1][0][0]=0;   Reactions[1][0][1]=1;   Reactions[1][0][2]=nSpecies;    Reactions[1][1][0]=3;   Reactions[1][1][1]=3;   Reactions[1][1][2] =1;
-      Reactions[2][0][0]=0;   Reactions[2][0][1]=2;   Reactions[2][0][2]=nSpecies;    Reactions[2][1][0]=3;   Reactions[2][1][1]=3;   Reactions[2][1][2] =2;
-      Reactions[3][0][0]=0;   Reactions[3][0][1]=3;   Reactions[3][0][2]=nSpecies;    Reactions[3][1][0]=3;   Reactions[3][1][1]=3;   Reactions[3][1][2] =3;
-      Reactions[4][0][0]=0;   Reactions[4][0][1]=4;   Reactions[4][0][2]=nSpecies;    Reactions[4][1][0]=3;   Reactions[4][1][1]=3;   Reactions[4][1][2] =4;
+      Reactions(0,0,0)=0;    Reactions(0,0,1)=0;   Reactions(0,0,2)=nSpecies;    Reactions(0,1,0)=3;   Reactions(0,1,1)=3;   Reactions(0,1,2) =0;
+      Reactions(1,0,0)=0;    Reactions(1,0,1)=1;   Reactions(1,0,2)=nSpecies;    Reactions(1,1,0)=3;   Reactions(1,1,1)=3;   Reactions(1,1,2) =1;
+      Reactions(2,0,0)=0;    Reactions(2,0,1)=2;   Reactions(2,0,2)=nSpecies;    Reactions(2,1,0)=3;   Reactions(2,1,1)=3;   Reactions(2,1,2) =2;
+      Reactions(3,0,0)=0;    Reactions(3,0,1)=3;   Reactions(3,0,2)=nSpecies;    Reactions(3,1,0)=3;   Reactions(3,1,1)=3;   Reactions(3,1,2) =3;
+      Reactions(4,0,0)=0;    Reactions(4,0,1)=4;   Reactions(4,0,2)=nSpecies;    Reactions(4,1,0)=3;   Reactions(4,1,1)=3;   Reactions(4,1,2) =4;      
       // O2 dissociation
-      Reactions[5][0][0]=1;   Reactions[5][0][1]=0;   Reactions[5][0][2]=nSpecies;    Reactions[5][1][0]=4;   Reactions[5][1][1]=4;   Reactions[5][1][2] =0;
-      Reactions[6][0][0]=1;   Reactions[6][0][1]=1;   Reactions[6][0][2]=nSpecies;    Reactions[6][1][0]=4;   Reactions[6][1][1]=4;   Reactions[6][1][2] =1;
-      Reactions[7][0][0]=1;   Reactions[7][0][1]=2;   Reactions[7][0][2]=nSpecies;    Reactions[7][1][0]=4;   Reactions[7][1][1]=4;   Reactions[7][1][2] =2;
-      Reactions[8][0][0]=1;   Reactions[8][0][1]=3;   Reactions[8][0][2]=nSpecies;    Reactions[8][1][0]=4;   Reactions[8][1][1]=4;   Reactions[8][1][2] =3;
-      Reactions[9][0][0]=1;   Reactions[9][0][1]=4;   Reactions[9][0][2]=nSpecies;    Reactions[9][1][0]=4;   Reactions[9][1][1]=4;   Reactions[9][1][2] =4;
+      Reactions(5,0,0)=1;    Reactions(5,0,1)=0;   Reactions(5,0,2)=nSpecies;    Reactions(5,1,0)=4;   Reactions(5,1,1)=4;   Reactions(5,1,2) =0;
+      Reactions(6,0,0)=1;    Reactions(6,0,1)=1;   Reactions(6,0,2)=nSpecies;    Reactions(6,1,0)=4;   Reactions(6,1,1)=4;   Reactions(6,1,2) =1;
+      Reactions(7,0,0)=1;    Reactions(7,0,1)=2;   Reactions(7,0,2)=nSpecies;    Reactions(7,1,0)=4;   Reactions(7,1,1)=4;   Reactions(7,1,2) =2;
+      Reactions(8,0,0)=1;    Reactions(8,0,1)=3;   Reactions(8,0,2)=nSpecies;    Reactions(8,1,0)=4;   Reactions(8,1,1)=4;   Reactions(8,1,2) =3;
+      Reactions(9,0,0)=1;    Reactions(9,0,1)=4;   Reactions(9,0,2)=nSpecies;    Reactions(9,1,0)=4;   Reactions(9,1,1)=4;   Reactions(9,1,2) =4;
       // NO dissociation
-      Reactions[10][0][0]=2;    Reactions[10][0][1]=0;    Reactions[10][0][2]=nSpecies;   Reactions[10][1][0]=3;    Reactions[10][1][1]=4;    Reactions[10][1][2] =0;
-      Reactions[11][0][0]=2;    Reactions[11][0][1]=1;    Reactions[11][0][2]=nSpecies;   Reactions[11][1][0]=3;    Reactions[11][1][1]=4;    Reactions[11][1][2] =1;
-      Reactions[12][0][0]=2;    Reactions[12][0][1]=2;    Reactions[12][0][2]=nSpecies;   Reactions[12][1][0]=3;    Reactions[12][1][1]=4;    Reactions[12][1][2] =2;
-      Reactions[13][0][0]=2;    Reactions[13][0][1]=3;    Reactions[13][0][2]=nSpecies;   Reactions[13][1][0]=3;    Reactions[13][1][1]=4;    Reactions[13][1][2] =3;
-      Reactions[14][0][0]=2;    Reactions[14][0][1]=4;    Reactions[14][0][2]=nSpecies;   Reactions[14][1][0]=3;    Reactions[14][1][1]=4;    Reactions[14][1][2] =4;
+      Reactions(10,0,0)=2;   Reactions(10,0,1)=0;  Reactions(10,0,2)=nSpecies;   Reactions(10,1,0)=3;  Reactions(10,1,1)=4;    Reactions(10,1,2) =0;
+      Reactions(11,0,0)=2;   Reactions(11,0,1)=1;  Reactions(11,0,2)=nSpecies;   Reactions(11,1,0)=3;  Reactions(11,1,1)=4;    Reactions(11,1,2) =1;
+      Reactions(12,0,0)=2;   Reactions(12,0,1)=2;  Reactions(12,0,2)=nSpecies;   Reactions(12,1,0)=3;  Reactions(12,1,1)=4;    Reactions(12,1,2) =2;
+      Reactions(13,0,0)=2;   Reactions(13,0,1)=3;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=3;  Reactions(13,1,1)=4;    Reactions(13,1,2) =3;
+      Reactions(14,0,0)=2;   Reactions(14,0,1)=4;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=3;  Reactions(14,1,1)=4;    Reactions(14,1,2) =4;    
       // N2 + O -> NO + N
-      Reactions[15][0][0]=0;    Reactions[15][0][1]=4;    Reactions[15][0][2]=nSpecies;   Reactions[15][1][0]=2;    Reactions[15][1][1]=3;    Reactions[15][1][2]= nSpecies;
+      Reactions(15,0,0)=0;   Reactions(15,0,1)=4;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=2;  Reactions(15,1,1)=3;    Reactions(15,1,2)= nSpecies;
       // NO + O -> O2 + N
-      Reactions[16][0][0]=2;    Reactions[16][0][1]=4;    Reactions[16][0][2]=nSpecies;   Reactions[16][1][0]=1;    Reactions[16][1][1]=3;    Reactions[16][1][2]= nSpecies;
-
+      Reactions(16,0,0)=2;   Reactions(16,0,1)=4;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=1;  Reactions(16,1,1)=3;    Reactions(16,1,2)= nSpecies;
       /*--- Set Arrhenius coefficients for reactions ---*/
       // Pre-exponential factor
       ArrheniusCoefficient[0]  = 7.0E21;
@@ -4994,67 +4919,67 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       /*--- Collision integral data ---*/
       // Omega(0,0) ----------------------
       //N2
-      Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-      Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
-      Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
-      Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
-      Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+      Omega00(0,0,0) = -6.0614558E-03;  Omega00(0,0,1) = 1.2689102E-01;   Omega00(0,0,2) = -1.0616948E+00;  Omega00(0,0,3) = 8.0955466E+02;
+      Omega00(0,1,0) = -3.7959091E-03;  Omega00(0,1,1) = 9.5708295E-02;   Omega00(0,1,2) = -1.0070611E+00;  Omega00(0,1,3) = 8.9392313E+02;
+      Omega00(0,2,0) = -1.9295666E-03;  Omega00(0,2,1) = 2.7995735E-02;   Omega00(0,2,2) = -3.1588514E-01;  Omega00(0,2,3) = 1.2880734E+02;
+      Omega00(0,3,0) = -1.0796249E-02;  Omega00(0,3,1) = 2.2656509E-01;   Omega00(0,3,2) = -1.7910602E+00;  Omega00(0,3,3) = 4.0455218E+03;
+      Omega00(0,4,0) = -2.7244269E-03;  Omega00(0,4,1) = 6.9587171E-02;   Omega00(0,4,2) = -7.9538667E-01;  Omega00(0,4,3) = 4.0673730E+02;
       //O2
-      Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
-      Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
-      Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
-      Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
-      Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+      Omega00(1,0,0) = -3.7959091E-03;  Omega00(1,0,1) = 9.5708295E-02;   Omega00(1,0,2) = -1.0070611E+00;  Omega00(1,0,3) = 8.9392313E+02;
+      Omega00(1,1,0) = -8.0682650E-04;  Omega00(1,1,1) = 1.6602480E-02;   Omega00(1,1,2) = -3.1472774E-01;  Omega00(1,1,3) = 1.4116458E+02;
+      Omega00(1,2,0) = -6.4433840E-04;  Omega00(1,2,1) = 8.5378580E-03;   Omega00(1,2,2) = -2.3225102E-01;  Omega00(1,2,3) = 1.1371608E+02;
+      Omega00(1,3,0) = -1.1453028E-03;  Omega00(1,3,1) = 1.2654140E-02;   Omega00(1,3,2) = -2.2435218E-01;  Omega00(1,3,3) = 7.7201588E+01;
+      Omega00(1,4,0) = -4.8405803E-03;  Omega00(1,4,1) = 1.0297688E-01;   Omega00(1,4,2) = -9.6876576E-01;  Omega00(1,4,3) = 6.1629812E+02;
       //NO
-      Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
-      Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
-      Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
-      Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
-      Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+      Omega00(2,0,0) = -1.9295666E-03;  Omega00(2,0,1) = 2.7995735E-02;   Omega00(2,0,2) = -3.1588514E-01;  Omega00(2,0,3) = 1.2880734E+02;
+      Omega00(2,1,0) = -6.4433840E-04;  Omega00(2,1,1) = 8.5378580E-03;   Omega00(2,1,2) = -2.3225102E-01;  Omega00(2,1,3) = 1.1371608E+02;
+      Omega00(2,2,0) = -0.0000000E+00;  Omega00(2,2,1) = -1.1056066E-02;  Omega00(2,2,2) = -5.9216250E-02;  Omega00(2,2,3) = 7.2542367E+01;
+      Omega00(2,3,0) = -1.5770918E-03;  Omega00(2,3,1) = 1.9578381E-02;   Omega00(2,3,2) = -2.7873624E-01;  Omega00(2,3,3) = 9.9547944E+01;
+      Omega00(2,4,0) = -1.0885815E-03;  Omega00(2,4,1) = 1.1883688E-02;   Omega00(2,4,2) = -2.1844909E-01;  Omega00(2,4,3) = 7.5512560E+01;
       //N
-      Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
-      Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
-      Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
-      Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
-      Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+      Omega00(3,0,0) = -1.0796249E-02;  Omega00(3,0,1) = 2.2656509E-01;   Omega00(3,0,2) = -1.7910602E+00;  Omega00(3,0,3) = 4.0455218E+03;
+      Omega00(3,1,0) = -1.1453028E-03;  Omega00(3,1,1) = 1.2654140E-02;   Omega00(3,1,2) = -2.2435218E-01;  Omega00(3,1,3) = 7.7201588E+01;
+      Omega00(3,2,0) = -1.5770918E-03;  Omega00(3,2,1) = 1.9578381E-02;   Omega00(3,2,2) = -2.7873624E-01;  Omega00(3,2,3) = 9.9547944E+01;
+      Omega00(3,3,0) = -9.6083779E-03;  Omega00(3,3,1) = 2.0938971E-01;   Omega00(3,3,2) = -1.7386904E+00;  Omega00(3,3,3) = 3.3587983E+03;
+      Omega00(3,4,0) = -7.8147689E-03;  Omega00(3,4,1) = 1.6792705E-01;   Omega00(3,4,2) = -1.4308628E+00;  Omega00(3,4,3) = 1.6628859E+03;
       //O
-      Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
-      Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
-      Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
-      Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
-      Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
-
+      Omega00(4,0,0) = -2.7244269E-03;  Omega00(4,0,1) = 6.9587171E-02;   Omega00(4,0,2) = -7.9538667E-01;  Omega00(4,0,3) = 4.0673730E+02;
+      Omega00(4,1,0) = -4.8405803E-03;  Omega00(4,1,1) = 1.0297688E-01;   Omega00(4,1,2) = -9.6876576E-01;  Omega00(4,1,3) = 6.1629812E+02;
+      Omega00(4,2,0) = -1.0885815E-03;  Omega00(4,2,1) = 1.1883688E-02;   Omega00(4,2,2) = -2.1844909E-01;  Omega00(4,2,3) = 7.5512560E+01;
+      Omega00(4,3,0) = -7.8147689E-03;  Omega00(4,3,1) = 1.6792705E-01;   Omega00(4,3,2) = -1.4308628E+00;  Omega00(4,3,3) = 1.6628859E+03;
+      Omega00(4,4,0) = -6.4040535E-03;  Omega00(4,4,1) = 1.4629949E-01;   Omega00(4,4,2) = -1.3892121E+00;  Omega00(4,4,3) = 2.0903441E+03;
+   
       // Omega(1,1) ----------------------
       //N2
-      Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-      Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
-      Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
-      Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
-      Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+      Omega11(0,0,0) = -7.6303990E-03;  Omega11(0,0,1) = 1.6878089E-01;   Omega11(0,0,2) = -1.4004234E+00;  Omega11(0,0,3) = 2.1427708E+03;
+      Omega11(0,1,0) = -8.0457321E-03;  Omega11(0,1,1) = 1.9228905E-01;   Omega11(0,1,2) = -1.7102854E+00;  Omega11(0,1,3) = 5.2213857E+03;
+      Omega11(0,2,0) = -6.8237776E-03;  Omega11(0,2,1) = 1.4360616E-01;   Omega11(0,2,2) = -1.1922240E+00;  Omega11(0,2,3) = 1.2433086E+03;
+      Omega11(0,3,0) = -8.3493693E-03;  Omega11(0,3,1) = 1.7808911E-01;   Omega11(0,3,2) = -1.4466155E+00;  Omega11(0,3,3) = 1.9324210E+03;
+      Omega11(0,4,0) = -8.3110691E-03;  Omega11(0,4,1) = 1.9617877E-01;   Omega11(0,4,2) = -1.7205427E+00;  Omega11(0,4,3) = 4.0812829E+03;
       //O2
-      Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
-      Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
-      Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
-      Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
-      Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+      Omega11(1,0,0) = -8.0457321E-03;  Omega11(1,0,1) = 1.9228905E-01;   Omega11(1,0,2) = -1.7102854E+00;  Omega11(1,0,3) = 5.2213857E+03;
+      Omega11(1,1,0) = -6.2931612E-03;  Omega11(1,1,1) = 1.4624645E-01;   Omega11(1,1,2) = -1.3006927E+00;  Omega11(1,1,3) = 1.8066892E+03;
+      Omega11(1,2,0) = -6.8508672E-03;  Omega11(1,2,1) = 1.5524564E-01;   Omega11(1,2,2) = -1.3479583E+00;  Omega11(1,2,3) = 2.0037890E+03;
+      Omega11(1,3,0) = -1.0608832E-03;  Omega11(1,3,1) = 1.1782595E-02;   Omega11(1,3,2) = -2.1246301E-01;  Omega11(1,3,3) = 8.4561598E+01;
+      Omega11(1,4,0) = -3.7969686E-03;  Omega11(1,4,1) = 7.6789981E-02;   Omega11(1,4,2) = -7.3056809E-01;  Omega11(1,4,3) = 3.3958171E+02;
       //NO
-      Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
-      Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
-      Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
-      Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
-      Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+      Omega11(2,0,0) = -6.8237776E-03;  Omega11(2,0,1) = 1.4360616E-01;   Omega11(2,0,2) = -1.1922240E+00;  Omega11(2,0,3) = 1.2433086E+03;
+      Omega11(2,1,0) = -6.8508672E-03;  Omega11(2,1,1) = 1.5524564E-01;   Omega11(2,1,2) = -1.3479583E+00;  Omega11(2,1,3) = 2.0037890E+03;
+      Omega11(2,2,0) = -7.4942466E-03;  Omega11(2,2,1) = 1.6626193E-01;   Omega11(2,2,2) = -1.4107027E+00;  Omega11(2,2,3) = 2.3097604E+03;
+      Omega11(2,3,0) = -1.4719259E-03;  Omega11(2,3,1) = 1.8446968E-02;   Omega11(2,3,2) = -2.6460411E-01;  Omega11(2,3,3) = 1.0911124E+02;
+      Omega11(2,4,0) = -1.0066279E-03;  Omega11(2,4,1) = 1.1029264E-02;   Omega11(2,4,2) = -2.0671266E-01;  Omega11(2,4,3) = 8.2644384E+01;
       //N
-      Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
-      Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
-      Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
-      Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
-      Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+      Omega11(3,0,0) = -8.3493693E-03;  Omega11(3,0,1) = 1.7808911E-01;   Omega11(3,0,2) = -1.4466155E+00;  Omega11(3,0,3) = 1.9324210E+03;
+      Omega11(3,1,0) = -1.0608832E-03;  Omega11(3,1,1) = 1.1782595E-02;   Omega11(3,1,2) = -2.1246301E-01;  Omega11(3,1,3) = 8.4561598E+01;
+      Omega11(3,2,0) = -1.4719259E-03;  Omega11(3,2,1) = 1.8446968E-02;   Omega11(3,2,2) = -2.6460411E-01;  Omega11(3,2,3) = 1.0911124E+02;
+      Omega11(3,3,0) = -7.7439615E-03;  Omega11(3,3,1) = 1.7129007E-01;   Omega11(3,3,2) = -1.4809088E+00;  Omega11(3,3,3) = 2.1284951E+03;
+      Omega11(3,4,0) = -5.0478143E-03;  Omega11(3,4,1) = 1.0236186E-01;   Omega11(3,4,2) = -9.0058935E-01;  Omega11(3,4,3) = 4.4472565E+02;
       //O
-      Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
-      Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
-      Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
-      Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
-      Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
+      Omega11(4,0,0) = -8.3110691E-03;  Omega11(4,0,1) = 1.9617877E-01;   Omega11(4,0,2) = -1.7205427E+00;  Omega11(4,0,3) = 4.0812829E+03;
+      Omega11(4,1,0) = -3.7969686E-03;  Omega11(4,1,1) = 7.6789981E-02;   Omega11(4,1,2) = -7.3056809E-01;  Omega11(4,1,3) = 3.3958171E+02;
+      Omega11(4,2,0) = -1.0066279E-03;  Omega11(4,2,1) = 1.1029264E-02;   Omega11(4,2,2) = -2.0671266E-01;  Omega11(4,2,3) = 8.2644384E+01;
+      Omega11(4,3,0) = -5.0478143E-03;  Omega11(4,3,1) = 1.0236186E-01;   Omega11(4,3,2) = -9.0058935E-01;  Omega11(4,3,3) = 4.4472565E+02;
+      Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
 
       break;
     }
@@ -5579,7 +5504,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    gradients for uwpind reconstruction. Set additional booleans to
    minimize overhead as appropriate. */
 
-  if (MUSCL_Flow || MUSCL_NEMO || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
+  if (MUSCL_Flow || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
 
     ReconstructionGradientRequired = true;
 
@@ -6725,6 +6650,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_EULER)     || (Kind_Solver == NEMO_NAVIER_STOKES)     || //(Kind_Solver == NEMO_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
@@ -6801,70 +6727,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
     }
-
-    if ( (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES)// || (Kind_Solver == NEMO_RANS) ||
-         /*(Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) ||
-         (Kind_Solver == DISC_ADJ_NEMO_RANS)*/) {
-
-      if (Kind_ConvNumScheme_NEMO == SPACE_CENTERED) {
-        //if (Kind_Centered_NEMO == JST) {
-        //  cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-        //  cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_NEMO << ", " << Kappa_4th_NEMO <<"." << endl;
-        //  cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        //}
-        if (Kind_Centered_NEMO== LAX) {
-          cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
-          cout << "Lax viscous coefficients (1st): " << Kappa_1st_NEMO << "." << endl;
-          cout << "First order integration." << endl;
-        }
-      }
-
-      if (Kind_ConvNumScheme_NEMO == SPACE_UPWIND) {
-        if (Kind_Upwind_NEMO == ROE)   cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_NEMO == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_NEMO == AUSMPLUSUP2)  cout << "AUSM+ -Up2 solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_NEMO == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_NEMO == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
-
-        if (Kind_Regime == COMPRESSIBLE) {
-          switch (Kind_RoeLowDiss) {
-          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
-          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
-          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
-          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
-          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
-          }
-        }
-
-        if (MUSCL_NEMO) {
-          cout << "Second order integration in space, with slope limiter." << endl;
-          switch (Kind_SlopeLimit_NEMO) {
-          case NO_LIMITER:
-            cout << "No slope-limiting method. "<< endl;
-            break;
-          case VENKATAKRISHNAN:
-            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-            break;
-          case VENKATAKRISHNAN_WANG:
-            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-            break;
-          case BARTH_JESPERSEN:
-            cout << "Barth-Jespersen slope-limiting method." << endl;
-            break;
-          case VAN_ALBADA_EDGE:
-            cout << "Van Albada slope-limiting method implemented by edges." << endl;
-            break;
-          }
-        }
-        else {
-          cout << "First order integration in space." << endl;
-        }
-
-      }
-
-    }
-
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
@@ -7099,6 +6961,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) || 
         (Kind_Solver == DISC_ADJ_INC_EULER) || (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
         (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
@@ -7153,61 +7016,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           break;
       }
     }
-
-      if ((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) //|| (Kind_Solver == NEMO_RANS) ||
-         /*(Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)*/) {
-      switch (Kind_TimeIntScheme_NEMO) {
-        case RUNGE_KUTTA_EXPLICIT:
-          cout << "Runge-Kutta explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << nRKStep << endl;
-          cout << "Alpha coefficients: ";
-          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-            cout << "\t" << RK_Alpha_Step[iRKStep];
-          }
-          cout << endl;
-          break;
-        case EULER_EXPLICIT:
-          cout << "Euler explicit method for the flow equations." << endl;
-          break;
-        case EULER_IMPLICIT:
-          cout << "Euler implicit method for the flow equations." << endl;
-          switch (Kind_Linear_Solver) {
-            case BCGSTAB:
-            case FGMRES:
-            case RESTARTED_FGMRES:
-              if (Kind_Linear_Solver == BCGSTAB)
-                cout << "BCGSTAB is used for solving the linear system." << endl;
-              else
-                cout << "FGMRES is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              break;
-            case SMOOTHER:
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
-                case LINELET: cout << "A Linelet"; break;
-                case LU_SGS:  cout << "A LU-SGS"; break;
-                case JACOBI:  cout << "A Jacobi"; break;
-              }
-              cout << " method is used for smoothing the linear system." << endl;
-              break;
-          }
-          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-          break;
-        case CLASSICAL_RK4_EXPLICIT:
-          cout << "Classical RK4 explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << 4 << endl;
-          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
-          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
-          break;
-      }
-    }
-
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
@@ -8826,8 +8634,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_NEMO_SYS:      return NEMO_SOL;
-    //case RUNTIME_ADJNEMO_SYS:   return ADJNEMO_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
@@ -8865,7 +8671,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   /*--- Set the solver methods ---*/
 
   switch (val_solver) {
-    case EULER: case INC_EULER:
+    case EULER: case INC_EULER: case NEMO_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8873,15 +8679,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
-    case NEMO_EULER:
-      if (val_system == RUNTIME_NEMO_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_NEMO, Kind_Centered_NEMO,
-                              Kind_Upwind_NEMO, Kind_SlopeLimit_NEMO,
-                              MUSCL_NEMO, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_NEMO);
-      }
-      break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES:
+    case NAVIER_STOKES: case INC_NAVIER_STOKES: case NEMO_NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8891,14 +8689,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
-      break;
-    case NEMO_NAVIER_STOKES:
-      if (val_system == RUNTIME_NEMO_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_NEMO, Kind_Centered_NEMO,
-                              Kind_Upwind_NEMO, Kind_SlopeLimit_NEMO,
-                              MUSCL_NEMO, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_NEMO);
       }
       break;
     case RANS: case INC_RANS:
@@ -10735,7 +10525,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: //case NEMO_RANS:    
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:     
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:

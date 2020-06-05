@@ -459,7 +459,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Flow = solver[NEMO_SOL]->GetNodes();
+  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Turb = NULL;
   unsigned short nSpecies = config->GetnSpecies();
 
@@ -524,10 +524,10 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   su2double VelMag = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    VelMag += pow(solver[NEMO_SOL]->GetVelocity_Inf(iDim),2.0);
+    VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0);
   }
-  su2double factor = 1.0/(0.5*solver[NEMO_SOL]->GetDensity_Inf()*VelMag);
-  //SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[NEMO_SOL]->GetPressure_Inf())*factor);
+  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
+  //SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
 
   if (/*config->GetKind_Solver() == NEMO_RANS ||*/ config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
@@ -542,26 +542,26 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (nSpecies == 2) {
-    SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 1));
+    SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+    SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
   }
   if (nSpecies == 5) {
-    SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_DENSITY_O2", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 1));
-    SetVolumeOutputValue("RES_DENSITY_NO", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 2));
-    SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 3));
-    SetVolumeOutputValue("RES_DENSITY_O",  iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, 4));
+    SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+    SetVolumeOutputValue("RES_DENSITY_O2", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
+    SetVolumeOutputValue("RES_DENSITY_NO", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
+    SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
+    SetVolumeOutputValue("RES_DENSITY_O",  iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 4));
   }
 
-  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies));
-  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies+1));
+  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies));
+  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+1));
   if (nDim == 3){
-    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies+2));
-    SetVolumeOutputValue("RES_ENERGY",     iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies+3));
-    SetVolumeOutputValue("RES_ENERGY_VE",  iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies+4));
+    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+2));
+    SetVolumeOutputValue("RES_ENERGY",     iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+3));
+    SetVolumeOutputValue("RES_ENERGY_VE",  iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+4));
   } else {
-    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies+2));
-    SetVolumeOutputValue("RES_ENERGY_VE", iPoint, solver[NEMO_SOL]->LinSysRes(iPoint, nSpecies+3));
+    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+2));
+    SetVolumeOutputValue("RES_ENERGY_VE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+3));
   }
 
   switch(config->GetKind_Turb_Model()){
@@ -621,19 +621,19 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
   //if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES) /*|| (config->GetKind_Solver()  == NEMO_RANS)*/) {
-  // SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-  //  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+  // SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+  //  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
   //  if (nDim == 3)
-  //    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[NEMO_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+  //    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
 
-  //  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[NEMO_SOL]->GetHeatFlux(iMarker, iVertex));
-  //  SetVolumeOutputValue("Y_PLUS", iPoint, solver[NEMO_SOL]->GetYPlus(iMarker, iVertex));
+  //  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
+  //  SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
   //}
 }
 
 void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
-  CSolver* NEMO_solver = solver[NEMO_SOL];
+  CSolver* NEMO_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
   unsigned short nSpecies = config->GetnSpecies();

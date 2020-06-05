@@ -230,7 +230,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
-  if (config->GetKind_ConvNumScheme_NEMO() == SPACE_CENTERED) {
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -246,7 +246,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*--- Allocate Jacobians for implicit time-stepping ---*/
-  if (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT) {
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
     Jacobian_i = new su2double* [nVar];
     Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -617,24 +617,20 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
 
   SetBaseClassPointerToNodes();
 
-  cout << "cat: finish creating all NS nodes" << endl;
-
-
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    cout << "cat: check node " << iPoint << endl;
 
     check = nodes->SetPrimVar_Compressible(iPoint, config); 
 
     if (check) {
 
       bool ionization;
-      unsigned short iEl, nHeavy, nEl, *nElStates;
+      unsigned short iEl, nHeavy, nEl;
+      const unsigned short *nElStates;
       su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
       su2double rho, rhos, Ef, Ev, Ee, soundspeed;
-      su2double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      const su2double *xi, *Ms, *thetav, *Tref, *hf;
 
       /*--- Determine the number of heavy species ---*/
       ionization = config->GetIonization();
@@ -645,8 +641,8 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
       xi        = config->GetRotationModes();      // Rotational modes of energy storage
       Ms        = config->GetMolar_Mass();         // Species molar mass
       thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-      thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-      g         = config->GetElDegeneracy();       // Degeneracy of electron states
+      const auto& thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+      const auto& g         = config->GetElDegeneracy();       // Degeneracy of electron states
       nElStates = config->GetnElStates();          // Number of electron states
       Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
       hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
@@ -858,14 +854,14 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint, ErrorCounter = 0;
 
   unsigned long InnerIter = config->GetInnerIter();
-  bool muscl              = config->GetMUSCL_NEMO();
+  bool muscl              = config->GetMUSCL_Flow();
   bool disc_adjoint       = config->GetDiscrete_Adjoint();
-  bool implicit           = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-  bool center             = (config->GetKind_ConvNumScheme_NEMO() == SPACE_CENTERED);
-  bool center_jst         = (center && config->GetKind_Centered_NEMO() == JST);
-  bool limiter            = ((config->GetKind_SlopeLimit_NEMO() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
+  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool center             = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  bool center_jst         = (center && config->GetKind_Centered_Flow() == JST);
+  bool limiter            = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool limiter_turb       = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada         = (config->GetKind_SlopeLimit_NEMO() == VAN_ALBADA_EDGE);
+  bool van_albada         = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
   bool nonPhys;
 
   su2double *errU, *errV;
@@ -1059,13 +1055,14 @@ void CNEMONSSolver::SetTime_Step(CGeometry *geometry,
   su2double Mean_SoundSpeed, Mean_ProjVel;
   su2double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
   su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
-  su2double cp, cv, cvve, RuSI, Ru, *xi, *Ms, Na, Mmix, Rmix;
+  su2double cp, cv, cvve, RuSI, Ru, Na, Mmix, Rmix;
   su2double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
   su2double *V_i, *V_j, *X;
   su2double UnitNormal[3];
   su2double tmp;
+  const su2double *xi, *Ms;
 
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
 
@@ -1295,7 +1292,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   unsigned long iPoint, jPoint, iEdge;
 
   /*--- Determine time integration scheme ---*/
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -1858,7 +1855,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   su2double **GradV;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
   pcontrol = 1.0;
@@ -2049,7 +2046,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   su2double **GradV, **GradY;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   catalytic = false;
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -2231,7 +2228,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   su2double *Coord_i, *Coord_j;
   su2double C;
 
-  bool implicit   = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool ionization = config->GetIonization();
 
   if (ionization) {
@@ -2373,15 +2370,16 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double pcontrol;
-  su2double rho, *eves, *hs, RuSI, Ru, *Ms, *xi;
+  su2double rho, *eves, *hs, RuSI, Ru;
   su2double *dTdU, *dTvedU, *Cvtr, *Cvve;
   su2double *Normal, Area, dij, UnitNormal[3];
-  su2double *Di, *Dj, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn;
+  su2double *Di, *Dj, *Vi, *Vj, *Yj, *dYdn, SdYdn;
   su2double **GradY;
   su2double **dVdU;
+  const su2double *Yst, *Ms, *xi;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
   pcontrol = 0.6;

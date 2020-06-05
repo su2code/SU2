@@ -250,7 +250,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Source      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
-  if (config->GetKind_ConvNumScheme_NEMO() == SPACE_CENTERED) {
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
@@ -282,7 +282,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   }
 
   /*--- Allocate Jacobians for implicit time-stepping ---*/
-  if (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT) {
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
     Jacobian_i = new su2double* [nVar];
     Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -514,10 +514,11 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
     if (nonPhys) {
       bool ionization;
-      unsigned short iEl, nHeavy, nEl, *nElStates;
+      unsigned short iEl, nHeavy, nEl;
+      const unsigned short *nElStates;
       su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
       su2double rho, rhos, Ef, Ev, Ee, soundspeed;
-      su2double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      const su2double *xi, *Ms, *thetav, *Tref, *hf;
 
       /*--- Determine the number of heavy species ---*/
       ionization = config->GetIonization();
@@ -528,8 +529,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
       xi        = config->GetRotationModes();      // Rotational modes of energy storage
       Ms        = config->GetMolar_Mass();         // Species molar mass
       thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-      thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-      g         = config->GetElDegeneracy();       // Degeneracy of electron states
+      const auto& thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+      const auto& g         = config->GetElDegeneracy();       // Degeneracy of electron states
       nElStates = config->GetnElStates();          // Number of electron states
       Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
       hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
@@ -629,10 +630,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
-  if (config->GetKind_ConvNumScheme_NEMO() == SPACE_CENTERED ) space_centered = true;
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
   else space_centered = false;
 
-  if (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT) euler_implicit = true;
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
@@ -751,8 +752,8 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        solver_container[iMesh][NEMO_SOL]->GetNodes()->Set_Solution_time_n();
-        solver_container[iMesh][NEMO_SOL]->GetNodes()->Set_Solution_time_n1();
+        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
         if (rans) {
           solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
           solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
@@ -764,7 +765,7 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
         (config->GetTime_Marching() == DT_STEPPING_2ND)) {
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
-      solver_container[MESH_0][NEMO_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
 
       /*--- Load an additional restart file for the turbulence model ---*/
       if (rans)
@@ -774,7 +775,7 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
 
       for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          solver_container[iMesh][NEMO_SOL]->GetNodes()->Set_Solution_time_n();
+          solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
           if (rans) {
             solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
           }
@@ -792,12 +793,12 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 
   unsigned long InnerIter = config->GetInnerIter();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-  bool muscl            = config->GetMUSCL_NEMO();
-  bool limiter          = ((config->GetKind_SlopeLimit_NEMO() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool center           = config->GetKind_ConvNumScheme_NEMO() == SPACE_CENTERED;
-  bool center_jst       = center && (config->GetKind_Centered_NEMO() == JST);
-  bool van_albada       = config->GetKind_SlopeLimit_NEMO() == VAN_ALBADA_EDGE;
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool muscl            = config->GetMUSCL_Flow();
+  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool center           = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
+  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool nonPhys;
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -905,7 +906,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 
   const bool viscous       = config->GetViscous();
 
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool time_steping = config->GetTime_Marching() == TIME_STEPPING;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -1195,7 +1196,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   bool err;
 
   /*--- Set booleans based on config settings ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   //Unused at the moment
   //bool centered = ((config->GetKind_Centered_NEMO() == JST) && (iMesh == MESH_0));
@@ -1286,10 +1287,10 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
   /*--- Set booleans based on config settings ---*/
    /*--- Set booleans based on config settings ---*/
-  bool implicit   = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-  bool muscl      = (config->GetMUSCL_NEMO() && (iMesh == MESH_0));
+  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool disc_adjoint = config->GetDiscrete_Adjoint();
-  bool limiter      = ((config->GetKind_SlopeLimit_NEMO() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) &&
+  bool limiter      = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) &&
                        !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool chk_err_i, chk_err_j, err;
 
@@ -1508,7 +1509,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   int rank = MASTER_NODE;
 
   /*--- Assign booleans ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
   bool frozen = config->GetFrozen();
   bool err = false;
 
@@ -2734,7 +2736,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       rhoCvtr = 0.0, rhoE       = 0.0, sqvel           = 0.0,
       denom   = 0.0, num        = 0.0, conc            = 0.0;
 
-  unsigned short iDim,nEl,nHeavy,*nElStates;
+  unsigned short iDim,nEl,nHeavy;
+  const unsigned short *nElStates;
 
   /*--- Local variables ---*/
   su2double Alpha         = config->GetAoA()*PI_NUMBER/180.0;
@@ -2751,7 +2754,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool ionization         = config->GetIonization();
 
-  su2double *Ms, *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev;
+  const su2double *Ms, *xi, *Tref, *hf, *thetav;
+  su2double rhos, Ef, Ee, Ev;
   su2double RuSI          = UNIVERSAL_GAS_CONSTANT;
   su2double Ru            = 1000.0*RuSI;
   su2double T             = config->GetTemperature_FreeStream();
@@ -2764,8 +2768,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   nElStates               = config->GetnElStates();
   hf                      = config->GetEnthalpy_Formation();
   thetav                  = config->GetCharVibTemp();
-  thetae                  = config->GetCharElTemp();
-  g                       = config->GetElDegeneracy();
+  const auto& thetae                  = config->GetCharElTemp();
+  const auto& g                       = config->GetElDegeneracy();
   ionization = config->GetIonization();
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -3436,9 +3440,9 @@ void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   su2double **Jacobian_b, **DubDu;
   su2double rhoCvtr, rhoCvve, rho_el, RuSI, Ru;
   su2double rho, cs, P, rhoE, rhoEve, conc, Beta;
-  su2double *u, *Ms, *dPdU;
+  su2double *u, *dPdU;
 
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
@@ -3458,7 +3462,7 @@ void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 
   /*--- Load parameters from the config class ---*/
-  Ms = config->GetMolar_Mass();
+  const su2double *Ms = config->GetMolar_Mass();
 
   /*--- Rename for convenience ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
@@ -3580,7 +3584,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double *U_domain,*U_infty;
 
   /*--- Set booleans from configuration parameters ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
   //bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
   //                   (config->GetKind_Solver() == DISC_ADJ_RANS))
@@ -3712,7 +3716,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
       alpha, aa, bb, cc, dd, Area, UnitaryNormal[3];
 
-  bool implicit             = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
@@ -3977,18 +3981,19 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_container,
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iVar, iDim, iSpecies,iEl, nHeavy, nEl, *nElStates;
+  unsigned short iVar, iDim, iSpecies,iEl, nHeavy, nEl;
+  const unsigned short *nElStates;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Pressure, P_Exit, Velocity[3], Temperature, Tve,
       Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
       Area, UnitaryNormal[3];
-  su2double *Ms, *xi, *thetav, **thetae, *Tref, **g, *hf, RuSI, Ru;
-  su2double Ef, Ev, Ee;
+  const su2double *Ms, *xi, *thetav, *Tref, *hf;
+  su2double Ef, Ev, Ee, RuSI, Ru;
   su2double thoTve, exptv, thsqr, Cvvs, Cves;
   su2double num, num2, num3, denom;
 
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
-  bool implicit           = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement      = config->GetGrid_Movement();
   bool viscous            = config->GetViscous();
   bool gravity            = config->GetGravityForce();
@@ -4042,8 +4047,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
   Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
   hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-  thetae    = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
+  const auto& thetae    = config->GetCharElTemp();
+  const auto& g         = config->GetElDegeneracy();
   nElStates = config->GetnElStates();
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -4350,21 +4355,23 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, *Mass_Frac, Velocity2, soundspeed;
   su2double Gas_Constant = config->GetGas_ConstantND();
 
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *Ms, *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev;
-  unsigned short nEl, nHeavy, *nElStates;
+  const su2double *Ms, *xi, *Tref, *hf, *thetav;
+  su2double rhos, Ef, Ee, Ev;
+  unsigned short nEl, nHeavy;
+  const unsigned short *nElStates;
   Tref                    = config->GetRefTemperature();
   Ms                      = config->GetMolar_Mass();
   xi                      = config->GetRotationModes();
   nElStates               = config->GetnElStates();
   hf                      = config->GetEnthalpy_Formation();
   thetav                  = config->GetCharVibTemp();
-  thetae                  = config->GetCharElTemp();
-  g                       = config->GetElDegeneracy();
+  const auto& thetae                  = config->GetCharElTemp();
+  const auto& g                       = config->GetElDegeneracy();
   cout << "This doesnt work" << endl;
   su2double denom = 0.0, conc   = 0.0, rhoCvtr = 0.0, num = 0.0,
       rhoE  = 0.0, rhoEve = 0.0;
@@ -4562,7 +4569,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   su2double *V_outlet, *V_domain;
   su2double *U_outlet, *U_domain;
 
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -4651,7 +4658,7 @@ void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
   su2double *U_time_nM1, *U_time_n, *U_time_nP1;
   su2double Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 
-  bool implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool Grid_Movement = config->GetGrid_Movement();
 
   /*--- loop over points ---*/
@@ -4960,9 +4967,9 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-  solver[MESH_0][NEMO_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][NEMO_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][NEMO_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_NEMO_SYS, false);
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -4972,16 +4979,16 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
       for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh-1][NEMO_SOL]->GetNodes()->GetSolution(Point_Fine);
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
         }
       }
-      solver[iMesh][NEMO_SOL]->GetNodes()->SetSolution(iPoint,Solution);
+      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
     }
-    solver[MESH_0][NEMO_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-    solver[MESH_0][NEMO_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-    solver[iMesh][NEMO_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_NEMO_SYS, false);
+    solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+    solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false); 
   }
 
   /*--- Update the geometry for flows on dynamic meshes ---*/

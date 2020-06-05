@@ -118,7 +118,7 @@ public:
    * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOEulerVariable(su2double val_pressure, su2double *val_massfrac,
+  CNEMOEulerVariable(su2double val_pressure, const su2double *val_massfrac,
                      su2double *val_mach, su2double val_temperature,
                      su2double val_temperature_ve, unsigned long npoint,
                      unsigned long ndim,

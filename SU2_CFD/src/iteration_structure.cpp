@@ -967,8 +967,8 @@ void CNEMOIteration::Preprocess(COutput *output,
   /*--- This is done only in the first block subiteration.---*/
   /*--- From then on, the solver reuses the partially converged solution obtained in the previous subiteration ---*/
   if( fsi  && ( OuterIter == 0 ) ){
-    solver[val_iZone][val_iInst][MESH_0][NEMO_SOL]->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
-  }
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
+  } 
 
  }
 
@@ -1002,10 +1002,10 @@ void CNEMOIteration::Iterate(COutput *output,
   switch( config[val_iZone]->GetKind_Solver() ) {
 
     case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
-      config[val_iZone]->SetGlobalParam(NEMO_EULER, RUNTIME_NEMO_SYS); break;
+      config[val_iZone]->SetGlobalParam(NEMO_EULER, RUNTIME_FLOW_SYS); break; 
 
     case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(NEMO_NAVIER_STOKES, RUNTIME_NEMO_SYS); break;
+      config[val_iZone]->SetGlobalParam(NEMO_NAVIER_STOKES, RUNTIME_FLOW_SYS); break; 
 
    // case NEMO_RANS: case DISC_ADJ_NEMO_RANS:
      // config[val_iZone]->SetGlobalParam(NEMO_RANS, RUNTIME_NEMO_SYS); break;
@@ -1014,8 +1014,8 @@ void CNEMOIteration::Iterate(COutput *output,
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
-  integration[val_iZone][val_iInst][NEMO_SOL]->MultiGrid_Iteration(geometry, solver, numerics,
-                                                                   config, RUNTIME_NEMO_SYS, val_iZone, val_iInst);
+  integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics,
+                                                                   config, RUNTIME_FLOW_SYS, val_iZone, val_iInst); 
 
 //  if ((config[val_iZone]->GetKind_Solver() == NEMO_RANS ||
 //       config[val_iZone]->GetKind_Solver() == DISC_ADJ_NEMO_RANS) && !frozen_visc) {
@@ -1047,7 +1047,7 @@ void CNEMOIteration::Iterate(COutput *output,
    with under-relaxation approach. ---*/
 
   if (config[val_iZone]->GetCFL_Adapt() == YES) {
-    solver[val_iZone][val_iInst][MESH_0][NEMO_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone]);
   } 
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -1081,8 +1081,8 @@ void CNEMOIteration::Update(COutput *output,
     /*--- Update dual time solver on all mesh levels ---*/
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      integration[val_iZone][val_iInst][NEMO_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][NEMO_SOL], config[val_iZone], iMesh);
-      integration[val_iZone][val_iInst][NEMO_SOL]->SetConvergence(false);
+      integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][FLOW_SOL], config[val_iZone], iMesh);
+      integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
 
     /*--- Update dual time solver for the turbulence model ---*/
@@ -1234,14 +1234,14 @@ void CNEMOIteration::Solve(COutput *output,
            config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
 
     /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
-    integration[val_iZone][INST_0][NEMO_SOL]->SetConvergence(false);
+    integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
   }
 
 }
 
 bool CNEMOIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
 
-  CSolver* NEMO_solver= solver[NEMO_SOL];
+  CSolver* NEMO_solver= solver[FLOW_SOL];
 
   bool fixed_cl_convergence = NEMO_solver->FixedCL_Convergence(config, output->GetConvergence());
 

@@ -40,7 +40,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
   unsigned short iVar, iSpecies;
 
   /*--- Assign booleans from CConfig ---*/
-  implicit   = config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT;
+  implicit   = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -137,10 +137,10 @@ void CSource_NEMO::GetKeqConstants(su2double *A, unsigned short val_Reaction,
                                    CConfig *config) {
   unsigned short ii, iSpecies, iIndex, tbl_offset, pwr;
   su2double N;
-  su2double *Ms;
   su2double tmp1, tmp2;
+
   /*--- Acquire database constants from CConfig ---*/
-  Ms = config->GetMolar_Mass();
+  const su2double *Ms = config->GetMolar_Mass();
   config->GetChemistryEquilConstants(RxnConstantTable, val_Reaction);
 
   /*--- Calculate mixture number density ---*/
@@ -194,13 +194,10 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
   unsigned short nHeavy, nEl, nEve;
-  int ***RxnMap;
   su2double T_min, epsilon;
   su2double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
   su2double rho, rhoCvtr, rhoCvve, P;
-  su2double *Ms, fwdRxn, bkwRxn, alpha, RuSI, Ru;
-  su2double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
-  su2double *hf, *Tref, *xi;
+  su2double fwdRxn, bkwRxn, alpha, RuSI, Ru;
   su2double af, bf, ab, bb, coeff;
   su2double dThf, dThb;
 
@@ -243,15 +240,15 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
 
   /*--- Acquire parameters from the configuration file ---*/
   nReactions = config->GetnReactions();
-  Ms         = config->GetMolar_Mass();
-  RxnMap     = config->GetReaction_Map();
-  hf         = config->GetEnthalpy_Formation();
-  xi         = config->GetRotationModes();
-  Tref       = config->GetRefTemperature();
-  Tcf_a      = config->GetRxnTcf_a();
-  Tcf_b      = config->GetRxnTcf_b();
-  Tcb_a      = config->GetRxnTcb_a();
-  Tcb_b      = config->GetRxnTcb_b();
+  const su2double *Ms         = config->GetMolar_Mass();
+  const su2double *hf         = config->GetEnthalpy_Formation();
+  const su2double *xi         = config->GetRotationModes();
+  const su2double *Tref       = config->GetRefTemperature();
+  const su2double *Tcf_a      = config->GetRxnTcf_a();
+  const su2double *Tcf_b      = config->GetRxnTcf_b();
+  const su2double *Tcb_a      = config->GetRxnTcb_a();
+  const su2double *Tcb_b      = config->GetRxnTcb_b();
+  const auto& RxnMap = config->GetReaction_Map();
 
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
 
@@ -288,12 +285,12 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
     for (ii = 0; ii < 3; ii++) {
 
       /*--- Reactants ---*/
-      iSpecies = RxnMap[iReaction][0][ii];
+      iSpecies = RxnMap(iReaction,0,ii);
       if ( iSpecies != nSpecies)
         fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
 
       /*--- Products ---*/
-      jSpecies = RxnMap[iReaction][1][ii];
+      jSpecies = RxnMap(iReaction,1,ii);
       if (jSpecies != nSpecies) {
         bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
       }
@@ -304,7 +301,7 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
     for (ii = 0; ii < 3; ii++) {
 
       /*--- Products ---*/
-      iSpecies = RxnMap[iReaction][1][ii];
+      iSpecies = RxnMap(iReaction,1,ii);
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -312,7 +309,7 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
       }
 
       /*--- Reactants ---*/
-      iSpecies = RxnMap[iReaction][0][ii];
+      iSpecies = RxnMap(iReaction,0,ii);
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -365,12 +362,12 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
       for (ii = 0; ii < 3; ii++) {
 
         /*--- Products ---*/
-        iSpecies = RxnMap[iReaction][1][ii];
+        iSpecies = RxnMap(iReaction,1,ii);
         if (iSpecies != nSpecies)
           betak[iSpecies]++;
 
         /*--- Reactants ---*/
-        iSpecies = RxnMap[iReaction][0][ii];
+        iSpecies = RxnMap(iReaction,0,ii);
         if (iSpecies != nSpecies)
           alphak[iSpecies]++;
       }
@@ -402,7 +399,7 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
       for (ii = 0; ii < 3; ii++) {
 
         /*--- Products ---*/
-        iSpecies = RxnMap[iReaction][1][ii];
+        iSpecies = RxnMap(iReaction,1,ii);
         if (iSpecies != nSpecies) {
           for (iVar = 0; iVar < nVar; iVar++) {
             val_Jacobian_i[iSpecies][iVar] +=
@@ -421,7 +418,7 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
         }
 
         /*--- Reactants ---*/
-        iSpecies = RxnMap[iReaction][0][ii];
+        iSpecies = RxnMap(iReaction,0,ii);
         if (iSpecies != nSpecies) {
           for (iVar = 0; iVar < nVar; iVar++) {
             val_Jacobian_i[iSpecies][iVar] -=
@@ -460,7 +457,6 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
   su2double Qtv, taunum, taudenom;
   su2double mu, A_sr, B_sr, num, denom;
   su2double Cs, sig_s;
-  su2double *Ms, *thetav;
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -487,8 +483,8 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
   nEv     = nSpecies+nDim+1;
 
   /*--- Read from CConfig ---*/
-  Ms        = config->GetMolar_Mass();
-  thetav    = config->GetCharVibTemp();
+  const su2double *Ms        = config->GetMolar_Mass();
+  const su2double *thetav    = config->GetCharVibTemp();
 
   /*--- Calculate mole fractions ---*/
   N    = 0.0;

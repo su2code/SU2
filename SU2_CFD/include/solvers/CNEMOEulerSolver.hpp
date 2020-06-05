@@ -54,9 +54,10 @@ protected:
   Energy_ve_Inf,       /*!< \brief Vib.-el. free stream energy. */
   Pressure_Inf,	       /*!< \brief Free stream pressure. */
   *Velocity_Inf,	   /*!< \brief Free stream flow velocity. */
-  *MassFrac_Inf,       /*!< \brief Free stream species mass fraction. */
   Temperature_Inf,     /*!< \brief Trans.-rot. free stream temperature. */
   Temperature_ve_Inf;  /*!< \brief Vib.-el. free stream temperature. */
+  const su2double *MassFrac_Inf;      /*!< \brief Free stream species mass fraction. */
+  
 
   su2double
   *lowerlimit,         /*!< \brief contains lower limits for conserved variables. */
