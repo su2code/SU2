@@ -183,7 +183,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
-  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0) && (!Output)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
         SetPrimitive_Gradient_GG(geometry, config, true); break;
