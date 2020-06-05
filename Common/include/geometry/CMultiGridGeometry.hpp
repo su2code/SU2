@@ -55,11 +55,6 @@ public:
   CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CMultiGridGeometry(void) override;
-
-  /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
    * \param[in] CVPoint - Control volume to be agglomerated.
    * \param[in] marker_seed - Marker of the seed.

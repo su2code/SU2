@@ -2423,15 +2423,11 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
         /*--- Set the MPI communication ---*/
 
-        SU2_OMP_MASTER
-        {
-          solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-          solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
-          solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_OLD);
-          solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_OLD);
-        }
-        SU2_OMP_BARRIER
+        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_OLD);
+        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_OLD);
 
       }
 
@@ -3605,21 +3601,17 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  SU2_OMP_MASTER
-  {
-    /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+  /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
 
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-    }
-
-    /*--- MPI parallelization ---*/
-
-    InitiateComms(geometry, config, MAX_EIGENVALUE);
-    CompleteComms(geometry, config, MAX_EIGENVALUE);
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
   }
-  SU2_OMP_BARRIER
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, MAX_EIGENVALUE);
+  CompleteComms(geometry, config, MAX_EIGENVALUE);
 
 }
 
@@ -3673,17 +3665,13 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
   if (isPeriodic) {
     /*--- Correct the Laplacian and sensor values across any periodic boundaries. ---*/
 
-    SU2_OMP_MASTER
-    {
-      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
 
-        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-      }
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
     }
-    SU2_OMP_BARRIER
 
     /*--- Set final pressure switch for each point ---*/
 
@@ -3692,17 +3680,13 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
       nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
 
-  SU2_OMP_MASTER
-  {
-    /*--- MPI parallelization ---*/
+  /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-    CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
 
-    InitiateComms(geometry, config, SENSOR);
-    CompleteComms(geometry, config, SENSOR);
-  }
-  SU2_OMP_BARRIER
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }
 
@@ -3751,12 +3735,8 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     nodes->SetSensor(iPoint, Ducros_i);
   }
 
-  SU2_OMP_MASTER
-  {
-    InitiateComms(geometry, config, SENSOR);
-    CompleteComms(geometry, config, SENSOR);
-  }
-  SU2_OMP_BARRIER
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }
 
@@ -4520,13 +4500,13 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
   }
   SU2_OMP_BARRIER
 
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   SU2_OMP_MASTER
   {
-    /*--- MPI solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION);
-    CompleteComms(geometry, config, SOLUTION);
-
     /*--- Compute the root mean square residual ---*/
 
     SetResidual_RMS(geometry, config);
@@ -4685,18 +4665,18 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   SU2_OMP_MASTER
   {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-
-    /*--- MPI solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION);
-    CompleteComms(geometry, config, SOLUTION);
-
     /*--- Compute the root mean square residual ---*/
 
     SetResidual_RMS(geometry, config);
@@ -4755,7 +4735,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
 
 }
 
-void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
@@ -4764,7 +4744,7 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
                              *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
-void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -4783,7 +4763,7 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
-void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
   const auto& primitives = nodes->GetPrimitive();
@@ -6846,7 +6826,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       if (dynamic_grid) {
           ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
       }
-  
+
       for (iDim = 0; iDim < nDim; iDim++)
         V_reflected[iDim+1] = nodes->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
 
@@ -11123,12 +11103,10 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
    accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
 
-  SU2_OMP_MASTER
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
-  SU2_OMP_BARRIER
 
 }
 
@@ -11499,8 +11477,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
-  SU2_OMP_MASTER
-  {
+  SU2_OMP_MASTER {
 
   /*--- Skip coordinates ---*/
 
@@ -11592,6 +11569,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Update the geometry for flows on deforming meshes ---*/
 
@@ -11638,9 +11617,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
-  } // end SU2_OMP_MASTER, preprocessing is thread-safe.
-  SU2_OMP_BARRIER
-
   /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
    *    after it loads its variables (they are needed to compute flow primitives). ---*/
   if (!turbulent) {
@@ -11665,21 +11641,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
 
-    SU2_OMP_MASTER
-    {
-      solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    }
-    SU2_OMP_BARRIER
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     if (!turbulent) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
   }
-
-  /*--- Go back to single threaded execution. ---*/
-  SU2_OMP_MASTER
-  {
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy. ---*/
   if (dual_time && config->GetGrid_Movement() && !config->GetDeform_Mesh() &&
@@ -11687,6 +11655,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     Restart_OldGeometry(geometry[MESH_0], config);
   }
 
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;

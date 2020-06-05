@@ -146,12 +146,8 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 
   /*--- MPI the new interpolated solution ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
-  }
-  SU2_OMP_BARRIER
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
 
 }
 
@@ -201,11 +197,7 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
-    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
-  }
-  SU2_OMP_BARRIER
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
 
 }

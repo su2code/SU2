@@ -811,7 +811,9 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Compute cell center of gravity ---*/
 
   if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-  geometry[MESH_0]->SetCoord_CG();
+  SU2_OMP_PARALLEL {
+    geometry[MESH_0]->SetCoord_CG();
+  }
 
   /*--- Create the control volume structures ---*/
 
