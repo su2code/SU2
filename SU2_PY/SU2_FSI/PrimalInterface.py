@@ -817,8 +817,8 @@ class Interface:
         cd = FluidSolver.Get_DragCoeff()
         
         # --- Fluid solver call for FSI subiteration --- #
-        print('TO add a check:  if rigid (fsi iter =1)or if not fixed cl mode this part needs not to be executes')
-        if nFSIIter ==1:
+        self.MPIPrint('TO add a check:  if rigid (fsi iter =1)or if not fixed cl mode this part needs not to be executes')
+        if nFSIIter !=1:
            self.MPIPrint('\n##### If fixed Cl mode and not rigid case, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
            self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
            FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
