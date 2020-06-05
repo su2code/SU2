@@ -227,6 +227,11 @@ public:
                    CNumerics *numerics,
                    CConfig *config) final;
 
+  void BC_Expression(CGeometry *geometry, CSolver **solver,
+                     CNumerics *conv_numerics, CNumerics *visc_numerics,
+                     CConfig *config,
+                     unsigned short val_marker) final;
+
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.

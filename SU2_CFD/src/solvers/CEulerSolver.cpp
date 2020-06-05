@@ -576,6 +576,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   SolverScope["CUR_TIME"]  = su2double(config->GetPhysicalTime()*config->GetTime_Ref());
   SolverScope["TIME_STEP"] = su2double(config->GetTime_Step());
   SolverScope["TIME_ITER"] = su2double(config->GetTimeIter());
+  SolverScope["INNER_ITER"] = su2double(config->GetInnerIter());;
   SolverScope["DENSITY"]            = 0.0;
   SolverScope["VELOCITY_MAGNITUDE"] = 0.0;
   SolverScope["TOTAL_PRESSURE"]     = 0.0;
@@ -585,6 +586,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   SolverScope["FLOW_DIR_Z"] = 0.0;
   SolverScope["PRESSURE"] = 0.0;
   SolverScope["CP"] = 0.0;
+  SolverScope["AVG_MASSFLOW"] = 0.0;
   SolverScope["TYPE"] = "OUTLET_PRESSURE";
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
     CExpressionParser parser (&SolverScope);
@@ -6637,9 +6639,11 @@ void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
   SolverScope["CUR_TIME"]  = su2double(config->GetTimeIter()*config->GetTime_Step());
   SolverScope["TIME_STEP"] = su2double(config->GetTime_Step());
   SolverScope["TIME_ITER"] = su2double(config->GetTimeIter());
+  SolverScope["INNER_ITER"] = su2double(config->GetInnerIter());
   SolverScope["CP"] = GetFluidModel()->GetCp();
   for (unsigned int iMarker = 0; iMarker < nMarker; iMarker++){
     if (config->GetMarker_All_KindBC(iMarker) == EXPRESSION_BOUNDARY){
+      // SolverScope["TYPE"] = expressionBCType[iMarker];
       std::string MarkerTag = config->GetMarker_All_TagBound(iMarker);
       CExpressionParser & parser = BCExpressions[MarkerTag];
 
@@ -6659,6 +6663,7 @@ void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
         const su2double VelMag     = sqrt(VelSquared);
         const su2double TotalPressure = 0.5*nodes->GetDensity(iPoint)*nodes->GetVelocity2(iPoint) + Pressure;
         const su2double TotalTemperature = Temperature + 0.5*VelSquared/GetFluidModel()->GetCp();
+        const su2double AvgMassFlow = config->GetSurface_MassFlow(iMarker);
 
         SolverScope["DENSITY"]            = Density;
         SolverScope["VELOCITY_MAGNITUDE"] = VelMag;
@@ -6672,6 +6677,7 @@ void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
         } else {
           SolverScope["FLOW_DIR_Z"] = 0.0;
         }
+        SolverScope["AVG_MASSFLOW"] = AvgMassFlow;
         parser.Eval();
 
         if (newBCType == "OUTLET_PRESSURE"){
@@ -6698,8 +6704,8 @@ void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
   }
 }
 
-void CEulerSolver::BC_Expression(CGeometry *geometry, CSolver** solver, CNumerics *visc_numerics,
-                                 CNumerics *conv_numerics, CConfig *config, unsigned short val_marker){
+void CEulerSolver::BC_Expression(CGeometry *geometry, CSolver** solver, CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
   if (expressionBCType[val_marker] == "OUTLET_PRESSURE"){
     BC_Outlet(geometry, solver, conv_numerics, visc_numerics, config, val_marker);
   } else if (expressionBCType[val_marker] == "INLET_TOTAL_CONDITIONS"){
@@ -9323,7 +9329,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       BC_Inlet_Massflow(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
       break;
     default:
-      SU2_MPI::Error("Unknow inlet BC type", CURRENT_FUNCTION);
+      SU2_MPI::Error("Unknown inlet BC type", CURRENT_FUNCTION);
       break;
   }
 }

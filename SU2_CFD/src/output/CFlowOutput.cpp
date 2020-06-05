@@ -457,10 +457,12 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
     string markerName = config->GetMarker_Analyze_TagBound(iMarker_Analyze);
+    unsigned short markerTag = config->GetMarker_CfgFile_TagBound(markerName);
 
     su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
     SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", MassFlow, markerName);
+    config->SetSurface_MassFlow(markerTag, MassFlow);
     Tot_Surface_MassFlow += MassFlow;
 
     su2double Mach = Surface_Mach_Total[iMarker_Analyze];

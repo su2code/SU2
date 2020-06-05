@@ -954,7 +954,7 @@ public:
                                    unsigned short val_marker) { }
 
   virtual void BC_Expression(CGeometry *geometry, CSolver **solver,
-                            CNumerics *visc_numerics, CNumerics *conv_numerics,
+                            CNumerics *conv_numerics, CNumerics *visc_numerics,
                             CConfig *config,
                             unsigned short val_marker) { };
   /*!
@@ -4739,6 +4739,8 @@ public:
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   virtual void SetUnsteadyBCs(CConfig *config, CGeometry* geometry) {}
+
+  inline virtual std::vector<std::string> GetExpressionBCType() const { return expressionBCType; }
 
 protected:
   /*!

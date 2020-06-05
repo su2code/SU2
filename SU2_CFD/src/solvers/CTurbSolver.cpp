@@ -404,6 +404,18 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+void CTurbSolver::BC_Expression(CGeometry *geometry, CSolver** solver, CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+  expressionBCType = solver[FLOW_SOL]->GetExpressionBCType();
+  if (expressionBCType[val_marker] == "OUTLET_PRESSURE"){
+    BC_Outlet(geometry, solver, conv_numerics, visc_numerics, config, val_marker);
+  } else if (expressionBCType[val_marker] == "INLET_TOTAL_CONDITIONS"){
+    BC_Inlet(geometry, solver, conv_numerics, visc_numerics, config, val_marker);
+  } else if (expressionBCType[val_marker] == "INLET_MASSFLOW"){
+    BC_Inlet(geometry, solver, conv_numerics, visc_numerics, config, val_marker);
+  } 
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
