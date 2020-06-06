@@ -7470,7 +7470,7 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
 #endif
   }
 
-  k = min(k, n - 1);
+  k = min(k, m - 1);
   Eigen::VectorXd y = LUSolve(H.block(0,0,k+1,k+1), beta.head(k+1), k);
   Eigen::VectorXd xxx = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
   b += RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
@@ -7734,7 +7734,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
   }
   unsigned long IterLinSol;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 150, &m_loc[0], &fst_row[0]);
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
