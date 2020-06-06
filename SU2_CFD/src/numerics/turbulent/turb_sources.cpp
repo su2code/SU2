@@ -908,6 +908,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
          pw = 20.*alfa_blended*beta_star*Density_i*TurbVar_i[1]*a1/(VorticityMag_i*F2_i);
        }
      }
+     else {
+       pw = 0.;
+     }
    }
     
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
