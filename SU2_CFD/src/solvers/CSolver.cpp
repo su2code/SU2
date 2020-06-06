@@ -5442,8 +5442,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
                 //--- Reset hessian if first volume node detected
                 if(counter == 0) {
                   for(iMetr = 0; iMetr < nMetr; iMetr++) {
-//                    hess[i+iMetr] = base_nodes->GetHessian(iPoint, iVar, iMetr);
-                    hess[i+iMetr] = 0.;
+                    hess[i+iMetr] = base_nodes->GetHessian(iPoint, iVar, iMetr);
+//                    hess[i+iMetr] = 0.;
                   }// iMetr
                 }// if counter
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
@@ -5457,8 +5457,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
             for(iVar = 0; iVar < nVar; iVar++){
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
-//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter+1));
-                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
+                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter+1));
+//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
               }// iMetr
             }// iVar
           }// if counter
