@@ -833,7 +833,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    for (iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-   su2double delta[3][3] = {{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}};
+   const su2double delta[3][3] = {{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}};
+   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -854,16 +855,18 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
        }
      }
      pk += Eddy_Viscosity_i*factor;
+     
+     const su2double lim = (Eddy_Viscosity_i > eps) ? 1.0 : 0.0;
 //     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
      if ((pk > 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
 //     if (pk > 0) {
        if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-         Jacobian_i[0][0] = (factor/TurbVar_i[1]-2./3.*diverg)*Volume;
-         Jacobian_i[0][1] = -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+         Jacobian_i[0][0] = (lim*factor/TurbVar_i[1]-2./3.*diverg)*Volume;
+         Jacobian_i[0][1] = -lim*factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
          Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
        }
        else {
-         Jacobian_i[0][0] = (factor*a1/(VorticityMag_i*F2_i)-2./3.*diverg)*Volume;
+         Jacobian_i[0][0] = (lim*factor*a1/(VorticityMag_i*F2_i)-2./3.*diverg)*Volume;
        }
      }
      else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
@@ -892,8 +895,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = alfa_blended*Density_i*max(pw,0.0);
    }
    else {
-//     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
-     pw = max(pw, 0.0);
+     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
+//     pw = max(pw, 0.0);
    }
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
