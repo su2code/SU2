@@ -2017,7 +2017,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   if (pk > 0.) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       factor = 0.0;
-      factor = -(2./3.)*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+//      factor = -(2./3.)*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
       if (pk <= 20.*betastar*r*k*omega) {
         factor += -(2./3.)*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim);
         factor += -(2./3.)*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
