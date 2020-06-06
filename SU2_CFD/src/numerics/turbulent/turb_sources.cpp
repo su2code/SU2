@@ -796,7 +796,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   unsigned short iDim, jDim;
   su2double alfa_blended, beta_blended;
-  su2double diverg, pk, pw, zeta;
+  su2double diverg, pk = 0., pw = 0., zeta;
 //  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
 //                                Vorticity_i[1]*Vorticity_i[1] +
 //                                Vorticity_i[2]*Vorticity_i[2]);
@@ -862,9 +862,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
          Jacobian_i[0][0] = (factor/TurbVar_i[1]-2./3.*diverg)*Volume;
          Jacobian_i[0][1] = -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
          Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
+         
+         pw = alfa_blended*Density_i*factor - 2.0/3.0*Density_i*TurbVar_i[1]*diverg;
        }
        else {
          Jacobian_i[0][0] = (factor*a1/(VorticityMag_i*F2_i)-2./3.*diverg)*Volume;
+         
+         pw = alfa_blended*Density_i*factor - 2.0/3.0*Density_i*a1/(VorticityMag_i*F2_i)*diverg;
        }
      }
      else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
@@ -872,9 +876,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
        Jacobian_i[0][1] = 20.0*beta_star*TurbVar_i[0]*Volume;
        if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
          Jacobian_i[1][1] = 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
+         
+         pw = 20.*alfa_blended*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[1];
        }
        else {
          Jacobian_i[1][1] = 20.0*alfa_blended*beta_star*VorticityMag_i*F2_i/a1*Volume;
+         
+         pw = 20.*alfa_blended*beta_star*Density_i*TurbVar_i[1]*a1/(VorticityMag_i*F2_i);
        }
      }
 //     if (TurbVar_i[1] > VorticityMag_i*F2_i/a1 && pw > 0.0) {
@@ -892,25 +900,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    else {
 //     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
 //     pw = max(pw, 0.0);
-     if ((pk > 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-       if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-         pw = alfa_blended*Density_i*factor - 2.0/3.0*Density_i*TurbVar_i[1]*diverg;
-       }
-       else {
-         pw = alfa_blended*Density_i*factor - 2.0/3.0*Density_i*a1/(VorticityMag_i*F2_i)*diverg;
-       }
-     }
-     else if(pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-       if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-         pw = 20.*alfa_blended*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[1];
-       }
-       else {
-         pw = 20.*alfa_blended*beta_star*Density_i*TurbVar_i[1]*a1/(VorticityMag_i*F2_i);
-       }
-     }
-     else {
-       pw = 0.;
-     }
    }
     
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
