@@ -358,6 +358,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
 void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   
+  AD_BEGIN_PASSIVE
+  
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       for (unsigned short jVar = 0; jVar < nVar; jVar++) {
@@ -392,4 +394,6 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
       }
     }
   }
+  
+  AD_END_PASSIVE
 }
