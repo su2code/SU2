@@ -66,7 +66,17 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDiscAdjMultizoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
-  ../src/iteration_structure.cpp \
+  ../src/iteration/CIteration.cpp \
+  ../src/iteration/CIterationFactory.cpp \
+  ../src/iteration/CAdjFluidIteration.cpp \
+  ../src/iteration/CDiscAdjFluidIteration.cpp \
+  ../src/iteration/CDiscAdjHeatIteration.cpp \
+  ../src/iteration/CDiscAdjFEAIteration.cpp \
+  ../src/iteration/CFEAIteration.cpp \
+  ../src/iteration/CFEMFluidIteration.cpp \
+  ../src/iteration/CFluidIteration.cpp \
+  ../src/iteration/CHeatIteration.cpp \
+  ../src/iteration/CTurboIteration.cpp \
   ../src/numerics/CNumerics.cpp \
   ../src/numerics/template.cpp \
   ../src/numerics/transition.cpp \
