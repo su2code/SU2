@@ -771,7 +771,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Viscous contribution ---*/
       
-      if (Vn_Infty < 0.0) {
+//      if (Vn_Infty < 0.0) {
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                                 geometry->node[iPoint]->GetCoord());
         visc_numerics->SetNormal(Normal);
@@ -815,7 +815,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
         CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
         CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
         
-      }
+//      }
     }
   }
 
