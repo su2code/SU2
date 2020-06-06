@@ -32,6 +32,7 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonDriver.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -147,31 +148,24 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-#include <Eigen/Dense>
-
 void CDiscAdjSinglezoneDriver::Run() {
-
-  using namespace Eigen;
 
   const bool steady = !config->GetTime_Domain();
 
   const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
   const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
-  const size_t nCols = 20;
+  const size_t nSamples = 20;
 
-  size_t nRows = 0;
+  auto nRows = 0ul;
   for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
       nRows += nPoint*solver->GetnVar();
   }
-
   const auto nVar = nRows/nPoint;
-  const auto nRowsDomain = nPointDomain*nVar;
 
-  MatrixXd X(nRows, nCols), Y(nRows, nCols), H;
-  X.col(0).setZero(); // initial solution
-  VectorXd R(nRows);
+  CQuasiNewtonDriver<passivedouble> QNDriver(nSamples, nPoint, nVar, nPointDomain);
+
 
   for (size_t iter = 0; iter < nAdjoint_Iter; iter++) {
 
@@ -216,59 +210,24 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     if (StopCalc) break;
 
-    auto iCol = min<int>(iter, nCols-1);
-
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
       if (!(solver && solver->GetAdjoint())) continue;
-
       const auto& sol = solver->GetNodes()->GetSolution();
-
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < sol.cols(); ++iVar)
-          Y(iPoint*nVar+offset+iVar, iCol) = SU2_TYPE::GetValue(sol(iPoint,iVar));
-      }
+          QNDriver.logFPresult(iPoint, offset+iVar, SU2_TYPE::GetValue(sol(iPoint,iVar)));
       offset += sol.cols();
     }
 
-    if (!iCol) continue;
-
-    /*--- Current residual. ---*/
-    R = Y.col(iCol) - X.col(iCol);
-
-    /*--- Use history to "predict" the interface values. ---*/
-    /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1). ---*/
-    H = (Y-X).block(0,1,nRows,iCol)-(Y-X).leftCols(iCol);
-
-    MatrixXd tmp = H.topRows(nRowsDomain).transpose()*H.topRows(nRowsDomain), HTH(iCol,iCol);
-    VectorXd C = H.topRows(nRowsDomain).transpose()*R.topRows(nRowsDomain), HTR(iCol);
-    SelectMPIWrapper<double>::W::Allreduce(tmp.data(), HTH.data(), iCol*iCol,
-                                           MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SelectMPIWrapper<double>::W::Allreduce(C.data(), HTR.data(), iCol,
-                                           MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    C = HTH.ldlt().solve(-HTR);
-
-    /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1). ---*/
-    H = Y.block(0,1,nRows,iCol)-Y.leftCols(iCol);
-
-    /*--- Check if we need to discard data (shift left to delete oldest data). ---*/
-    if (iCol == nCols-1) {
-      X.leftCols(nCols-1) = X.rightCols(nCols-1);
-      Y.leftCols(nCols-1) = Y.rightCols(nCols-1);
-      iCol--;
-    }
-
-    /*--- Improved estimate for the solution. ---*/
-    X.col(iCol+1) = Y.col(iCol) + H*C;
+    QNDriver.compute();
 
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
       if (!(solver && solver->GetAdjoint())) continue;
-
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          solver->GetNodes()->SetSolution(iPoint, iVar, X(iPoint*nVar+offset+iVar, iCol+1));
-      }
+          solver->GetNodes()->SetSolution(iPoint, iVar, QNDriver(iPoint,offset+iVar));
       offset += solver->GetnVar();
     }
 

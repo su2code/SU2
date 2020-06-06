@@ -28,6 +28,8 @@
 #include "../../include/toolboxes/CSymmetricMatrix.hpp"
 #include "../../include/mpi_structure.hpp"
 
+using namespace std;
+
 #if defined(HAVE_MKL)
 #include "mkl.h"
 #ifndef HAVE_LAPACK
