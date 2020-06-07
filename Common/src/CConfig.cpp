@@ -8047,21 +8047,21 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   }
 }
 
-su2double* CConfig::GetPeriodicRotCenter(string val_marker) {
+const su2double* CConfig::GetPeriodicRotCenter(string val_marker) const {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
   return Periodic_RotCenter[iMarker_PerBound];
 }
 
-su2double* CConfig::GetPeriodicRotAngles(string val_marker) {
+const su2double* CConfig::GetPeriodicRotAngles(string val_marker) const {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
   return Periodic_RotAngles[iMarker_PerBound];
 }
 
-su2double* CConfig::GetPeriodicTranslation(string val_marker) {
+const su2double* CConfig::GetPeriodicTranslation(string val_marker) const {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
