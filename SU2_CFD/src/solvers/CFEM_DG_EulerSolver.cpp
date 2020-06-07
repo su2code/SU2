@@ -28,9 +28,9 @@
 
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../include/thermophysical/CIdealGas.hpp"
-#include "../../include/thermophysical/CVanDerWaalsGas.hpp"
-#include "../../include/thermophysical/CPengRobinson.hpp"
+#include "../../include/fluid/CIdealGas.hpp"
+#include "../../include/fluid/CVanDerWaalsGas.hpp"
+#include "../../include/fluid/CPengRobinson.hpp"
 
 #define SIZE_ARR_NORM 8
 

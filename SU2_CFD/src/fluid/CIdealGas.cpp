@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/thermophysical/CIdealGas.hpp"
+#include "../../include/fluid/CIdealGas.hpp"
 
 CIdealGas::CIdealGas(su2double gamma, su2double R, bool CompEntropy) : CFluidModel() {
   Gamma = gamma;

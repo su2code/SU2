@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../thermophysical/CFluidModel.hpp"
+#include "../fluid/CFluidModel.hpp"
 #include "../task_definition.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../sgs_model.hpp"

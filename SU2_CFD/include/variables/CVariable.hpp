@@ -36,7 +36,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../thermophysical/CFluidModel.hpp"
+#include "../fluid/CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/C2DContainer.hpp"
 
 
