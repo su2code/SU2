@@ -55,6 +55,11 @@
 /*--- The generic start of OpenMP constructs. ---*/
 #define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
 
+/*--- Detect SIMD support (version 4+, after Jul 2013). ---*/
+#if _OPENMP >= 201307
+#define HAVE_OMP_SIMD
+#endif
+
 #else // Compile without OpenMP
 
 /*--- Disable pragmas to quiet compilation warnings. ---*/
@@ -110,6 +115,11 @@ inline void omp_destroy_lock(omp_lock_t*){}
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
 
+/*--- Disable some unsupported features. ---*/
+#ifndef HAVE_OMP_SIMD
+#undef SU2_OMP_SIMD
+#define SU2_OMP_SIMD
+#endif
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 
@@ -156,7 +166,7 @@ inline size_t computeStaticChunkSize(size_t totalWork,
 template<class T, class U>
 void parallelCopy(size_t size, const T* src, U* dst)
 {
-  SU2_OMP_FOR_STAT(4096)
+  SU2_OMP_FOR_STAT(2048)
   for(size_t i=0; i<size; ++i) dst[i] = src[i];
 }
 
@@ -169,7 +179,7 @@ void parallelCopy(size_t size, const T* src, U* dst)
 template<class T, class U>
 void parallelSet(size_t size, T val, U* dst)
 {
-  SU2_OMP_FOR_STAT(4096)
+  SU2_OMP_FOR_STAT(2048)
   for(size_t i=0; i<size; ++i) dst[i] = val;
 }
 

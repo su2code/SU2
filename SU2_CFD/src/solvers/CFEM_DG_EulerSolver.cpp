@@ -2673,7 +2673,7 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
 
    /* Get the rotation angles from config for this marker. */
    const unsigned short pInd = markersRotPer[i];
-   su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
+   auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
 
     /*--- Determine the rotation matrix from the donor to the halo elements.
           This is the transpose of the rotation matrix from the halo to the
