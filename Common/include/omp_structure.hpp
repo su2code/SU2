@@ -55,11 +55,6 @@
 /*--- The generic start of OpenMP constructs. ---*/
 #define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
 
-/*--- Detect SIMD support (version 4+, after Jul 2013). ---*/
-#if _OPENMP >= 201307
-#define HAVE_OMP_SIMD
-#endif
-
 #else // Compile without OpenMP
 
 /*--- Disable pragmas to quiet compilation warnings. ---*/
@@ -98,10 +93,19 @@ inline void omp_set_lock(omp_lock_t*){}
 inline void omp_unset_lock(omp_lock_t*){}
 inline void omp_destroy_lock(omp_lock_t*){}
 
-#endif
+#endif // end OpenMP detection
 
-/*--- Convenience macros (do not use excessive nesting of macros). ---*/
-#define SU2_OMP_SIMD SU2_OMP(simd)
+/*--- Detect SIMD support (version 4+, after Jul 2013). ---*/
+#ifdef _OPENMP
+#if _OPENMP >= 201307
+#define HAVE_OMP_SIMD
+#define SU2_OMP_SIMD PRAGMIZE(omp simd)
+#else
+#define SU2_OMP_SIMD
+#endif
+#endif // end SIMD detection
+
+/*--- Convenience macros (do not use excessive nesting). ---*/
 
 #define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_ATOMIC SU2_OMP(atomic)
@@ -114,12 +118,6 @@ inline void omp_destroy_lock(omp_lock_t*){}
 
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
-
-/*--- Disable some unsupported features. ---*/
-#ifndef HAVE_OMP_SIMD
-#undef SU2_OMP_SIMD
-#define SU2_OMP_SIMD
-#endif
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 

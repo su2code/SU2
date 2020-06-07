@@ -33,6 +33,7 @@
 #pragma once
 
 #include "../omp_structure.hpp"
+#include "../mpi_structure.hpp"
 #include "CSymmetricMatrix.hpp"
 
 /*!
@@ -46,24 +47,22 @@
  */
 template<class Scalar_t>
 class CQuasiNewtonDriver {
-  static_assert(std::is_floating_point<Scalar_t>::value,"");
-
 public:
   using Scalar = Scalar_t;
-  using Index = typename su2matrix<Scalar_t>::Index;
+  using Index = typename su2matrix<Scalar>::Index;
+  static_assert(std::is_floating_point<Scalar>::value,"");
 
 private:
-  enum: size_t {BLOCK_SIZE = 1024}; /*!< \brief Loop tiling parameter. */
-
+  enum: size_t {BLOCK_SIZE = 1024};     /*!< \brief Loop tiling parameter. */
   std::vector<su2matrix<Scalar> > X, R; /*!< \brief Input and residual history of the FP. */
-  su2matrix<Scalar> corr;               /*!< \brief Correction applied to the FP's results. */
+  su2matrix<Scalar> corr;               /*!< \brief Correction to the natural FP result. */
   su2vector<Scalar> mat, rhs, sol;      /*!< \brief Matrix, rhs, and solution of the normal equations. */
   Index nSample = 0, iSample = 0;       /*!< \brief Max num, and current sample. */
   Index nPtDomain = 0;                  /*!< \brief Local size of the history, considered in dot products. */
 
   void shiftHistoryLeft() {
     for (Index i = 1; i < nSample; ++i) {
-      /*--- We swap instead of moving to re-use the memory of the first sample.
+      /*--- Swap instead of moving to re-use the memory of the first sample.
        * This is why X and R are not stored as contiguous blocks of mem. ---*/
       std::swap(X[i-1], X[i]);
       std::swap(R[i-1], R[i]);
@@ -76,7 +75,7 @@ private:
     rhs.resize(iSample) = Scalar(0);
 
     /*--- Size for the dot products. ---*/
-    const auto end = min<Index>(nPtDomain,corr.rows())*corr.cols();
+    const auto end = std::min<Index>(nPtDomain,corr.rows())*corr.cols();
 
     /*--- Tiled part of the loop. ---*/
     Index begin = 0;
@@ -174,54 +173,61 @@ public:
   }
 
   /*!
+   * \brief Discard all history, keeping the current solution.
+   */
+  void reset() { std::swap(X[0], X[iSample]); iSample = 0; }
+
+  /*!
    * \brief Store the result of the fixed point iteration for given point and variable index.
    */
-  void logFPresult(Index iPt, Index iVar, Scalar val) {
-    /*--- Convert to residual. ---*/
-    R[iSample](iPt,iVar) = val - X[iSample](iPt,iVar);
-  }
+  void logFPresult(Index iPt, Index iVar, Scalar val) { corr(iPt,iVar) = val; }
+
+  /*!
+   * \brief Access entire structure that stores the current FP result.
+   */
+  su2matrix<Scalar>& getFPresult() { return corr; }
+  const su2matrix<Scalar>& getFPresult() const { return corr; }
 
   /*!
    * \brief Access the current solution approximation.
    */
-  const Scalar& operator() (Index iPt, Index iVar) const { return X[iSample](iPt,iVar); }
   Scalar& operator() (Index iPt, Index iVar) { return X[iSample](iPt,iVar); }
+  const Scalar& operator() (Index iPt, Index iVar) const { return X[iSample](iPt,iVar); }
 
   /*!
    * \brief Compute a new approximation.
    * \note To be used after logging the FP result for all points and variables.
    */
   void compute() {
-    /*--- Not enough history to build LS problem yet. ---*/
-    if (!iSample) {
-      SU2_OMP_SIMD
-      for (Index i = 0; i < corr.size(); ++i)
-        X[1].data()[i] = X[0].data()[i] + R[0].data()[i];
-      iSample++;
-      return;
+    /*--- Compute FP residual, clear correction. ---*/
+    SU2_OMP_SIMD
+    for (Index i = 0; i < corr.size(); ++i) {
+      R[iSample].data()[i] = corr.data()[i] - X[iSample].data()[i];
+      corr.data()[i] = Scalar(0);
     }
 
-    /*--- Solve the normal equations. ---*/
-    computeNormalEquations();
-    CSymmetricMatrix pseudoInv(iSample);
-    for (Index i = 0, k = 0; i < iSample; ++i)
-      for (Index j = 0; j <= i; ++j)
-        pseudoInv(i,j) = mat(k++);
-    pseudoInv.Invert(true);
-    sol.resize(iSample);
-    pseudoInv.MatVecMult(rhs.data(), sol.data());
+    if (iSample > 0) {
+      /*--- Solve the normal equations. ---*/
+      computeNormalEquations();
+      CSymmetricMatrix pseudoInv(iSample);
+      for (Index i = 0, k = 0; i < iSample; ++i)
+        for (Index j = 0; j <= i; ++j)
+          pseudoInv(i,j) = mat(k++);
+      pseudoInv.Invert(true);
+      sol.resize(iSample);
+      pseudoInv.MatVecMult(rhs.data(), sol.data());
 
-    /*--- Compute correction. ---*/
-    corr = Scalar(0);
-    for (Index k = 0; k < sol.size(); ++k) {
-      const auto x1 = X[k+1].data();
-      const auto r1 = R[k+1].data();
-      const auto x0 = X[k].data();
-      const auto r0 = R[k].data();
-      SU2_OMP_SIMD
-      for (Index i = 0; i < corr.size(); ++i) {
-        Scalar dy = r1[i]-r0[i] + x1[i]-x0[i];
-        corr.data()[i] += sol(k) * dy;
+      /*--- Compute correction, cleared before for less trunc. error. ---*/
+      for (Index k = 0; k < sol.size(); ++k) {
+        const auto x1 = X[k+1].data();
+        const auto r1 = R[k+1].data();
+        const auto x0 = X[k].data();
+        const auto r0 = R[k].data();
+        SU2_OMP_SIMD
+        for (Index i = 0; i < corr.size(); ++i) {
+          Scalar dy = r1[i]-r0[i] + x1[i]-x0[i];
+          corr.data()[i] += sol(k) * dy;
+        }
       }
     }
 
@@ -231,14 +237,10 @@ public:
       iSample--;
     }
 
-    /*--- Apply correction to last iterate. ---*/
-    auto xnew = X[iSample+1].data();
-    const auto xold = X[iSample].data();
-    const auto rold = R[iSample].data();
+    /*--- Set new solution. ---*/
     SU2_OMP_SIMD
     for (Index i = 0; i < corr.size(); ++i)
-      xnew[i] = xold[i] + rold[i] + corr.data()[i];
-
-    iSample++;
+      corr.data()[i] += R[iSample].data()[i] + X[iSample].data()[i];
+    std::swap(X[++iSample], corr);
   }
 };
