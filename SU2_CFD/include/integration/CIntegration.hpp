@@ -175,5 +175,17 @@ public:
   virtual void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                     CNumerics ******numerics_container, CConfig **config,
                                     unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  virtual void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
+                                         CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem,
+                                         su2double *monitor) { };
 
 };

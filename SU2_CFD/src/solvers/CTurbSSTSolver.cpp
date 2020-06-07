@@ -331,7 +331,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
-  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
+//  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
+  solver_container[FLOW_SOL]->Preprocessing(geometry, solver_container, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   SetEddyViscosity(geometry, solver_container);
   
   /*--- Store variables from the mean flow solver ---*/
