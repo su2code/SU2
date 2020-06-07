@@ -846,7 +846,7 @@ def main():
     rot_naca0012.cfg_dir   = "rotating/naca0012"
     rot_naca0012.cfg_file  = "rot_NACA0012.cfg"
     rot_naca0012.test_iter = 25
-    rot_naca0012.test_vals = [-2.613840, 2.932659, -0.078921, 0.002265] #last 4 columns
+    rot_naca0012.test_vals = [-2.657250, 2.889308, -0.079043, 0.002261] #last 4 columns
     rot_naca0012.su2_exec  = "SU2_CFD"
     rot_naca0012.timeout   = 1600
     rot_naca0012.tol       = 0.00001
