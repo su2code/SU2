@@ -2009,7 +2009,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 //  const su2double lim      = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
 //  const su2double omegalim = min(1./omega,a1/(VorticityMag*F1));
   
-  const su2double lim      = 1.0
+  const su2double lim      = 1.0;
   const su2double omegalim = 1./omega;
 
   //--- Momentum weights
