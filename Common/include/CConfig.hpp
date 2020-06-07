@@ -820,9 +820,9 @@ private:
   su2double* CpPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
   su2double* MuPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
   su2double* KtPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
-  array<double, N_POLY_COEFFS> CpPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
-  array<double, N_POLY_COEFFS>MuPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
-  array<double, N_POLY_COEFFS>KtPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
+  array<su2double, N_POLY_COEFFS>MuPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
+  array<su2double, N_POLY_COEFFS>KtPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
@@ -1016,9 +1016,9 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  array<double, N_POLY_COEFFS> default_cp_polycoeffs{0.0};     /*!< \brief Array for specific heat polynomial coefficients. */
-  array<double, N_POLY_COEFFS> default_mu_polycoeffs{0.0};     /*!< \brief Array for viscosity polynomial coefficients. */
-  array<double, N_POLY_COEFFS> default_kt_polycoeffs{0.0};     /*!< \brief Array for thermal conductivity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_cp_polycoeffs{0.0};     /*!< \brief Array for specific heat polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_mu_polycoeffs{0.0};     /*!< \brief Array for viscosity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_kt_polycoeffs{0.0};     /*!< \brief Array for thermal conductivity polynomial coefficients. */
   su2double *ExtraRelFacGiles;          /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
