@@ -264,46 +264,46 @@ void computeHessiansGreenGauss(CSolver* solver,
 
     /*--- Add boundary fluxes. ---*/
 
-    for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
-    {
-      if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-          (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
-      {
-        /*--- Work is shared in inner loop as two markers
-         *    may try to update the same point. ---*/
-
-        SU2_OMP_FOR_STAT(OMP_MAX_CHUNK)
-        for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
-        {
-          size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-          auto node = geometry.node[iPoint];
-
-          /*--- Halo points do not need to be considered. ---*/
-
-          if (!node->GetDomain()) continue;
-
-          su2double volume = node->GetVolume() + node->GetPeriodicVolume();
-
-          const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
-
-          for (size_t jDim = 0; jDim < nDim; ++jDim)
-          {
-            for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-            {
-              su2double flux = gradient(iPoint,iVar,jDim) / volume;
-
-              for (size_t iDim = 0; iDim < nDim; ++iDim)
-              {
-                size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
-                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
-                if (iDim != jDim) flux *= 0.5;
-                hessian(iPoint, iVar, ind) -= flux * area[iDim];
-              }
-            }
-          }
-        }
-      }
-    }
+//    for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+//    {
+//      if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+//          (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+//      {
+//        /*--- Work is shared in inner loop as two markers
+//         *    may try to update the same point. ---*/
+//
+//        SU2_OMP_FOR_STAT(OMP_MAX_CHUNK)
+//        for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
+//        {
+//          size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+//          auto node = geometry.node[iPoint];
+//
+//          /*--- Halo points do not need to be considered. ---*/
+//
+//          if (!node->GetDomain()) continue;
+//
+//          su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+//
+//          const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+//
+//          for (size_t jDim = 0; jDim < nDim; ++jDim)
+//          {
+//            for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+//            {
+//              su2double flux = gradient(iPoint,iVar,jDim) / volume;
+//
+//              for (size_t iDim = 0; iDim < nDim; ++iDim)
+//              {
+//                size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+//                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+//                if (iDim != jDim) flux *= 0.5;
+//                hessian(iPoint, iVar, ind) -= flux * area[iDim];
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
 
   } // end SU2_OMP_PARALLEL
 
