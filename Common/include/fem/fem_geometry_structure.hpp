@@ -174,7 +174,7 @@ public:
  * \author E. van der Weide
  * \version 7.0.5 "Blackbird"
  */
-class CSurfaceElementFEM;   // Forward declaration to avoid problems.
+struct CSurfaceElementFEM;   // Forward declaration to avoid problems.
 struct CSortBoundaryFaces {
  /*!
   * \brief Operator used for the comparison.
