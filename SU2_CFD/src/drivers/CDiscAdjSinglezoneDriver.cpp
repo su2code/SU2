@@ -152,22 +152,17 @@ void CDiscAdjSinglezoneDriver::Run() {
 
   const bool steady = !config->GetTime_Domain();
 
-  const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
-  const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
-  const size_t nSamples = 20;
+  CQuasiNewtonDriver<passivedouble> QNDriver;
+  if (config->GetnQuasiNewtonSamples() > 1) {
+    QNDriver.resize(config->GetnQuasiNewtonSamples(),
+                    geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+                    GetTotalNumberOfVariables(ZONE_0,true),
+                    geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
 
-  auto nRows = 0ul;
-  for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-    auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
-      nRows += nPoint*solver->GetnVar();
+    GetAllSolutions(ZONE_0, true, QNDriver.solution());
   }
-  const auto nVar = nRows/nPoint;
 
-  CQuasiNewtonDriver<passivedouble> QNDriver(nSamples, nPoint, nVar, nPointDomain);
-
-
-  for (size_t iter = 0; iter < nAdjoint_Iter; iter++) {
+  for (auto iter = 0ul; iter < nAdjoint_Iter; iter++) {
 
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
      *--- of the previous iteration. The values are passed to the AD tool.
@@ -210,25 +205,12 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     if (StopCalc) break;
 
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-      if (!(solver && solver->GetAdjoint())) continue;
-      const auto& sol = solver->GetNodes()->GetSolution();
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < sol.cols(); ++iVar)
-          QNDriver.logFPresult(iPoint, offset+iVar, SU2_TYPE::GetValue(sol(iPoint,iVar)));
-      offset += sol.cols();
-    }
+    /*--- Correct the solution with the quasi-Newton approach. ---*/
 
-    QNDriver.compute();
-
-    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-      if (!(solver && solver->GetAdjoint())) continue;
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          solver->GetNodes()->SetSolution(iPoint, iVar, QNDriver(iPoint,offset+iVar));
-      offset += solver->GetnVar();
+    if (config->GetnQuasiNewtonSamples() > 1) {
+      GetAllSolutions(ZONE_0, true, QNDriver.FPresult());
+      QNDriver.compute();
+      SetAllSolutions(ZONE_0, true, QNDriver.solution());
     }
 
   }

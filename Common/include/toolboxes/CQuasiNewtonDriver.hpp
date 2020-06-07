@@ -41,9 +41,9 @@
  * \note The implementation prioritizes storage, the LS problem is solved
  * via the normal equations as that is easy to make parallel over MPI, it
  * may however be unstable with large sample sizes (compared to QR decomp).
- * Usage: Allocate, set the initial solution (operator (i,j), default is 0),
- * run the FP, log its result ("logFPresult"), compute new solution, use it
- * as the input of the FP, run the FP, etc.
+ * Usage: Allocate, store the initial solution (operator (i,j), default is 0),
+ * run the FP, store its result ("FPresult"), compute new solution, use it
+ * as the new input of the FP, run the FP, etc.
  */
 template<class Scalar_t>
 class CQuasiNewtonDriver {
@@ -57,11 +57,11 @@ private:
   std::vector<su2matrix<Scalar> > X, R; /*!< \brief Input and residual history of the FP. */
   su2matrix<Scalar> corr;               /*!< \brief Correction to the natural FP result. */
   su2vector<Scalar> mat, rhs, sol;      /*!< \brief Matrix, rhs, and solution of the normal equations. */
-  Index nSample = 0, iSample = 0;       /*!< \brief Max num, and current sample. */
+  Index iSample = 0;                    /*!< \brief Current sample index. */
   Index nPtDomain = 0;                  /*!< \brief Local size of the history, considered in dot products. */
 
   void shiftHistoryLeft() {
-    for (Index i = 1; i < nSample; ++i) {
+    for (Index i = 1; i < X.size(); ++i) {
       /*--- Swap instead of moving to re-use the memory of the first sample.
        * This is why X and R are not stored as contiguous blocks of mem. ---*/
       std::swap(X[i-1], X[i]);
@@ -157,15 +157,14 @@ public:
    * \param[in] nptdomain - Local size (< npt), if 0 (default), MPI parallelization is skipped.
    */
   void resize(Index nsample, Index npt, Index nvar, Index nptdomain = 0) {
-    assert(nptdomain <= npt);
-    assert(nsample > 1);
+    if (nptdomain > npt || nsample < 2)
+      SU2_MPI::Error("Invalid quasi-Newton parameters", CURRENT_FUNCTION);
     iSample = 0;
-    nSample = nsample;
     nPtDomain = nptdomain? nptdomain : npt;
     corr.resize(npt,nvar);
     X.clear();
     R.clear();
-    for (Index i = 0; i < nSample; ++i) {
+    for (Index i = 0; i < nsample; ++i) {
       X.emplace_back(npt,nvar);
       R.emplace_back(npt,nvar);
     }
@@ -178,25 +177,26 @@ public:
   void reset() { std::swap(X[0], X[iSample]); iSample = 0; }
 
   /*!
-   * \brief Store the result of the fixed point iteration for given point and variable index.
+   * \brief Access the current fixed-point result.
+   * \note Use these to STORE the result of running the FP.
    */
-  void logFPresult(Index iPt, Index iVar, Scalar val) { corr(iPt,iVar) = val; }
-
-  /*!
-   * \brief Access entire structure that stores the current FP result.
-   */
-  su2matrix<Scalar>& getFPresult() { return corr; }
-  const su2matrix<Scalar>& getFPresult() const { return corr; }
+  su2matrix<Scalar>& FPresult() { return corr; }
+  const su2matrix<Scalar>& FPresult() const { return corr; }
+  Scalar& FPresult(Index iPt, Index iVar) { return corr(iPt,iVar); }
+  const Scalar& FPresult(Index iPt, Index iVar) const { return corr(iPt,iVar); }
 
   /*!
    * \brief Access the current solution approximation.
+   * \note Use these, after calling compute, to GET the new FP solution estimate.
    */
+  su2matrix<Scalar>& solution() { return X[iSample]; }
+  const su2matrix<Scalar>& solution() const { return X[iSample]; }
   Scalar& operator() (Index iPt, Index iVar) { return X[iSample](iPt,iVar); }
   const Scalar& operator() (Index iPt, Index iVar) const { return X[iSample](iPt,iVar); }
 
   /*!
    * \brief Compute a new approximation.
-   * \note To be used after logging the FP result for all points and variables.
+   * \note To be used after storing the FP result.
    */
   void compute() {
     /*--- Compute FP residual, clear correction. ---*/
@@ -232,7 +232,7 @@ public:
     }
 
     /*--- Check for need to shift left. ---*/
-    if (iSample == nSample-1) {
+    if (iSample+1 == X.size()) {
       shiftHistoryLeft();
       iSample--;
     }
