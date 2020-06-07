@@ -38,7 +38,7 @@
 #include "../../include/thermophysical/CPolynomialViscosity.hpp"
 #include "../../include/thermophysical/CSutherland.hpp"
 
-void CFluidModel::SetLaminarViscosityModel(CConfig* config) {
+void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
     case CONSTANT_VISCOSITY:
       LaminarViscosity = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND()));
@@ -57,7 +57,7 @@ void CFluidModel::SetLaminarViscosityModel(CConfig* config) {
   }
 }
 
-void CFluidModel::SetThermalConductivityModel(CConfig* config) {
+void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
   switch (config->GetKind_ConductivityModel()) {
     case CONSTANT_CONDUCTIVITY:
       if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
