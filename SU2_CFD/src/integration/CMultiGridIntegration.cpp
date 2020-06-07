@@ -818,10 +818,12 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
      solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
 
      /*--- Solve the poisson equation (pressure correction) ---*/
+     for (iCorr = 0; iCorr < nCorr; iCorr++) {
      config[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS);
      CurrentGridIteration(geometry, solver, numerics, config,
                   iMesh, RUNTIME_POISSON_SYS,
                   Iteration, iZone, iInst); 
+     }
      
      /*--- Correct pressure and velocities ---*/
       solver[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone]);

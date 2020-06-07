@@ -1496,8 +1496,6 @@ unsigned long CPBIncEulerSolver::SetPrimitive_Variables(CSolver **solver_contain
 
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 
-    nodes->SetMassFluxZero(iPoint);
-
   }
 
   return nonPhysicalPoints;
@@ -3601,8 +3599,9 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     }
   }
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     AddResMassFlux(nodes->GetMassFlux(iPoint)*nodes->GetMassFlux(iPoint));
+  }
 
   InitiateComms(geometry, config, MASS_FLUX);
   CompleteComms(geometry, config, MASS_FLUX);

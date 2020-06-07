@@ -365,7 +365,7 @@ public:
   
   inline void SubtractMassFlux(unsigned long iPoint, su2double val_MassFlux) {MassFlux(iPoint) -= val_MassFlux; }
   
-  inline su2double GetMassFlux(unsigned long iPoint) { return MassFlux(iPoint); }
+  inline su2double GetMassFlux(unsigned long iPoint) const { return MassFlux(iPoint); }
 
 };
 

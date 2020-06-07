@@ -93,7 +93,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_Poisson::ComputeResidual(const CConf
   su2double *MomCoeffxNormal = new su2double[nDim];
   su2double *MomCoeffxNormalCorrected = new su2double[nDim];
   su2double  Mean_GradPoissonVar_Edge[MAXNDIM], GradPoisson[MAXNDIM];
-  su2double  Mean_GradPoissonVar_Face[MAXNDIM][MAXNDIM];
+  su2double  Mean_GradPoissonVar_Face[MAXNDIM][MAXNDIM], Num, Den;
    
   Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
 
@@ -105,15 +105,39 @@ CNumerics::ResidualType<> CAvgGradCorrected_Poisson::ComputeResidual(const CConf
    }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-
-  dist_ij_2 = 0; proj_vector_ij = 0;
+  /*--- Minimum correction approach. ---*/
+  /*dist_ij_2 = 0; proj_vector_ij = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;*/
+
+  /*--- Over relaxed approach. ---*/
+  dist_ij_2 = 0; proj_vector_ij = 0;
+  Num = 0.0; Den = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    Num += MomCoeffxNormal[iDim]*MomCoeffxNormal[iDim];
+    Den += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
+  }
+  if (Den == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = Num/Den;
+  
+  /*--- Orthogonal correction approach. ---*/
+  /*dist_ij_2 = 0; proj_vector_ij = 0;
+  Num = 0.0; Den = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    Num += MomCoeffxNormal[iDim]*MomCoeffxNormal[iDim];
+  }
+  Den = dist_ij_2;
+  if (Den == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = sqrt(Num/Den);*/
 
   /*--- Correct the face gradient for odd-even decoupling ---*/
   /*--- Steps are 

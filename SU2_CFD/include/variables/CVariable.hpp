@@ -2738,7 +2738,7 @@ public:
   
   inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
   
-  inline virtual su2double GetMassFlux(unsigned long iPoint) { return 0.0; }
+  inline virtual su2double GetMassFlux(unsigned long iPoint) const { return 0.0; }
   
   inline virtual bool GetStrongBC(unsigned long iPoint) { return false; }
   
