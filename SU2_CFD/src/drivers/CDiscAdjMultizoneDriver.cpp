@@ -31,6 +31,7 @@
 #include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonDriver.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -163,6 +164,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  vector<CQuasiNewtonDriver<passivedouble> > QNDriver(nZone);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -176,6 +178,15 @@ void CDiscAdjMultizoneDriver::Run() {
      *    correctly as the OF gradient will overwrite the solution. ---*/
 
     Set_BGSSolution_k_To_Solution(iZone);
+
+    /*--- Prepare quasi-Newton drivers. ---*/
+
+    if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
+      QNDriver[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(),
+                             geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
+                             GetTotalNumberOfVariables(iZone, true),
+                             geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
+    }
   }
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
@@ -248,7 +259,15 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
       bool eval_transfer = false;
-      bool no_restart = (iOuterIter > 0) || !config_container[iZone]->GetRestart();
+      const bool restart = config_container[iZone]->GetRestart();
+      const bool no_restart = (iOuterIter > 0) || !restart;
+
+      /*--- When restarting, we start using the QN driver only after the first iteration. ---*/
+
+      if (QNDriver[iZone].size() && restart && (iOuterIter==1)) {
+        QNDriver[iZone].reset();
+        GetAllSolutions(iZone, true, QNDriver[iZone].solution());
+      }
 
       for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
@@ -282,6 +301,13 @@ void CDiscAdjMultizoneDriver::Run() {
          *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
 
         Set_SolutionOld_To_Solution(iZone);
+
+        /*--- Use QN driver to improve solution. ---*/
+
+        if (QNDriver[iZone].size()) {
+          GetAllSolutions(iZone, true, QNDriver[iZone].FPresult());
+          SetAllSolutions(iZone, true, QNDriver[iZone].compute());
+        }
 
         /*--- Print out the convergence data to screen and history file. ---*/
 

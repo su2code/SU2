@@ -207,10 +207,9 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Correct the solution with the quasi-Newton approach. ---*/
 
-    if (config->GetnQuasiNewtonSamples() > 1) {
+    if (QNDriver.size()) {
       GetAllSolutions(ZONE_0, true, QNDriver.FPresult());
-      QNDriver.compute();
-      SetAllSolutions(ZONE_0, true, QNDriver.solution());
+      SetAllSolutions(ZONE_0, true, QNDriver.compute());
     }
 
   }

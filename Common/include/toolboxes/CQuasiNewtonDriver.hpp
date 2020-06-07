@@ -137,14 +137,10 @@ private:
   }
 
 public:
-  /*!
-   * \brief Default construction without allocation.
-   */
+  /*! \brief Default construction without allocation. */
   CQuasiNewtonDriver() = default;
 
-  /*!
-   * \brief Construction with allocation, see "resize".
-   */
+  /*! \brief Construction with allocation, see "resize". */
   CQuasiNewtonDriver(Index nsample, Index npt, Index nvar, Index nptdomain = 0) {
     resize(nsample, npt, nvar, nptdomain);
   }
@@ -171,9 +167,10 @@ public:
     X[0] = Scalar(0);
   }
 
-  /*!
-   * \brief Discard all history, keeping the current solution.
-   */
+  /*! \brief Size of the object, the number of samples. */
+  Index size() const { return X.size(); }
+
+  /*! \brief Discard all history, keeping the current solution. */
   void reset() { std::swap(X[0], X[iSample]); iSample = 0; }
 
   /*!
@@ -195,10 +192,10 @@ public:
   const Scalar& operator() (Index iPt, Index iVar) const { return X[iSample](iPt,iVar); }
 
   /*!
-   * \brief Compute a new approximation.
+   * \brief Compute and return a new approximation.
    * \note To be used after storing the FP result.
    */
-  void compute() {
+  const su2matrix<Scalar>& compute() {
     /*--- Compute FP residual, clear correction. ---*/
     SU2_OMP_SIMD
     for (Index i = 0; i < corr.size(); ++i) {
@@ -242,5 +239,7 @@ public:
     for (Index i = 0; i < corr.size(); ++i)
       corr.data()[i] += R[iSample].data()[i] + X[iSample].data()[i];
     std::swap(X[++iSample], corr);
+
+    return solution();
   }
 };
