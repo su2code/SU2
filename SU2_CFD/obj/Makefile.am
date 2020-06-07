@@ -49,11 +49,10 @@ noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
 libSU2Core_sources = ../src/definition_structure.cpp \
-  ../src/fluid_model.cpp \
-  ../src/fluid_model_pig.cpp \
-  ../src/fluid_model_pvdw.cpp \
-  ../src/fluid_model_ppr.cpp \
-  ../src/fluid_model_inc.cpp \
+  ../src/fluid/CFluidModel.cpp \
+  ../src/fluid/CIdealGas.cpp \
+  ../src/fluid/CPengRobinson.cpp \
+  ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
@@ -173,7 +172,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDisplacementsInterface.cpp \
   ../src/interfaces/fsi/CFlowTractionInterface.cpp \
   ../src/interfaces/fsi/CDiscAdjFlowTractionInterface.cpp \
-  ../src/transport_model.cpp \
   ../src/variables/CFEABoundVariable.cpp \
   ../src/variables/CRadVariable.cpp \
   ../src/variables/CRadP1Variable.cpp \
