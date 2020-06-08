@@ -5483,7 +5483,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
               }
             }
           }// if flow
-          else if (Kind_Solver == RUNTIME_FLOW_SYS &&
+          else if (Kind_Solver == RUNTIME_TURB_SYS &&
                   ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))) {
             for(iMetr = 0; iMetr < nMetr; iMetr++) {
               base_nodes->SetHessian(iPoint, 0, iMetr, 0.0);
