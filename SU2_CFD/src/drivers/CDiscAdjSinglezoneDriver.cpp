@@ -162,13 +162,13 @@ void CDiscAdjSinglezoneDriver::Run() {
     if (TimeIter != 0) GetAllSolutions(ZONE_0, true, QNDriver);
   }
 
-  for (auto iter = 0ul; iter < nAdjoint_Iter; iter++) {
+  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
 
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
      *--- of the previous iteration. The values are passed to the AD tool.
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetInnerIter(iter);
+    config->SetInnerIter(Adjoint_Iter);
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
@@ -200,7 +200,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     if (steady) {
       iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
-                        config_container, iter, false, ZONE_0, INST_0);
+                        config_container, Adjoint_Iter, false, ZONE_0, INST_0);
     }
 
     if (StopCalc) break;

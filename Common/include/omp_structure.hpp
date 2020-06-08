@@ -100,10 +100,11 @@ inline void omp_destroy_lock(omp_lock_t*){}
 #if _OPENMP >= 201307
 #define HAVE_OMP_SIMD
 #define SU2_OMP_SIMD PRAGMIZE(omp simd)
-#else
+#endif
+#endif
+#ifndef SU2_OMP_SIMD
 #define SU2_OMP_SIMD
 #endif
-#endif // end SIMD detection
 
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
