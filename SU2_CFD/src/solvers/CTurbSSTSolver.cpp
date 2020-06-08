@@ -1952,8 +1952,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   omega = varTur->GetPrimitive(iPoint, 1);
   
   mu  = varFlo->GetLaminarViscosity(iPoint);
-  mut = varFlo->GetEddyViscosity(iPoint);
-//  mut = max(r*k/omega, eps);
+//  mut = varFlo->GetEddyViscosity(iPoint);
+  mut = max(r*k/omega, eps);
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
@@ -2006,33 +2006,33 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                       Vorticity[1]*Vorticity[1] +
                                       Vorticity[2]*Vorticity[2]);
   
-  const su2double lim      = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
-  const su2double omegalim = min(1./omega,a1/(VorticityMag*F1));
+//  const su2double lim      = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+//  const su2double omegalim = min(1./omega,a1/(VorticityMag*F1));
   
-//  const su2double lim      = 1.0;
-//  const su2double omegalim = 1./omega;
+  const su2double lim      = 1.0;
+  const su2double omegalim = 1./omega;
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
   su2double factor = 0.0;
-  if (pk > 0.) {
+//  if (pk > 0.) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       factor = 0.0;
 //      factor += -(2./3.)*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-      if (pk <= 20.*betastar*r*k*omega) {
+//      if (pk <= 20.*betastar*r*k*omega) {
         factor += -(2./3.)*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim);
         factor += -(2./3.)*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-      }
+//      }
       for (jDim = 0; jDim < nDim; ++jDim) {
 //        factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
-        if (pk <= 20.*betastar*r*k*omega){
+//        if (pk <= 20.*betastar*r*k*omega){
           factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
           factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
-        }
+//        }
       }
       TmpWeights[iDim+1] += factor;
     }
-  }
+//  }
 
   //--- k and omega weights
   factor = 0.0;
@@ -2095,21 +2095,21 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   weights[2][nVarFlo+1] += TmpWeights[nVarFlo+1];
 
   //--- Zeroth-order terms due to production
-  if (pk > 0.) {
-    if (pk <= 20.*betastar*r*k*omega) {
+//  if (pk > 0.) {
+//    if (pk <= 20.*betastar*r*k*omega) {
       weights[0][nVarFlo+0] += (2./3.)*divu*varAdjTur->GetSolution(iPoint,0);
 //      weights[0][nVarFlo+1] += (2./3.)*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
-    }
-    else if (pk > 20.*betastar*r*k*omega) {
-      weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
-//                             + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
-      weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
-      weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
-//                             - 40.0*lim*alfa*betastar*omega*varAdjTur->GetSolution(iPoint,1)
-//                             - 20.0*(1.-lim)*alfa*betastar*VorticityMag*F1/a1*varAdjTur->GetSolution(iPoint,1);
-    }
+//    }
+//    else if (pk > 20.*betastar*r*k*omega) {
+//      weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
+////                             + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
+//      weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
+//      weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
+////                             - 40.0*lim*alfa*betastar*omega*varAdjTur->GetSolution(iPoint,1)
+////                             - 20.0*(1.-lim)*alfa*betastar*VorticityMag*F1/a1*varAdjTur->GetSolution(iPoint,1);
+//    }
     weights[0][nVarFlo+1] += (2./3.)*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
-  }
+//  }
   
   //--- Zeroth-order terms due to dissipation
   weights[0][0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
