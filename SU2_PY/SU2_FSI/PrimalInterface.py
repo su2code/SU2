@@ -34,7 +34,7 @@ import numpy as np
 import shutil
 import os
 import scipy.io
-from FSI_tools import readConfig
+from SU2_FSI.FSI_tools import readConfig
 
 # ----------------------------------------------------------------------
 #  FSI Interface Class
