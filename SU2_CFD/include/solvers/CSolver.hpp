@@ -325,6 +325,13 @@ public:
   /*!
    * \brief Correct the gradient at symmetry planes.
    */
+  void CorrectWallGradient(CGeometry *geometry,
+                           CConfig *config,
+                           unsigned short Kind_Solver);
+  
+  /*!
+   * \brief Correct the gradient at symmetry planes.
+   */
   void CorrectSymmPlaneHessian(CGeometry *geometry,
                                CConfig *config,
                                unsigned short Kind_Solver);

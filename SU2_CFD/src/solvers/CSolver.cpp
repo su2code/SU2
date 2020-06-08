@@ -3134,6 +3134,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
                              *config, solution, 0, nVar, gradient);
   
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
+  CorrectWallGradient(geometry, config, Kind_Solver);
   
   auto& hessian = base_nodes->GetHessian();
   
@@ -5383,6 +5384,64 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Grad_Symm[iVar];
   delete [] Grad_Symm;
+}
+
+void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
+  unsigned short iVar, iDim, iMarker;
+  unsigned long iVertex;
+  
+  su2double Area,
+            *Normal     = new su2double[nDim],
+            *UnitNormal = new su2double[nDim];
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++)
+            Normal[iDim] = -Normal[iDim];
+
+          //--- Compute unit normal.
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = -Normal[iDim]/Area;
+          
+          if (Kind_Solver == RUNTIME_FLOW_SYS) {
+            for (iVar = 1; iVar < nDim+1; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
+                const su2double grad_dot_n = grad * UnitNormal[iDim];
+                base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
+              }
+            }
+          }
+          else if (Kind_Solver == RUNTIME_TURB_SYS) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
+              const su2double grad_dot_n = grad * UnitNormal[iDim];
+              base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
+            }
+          }
+          
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+  
+  //--- communicate the gradient values via MPI
+  InitiateComms(geometry, config, ANISO_GRADIENT);
+  CompleteComms(geometry, config, ANISO_GRADIENT);
+  
+  //--- Free locally allocated memory
+  delete [] Normal;
+  delete [] UnitNormal;
 }
 
 void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
