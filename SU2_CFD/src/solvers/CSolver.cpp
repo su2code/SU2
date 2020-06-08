@@ -5414,7 +5414,7 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
 }
 
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iMetr, iMarker;
+  unsigned short iVar, iMetr, iMarker, iDim, jDim;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
 
@@ -5464,7 +5464,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
 //    }// if KindBC
 //  }// iMarker
   
-  /*--- Set error due to velocity, k equal to zero at heat flux wall ---*/
+  /*--- Set Hessian of velocity, k at heat flux wall ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
@@ -5482,13 +5482,39 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
                 base_nodes->SetHessian(iPoint, iVar, iMetr, 0.0);
               }
             }
+            
+            su2double volume = geometry->node[iPoint]->GetVolume();
+            su2double* area = geometry->vertex[iMarker][iVertex]->GetNormal();
+            for (iVar = 1; iVar < nDim+1; iVar++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                su2double flux = base_nodes->GetGradient_Adaptation(iPoint, iVar, jDim) / volume;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                              : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                  if (iDim != jDim) flux *= 0.5;
+                  base_nodes->AddHessian(iPoint, iVar, ind, flux*area[iDim]);
+                }
+              }
+            }
           }// if flow
           else if (Kind_Solver == RUNTIME_TURB_SYS &&
                   ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))) {
             for(iMetr = 0; iMetr < nMetr; iMetr++) {
               base_nodes->SetHessian(iPoint, 0, iMetr, 0.0);
             }
-          }
+            
+            su2double volume = geometry->node[iPoint]->GetVolume();
+            su2double* area = geometry->vertex[iMarker][iVertex]->GetNormal();
+            for (jDim = 0; jDim < nDim; jDim++) {
+              su2double flux = base_nodes->GetGradient_Adaptation(iPoint, 0, jDim) / volume;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                if (iDim != jDim) flux *= 0.5;
+                base_nodes->AddHessian(iPoint, 0, ind, flux*area[iDim]);
+              }
+            }
+          }// if turb
         }// if Domain
       }// iVertex
     }// if KindBC
