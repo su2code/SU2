@@ -3134,7 +3134,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
                              *config, solution, 0, nVar, gradient);
   
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
-  CorrectWallGradient(geometry, config, Kind_Solver);
+//  CorrectWallGradient(geometry, config, Kind_Solver);
   
   auto& hessian = base_nodes->GetHessian();
   
