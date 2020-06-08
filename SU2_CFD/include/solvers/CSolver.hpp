@@ -333,7 +333,8 @@ public:
    * \brief Correct the Hessian at boundaries.
    */
   void CorrectBoundHessian(CGeometry *geometry,
-                           CConfig *config);
+                           CConfig *config,
+                           unsigned short Kind_Solver);
 
   /*!
    * \brief Make the eigenvalues of the Hessians positive.

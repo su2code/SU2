@@ -5413,14 +5413,62 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
   CompleteComms(geometry, config, HESSIAN);
 }
 
-void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
+void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   unsigned short iVar, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
 
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//
+//    if (config->GetSolid_Wall(iMarker)) {
+//
+//      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//
+//        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//
+//        if (geometry->node[iPoint]->GetDomain()) {
+//
+//          //--- Correct if any of the neighbors belong to the volume
+//          unsigned short iNeigh, counter = 0;
+//          su2double hess[nMetr*nVar];
+//          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+//            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//            if(!geometry->node[jPoint]->GetBoundary()) {
+//              for(iVar = 0; iVar < nVar; iVar++){
+//                const unsigned short i = iVar*nMetr;
+//                //--- Reset hessian if first volume node detected
+//                if(counter == 0) {
+//                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
+////                    hess[i+iMetr] = base_nodes->GetHessian(iPoint, iVar, iMetr);
+//                    hess[i+iMetr] = 0.;
+//                  }// iMetr
+//                }// if counter
+//                for(iMetr = 0; iMetr < nMetr; iMetr++) {
+//                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
+//                }// iMetr
+//              }// iVar
+//              counter ++;
+//            }// if boundary
+//          }// iNeigh
+//          if(counter > 0) {
+//            for(iVar = 0; iVar < nVar; iVar++){
+//              const unsigned short i = iVar*nMetr;
+//              for(iMetr = 0; iMetr < nMetr; iMetr++) {
+////                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter+1));
+//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
+//              }// iMetr
+//            }// iVar
+//          }// if counter
+//        }// if domain
+//      }// iVertex
+//    }// if KindBC
+//  }// iMarker
+  
+  /*--- Set error due to velocity, k equal to zero at heat flux wall ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if (config->GetSolid_Wall(iMarker)) {
+      
+    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
       
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
@@ -5428,38 +5476,20 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
         
         if (geometry->node[iPoint]->GetDomain()) {
           
-          //--- Correct if any of the neighbors belong to the volume
-          unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar];
-          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            if(!geometry->node[jPoint]->GetBoundary()) {
-              for(iVar = 0; iVar < nVar; iVar++){
-                const unsigned short i = iVar*nMetr;
-                //--- Reset hessian if first volume node detected
-                if(counter == 0) {
-                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
-//                    hess[i+iMetr] = base_nodes->GetHessian(iPoint, iVar, iMetr);
-                    hess[i+iMetr] = 0.;
-                  }// iMetr
-                }// if counter
-                for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
-                }// iMetr
-              }// iVar
-              counter ++;
-            }// if boundary
-          }// iNeigh
-          if(counter > 0) {
-            for(iVar = 0; iVar < nVar; iVar++){
-              const unsigned short i = iVar*nMetr;
+          if (Kind_Solver == RUNTIME_FLOW_SYS) {
+            for (iVar = 1; iVar < nDim+1; iVar++) {
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
-//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter+1));
-                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
-              }// iMetr
-            }// iVar
-          }// if counter
-        }// if domain
+                base_nodes->SetHessian(iPoint, iVar, iMetr, 0.0);
+              }
+            }
+          }// if flow
+          else if (Kind_Solver == RUNTIME_FLOW_SYS &&
+                  ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))) {
+            for(iMetr = 0; iMetr < nMetr; iMetr++) {
+              base_nodes->SetHessian(iPoint, 0, iMetr, 0.0);
+            }
+          }
+        }// if Domain
       }// iVertex
     }// if KindBC
   }// iMarker
