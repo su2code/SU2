@@ -803,6 +803,10 @@ class Interface:
                self.MPIBarrier()
                if self.haveSolidSolver:
                    SolidSolver.run()
+            else:
+               # writing an empty restart just to allow optimization framework to run adjoint 
+               hist_file = open("restart.pyBeam", "w")       
+               hist_file.close()
 
             self.FSIIter += 1
 
