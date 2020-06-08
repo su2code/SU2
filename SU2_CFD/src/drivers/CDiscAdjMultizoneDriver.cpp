@@ -262,11 +262,11 @@ void CDiscAdjMultizoneDriver::Run() {
       const bool restart = config_container[iZone]->GetRestart();
       const bool no_restart = (iOuterIter > 0) || !restart;
 
-      /*--- When restarting, we start using the QN driver only after the first iteration. ---*/
+      /*--- Reset QN driver for new inner iterations. ---*/
 
-      if (QNDriver[iZone].size() && restart && (iOuterIter==1)) {
+      if (QNDriver[iZone].size()) {
         QNDriver[iZone].reset();
-        GetAllSolutions(iZone, true, QNDriver[iZone].solution());
+        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, QNDriver[iZone]);
       }
 
       for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
@@ -297,17 +297,18 @@ void CDiscAdjMultizoneDriver::Run() {
                                                     solver_container, numerics_container, config_container,
                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
+        /*--- Use QN driver to improve the solution. ---*/
+
+        if (QNDriver[iZone].size()) {
+          GetAllSolutions(iZone, true, QNDriver[iZone].FPresult());
+          QNDriver[iZone].compute();
+          if(iInnerIter) SetAllSolutions(iZone, true, QNDriver[iZone]);
+        }
+
         /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
          *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
 
         Set_SolutionOld_To_Solution(iZone);
-
-        /*--- Use QN driver to improve solution. ---*/
-
-        if (QNDriver[iZone].size()) {
-          GetAllSolutions(iZone, true, QNDriver[iZone].FPresult());
-          SetAllSolutions(iZone, true, QNDriver[iZone].compute());
-        }
 
         /*--- Print out the convergence data to screen and history file. ---*/
 

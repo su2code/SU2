@@ -53,6 +53,8 @@ public:
   static_assert(std::is_floating_point<Scalar>::value,"");
 
 private:
+  using MPI_Wrapper = typename SelectMPIWrapper<Scalar>::W;
+
   enum: size_t {BLOCK_SIZE = 1024};     /*!< \brief Loop tiling parameter. */
   std::vector<su2matrix<Scalar> > X, R; /*!< \brief Input and residual history of the FP. */
   su2matrix<Scalar> corr;               /*!< \brief Correction to the natural FP result. */
@@ -70,12 +72,10 @@ private:
   }
 
   void computeNormalEquations() {
-    /*--- Lower triangular packed storage. ---*/
-    mat.resize(iSample*(iSample+1)/2) = Scalar(0);
-    rhs.resize(iSample) = Scalar(0);
-
     /*--- Size for the dot products. ---*/
     const auto end = std::min<Index>(nPtDomain,corr.rows())*corr.cols();
+
+    mat = Scalar(0); rhs = Scalar(0);
 
     /*--- Tiled part of the loop. ---*/
     Index begin = 0;
@@ -94,13 +94,13 @@ private:
       const auto type = (sizeof(Scalar) < sizeof(double))? MPI_FLOAT : MPI_DOUBLE;
 
       su2vector<Scalar> tmp(mat.size());
-      SelectMPIWrapper<Scalar>::W::Allreduce(mat.data(), tmp.data(), mat.size(),
-                                             type, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Wrapper::Allreduce(mat.data(), tmp.data(), iSample*(iSample+1)/2,
+                             type, MPI_SUM, MPI_COMM_WORLD);
       mat = std::move(tmp);
 
-      sol = rhs;
-      SelectMPIWrapper<Scalar>::W::Allreduce(sol.data(), rhs.data(), rhs.size(),
-                                             type, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Wrapper::Allreduce(rhs.data(), sol.data(), iSample,
+                             type, MPI_SUM, MPI_COMM_WORLD);
+      std::swap(rhs, sol);
     }
   }
 
@@ -115,9 +115,11 @@ private:
     for (Index i = 0; i < iSample; ++i) {
       const auto ri1 = R[i+1].data() + start;
       const auto ri0 = R[i].data() + start;
-      for (Index j = 0; j <= i; ++j) {
+      /*--- Off-diagonal coefficients. ---*/
+      for (Index j = 0; j < i; ++j) {
         const auto rj1 = R[j+1].data() + start;
         const auto rj0 = R[j].data() + start;
+        /*--- Sum of partial sums to reduce trunc. error. ---*/
         Scalar sum = 0;
         SU2_OMP_SIMD
         for (Index k = 0; k < blkSize; ++k) {
@@ -126,13 +128,16 @@ private:
         const auto iCoeff = i*(i+1)/2 + j;
         mat(iCoeff) += sum;
       }
+      /*--- Diagonal coeff and residual fused. ---*/
+      Scalar diag = 0, res = 0;
       const auto r = R[iSample].data() + start;
-      Scalar sum = 0;
       SU2_OMP_SIMD
       for (Index k = 0; k < blkSize; ++k) {
-        sum += (ri1[k]-ri0[k]) * r[k];
+        diag += pow(ri1[k]-ri0[k], 2);
+        res += (ri1[k]-ri0[k]) * r[k];
       }
-      vec(i) -= sum;
+      mat(i*(i+3)/2) += diag;
+      vec(i) -= res;
     }
   }
 
@@ -165,6 +170,10 @@ public:
       R.emplace_back(npt,nvar);
     }
     X[0] = Scalar(0);
+    /*--- Lower triangular packed storage. ---*/
+    mat.resize(nsample*(nsample-1)/2);
+    rhs.resize(nsample-1);
+    sol.resize(nsample-1);
   }
 
   /*! \brief Size of the object, the number of samples. */
@@ -211,11 +220,10 @@ public:
         for (Index j = 0; j <= i; ++j)
           pseudoInv(i,j) = mat(k++);
       pseudoInv.Invert(true);
-      sol.resize(iSample);
       pseudoInv.MatVecMult(rhs.data(), sol.data());
 
       /*--- Compute correction, cleared before for less trunc. error. ---*/
-      for (Index k = 0; k < sol.size(); ++k) {
+      for (Index k = 0; k < iSample; ++k) {
         const auto x1 = X[k+1].data();
         const auto r1 = R[k+1].data();
         const auto x0 = X[k].data();

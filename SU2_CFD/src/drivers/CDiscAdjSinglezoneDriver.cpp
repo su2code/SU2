@@ -159,7 +159,7 @@ void CDiscAdjSinglezoneDriver::Run() {
                     GetTotalNumberOfVariables(ZONE_0,true),
                     geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
 
-    GetAllSolutions(ZONE_0, true, QNDriver.solution());
+    if (TimeIter != 0) GetAllSolutions(ZONE_0, true, QNDriver);
   }
 
   for (auto iter = 0ul; iter < nAdjoint_Iter; iter++) {
