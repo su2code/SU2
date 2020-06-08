@@ -5308,7 +5308,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
           //--- The gradients of the primal and adjoint momentum components are set later with the
           //--- correct values: grad(V)_s = grad(V) - [grad(V)*n]n, V being any conservative.
           for (iVar = 0; iVar < nVar; iVar++) {
-            if ((iVar == 0) || (iVar > nDim) || (Kind_Solver == RUNTIME_TURB_SYS)) {
+            if ((iVar == 0) || (iVar > nDim) || (Kind_Solver == RUNTIME_TURB_SYS) || (Kind_Solver == RUNTIME_ADJTURB_SYS)) {
               //--- Compute projected part of the gradient in a dot product.
               su2double ProjGradient = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
@@ -5321,7 +5321,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             }// if density, energy, or turbulent
           }// iVar
           
-          if (Kind_Solver == RUNTIME_FLOW_SYS) {
+          if ((Kind_Solver == RUNTIME_FLOW_SYS) || (Kind_Solver == RUNTIME_ADJFLOW_SYS)) {
             //--- Compute gradients of normal and tangential momentum:
             //--- grad(rv*n) = grad(rv_x) n_x + grad(rv_y) n_y (+ grad(rv_z) n_z)
             //--- grad(rv*t) = grad(rv_x) t_x + grad(rv_y) t_y (+ grad(rv_z) t_z)

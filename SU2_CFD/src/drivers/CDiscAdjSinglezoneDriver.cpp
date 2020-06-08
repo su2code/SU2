@@ -601,7 +601,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     */
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
-    solver_adjflow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
+    solver_adjflow->SetHessian_GG(geometry, config, RUNTIME_ADJFLOW_SYS);
 //    solver_adjflow->CorrectBoundHessian(geometry, config, RUNTIME_FLOW_SYS);
     
     if ( config->GetKind_Turb_Model() != NONE) {
@@ -610,7 +610,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
 //      solver_turb->CorrectBoundHessian(geometry, config, RUNTIME_TURB_SYS);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
-      solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_TURB_SYS);
+      solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_ADJTURB_SYS);
 //      solver_adjturb->CorrectBoundHessian(geometry, config, RUNTIME_TURB_SYS);
     }
   }
