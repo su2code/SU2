@@ -172,7 +172,7 @@ class Interface:
         self.unsteady = False  # flag for steady or unsteady simulation (default is steady)
 
         # --- checking if fixed cl mode is selected
-        self.fixedClMode = readConfig(ConfigFileName, voice, False)
+        self.fixedClMode = readConfig(FSI_config['SU2_CONFIG'], 'FIXED_CL_MODE', False)
 
         # ---Some screen output ---
         self.MPIPrint('Fluid solver : SU2_CFD')
