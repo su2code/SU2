@@ -34,6 +34,8 @@ import numpy as np
 import shutil
 import os
 import scipy.io
+from FSI_tools import readConfig
+
 # ----------------------------------------------------------------------
 #  FSI Interface Class
 # ----------------------------------------------------------------------
@@ -168,6 +170,9 @@ class Interface:
 
         self.FSIIter = 0  # current FSI iteration
         self.unsteady = False  # flag for steady or unsteady simulation (default is steady)
+
+        # --- checking if fixed cl mode is selected
+        self.fixedClMode = readConfig(ConfigFileName, voice, False)
 
         # ---Some screen output ---
         self.MPIPrint('Fluid solver : SU2_CFD')
@@ -792,11 +797,12 @@ class Interface:
             self.MPIBarrier()
             self.transferFluidTractions(FluidSolver, SolidSolver, MLSSolver)
 
-            # --- Solid solver call for FSI subiteration --- #
-            self.MPIPrint('\n##### Launching solid solver for a static computation\n')
-            self.MPIBarrier()
-            if self.haveSolidSolver:
-                SolidSolver.run()
+            if nFSIIter !=1:  # if the analysis we are running is not rigid (which means nFSIIter =1)
+               # --- Solid solver call for FSI subiteration --- #
+               self.MPIPrint('\n##### Launching solid solver for a static computation\n')
+               self.MPIBarrier()
+               if self.haveSolidSolver:
+                   SolidSolver.run()
 
             self.FSIIter += 1
 
@@ -817,9 +823,8 @@ class Interface:
         cd = FluidSolver.Get_DragCoeff()
         
         # --- Fluid solver call for FSI subiteration --- #
-        self.MPIPrint('TO add a check:  if rigid (fsi iter =1)or if not fixed cl mode this part needs not to be executes')
-        if nFSIIter !=1:
-           self.MPIPrint('\n##### If fixed Cl mode and not rigid case, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
+        if self.fixedClMode == 'YES':
+           self.MPIPrint('\n##### If fixed Cl mode, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
            self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
            FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
            FluidSolver.Preprocess(0,200)          # Time iteration pre-processing

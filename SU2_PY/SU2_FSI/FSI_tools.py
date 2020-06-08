@@ -48,7 +48,7 @@ def SaveSplineMatrix(config):
     # Launching shell command
     run_command(command, 'Splining', True,  Output_file)
 
-def readConfig(ConfigFileName, voice):
+def readConfig(ConfigFileName, voice, BreakCode = True):
     """
     This function scans an input file looking for a specific voice
     """    
@@ -69,9 +69,13 @@ def readConfig(ConfigFileName, voice):
         if this_param == voice:
             break
     
-    if not this_value:
-        raise SystemExit(voice + ' is not present in ' + 'ConfigFileName')
-    
+    if BreakCode == True:
+       if not this_value:
+           raise SystemExit(voice + ' is not present in ' + 'ConfigFileName')
+    else:
+        if not this_value:
+           this_value = 'NO'
+        
     return this_value
         
 
@@ -520,5 +524,71 @@ def WriteSolution(folder,x,it):
           log.write('%10s \t' % str(x[i]) )
     log.write("\n")      
     log.close() 
+    
+    return
+
+def SharpEdge(adj_folder,configAdj):
+    """ 
+    Sharp edge sensitivity option. Removes surface sesntivity in areas with a sharp edge (LE,TE and wing tip).
+    It is stated in SU2_CFD adjoint solver config file. Reads cvs surface_adjoint and check where sensitivity is put to 0.
+    Then it communicates it to the 'Boundary_Nodes_Sensitivity.dat' which is used for chain rule.
+    NB: it requires surface_adjoint.cvs as output of the adjoint solver:
+    % Output file surface adjoint coefficient (w/o extension)
+    SURFACE_ADJ_FILENAME= surface_adjoint   
+    % Files to output 
+    % Possible formats : (TECPLOT, TECPLOT_BINARY, SURFACE_TECPLOT,
+    %  SURFACE_TECPLOT_BINARY, CSV, SURFACE_CSV, PARAVIEW, PARAVIEW_BINARY, SURFACE_PARAVIEW, 
+    %  SURFACE_PARAVIEW_BINARY, MESH, RESTART_BINARY, RESTART_ASCII, CGNS, STL)
+    % default : (RESTART, PARAVIEW, SURFACE_PARAVIEW)
+    OUTPUT_FILES= (RESTART, PARAVIEW, SURFACE_PARAVIEW,SURFACE_CSV)    
+    """      
+
+    # solution file to read
+    surface_adj = readConfig(configAdj, 'SURFACE_ADJ_FILENAME')
+    ftr = adj_folder + '/' + surface_adj + '.csv'
+
+    CSV = []
+    
+    # reading cvs file
+    try:
+       with open(ftr, 'r') as file:
+          reader = csv.reader(file)
+          for row in reader:
+
+             if row[0] == "PointID":
+                continue
+             else: 
+                ID = int(row[0]);  Sens_surf = float(row[-1]); Sens_z = float(row[-2]); Sens_y = float(row[-3]); Sens_x = float(row[-4]); 
+                CSV.append([ID,Sens_x,Sens_y,Sens_z,Sens_surf])
+             
+    except IOError:
+       print("Surface adjoint cvs not available")
+    
+    
+    # Update the  Boundary_Nodes_Sensitivity putting to 0 sharp edge sensitivities
+    ConfigFileName = adj_folder + '/' + 'Boundary_Nodes_Sensitivity.dat'
+    configfile2 = open(ConfigFileName + '_temp',"w")
+    i = 0
+    with open(ConfigFileName, 'r') as configfile:
+      while 1:          
+        line = configfile.readline()
+        string = line
+        if not line:
+           break
+        if float(CSV[i][-1]) ==0 and float(CSV[i][-2]) ==0 and float(CSV[i][-3]) ==0 and float(CSV[i][-4]) ==0:
+           # remove line returns
+           line = line.strip('\r\n')  
+           line = line.split()
+           string_alt = line[0] + '\t' + line[1] + '\t' + line[2] + '\t' + line[3] + '\t' + str(0) + '\t' + str(0) + '\t' + str(0) + '\n'
+           configfile2.write(string_alt)
+        else:
+           configfile2.write(string)
+        i = i+1
+
+    configfile.close()    
+    configfile2.close()        
+    # the file is now replaced
+    os.rename(ConfigFileName, 'Boundary_Nodes_Sensitivity_original.dat' )
+    os.rename(ConfigFileName + '_temp', ConfigFileName) 
     
     return

@@ -897,11 +897,12 @@ class AdjointInterface:
             # --- Solid solver call for FSI subiteration --- #
 
             self.MPIBarrier()
-            if self.haveSolidSolver:
-                self.MPIPrint('\n##### Recording the pyBeam solution process\n')
-                SolidSolver.RecordSolver()
-                self.MPIPrint('\n##### Running the adjoint\n')
-                SolidSolver.RunAdjoint()
+            if nFSIIter !=1:  # if the analysis we are running is not rigid (which means nFSIIter =1)
+               if self.haveSolidSolver:
+                   self.MPIPrint('\n##### Recording the pyBeam solution process\n')
+                   SolidSolver.RecordSolver()
+                   self.MPIPrint('\n##### Running the adjoint\n')
+                   SolidSolver.RunAdjoint()
 
             self.FSIIter += 1
 

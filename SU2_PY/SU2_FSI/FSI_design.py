@@ -66,7 +66,7 @@ import os, sys
 import numpy as np
 from math import pow, factorial
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
-from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal, FSIAdjoint, ChainRule, ReadGeoConstraintGradients
+from SU2_FSI.FSI_tools import readConfig, run_command, UpdateConfig, DeformMesh, Geometry, ReadGeoConstraints, FSIPrimal, FSIAdjoint, ChainRule, ReadGeoConstraintGradients, SharpEdge
 # -------------------------------------------------------------------
 #  Project Class
 # -------------------------------------------------------------------
@@ -239,6 +239,12 @@ class Design:
     
         if self.adjoint == True:
             
+            # If option is selected, applying sharp edge utility provided by SU2 
+            option = readConfig(adj_folder + '/' +self.configFSIAdjoint['SU2_CONFIG'], 'SENS_REMOVE_SHARP', False) 
+            if option == 'YES':                         
+               SharpEdge(adj_folder,self.configFSIAdjoint['SU2_CONFIG'])
+               
+            # performing the chain rule over grid nodes sensitivities
             obj_df = ChainRule(adj_folder,FFD_indexes, PointInv,ffd_degree)
             
         else:
