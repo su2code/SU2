@@ -179,7 +179,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
-    sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
+    sys.stdout.write('True lower and upper bound for each independent variable: ' + str(xb*project.config['OPT_RELAX_FACTOR']) + '\n\n')
 
     # Run Optimizer
     outputs = fmin_slsqp( x0             = x0             ,

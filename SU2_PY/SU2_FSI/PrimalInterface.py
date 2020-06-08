@@ -802,7 +802,7 @@ class Interface:
                self.MPIPrint('\n##### Launching solid solver for a static computation\n')
                self.MPIBarrier()
                if self.haveSolidSolver:
-                   SolidSolver.run()
+                   pyBeam_success = SolidSolver.run()
             else:
                # writing an empty restart just to allow optimization framework to run adjoint 
                hist_file = open("restart.pyBeam", "w")       
@@ -820,30 +820,41 @@ class Interface:
                 hist_file.write(str(FluidSolver.Get_LiftCoeff()) + "\n")
                 hist_file.close()
 
+            if pyBeam_success == False:
+                break
+
         self.MPIBarrier()
         
-        # --- Extract drag and lift in case fixed CL mode and doing finite differences on AoA
-        cl = FluidSolver.Get_LiftCoeff()
-        cd = FluidSolver.Get_DragCoeff()
+        if pyBeam_success != False:        
+                
+           # --- Extract drag and lift in case fixed CL mode and doing finite differences on AoA
+           cl = FluidSolver.Get_LiftCoeff()
+           cd = FluidSolver.Get_DragCoeff()
         
-        # --- Fluid solver call for FSI subiteration --- #
-        if self.fixedClMode == 'YES':
-           self.MPIPrint('\n##### If fixed Cl mode, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
-           self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
-           FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
-           FluidSolver.Preprocess(0,200)          # Time iteration pre-processing
-           FluidSolver.Run()                  # Run one time-step (static: one simulation)
-           FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
-           FluidSolver.Update()               # Update the solver for the next time iteration
-           FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
-           FluidSolver.Output(0)              # Output the solution to file
+           # --- Fluid solver call for FSI subiteration --- #
+           if self.fixedClMode == 'YES':
+              self.MPIPrint('\n##### If fixed Cl mode, performing extra CFD to calculate with FD the derivative of Cl with respect to AoA\n')
+              self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
+              FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
+              FluidSolver.Preprocess(0,200)          # Time iteration pre-processing
+              FluidSolver.Run()                  # Run one time-step (static: one simulation)
+              FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
+              FluidSolver.Update()               # Update the solver for the next time iteration
+              FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
+              FluidSolver.Output(0)              # Output the solution to file
 
-        self.MPIPrint('\nBGS is converged (strong coupling)')
-        self.MPIPrint(' ')
-        self.MPIPrint('*************************')
-        self.MPIPrint('*  End FSI computation  *')
-        self.MPIPrint('*************************')
-        self.MPIPrint(' ')
+           self.MPIPrint('\nBGS is converged (strong coupling)')
+           self.MPIPrint(' ')
+           self.MPIPrint('*************************')
+           self.MPIPrint('*  End FSI computation  *')
+           self.MPIPrint('*************************')
+           self.MPIPrint(' ')
+        
+        else:
+           # if pyBeam diverges probably within the optimization configuration the guess is wrong
+           # so the code exits and to the obj function (cd) a trivial high value is assigned 
+           cl = FluidSolver.Get_LiftCoeff()
+           cd = 100
         
         return cl, cd
 
