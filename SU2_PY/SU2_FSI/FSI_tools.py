@@ -589,7 +589,7 @@ def SharpEdge(adj_folder,configAdj):
     configfile.close()    
     configfile2.close()        
     # the file is now replaced
-    os.rename(ConfigFileName, 'Boundary_Nodes_Sensitivity_original.dat' )
+    os.rename(ConfigFileName, adj_folder + '/' + 'Boundary_Nodes_Sensitivity_original.dat' )
     os.rename(ConfigFileName + '_temp', ConfigFileName) 
     
     return
