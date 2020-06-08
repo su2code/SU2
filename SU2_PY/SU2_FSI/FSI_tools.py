@@ -34,6 +34,7 @@ import subprocess
 import numpy as np
 from math import pow, factorial
 import scipy.io
+import csv
 
 def SaveSplineMatrix(config):
     """
