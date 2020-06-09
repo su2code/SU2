@@ -295,15 +295,15 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SetValZero();
   }
   
-  /*--- Set flow solver primitives to values stored in turb solver ---*/
-    
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
-    }
-  }
+//  /*--- Set flow solver primitives to values stored in turb solver ---*/
+//
+//  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+//
+//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+//    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
+//      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
+//    }
+//  }
   
   /*--- Compute gradients ---*/
     
@@ -331,14 +331,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
-//  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
-  solver_container[FLOW_SOL]->Preprocessing(geometry, solver_container, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+//  solver_container[FLOW_SOL]->Preprocessing(geometry, solver_container, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   SetEddyViscosity(geometry, solver_container);
   
   /*--- Store variables from the mean flow solver ---*/
 
-  SetFlowPrimitive(solver_container);
-  SetFlowGradient(solver_container);
+//  SetFlowPrimitive(solver_container);
+//  SetFlowGradient(solver_container);
 
 }
 
