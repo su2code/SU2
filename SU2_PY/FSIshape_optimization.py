@@ -157,7 +157,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     # number of design variables  (this is read from the DEF input file)
     n_dv = len(x0)
     project.n_dv = n_dv
-              
+            
     # obj scale
     # I need to look into the Adjoint flow file
     # Adjoint config
@@ -179,7 +179,7 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
-    sys.stdout.write('True lower and upper bound for each independent variable: ' + str(xb*project.config['OPT_RELAX_FACTOR']) + '\n\n')
+    #sys.stdout.write('True lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
 
     # Run Optimizer
     outputs = fmin_slsqp( x0             = x0             ,
