@@ -746,6 +746,10 @@ class Interface:
         Synchronizes the fluid and solid solver with data exchange at the f/s interface.
         """
 
+
+        # Booleian of pyBeam convergence shared by all processors (if it's true the simulation goes on)
+        pyBeam_success = False
+        
         # Stores FD sensitivity variable
         self.FD_sens = FD_sens;
 
@@ -808,6 +812,10 @@ class Interface:
                hist_file = open("restart.pyBeam", "w")       
                hist_file.close()
 
+            # sharing to all processors pyBeam success            
+            pyBeam_success = self.comm.bcast(pyBeam_success,root=0)
+            self.MPIBarrier()
+            
             self.FSIIter += 1
 
             # Store the surface flow history
