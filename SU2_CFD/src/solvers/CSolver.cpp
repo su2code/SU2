@@ -6293,9 +6293,6 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
       const su2double part = (abs(weights[0][iVar])
                              +abs(weights[1][iVar])
                              +abs(weights[2][iVar]))*hess;
-//      const su2double part = abs(weights[0][iVar]
-//                                +weights[1][iVar]
-//                                +weights[2][iVar])*hess;
       varFlo->AddMetric(iPoint, im, part);
     }
   }
@@ -6310,9 +6307,6 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
         const su2double part = (abs(weights[0][nVarFlo+iVar])
                                +abs(weights[1][nVarFlo+iVar])
                                +abs(weights[2][nVarFlo+iVar]))*hess;
-//        const su2double part = abs(weights[0][nVarFlo+iVar]
-//                                  +weights[1][nVarFlo+iVar]
-//                                  +weights[2][nVarFlo+iVar])*hess;
         varFlo->AddMetric(iPoint, im, part);
       }
     }
@@ -6352,15 +6346,6 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     const su2double b = base_nodes->GetMetric(iPoint, 1);
     const su2double c = base_nodes->GetMetric(iPoint, 2);
     
-//    if (fabs(a*c - b*b) < 1.0E-16) {
-//      A[0][0] = a+1.0E-16; A[0][1] = b;
-//      A[1][0] = b;         A[1][1] = c+1.0E-16;
-//    }
-//    else {
-//      A[0][0] = a; A[0][1] = b;
-//      A[1][0] = b; A[1][1] = c;
-//    }
-    
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
 
@@ -6383,15 +6368,6 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
     const su2double c = base_nodes->GetMetric(iPoint, 2);
-    
-//    if (fabs(a*c - b*b) < 1.0E-16) {
-//      A[0][0] = a+1.0E-16; A[0][1] = b;
-//      A[1][0] = b;         A[1][1] = c+1.0E-16;
-//    }
-//    else {
-//      A[0][0] = a; A[0][1] = b;
-//      A[1][0] = b; A[1][1] = c;
-//    }
     
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
@@ -6489,17 +6465,6 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     const su2double e = base_nodes->GetMetric(iPoint, 4);
     const su2double f = base_nodes->GetMetric(iPoint, 5);
 
-//    if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
-//      A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
-//      A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
-//      A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
-//    }
-//    else {
-//      A[0][0] = a; A[0][1] = b; A[0][2] = c;
-//      A[1][0] = b; A[1][1] = d; A[1][2] = e;
-//      A[2][0] = c; A[2][1] = e; A[2][2] = f;
-//    }
-    
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
     A[2][0] = c; A[2][1] = e; A[2][2] = f;
@@ -6527,17 +6492,6 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     const su2double e = base_nodes->GetMetric(iPoint, 4);
     const su2double f = base_nodes->GetMetric(iPoint, 5);
 
-//    if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
-//      A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
-//      A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
-//      A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
-//    }
-//    else {
-//      A[0][0] = a; A[0][1] = b; A[0][2] = c;
-//      A[1][0] = b; A[1][1] = d; A[1][2] = e;
-//      A[2][0] = c; A[2][1] = e; A[2][2] = f;
-//    }
-    
     A[0][0] = a; A[0][1] = b; A[0][2] = c;
     A[1][0] = b; A[1][1] = d; A[1][2] = e;
     A[2][0] = c; A[2][1] = e; A[2][2] = f;
