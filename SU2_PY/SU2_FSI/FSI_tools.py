@@ -157,15 +157,17 @@ def UpdateConfig(ConfigFileName, param, value):
     os.rename(ConfigFileName + '_temp', ConfigFileName)                    
 
 
-def DeformMesh(deform_folder, ConfigFileName):
+def DeformMesh(deform_folder, config):
     '''
             Executes in:
              ./DEFORM
-    '''  
+    '''    
     # going to ./DEFORM folder
     os.chdir(deform_folder)
     
-    command = 'SU2_DEF ' + ConfigFileName
+    ConfigFileName = config['CONFIG_DEF']
+    
+    command = 'mpirun -n ' + str(config['NUMBER_PART']) + ' SU2_DEF ' + ConfigFileName
     Output_file =  'Output_SU2_DEF.out'
     run_command(command, 'SU2_DEF', True, Output_file)
     

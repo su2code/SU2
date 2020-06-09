@@ -133,7 +133,7 @@ class Design:
         UpdateConfig(ConfigFileName, 'DV_VALUE', self.__dv*float ( self.config['OPT_RELAX_FACTOR'] ))
         
         # performing SU2_DEF
-        DeformMesh(deform_folder,self.config['CONFIG_DEF'])
+        DeformMesh(deform_folder,self.config)
 
 
     def FSIPrimal(self,primal_folder):
