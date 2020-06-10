@@ -1994,16 +1994,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = 3*(nDim-1)*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case ANISO_AUX_VAR:
-      COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case ANISO_AUX_GRADIENT:
-      COUNT_PER_POINT  = nDim*1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case AUX_HESSIAN:
-      COUNT_PER_POINT  = 3*(nDim-1)*1;
+    case METRIC:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -2160,19 +2152,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetHessian(iPoint, iVar, iDim);
             break;
-          case ANISO_AUX_VAR:
-            for (iVar = 0; iVar < 1; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetAuxVar_Adaptation(iPoint, iVar);
-          break;
-          case ANISO_AUX_GRADIENT:
-            for (iDim = 0; iDim < nDim; iDim++)
-              for (iVar = 0; iVar < 1; iVar++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradientAuxVar_Adaptation(iPoint, iVar, iDim);
-            break;
-          case AUX_HESSIAN:
+          case METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
-              for (iVar = 0; iVar < 1; iVar++)
-                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetHessianAuxVar(iPoint, iVar, iDim);
+              bufDSend[buf_offset+iDim] = base_nodes->GetMetric(iPoint, iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2352,19 +2334,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 base_nodes->SetHessian(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
             break;
-          case ANISO_AUX_VAR:
-            for (iVar = 0; iVar < 1; iVar++)
-              base_nodes->SetAuxVar_Adaptation(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-          break;
-          case ANISO_AUX_GRADIENT:
-            for (iDim = 0; iDim < nDim; iDim++)
-              for (iVar = 0; iVar < 1; iVar++)
-                base_nodes->SetGradientAuxVar_Adaptation(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
-            break;
-          case AUX_HESSIAN:
+          case METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
-              for (iVar = 0; iVar < 1; iVar++)
-                base_nodes->SetHessianAuxVar(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
+              base_nodes->SetMetric(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -3145,23 +3117,23 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
 
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetDensity(iPoint)*base_nodes->GetEnthalpy(iPoint));
-  
-  //--- communicate the solution values via MPI
-  InitiateComms(geometry, config, ANISO_AUX_VAR);
-  CompleteComms(geometry, config, ANISO_AUX_VAR);
-
-  const auto& solution = base_nodes->GetAuxVar_Adaptation();
-  auto& gradient = base_nodes->GetGradientAuxVar_Adaptation();
-
-  computeGradientsGreenGauss(this, ANISO_AUX_GRADIENT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, 1, gradient);
-  
-  auto& hessian = base_nodes->GetHessianAuxVar();
-  
-  computeHessiansGreenGauss(this, AUX_HESSIAN, PERIODIC_SOL_GG, *geometry,
-                            *config, gradient, 0, 1, hessian);
+//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+//    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetDensity(iPoint)*base_nodes->GetEnthalpy(iPoint));
+//
+//  //--- communicate the solution values via MPI
+//  InitiateComms(geometry, config, ANISO_AUX_VAR);
+//  CompleteComms(geometry, config, ANISO_AUX_VAR);
+//
+//  const auto& solution = base_nodes->GetAuxVar_Adaptation();
+//  auto& gradient = base_nodes->GetGradientAuxVar_Adaptation();
+//
+//  computeGradientsGreenGauss(this, ANISO_AUX_GRADIENT, PERIODIC_SOL_GG, *geometry,
+//                             *config, solution, 0, 1, gradient);
+//
+//  auto& hessian = base_nodes->GetHessianAuxVar();
+//
+//  computeHessiansGreenGauss(this, AUX_HESSIAN, PERIODIC_SOL_GG, *geometry,
+//                            *config, gradient, 0, 1, hessian);
   
 }
 
@@ -5583,6 +5555,10 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
   unsigned short nMet = 3*(nDim-1);
   unsigned long iPoint;
   su2double met[nMet];
+  
+  //--- communicate the gradient values via MPI
+  InitiateComms(geometry, config, METRIC);
+  CompleteComms(geometry, config, METRIC);
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
