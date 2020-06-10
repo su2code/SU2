@@ -300,40 +300,38 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     CorrectJacobian(config);
     
     /*--- Jacobian wrt eddy viscosity ---*/
-    
-    const su2double eps = numeric_limits<passivedouble>::epsilon();
-    
-    su2double VorticityMag;
+        
+//    su2double VorticityMag;
 
 //    if (Eddy_Viscosity_i > eps) {
-      VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
-                          Vorticity_i[1]*Vorticity_i[1] +
-                          Vorticity_i[2]*Vorticity_i[2]);
-      if (TurbVar_i[1] > VorticityMag*F2_i/a1) {
+//      VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+//                          Vorticity_i[1]*Vorticity_i[1] +
+//                          Vorticity_i[2]*Vorticity_i[2]);
+      if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
         Jacobian_i[0][0] += 0.5*sigma_kine_i/TurbVar_i[1]*Proj_Mean_GradTurbVar[0];
         Jacobian_i[0][1] += -0.5*sigma_kine_i*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[0];
         Jacobian_i[1][0] += 0.5*sigma_omega_i/TurbVar_i[1]*Proj_Mean_GradTurbVar[1];
         Jacobian_i[1][1] += -0.5*sigma_omega_i*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[1];
       }
       else {
-        Jacobian_i[0][0] += 0.5*sigma_kine_i*a1/(VorticityMag*F2_i)*Proj_Mean_GradTurbVar[0];
-        Jacobian_i[1][0] += 0.5*sigma_omega_i*a1/(VorticityMag*F2_i)*Proj_Mean_GradTurbVar[1];
+        Jacobian_i[0][0] += 0.5*sigma_kine_i*a1/(VorticityMag_i*F2_i)*Proj_Mean_GradTurbVar[0];
+        Jacobian_i[1][0] += 0.5*sigma_omega_i*a1/(VorticityMag_i*F2_i)*Proj_Mean_GradTurbVar[1];
       }
 //    }
     
 //    if (Eddy_Viscosity_j > eps) {
-      VorticityMag = sqrt(Vorticity_j[0]*Vorticity_j[0] +
-                          Vorticity_j[1]*Vorticity_j[1] +
-                          Vorticity_j[2]*Vorticity_j[2]);
-      if (TurbVar_j[1] > VorticityMag*F2_j/a1) {
+//      VorticityMag = sqrt(Vorticity_j[0]*Vorticity_j[0] +
+//                          Vorticity_j[1]*Vorticity_j[1] +
+//                          Vorticity_j[2]*Vorticity_j[2]);
+      if (TurbVar_j[1] > VorticityMag_j*F2_j/a1) {
         Jacobian_j[0][0] += 0.5*sigma_kine_j/TurbVar_j[1]*Proj_Mean_GradTurbVar[0];
         Jacobian_j[0][1] += -0.5*sigma_kine_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0];
         Jacobian_j[1][0] += 0.5*sigma_omega_j/TurbVar_j[1]*Proj_Mean_GradTurbVar[1];
         Jacobian_j[1][1] += -0.5*sigma_omega_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1];
       }
       else {
-        Jacobian_j[0][0] += 0.5*sigma_kine_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[0];
-        Jacobian_j[1][0] += 0.5*sigma_omega_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[1];
+        Jacobian_j[0][0] += 0.5*sigma_kine_j*a1/(VorticityMag_j*F2_j)*Proj_Mean_GradTurbVar[0];
+        Jacobian_j[1][0] += 0.5*sigma_omega_j*a1/(VorticityMag_j*F2_j)*Proj_Mean_GradTurbVar[1];
       }
 //    }
     
@@ -355,8 +353,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     const su2double factor_j = dmudT_j/(r_j*Cv);
     
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      if (TurbVar_i[0] > eps) Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
-      if (TurbVar_j[0] > eps) Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
+      Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
+      Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
     }
   }
 
