@@ -5437,7 +5437,7 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
     }// iMarker
   }// if Kind_Solver
   
-  //--- communicate the gradient values via MPI
+  //--- communicate the Hessian values via MPI
   InitiateComms(geometry, config, HESSIAN);
   CompleteComms(geometry, config, HESSIAN);
 }
@@ -5556,7 +5556,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint;
   su2double met[nMet];
   
-  //--- communicate the gradient values via MPI
+  //--- communicate the metric values via MPI
   InitiateComms(geometry, config, METRIC);
   CompleteComms(geometry, config, METRIC);
 
