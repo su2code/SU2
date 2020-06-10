@@ -5579,51 +5579,38 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
 }
 
 void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
-  unsigned short iMet, iMarker, iNeigh, counter;
+  unsigned short iMet, iNeigh, counter;
   unsigned short nMet = 3*(nDim-1);
-  unsigned long iVertex;
+  unsigned long iPoint;
   su2double met[nMet];
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
-
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        if (geometry->node[iPoint]->GetDomain()) {
-
-          //--- Correct if any of the neighbors belong to the volume
-          counter = 0;
-          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            if(!geometry->node[jPoint]->GetBoundary()) {
-              //--- Reset metric if first volume node detected
-              if(counter == 0) {
-                for(iMet = 0; iMet < nMet; iMet++) {
-                  met[iMet] = base_nodes->GetMetric(iPoint, iMet);
-                }// iMet
-              }// if counter
-              for(iMet = 0; iMet < nMet; iMet++) {
-                met[iMet] += base_nodes->GetMetric(jPoint, iMet);
-              }// iMet
-              counter ++;
-            }// if boundary
-          }// iNeigh
-          if(counter > 0) {
+    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+      //--- Correct if any of the neighbors belong to the volume
+      counter = 0;
+      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+        const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+        if(!geometry->node[jPoint]->GetBoundary()) {
+          //--- Reset metric if first volume node detected
+          if(counter == 0) {
             for(iMet = 0; iMet < nMet; iMet++) {
-              base_nodes->SetMetric(iPoint, iMet, met[iMet]/su2double(counter+1));
+              met[iMet] = base_nodes->GetMetric(iPoint, iMet);
             }// iMet
           }// if counter
-        }// if domain
-      }// iVertex
-    }// if KindBC
-  }// iMarker
+          for(iMet = 0; iMet < nMet; iMet++) {
+            met[iMet] += base_nodes->GetMetric(jPoint, iMet);
+          }// iMet
+          counter ++;
+        }// if boundary
+      }// iNeigh
+      if(counter > 0) {
+        for(iMet = 0; iMet < nMet; iMet++) {
+          base_nodes->SetMetric(iPoint, iMet, met[iMet]/su2double(counter+1));
+        }// iMet
+      }// if counter
+    }// if PhysicaBoundary
+  }// iPoint
   
 }
 
