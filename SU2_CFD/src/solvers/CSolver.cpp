@@ -5562,12 +5562,12 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
-    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+    if (geometry->node[iPoint]->GetSolidBoundary()) {
       //--- Correct if any of the neighbors belong to the volume
       counter = 0;
       for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-        if(!geometry->node[jPoint]->GetPhysicalBoundary()) {
+        if(!geometry->node[jPoint]->GetSolidBoundary()) {
           //--- Reset metric if first volume node detected
           if(counter == 0) {
             for(iMet = 0; iMet < nMet; iMet++) {
@@ -5740,8 +5740,8 @@ void CSolver::ComputeMetric(CSolver   **solver,
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
   }
   
-//  //--- Smooth metric at solid boundaries
-//  CorrectBoundMetric(geometry, config);
+  //--- Smooth metric at solid boundaries
+  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
