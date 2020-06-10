@@ -5740,8 +5740,8 @@ void CSolver::ComputeMetric(CSolver   **solver,
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
   }
   
-  //--- Smooth metric at solid boundaries
-  CorrectBoundMetric(geometry, config);
+//  //--- Smooth metric at solid boundaries
+//  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
