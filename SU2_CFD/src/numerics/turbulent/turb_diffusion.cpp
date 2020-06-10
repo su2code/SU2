@@ -305,7 +305,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     
     su2double VorticityMag;
 
-    if (Eddy_Viscosity_i > eps) {
+//    if (Eddy_Viscosity_i > eps) {
       VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
                           Vorticity_i[1]*Vorticity_i[1] +
                           Vorticity_i[2]*Vorticity_i[2]);
@@ -319,9 +319,9 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
         Jacobian_i[0][0] += 0.5*sigma_kine_i*a1/(VorticityMag*F2_i)*Proj_Mean_GradTurbVar[0];
         Jacobian_i[1][0] += 0.5*sigma_omega_i*a1/(VorticityMag*F2_i)*Proj_Mean_GradTurbVar[1];
       }
-    }
+//    }
     
-    if (Eddy_Viscosity_j > eps) {
+//    if (Eddy_Viscosity_j > eps) {
       VorticityMag = sqrt(Vorticity_j[0]*Vorticity_j[0] +
                           Vorticity_j[1]*Vorticity_j[1] +
                           Vorticity_j[2]*Vorticity_j[2]);
@@ -335,7 +335,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
         Jacobian_j[0][0] += 0.5*sigma_kine_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[0];
         Jacobian_j[1][0] += 0.5*sigma_omega_j*a1/(VorticityMag*F2_j)*Proj_Mean_GradTurbVar[1];
       }
-    }
+//    }
     
     /*--- Jacobian wrt laminar viscosity ---*/
     const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;

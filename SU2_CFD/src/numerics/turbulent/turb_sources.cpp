@@ -856,10 +856,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      }
      pk += Eddy_Viscosity_i*factor;
      
-     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
+     pw = factor*alfa_blended*Density_i*factor;
      if ((pk > 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = -2./3.*diverg*Volume;
-       if (Eddy_Viscosity_i > eps) {
+//       if (Eddy_Viscosity_i > eps) {
          if (TurbVar_i[1] > VorticityMag*F2_i/a1) {
            Jacobian_i[0][0] += factor/TurbVar_i[1]*Volume;
            Jacobian_i[0][1] += -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
@@ -867,7 +867,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
          else {
            Jacobian_i[0][0] += factor*a1/(VorticityMag*F2_i)*Volume;
          }
-       }
+//       }
      }
      else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
        Jacobian_i[0][0] = 20.0*beta_star*TurbVar_i[1]*Volume;

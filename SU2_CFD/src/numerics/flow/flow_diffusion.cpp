@@ -997,7 +997,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
   
     /*--- Jacobian wrt eddy viscosity ---*/
     
-    if (Eddy_Viscosity_i > eps) {
+//    if (Eddy_Viscosity_i > eps) {
       const su2double VorticityMag_i = sqrt(Vorticity_i[0]*Vorticity_i[0] +
                                             Vorticity_i[1]*Vorticity_i[1] +
                                             Vorticity_i[2]*Vorticity_i[2]);
@@ -1011,9 +1011,9 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
           Jacobian_i[nDim+1][0] += 0.5*factor*heat_flux_vec[iDim]*Normal[iDim];
         }
       }
-    }
+//    }
 
-    if (Eddy_Viscosity_j > eps) {
+//    if (Eddy_Viscosity_j > eps) {
       const su2double VorticityMag_j = sqrt(Vorticity_j[0]*Vorticity_j[0] +
                                             Vorticity_j[1]*Vorticity_j[1] +
                                             Vorticity_j[2]*Vorticity_j[2]);
@@ -1027,7 +1027,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
           Jacobian_j[nDim+1][0] += 0.5*factor*heat_flux_vec[iDim]*Normal[iDim];
         }
       }
-    }
+//    }
     
   }
   

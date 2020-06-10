@@ -416,7 +416,8 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
     const su2double zeta  = max(omega, VorticityMag*F2/a1);
-    const su2double muT   = max(rho*kine/zeta, eps);
+//    const su2double muT   = max(rho*kine/zeta, eps);
+    const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
         
@@ -1999,7 +2000,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double sigmaomega2 = constants[3];
   const su2double beta        = F1*constants[4] + (1.0 - F1)*constants[5];
   const su2double betastar    = constants[6];
-  const su2double a1          = constants[7];
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
