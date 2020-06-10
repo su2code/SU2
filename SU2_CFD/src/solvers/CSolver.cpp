@@ -5443,8 +5443,8 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
 }
 
 void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iMetr, iMarker;
-  unsigned short nMetr = 3*(nDim-1);
+  unsigned short iVar, iMet, iMarker;
+  unsigned short nMet = 3*(nDim-1);
   unsigned long iVertex;
 
   //--- Eliminate Hessians of normal velocity at symmetry plane
@@ -5455,10 +5455,10 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
           const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
             for (iVar = 0; iVar < nVar; iVar++) {
-              for (iMetr = 0; iMetr < nMetr; iMetr++) {
+              for (iMet = 0; iMet < nMet; iMet++) {
                 
               }// iVar
-            }// iMetr
+            }// iMet
           }// if domain
         }// iVertex
       }// if KindBC
@@ -5471,8 +5471,8 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
 }
 
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iMetr, iMarker, iDim, jDim;
-  unsigned short nMetr = 3*(nDim-1);
+  unsigned short iVar, iMet, iMarker, iDim, jDim;
+  unsigned short nMet = 3*(nDim-1);
   unsigned long iVertex;
 
 //  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5487,33 +5487,33 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
 //
 //          //--- Correct if any of the neighbors belong to the volume
 //          unsigned short iNeigh, counter = 0;
-//          su2double hess[nMetr*nVar];
+//          su2double hess[nMet*nVar];
 //          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 //            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 //            if(!geometry->node[jPoint]->GetBoundary()) {
 //              for(iVar = 0; iVar < nVar; iVar++){
-//                const unsigned short i = iVar*nMetr;
+//                const unsigned short i = iVar*nMet;
 //                //--- Reset hessian if first volume node detected
 //                if(counter == 0) {
-//                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
-////                    hess[i+iMetr] = base_nodes->GetHessian(iPoint, iVar, iMetr);
-//                    hess[i+iMetr] = 0.;
-//                  }// iMetr
+//                  for(iMet = 0; iMet < nMet; iMet++) {
+////                    hess[i+iMet] = base_nodes->GetHessian(iPoint, iVar, iMet);
+//                    hess[i+iMet] = 0.;
+//                  }// iMet
 //                }// if counter
-//                for(iMetr = 0; iMetr < nMetr; iMetr++) {
-//                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
-//                }// iMetr
+//                for(iMet = 0; iMet < nMet; iMet++) {
+//                  hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet);
+//                }// iMet
 //              }// iVar
 //              counter ++;
 //            }// if boundary
 //          }// iNeigh
 //          if(counter > 0) {
 //            for(iVar = 0; iVar < nVar; iVar++){
-//              const unsigned short i = iVar*nMetr;
-//              for(iMetr = 0; iMetr < nMetr; iMetr++) {
-////                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter+1));
-//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
-//              }// iMetr
+//              const unsigned short i = iVar*nMet;
+//              for(iMet = 0; iMet < nMet; iMet++) {
+////                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/su2double(counter+1));
+//                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/su2double(counter));
+//              }// iMet
 //            }// iVar
 //          }// if counter
 //        }// if domain
@@ -5535,8 +5535,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
           
           if (Kind_Solver == RUNTIME_FLOW_SYS) {
             for (iVar = 1; iVar < nDim+1; iVar++) {
-              for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                base_nodes->SetHessian(iPoint, iVar, iMetr, 0.0);
+              for(iMet = 0; iMet < nMet; iMet++) {
+                base_nodes->SetHessian(iPoint, iVar, iMet, 0.0);
               }
             }
             
@@ -5556,8 +5556,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
           }// if flow
           else if (Kind_Solver == RUNTIME_TURB_SYS &&
                   ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))) {
-            for(iMetr = 0; iMetr < nMetr; iMetr++) {
-              base_nodes->SetHessian(iPoint, 0, iMetr, 0.0);
+            for(iMet = 0; iMet < nMet; iMet++) {
+              base_nodes->SetHessian(iPoint, 0, iMet, 0.0);
             }
             
             su2double volume = geometry->node[iPoint]->GetVolume();
@@ -5576,6 +5576,51 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
       }// iVertex
     }// if KindBC
   }// iMarker
+}
+
+void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
+  unsigned short iMet, iMarker, iNeigh, counter;
+  unsigned short nMet = 3*(nDim-1);
+  unsigned long iVertex;
+  su2double met[nMet];
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetSolid_Wall(iMarker)) {
+
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          //--- Correct if any of the neighbors belong to the volume
+          counter = 0;
+          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+            if(!geometry->node[jPoint]->GetBoundary()) {
+              //--- Reset hessian if first volume node detected
+              if(counter == 0) {
+                for(iMet = 0; iMet < nMet; iMet++) {
+                  met[iMet] = base_nodes->GetMetric(iPoint, iMet);
+                }// iMet
+              }// if counter
+              for(iMet = 0; iMet < nMet; iMet++) {
+                met[iMet] += base_nodes->GetMetric(jPoint, iMet);
+              }// iMet
+              counter ++;
+            }// if boundary
+          }// iNeigh
+          if(counter > 0) {
+            for(iMet = 0; iMet < nMet; iMet++) {
+              base_nodes->SetMetric(iPoint, iMet, met[iMet]/su2double(counter+1));
+            }// iMet
+          }// if counter
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+  
 }
 
 void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
@@ -5713,11 +5758,6 @@ void CSolver::ComputeMetric(CSolver   **solver,
 
     //--- Convective terms
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
-    
-    /*
-    //--- Scalar dissipation terms
-    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
-     */
 
     //--- Viscous terms
     if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
@@ -5732,6 +5772,9 @@ void CSolver::ComputeMetric(CSolver   **solver,
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
   }
+  
+  //--- Smooth metric at solid boundaries
+  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
@@ -6280,7 +6323,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
             *varTur = solver[TURB_SOL]->GetNodes();
 
   unsigned short iVar, im;
-  const unsigned short nMetr = 3*(nDim-1);
+  const unsigned short nMet = 3*(nDim-1);
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   const bool turb = (config->GetKind_Turb_Model() != NONE);
@@ -6288,7 +6331,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
   //--- Mean flow variables
   for (iVar = 0; iVar < nVarFlo; ++iVar) {
 
-    for (im = 0; im < nMetr; ++im) {
+    for (im = 0; im < nMet; ++im) {
       const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
       const su2double part = abs(weights[0][iVar]
                                 +weights[1][iVar]
@@ -6302,7 +6345,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     for (iVar = 0; iVar < nVarTur; ++iVar) {
 
-      for (im = 0; im < nMetr; ++im) {
+      for (im = 0; im < nMet; ++im) {
         const su2double hess = varTur->GetHessian(iPoint, iVar, im);
         const su2double part = abs(weights[0][nVarFlo+iVar]
                                   +weights[1][nVarFlo+iVar]

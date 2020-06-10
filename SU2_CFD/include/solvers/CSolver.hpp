@@ -342,6 +342,12 @@ public:
   void CorrectBoundHessian(CGeometry *geometry,
                            CConfig *config,
                            unsigned short Kind_Solver);
+  
+  /*!
+   * \brief Correct the metric at boundaries.
+   */
+  void CorrectBoundMetric(CGeometry *geometry,
+                          CConfig *config);
 
   /*!
    * \brief Make the eigenvalues of the Hessians positive.
