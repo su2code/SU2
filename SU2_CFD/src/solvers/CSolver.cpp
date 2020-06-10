@@ -5586,7 +5586,11 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {
+    //--- Correct for physical boundaries
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
 
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
@@ -5599,7 +5603,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
-              //--- Reset hessian if first volume node detected
+              //--- Reset metric if first volume node detected
               if(counter == 0) {
                 for(iMet = 0; iMet < nMet; iMet++) {
                   met[iMet] = base_nodes->GetMetric(iPoint, iMet);
