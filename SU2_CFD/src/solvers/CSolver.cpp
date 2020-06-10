@@ -6186,9 +6186,9 @@ void CSolver::ViscousMetric(CSolver                    **solver,
 
   //--- Momentum weights
   vector<su2double> TmpWeights(nVarFlo, 0.0);
-  TmpWeights[1] += u[0]*factor;
-  TmpWeights[2] += u[1]*factor;
-  if(nDim == 3) TmpWeights[3] += u[2]*factor;
+  TmpWeights[1] += -u[0]*factor;
+  TmpWeights[2] += -u[1]*factor;
+  if(nDim == 3) TmpWeights[3] += -u[2]*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), jDim);
@@ -6196,11 +6196,11 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   }
 
   //--- Energy weight
-  TmpWeights[nVarFlo-1] += -factor;
+  TmpWeights[nVarFlo-1] += factor;
   
   //--- k weight
   if (sst) {
-    weights[1][nVarFlo] += factor;
+    weights[1][nVarFlo] += -factor;
     for (iDim = 0; iDim < nDim; ++iDim) {
       weights[1][nVarFlo] += -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
                                      + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
@@ -6210,7 +6210,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] += -e*TmpWeights[nVarFlo-1];
-  if (sst) TmpWeights[0] -= k*factor;
+  if (sst) TmpWeights[0] += k*factor;
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar];
