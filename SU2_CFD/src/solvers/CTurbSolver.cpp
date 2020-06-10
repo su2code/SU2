@@ -134,8 +134,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Primitive variables w/o reconstruction ---*/
 
-//    const auto V_i = (sst) ? nodes->GetFlowPrimitive(iPoint) : flowNodes->GetPrimitive(iPoint);
-//    const auto V_j = (sst) ? nodes->GetFlowPrimitive(jPoint) : flowNodes->GetPrimitive(jPoint);
     const auto V_i = flowNodes->GetPrimitive(iPoint);
     const auto V_j = flowNodes->GetPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
