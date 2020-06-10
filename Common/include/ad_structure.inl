@@ -60,6 +60,8 @@ namespace AD{
 
   extern std::vector<su2double::TapeType::Position> TapePositions;
 
+  extern std::vector<su2double::TapeType::Position> ForwardTapePositions;
+
   extern std::vector<su2double::GradientData> localInputValues;
 
   extern std::vector<su2double*> localOutputValues;
@@ -97,8 +99,16 @@ namespace AD{
     }
   }
 
-  inline void ComputeAdjointForward() {AD::globalTape.evaluateForward();
-                                      adjointVectorPosition = 0;}
+  inline void ComputeAdjointForward(unsigned short enter, unsigned short leave) {
+    AD::globalTape.evaluateForward(ForwardTapePositions[enter], ForwardTapePositions[leave]);
+    if (leave == 0) {
+      adjointVectorPosition = 0;
+    }
+  }
+
+  inline void Push_ForwardTapePosition() {
+    ForwardTapePositions.push_back(AD::globalTape.getPosition());
+  }
 
   inline void Reset() {
     globalTape.reset();
@@ -282,7 +292,9 @@ namespace AD{
 
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
 
-  inline void ComputeAdjointForward() {}
+  inline void ComputeAdjointForward(unsigned short enter, unsigned short leave) {}
+
+  inline void Push_ForwardTapePosition() {}
 
   inline void SetIndex(int &index, const su2double &data) {}
 

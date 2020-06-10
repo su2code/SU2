@@ -41,6 +41,8 @@ namespace AD {
   su2double::TapeType::Position StartPosition, EndPosition;
   std::vector<su2double::TapeType::Position> TapePositions;
 
+  std::vector<su2double::TapeType::Position> ForwardTapePositions;
+
   bool Status = false;
   bool PreaccActive = false;
   bool PreaccEnabled = true;

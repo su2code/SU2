@@ -587,9 +587,12 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
     param_jacobi =  new su2double[nDVtotal*nPoint*nDim];
 
     /// get the Jacobian of the parametrization for simplicity in the rest of the function
-    GetParameterizationJacobianPreaccumulation(geometry, config, surface_movement[ZONE_0], param_jacobi);
+    // GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
+    // GetParameterizationJacobianPreaccumulation(geometry, config, surface_movement[ZONE_0], param_jacobi);
+    // GetParameterizationJacobianForward(geometry,config,surface_movement[ZONE_0], param_jacobi);
 
-  /* for debuging and speed tests
+
+  // for debuging and speed tests
   // some temporary test stuff
   auto start = std::chrono::high_resolution_clock::now();
   GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
@@ -604,7 +607,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   su2double* param_jacobi2;
   param_jacobi2 =  new su2double[nDVtotal*nPoint*nDim];
   start = std::chrono::high_resolution_clock::now();
-  GetParameterizationJacobianPreaccumulation(geometry, config, surface_movement[ZONE_0], param_jacobi2);
+  GetParameterizationJacobianForward(geometry, config, surface_movement[ZONE_0], param_jacobi2);
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
   std::cout << "Execution required: " << duration.count() << std::endl;
@@ -613,6 +616,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
       file2 << Cast2Eigenmatrix(geometry, config, param_jacobi2) << '\n';
   }
 
+  /*
   ofstream DV_Jacobian ("DV_Jacobian.txt");
   DV_Jacobian.precision(17);
   auto iDVindex=0;

@@ -58,11 +58,7 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (visitedPoints[iPoint]==0){
-          visitedPoints[iPoint] = 1;
-        } else {
-          visitedPoints[iPoint] = 1;
-        }
+        visitedPoints[iPoint] = 1;
       }
     }
   }
@@ -169,24 +165,18 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
- /// new version
-
   unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iMarker, iVertex, iDim;
   su2double* VarCoord;
-  std::vector<std::vector<su2double>> DV_Value;
+  su2double** DV_Value;
+  double localGradient;
 
-  // get some numbers from config
+  /*--- get information from config ---*/
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nPoint  = geometry->GetnPoint();
   nDV     = config->GetnDV();
   nDV_Total = config->GetnDV_Total();
-
-  /*--- Discrete adjoint tape recording ---*/
-
-  if (SU2_MPI::GetRank() == MASTER_NODE)
-    cout  << endl << "Taping surface parameterization using Algorithmic Differentiation (ZONE " << config->GetiZone() << ")." << endl;
 
   /*--- Start recording of operations ---*/
 
@@ -197,22 +187,19 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
 
+  DV_Value = config->GetDV_Pointer();
   for (iDV = 0; iDV < nDV; iDV++){
-
     nDV_Value =  config->GetnDV_Value(iDV);
-    DV_Value.push_back(std::vector<su2double>());
-
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
 
-      /*--- Initilization with su2double resets the index ---*/
-
-      DV_Value[iDV].push_back(0.0);
-
+      /*--- Initilization of su2double with 0.0 resets the index ---*/
+      DV_Value[iDV][iDV_Value] = 0.0;
       AD::RegisterInput(DV_Value[iDV][iDV_Value]);
 
-      config->SetDV_Value(iDV, iDV_Value, DV_Value[iDV][iDV_Value]);
     }
   }
+
+  AD::Push_ForwardTapePosition();
 
   /*--- Call the surface deformation routine ---*/
 
@@ -231,7 +218,9 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
     }
   }
 
+
   /*--- Stop the recording --- */
+  AD::Push_ForwardTapePosition();
   AD::StopRecording();
 
   /*--- Loop over all design variables and calculate the derivative with respect to that variable --*/
@@ -242,21 +231,21 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
 
       SU2_TYPE::SetDerivative(DV_Value[iDV][iDV_Value], 1.0);
 
-      AD::ComputeAdjointForward();
+      AD::ComputeAdjointForward(0,1);
 
-      /*--- Extract sensitivity with respect to this design variable ---*/
+      /*--- Extract sensitivities ---*/
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
         if (config->GetMarker_All_DV(iMarker) == YES) {
           nVertex = geometry->nVertex[iMarker];
-          for (iVertex = 0; iVertex <nVertex; iVertex++) {
-            VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            for (iDim=0; iDim<nDim; iDim++) {
-              Jacobian[iDV_index*nPoint*nDim+iPoint*nDim+iDim] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+            for (iVertex = 0; iVertex <nVertex; iVertex++) {
+              VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              for (iDim=0; iDim<nDim; iDim++) {
+                Jacobian[iDV_index*nPoint*nDim+iPoint*nDim+iDim] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+              }
             }
           }
         }
-      }
 
       iDV_index++;
       AD::ClearAdjoints();
@@ -299,11 +288,7 @@ void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *co
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (visitedPoints[iPoint]==0){
-          visitedPoints[iPoint] = 1;
-        } else {
-          visitedPoints[iPoint] = 1;
-        }
+        visitedPoints[iPoint] = 1;
       }
     }
   }
