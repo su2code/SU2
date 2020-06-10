@@ -1954,7 +1954,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   omega = varTur->GetPrimitive(iPoint, 1);
   
   mu  = varFlo->GetLaminarViscosity(iPoint);
-  mut = max(r*k/omega, eps);
+  mut = r*k/omega, eps;
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
@@ -2011,7 +2011,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
       factor += -(2./3.)*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
       for (jDim = 0; jDim < nDim; ++jDim) {
         factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
-        factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
+        factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/max(mut,eps)*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
       }
       TmpWeights[iDim+1] += factor;
     }
@@ -2022,7 +2022,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (taut[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/mut
+      factor += (taut[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/max(mut,eps)
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
