@@ -3106,7 +3106,6 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
                              *config, solution, 0, nVar, gradient);
   
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
-//  CorrectWallGradient(geometry, config, Kind_Solver);
   
   auto& hessian = base_nodes->GetHessian();
   
@@ -5755,9 +5754,6 @@ void CSolver::ComputeMetric(CSolver   **solver,
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
   }
-  
-  //--- Smooth metric at solid boundaries
-  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
