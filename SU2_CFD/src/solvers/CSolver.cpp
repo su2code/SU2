@@ -5755,7 +5755,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
   }
   
   //--- Smooth metric at solid boundaries
-//  CorrectBoundMetric(geometry, config);
+  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
