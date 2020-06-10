@@ -175,13 +175,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
           su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-//            Project_Grad_i += 0.5*Vector_ij[iDim]*Gradient_i[iVar][iDim];
-//            Project_Grad_j -= 0.5*Vector_ij[iDim]*Gradient_j[iVar][iDim];
+//            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+//            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+            Project_Grad_i += 0.5*Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j -= 0.5*Vector_ij[iDim]*Gradient_j[iVar][iDim];
           }
-//          Project_Grad_i += 0.25*(V_j[iVar]-V_i[iVar]);
-//          Project_Grad_j -= 0.25*(V_j[iVar]-V_i[iVar]);
+          Project_Grad_i += 0.25*(V_j[iVar]-V_i[iVar]);
+          Project_Grad_j -= 0.25*(V_j[iVar]-V_i[iVar]);
           if (limiterFlow) {
             Project_Grad_i *= Limiter_i[iVar];
             Project_Grad_j *= Limiter_j[iVar];
@@ -207,13 +207,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         for (iVar = 0; iVar < nVar; iVar++) {
           su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-//            Project_Grad_i += 0.5*Vector_ij[iDim]*Gradient_i[iVar][iDim];
-//            Project_Grad_j -= 0.5*Vector_ij[iDim]*Gradient_j[iVar][iDim];
+//            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+//            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+            Project_Grad_i += 0.5*Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j -= 0.5*Vector_ij[iDim]*Gradient_j[iVar][iDim];
           }
-//          Project_Grad_i += 0.25*(Turb_j[iVar]-Turb_i[iVar]);
-//          Project_Grad_j -= 0.25*(Turb_j[iVar]-Turb_i[iVar]);
+          Project_Grad_i += 0.25*(Turb_j[iVar]-Turb_i[iVar]);
+          Project_Grad_j -= 0.25*(Turb_j[iVar]-Turb_i[iVar]);
           if (limiter) {
             Project_Grad_i *= Limiter_i[iVar];
             Project_Grad_j *= Limiter_j[iVar];
