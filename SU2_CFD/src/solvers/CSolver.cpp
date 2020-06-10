@@ -5366,47 +5366,55 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
             *UnitNormal = new su2double[nDim],
             *SumNormal  = new su2double[nDim];
   
+  bool correct;
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetSolidBoundary()) {
-      //--- Reset sume(grad_dot_n)
+      correct = false;
+      
+      //--- Reset sum(grad_dot_n)
       for (iDim = 0; iDim < nDim; iDim++) {
         SumNormal[iDim] = 0.;
       }
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex > -1) {
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
-        }// if iVertex
+        if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+          iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (iVertex > -1) {
+            correct = true;
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
+          }// if iVertex
+        }// if Heat_Flux
       }// iMarker
-          
-      //--- Compute unit normal.
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += SumNormal[iDim]*SumNormal[iDim];
-      Area = sqrt (Area);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = SumNormal[iDim]/Area;
       
-      //--- Dot gradient with normal.
-      if (Kind_Solver == RUNTIME_FLOW_SYS) {
-        for (iVar = 1; iVar < nDim+1; iVar++) {
-          for (iDim = 0; iDim < nDim; iDim++) {
-            const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
-            const su2double grad_dot_n = grad * UnitNormal[iDim];
-            base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
+      if (correct) {
+        //--- Compute unit normal.
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += SumNormal[iDim]*SumNormal[iDim];
+        Area = sqrt (Area);
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          UnitNormal[iDim] = SumNormal[iDim]/Area;
+        
+        //--- Dot gradient with normal.
+        if (Kind_Solver == RUNTIME_FLOW_SYS) {
+          for (iVar = 1; iVar < nDim+1; iVar++) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
+              const su2double grad_dot_n = grad * UnitNormal[iDim];
+              base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
+            }
           }
-        }
-      }// if flow
-      else if (Kind_Solver == RUNTIME_TURB_SYS) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
-          const su2double grad_dot_n = grad * UnitNormal[iDim];
-          base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
-        }
-      }// if turb
+        }// if flow
+        else if (Kind_Solver == RUNTIME_TURB_SYS) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
+            const su2double grad_dot_n = grad * UnitNormal[iDim];
+            base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
+          }
+        }// if turb
+      }// if correct
     }// if SolidBoundary
   }// iPoint
   
