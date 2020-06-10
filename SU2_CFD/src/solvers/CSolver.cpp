@@ -3106,7 +3106,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
                              *config, solution, 0, nVar, gradient);
   
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
-//  CorrectWallGradient(geometry, config, Kind_Solver);
+  CorrectWallGradient(geometry, config, Kind_Solver);
   
   auto& hessian = base_nodes->GetHessian();
   
@@ -5358,52 +5358,57 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
 
 void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   unsigned short iVar, iDim, iMarker;
-  unsigned long iVertex;
+  unsigned long iPoint;
+  long iVertex;
   
   su2double Area,
             *Normal     = new su2double[nDim],
-            *UnitNormal = new su2double[nDim];
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
-          
+            *UnitNormal = new su2double[nDim],
+            *SumNormal  = new su2double[nDim];
+  
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (geometry->node[iPoint]->GetSolidBoundary()) {
+      //--- Reset sume(grad_dot_n)
+      for (iDim = 0; iDim < nDim; iDim++) {
+        SumNormal[iDim] = 0.;
+      }
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex > -1) {
           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++)
-            Normal[iDim] = -Normal[iDim];
-
-          //--- Compute unit normal.
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt (Area);
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            UnitNormal[iDim] = -Normal[iDim]/Area;
+          for (iDim = 0; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
+        }// if iVertex
+      }// iMarker
           
-          if (Kind_Solver == RUNTIME_FLOW_SYS) {
-            for (iVar = 1; iVar < nDim+1; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
-                const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
-                const su2double grad_dot_n = grad * UnitNormal[iDim];
-                base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
-              }
-            }
+      //--- Compute unit normal.
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += SumNormal[iDim]*SumNormal[iDim];
+      Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = SumNormal[iDim]/Area;
+      
+      //--- Dot gradient with normal.
+      if (Kind_Solver == RUNTIME_FLOW_SYS) {
+        for (iVar = 1; iVar < nDim+1; iVar++) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
+            const su2double grad_dot_n = grad * UnitNormal[iDim];
+            base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
           }
-          else if (Kind_Solver == RUNTIME_TURB_SYS) {
-            for (iDim = 0; iDim < nDim; iDim++) {
-              const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
-              const su2double grad_dot_n = grad * UnitNormal[iDim];
-              base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
-            }
-          }
-          
-        }// if domain
-      }// iVertex
-    }// if KindBC
-  }// iMarker
+        }
+      }// if flow
+      else if (Kind_Solver == RUNTIME_TURB_SYS) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
+          const su2double grad_dot_n = grad * UnitNormal[iDim];
+          base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
+        }
+      }// if turb
+    }// if SolidBoundary
+  }// iPoint
   
   //--- communicate the gradient values via MPI
   InitiateComms(geometry, config, ANISO_GRADIENT);
@@ -5412,6 +5417,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
   //--- Free locally allocated memory
   delete [] Normal;
   delete [] UnitNormal;
+  delete [] SumNormal;
 }
 
 void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
@@ -5741,7 +5747,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
   }
   
   //--- Smooth metric at solid boundaries
-  CorrectBoundMetric(geometry, config);
+//  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
