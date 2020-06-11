@@ -857,8 +857,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pk += Eddy_Viscosity_i*factor;
      
      pw = alfa_blended*Density_i*factor;
-     if (TurbVar_i[1] > VorticityMag*F2_i/a1) pw += -2.0/3.0*Density_i*TurbVar_i[1]*diverg;
-     else pw += - 2.0/3.0*Density_i*VorticityMag*F2_i/a1*diverg;
+     if (TurbVar_i[1] > VorticityMag*F2_i/a1) pw += -2.0/3.0*alfa_blended*Density_i*TurbVar_i[1]*diverg;
+     else pw += - 2.0/3.0*alfa_blended*Density_i*VorticityMag*F2_i/a1*diverg;
        
      if ((pk > 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = -2./3.*diverg*Volume;
