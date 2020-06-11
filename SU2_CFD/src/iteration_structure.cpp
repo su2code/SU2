@@ -475,7 +475,7 @@ void CFluidIteration::Iterate(COutput *output,
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!config[val_iZone]->GetDiscrete_Adjoint())) {
+  if (config[val_iZone]->GetCFL_Adapt() == YES) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
