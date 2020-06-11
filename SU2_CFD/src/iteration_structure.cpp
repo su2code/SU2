@@ -414,7 +414,7 @@ void CFluidIteration::Iterate(COutput *output,
                      (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   TimeIter = config[val_iZone]->GetTimeIter();
 
-  /* --- Setting up iteration values depending on if this is a
+  /* --- Setcting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
 
   InnerIter = config[val_iZone]->GetInnerIter();
@@ -432,19 +432,6 @@ void CFluidIteration::Iterate(COutput *output,
     case RANS: case DISC_ADJ_RANS: case INC_RANS: case DISC_ADJ_INC_RANS:
       config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS); break;
 
-  }
-  
-  /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
-  
-  if (config[val_iZone]->GetDiscrete_Adjoint()) {
-    su2double monitor = 1.0;
-    integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst],
-                                                                           solver[val_iZone][val_iInst],
-                                                                           numerics[val_iZone][val_iInst],
-                                                                           config[val_iZone],
-                                                                           MESH_0,
-                                                                           RUNTIME_FLOW_SYS,
-                                                                           &monitor);
   }
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
@@ -508,6 +495,19 @@ void CFluidIteration::Iterate(COutput *output,
         SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
     }
 
+  }
+  
+  /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
+  
+  if (config[val_iZone]->GetDiscrete_Adjoint()) {
+    su2double monitor = 1.0;
+    integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst],
+                                                                           solver[val_iZone][val_iInst],
+                                                                           numerics[val_iZone][val_iInst],
+                                                                           config[val_iZone],
+                                                                           MESH_0,
+                                                                           RUNTIME_FLOW_SYS,
+                                                                           &monitor);
   }
 
 }
