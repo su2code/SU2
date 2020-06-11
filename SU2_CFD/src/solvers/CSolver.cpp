@@ -5754,6 +5754,9 @@ void CSolver::ComputeMetric(CSolver   **solver,
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
   }
+  
+  //--- Apply correction to wall boundary
+  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
