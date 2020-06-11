@@ -5074,7 +5074,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
                               const su2double *const *const *const Jacobian_ic,
                               const su2double *const *const *const Jacobian_jc) {
   
-//  AD_BEGIN_PASSIVE
+  AD_BEGIN_PASSIVE
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
@@ -5197,7 +5197,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
     }
   }
   
-//  AD_END_PASSIVE
+  AD_END_PASSIVE
   
 }
 
@@ -6103,9 +6103,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
 
   unsigned short iDim, jDim, iVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-  
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
-  
+    
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], e, k,
             T, mu, mut, lam, lamt, dmudT, 
@@ -6125,7 +6123,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   T   = varFlo->GetTemperature(iPoint);
   mu  = varFlo->GetLaminarViscosity(iPoint);
   mut = varFlo->GetEddyViscosity(iPoint);
-//  if (sst) mut = r*k/varTur->GetPrimitive(iPoint,1);
+  if (sst) mut = r*k/varTur->GetPrimitive(iPoint,1);
 
   Tref  = config->GetMu_Temperature_RefND();
   S     = config->GetMu_SND();
