@@ -5756,7 +5756,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
   }
   
   //--- Apply correction to wall boundary
-  CorrectBoundMetric(geometry, config);
+//  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);
