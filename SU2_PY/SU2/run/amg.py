@@ -222,7 +222,7 @@ def amg ( config , kind='' ):
             
             config_cfd.CONV_FILENAME    = "history"
             config_cfd.RESTART_FILENAME = cur_solfil
-            config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'MIN_CFL']
+            config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
             config_cfd.COMPUTE_METRIC   = 'NO'
             config_cfd.MATH_PROBLEM     = 'DIRECT'
             
@@ -249,7 +249,7 @@ def amg ( config , kind='' ):
                 config_cfd_ad.ADAP_COMPLEXITY      = int(mesh_sizes[0])
 
                 cfl = su2amg.get_min_cfl(history_format)
-                su2amg.set_cfl(config_cfd_ad, adap_flow_cfl[iSiz])
+                su2amg.set_cfl(config_cfd_ad, cfl)
 
                 SU2_CFD(config_cfd_ad)
 
@@ -296,9 +296,10 @@ def amg ( config , kind='' ):
         config_cfd.ITER             = 1
         config_cfd.CONV_FILENAME    = "history"
         config_cfd.RESTART_FILENAME = cur_solfil
-        config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'MIN_CFL']
+        config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
         config_cfd.COMPUTE_METRIC   = 'NO'
         config_cfd.MATH_PROBLEM     = 'DIRECT'
+
         SU2_CFD(config_cfd)
 
         if adap_sensor == 'GOAL':
@@ -326,6 +327,7 @@ def amg ( config , kind='' ):
             if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
                 config_cfd_ad.ITER        = config.ITER
                 config_cfd_ad.RESTART_SOL = 'NO'
+
                 SU2_CFD(config_cfd_ad)
 
                 cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
@@ -334,7 +336,9 @@ def amg ( config , kind='' ):
             else:
                 os.symlink(os.path.join(cwd, cur_solfil_adj_ini), cur_solfil_adj_ini)
                 config_cfd_ad.ITER = 1
+
                 SU2_CFD(config_cfd_ad)
+
                 sav_stdout.write('Initial adjoint CFD solution is provided.\n')
                 sav_stdout.flush()
 
