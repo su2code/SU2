@@ -669,11 +669,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
 }
 
-
-CMultiGridGeometry::~CMultiGridGeometry(void) {
-
-}
-
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config) {
 
   bool agglomerate_CV = false;
@@ -1104,6 +1099,8 @@ void CMultiGridGeometry::MatchPeriodic(CConfig *config, unsigned short val_perio
 
 void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
 
+  SU2_OMP_MASTER {
+
   unsigned long iFinePoint, iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
   unsigned short iChildren, iNode, iDim;
@@ -1166,9 +1163,13 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
     }
   }
 
+  } SU2_OMP_BARRIER
 }
 
 void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
+
+  SU2_OMP_MASTER {
+
   unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
   unsigned short iMarker, iChildren, iDim;
   su2double *Normal, Area, *NormalFace = nullptr;
@@ -1205,29 +1206,24 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
+  } SU2_OMP_BARRIER
 }
 
 void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
-  unsigned long Point_Fine, Point_Coarse;
-  unsigned short iChildren, iDim;
-  su2double Area_Parent, Area_Children;
-  su2double *Coordinates_Fine, *Coordinates;
-  Coordinates = new su2double[nDim];
 
-  for (Point_Coarse = 0; Point_Coarse < GetnPoint(); Point_Coarse++) {
-    Area_Parent = nodes->GetVolume(Point_Coarse);
-    for (iDim = 0; iDim < nDim; iDim++) Coordinates[iDim] = 0.0;
-    for (iChildren = 0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-      Area_Children = geometry->nodes->GetVolume(Point_Fine);
-      Coordinates_Fine = geometry->nodes->GetCoord(Point_Fine);
-      for (iDim = 0; iDim < nDim; iDim++)
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_max_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < nPoint; Point_Coarse++) {
+    auto Area_Parent = nodes->GetVolume(Point_Coarse);
+    su2double Coordinates[3] = {0.0};
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+      auto Area_Children = geometry->nodes->GetVolume(Point_Fine);
+      auto Coordinates_Fine = geometry->nodes->GetCoord(Point_Fine);
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         Coordinates[iDim] += Coordinates_Fine[iDim]*Area_Children/Area_Parent;
     }
-    for (iDim = 0; iDim < nDim; iDim++)
-      nodes->SetCoord(Point_Coarse, iDim, Coordinates[iDim]);
+    nodes->SetCoord(Point_Coarse, Coordinates);
   }
-  delete[] Coordinates;
 }
 
 void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
@@ -1325,6 +1321,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsign
 void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {
 
   /*--- Loop over all coarse mesh points. ---*/
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_max_threads()))
   for (unsigned long Point_Coarse = 0; Point_Coarse < nPoint; Point_Coarse++) {
     su2double Area_Parent = nodes->GetVolume(Point_Coarse);
 

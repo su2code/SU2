@@ -28,6 +28,9 @@
 
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/fluid/CIdealGas.hpp"
+#include "../../include/fluid/CVanDerWaalsGas.hpp"
+#include "../../include/fluid/CPengRobinson.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -2670,7 +2673,7 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
 
    /* Get the rotation angles from config for this marker. */
    const unsigned short pInd = markersRotPer[i];
-   su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
+   auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
 
     /*--- Determine the rotation matrix from the donor to the halo elements.
           This is the transpose of the rotation matrix from the halo to the
