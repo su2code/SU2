@@ -747,11 +747,11 @@ class Interface:
         """
         
         
-       # Booleian of pyBeam convergence shared by all processors (if it's true the simulation goes on)
-       # In case of rigid (only one iter) pyBeam is not even cvalled so it is already true        
-       # In case of FSI it is pyBeam that has to modify it
-       # Initialization is required for every processor    
-       pyBeam_success = True
+        # Booleian of pyBeam convergence shared by all processors (if it's true the simulation goes on)
+        # In case of rigid (only one iter) pyBeam is not even cvalled so it is already true        
+        # In case of FSI it is pyBeam that has to modify it
+        # Initialization is required for every processor    
+        pyBeam_success = True
         
         # Stores FD sensitivity variable
         self.FD_sens = FD_sens;
