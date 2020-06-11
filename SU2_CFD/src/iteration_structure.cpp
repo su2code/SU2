@@ -433,6 +433,19 @@ void CFluidIteration::Iterate(COutput *output,
       config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS); break;
 
   }
+  
+  /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
+  
+  if (config[val_iZone]->GetDiscrete_Adjoint()) {
+    su2double monitor = 1.0;
+    integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst],
+                                                                           solver[val_iZone][val_iInst],
+                                                                           numerics[val_iZone][val_iInst],
+                                                                           config[val_iZone],
+                                                                           MESH_0,
+                                                                           RUNTIME_FLOW_SYS,
+                                                                           &monitor);
+  }
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
@@ -495,19 +508,6 @@ void CFluidIteration::Iterate(COutput *output,
         SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
     }
 
-  }
-  
-  /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
-  
-  if (config[val_iZone]->GetDiscrete_Adjoint()) {
-    su2double monitor = 1.0;
-    integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst],
-                                                                           solver[val_iZone][val_iInst],
-                                                                           numerics[val_iZone][val_iInst],
-                                                                           config[val_iZone],
-                                                                           MESH_0,
-                                                                           RUNTIME_FLOW_SYS,
-                                                                           &monitor);
   }
 
 }
