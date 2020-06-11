@@ -121,7 +121,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
 }
 
-void CMultiGridIntegration::MultiGrid_Cycle(CGeometrys ****geometry,
+void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             CSolver *****solver_container,
                                             CNumerics ******numerics_container,
                                             CConfig **config_container,
