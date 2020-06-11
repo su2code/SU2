@@ -249,7 +249,7 @@ def amg ( config , kind='' ):
                 config_cfd_ad.ADAP_COMPLEXITY      = int(mesh_sizes[0])
 
                 cfl = su2amg.get_min_cfl(history_format)
-                cfl = max(0.9*cfl, float(config.CFL_NUMBER))
+                cfl = max(0.5*cfl, float(config.CFL_NUMBER))
                 su2amg.set_cfl(config_cfd_ad, cfl)
 
                 SU2_CFD(config_cfd_ad)
@@ -524,7 +524,7 @@ def amg ( config , kind='' ):
                     config_cfd_ad.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
 
                     cfl = su2amg.get_min_cfl(history_format)
-                    cfl = max(0.9*cfl, adap_flow_cfl[iSiz])
+                    cfl = max(0.5*cfl, adap_flow_cfl[iSiz])
                     su2amg.set_cfl(config_cfd_ad, cfl)
 
                     SU2_CFD(config_cfd_ad)
