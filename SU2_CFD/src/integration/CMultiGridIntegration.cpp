@@ -113,9 +113,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
 
-  NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
-                            numerics_container[iZone][iInst], config[iZone],
-                            FinestMesh, RunTime_EqSystem, &monitor);
+  if (!config[iZone]->GetDiscrete_Adjoint())
+    NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
+                              numerics_container[iZone][iInst], config[iZone],
+                              FinestMesh, RunTime_EqSystem, &monitor);
 
   } // end SU2_OMP_PARALLEL
 
