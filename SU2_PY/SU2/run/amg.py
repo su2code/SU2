@@ -258,6 +258,9 @@ def amg ( config , kind='' ):
                 suffix         = su2io.get_adjointSuffix(func_name)
                 cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
+                #--- Set RESTART_SOL=YES for runs after adaptation
+                config_cfd_ad.RESTART_SOL = 'YES'
+
         except:
             sys.stdout = sav_stdout
             sys.stderr = sav_stderr
@@ -332,6 +335,9 @@ def amg ( config , kind='' ):
                 SU2_CFD(config_cfd_ad)
 
                 cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
+
+                #--- Set RESTART_SOL=YES for runs after adaptation
+                config_cfd_ad.RESTART_SOL = 'YES'
 
             #--- Otherwise just compute the metric
             else:
