@@ -1954,7 +1954,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   omega = varTur->GetPrimitive(iPoint, 1);
   
   mu  = varFlo->GetLaminarViscosity(iPoint);
-  mut = r*k/omega;
+  mut = nodes->GetmuT(iPoint);
+//  mut = r*k/omega;
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
