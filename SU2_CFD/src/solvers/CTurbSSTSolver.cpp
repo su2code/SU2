@@ -388,7 +388,6 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   
   const su2double a1 = constants[7];
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
   
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -416,7 +415,6 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
     const su2double zeta  = max(omega, VorticityMag*F2/a1);
-//    const su2double muT   = max(rho*kine/zeta, eps);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
@@ -549,7 +547,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned long iPoint) {
   
-  AD_BEGIN_PASSIVE
+//  AD_BEGIN_PASSIVE
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
@@ -559,13 +557,9 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     
     if ((geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) &&
         (CDkw > 1.e-20)) {
-//    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = flowNodes->GetPrimitive(iPoint, nDim+2);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
-//      const su2double rk_i     = nodes->GetSolution(iPoint,0);
-//      const su2double muT_i    = nodes->GetmuT(iPoint);
-//      const su2double om_i     = rk_i/muT_i;
       
       Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
       Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -577,7 +571,6 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-//        const su2double r_j      = flowNodes->GetDensity(jPoint);
         const su2double r_j  = flowNodes->GetPrimitive(jPoint, nDim+2);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
 
@@ -618,7 +611,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     }
   }
   
-  AD_END_PASSIVE
+//  AD_END_PASSIVE
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -774,51 +767,49 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Viscous contribution ---*/
       
-//      if (Vn_Infty < 0.0) {
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[iPoint]->GetCoord());
-        visc_numerics->SetNormal(Normal);
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                              geometry->node[iPoint]->GetCoord());
+      visc_numerics->SetNormal(Normal);
 
-        /*--- Conservative variables w/o reconstruction ---*/
-        visc_numerics->SetPrimitive(V_domain, V_domain);
+      /*--- Conservative variables w/o reconstruction ---*/
+      visc_numerics->SetPrimitive(V_domain, V_domain);
 
-        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-        visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
-        visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
-                                          nodes->GetGradient(iPoint));
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+                                        nodes->GetGradient(iPoint));
 
-        /*--- Menter's first blending function ---*/
-        visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
-                                     nodes->GetF1blending(iPoint));
+      /*--- Menter's first blending function ---*/
+      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint),
+                                   nodes->GetF1blending(iPoint));
+      
+      /*--- Menter's second blending function ---*/
+      visc_numerics->SetF2blending(nodes->GetF2blending(iPoint),
+                                   nodes->GetF2blending(iPoint));
+      
+      /*--- Vorticity ---*/
+      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
+                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+      
+      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                     nodes->GetVorticityMag(iPoint));
+
+      /*--- Set values for gradient Jacobian ---*/
+      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                               geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute residual, and Jacobians ---*/
+      auto visc_residual = visc_numerics->ComputeResidual(config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+      LinSysRes.SubtractBlock(iPoint, visc_residual);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
+      
+      /*--- Compute Jacobian correction for influence from all neighbors ---*/
+      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
         
-        /*--- Menter's second blending function ---*/
-        visc_numerics->SetF2blending(nodes->GetF2blending(iPoint),
-                                     nodes->GetF2blending(iPoint));
-        
-        /*--- Vorticity ---*/
-        visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
-                                    solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
-        
-        visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-                                       nodes->GetVorticityMag(iPoint));
-
-        /*--- Set values for gradient Jacobian ---*/
-        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-                                 geometry->node[iPoint]->GetVolume());
-
-        /*--- Compute residual, and Jacobians ---*/
-        auto visc_residual = visc_numerics->ComputeResidual(config);
-
-        /*--- Subtract residual, and update Jacobians ---*/
-        LinSysRes.SubtractBlock(iPoint, visc_residual);
-        Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-        Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
-        
-        /*--- Compute Jacobian correction for influence from all neighbors ---*/
-        CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-        CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
-        
-//      }
     }
   }
 
