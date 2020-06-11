@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid_model.hpp"
+#include "../fluid/CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/C2DContainer.hpp"
 
 

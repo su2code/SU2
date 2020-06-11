@@ -2,11 +2,11 @@
  * \file wall_model.hpp
  * \brief Headers for the wall model functions for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -42,7 +42,7 @@ class CFluidModel;
  * \class CWallModel
  * \brief Base class for defining the LES wall model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CWallModel {
 
@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CWallModel(void);
+  virtual ~CWallModel(void) = default;
 
   /*!
    * \brief Virtual function, which computes the wall shear stress and heat flux
@@ -81,7 +81,7 @@ public:
                                           const su2double velExchange,
                                           const su2double muExchange,
                                           const su2double pExchange,
-                                          const su2double Wall_HeatFlux, 
+                                          const su2double Wall_HeatFlux,
                                           const bool      HeatFlux_Prescribed,
                                           const su2double TWall,
                                           const bool      Temperature_Prescribed,
@@ -116,11 +116,6 @@ public:
    */
   CWallModel1DEQ(CConfig      *config,
                  const string &Marker_Tag);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CWallModel1DEQ(void) override;
 
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -169,9 +164,9 @@ private:
 };
 
 class CWallModelLogLaw : public CWallModel {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class, which initializes the object.
    * \param[in] config     - Definition of the particular problem.
@@ -180,12 +175,7 @@ public:
    */
   CWallModelLogLaw(CConfig      *config,
                    const string &Marker_Tag);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CWallModelLogLaw(void) override;
-  
+
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
    from the data at the exchange location.
@@ -217,7 +207,7 @@ public:
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
                                   su2double       &kOverCvWall) override;
-  
+
 private:
 
   su2double C;  /*!< \brief Constant to match the Reichardt BL profile. */
@@ -227,5 +217,3 @@ private:
    */
   CWallModelLogLaw(void);
 };
-
-#include "wall_model.inl"

@@ -3,7 +3,7 @@
  * \brief Main subroutines for for carrying out geometrical searches using an
  *        alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -332,7 +332,7 @@ void CADTPointsOnlyClass::DetermineNearestNode_impl(vector<unsigned long>& front
                                                     unsigned long   &pointID,
                                                     int             &rankID) const {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
@@ -448,7 +448,7 @@ void CADTPointsOnlyClass::DetermineNearestNode_impl(vector<unsigned long>& front
     if(frontLeaves.size() == 0) break;
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* Recompute the distance to get the correct dependency if we use AD */
   coorTarget = coorPoints.data() + nDimADT*minIndex;
@@ -790,7 +790,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
                                                  unsigned long   &elemID,
                                                  int             &rankID) const {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the distance (squared) to the quaranteed distance ---*/
@@ -953,7 +953,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
     }
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */
@@ -1304,10 +1304,10 @@ bool CADTElemClass::CoorInTetrahedron(const unsigned long elemID,
      ((parCoor[0]+parCoor[1]+parCoor[2]) <= paramLowerBound)) {
     coorIsInside = true;
 
-    parCoor[0] = -0.5*(parCoor[0] + parCoor[1] + parCoor[2] + 1.0);
-    parCoor[1] =  0.5*(parCoor[0] + 1.0);
-    parCoor[2] =  0.5*(parCoor[1] + 1.0);
-    parCoor[3] =  0.5*(parCoor[2] + 1.0);
+    weightsInterpol[0] = -0.5*(parCoor[0] + parCoor[1] + parCoor[2] + 1.0);
+    weightsInterpol[1] =  0.5*(parCoor[0] + 1.0);
+    weightsInterpol[2] =  0.5*(parCoor[1] + 1.0);
+    weightsInterpol[3] =  0.5*(parCoor[2] + 1.0);
   }
 
   /* Return the value of coorIsInside. */

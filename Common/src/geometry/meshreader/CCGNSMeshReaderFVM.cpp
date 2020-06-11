@@ -3,7 +3,7 @@
  * \brief Class that reads a single zone of a CGNS mesh file from disk into
  *        linear partitions across all ranks.
  * \author T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1084,10 +1084,10 @@ string CCGNSMeshReaderFVM::GetCGNSElementType(ElementType_t val_elem_type,
 #endif
 
 void CCGNSMeshReaderFVM::InitiateCommsAll(void *bufSend,
-                                          int *nElemSend,
+                                          const int *nElemSend,
                                           SU2_MPI::Request *sendReq,
                                           void *bufRecv,
-                                          int *nElemRecv,
+                                          const int *nElemRecv,
                                           SU2_MPI::Request *recvReq,
                                           unsigned short countPerElem,
                                           unsigned short commType) {

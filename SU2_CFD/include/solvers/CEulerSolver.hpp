@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -616,7 +616,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -627,7 +627,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -635,7 +635,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
+  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -1060,7 +1060,7 @@ public:
    * \brief Set gradients of coefficients for fixed CL mode
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCoefficient_Gradients(CConfig *config);
+  void SetCoefficient_Gradients(CConfig *config) const;
 
   /*!
    * \brief Update the solution using the explicit Euler scheme.

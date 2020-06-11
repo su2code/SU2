@@ -3,7 +3,7 @@
  * \brief Header file for the class CCGNSMeshReaderFVM.
  *        The implementations are in the <i>CCGNSMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -126,10 +126,10 @@ private:
    * \param[in] countPerElem - Pieces of data per element communicated.
    */
   void InitiateCommsAll(void *bufSend,
-                        int *nElemSend,
+                        const int *nElemSend,
                         SU2_MPI::Request *sendReq,
                         void *bufRecv,
-                        int *nElemRecv,
+                        const int *nElemRecv,
                         SU2_MPI::Request *recvReq,
                         unsigned short countPerElem,
                         unsigned short commType);

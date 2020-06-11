@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,7 +70,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
 private:
   const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief config of the problem. */
+  const CConfig *config;                 /*!< \brief config of the problem. */
 
 public:
   /*!
@@ -80,7 +80,7 @@ public:
    * \param[in] config_ref - config of the problem
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType> & matrix_ref,
-                                 CGeometry *geometry_ref, CConfig *config_ref) :
+                                 CGeometry *geometry_ref, const CConfig *config_ref) :
     matrix(matrix_ref),
     geometry(geometry_ref),
     config(config_ref) {}
@@ -110,7 +110,7 @@ class CSysMatrixVectorProductTransposed final : public CMatrixVectorProduct<Scal
 private:
   const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief config of the problem. */
+  const CConfig *config;                 /*!< \brief config of the problem. */
 
 public:
   /*!
@@ -120,7 +120,7 @@ public:
    * \param[in] config_ref - config of the problem
    */
   inline CSysMatrixVectorProductTransposed(const CSysMatrix<ScalarType> & matrix_ref,
-                                           CGeometry *geometry_ref, CConfig *config_ref) :
+                                           CGeometry *geometry_ref, const CConfig *config_ref) :
     matrix(matrix_ref),
     geometry(geometry_ref),
     config(config_ref) {}

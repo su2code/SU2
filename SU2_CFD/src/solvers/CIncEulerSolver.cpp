@@ -2,7 +2,7 @@
  * \file solution_direct_mean_inc.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,9 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
-
+#include "../../include/fluid/CConstantDensity.hpp"
+#include "../../include/fluid/CIncIdealGas.hpp"
+#include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -74,7 +76,6 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   jPoint_UndLapl = nullptr;
   Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
   CharacPrimVar = nullptr;
-  Smatrix = nullptr; Cvector = nullptr;
   Preconditioner = nullptr;
 
   FluidModel = nullptr;
@@ -183,7 +184,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   jPoint_UndLapl = nullptr;
   Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
   CharacPrimVar = nullptr;
-  Smatrix = nullptr; Cvector = nullptr;
   Preconditioner = nullptr;
 
   /*--- Fluid model pointer initialization ---*/
@@ -308,22 +308,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   else {
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -853,7 +837,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      FluidModel = new CIncIdealGasPolynomial(config->GetGas_Constant(), Pressure_Thermodynamic);
+      FluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
@@ -1003,16 +987,14 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case CONSTANT_DENSITY:
       FluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
 
     case INC_IDEAL_GAS:
       FluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
 
     case INC_IDEAL_GAS_POLY:
-      FluidModel = new CIncIdealGasPolynomial(Gas_ConstantND, Pressure_ThermodynamicND);
+      FluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
@@ -1020,9 +1002,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
         FluidModel->SetCpModel(config);
       }
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
-
+      FluidModel->SetTDState_T(Temperature_FreeStreamND);
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -3594,7 +3575,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
 
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
@@ -3603,7 +3584,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
                              *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -3622,7 +3603,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
-void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
   const auto& primitives = nodes->GetPrimitive();

@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.4 "Blackbird"',
+        version: '7.0.5 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -61,9 +61,14 @@ if get_option('enable-cgns')
   su2_cpp_args += '-DHAVE_CGNS'
 endif
 
-# Check for non-debug build
+# check for non-debug build
 if get_option('buildtype')!='debug'
   su2_cpp_args += '-DNDEBUG'
+endif
+
+# check for mixed precision floating point arithmetic
+if get_option('enable-mixedprec')
+  su2_cpp_args += '-DUSE_MIXED_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them
@@ -177,7 +182,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.4 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.0.5 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -193,6 +198,7 @@ message('''---------------------------------------------------------------------
          Intel-MKL:      @7@
          OpenBlas:       @8@
          PaStiX:         @9@
+         Mixed Float:    @10@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -204,8 +210,8 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @10@ install' to compile and install SU2
+         Use './ninja -C @11@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
 

@@ -1,9 +1,9 @@
 /*!
- * \file linear_solvers_structure.hpp
+ * \file CSysSolve.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
- *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -78,8 +78,9 @@ public:
 
 private:
 
-  bool mesh_deform;    /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
-  ScalarType Residual; /*!< \brief Residual at the end of a call to Solve. */
+  bool mesh_deform;          /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  ScalarType Residual=1e-20; /*!< \brief Residual at the end of a call to Solve or Solve_b. */
+  unsigned long Iterations=0;/*!< \brief Iterations done in Solve or Solve_b. */
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
@@ -241,7 +242,7 @@ public:
    */
   unsigned long CG_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                              const PrecondType & precond, ScalarType tol, unsigned long m,
-                             ScalarType & residual, bool monitoring, CConfig *config) const;
+                             ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -257,7 +258,7 @@ public:
    */
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
-                                 ScalarType & residual, bool monitoring, CConfig *config) const;
+                                 ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -273,7 +274,7 @@ public:
    */
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                   const PrecondType & precond, ScalarType tol, unsigned long m,
-                                  ScalarType & residual, bool monitoring, CConfig *config) const;
+                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Generic smoother (modified Richardson iteration with preconditioner)
@@ -289,7 +290,7 @@ public:
    */
   unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                    const PrecondType & precond, ScalarType tol, unsigned long m,
-                                   ScalarType & residual, bool monitoring, CConfig *config) const;
+                                   ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Solve the linear system using a Krylov subspace method
@@ -300,7 +301,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                      CGeometry *geometry, CConfig *config);
+                      CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Solve the adjoint linear system using a Krylov subspace method
@@ -311,11 +312,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve_b(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                        CGeometry *geometry, CConfig *config);
+                        CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Get the number of iterations.
+   * \return The number of iterations done by Solve or Solve_b
+   */
+  inline unsigned long GetIterations(void) const { return Iterations; }
 
   /*!
    * \brief Get the final residual.
-   * \return The residual at the end of Solve
+   * \return The residual at the end of Solve or Solve_b
    */
   inline ScalarType GetResidual(void) const { return Residual; }
 

@@ -2,7 +2,7 @@
  * \file CFileWriter.hpp
  * \brief Headers fo the file writer class.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,6 @@
 #include <string>
 #include <cstring>
 #include <fstream>
-#include <time.h>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
@@ -83,7 +82,7 @@ protected:
    * \brief The parallel data sorter
    */
   CParallelDataSorter* dataSorter;
-  
+
 #ifdef HAVE_MPI
   /*!
    * \brief The displacement that every process has in the current file view
@@ -143,9 +142,9 @@ public:
    * \return The time used to write to file.
    */
   su2double Get_UsedTime() const {return usedTime;}
-  
+
 protected:
-  
+
   /*!
    * \brief Collectively write a binary data array distributed over all processors to file using MPI I/O.
    * \param[in] data - Pointer to the data to write.
@@ -165,27 +164,27 @@ protected:
    * \return Boolean indicating whether the writing was successful.
    */
   bool WriteMPIBinaryData(const void *data, unsigned long sizeInBytes, unsigned short processor);
-  
+
   /*!
    * \brief Write a string to a currently opened file using MPI I/O. Note: routine must be called collectively,
    *  although only one processor writes the string.
    * \param[in] str - The string to write to file.
    * \param[in] processor - Rank of the processor that should the string.
-   * \return 
+   * \return
    */
   bool WriteMPIString(const std::string& str, unsigned short processor);
-  
+
   /*!
    * \brief Open a file to write using MPI I/O. Already existing file is deleted.
    * \return Boolean indicating whether the opening was successful.
    */
   bool OpenMPIFile();
-  
+
   /*!
-   * \brief Close a file using MPI I/O. 
+   * \brief Close a file using MPI I/O.
    * \return Boolean indicating whether the closing was successful.
    */
   bool CloseMPIFile();
-  
+
 };
 

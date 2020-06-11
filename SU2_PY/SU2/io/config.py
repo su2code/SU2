@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.4 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -340,10 +340,29 @@ def read_config(filename):
             break
         
         # remove line returns
-        line = line.strip('\r\n')
-        # make sure it has useful data
-        if (not "=" in line) or (line[0] == '%'):
+        line = line.strip('\r\n').strip()
+
+        if (len(line) == 0):
             continue
+        # make sure it has useful data
+        if (line[0] == '%'):
+            continue
+            
+        # --- Check if there is a line continuation character at the
+        # end of the current line or somewhere in between (the rest is ignored then).
+        # If yes, read until there is a line without one or an empty line.
+        # If there is a statement after a cont. char
+        # throw an error. ---*/
+    
+        while(line[0].endswith('\\') or len(line.split('\\')) > 1):
+            tmp_line = input_file.readline()
+            tmp_line = tmp_line.strip()
+            assert len(tmp_line.split('=')) <= 1, ('Statement found after line '
+                                                   'continuation character in config file %s' % tmp_line)
+            if (not tmp_line.startswith('%')):
+                line = line.split('\\')[0]
+                line += ' ' + tmp_line
+
         # split across equals sign
         line = line.split("=",1)
         this_param = line[0].strip()

@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -921,7 +921,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
-            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Kab, simp_penalty);
           }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
@@ -1081,8 +1081,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   /*--- Never record this method as the mass matrix is passive (but the mass residual is not). ---*/
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1157,7 +1156,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
 
   } // end SU2_OMP_PARALLEL
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1330,8 +1329,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Never record this method as atm it is not differentiable. ---*/
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   const bool prestretch_fem = config->GetPrestretch();
 
@@ -1610,7 +1608,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   }
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1947,18 +1945,21 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*---  Compute the residual Ax-f ---*/
 
 #ifndef CODI_FORWARD_TYPE
-    CSysVector<passivedouble> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
+    CSysVector<su2mixedfloat> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #else
     CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #endif
 
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+    /*---  We need temporaries to interface with the passive matrix. ---*/
+    CSysVector<su2mixedfloat> sol, res;
+#endif
+
     SU2_OMP_PARALLEL
     {
-#ifndef CODI_REVERSE_TYPE
+#if !(defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)) || defined(CODI_FORWARD_TYPE)
     Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
 #else
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<passivedouble> sol, res;
     sol.PassiveCopy(LinSysSol);
     res.PassiveCopy(LinSysRes);
     Jacobian.ComputeResidual(sol, res, LinSysAux);
@@ -2507,13 +2508,12 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
       }
     }
 
+    /*--- Perform the MPI communication of the solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
+
   } // end SU2_OMP_PARALLEL
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
-
 }
 
 void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) {
@@ -2559,12 +2559,9 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    SU2_OMP_MASTER
-    {
-      InitiateComms(geometry, config, SOLUTION_FEA);
-      CompleteComms(geometry, config, SOLUTION_FEA);
-    }
-    SU2_OMP_BARRIER
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
 
     /*--- After the solution has been communicated, set the 'old' predicted solution as the solution. ---*/
     /*--- Loop over n points (as we have already communicated everything. ---*/

@@ -2,7 +2,7 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,21 +118,6 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
       Point_Max_Coord_BGS[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
     }
-  }
-
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar+1];
-    for (iVar = 0; iVar < nVar+1; iVar++)
-      Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
