@@ -599,7 +599,6 @@ void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 
         /*--- Includes 1 in the diagonal ---*/
         Jacobian.DeleteValsRowi(iPoint);
-
       } else {
         /*--- For rough walls, the boundary condition is given by
          * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}

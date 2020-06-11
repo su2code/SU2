@@ -254,6 +254,7 @@ private:
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
+  *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
   *Marker_Clamped,                /*!< \brief Clamped markers. */
@@ -927,7 +928,7 @@ private:
   nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */
   nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
   nMarkerPlunging_Ampl,           /*!< \brief Number of values provided for plunging amplitude of marker. */
-  nRoughWall;                     /*!< \brief Number of rough walls. */
+  nRough_Wall;                    /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short
   nOmega_HB,                      /*!< \brief Number of frequencies in Harmonic Balance Operator. */
@@ -2937,7 +2938,7 @@ public:
    * \brief Get the total number of rough markers.
    * \return Total number of heat flux markers.
    */
-  unsigned short GetnRoughWall(void) const { return nRoughWall; }
+  unsigned short GetnRoughWall(void) const { return nRough_Wall; }
 
   /*!
    * \brief Get the total number of objectives in kind_objective list

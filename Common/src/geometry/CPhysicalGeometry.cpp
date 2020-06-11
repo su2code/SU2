@@ -11639,8 +11639,6 @@ unsigned short iMarker;
   SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts, 1,
                        MPI_INT, MPI_COMM_WORLD);
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);   // Not sure if needed
-
   // displacements based on size on each rank
   displs[0] = 0;
   for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
@@ -11666,8 +11664,6 @@ unsigned short iMarker;
                         recvCounts, displs, MPI_DOUBLE,
                         MPI_COMM_WORLD);
 
-  SU2_MPI::Barrier(MPI_COMM_WORLD); // Not sure if needed
-  
   /*--- Set the global array of roughness per marker. ---*/
   config->SetGlobalRoughnessArray(globalRough, sizeGlobal);
 
