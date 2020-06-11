@@ -161,6 +161,41 @@ def get_su2_dim(filename):
         
     return dim
 
+def get_min_cfl(history_format):
+
+    #--- Set the file name and format
+    if (history_format == 'TECPLOT'):
+        solname  = 'history.dat'
+        headerline = 1
+    else:
+        solname  = 'history.csv'
+        headerline = 0
+
+    #--- Load the header information
+    with open(solname, 'rb') as f:
+        for i, line in enumerate(f):
+            if i == headerline:
+                header = line.decode('ascii')
+                break
+
+    #--- Get the column with min CFL
+    headertags = header.split(",")
+    for i in range(len(headertags)):
+        if ("Min CFL" in headertags[i]):
+            col = i
+            break
+
+    #--- Get data from last line of file
+    with open(solname, 'rb') as f:
+        f.seek(-2, os.SEEK_END)
+        while f.read(1) != b'\n':
+            f.seek(-2, os.SEEK_CUR) 
+        last_line = f.readline().decode('ascii')
+
+    data = last_line.split(",")
+
+    return float(data[col])
+
 def get_su2_npoin(filename):
     
     meshfile = open(filename,'r')

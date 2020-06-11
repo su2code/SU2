@@ -65,6 +65,7 @@ def amg ( config , kind='' ):
         raise AttributeError(err)
     
     #--- Print adap options
+
     sys.stdout.write(su2amg.print_adap_options(config, adap_options))
     
     #--- How many iterative loops? Using what prescribed mesh sizes? 
@@ -73,6 +74,7 @@ def amg ( config , kind='' ):
     sub_iter     = su2amg.get_sub_iterations(config)
     
     #--- Solver iterations/ residual reduction param for each size level
+
     adap_flow_iter = su2amg.get_flow_iter(config)
     adap_adj_iter  = su2amg.get_adj_iter(config)
     adap_flow_cfl  = su2amg.get_flow_cfl(config)
@@ -117,6 +119,14 @@ def amg ( config , kind='' ):
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
         
     cur_meshfil = config['MESH_FILENAME']
+
+    #--- Format of history file
+
+    history_format = config.TABULAR_FORMAT
+    if (history_format == 'TECPLOT'):
+        history_filename = os.path.join(cwd,'history_adap.dat')
+    else:
+        history_filename = os.path.join(cwd,'history_adap.csv')
 
     #--- AMG parameters
     
@@ -212,7 +222,7 @@ def amg ( config , kind='' ):
             
             config_cfd.CONV_FILENAME    = "history"
             config_cfd.RESTART_FILENAME = cur_solfil
-            config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
+            config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'MIN_CFL']
             config_cfd.COMPUTE_METRIC   = 'NO'
             config_cfd.MATH_PROBLEM     = 'DIRECT'
             
@@ -237,6 +247,10 @@ def amg ( config , kind='' ):
                 config_cfd_ad.ADAP_HMIN            = config.PYADAP_HMIN
                 config_cfd_ad.ADAP_ARMAX           = config.PYADAP_ARMAX
                 config_cfd_ad.ADAP_COMPLEXITY      = int(mesh_sizes[0])
+
+                cfl = su2amg.get_min_cfl(history_format)
+                su2amg.set_cfl(config_cfd_ad, adap_flow_cfl[iSiz])
+
                 SU2_CFD(config_cfd_ad)
 
                 func_name      = config.OBJECTIVE_FUNCTION
@@ -282,7 +296,7 @@ def amg ( config , kind='' ):
         config_cfd.ITER             = 1
         config_cfd.CONV_FILENAME    = "history"
         config_cfd.RESTART_FILENAME = cur_solfil
-        config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF']
+        config_cfd.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'MIN_CFL']
         config_cfd.COMPUTE_METRIC   = 'NO'
         config_cfd.MATH_PROBLEM     = 'DIRECT'
         SU2_CFD(config_cfd)
@@ -345,12 +359,6 @@ def amg ( config , kind='' ):
     global_iter = 0
 
     #--- Print convergence history
-
-    history_format = config.TABULAR_FORMAT
-    if (history_format == 'TECPLOT'):
-        history_filename = os.path.join(cwd,'history_adap.dat')
-    else:
-        history_filename = os.path.join(cwd,'history_adap.csv')
 
     npoin = su2amg.get_su2_npoin(cur_meshfil)
     su2amg.plot_results(history_format, history_filename, global_iter, npoin)
@@ -510,7 +518,8 @@ def amg ( config , kind='' ):
                     config_cfd_ad.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd_ad.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
 
-                    su2amg.set_cfl(config_cfd_ad, adap_adj_cfl[iSiz])
+                    cfl = su2amg.get_min_cfl(history_format)
+                    su2amg.set_cfl(config_cfd_ad, cfl)
 
                     SU2_CFD(config_cfd_ad)
 
