@@ -547,7 +547,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned long iPoint) {
   
-  AD_BEGIN_PASSIVE
+//  AD_BEGIN_PASSIVE
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
@@ -609,7 +609,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     }
   }
   
-  AD_END_PASSIVE
+//  AD_END_PASSIVE
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
