@@ -4497,7 +4497,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #if defined CODI_REVERSE_TYPE
   AD_Mode = YES;
 
-  AD::PreaccEnabled = AD_Preaccumulation;
+  AD::PreaccEnabled = (AD_Preaccumulation && !Bool_Compute_Metric);
 
 #else
   if (AD_Mode == YES) {

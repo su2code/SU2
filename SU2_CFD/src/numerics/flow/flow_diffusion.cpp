@@ -511,7 +511,6 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        const CConfig *config) {
   
   const su2double Density = val_Mean_PrimVar[nDim+2];
-//  const su2double factor = 0.5/Density;
   const su2double factor_i = 0.5/V_i[nDim+2];
   const su2double factor_j = 0.5/V_j[nDim+2];
 
@@ -623,7 +622,7 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
                                     const su2double Density,
                                     const CConfig *config) {
   
-  AD_BEGIN_PASSIVE
+//  AD_BEGIN_PASSIVE
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -663,7 +662,7 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     }
   }
   
-  AD_END_PASSIVE
+//  AD_END_PASSIVE
 
 }
 
