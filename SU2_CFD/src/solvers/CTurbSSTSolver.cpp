@@ -1564,13 +1564,13 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance);
       su2double Omega = 0.0;
       
-      if (distance != distance) cout << "Nan detected at rank " << rank << ", node "<< jPoint << endl;
-      if (distance < 1.0E-16) cout << "Small value detected at " << rank << ", node " << jPoint << endl;
-      
       for (kNode = 0; kNode < 4; kNode++) {
         
         const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
         const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
+        
+        if (DensityWall != DensityWall) cout << "Nan detected at rank " << rank << ", node "<< jPoint << endl;
+        if (DensityWall < 1.0E-16) cout << "Small value detected at " << rank << ", node " << jPoint << endl;
         
         const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0));
         Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
