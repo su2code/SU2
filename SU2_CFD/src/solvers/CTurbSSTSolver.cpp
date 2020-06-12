@@ -1573,6 +1573,9 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
         Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
       }
       
+      if (Omega != Omega) cout << "Nan detected at rank " << rank << ", node "<< jPoint << endl;
+      if (Omega < 1.0E-16) cout << "Small value detected at " << rank << ", node " << jPoint << endl;
+      
       nodes->SetSolution_Old(jPoint,1,density*Omega);
       nodes->SetSolution(jPoint,1,density*Omega);
       LinSysRes.SetBlock_Zero(jPoint,1);
