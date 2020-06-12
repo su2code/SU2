@@ -640,14 +640,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       for (unsigned short jNeigh = 0; jNeigh < geometry->node[iPoint]->GetnPoint(); jNeigh++) {
         jPoint = geometry->node[iPoint]->GetPoint(jNeigh);
         if (!geometry->node[jPoint]->GetSolidBoundary()) {
-//          distance = 0.;
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            const su2double Coord_i = geometry->node[iPoint]->GetCoord(iDim);
-//            const su2double Coord_j = geometry->node[jPoint]->GetCoord(iDim);
-//            distance += pow((Coord_i-Coord_j), 2.);
-//          }
-//          distance = sqrt(distance);
-          distance = geometry->node[jPoint]->GetWall_Distance();
+          distance = 0.;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            const su2double Coord_i = geometry->node[iPoint]->GetCoord(iDim);
+            const su2double Coord_j = geometry->node[jPoint]->GetCoord(iDim);
+            distance += pow((Coord_i-Coord_j), 2.);
+          }
+          distance = sqrt(distance);
+//          distance = geometry->node[jPoint]->GetWall_Distance();
           
           density_s = flowNodes->GetDensity(iPoint);
           density_v = flowNodes->GetDensity(jPoint);
