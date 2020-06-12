@@ -1564,7 +1564,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance);
       su2double Omega = 0.0;
       
-      for (kNode = 0; kNode < 4; kNode++) {
+      for (kNode = 0; kNode < geometry->elem[iElem]->GetnNodes(); kNode++) {
         
         const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
         const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
