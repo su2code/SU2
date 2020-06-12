@@ -6245,7 +6245,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   const bool turb = (config->GetKind_Turb_Model() != NONE);
-
+  
   //--- Mean flow variables
   for (iVar = 0; iVar < nVarFlo; ++iVar) {
 
