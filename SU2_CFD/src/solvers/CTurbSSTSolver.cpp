@@ -621,7 +621,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
-  unsigned short iDim;
+  unsigned short iDim, counter;
   su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
   su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
   
@@ -634,34 +634,64 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- distance to closest neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-//      distance = geometry->node[jPoint]->GetWall_Distance();
-      distance = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        const su2double Coord_i = geometry->node[iPoint]->GetCoord(iDim);
-        const su2double Coord_j = geometry->node[jPoint]->GetCoord(iDim);
-        distance += pow((Coord_i-Coord_j), 2.);
+      /*--- average value based on neighbors ---*/
+      Solution[1] = 0.;
+      counter = 0;
+      for (unsigned short jNeigh = 0; jNeigh < geometry->node[iPoint]->GetnPoint(); jNeigh++) {
+        jPoint = geometry->node[iPoint]->GetPoint(jNeigh);
+        if (!geometry->node[jPoint]->GetSolidBoundary()) {
+          distance = 0.;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            const su2double Coord_i = geometry->node[iPoint]->GetCoord(iDim);
+            const su2double Coord_j = geometry->node[jPoint]->GetCoord(iDim);
+            distance += pow((Coord_i-Coord_j), 2.);
+          }
+          distance = sqrt(distance);
+          
+          density_s = flowNodes->GetDensity(iPoint);
+          density_v = flowNodes->GetDensity(jPoint);
+          
+          energy_v = flowNodes->GetEnergy(jPoint);
+          vel2_v = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
+          k_v = nodes->GetSolution(jPoint,0)/density_v;
+          staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+
+          fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
+          laminar_viscosity_v = fluidModel->GetLaminarViscosity();
+          
+          Solution[1] += 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+          counter++;
+        }
       }
-      distance = sqrt(distance);
+      Solution[1] /= su2double(counter);
+//      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+////      distance = geometry->node[jPoint]->GetWall_Distance();
+//      distance = 0.;
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        const su2double Coord_i = geometry->node[iPoint]->GetCoord(iDim);
+//        const su2double Coord_j = geometry->node[jPoint]->GetCoord(iDim);
+//        distance += pow((Coord_i-Coord_j), 2.);
+//      }
+//      distance = sqrt(distance);
 
       /*--- Set wall values ---*/
 
-      density_s = flowNodes->GetDensity(iPoint);
-      density_v = flowNodes->GetDensity(jPoint);
-      
-      energy_v = flowNodes->GetEnergy(jPoint);
-      vel2_v = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
-      k_v = nodes->GetSolution(jPoint,0)/density_v;
-      staticenergy_v = energy_v - 0.5*vel2_v - k_v;
-
-      fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
-      laminar_viscosity_v = fluidModel->GetLaminarViscosity();
-      
-
+//      density_s = flowNodes->GetDensity(iPoint);
+//      density_v = flowNodes->GetDensity(jPoint);
+//
+//      energy_v = flowNodes->GetEnergy(jPoint);
+//      vel2_v = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
+//      k_v = nodes->GetSolution(jPoint,0)/density_v;
+//      staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+//
+//      fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
+//      laminar_viscosity_v = fluidModel->GetLaminarViscosity();
+//
+//
       Solution[0] = 0.0;
-      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+//      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
