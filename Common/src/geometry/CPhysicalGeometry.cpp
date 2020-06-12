@@ -12175,11 +12175,12 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       unsigned short markerID;
       unsigned long  elemID;
       int            rankID;
+      unsigned short vtkID;
       su2double      dist;
       su2double      weights[4];
 
       WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
-                                       elemID, rankID, weights);
+                                       elemID, rankID, vtkID, weights);
       if (dist < node[iPoint]->GetWall_Distance())
         node[iPoint]->SetWall_Distance(dist);
 
@@ -12197,6 +12198,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
                    node[iPoint]->SetWall_Rank(rankID);
                    node[iPoint]->SetWall_Marker(markerID);
                    node[iPoint]->SetWall_Element(elemID);
+                   node[iPoint]->SetWall_VTK_Type(vtkID);
                    node[iPoint]->SetWall_Interpolation_Weights(weights);
                    break;
                  } // if jVertex

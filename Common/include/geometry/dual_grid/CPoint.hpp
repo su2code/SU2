@@ -69,6 +69,7 @@ private:
   short Wall_Rank;                    /*!< \brief Rank of the nearest wall element. */
   short Wall_Marker;                  /*!< \brief Marker of the nearest wall element. */
   long Wall_Element;                  /*!< \brief Index of the nearest wall element. */
+  short Wall_VTK_Type;                /*!< \brief VTK type of wall element. */
   bool Bool_Wall_Neighbor;            /*!< \brief Whether this node neighbors a solid boundary. */
   su2double Wall_Interp_Weights[4];   /*!<\brief Interpolation weights at nearest wall element. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
@@ -151,6 +152,12 @@ public:
   inline void SetWall_Element(long val_element) { Wall_Element = val_element; }
   
   /*!
+   * \brief Set the index of the nearest wall element.
+   * \param[in] val_element - Index of the element.
+   */
+  inline void SetWall_VTK_Type(short val_vtk) { Wall_VTK_Type = val_vtk; }
+  
+  /*!
    * \brief Set whether the node neighbors a solid wall.
    * \param[in] val_bool - whether the node neighbors a solid wall.
    */
@@ -190,6 +197,11 @@ public:
    * \brief Get the index of the nearest wall element.
    */
   inline long GetWall_Element(void) { return Wall_Element; }
+  
+  /*!
+   * \brief Get the index of the nearest wall element.
+   */
+  inline short GetWall_VTK_Type(void) { return Wall_VTK_Type; }
   
   /*!
    * \brief Get whether the node neighbors a solid wall.

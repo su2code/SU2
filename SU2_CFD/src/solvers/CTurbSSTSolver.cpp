@@ -1564,7 +1564,20 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance);
       su2double Omega = 0.0;
       
-      for (kNode = 0; kNode < geometry->elem[iElem]->GetnNodes(); kNode++) {
+      unsigned short nWall = 0;
+      switch(geometry->node[jPoint]->GetWall_VTK_Type()) {
+        case LINE:
+          nWall = 2;
+        case TRIANGLE:
+          nWall = 3;
+        case QUADRILATERAL:
+          nWall = 4;
+        default:
+          /* This should not happen. */
+          SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
+      }
+      
+      for (kNode = 0; kNode < nWall; kNode++) {
         
         const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
         const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);

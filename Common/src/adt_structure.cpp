@@ -790,6 +790,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
                                             unsigned short  &markerID,
                                             unsigned long   &elemID,
                                             int             &rankID,
+                                            unsigned short  &vtkID,
                                             su2double       *weightsInterpol) {
 
   AD_BEGIN_PASSIVE
@@ -977,7 +978,9 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
   su2double weights[4];
   Dist2ToElement(jj, coor, dist, weights);
   dist = sqrt(dist);
+  vtkID = elemVTK_Type[jj];
   memcpy(weightsInterpol, weights, 4*sizeof(su2double));
+
 }
 
 bool CADTElemClass::CoorInElement(const unsigned long elemID,

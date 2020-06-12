@@ -412,6 +412,7 @@ public:
                                unsigned short  &markerID,
                                unsigned long   &elemID,
                                int             &rankID,
+                               unsigned short  &vtkID,
                                su2double       *weightsInterpol);
 private:
 
