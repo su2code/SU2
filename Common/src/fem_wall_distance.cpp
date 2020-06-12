@@ -200,9 +200,10 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
+        unsigned short vtkID;
         su2double      dist;
         su2double      weights[4];
-        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
+        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, vtkID, weights);
         // WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         volElem[l].wallDistance[i] = dist;
@@ -235,9 +236,10 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
+        unsigned short vtkID;
         su2double      dist;
         su2double      weights[4];
-        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
+        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, vtkID, weights);
         // WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         volElem[l].wallDistanceSolDOFs[i] = dist;
@@ -270,9 +272,10 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
+        unsigned short vtkID;
         su2double      dist;
         su2double      weights[4];
-        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
+        WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, vtkID, weights);
         // WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
         matchingFaces[l].wallDistance[i] = dist;
@@ -324,9 +327,10 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
             unsigned short markerID;
             unsigned long  elemID;
             int            rankID;
+            unsigned short vtkID;
             su2double      dist;
             su2double      weights[4];
-            WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
+            WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID, vtkID, weights);
             // WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
 
             surfElem[l].wallDistance[i] = dist;
