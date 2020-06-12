@@ -1573,17 +1573,14 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
         const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
         Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
       }
-      Solution[1] = density*Omega;
-
-      for (iVar = 1; iVar < nVar; iVar++) {
-        nodes->SetSolution_Old(jPoint,iVar,Solution[iVar]);
-        nodes->SetSolution(jPoint,iVar,Solution[iVar]);
-        LinSysRes.SetBlock_Zero(jPoint,iVar);
+      
+      nodes->SetSolution_Old(jPoint,1,density*Omega);
+      nodes->SetSolution(jPoint,1,density*Omega);
+      LinSysRes.SetBlock_Zero(jPoint,1);
         
-        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-        total_index = jPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      total_index = jPoint*nVar+1;
+      Jacobian.DeleteValsRowi(total_index);
     }
   }
   
