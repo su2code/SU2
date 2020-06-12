@@ -636,7 +636,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- distance to closest neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      distance = geometry->node[jPoint]->GetWall_Distance();
+//      distance = geometry->node[jPoint]->GetWall_Distance();
+      distance = 0.;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        const su2double Coord_i = geometry->node[iPoint]->GetCoord(iDim);
+        const su2double Coord_j = geometry->node[jPoint]->GetCoord(iDim);
+        distance += pow((Coord_i-Coord_j), 2.);
+      }
+      distance = sqrt(distance);
 
       /*--- Set wall values ---*/
 
