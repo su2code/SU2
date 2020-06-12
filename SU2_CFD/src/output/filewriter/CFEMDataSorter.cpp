@@ -2,14 +2,14 @@
  * \file CFEMDataSorter.cpp
  * \brief Datasorter class for FEM solvers.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,9 +26,13 @@
  */
 
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
-#include "../../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../../Common/include/fem/fem_geometry_structure.hpp"
+#include <numeric>
 
-CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
+CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
+  CParallelDataSorter(config, valFieldNames){
+
+  nDim = geometry->GetnDim();
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -53,20 +57,16 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       globalID.push_back(globalIndex);
 
-      nLocalPoint_Sort++;
+      nLocalPointsBeforeSort++;
     }
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
+  SU2_MPI::Allreduce(&nLocalPointsBeforeSort, &nGlobalPointBeforeSort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nGlobalPoint_Sort = nLocalPoint_Sort;
-#endif
 
   /*--- Create a linear partition --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
+  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
@@ -76,9 +76,9 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
 CFEMDataSorter::~CFEMDataSorter(){
 
-  if (Index != NULL)       delete [] Index;
-  if (idSend != NULL)      delete [] idSend;
-  if (linearPartitioner != NULL) delete linearPartitioner;
+        delete [] Index;
+       delete [] idSend;
+  delete linearPartitioner;
 
 }
 
@@ -93,6 +93,8 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
 
   /*--- Sort volumetric grid connectivity. ---*/
 
+  nElemPerType.fill(0);
+
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
   SortVolumetricConnectivity(config, geometry, TETRAHEDRON  );
@@ -100,17 +102,9 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SortVolumetricConnectivity(config, geometry, PRISM        );
   SortVolumetricConnectivity(config, geometry, PYRAMID      );
 
+  SetTotalElements();
 
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 
@@ -167,7 +161,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
 
   /* Allocate the memory to store the connectivity if the size is
      larger than zero. */
-  int *Conn_SubElem = NULL;
+  int *Conn_SubElem = nullptr;
   if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Loop again over the local volume elements and store the global
@@ -211,37 +205,33 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
     }
   }
 
+  nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
+
   /*--- Store the particular global element count in the class data,
         and set the class data pointer to the connectivity array. ---*/
   switch (Elem_Type) {
     case TRIANGLE:
-      nParallel_Tria = nSubElem_Local;
-      if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
-      nParallel_Quad = nSubElem_Local;
-      if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
-      nParallel_Tetr = nSubElem_Local;
-      if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+      delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
-      nParallel_Hexa = nSubElem_Local;
-      if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+      delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
-      nParallel_Pris = nSubElem_Local;
-      if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+      delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
-      nParallel_Pyra = nSubElem_Local;
-      if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+      delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_SubElem;
       break;
     default:

@@ -3,14 +3,14 @@
  * \brief Declarations and inlines of the transfer structure.
  *        The subroutines and functions are in the physics folders.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../../../Common/include/config_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../solver_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../solvers/CSolver.hpp"
+
 
 using namespace std;
 
@@ -49,26 +50,26 @@ using namespace std;
  * \class CInterface
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 
 class CInterface {
 protected:
 
-  int rank,  /*!< \brief MPI Rank. */
-  size;      /*!< \brief MPI Size. */
+  const int rank;   /*!< \brief MPI Rank. */
+  const int size;   /*!< \brief MPI Size. */
 
-  su2double *Physical_Constants;
-  su2double *Donor_Variable;
-  su2double *Target_Variable;
-  bool valAggregated;
+  su2double *Physical_Constants = nullptr;
+  su2double *Donor_Variable = nullptr;
+  su2double *Target_Variable = nullptr;
+  bool valAggregated = false;
 
   /*--- Mixing Plane interface variable ---*/
-  su2double *SpanValueCoeffTarget;
-  unsigned short *SpanLevelDonor;
-  unsigned short nSpanMaxAllZones;
+  su2double *SpanValueCoeffTarget = nullptr;
+  unsigned short *SpanLevelDonor = nullptr;
+  unsigned short nSpanMaxAllZones = 0;
 
-  unsigned short nVar;
+  unsigned short nVar = 0;
 
 public:
   /*!

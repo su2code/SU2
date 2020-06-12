@@ -3,14 +3,14 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -63,27 +63,17 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 6.2.0 \"Falcon\"                            |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                         |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| The current SU2 release has been coordinated by the                   |\n')
-    sys.stdout.write('| SU2 International Developers Society <www.su2devsociety.org>          |\n')
-    sys.stdout.write('| with selected contributions from the open-source community.           |\n')
+    sys.stdout.write('| SU2 Project Website: https://su2code.github.io                        |\n')
+    sys.stdout.write('|                                                                       |\n')
+    sys.stdout.write('| The SU2 Project is maintained by the SU2 Foundation                   |\n')
+    sys.stdout.write('| (http://su2foundation.org)                                            |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| The main research teams contributing to the current release are:      |\n')
-    sys.stdout.write('| - Prof. Juan J. Alonso\'s group at Stanford University.                |\n')
-    sys.stdout.write('| - Prof. Piero Colonna\'s group at Delft University of Technology.      |\n')
-    sys.stdout.write('| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. |\n')
-    sys.stdout.write('| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  |\n')
-    sys.stdout.write('| - Prof. Rafael Palacios\' group at Imperial College London.            |\n')
-    sys.stdout.write('| - Prof. Vincent Terrapon\' group at the University of Liege.           |\n')
-    sys.stdout.write('| - Prof. Edwin van der Weide\' group at the University of Twente.       |\n')
-    sys.stdout.write('| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |\n')
-    sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |\n')
-    sys.stdout.write('|                      Tim Albring, and the SU2 contributors.           |\n')
+    sys.stdout.write('| Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)                |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')
     sys.stdout.write('| modify it under the terms of the GNU Lesser General Public            |\n')
@@ -116,7 +106,6 @@ def shape_optimization( filename                           ,
                         optimization = 'SLSQP'             ,
                         quiet       = False                ,
                         nzones      = 1                    ):
-  
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -140,14 +129,31 @@ def shape_optimization( filename                           ,
     # State
     state = SU2.io.State()
     state.find_files(config)
-    
+
+    # add restart files to state.FILES
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL', 'NO') == 'YES' and gradient != 'CONTINUOUS_ADJOINT':
+        restart_name = config['RESTART_FILENAME'].split('.')[0]
+        restart_filename = restart_name + '_' + str(int(config['RESTART_ITER'])-1).zfill(5) + '.dat'
+        if not os.path.isfile(restart_filename): # throw, if restart files does not exist
+            sys.exit("Error: Restart file <" + restart_filename + "> not found.")
+        state['FILES']['RESTART_FILE_1'] = restart_filename
+
+        # use only, if time integration is second order
+        if config.get('TIME_MARCHING', 'NO') == 'DUAL_TIME_STEPPING-2ND_ORDER':
+            restart_filename = restart_name + '_' + str(int(config['RESTART_ITER'])-2).zfill(5) + '.dat'
+            if not os.path.isfile(restart_filename): # throw, if restart files does not exist
+                sys.exit("Error: Restart file <" + restart_filename + "> not found.")
+            state['FILES']['RESTART_FILE_2'] =restart_filename
+
+
     # Project
+
     if os.path.exists(projectname):
         project = SU2.io.load_data(projectname)
         project.config = config
     else:
         project = SU2.opt.Project(config,state)
-    
+
     # Optimize
     if optimization == 'SLSQP':
       SU2.opt.SLSQP(project,x0,xb,its,accu)

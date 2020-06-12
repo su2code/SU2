@@ -1,42 +1,17 @@
-su2_cfd_src = files(['solver_direct_transition.cpp',
-                     'solver_adjoint_turbulent.cpp',
-                     'integration_structure.cpp',
-                     'solver_direct_mean_fem.cpp',
-                     'numerics_adjoint_mean.cpp',
-                     'transport_model.cpp',
-                     'numerics_adjoint_turbulent.cpp',
+su2_cfd_include = include_directories('./')
+su2_cfd_src = files(['transport_model.cpp',
                      'fluid_model_pvdw.cpp',
-                     'integration_time.cpp',
                      'fluid_model_pig.cpp',
-                     'solver_direct_mean.cpp',
                      'iteration_structure.cpp',
                      'fluid_model_inc.cpp',
-                     'solver_adjoint_mean.cpp',
-                     'solver_adjoint_elasticity.cpp',
-                     'solver_structure.cpp',
-                     'numerics_direct_turbulent.cpp',
-                     'numerics_direct_transition.cpp',
-                     'solver_template.cpp',
-                     'solver_direct_elasticity.cpp',
                      'definition_structure.cpp',
-                     'numerics_direct_mean_inc.cpp',
-                     'solver_direct_turbulent.cpp',
                      'fluid_model.cpp',
-                     'solver_direct_mean_inc.cpp',
-                     'numerics_direct_mean.cpp',
-                     'solver_direct_heat.cpp',
-                     'numerics_direct_heat.cpp',
                      'fluid_model_ppr.cpp',
                      'python_wrapper_structure.cpp',
-                     'numerics_structure.cpp',
-                     'numerics_template.cpp',
-                     'solver_adjoint_discrete.cpp',
-                     'CMarkerProfileReaderFVM.cpp',
-                     'solver_gradient_smoothing.cpp',
-                     'numerics_gradient_smoothing.cpp',
-                     'SU2_CFD.cpp'])
+                     'CMarkerProfileReaderFVM.cpp'])
 
-su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
+su2_cfd_src += files(['output/COutputFactory.cpp',
+                      'output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
                       'output/CAdjHeatOutput.cpp',
@@ -63,14 +38,18 @@ su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
                       'output/filewriter/CTecplotFileWriter.cpp',
                       'output/filewriter/CTecplotBinaryFileWriter.cpp',
                       'output/filewriter/CCSVFileWriter.cpp',
+                      'output/filewriter/CSTLFileWriter.cpp',
                       'output/filewriter/CSU2FileWriter.cpp',
                       'output/filewriter/CSU2BinaryFileWriter.cpp',
-                      'output/filewriter/CSU2MeshFileWriter.cpp'])
+                      'output/filewriter/CParaviewXMLFileWriter.cpp',
+                      'output/filewriter/CParaviewVTMFileWriter.cpp',
+                      'output/filewriter/CSU2MeshFileWriter.cpp',
+                      'output/tools/CWindowingTools.cpp'])
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CTransLMVariable.cpp',
                       'variables/CAdjEulerVariable.cpp',
-                      'variables/CHeatFVMVariable.cpp',
+                      'variables/CHeatVariable.cpp',
                       'variables/CTurbVariable.cpp',
                       'variables/CAdjNSVariable.cpp',
                       'variables/CBaselineVariable.cpp',
@@ -84,25 +63,69 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CMeshVariable.cpp',
                       'variables/CMeshBoundVariable.cpp',
                       'variables/CMeshElement.cpp',
-                      'variables/CSobolevSmoothingVariable.cpp',
+                      'variables/CRadVariable.cpp',
+                      'variables/CRadP1Variable.cpp',
                       'variables/CTurbSSTVariable.cpp',
                       'variables/CVariable.cpp',
                       'variables/CNSVariable.cpp',
                       'variables/CAdjTurbVariable.cpp',
                       'variables/CIncEulerVariable.cpp',
-                      'variables/CEulerVariable.cpp'])
+                      'variables/CEulerVariable.cpp',
+                      'variables/CSobolevSmoothingVariable.cpp'])
 
-su2_cfd_src += files(['solvers/CMeshSolver.cpp',
-                      'solvers/CDiscAdjMeshSolver.cpp'])
+su2_cfd_src += files(['solvers/CSolverFactory.cpp',
+                      'solvers/CAdjEulerSolver.cpp',
+                      'solvers/CAdjNSSolver.cpp',
+                      'solvers/CAdjTurbSolver.cpp',
+                      'solvers/CBaselineSolver.cpp',
+                      'solvers/CBaselineSolver_FEM.cpp',
+                      'solvers/CDiscAdjFEASolver.cpp',
+                      'solvers/CDiscAdjMeshSolver.cpp',
+                      'solvers/CRadSolver.cpp',
+                      'solvers/CRadP1Solver.cpp',
+                      'solvers/CDiscAdjSolver.cpp',
+                      'solvers/CEulerSolver.cpp',
+                      'solvers/CFEASolver.cpp',
+                      'solvers/CFEM_DG_EulerSolver.cpp',
+                      'solvers/CFEM_DG_NSSolver.cpp',
+                      'solvers/CHeatSolver.cpp',
+                      'solvers/CIncEulerSolver.cpp',
+                      'solvers/CIncNSSolver.cpp',
+                      'solvers/CMeshSolver.cpp',
+                      'solvers/CNSSolver.cpp',
+                      'solvers/CSolver.cpp',
+                      'solvers/CTemplateSolver.cpp',
+                      'solvers/CTransLMSolver.cpp',
+                      'solvers/CTurbSolver.cpp',
+                      'solvers/CTurbSASolver.cpp',
+                      'solvers/CTurbSSTSolver.cpp',
+                      'solvers/CGradientSmoothingSolver.cpp'])
 
-su2_cfd_src += files(['numerics/elasticity/CFEAElasticity.cpp',
+su2_cfd_src += files(['numerics/CNumerics.cpp',
+                      'numerics/template.cpp',
+                      'numerics/transition.cpp',
+                      'numerics/heat.cpp',
+                      'numerics/radiation.cpp',
+                      'numerics/flow/convection/roe.cpp',
+                      'numerics/flow/convection/fds.cpp',
+                      'numerics/flow/convection/fvs.cpp',
+                      'numerics/flow/convection/cusp.cpp',
+                      'numerics/flow/convection/hllc.cpp',
+                      'numerics/flow/convection/ausm_slau.cpp',
+                      'numerics/flow/convection/centered.cpp',
+                      'numerics/flow/flow_diffusion.cpp',
+                      'numerics/flow/flow_sources.cpp',
+                      'numerics/continuous_adjoint/adj_convection.cpp',
+                      'numerics/continuous_adjoint/adj_diffusion.cpp',
+                      'numerics/continuous_adjoint/adj_sources.cpp',
+                      'numerics/turbulent/turb_convection.cpp',
+                      'numerics/turbulent/turb_diffusion.cpp',
+                      'numerics/turbulent/turb_sources.cpp',
+                      'numerics/elasticity/CFEAElasticity.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
-                      'numerics/elasticity/CFEAMeshElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
-                      'numerics/elasticity/CFEM_NeoHookean_Comp.cpp',
-                      'numerics/elasticity/CFEM_Knowles_NearInc.cpp',
-                      'numerics/elasticity/CFEM_IdealDE.cpp',
-                      'numerics/elasticity/CFEM_DielectricElastomer.cpp'])
+                      'numerics/elasticity/nonlinear_models.cpp',
+                      'numerics/CGradSmoothing.cpp'])
 
 su2_cfd_src += files(['interfaces/CInterface.cpp',
                       'interfaces/cfd/CConservativeVarsInterface.cpp',
@@ -111,9 +134,7 @@ su2_cfd_src += files(['interfaces/CInterface.cpp',
                       'interfaces/cht/CConjugateHeatInterface.cpp',
                       'interfaces/fsi/CDisplacementsInterface.cpp',
                       'interfaces/fsi/CFlowTractionInterface.cpp',
-                      'interfaces/fsi/CDiscAdjFlowTractionInterface.cpp',
-                      'interfaces/fsi/CDisplacementsInterfaceLegacy.cpp',
-                      'interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp'])
+                      'interfaces/fsi/CDiscAdjFlowTractionInterface.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
@@ -122,27 +143,57 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 
+su2_cfd_src += files(['integration/CIntegration.cpp',
+                      'integration/CIntegrationFactory.cpp',
+                      'integration/CSingleGridIntegration.cpp',
+                      'integration/CMultiGridIntegration.cpp',
+                      'integration/CStructuralIntegration.cpp',
+                      'integration/CFEM_DG_Integration.cpp'])
+
+su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
+
 if get_option('enable-normal')
+  su2_cfd_lib = static_library('SU2core',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, common_dep],
+		               cpp_args:  [default_warning_flags, su2_cpp_args])
+  su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
+                                   include_directories: su2_cfd_include)
   su2_cfd = executable('SU2_CFD',
-                       su2_cfd_src, 
-                       install : true, 
-                       dependencies : [su2_deps, common_dep], 
+                       'SU2_CFD.cpp',
+                       install : true,
+                       dependencies : [su2_cfd_dep, su2_deps, common_dep],
                        cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
 endif
 
 if get_option('enable-autodiff')
+  su2_cfd_lib_ad = static_library('SU2core_AD',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, codi_dep, commonAD_dep],
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
+  su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
+                                   include_directories: su2_cfd_include)
   su2_cfd_ad = executable('SU2_CFD_AD',
-                       su2_cfd_src,
-                       install : true, 
-                       dependencies : [su2_deps, codi_dep, commonAD_dep], 
-                       cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
+                          'SU2_CFD.cpp',
+                          install : true,
+                          dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
 endif
 
 if get_option('enable-directdiff')
+  su2_cfd_lib_dd = static_library('SU2core_DIRECTDIFF',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, codi_dep, commonDD_dep],
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args])
+  su2_cfd_dep_dd = declare_dependency(link_with: su2_cfd_lib_dd,
+                                   include_directories: su2_cfd_include)
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
-                       su2_cfd_src,
-                       install : true, 
-                       dependencies : [su2_deps, codi_dep, commonDD_dep], 
-                       cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
+                          'SU2_CFD.cpp',
+                          install : true,
+                          dependencies : [su2_cfd_dep_dd, su2_deps, codi_dep, commonDD_dep],
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
 endif
 

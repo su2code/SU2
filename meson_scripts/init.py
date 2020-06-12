@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -48,9 +48,9 @@ def init_submodules(method = 'auto'):
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = 'edde14f9ac4026b72b1e130f61c0a78e8652afa5'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
+  sha_version_meson = '29ef4478df6d3aaca40c7993f125b29409be1de2'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
-  sha_version_ninja = '2d15b04e411229cb902332957281622119025e77'
+  sha_version_ninja = '52649de2c56b63f42bc59513d51286531c595b44'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
 
   medi_name = 'MeDiPack'

@@ -5,14 +5,14 @@
  *        technique definition). The subroutines and functions are in
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,10 +36,9 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
-#include <ctime>
 
-#include "geometry_structure.hpp"
-#include "config_structure.hpp"
+#include "geometry/CGeometry.hpp"
+#include "CConfig.hpp"
 #include "linear_algebra/CSysMatrix.hpp"
 #include "linear_algebra/CSysVector.hpp"
 #include "linear_algebra/CSysSolve.hpp"
@@ -129,12 +128,12 @@ public:
   /*!
    * \brief Returns the current order of the function.
    */
-  su2double GetOrder();
+  su2double GetOrder() const;
 
   /*!
    * \brief Returns the current degree of the function.
    */
-  su2double GetDegree();
+  su2double GetDegree() const;
 };
 
 /*!
@@ -159,14 +158,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBSplineBlending();
+  ~CBSplineBlending() override;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t) override;
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -174,14 +173,14 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der) override;
 
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  void SetOrder(short val_order, short n_controlpoints);
+  void SetOrder(short val_order, short n_controlpoints) override;
 
 };
 
@@ -234,14 +233,14 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CBezierBlending();
+  ~CBezierBlending() override;
 
   /*!
    * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t) override;
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -249,14 +248,14 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der) override;
 
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  void SetOrder(short val_order, short n_controlpoints);
+  void SetOrder(short val_order, short n_controlpoints) override;
 
 };
 
@@ -319,12 +318,12 @@ public:
    * \param[in] val_mDegree - Degree of the FFDBox in the j direction.
    * \param[in] val_nDegree - Degree of the FFDBox in the k direction.
    */
-  CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending);
+  CFreeFormDefBox(const unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFreeFormDefBox(void);
+  ~CFreeFormDefBox(void) override;
 
   /*!
    * \brief Define the I planes to to fix in a FFD box.
@@ -366,19 +365,19 @@ public:
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
-  unsigned short Get_nFix_IPlane(void);
+  unsigned short Get_nFix_IPlane(void) const;
   
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
-  unsigned short Get_nFix_JPlane(void);
+  unsigned short Get_nFix_JPlane(void) const;
   
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
-  unsigned short Get_nFix_KPlane(void);
+  unsigned short Get_nFix_KPlane(void) const;
   
   /*!
    * \brief Add to the vector of markers a new marker.
@@ -409,7 +408,7 @@ public:
    * \param[in] val_coord - New coord inside FFD box.
    * \param[in] val_iSurfacePoints - Surface points of FFD box.
    */
-  void Set_CartesianCoord(su2double *val_coord, unsigned long val_iSurfacePoints);
+  void Set_CartesianCoord(const su2double *val_coord, unsigned long val_iSurfacePoints);
 
   /*!
    * \brief Add to the vector of parametric coordinates a new coordinate.
@@ -434,7 +433,7 @@ public:
    * \param[in] val_coord - New coord inside FFD box.
    * \param[in] val_iSurfacePoints - Surface points of FFD box.
    */
-  void Set_ParametricCoord(su2double *val_coord, unsigned long val_iSurfacePoints);
+  void Set_ParametricCoord(const su2double *val_coord, unsigned long val_iSurfacePoints);
 
   /*!
    * \brief Get index of the marker.
@@ -469,17 +468,17 @@ public:
   /*!
    * \brief Get number of surface points.
    */
-  unsigned long GetnSurfacePoint(void);
+  unsigned long GetnSurfacePoint(void) const;
 
   /*!
    * \brief Get number of parent FFD boxes.
   */
-  unsigned short GetnParentFFDBox(void);
+  unsigned short GetnParentFFDBox(void) const;
 
   /*!
    * \brief Get number of child FFD boxes.
    */
-  unsigned short GetnChildFFDBox(void);
+  unsigned short GetnChildFFDBox(void) const;
 
   /*!
    * \brief Get tag of parent FFD box.
@@ -510,13 +509,13 @@ public:
    * \brief Get the number of corner points.
    * \return Number of corner points.
    */
-  unsigned short GetnCornerPoints(void);
+  unsigned short GetnCornerPoints(void) const;
 
   /*!
    * \brief Get the number of control points.
    * \return Number of control points.
    */
-  unsigned short GetnControlPoints(void);
+  unsigned short GetnControlPoints(void) const;
   
   /*!
    * \brief Get the number of control points.
@@ -540,7 +539,7 @@ public:
    * \param[in] val_coord - Coordinates of the corner point with index <i>val_icornerpoints</i>.
    * \param[in] val_icornerpoints - Index of the corner point.
    */
-  void SetCoordCornerPoints(su2double *val_coord, unsigned short val_icornerpoints);
+  void SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints);
 
   /*!
    * \overload
@@ -558,7 +557,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetCoordControlPoints(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
+  void SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -567,7 +566,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetCoordControlPoints_Copy(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
+  void SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -576,7 +575,7 @@ public:
    * \param[in] jDegree - Index of the FFDBox, j direction.
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
-  void SetParCoordControlPoints(su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
+  void SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
   /*!
    * \brief Get the coordinates of the corner points.
@@ -584,14 +583,14 @@ public:
    * \param[in] val_icornerpoints - Index of the corner point.
    * \return Coordinate <i>val_dim</i> of the corner point <i>val_icornerpoints</i>.
    */
-  su2double GetCoordCornerPoints(unsigned short val_dim, unsigned short val_icornerpoints);
+  su2double GetCoordCornerPoints(unsigned short val_dim, unsigned short val_icornerpoints) const;
 
   /*!
    * \brief Get the coordinates of the corner points.
    * \param[in] val_icornerpoints - Index of the corner point.
    * \return Pointer to the coordinate vector of the corner point <i>val_icornerpoints</i>.
    */
-  su2double *GetCoordCornerPoints(unsigned short val_icornerpoints);
+  su2double *GetCoordCornerPoints(unsigned short val_icornerpoints) const;
 
   /*!
    * \brief Get the coordinates of the control point.
@@ -600,7 +599,7 @@ public:
    * \param[in] val_kindex - Value of the local k index of the control point.
    * \return Pointer to the coordinate vector of the control point with local index (i, j, k).
    */
-  su2double *GetCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex);
+  su2double *GetCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex) const;
 
   /*!
    * \brief Get the parametric coordinates of the control point.
@@ -609,7 +608,7 @@ public:
    * \param[in] val_kindex - Value of the local k index of the control point.
    * \return Pointer to the coordinate vector of the control point with local index (i, j, k).
    */
-  su2double *GetParCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex);
+  su2double *GetParCoordControlPoints(unsigned short val_iindex, unsigned short val_jindex, unsigned short val_kindex) const;
 
   /*!
    * \brief Set the control points in a parallelepiped (hexahedron).
@@ -627,7 +626,7 @@ public:
    * \param[in] val_index - Local index (i, j, k) of the control point.
    * \param[in] movement - Movement of the control point.
    */
-  void SetControlPoints(unsigned short *val_index, su2double *movement);
+  void SetControlPoints(const unsigned short *val_index, const su2double *movement);
 
   /*!
    * \brief Set the original value of the control points.
@@ -710,7 +709,7 @@ public:
    * \param[in] cart_coord - Cartesian coordinates of a point.
    * \return Pointer to the parametric coordinates of a point.
    */
-  su2double *GetParametricCoord_Analytical(su2double *cart_coord);
+  su2double *GetParametricCoord_Analytical(const su2double *cart_coord);
 
   /*!
    * \brief Iterative strategy for computing the parametric coordinates.
@@ -720,7 +719,7 @@ public:
    * \param[in] it_max - Maximal number of iterations.
    * \return Parametric coordinates of the point.
    */
-  su2double *GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *guess, CConfig *config);
+  su2double *GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, const su2double *guess, CConfig *config);
 
   /*!
    * \brief Compute the cross product.
@@ -728,7 +727,7 @@ public:
    * \param[in] v2 - Second input vector.
    * \param[out] v3 - Output vector wuth the cross product.
    */
-  void CrossProduct(su2double *v1, su2double *v2, su2double *v3);
+  void CrossProduct(const su2double *v1, const su2double *v2, su2double *v3);
 
   /*!
    * \brief Compute the doc product.
@@ -736,7 +735,7 @@ public:
    * \param[in] v2 - Sencond input vector.
    * \return Dot product between <i>v1</i>, and <i>v2</i>.
    */
-  su2double DotProduct(su2double *v1, su2double *v2);
+  su2double DotProduct(const su2double *v1, const su2double *v2);
 
   /*!
    * \brief Here we take the parametric coords of a point in the box and we convert them to the
@@ -744,25 +743,25 @@ public:
    * \param[in] ParamCoord - Parametric coordinates of a point.
    * \return Pointer to the cartesian coordinates of a point.
    */
-  su2double *EvalCartesianCoord(su2double *ParamCoord);
+  su2double *EvalCartesianCoord(su2double *ParamCoord) const;
 
   /*!
    * \brief Get the order in the l direction of the FFD FFDBox.
    * \return Order in the l direction of the FFD FFDBox.
    */
-  unsigned short GetlOrder(void);
+  unsigned short GetlOrder(void) const;
 
   /*!
    * \brief Get the order in the m direction of the FFD FFDBox.
    * \return Order in the m direction of the FFD FFDBox.
    */
-  unsigned short GetmOrder(void);
+  unsigned short GetmOrder(void) const;
 
   /*!
    * \brief Get the order in the n direction of the FFD FFDBox.
    * \return Order in the n direction of the FFD FFDBox.
    */
-  unsigned short GetnOrder(void);
+  unsigned short GetnOrder(void) const;
   
   /*!
    * \brief Get the order in the l direction of the FFD FFDBox.
@@ -788,7 +787,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iFFDBox - Index of the FFDBox.
    */
-  bool GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint);
+  bool GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) const;
 
   /*!
    * \brief Set the zone of the computational domain that is going to be deformed.
@@ -796,7 +795,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iFFDBox - Index of the FFDBox.
    */
-  void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox);
+  void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const;
 
   /*!
    * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
@@ -829,7 +828,7 @@ public:
    * \param[in] lmn - Degree of the FFD box.
    * \return __________.
    */
-  su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
+  su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -843,7 +842,7 @@ public:
    * \param[in] lmn - Degree of the FFD box.
    * \return __________.
    */
-  su2double GetDerivative2(su2double *uvw, unsigned short dim, su2double *xyz, unsigned short *lmn);
+  su2double GetDerivative2(su2double *uvw, unsigned short dim, const su2double *xyz, const unsigned short *lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -875,7 +874,7 @@ public:
    * \return __________.
    */
   su2double GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-                           unsigned short *ijk, unsigned short *lmn);
+                           unsigned short *ijk, unsigned short *lmn) const;
 
   /*!
    * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -901,7 +900,7 @@ public:
    * \param[in] a - _______.
    * \return __________.
    */
-  su2double GetNorm(su2double *a);
+  su2double GetNorm(const su2double *a);
 
   /*!
    * \brief Set the tag that identify a FFDBox.
@@ -913,7 +912,7 @@ public:
    * \brief Get the tag that identify a FFDBox.
    * \return Value of the tag that identigy the FFDBox.
    */
-  string GetTag(void);
+  string GetTag(void) const;
 
   /*!
    * \brief Set the nested level of the FFDBox.
@@ -925,7 +924,7 @@ public:
    * \brief Get the nested level of the FFDBox.
    * \return Value of the nested level of the the FFDBox.
    */
-  unsigned short GetLevel(void);
+  unsigned short GetLevel(void) const;
   
   /*!
    * \brief Compute the determinant of a 3 by 3 matrix.
@@ -948,13 +947,18 @@ protected:
   unsigned short nDim;		/*!< \brief Number of dimensions. */
   unsigned short nVar;		/*!< \brief Number of variables. */
   
-  unsigned long nPoint;		   /*!< \brief Number of points. */
+  unsigned long nPoint;		     /*!< \brief Number of points. */
   unsigned long nPointDomain;  /*!< \brief Number of points in the domain. */
 
   unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
+#ifndef CODI_FORWARD_TYPE
+  CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
+  CSysSolve<su2mixedfloat>  System;      /*!< \brief Linear solver/smoother. */
+#else
+  CSysMatrix<su2double> StiffMatrix;
   CSysSolve<su2double>  System;
-  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+#endif
   CSysVector<su2double> LinSysSol;
   CSysVector<su2double> LinSysRes;
 
@@ -973,7 +977,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CVolumetricMovement(void);
+  ~CVolumetricMovement(void) override;
   
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -1092,37 +1096,37 @@ public:
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetHexa_Volume(su2double CoordCorners[8][3]);
+  su2double GetHexa_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetTetra_Volume(su2double CoordCorners[8][3]);
+  su2double GetTetra_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetPrism_Volume(su2double CoordCorners[8][3]);
+  su2double GetPrism_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetPyram_Volume(su2double CoordCorners[8][3]);
+  su2double GetPyram_Volume(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetTriangle_Area(su2double CoordCorners[8][3]);
+  su2double GetTriangle_Area(su2double CoordCorners[8][3]) const;
   
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
-  su2double GetQuadrilateral_Area(su2double CoordCorners[8][3]);
+  su2double GetQuadrilateral_Area(su2double CoordCorners[8][3]) const;
 
   /*!
    * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
@@ -1145,7 +1149,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) const;
 
   /*!
    * \brief Check the boundary vertex that are going to be moved.
@@ -1231,20 +1235,12 @@ public:
   void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
 
   /*!
-   * \brief Get the object for multiplication by the stiffness matrix of the volume deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Transpose - Wether or not you want to multiply by the transposed matrix
-   */
-  CMatrixVectorProduct<su2double>* GetStiffnessMatrixVectorProduct(CGeometry *geometry, CConfig *config, bool Transpose);
-
-  /*!
    * \brief Get the stiffness matrix of the volume deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  CSysMatrix<su2double> &GetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool Derivative);
+  CSysMatrix<su2mixedfloat> &GetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool Derivative);
 
   /*!
    * \brief Grid deformation using the spring analogy method.
@@ -1296,7 +1292,7 @@ public:
    * \brief Retrieve the number of iterations when moving the mesh.
    * \param[out] Number of iterations.
    */
-  unsigned long Get_nIterMesh(void);
+  unsigned long Get_nIterMesh(void) const;
 
   /*!
    * \brief Set the boundary dependencies in the mesh side of the problem
@@ -1304,183 +1300,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
-};
-
-/*! 
- * \class CElasticityMovement
- * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
- * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
- * \version 7.0.0 "Blackbird"
- */
-class CElasticityMovement : public CVolumetricMovement {
-protected:
-
-  unsigned short nDim;    /*!< \brief Number of dimensions. */
-  unsigned short nVar;    /*!< \brief Number of variables. */
-
-  unsigned long nPoint;   /*!< \brief Number of points. */
-  unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
-
-  unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
-  su2double valResidual;
-
-  su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
-  *Solution;         /*!< \brief Auxiliary nDim vector. */
-
-  su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
-  su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
-
-  su2double MinVolume;
-  su2double MaxVolume;
-
-#ifndef CODI_FORWARD_TYPE
-  CSysSolve<passivedouble>  System;
-  CSysMatrix<passivedouble> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-#else
-  CSysSolve<su2double>  System;
-  CSysMatrix<su2double> StiffMatrix;
-#endif
-  CSysVector<su2double> LinSysSol;
-  CSysVector<su2double> LinSysRes;
-
-  su2double E;                  /*!< \brief Young's modulus of elasticity. */
-  su2double Nu;                 /*!< \brief Poisson's ratio. */
-
-  su2double Mu;                 /*!< \brief Lame's coeficient. */
-  su2double Lambda;             /*!< \brief Lame's coeficient. */
-
-  su2double **Jacobian_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
-
-  su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
-  **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
-  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
-  su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
-  su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
-
-public:
-
-  CElement** element_container;  /*!< \brief Container which stores the element information. */
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CElasticityMovement(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CElasticityMovement(void);
-
-  /*!
-   * \brief Grid deformation using the linear elasticity equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] UpdateGeo - Update geometry.
-   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
-   */
-  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
-
-  /*!
-   * \brief Update the value of the coordinates after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the dual grid after the grid movement (edges and control volumes).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the coarse multigrid levels after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-
-  /*!
-   * \brief Check the boundary vertex that are going to be moved.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements to 0.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker -
-   */
-  void SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \return Value of the length of the smallest edge of the grid.
-   */
-  void SetMinMaxVolume(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \return Value of the length of the smallest edge of the grid.
-   */
-  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the number of iterations when moving the mesh.
-   * \param[in] val_nIterMesh - Number of iterations.
-   */
-  void Set_nIterMesh(unsigned long val_nIterMesh);
-
-  /*!
-   * \brief Retrieve the number of iterations when moving the mesh.
-   * \param[out] Number of iterations.
-   */
-  unsigned long Get_nIterMesh(void);
-
-  /*!
-   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
-   */
-  void Set_Element_Stiffness(su2double ElemVolume, CConfig *config);
-
-  /*!
-   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
-   */
-  void Compute_Element_Contribution(CElement *element, CConfig *config);
-
-  /*!
-   * \brief Compute the constitutive matrix in an element for mesh deformation problems
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  void Compute_Constitutive_Matrix(void);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
-
 };
 
 /*!
@@ -1510,7 +1329,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSurfaceMovement(void);
+  ~CSurfaceMovement(void) override;
   
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
@@ -1586,46 +1405,6 @@ public:
    * \param[in] iter - Physical time iteration number.
    */
   void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-  
-  /*!
-   * \brief Computes the displacement of a translating surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Translating(CGeometry *geometry, CConfig *config,
-                           unsigned long iter, unsigned short iZone);
-  
-  /*!
-   * \brief Computes the displacement of a plunging surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Plunging(CGeometry *geometry, CConfig *config,
-                        unsigned long iter, unsigned short iZone);
-  
-  /*!
-   * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Pitching(CGeometry *geometry, CConfig *config,
-                        unsigned long iter, unsigned short iZone);
-  
-  /*!
-   * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time iteration.
-   * \param[in] iZone - Zone number in the mesh.
-   */
-  void Surface_Rotating(CGeometry *geometry, CConfig *config,
-                        unsigned long iter, unsigned short iZone);
   
   /*!
    * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
@@ -1704,7 +1483,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config);
+  void SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
@@ -1778,7 +1557,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1788,7 +1567,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1798,7 +1577,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1808,7 +1587,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1818,7 +1597,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1838,7 +1617,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1848,7 +1627,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1858,7 +1637,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1878,7 +1657,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a rotation angle deformation of the Free From box using the control point position.
@@ -1888,7 +1667,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
   
   /*!
    * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
@@ -1898,7 +1677,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  bool SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  bool SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef) const;
 
   /*!
    * \brief Read the free form information from the grid input file.
@@ -1942,7 +1721,7 @@ public:
    *        compute the parametric coordinates.
    * \return <code>TRUE</code> if the input grid file has a complete information; otherwise <code>FALSE</code>.
    */
-  bool GetFFDBoxDefinition(void);
+  bool GetFFDBoxDefinition(void) const;
 
   /*!
    * \brief Check if the design variable definition matches the FFD box definition.
@@ -1957,13 +1736,13 @@ public:
    * \brief Obtain the number of FFDBoxes.
    * \return Number of FFD FFDBoxes.
    */
-  unsigned short GetnFFDBox(void);
+  unsigned short GetnFFDBox(void) const;
 
   /*!
    * \brief Obtain the number of levels.
    * \return Number of FFD levels.
    */
-  unsigned short GetnLevel(void);
+  unsigned short GetnLevel(void) const;
 
   /*!
    * \brief Set derivatives of the surface/boundary deformation.

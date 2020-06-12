@@ -4,7 +4,7 @@
  *        projections between mesh coordinate sensitivities and design values
  *        similar to the functions in SU2_DOT
  * \author T.Dick
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,11 +30,8 @@
 #pragma once
 
 #include "option_structure.hpp"
-#include "config_structure.hpp"
-#include "geometry_structure.hpp"
+#include "CConfig.hpp"
 #include "grid_movement_structure.hpp"
-#include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
-#include "../../SU2_CFD/include/solver_structure.hpp"
 #include "eigen_structure.hpp"
 
 /*!

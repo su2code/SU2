@@ -2,14 +2,14 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
 CPengRobinson::~CPengRobinson(void) { }
 
 
-su2double CPengRobinson::alpha2(su2double T) {
+su2double CPengRobinson::alpha2(su2double T) const {
 
   return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
 }

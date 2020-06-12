@@ -3,14 +3,14 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -90,6 +90,10 @@ def State_Factory(state=None,config=None):
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
+        WND_CAUCHY_DATA:
+            TIME_ITER
+            UNST_ADJOINT_ITER
+            ITER_AVERAGE_OBJ
 
     """   
     
@@ -103,12 +107,16 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY', 'HESSIAN']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA', 'HESSIAN]:
         NewClass[key] = ordered_bunch()
             
     if config:
         NewClass.find_files(config)
-            
+        # WND_Convergence Data
+        NewClass['WND_CAUCHY_DATA'] = {'TIME_ITER': config['TIME_ITER'],
+                                       'UNST_ADJOINT_ITER': config['UNST_ADJOINT_ITER'],
+                                       'ITER_AVERAGE_OBJ': config['ITER_AVERAGE_OBJ']}
+
     return NewClass
 
 
@@ -318,31 +326,33 @@ class State(ordered_bunch):
 
         register_file('MESH',mesh_name)
 
-        # direct solutions
-        if restart:
-            register_file('DIRECT',direct_name)
-            if multipoint:
-                name_list = expand_multipoint(direct_name,config)
-                name_list = expand_zones(name_list,config)
-                register_file('MULTIPOINT_DIRECT',name_list)
-        
-        # flow meta data file
-        if restart:
-            register_file('FLOW_META','flow.meta')
-            if multipoint:
-                name_list = expand_multipoint('flow.meta',config)
-                register_file('MULTIPOINT_FLOW_META',name_list)
-
-        # adjoint solutions
-        if restart:
-            for obj, suff in adj_map.items():
-                ADJ_LABEL = 'ADJOINT_' + obj
-                adjoint_name_suffixed = add_suffix(adjoint_name,suff)
-                register_file(ADJ_LABEL,adjoint_name_suffixed)
+        # old style restart
+        if not 'RESTART_FILE_1' in files.keys():
+            # direct solutions
+            if restart:
+                register_file('DIRECT',direct_name)
                 if multipoint:
-                    name_list = expand_zones(add_suffix(expand_multipoint(adjoint_name,config), suff), config)
-                    multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
-                    register_file(multipoint_adj_name, name_list)
+                    name_list = expand_multipoint(direct_name,config)
+                    name_list = expand_zones(name_list,config)
+                    register_file('MULTIPOINT_DIRECT',name_list)
+
+            # flow meta data file
+            if restart:
+                register_file('FLOW_META','flow.meta')
+                if multipoint:
+                    name_list = expand_multipoint('flow.meta',config)
+                    register_file('MULTIPOINT_FLOW_META',name_list)
+
+            # adjoint solutions
+            if restart:
+                for obj, suff in adj_map.items():
+                    ADJ_LABEL = 'ADJOINT_' + obj
+                    adjoint_name_suffixed = add_suffix(adjoint_name,suff)
+                    register_file(ADJ_LABEL,adjoint_name_suffixed)
+                    if multipoint:
+                        name_list = expand_zones(add_suffix(expand_multipoint(adjoint_name,config), suff), config)
+                        multipoint_adj_name = 'MULTIPOINT_' + ADJ_LABEL
+                        register_file(multipoint_adj_name, name_list)
         
         # equivalent area
         if 'EQUIV_AREA' in special_cases:

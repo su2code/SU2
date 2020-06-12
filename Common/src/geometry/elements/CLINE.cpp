@@ -1,8 +1,8 @@
 /*!
- * \file CTRIA3.cpp
+ * \file CLINE.cpp
  * \brief Definition of the 2-node line element with two Gauss points.
  * \author T. Dick
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

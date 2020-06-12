@@ -2,14 +2,14 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,9 @@ class CIncEulerVariable : public CVariable {
 protected:
   VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
   MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
-  VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-  VectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
   VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
 
@@ -62,12 +62,19 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncEulerVariable() = default;
+  ~CIncEulerVariable() override = default;
 
   /*!
-   * \brief Set to zero the gradient of the primitive variables.
+   * \brief Get the primitive variable gradients for all points.
+   * \return Reference to primitive variable gradient.
    */
-  void SetGradient_PrimitiveZero() final;
+  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Reference to variable reconstruction gradient.
+   */
+  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
@@ -81,17 +88,6 @@ public:
   }
 
   /*!
-   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) -= value;
-  }
-
-  /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -101,6 +97,12 @@ public:
   inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Primitive(iPoint,iVar,iDim);
   }
+
+  /*!
+   * \brief Get the primitive variables limiter.
+   * \return Primitive variables limiter for the entire domain.
+   */
+  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -146,7 +148,7 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
-  
+
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -157,7 +159,7 @@ public:
   inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Reconstruction(iPoint,iVar,iDim);
   }
-  
+
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -168,7 +170,7 @@ public:
   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
   }
-  
+
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -181,6 +183,12 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint,0) = Solution(iPoint,0); }
+
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
 
   /*!
    * \brief Get the primitive variables.

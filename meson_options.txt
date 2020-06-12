@@ -1,4 +1,5 @@
 option('with-mpi',   type : 'feature', value : 'auto', description: 'enable MPI support')
+option('with-omp',   type : 'boolean', value : false, description: 'enable OpenMP support')
 option('enable-tecio', type : 'boolean', value : true, description: 'enable TECIO support')
 option('enable-cgns',  type : 'boolean', value : true, description: 'enable CGNS support')
 option('enable-autodiff',  type : 'boolean', value : false, description: 'enable AD (reverse) support')
@@ -13,3 +14,5 @@ option('enable-pastix', type : 'boolean', value : false, description: 'enable Pa
 option('pastix_root', type : 'string', value : 'externals/pastix/', description: 'PaStiX base directory')
 option('scotch_root', type : 'string', value : 'externals/scotch/', description: 'Scotch base directory')
 option('custom-mpi',  type : 'boolean', value : false, description: 'Use custom mpi include and library path from env variables')
+option('enable-tests',  type : 'boolean', value : false, description: 'Compile Unit Tests')
+option('enable-mixedprec', type : 'boolean', value : false, description: 'Use single precision floating point arithmetic for sparse algebra')

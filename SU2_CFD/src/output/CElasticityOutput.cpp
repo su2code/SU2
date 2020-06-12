@@ -2,14 +2,14 @@
  * \file output_elasticity.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,8 @@
 
 #include "../../include/output/CElasticityOutput.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
@@ -115,10 +115,9 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
-    SetHistoryOutputValue("RMS_ETOL", log10(dotProd(fea_solver->LinSysSol, fea_solver->LinSysRes)));
-
+    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
+    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
   }
 
   if (multiZone){
@@ -128,18 +127,20 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
 
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
-  SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
+  SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment()*100);
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
 
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
-  
-} 
+
+  SetHistoryOutputValue("COMBO", fea_solver->GetTotal_ComboObj());
+
+}
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
-  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL",  "Number of iterations of the linear solver.");
-  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL",  "Residual of the linear solver.");
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
   // Residuals
 
@@ -156,20 +157,22 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  ScreenOutputFormat::FIXED, "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
+
+  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
 
 }
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Struc = solver[FEA_SOL]->GetNodes();
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
   SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
@@ -237,5 +240,3 @@ bool CElasticityOutput::SetInit_Residuals(CConfig *config){
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 
 }
-
-

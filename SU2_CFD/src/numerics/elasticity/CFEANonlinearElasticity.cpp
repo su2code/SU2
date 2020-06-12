@@ -3,14 +3,14 @@
  * \brief This file contains the routines for setting the tangent matrix and
  *        residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 
 
 CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
+                                   const CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
   nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
 
@@ -66,8 +66,8 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
   C10 = Mu/2.0;
   D1  = 2.0/Kappa;
 
-  F_Mat_Iso = NULL;
-  b_Mat_Iso = NULL;
+  F_Mat_Iso = nullptr;
+  b_Mat_Iso = nullptr;
 
   F_Mat_Iso = new su2double *[3];
   b_Mat_Iso = new su2double *[3];
@@ -82,12 +82,13 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
   nElectric_Field   = 0;
   nDim_Electric_Field = 0;
 
-  EField_Ref_Unit   = NULL;
-  EField_Ref_Mod    = NULL;
-  EField_Curr_Unit  = NULL;
-  if (maxwell_stress == true){
+  EField_Ref_Unit   = nullptr;
+  EField_Ref_Mod    = nullptr;
+  EField_Curr_Unit  = nullptr;
 
-    su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
+  if (maxwell_stress == true) {
+
+    const su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
     unsigned short iVar, iDim;
     su2double ref_Efield_mod;
 
@@ -98,9 +99,11 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
 
     nDim_Electric_Field = config->GetnDim_Electric_Field();
 
-    if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
+    if (nDim != nDim_Electric_Field) {
+      SU2_MPI::Error("The electric field dimensions do not agree with the geometry.", CURRENT_FUNCTION);
+    }
 
-     /*--- DV_Val: Vector to store the value of the design variable. ---*/
+    /*--- DV_Val: Vector to store the value of the design variable. ---*/
 
     nElectric_Field = config->GetnElectric_Field();
 
@@ -112,8 +115,8 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
     }
     ref_Efield_mod = sqrt(ref_Efield_mod);
 
-    if (ref_Efield_mod == 0){
-      SU2_MPI::Error("The electric field has not been defined!!!!!", CURRENT_FUNCTION);
+    if (ref_Efield_mod == 0) {
+      SU2_MPI::Error("The electric field has not been defined.", CURRENT_FUNCTION);
     }
 
     /*--- Initialize pointer for the electric field ---*/
@@ -194,27 +197,27 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
   delete [] KAux_P_ab;
   delete [] currentCoord;
 
-  if (F_Mat_Iso != NULL) {
+  if (F_Mat_Iso != nullptr) {
     for (iVar = 0; iVar < 3; iVar++){
-      if (F_Mat_Iso[iVar] != NULL) delete [] F_Mat_Iso[iVar];
+      if (F_Mat_Iso[iVar] != nullptr) delete [] F_Mat_Iso[iVar];
     }
     delete [] F_Mat_Iso;
   }
-  if (b_Mat_Iso != NULL){
+  if (b_Mat_Iso != nullptr){
     for (iVar = 0; iVar < 3; iVar++){
-      if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
+      if (b_Mat_Iso[iVar] != nullptr) delete [] b_Mat_Iso[iVar];
     }
     delete [] b_Mat_Iso;
   }
 
-  if (EField_Ref_Unit  != NULL)   delete [] EField_Ref_Unit;
-  if (EField_Ref_Mod   != NULL)   delete [] EField_Ref_Mod;
-  if (EField_Curr_Unit != NULL)   delete [] EField_Curr_Unit;
+  delete [] EField_Ref_Unit;
+  delete [] EField_Ref_Mod;
+  delete [] EField_Curr_Unit;
 
 }
 
 
-void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -465,7 +468,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 
 }
 
-void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -596,7 +599,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
 
 }
 
-void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, const CConfig *config) {
 
 //  Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
 
@@ -627,7 +630,7 @@ void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *conf
 
 }
 
-void CFEANonlinearElasticity::SetElectric_Properties(const CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::SetElectric_Properties(const CElement *element, const CConfig *config) {
 
   // Set the modulus of the electric field in the current element
   /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
@@ -742,7 +745,7 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat(void) {
 
 }
 
-void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;

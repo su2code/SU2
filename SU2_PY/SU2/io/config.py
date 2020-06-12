@@ -3,14 +3,14 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
+from .historyMap import history_header_map as historyOutFields
 import numpy as np
 from ..util import ordered_bunch, switch
 from .tools import *
@@ -95,8 +96,46 @@ class Config(ordered_bunch):
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 raise
-        
         self._filename = filename
+
+        if self.get("TIME_DOMAIN") == "YES":
+            objFuncsFields = self.get("OPT_OBJECTIVE")
+            histFields = self.get("HISTORY_OUTPUT")
+            diff_objective = self.get("OBJECTIVE_FUNCTION")
+            constrFuncFields = self.get("OPT_CONSTRAINT")
+
+            #OPT_OBJECTIVES
+            if bool (objFuncsFields):
+                for key in objFuncsFields:
+                    tavg_keyGroup = "TAVG_" + historyOutFields[key]["GROUP"]
+                    if  not tavg_keyGroup in histFields:
+                        histFields.append(tavg_keyGroup)
+
+                    dtavg_keyGroup = "D_TAVG_" + historyOutFields[key]["GROUP"]
+                    if not dtavg_keyGroup in histFields:
+                        histFields.append(dtavg_keyGroup)
+
+            #OPT_CONSTRAINTS
+            if bool (constrFuncFields):
+                for key in constrFuncFields:
+                    eqIneqConstrFunc = constrFuncFields.get(key)
+                    for key_inner in eqIneqConstrFunc:
+                        tavg_keyGroup = "TAVG_" + historyOutFields[key_inner]["GROUP"]
+                        if  not tavg_keyGroup in histFields:
+                            histFields.append(tavg_keyGroup)
+
+            #DIRECT_DIFF Field
+            if diff_objective in historyOutFields:
+                tavg_keyGroup = "TAVG_" + historyOutFields[diff_objective]["GROUP"]
+                if  not tavg_keyGroup in histFields:
+                    histFields.append(tavg_keyGroup)
+
+                dtavg_keyGroup = "D_TAVG_" + historyOutFields[diff_objective]["GROUP"]
+                if not dtavg_keyGroup in histFields:
+                    histFields.append(dtavg_keyGroup)
+
+            self["HISTORY_OUTPUT"]= histFields
+
     
     def read(self,filename):
         """ reads from a config file """
@@ -301,10 +340,29 @@ def read_config(filename):
             break
         
         # remove line returns
-        line = line.strip('\r\n')
-        # make sure it has useful data
-        if (not "=" in line) or (line[0] == '%'):
+        line = line.strip('\r\n').strip()
+
+        if (len(line) == 0):
             continue
+        # make sure it has useful data
+        if (line[0] == '%'):
+            continue
+            
+        # --- Check if there is a line continuation character at the
+        # end of the current line or somewhere in between (the rest is ignored then).
+        # If yes, read until there is a line without one or an empty line.
+        # If there is a statement after a cont. char
+        # throw an error. ---*/
+    
+        while(line[0].endswith('\\') or len(line.split('\\')) > 1):
+            tmp_line = input_file.readline()
+            tmp_line = tmp_line.strip()
+            assert len(tmp_line.split('=')) <= 1, ('Statement found after line '
+                                                   'continuation character in config file %s' % tmp_line)
+            if (not tmp_line.startswith('%')):
+                line = line.split('\\')[0]
+                line += ' ' + tmp_line
+
         # split across equals sign
         line = line.split("=",1)
         this_param = line[0].strip()

@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -79,7 +79,7 @@ class TestCase:
         passed       = True
         exceed_tol   = False
         timed_out    = False
-        iter_missing = True
+        iter_missing = False
         start_solver = True
 
         # if root, add flag to mpirun
@@ -87,15 +87,19 @@ class TestCase:
             if self.su2_exec.startswith('mpirun'):
                 self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
 
-        # Adjust the number of iterations in the config file   
-        self.adjust_iter()
+        # Adjust the number of iterations in the config file
+        if len(self.test_vals) != 0:
+            self.adjust_iter() 
 
         # Check for disabling the restart
         if self.no_restart:
             self.disable_restart()
 
         # Assemble the shell command to run SU2
-        logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
+        if len(self.test_vals) != 0:
+            logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
+        else:
+            logfilename = '%s_check.log' % os.path.splitext(self.cfg_file)[0]
 
         # Check for polar calls
         if self.polar:
@@ -131,7 +135,7 @@ class TestCase:
         output = f.readlines()
         delta_vals = []
         sim_vals = []
-        if not timed_out:
+        if not timed_out and len(self.test_vals) != 0:
             start_solver = False
             for line in output:
                 if not start_solver: # Don't bother parsing anything before --Start solver ---
@@ -179,6 +183,10 @@ class TestCase:
         #for j in output:
         #  print(j)
 
+
+        process.communicate()
+        if process.returncode != 0:
+            passed = False
         if passed:
             print("%s: PASSED"%self.tag)
         else:
@@ -200,13 +208,14 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d' % self.test_iter)
+        if len(self.test_vals) != 0:
+            print('test_iter=%d' % self.test_iter)
 
-        print_vals(self.test_vals, name="test_vals (stored)")
+            print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+            print_vals(sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+            print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)

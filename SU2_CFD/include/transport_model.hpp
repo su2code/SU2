@@ -2,14 +2,14 @@
  * \file transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@
 #include "stdio.h"
 #include "math.h"
 
-#include "../../Common/include/datatype_structure.hpp"
+#include "../../Common/include/basic_types/datatype_structure.hpp"
 
 using namespace std;
 
@@ -73,17 +73,17 @@ public:
   /*!
    * \brief return viscosity value.
    */
-  su2double GetViscosity(void);
+  su2double GetViscosity(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdmudrho_T(void);
+  su2double Getdmudrho_T(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdmudT_rho(void);
+  su2double GetdmudT_rho(void) const;
 
   /*!
    * \brief Set Viscosity.
@@ -105,24 +105,24 @@ public:
  * \version 1.0
  */
 class CConstantViscosity : public CViscosityModel {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantViscosity(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantViscosity(su2double mu_const);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantViscosity(void);
-   
+  ~CConstantViscosity(void) override;
+
 };
 
 /*!
@@ -137,34 +137,34 @@ protected:
   su2double Mu_ref,  /*!< \brief Internal Energy. */
   T_ref,             /*!< \brief DpDd_e. */
   S;                 /*!< \brief DpDe_d. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CSutherland(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CSutherland(su2double mu_ref, su2double t_ref, su2double s);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSutherland(void);
-  
+  ~CSutherland(void) override;
+
   /*!
    * \brief Set Viscosity.
    */
-  void SetViscosity(su2double T, su2double rho);
-  
+  void SetViscosity(su2double T, su2double rho) override;
+
   /*!
    * \brief Set Viscosity Derivatives.
    */
-  void SetDerViscosity(su2double T, su2double rho);
-  
+  void SetDerViscosity(su2double T, su2double rho) override;
+
 };
 
 /*!
@@ -178,27 +178,27 @@ protected:
   su2double *b;               /*!< \brief Polynomial coefficients for viscosity as a function of temperature. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialViscosity(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b);
-  
+  CPolynomialViscosity(unsigned short val_nCoeffs, const su2double* val_b);
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialViscosity(void);
-  
+  ~CPolynomialViscosity(void) override;
+
   /*!
    * \brief Set Viscosity.
    */
-  void SetViscosity(su2double T, su2double rho);
-  
+  void SetViscosity(su2double T, su2double rho) override;
+
 };
 
 /*!
@@ -228,17 +228,17 @@ public:
   /*!
    * \brief return viscosity value.
    */
-  su2double GetConductivity(void);
+  su2double GetConductivity(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdktdrho_T(void);
+  su2double Getdktdrho_T(void) const;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdktdT_rho(void);
+  su2double GetdktdT_rho(void) const;
 
   /*!
    * \brief Set Thermal conductivity.
@@ -275,7 +275,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantConductivity(void);
+  ~CConstantConductivity(void) override;
 
 };
 
@@ -286,33 +286,33 @@ public:
  * \version 1.0
  */
 class CConstantConductivityRANS : public CConductivityModel {
-  
+
 protected:
   su2double Kt_Lam;         /*!< \brief Constant laminar conductivity. */
   su2double Prandtl_Turb;   /*!< \brief Turbulent Prandtl number. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantConductivityRANS(void);
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CConstantConductivityRANS(su2double kt_const, su2double pr_turb);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantConductivityRANS(void);
-  
+  ~CConstantConductivityRANS(void) override;
+
   /*!
    * \brief Set effective thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
-  
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
+
 };
 
 /*!
@@ -335,7 +335,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantPrandtl(void);
+  ~CConstantPrandtl(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -347,12 +347,12 @@ public:
    * \brief par1 -> Cp.
    * \brief par2 -> Mu.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
 
   /*!
    * \brief Set Thermal conductivity derivatives.
    */
-  void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+  void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) override;
 
 };
 
@@ -378,7 +378,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConstantPrandtlRANS(void);
+  ~CConstantPrandtlRANS(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -388,7 +388,7 @@ public:
   /*!
    * \brief Set effective thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
 
 };
 
@@ -401,29 +401,29 @@ class CPolynomialConductivity : public CConductivityModel {
 protected:
   unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
   su2double *b;               /*!< \brief Polynomial coefficients for thermal conductivity as a function of temperature. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialConductivity(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialConductivity(void);
-  
+  ~CPolynomialConductivity(void) override;
+
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b);
-  
+  CPolynomialConductivity(unsigned short val_nCoeffs, const su2double* val_b);
+
   /*!
    * \brief Set Thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
-  
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
+
 };
 
 /*!
@@ -438,27 +438,27 @@ protected:
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl number. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPolynomialConductivityRANS(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CPolynomialConductivityRANS(void);
-  
+  ~CPolynomialConductivityRANS(void) override;
+
   /*!
    * \brief Constructor of the class.
    */
-  CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb);
-  
+  CPolynomialConductivityRANS(unsigned short val_nCoeffs, const su2double* val_b, su2double pr_turb);
+
   /*!
    * \brief Set Thermal conductivity.
    */
-  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
-  
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override;
+
 };
 
 #include "transport_model.inl"

@@ -3,7 +3,7 @@
  * \brief Functions for projections between mesh coordinate sensitivities and design values
  *        similar to the functions in SU2_DOT
  * \author T.Dick
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -199,8 +199,6 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
     }
   }
 
-  AD::Push_ForwardTapePosition();
-
   /*--- Call the surface deformation routine ---*/
 
   surface_movement->SetSurface_Deformation(geometry, config);
@@ -220,7 +218,6 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
 
 
   /*--- Stop the recording --- */
-  AD::Push_ForwardTapePosition();
   AD::StopRecording();
 
   /*--- Loop over all design variables and calculate the derivative with respect to that variable --*/
@@ -231,7 +228,7 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
 
       SU2_TYPE::SetDerivative(DV_Value[iDV][iDV_Value], 1.0);
 
-      AD::ComputeAdjointForward(0,1);
+      AD::ComputeAdjointForward();
 
       /*--- Extract sensitivities ---*/
       for (iMarker = 0; iMarker < nMarker; iMarker++) {

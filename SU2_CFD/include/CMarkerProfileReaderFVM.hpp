@@ -1,4 +1,3 @@
-
 /*!
  * \file CMarkerProfileReaderFVM.hpp
  * \brief Header file for the class CMarkerProfileReaderFVM.
@@ -20,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -45,8 +44,8 @@
 #include <iomanip>
 
 #include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 
 using namespace std;
 
@@ -125,7 +124,7 @@ public:
    * \brief Get the number of profiles found within the input file.
    * \returns Number of profiles found within the input file.
    */
-  inline unsigned long GetNumberOfProfiles() {
+  inline unsigned long GetNumberOfProfiles() const {
     return numberOfProfiles;
   }
   
@@ -155,7 +154,7 @@ public:
   inline unsigned long GetNumberOfColumnsInProfile(int val_iProfile) {
     return numberOfColumnsInProfile[val_iProfile];
   }
-  
+
   /*!
    * \brief Get the 1D vector of data for a profile from the input file.
    * \param[in] val_iProfile - current profile index.
@@ -165,4 +164,18 @@ public:
     return profileData[val_iProfile];
   }
   
+   /*!
+   * \brief Get the data for the specific column if interpolation being done.
+   * \param[in] val_iProfile - current profile index.
+   * \param[in] iCol - the column whose data is required
+   * \returns the specific column data.
+   */
+  inline vector<su2double> GetColumnForProfile(int val_iProfile, unsigned short iCol) const {
+    auto nRow = numberOfRowsInProfile[val_iProfile];
+    auto nCol = numberOfColumnsInProfile[val_iProfile];
+    vector<su2double> ColumnData(nRow);
+    for (unsigned long iRow = 0; iRow < nRow; iRow++)
+      ColumnData[iRow]=profileData[val_iProfile][iRow*nCol+iCol];
+    return ColumnData;
+  }
 };

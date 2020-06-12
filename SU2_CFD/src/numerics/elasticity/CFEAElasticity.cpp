@@ -1,16 +1,15 @@
 /*!
  * \file CFEAElasticity.cpp
- * \brief This file contains the routines for setting the tangent matrix and
- *        residual of a FEM linear elastic structural problem.
+ * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,10 +26,11 @@
  */
 
 #include "../../../include/numerics/elasticity/CFEAElasticity.hpp"
+#include "../../../../Common/include/omp_structure.hpp"
 
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                               CConfig *config) : CNumerics() {
+                               const CConfig *config) : CNumerics() {
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -166,19 +166,19 @@ CFEAElasticity::~CFEAElasticity(void) {
   delete [] GradNi_Ref_Mat;
   delete [] GradNi_Curr_Mat;
 
-  if (DV_Val != nullptr) delete[] DV_Val;
+  delete[] DV_Val;
 
-  if (FAux_Dead_Load != nullptr) delete [] FAux_Dead_Load;
+  delete [] FAux_Dead_Load;
 
-  if (E_i != nullptr) delete [] E_i;
-  if (Nu_i != nullptr) delete [] Nu_i;
-  if (Rho_s_i != nullptr) delete [] Rho_s_i;
-  if (Rho_s_DL_i != nullptr) delete [] Rho_s_DL_i;
-  if (Ni_Vec != nullptr) delete [] Ni_Vec;
+  delete [] E_i;
+  delete [] Nu_i;
+  delete [] Rho_s_i;
+  delete [] Rho_s_DL_i;
+  delete [] Ni_Vec;
 }
 
 
-void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -187,9 +187,12 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
   unsigned short iGauss, nGauss;
   unsigned short iNode, jNode, nNode;
 
-  su2double Weight, Jac_X;
+  su2double Weight, Jac_X, val_Mab;
 
-  su2double val_Mab;
+  /*--- Register pre-accumulation inputs, density and reference coords. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(Rho_s);
+  element->SetPreaccIn_Coords(false);
 
   element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear(); /*--- Need to compute the gradients to obtain the Jacobian ---*/
@@ -227,10 +230,14 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
   }
 
+  /*--- Register the mass matrix as preaccumulation output. ---*/
+  element->SetPreaccOut_Mab();
+  AD::EndPreacc();
+
 }
 
 
-void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -282,7 +289,7 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 }
 
 
-void CFEAElasticity::SetElement_Properties(const CElement *element, CConfig *config) {
+void CFEAElasticity::SetElement_Properties(const CElement *element, const CConfig *config) {
 
   /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
   Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
@@ -311,9 +318,12 @@ void CFEAElasticity::SetElement_Properties(const CElement *element, CConfig *con
 }
 
 
-void CFEAElasticity::ReadDV(CConfig *config) {
+void CFEAElasticity::ReadDV(const CConfig *config) {
 
   int rank = SU2_MPI::GetRank();
+  bool master_node = false;
+  SU2_OMP_MASTER
+  master_node = (rank == MASTER_NODE);
 
   unsigned long index;
 
@@ -345,7 +355,7 @@ void CFEAElasticity::ReadDV(CConfig *config) {
 
   filename = input_name;
 
-  if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
+  if (master_node) cout << "Filename: " << filename << "." << endl;
 
   properties_file.open(filename.data(), ios::in);
 
@@ -353,7 +363,7 @@ void CFEAElasticity::ReadDV(CConfig *config) {
 
   if (properties_file.fail()) {
 
-    if (rank == MASTER_NODE)
+    if (master_node)
       cout << "There is no design variable file." << endl;
 
     n_DV   = 1;
@@ -366,7 +376,7 @@ void CFEAElasticity::ReadDV(CConfig *config) {
 
     string text_line;
 
-     /*--- First pass: determine number of design variables ---*/
+    /*--- First pass: determine number of design variables ---*/
 
     unsigned short iDV = 0;
 

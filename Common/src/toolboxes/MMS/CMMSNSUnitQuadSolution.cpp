@@ -2,14 +2,14 @@
  * \file CMMSNSUnitQuadSolution.cpp
  * \brief Implementations of the member functions of CMMSNSUnitQuadSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
                                                unsigned short val_iMesh,
                                                CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -120,7 +120,7 @@ CMMSNSUnitQuadSolution::~CMMSNSUnitQuadSolution(void) { }
 
 void CMMSNSUnitQuadSolution::GetBCState(const su2double *val_coords,
                                         const su2double val_t,
-                                        su2double       *val_solution) {
+                                        su2double       *val_solution) const {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
@@ -128,7 +128,7 @@ void CMMSNSUnitQuadSolution::GetBCState(const su2double *val_coords,
 
 void CMMSNSUnitQuadSolution::GetSolution(const su2double *val_coords,
                                          const su2double val_t,
-                                         su2double       *val_solution) {
+                                         su2double       *val_solution) const {
 
   /* Easier storage of the x- and y-coordinates. */
   const su2double x = val_coords[0];
@@ -167,7 +167,7 @@ void CMMSNSUnitQuadSolution::GetSolution(const su2double *val_coords,
 
 void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
                                               const su2double val_t,
-                                              su2double       *val_source) {
+                                              su2double       *val_source) const {
 
   /*--- The source code for the source terms is generated in Maple.
         See the file CMMSNSUnitQuadSolution.mw in the directory
@@ -378,6 +378,6 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
   val_source[nDim+1] = t564 + t565 + t566 + t567;
 }
 
-bool CMMSNSUnitQuadSolution::IsManufacturedSolution(void) {
+bool CMMSNSUnitQuadSolution::IsManufacturedSolution(void) const {
   return true;
 }

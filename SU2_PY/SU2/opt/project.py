@@ -3,14 +3,14 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -148,11 +148,11 @@ class Project(object):
         self.designs = designs     # design list
         self.folder  = folder      # project folder
         self.results = su2util.ordered_bunch() # project design results
-        
+
         # output filenames
-        self.filename = 'project.pkl' 
-        self.results_filename = 'results.pkl' 
-        
+        self.filename = 'project.pkl'
+        self.results_filename = 'results.pkl'
+
         # initialize folder with files
         pull,link = state.pullnlink(config)
 
@@ -181,31 +181,34 @@ class Project(object):
         config = self.config           # project config
         state  = self.state            # project state
         folder = self.folder           # project folder
-        
         filename = self.filename
         
         # check folder
-        assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
-        
+        assert os.path.exists(folder) , 'cannot find project folder %s' % folder
+
         # list project files to pull and link
         pull,link = state.pullnlink(config)
-        
+
         # project folder redirection, don't overwrite files
-        with redirect_folder(folder,pull,link,force=False) as push:        
-        
+        with redirect_folder(folder,pull,link,force=False) as push:
+
             # start design
             design = self.new_design(konfig)
             
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print(os.path.join(self.folder,design.folder))
             timestamp = design.state.tic()
-            
+
+            # set right option in design config.
+            if konfig.get('TIME_DOMAIN', 'NO') == 'YES' and konfig.get('RESTART_SOL', 'NO') == 'YES':
+                design.config['RESTART_SOL'] = 'YES'
+
             # run design+
             vals = design._eval(func,*args)
-            
+
             # check for update
             if design.state.toc(timestamp):
-                
+
                 # recompile design results
                 self.compile_results()
                 
@@ -299,8 +302,7 @@ class Project(object):
         # start new design
         else:
             design = self.init_design(konfig,closest)
-        #: if new design    
-        
+        #: if new design
         return design
     
     def get_design(self,config):

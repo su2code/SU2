@@ -2,14 +2,14 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,11 @@
  */
 
 #include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "../../include/output/tools/CWindowingTools.hpp"
+#include "../../include/output/COutputFactory.hpp"
+#include "../../include/output/COutputLegacy.hpp"
+
+#include "../../../Common/include/gradient_projection.hpp"
 
 #include <chrono>
 
@@ -69,12 +74,12 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
       direct_iteration = new CTurboIteration(config);
-      output_legacy = new COutputLegacy(config_container[ZONE_0]);
+      output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
     }
     else       direct_iteration = new CFluidIteration(config);
-    if (compressible) direct_output = new CFlowCompOutput(config, nDim);
-    else direct_output = new CFlowIncOutput(config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    if (compressible) direct_output = COutputFactory::createOutput(EULER, config, nDim);
+    else direct_output =  COutputFactory::createOutput(INC_EULER, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
     break;
@@ -83,8 +88,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
-    direct_output = new CFlowCompFEMOutput(config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    direct_output = COutputFactory::createOutput(FEM_EULER, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -92,8 +97,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
-    direct_output = new CElasticityOutput(config, nDim);
-    MainVariables = FEA_DISP_VARS;
+    direct_output = COutputFactory::createOutput(FEM_ELASTICITY, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -101,8 +106,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
-    direct_output = new CHeatOutput(config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    direct_output = COutputFactory::createOutput(HEAT_EQUATION, config, nDim);
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -113,6 +118,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 }
 
 CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
+
+  delete direct_iteration;
+  delete direct_output;
 
 }
 
@@ -272,9 +280,12 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
+  CWindowingTools windowEvaluator = CWindowingTools();
+
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
-      seeding = 1.0/((su2double)IterAvg_Obj);
+      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
+      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
     else{
       seeding = 0.0;
@@ -286,7 +297,6 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
   }
-
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
@@ -441,6 +451,9 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
       if (config->GetWeakly_Coupled_Heat()){
         cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
       }
+      if ( config->AddRadiation()) {
+        cout <<"log10[E(rad)]: " << log10(solver[RAD_SOL]->GetRes_RMS(0)) << endl;
+      }
       break;
 
     case DISC_ADJ_FEM:
@@ -537,9 +550,11 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
     solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
   AD::ClearAdjoints();
 
   /*--- If necessary smooth the calculated geometry sensitivities ---*/
+
   if (config->GetSmoothGradient()) {
     DerivativeTreatment();
   }

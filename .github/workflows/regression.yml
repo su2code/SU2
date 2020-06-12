@@ -1,4 +1,4 @@
-name: Regression Testing
+name: Regression and Unit Testing
 
 on:
   push:
@@ -16,20 +16,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI]
+        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true'
+            flags: '-Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ReverseMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ForwardMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false'          
+            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled'
+            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --werror'
           - config_set: ReverseNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --werror'
           - config_set: ForwardNoMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled'  
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled  -Denable-tests=true --werror'
+          - config_set: BaseOMP
+            flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --werror'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
@@ -47,15 +49,17 @@ jobs:
         with:
           name: ${{ matrix.config_set }}
           path: install/bin
-  tests:
+  regression_tests:
     runs-on: ubuntu-latest
     name: Regression Tests
     needs: build
     strategy:
       fail-fast: false
       matrix: 
-        testscript: ['parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py']
+        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py']
         include:
+          - testscript: 'tutorials.py'
+            tag: MPI
           - testscript: 'parallel_regression.py'
             tag: MPI
           - testscript: 'parallel_regression_AD.py'
@@ -64,6 +68,37 @@ jobs:
             tag: NoMPI
           - testscript: 'serial_regression_AD.py'
             tag: NoMPI
+          - testscript: 'hybrid_regression.py'
+            tag: OMP
+    steps:
+      - name: Download All artifact
+        uses: actions/download-artifact@v2
+      - name: Move Binaries
+        run: |
+          mkdir -p install/bin
+          if [ -d "${{format('Base{0}', matrix.tag)}}" ];    then cp -r ${{format('Base{0}', matrix.tag)}}/.    install/bin/; fi
+          if [ -d "${{format('Reverse{0}', matrix.tag)}}" ]; then cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/; fi
+          if [ -d "${{format('Forward{0}', matrix.tag)}}" ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/; fi
+          chmod a+x install/bin/*
+      - name: Run Tests in Container
+        uses: docker://su2code/test-su2:20200303
+        with:
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+  unit_tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        testdriver: ['test_driver', 'test_driver_AD', 'test_driver_DD']
+        include:
+          - testdriver: 'test_driver'
+            tag: MPI
+          - testdriver: 'test_driver_AD'
+            tag: MPI
+          - testdriver: 'test_driver_DD'
+            tag: MPI
     steps:
       - name: Download Base
         uses: actions/download-artifact@v1
@@ -83,9 +118,8 @@ jobs:
           cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
           cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
-          chmod a+x install/bin/*               
-      - name: Run Tests in Container
+          chmod a+x install/bin/*
+      - name: Run Unit Tests
         uses: docker://su2code/test-su2:20191031
         with:
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
-  
+          entrypoint: install/bin/${{matrix.testdriver}}

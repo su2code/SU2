@@ -11,7 +11,7 @@
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -46,8 +46,7 @@ threads="1"
 %}
 
 // ----------- USED MODULES ------------
-%import "../../Common/include/datatypes/codi_reverse_structure.hpp"
-%import "../../Common/include/datatype_structure.hpp"
+%import "../../Common/include/basic_types/datatype_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
 %include "std_vector.i"

@@ -3,14 +3,14 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,10 +28,16 @@
 
 #ifdef HAVE_PASTIX
 
+#include "../../include/mpi_structure.hpp"
+#include "../../include/omp_structure.hpp"
+#include "../../include/CConfig.hpp"
+#include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CPastixWrapper.hpp"
+
 #include<numeric>
 
-void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
+template<class ScalarType>
+void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, CConfig *config) {
 
   using namespace PaStiX;
 
@@ -84,6 +90,15 @@ void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
   iparm[IPARM_ORDERING]            = API_ORDER_PTSCOTCH;
   iparm[IPARM_INCOMPLETE]          = incomplete;
   iparm[IPARM_LEVEL_OF_FILL]       = pastix_int_t(config->GetPastixFillLvl());
+  iparm[IPARM_THREAD_NBR]          = omp_get_max_threads();
+#if defined(HAVE_MPI) && defined(HAVE_OMP)
+  int comm_mode = MPI_THREAD_SINGLE;
+  MPI_Query_thread(&comm_mode);
+  if (comm_mode == MPI_THREAD_MULTIPLE)
+    iparm[IPARM_THREAD_COMM_MODE] = API_THREAD_MULTIPLE;
+  else
+    iparm[IPARM_THREAD_COMM_MODE] = API_THREAD_FUNNELED;
+#endif
 
   /*--- Prepare sparsity structure ---*/
 
@@ -207,9 +222,9 @@ void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
   isinitialized = true;
 }
 
-
-void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
-                               unsigned short kind_fact, bool transposed) {
+template<class ScalarType>
+void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, CConfig *config,
+                                           unsigned short kind_fact, bool transposed) {
   using namespace PaStiX;
 
   /*--- Detect a possible change of settings between direct and adjoint that requires a reset ---*/
@@ -263,12 +278,13 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
     cout << " +--------------------------------------------------------------------+" << endl;
   }
 
-  unsigned long i, j, iRow, begin, target, source,
+  unsigned long i, j, k, iRow, begin, target, source,
                 szBlk = matrix.nVar*matrix.nVar, nNonZero = values.size();
 
   /*--- Copy matrix values and swap blocks as required ---*/
 
-  memcpy(values.data(), matrix.values, nNonZero*sizeof(passivedouble));
+  for (i = 0; i < nNonZero; ++i)
+    values[i] = SU2_TYPE::GetValue(matrix.values[i]);
 
   for (i = 0; i < sort_rows.size(); ++i)
   {
@@ -280,7 +296,8 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
       target = (begin+j)*szBlk;
       source = sort_order[i][j]*szBlk;
 
-      memcpy(values.data()+target, matrix.values+source, szBlk*sizeof(passivedouble));
+      for (k = 0; k < szBlk; ++k)
+        values[target+k] = SU2_TYPE::GetValue(matrix.values[source+k]);
     }
   }
 
@@ -311,4 +328,10 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
 
   isfactorized = true;
 }
+
+#ifdef CODI_FORWARD_TYPE
+template class CPastixWrapper<su2double>;
+#else
+template class CPastixWrapper<su2mixedfloat>;
+#endif
 #endif

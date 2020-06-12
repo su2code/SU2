@@ -1,15 +1,15 @@
 /*!
- * \file matrix_structure.cpp
- * \brief Main subroutines for doing the sparse structures
+ * \file CSysMatrix.cpp
+ * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,37 +27,43 @@
 
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
+#include "../../include/geometry/CGeometry.hpp"
+#include "../../include/CConfig.hpp"
+#include "../../include/omp_structure.hpp"
+#include "../../include/toolboxes/allocation_toolbox.hpp"
+
+#include <cmath>
+
 template<class ScalarType>
-CSysMatrix<ScalarType>::CSysMatrix(void) {
+CSysMatrix<ScalarType>::CSysMatrix() :
+  rank(SU2_MPI::GetRank()),
+  size(SU2_MPI::GetSize()) {
 
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
+  nPoint = nPointDomain = nVar = nEqn = 0;
+  nnz = nnz_ilu = 0;
+  ilu_fill_in = 0;
+  nLinelet = 0;
 
-  ilu_fill_in       = 0;
+  omp_partitions    = nullptr;
 
-  /*--- Array initialization ---*/
+  matrix            = nullptr;
+  row_ptr           = nullptr;
+  dia_ptr           = nullptr;
+  col_ind           = nullptr;
 
-  matrix            = NULL;
-  ILU_matrix        = NULL;
-  row_ptr           = NULL;
-  col_ind           = NULL;
-  row_ptr_ilu       = NULL;
-  col_ind_ilu       = NULL;
-  block             = NULL;
-  prod_row_vector   = NULL;
-  aux_vector        = NULL;
-  sum_vector        = NULL;
-  invM              = NULL;
-  block_weight      = NULL;
-  block_inverse     = NULL;
+  ILU_matrix        = nullptr;
+  row_ptr_ilu       = nullptr;
+  dia_ptr_ilu       = nullptr;
+  col_ind_ilu       = nullptr;
+
+  invM              = nullptr;
 
 #ifdef USE_MKL
-  MatrixMatrixProductJitter              = NULL;
-  MatrixVectorProductJitterBetaOne       = NULL;
-  MatrixVectorProductJitterBetaZero      = NULL;
-  MatrixVectorProductJitterAlphaMinusOne = NULL;
-  MatrixVectorProductTranspJitterBetaOne = NULL;
-  mkl_ipiv = NULL;
+  MatrixMatrixProductJitter              = nullptr;
+  MatrixVectorProductJitterBetaOne       = nullptr;
+  MatrixVectorProductJitterBetaZero      = nullptr;
+  MatrixVectorProductJitterAlphaMinusOne = nullptr;
+  MatrixVectorProductTranspJitterBetaOne = nullptr;
 #endif
 
 }
@@ -65,207 +71,168 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
 template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
-  /*--- Memory deallocation ---*/
-
-  if (matrix != NULL)             delete [] matrix;
-  if (ILU_matrix != NULL)         delete [] ILU_matrix;
-  if (row_ptr != NULL)            delete [] row_ptr;
-  if (col_ind != NULL)            delete [] col_ind;
-
-  if (ilu_fill_in != 0) {
-    if (row_ptr_ilu != NULL) delete [] row_ptr_ilu;
-    if (col_ind_ilu != NULL) delete [] col_ind_ilu;
-  }
-
-  if (block != NULL)              delete [] block;
-  if (block_weight != NULL)       delete [] block_weight;
-  if (block_inverse != NULL)      delete [] block_inverse;
-
-  if (prod_row_vector != NULL)    delete [] prod_row_vector;
-  if (aux_vector != NULL)         delete [] aux_vector;
-  if (sum_vector != NULL)         delete [] sum_vector;
-  if (invM != NULL)               delete [] invM;
+  delete [] omp_partitions;
+  MemoryAllocation::aligned_free(ILU_matrix);
+  MemoryAllocation::aligned_free(matrix);
+  MemoryAllocation::aligned_free(invM);
 
 #ifdef USE_MKL
-  if ( MatrixMatrixProductJitter != NULL )              mkl_jit_destroy( MatrixMatrixProductJitter );
-  if ( MatrixVectorProductJitterBetaZero != NULL )      mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
-  if ( MatrixVectorProductJitterBetaOne  != NULL )      mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
-  if ( MatrixVectorProductJitterAlphaMinusOne != NULL ) mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
-  if ( MatrixVectorProductTranspJitterBetaOne != NULL ) mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
-  if ( mkl_ipiv != NULL ) delete [] mkl_ipiv;
+  mkl_jit_destroy( MatrixMatrixProductJitter );
+  mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
+  mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
+  mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
+  mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
 #endif
 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::Initialize(unsigned long nPoint, unsigned long nPointDomain,
-                            unsigned short nVar, unsigned short nEqn,
-                            bool EdgeConnect, CGeometry *geometry, CConfig *config) {
+void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain,
+                                        unsigned short nvar, unsigned short neqn,
+                                        bool EdgeConnect, CGeometry *geometry,
+                                        const CConfig *config, bool needTranspPtr) {
 
-  /*--- Don't delete *row_ptr, *col_ind because they are
-   asigned to the Jacobian structure. ---*/
+  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
 
-  unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem, iVar;
-  unsigned short iNeigh, iElem, iNode, *nNeigh, *nNeigh_ilu;
-  vector<unsigned long>::iterator it;
-  vector<unsigned long> vneighs, vneighs_ilu;
+  if(npoint == 0) return;
 
-  /*--- Set the ILU fill in level --*/
-
-  ilu_fill_in = config->GetLinear_Solver_ILU_n();
-
-  /*--- Compute the number of neighbors ---*/
-
-  nNeigh = new unsigned short [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    if (EdgeConnect) {
-      nNeigh[iPoint] = (geometry->node[iPoint]->GetnPoint()+1);  // +1 -> to include diagonal element
-    }
-    else {
-      vneighs.clear();
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-
-      sort(vneighs.begin(), vneighs.end());
-      it = unique(vneighs.begin(), vneighs.end());
-      vneighs.resize(it - vneighs.begin());
-      nNeigh[iPoint] = vneighs.size();
-    }
-
+  if(matrix != nullptr) {
+    SU2_OMP_MASTER
+    SU2_MPI::Error("CSysMatrix can only be initialized once.", CURRENT_FUNCTION);
   }
 
-  /*--- Create row_ptr structure, using the number of neighbors ---*/
-
-  row_ptr = new unsigned long [nPoint+1];
-  row_ptr[0] = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
-  nnz = row_ptr[nPoint];
-
-  /*--- Create col_ind structure ---*/
-
-  col_ind = new unsigned long [nnz];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    vneighs.clear();
-
-    if (EdgeConnect) {
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++)
-        vneighs.push_back(geometry->node[iPoint]->GetPoint(iNeigh));
-      vneighs.push_back(iPoint);
-    }
-    else {
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-    }
-
-    sort(vneighs.begin(), vneighs.end());
-    it = unique(vneighs.begin(), vneighs.end());
-    vneighs.resize( it - vneighs.begin() );
-
-    index = row_ptr[iPoint];
-    for (iNeigh = 0; iNeigh < vneighs.size(); iNeigh++) {
-      col_ind[index] = vneighs[iNeigh];
-      index++;
-    }
-
+  if(nvar > MAXNVAR) {
+    SU2_OMP_MASTER
+    SU2_MPI::Error("nVar larger than expected, increase MAXNVAR.", CURRENT_FUNCTION);
   }
 
-  /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
+  /*--- Application of this matrix, FVM or FEM. ---*/
+  const auto type = EdgeConnect? ConnectivityType::FiniteVolume : ConnectivityType::FiniteElement;
 
-  SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
+  /*--- Type of preconditioner the matrix will be asked to build. ---*/
+  auto prec = config->GetKind_Linear_Solver_Prec();
+
+  if (!EdgeConnect && !config->GetStructuralProblem()) {
+    /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
+    prec = config->GetKind_Deform_Linear_Solver_Prec();
+  }
+  else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
+    /*--- Else "upgrade" primal solver settings. ---*/
+    prec = config->GetKind_DiscAdj_Linear_Prec();
+  }
+  const bool ilu_needed = (prec==ILU);
+  const bool diag_needed = ilu_needed || (prec==JACOBI) || (prec==LINELET);
+
+  /*--- Basic dimensions. ---*/
+  nVar = nvar;
+  nEqn = neqn;
+  nPoint = npoint;
+  nPointDomain = npointdomain;
+
+  /*--- Get sparse structure pointers from geometry,
+   *    the data is managed by CGeometry to allow re-use. ---*/
+
+  const auto& csr = geometry->GetSparsePattern(type,0);
+
+  nnz = csr.getNumNonZeros();
+  row_ptr = csr.outerPtr();
+  col_ind = csr.innerIdx();
+  dia_ptr = csr.diagPtr();
+
+  if (needTranspPtr)
+    col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
+
+  if (type == ConnectivityType::FiniteVolume)
+    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
+
+  /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
+
+  if(ilu_needed)
+  {
+    ilu_fill_in = config->GetLinear_Solver_ILU_n();
+
+    const auto& csr_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
+
+    row_ptr_ilu = csr_ilu.outerPtr();
+    col_ind_ilu = csr_ilu.innerIdx();
+    dia_ptr_ilu = csr_ilu.diagPtr();
+    nnz_ilu = csr_ilu.getNumNonZeros();
+  }
+
+  /*--- Allocate data. ---*/
+#define ALLOC_AND_INIT(ptr,num) {\
+  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,num*sizeof(ScalarType));\
+  for(size_t k=0; k<num; ++k) ptr[k]=0.0; }
+
+  ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
+
+  /*--- Preconditioners. ---*/
+
+  if (ilu_needed) {
+    ALLOC_AND_INIT(ILU_matrix, nnz_ilu*nVar*nEqn)
+  }
+
+  if (diag_needed) {
+    ALLOC_AND_INIT(invM, nPointDomain*nVar*nEqn);
+  }
+#undef ALLOC_AND_INIT
+
+  /*--- Thread parallel initialization. ---*/
+
+  int num_threads = omp_get_max_threads();
+
+  /*--- Set suitable chunk sizes for light static for loops, and heavy
+   dynamic ones, such that threads are approximately evenly loaded. ---*/
+  omp_light_size = computeStaticChunkSize(nnz*nVar*nEqn, num_threads, OMP_MAX_SIZE_L);
+  omp_heavy_size = computeStaticChunkSize(nPointDomain, num_threads, OMP_MAX_SIZE_H);
+
+  omp_num_parts = config->GetLinear_Solver_Prec_Threads();
+  if (omp_num_parts == 0) omp_num_parts = num_threads;
+
+  /*--- This is akin to the row_ptr. ---*/
+  omp_partitions = new unsigned long [omp_num_parts+1];
+
+  /// TODO: Use a work estimate to produce more balanced partitions.
+  auto pts_per_part = roundUpDiv(nPointDomain, omp_num_parts);
+  for(auto part = 0ul; part < omp_num_parts; ++part)
+    omp_partitions[part] = part * pts_per_part;
+  omp_partitions[omp_num_parts] = nPointDomain;
 
   /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
-  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
-  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
-
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
-  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
-
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
-  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
-
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar, -1.0, 1, nVar, 1.0, 1 );
-  MatrixVectorProductKernelAlphaMinusOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterAlphaMinusOne );
-
-  mkl_jit_create_dgemm( &MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar );
-  MatrixVectorProductTranspKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductTranspJitterBetaOne );
-
-  mkl_ipiv = new lapack_int [ nVar ];
+#ifndef USE_MIXED_PRECISION
+  /*--- Double precision kernels. ---*/
+  #define CREATE_GEMM mkl_jit_create_dgemm
+  #define GET_GEMM_PTR mkl_jit_get_dgemm_ptr
+#else
+  /*--- Single precision kernels. ---*/
+  #define CREATE_GEMM mkl_jit_create_sgemm
+  #define GET_GEMM_PTR mkl_jit_get_sgemm_ptr
 #endif
+  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
+  MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
 
-  /*--- Initialization matrix to zero ---*/
+  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
+  MatrixVectorProductKernelBetaZero = GET_GEMM_PTR(MatrixVectorProductJitterBetaZero);
 
-  SetValZero();
+  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductJitterBetaOne);
 
-  delete [] nNeigh;
+  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelAlphaMinusOne = GET_GEMM_PTR(MatrixVectorProductJitterAlphaMinusOne);
 
-  /*--- ILU(n) preconditioner with a specific sparse structure ---*/
-
-  if (ilu_fill_in != 0) {
-
-    nNeigh_ilu = new unsigned short [nPoint];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-      vneighs_ilu.clear();
-      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
-      sort(vneighs_ilu.begin(), vneighs_ilu.end());
-      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-      vneighs_ilu.resize(it - vneighs_ilu.begin());
-      nNeigh_ilu[iPoint] = vneighs_ilu.size();
-
-    }
-
-    row_ptr_ilu = new unsigned long [nPoint+1];
-    row_ptr_ilu[0] = 0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      row_ptr_ilu[iPoint+1] = row_ptr_ilu[iPoint] + nNeigh_ilu[iPoint];
-    nnz_ilu = row_ptr_ilu[nPoint];
-
-    /*--- Create col_ind structure ---*/
-
-    col_ind_ilu = new unsigned long [nnz_ilu];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-      vneighs_ilu.clear();
-      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
-      sort(vneighs_ilu.begin(), vneighs_ilu.end());
-      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-      vneighs_ilu.resize( it - vneighs_ilu.begin() );
-
-      index = row_ptr_ilu[iPoint];
-      for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
-        col_ind_ilu[index] = vneighs_ilu[iNeigh];
-        index++;
-      }
-
-    }
-
-    ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
-    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-
-    invM = new ScalarType [nPointDomain*nVar*nEqn];
-    for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
-
-    delete [] nNeigh_ilu;
-
-  }
+  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
+              MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
+  MatrixVectorProductTranspKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductTranspJitterBetaOne);
+#endif
 
 }
 
-
-// test version
 template<class ScalarType>
 void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
                             unsigned short nVar, unsigned short nEqn, unsigned long val_marker,
@@ -281,6 +248,9 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
 
   vector<unsigned long> indexNodes;
 
+  // placeholders since row_ptr_ilu is const since version 7.0.5
+  unsigned long *row_ptr_ilu_helper, *col_ind_ilu_helper;
+
   /*--- We need to initialize those ---*/
   nPoint = nVertex;
   nPointDomain = nVertex;
@@ -289,7 +259,6 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
     indexNodes.push_back(geometry->vertex[val_marker][iVertex]->GetNode());
   }
-
 
   /*--- Set the ILU fill in level --*/
 
@@ -306,11 +275,11 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
       --- problem: we need some index magic to get the connection between local index, global node and vertex index.          ---
       --- problem: we get global nodes from vertex nodes, for the inverse we need a lookup / search operation on the vector.  ---*/
 
-    for (iElem = 0; iElem < geometry->node[indexNodes[iVertex]]->GetnElem(); iElem++) {
-      Elem =  geometry->node[indexNodes[iVertex]]->GetElem(iElem);
+    for (iElem = 0; iElem < geometry->nodes->GetnElem(indexNodes[iVertex]); iElem++) {
+      Elem =  geometry->nodes->GetElem(indexNodes[iVertex], iElem);
       for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
         node = geometry->elem[Elem]->GetNode(iNode);
-        if ( geometry->node[node]->GetVertex(val_marker) >= 0 ) {
+        if ( geometry->nodes->GetVertex(node, val_marker) >= 0 ) {
           it = std::find(indexNodes.begin(),indexNodes.end(),node);
           vneighs.push_back(std::distance(indexNodes.begin(), it));
         }
@@ -342,11 +311,11 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
     vneighs.clear();
 
     /*--- Idea: loop over 3D elements since otherwise it is to expensive. but check wether the point isalso in the boundary.  ---*/
-    for (iElem = 0; iElem < geometry->node[indexNodes[iVertex]]->GetnElem(); iElem++) {
-      Elem =  geometry->node[indexNodes[iVertex]]->GetElem(iElem);
+    for (iElem = 0; iElem < geometry->nodes->GetnElem(indexNodes[iVertex]); iElem++) {
+      Elem =  geometry->nodes->GetElem(indexNodes[iVertex], iElem);
       for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
         node = geometry->elem[Elem]->GetNode(iNode);
-        if ( geometry->node[node]->GetVertex(val_marker) >= 0 ) {
+        if ( geometry->nodes->GetVertex(node, val_marker) >= 0 ) {
           it = std::find(indexNodes.begin(),indexNodes.end(),node);
           vneighs.push_back(std::distance(indexNodes.begin(), it));
         }
@@ -419,15 +388,16 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
 
     }
 
-    row_ptr_ilu = new unsigned long [nVertex+1];
-    row_ptr_ilu[0] = 0;
+    row_ptr_ilu_helper = new unsigned long [nVertex+1];
+    row_ptr_ilu_helper[0] = 0;
     for (iVertex = 0; iVertex < nVertex; iVertex++)
-      row_ptr_ilu[iVertex+1] = row_ptr_ilu[iVertex] + nNeigh_ilu[iVertex];
-    nnz_ilu = row_ptr_ilu[nVertex];
+      row_ptr_ilu_helper[iVertex+1] = row_ptr_ilu_helper[iVertex] + nNeigh_ilu[iVertex];
+    nnz_ilu = row_ptr_ilu_helper[nVertex];
+    row_ptr_ilu =row_ptr_ilu_helper;
 
     /*--- Create col_ind structure ---*/
 
-    col_ind_ilu = new unsigned long [nnz_ilu];
+    col_ind_ilu_helper = new unsigned long [nnz_ilu];
     for (iVertex = 0; iVertex < nVertex; iVertex++) {
 
       vneighs_ilu.clear();
@@ -438,11 +408,12 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
 
       index = row_ptr_ilu[iVertex];
       for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
-        col_ind_ilu[index] = vneighs_ilu[iNeigh];
+        col_ind_ilu_helper[index] = vneighs_ilu[iNeigh];
         index++;
       }
 
     }
+    col_ind_ilu = col_ind_ilu_helper;
 
     ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
     for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
@@ -456,7 +427,6 @@ void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
 
 }
 
-
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
                                bool EdgeConnect, vector<unsigned long> & vneighs) {
@@ -466,15 +436,15 @@ void CSysMatrix<ScalarType>::SetNeighbours(CGeometry *geometry, unsigned long iP
 
   if (EdgeConnect) {
     vneighs.push_back(iPoint);
-    for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-      Point = geometry->node[iPoint]->GetPoint(iNode);
+    for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+      Point = geometry->nodes->GetPoint(iPoint, iNode);
       vneighs.push_back(Point);
       if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
     }
   }
   else {
-    for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-      Elem =  geometry->node[iPoint]->GetElem(iElem);
+    for (iElem = 0; iElem < geometry->nodes->GetnElem(iPoint); iElem++) {
+      Elem =  geometry->nodes->GetElem(iPoint, iElem);
       for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
         Point = geometry->elem[Elem]->GetNode(iNode);
         vneighs.push_back(Point);
@@ -485,7 +455,6 @@ void CSysMatrix<ScalarType>::SetNeighbours(CGeometry *geometry, unsigned long iP
 
 }
 
-
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetNeighboursOwnConnectivity(CGeometry *geometry, unsigned long iVertex, unsigned short deep_level,
                                                           unsigned short fill_level, unsigned long val_marker,
@@ -493,11 +462,11 @@ void CSysMatrix<ScalarType>::SetNeighboursOwnConnectivity(CGeometry *geometry, u
   unsigned long Point, iElem, Elem;
   unsigned short iNode;
 
-  for (iElem = 0; iElem < geometry->node[indexNodes[iVertex]]->GetnElem(); iElem++) {
-    Elem =  geometry->node[indexNodes[iVertex]]->GetElem(iElem);
+  for (iElem = 0; iElem < geometry->nodes->GetnElem(indexNodes[iVertex]); iElem++) {
+    Elem =  geometry->nodes->GetElem(indexNodes[iVertex], iElem);
     for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
       Point = geometry->elem[Elem]->GetNode(iNode);
-      if ( geometry->node[Point]->GetVertex(val_marker) >= 0 ) {
+      if ( geometry->nodes->GetVertex(Point, val_marker) >= 0 ) {
         auto it = std::find(indexNodes.begin(),indexNodes.end(),Point);
         vneighs.push_back(std::distance(indexNodes.begin(), it));
         if (deep_level < fill_level) SetNeighboursOwnConnectivity(geometry, Point, deep_level+1, fill_level, val_marker, indexNodes, vneighs);
@@ -507,11 +476,11 @@ void CSysMatrix<ScalarType>::SetNeighboursOwnConnectivity(CGeometry *geometry, u
 
 }
 
-
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
 
   unsigned long iVar;
+
 
   nPoint       = val_nPoint;        // Assign number of points in the mesh
   nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
@@ -529,13 +498,13 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
   }
 
   matrix            = new ScalarType [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
-  block             = new ScalarType [nVar*nEqn];
-  block_weight      = new ScalarType [nVar*nEqn];
-  block_inverse     = new ScalarType [nVar*nEqn];
+  ScalarType* block             = new ScalarType [nVar*nEqn];
+  ScalarType* block_weight      = new ScalarType [nVar*nEqn];
+  ScalarType* block_inverse     = new ScalarType [nVar*nEqn];
 
-  prod_row_vector   = new ScalarType [nVar];
-  aux_vector        = new ScalarType [nVar];
-  sum_vector        = new ScalarType [nVar];
+  ScalarType* prod_row_vector   = new ScalarType [nVar];
+  ScalarType* aux_vector        = new ScalarType [nVar];
+  ScalarType* sum_vector        = new ScalarType [nVar];
 
   /*--- Memory initialization ---*/
 
@@ -586,14 +555,22 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
 
   }
 
+  delete [] block;
+  delete [] block_weight;
+  delete [] block_inverse;
+
+  delete [] prod_row_vector;
+  delete [] aux_vector;
+  delete [] sum_vector;
+
 }
 
 template<class ScalarType>
 template<class OtherType>
-void CSysMatrix<ScalarType>::InitiateComms(CSysVector<OtherType> & x,
+void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
                                            CGeometry *geometry,
                                            CConfig *config,
-                                           unsigned short commType) {
+                                           unsigned short commType) const {
 
   /*--- Local variables ---*/
 
@@ -743,7 +720,7 @@ template<class OtherType>
 void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
                                            CGeometry *geometry,
                                            CConfig *config,
-                                           unsigned short commType) {
+                                           unsigned short commType) const {
 
   /*--- Local variables ---*/
 
@@ -755,7 +732,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
   /*--- Set some local pointers to make access simpler. ---*/
 
-  su2double *bufDRecv = geometry->bufD_P2PRecv;
+  const su2double *bufDRecv = geometry->bufD_P2PRecv;
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -866,6 +843,109 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 }
 
 template<class ScalarType>
+void CSysMatrix<ScalarType>::SetValZero() {
+  SU2_OMP_FOR_STAT(omp_light_size)
+  for (auto index = 0ul; index < nnz*nVar*nEqn; index++)
+    matrix[index] = 0.0;
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::SetValDiagonalZero() {
+  SU2_OMP_FOR_STAT(omp_heavy_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint)
+    for (auto index = 0ul; index < nVar*nEqn; ++index)
+      matrix[dia_ptr[iPoint]*nVar*nEqn + index] = 0.0;
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const {
+
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  lapack_int ipiv[MAXNVAR];
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1 );
+#else
+#define A(I,J) matrix[(I)*nVar+(J)]
+
+  /*--- Transform system in Upper Matrix ---*/
+  for (auto iVar = 1ul; iVar < nVar; iVar++) {
+    for (auto jVar = 0ul; jVar < iVar; jVar++) {
+      ScalarType weight = A(iVar,jVar) / A(jVar,jVar);
+      for (auto kVar = jVar; kVar < nVar; kVar++)
+        A(iVar,kVar) -= weight * A(jVar,kVar);
+      vec[iVar] -= weight * vec[jVar];
+    }
+  }
+
+  /*--- Backwards substitution ---*/
+  for (auto iVar = nVar; iVar > 0ul;) {
+    iVar--; // unsigned type
+    for (auto jVar = iVar+1; jVar < nVar; jVar++)
+      vec[iVar] -= A(iVar,jVar) * vec[jVar];
+    vec[iVar] /= A(iVar,iVar);
+  }
+#undef A
+#endif
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::MatrixInverse(ScalarType *matrix, ScalarType *inverse) const {
+
+  /*--- This is a generalization of Gaussian elimination for multiple rhs' (the basis vectors).
+   We could call "Gauss_Elimination" multiple times or fully generalize it for multiple rhs,
+   the performance of both routines would suffer in both cases without the use of exotic templating.
+   And so it feels reasonable to have some duplication here. ---*/
+
+  assert((matrix != inverse) && "Output cannot be the same as the input.");
+
+#define M(I,J) inverse[(I)*nVar+(J)]
+
+  /*--- Initialize the inverse with the identity. ---*/
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++)
+      M(iVar,jVar) = ScalarType(iVar==jVar);
+
+  /*--- Inversion ---*/
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  lapack_int ipiv[MAXNVAR];
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar );
+#else
+#define A(I,J) matrix[(I)*nVar+(J)]
+
+  /*--- Transform system in Upper Matrix ---*/
+  for (auto iVar = 1ul; iVar < nVar; iVar++) {
+    for (auto jVar = 0ul; jVar < iVar; jVar++)
+    {
+      ScalarType weight = A(iVar,jVar) / A(jVar,jVar);
+
+      for (auto kVar = jVar; kVar < nVar; kVar++)
+        A(iVar,kVar) -= weight * A(jVar,kVar);
+
+      /*--- at this stage M is lower triangular so not all cols need updating ---*/
+      for (auto kVar = 0ul; kVar <= jVar; kVar++)
+        M(iVar,kVar) -= weight * M(jVar,kVar);
+    }
+  }
+
+  /*--- Backwards substitution ---*/
+  for (auto iVar = nVar; iVar > 0ul;) {
+    iVar--; // unsigned type
+    for (auto jVar = iVar+1; jVar < nVar; jVar++)
+      for (auto kVar = 0ul; kVar < nVar; kVar++)
+        M(iVar,kVar) -= A(iVar,jVar) * M(jVar,kVar);
+
+    for (auto kVar = 0ul; kVar < nVar; kVar++)
+      M(iVar,kVar) /= A(iVar,iVar);
+  }
+#undef A
+#endif
+#undef M
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 
   unsigned long block_i = i/nVar;
@@ -882,119 +962,89 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
+void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
+                                        unsigned long row_i, ScalarType *prod) const {
   unsigned long iVar, index, col_j;
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
+  for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     col_j = col_ind[index];
-    if (col_j > row_i) {
-      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
-    }
+    MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod);
   }
 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    if (col_j < row_i) {
-      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
-    }
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
-  for (unsigned long index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] == row_i) {
-      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[row_i*nVar], prod_row_vector);
-      break;
-    }
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
-
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
-
-  unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
+void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                 CGeometry *geometry, CConfig *config) const {
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
-  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    cerr << "CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>&, CSysVector<ScalarType>): "
-    << "nVar values incompatible." << endl;
-    throw(-1);
+#ifndef NDEBUG
+  if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
+    SU2_OMP_MASTER
+    SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
-  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    cerr << "CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>&, CSysVector<ScalarType>): "
-    << "nPoint and nBlk values incompatible." << endl;
-    throw(-1);
+  if (nPoint != prod.GetNBlk()) {
+    SU2_OMP_MASTER
+    SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
+#endif
 
-  prod = ScalarType(0.0); // set all entries of prod to zero
-  for (row_i = 0; row_i < nPointDomain; row_i++) {
-    prod_begin = row_i*nVar; // offset to beginning of block row_i
-    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
-      mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+  /*--- OpenMP parallelization. First need to make view of vectors
+   *    consistent, a barrier is implicit at the end of FOR section
+   *    (and it is required before master thread communicates). ---*/
+
+  SU2_OMP_BARRIER
+
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
+    auto prod_begin = row_i*nVar; // offset to beginning of block row_i
+    for(auto iVar = 0ul; iVar < nVar; iVar++)
+      prod[prod_begin+iVar] = 0.0;
+    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+      auto vec_begin = col_ind[index]*nEqn; // offset to beginning of block col_ind[index]
+      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
       MatrixVectorProductAdd(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
 
-  /*--- MPI Parallelization ---*/
+  /*--- MPI Parallelization by master thread. ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-
+  SU2_OMP_MASTER
+  {
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                           CGeometry *geometry, CConfig *config) const {
 
-  unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
+  /// TODO: The transpose product requires a different thread-parallel strategy.
+  SU2_OMP_MASTER
+  {
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
-  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
+#ifndef NDEBUG
+  if ((nVar != vec.GetNVar()) || (nEqn != prod.GetNVar())) {
+    SU2_OMP_MASTER
     SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
-  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
+  if (nPoint != vec.GetNBlk()) {
+    SU2_OMP_MASTER
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
+#endif
 
   prod = ScalarType(0.0); // set all entries of prod to zero
-  for (row_i = 0; row_i < nPointDomain; row_i++) {
-    vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
-    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      prod_begin = col_ind[index]*nVar; // offset to beginning of block row_i
-      mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+  for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
+    auto vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
+    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+      auto prod_begin = col_ind[index]*nEqn; // offset to beginning of block row_i
+      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
       MatrixVectorProductTransp(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
@@ -1004,221 +1054,299 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
   InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
 
+  }
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
+  SU2_OMP(for schedule(dynamic,omp_heavy_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                         CGeometry *geometry, CConfig *config) const {
 
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
+  SU2_OMP_BARRIER
+  SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
   /*--- MPI Parallelization ---*/
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-
+  SU2_OMP_MASTER
+  {
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 
-  unsigned long index, index_, iVar;
-  ScalarType *Block_ij;
-  const ScalarType *Block_jk;
-  long iPoint, jPoint, kPoint;
+  /*--- Copy block matrix to compute factorization in-place. ---*/
 
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm, so that we have the factorization stored
-   in the ILUMatrix at the end of this preprocessing. ---*/
+  if ((ilu_fill_in == 0) && !transposed) {
+    /*--- ILU0, direct copy. ---*/
+    SU2_OMP_FOR_STAT(omp_light_size)
+    for (auto iVar = 0ul; iVar < nnz*nVar*nVar; ++iVar)
+      ILU_matrix[iVar] = matrix[iVar];
+  }
+  else {
+    /*--- ILUn clear the ILU matrix first, for ILU0^T
+     *    the copy takes care of the clearing. ---*/
+    if (ilu_fill_in > 0) {
+      SU2_OMP_FOR_STAT(omp_light_size)
+      for (auto iVar = 0ul; iVar < nnz_ilu*nVar*nVar; iVar++)
+        ILU_matrix[iVar] = 0.0;
+    }
 
-  for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-
-  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      jPoint = col_ind[index];
-      if (transposed) {
-        Block_ij = GetBlock(jPoint, iPoint);
-        SetBlockTransposed_ILUMatrix(iPoint, jPoint, Block_ij);
-      } else {
-        Block_ij = GetBlock(iPoint, jPoint);
-        SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+    /*--- Transposed or ILUn, traverse matrix to access its blocks
+     *    sequentially and set them in the ILU matrix. ---*/
+    SU2_OMP_FOR_DYN(omp_heavy_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      for (auto index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+        auto jPoint = col_ind[index];
+        if (transposed) {
+          SetBlockTransposed_ILUMatrix(jPoint, iPoint, &matrix[index*nVar*nVar]);
+        } else {
+          SetBlock_ILUMatrix(iPoint, jPoint, &matrix[index*nVar*nVar]);
+        }
       }
     }
   }
 
   /*--- Transform system in Upper Matrix ---*/
 
-  for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
+  /*--- OpenMP Parallelization, a loop construct is used to ensure
+   *    the preconditioner is computed correctly even if called
+   *    outside of a parallel section. ---*/
 
-    /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
+  SU2_OMP_FOR_STAT(1)
+  for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
+  {
+    const auto begin = omp_partitions[thread];
+    const auto end = omp_partitions[thread+1];
 
-    InverseDiagonalBlock_ILUMatrix(iPoint-1, &invM[(iPoint-1)*nVar*nVar]);
+    /*--- Each thread will work on the submatrix defined from row/col "begin"
+     *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
+     *    what the MPI-only implementation does. ---*/
 
-    /*--- For each row (unknown), loop over all entries in A on this row
-     row_ptr_ilu[iPoint+1] will have the index for the first entry on the next
-     row. ---*/
+    ScalarType weight[MAXNVAR*MAXNVAR], aux_block[MAXNVAR*MAXNVAR];
 
-    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+    for (auto iPoint = begin+1; iPoint < end; iPoint++) {
 
-      /*--- jPoint here is the column for each entry on this row ---*/
+      /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
 
-      jPoint = col_ind_ilu[index];
+      InverseDiagonalBlock_ILUMatrix(iPoint-1, &invM[(iPoint-1)*nVar*nVar]);
 
-      /*--- Check that this column is in the lower triangular portion ---*/
+      /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
 
-      if (jPoint < iPoint) {
+      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
 
-        /*--- If we're in the lower triangle, multiply the block by
-         the inverse of the corresponding diagonal block. ---*/
+        /*--- jPoint is the column index (jPoint < iPoint). ---*/
 
-        Block_ij = &ILU_matrix[index*nVar*nEqn];
-        MatrixMatrixProduct(Block_ij, &invM[jPoint*nVar*nVar], block_weight);
+        auto jPoint = col_ind_ilu[index];
 
-        /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
+        /*--- We only care about the sub matrix within "begin" and "end-1". ---*/
 
-        for (index_ = row_ptr_ilu[jPoint]; index_ < row_ptr_ilu[jPoint+1]; index_++) {
+        if (jPoint < begin) continue;
 
-          /*--- Get the column of the entry ---*/
+        /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
 
-          kPoint = col_ind_ilu[index_];
+        auto Block_ij = &ILU_matrix[index*nVar*nVar];
+        MatrixMatrixProduct(Block_ij, &invM[jPoint*nVar*nVar], weight);
 
-          /*--- If the column is greater than or equal to jPoint, i.e., the
-           upper triangular part, then multiply and modify the matrix.
-           Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
+        /*--- "weight" holds Aij*inv(Ajj). Jump to the upper part of the jPoint row. ---*/
 
-          if (kPoint > jPoint) {
+        for (auto index_ = dia_ptr_ilu[jPoint]+1; index_ < row_ptr_ilu[jPoint+1]; index_++) {
 
-            Block_jk = &ILU_matrix[index_*nVar*nEqn];
-            MatrixMatrixProduct(block_weight, Block_jk, block);
-            SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+          /*--- Get the column index (kPoint > jPoint). ---*/
 
+          auto kPoint = col_ind_ilu[index_];
+
+          if (kPoint >= end) break;
+
+          /*--- If Aik exists, update it: Aik -= Aij*inv(Ajj)*Ajk ---*/
+
+          auto Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
+
+          if (Block_ik != nullptr) {
+            auto Block_jk = &ILU_matrix[index_*nVar*nVar];
+            MatrixMatrixProduct(weight, Block_jk, aux_block);
+            MatrixSubtraction(Block_ik, aux_block, Block_ik);
           }
         }
 
-        /*--- Lastly, store block_weight in the lower triangular part, which
+        /*--- Lastly, store "weight" in the lower triangular part, which
          will be reused during the forward solve in the precon/smoother. ---*/
 
-        for (iVar = 0; iVar < nVar*nEqn; ++iVar)
-          Block_ij[iVar] = block_weight[iVar];
-
+        for (auto iVar = 0ul; iVar < nVar*nVar; ++iVar)
+          Block_ij[iVar] = weight[iVar];
       }
     }
-  }
+    InverseDiagonalBlock_ILUMatrix(end-1, &invM[(end-1)*nVar*nVar]);
 
-  InverseDiagonalBlock_ILUMatrix(nPointDomain-1, &invM[(nPointDomain-1)*nVar*nVar]);
+  }
 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                      CGeometry *geometry, CConfig *config) const {
+  /*--- Coherent view of vectors. ---*/
+  SU2_OMP_BARRIER
 
-  unsigned long index, iVar;
-  const ScalarType *Block_ij;
-  long iPoint, jPoint;
+  /*--- OpenMP Parallelization ---*/
+  SU2_OMP_FOR_STAT(1)
+  for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
+  {
+    const auto begin = omp_partitions[thread];
+    const auto end = omp_partitions[thread+1];
 
-  /*--- Copy vector to then work on prod in place ---*/
+    ScalarType aux_vec[MAXNVAR];
 
-  for (iPoint = 0; iPoint < long(nPointDomain*nVar); iPoint++)
-    prod[iPoint] = vec[iPoint];
+    /*--- Copy vector to then work on prod in place ---*/
 
-  /*--- Forward solve the system using the lower matrix entries that
-   were computed and stored during the ILU preprocessing. Note
-   that we are overwriting the residual vector as we go. ---*/
+    for (auto iVar = begin*nVar; iVar < end*nVar; iVar++)
+      prod[iVar] = vec[iVar];
 
-  for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
-    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
-      jPoint = col_ind_ilu[index];
-      if (jPoint < iPoint) {
-        Block_ij = &ILU_matrix[index*nVar*nEqn];
+    /*--- Forward solve the system using the lower matrix entries that
+     were computed and stored during the ILU preprocessing. Note
+     that we are overwriting the residual vector as we go. ---*/
+
+    for (auto iPoint = begin+1; iPoint < end; iPoint++) {
+      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
+        auto jPoint = col_ind_ilu[index];
+        if (jPoint < begin) continue;
+        auto Block_ij = &ILU_matrix[index*nVar*nVar];
         MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], &prod[iPoint*nVar]);
       }
     }
-  }
 
-  /*--- Backwards substitution (starts at the last row) ---*/
+    /*--- Backwards substitution (starts at the last row) ---*/
 
-  for (iPoint = nPointDomain-1; iPoint >= 0; iPoint--) {
+    for (auto iPoint = end; iPoint > begin;) {
+      iPoint--; // unsigned type
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        aux_vec[iVar] = prod[iPoint*nVar+iVar];
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      sum_vector[iVar] = prod[iPoint*nVar+iVar];
-
-    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
-      jPoint = col_ind_ilu[index];
-      if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
-        Block_ij = &ILU_matrix[index*nVar*nEqn];
-        MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], sum_vector);
+      for (auto index = dia_ptr_ilu[iPoint]+1; index < row_ptr_ilu[iPoint+1]; index++) {
+        auto jPoint = col_ind_ilu[index];
+        if (jPoint >= end) break;
+        auto Block_ij = &ILU_matrix[index*nVar*nVar];
+        MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], aux_vec);
       }
-    }
 
-    MatrixVectorProduct(&invM[iPoint*nVar*nVar], sum_vector, &prod[iPoint*nVar]);
+      MatrixVectorProduct(&invM[iPoint*nVar*nVar], aux_vec, &prod[iPoint*nVar]);
+    }
   }
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-
+  SU2_OMP_MASTER
+  {
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
-  unsigned long iPoint, iVar;
+void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                         CGeometry *geometry, CConfig *config) const {
 
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    LowerProduct(prod, iPoint);                                               // Compute L.x*
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
-    Gauss_Elimination(iPoint, &prod[iPoint*nVar]);                            // Solve D.x* = aux_vector
+  /*--- Coherent view of vectors. ---*/
+  SU2_OMP_BARRIER
+
+  /*--- OpenMP Parallelization ---*/
+  SU2_OMP_FOR_STAT(1)
+  for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
+  {
+    const auto begin = omp_partitions[thread];
+    const auto end = omp_partitions[thread+1];
+
+    /*--- Each thread will work on the submatrix defined from row/col "begin"
+     *    to row/col "end-1", except the last thread that also considers halos.
+     *    This is NOT exactly equivalent to the MPI implementation on the same
+     *    number of domains, for that we would need to define "thread-halos". ---*/
+
+    ScalarType low_prod[MAXNVAR];
+
+    for (auto iPoint = begin; iPoint < end; ++iPoint) {
+      auto idx = iPoint*nVar;
+      LowerProduct(prod, iPoint, begin, low_prod);        // Compute L.x*
+      VectorSubtraction(&vec[idx], low_prod, &prod[idx]); // Compute y = b - L.x*
+      Gauss_Elimination(iPoint, &prod[idx]);              // Solve D.x* = y
+    }
   }
 
   /*--- MPI Parallelization ---*/
-
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  SU2_OMP_MASTER
+  {
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
 
-  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
-    DiagonalProduct(prod, iPoint);                                        // Compute D.x*
-    for (iVar = 0; iVar < nVar; iVar++)
-      aux_vector[iVar] = prod_row_vector[iVar];                           // Compute aux_vector = D.x*
-    UpperProduct(prod, iPoint);                                           // Compute U.x_(n+1)
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar+iVar] = aux_vector[iVar] - prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
-    Gauss_Elimination(iPoint, &prod[iPoint*nVar]);                        // Solve D.x* = aux_vector
+  /*--- OpenMP Parallelization ---*/
+  SU2_OMP_FOR_STAT(1)
+  for(unsigned long thread = 0; thread < omp_num_parts; ++thread)
+  {
+    const auto begin = omp_partitions[thread];
+    const auto row_end = omp_partitions[thread+1];
+    /*--- On the last thread partition the upper
+     *    product should consider halo columns. ---*/
+    const auto col_end = (row_end==nPointDomain)? nPoint : row_end;
+
+    ScalarType up_prod[MAXNVAR], dia_prod[MAXNVAR];
+
+    for (auto iPoint = row_end; iPoint > begin;) {
+      iPoint--; // because of unsigned type
+      auto idx = iPoint*nVar;
+      DiagonalProduct(prod, iPoint, dia_prod);          // Compute D.x*
+      UpperProduct(prod, iPoint, col_end, up_prod);     // Compute U.x_(n+1)
+      VectorSubtraction(dia_prod, up_prod, &prod[idx]); // Compute y = D.x*-U.x_(n+1)
+      Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x* = y
+    }
   }
 
   /*--- MPI Parallelization ---*/
-
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-
+  SU2_OMP_MASTER
+  {
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
-unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+
+  assert(omp_get_thread_num()==0 && "Linelet preconditioner cannot be built by multiple threads.");
 
   bool add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode, MeanPoints;
-  su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+  unsigned short iMarker, iNode;
+  su2double alpha = 0.9, weight, max_weight, area, volume_iPoint, volume_jPoint;
+  const su2double* normal;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
 
   /*--- Memory allocation --*/
 
   vector<bool> check_Point(nPoint,true);
 
+  LineletBool.clear();
   LineletBool.resize(nPoint,false);
 
   nLinelet = 0;
@@ -1272,15 +1400,15 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
 
         iPoint = LineletPoint[iLinelet][index_Point];
         max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
+        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+          if ((check_Point[jPoint]) && geometry->nodes->GetDomain(jPoint)) {
             iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edge[iEdge]->GetNormal();
+            normal = geometry->edges->GetNormal(iEdge);
             if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
             else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->node[iPoint]->GetVolume();
-            volume_jPoint = geometry->node[jPoint]->GetVolume();
+            volume_iPoint = geometry->nodes->GetVolume(iPoint);
+            volume_jPoint = geometry->nodes->GetVolume(jPoint);
             weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
             max_weight = max(max_weight, weight);
           }
@@ -1290,17 +1418,17 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
 
         add_point = false;
         counter = 0;
-        next_Point = geometry->node[iPoint]->GetPoint(0);
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+        next_Point = geometry->nodes->GetPoint(iPoint, 0);
+        for (iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          jPoint = geometry->nodes->GetPoint(iPoint, iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edge[iEdge]->GetNormal();
+          normal = geometry->edges->GetNormal(iEdge);
           if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
           else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->node[iPoint]->GetVolume();
-          volume_jPoint = geometry->node[jPoint]->GetVolume();
+          volume_iPoint = geometry->nodes->GetVolume(iPoint);
+          volume_jPoint = geometry->nodes->GetVolume(jPoint);
           weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
+          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->nodes->GetDomain(jPoint))) &&
               ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
             add_point = true;
             next_Point = jPoint;
@@ -1358,141 +1486,140 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
   }
   Local_nLineLets = nLinelet;
 
-#ifndef HAVE_MPI
-  Global_nPoints = Local_nPoints;
-  Global_nLineLets = Local_nLineLets;
-#else
   SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  MeanPoints = SU2_TYPE::Int(ScalarType(Global_nPoints)/ScalarType(Global_nLineLets));
 
   /*--- Memory allocation --*/
 
-  LineletUpper.resize(max_nElem,NULL);
-  LineletInvDiag.resize(max_nElem*nVar*nVar,0.0);
-  LineletVector.resize(max_nElem*nVar,0.0);
+  LineletUpper.resize(omp_get_max_threads(), vector<const ScalarType*>(max_nElem,nullptr));
+  LineletVector.resize(omp_get_max_threads(), vector<ScalarType>(max_nElem*nVar,0.0));
+  LineletInvDiag.resize(omp_get_max_threads(), vector<ScalarType>(max_nElem*nVar*nVar,0.0));
 
-  return MeanPoints;
+  return (unsigned long)(passivedouble(Global_nPoints) / Global_nLineLets);
 
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                              CGeometry *geometry, CConfig *config) {
-
-  unsigned long iVar, iElem, nElem, iLinelet, iPoint, im1Point;
-  /*--- Pointers to lower, upper, and diagonal blocks ---*/
-  const ScalarType *l = NULL, *u = NULL, *d = NULL;
-  /*--- Inverse of d_{i-1}, modified d_i, modified b_i (rhs) ---*/
-  ScalarType *inv_dm1 = NULL, *d_prime = NULL, *b_prime = NULL;
-
-//  if (size != SINGLE_NODE)
-//    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
+                                                          CGeometry *geometry, CConfig *config) const {
+  /*--- Coherent view of vectors. ---*/
+  SU2_OMP_BARRIER
 
   /*--- Jacobi preconditioning where there is no linelet ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  SU2_OMP(for schedule(dynamic,omp_heavy_size) nowait)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
     if (!LineletBool[iPoint])
       MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
-  /*--- MPI Parallelization ---*/
+  /*--- Solve each linelet using the Thomas algorithm ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  SU2_OMP_FOR_DYN(1)
+  for (auto iLinelet = 0ul; iLinelet < nLinelet; iLinelet++) {
 
-  /*--- Solve linelet using the Thomas algorithm ---*/
+    /*--- Get references to the working vectors allocated for this thread. ---*/
 
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-
-    nElem = LineletPoint[iLinelet].size();
+    int thread = omp_get_thread_num();
+    vector<const ScalarType*>& lineletUpper = LineletUpper[thread];
+    vector<ScalarType>& lineletInvDiag = LineletInvDiag[thread];
+    vector<ScalarType>& lineletVector = LineletVector[thread];
 
     /*--- Initialize the solution vector with the rhs ---*/
 
-    for (iElem = 0; iElem < nElem; iElem++) {
-      iPoint = LineletPoint[iLinelet][iElem];
-      for (iVar = 0; iVar < nVar; iVar++)
-        LineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
+    auto nElem = LineletPoint[iLinelet].size();
+
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+      auto iPoint = LineletPoint[iLinelet][iElem];
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        lineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
 
-    /*--- Forward pass, eliminate lower entries, modify diagonal and rhs ---*/
+    /*--- Forward pass, eliminate lower entries, modify diagonal and rhs. ---*/
 
-    iPoint = LineletPoint[iLinelet][0];
-    d = GetBlock(iPoint, iPoint);
-    for (iVar = 0; iVar < nVar*nVar; ++iVar)
-      LineletInvDiag[iVar] = d[iVar];
+    /*--- Small temporaries. ---*/
+    ScalarType aux_block[MAXNVAR*MAXNVAR], aux_vector[MAXNVAR];
 
-    for (iElem = 1; iElem < nElem; iElem++) {
+    /*--- Copy diagonal block for first point in this linelet. ---*/
+    MatrixCopy(&matrix[dia_ptr[LineletPoint[iLinelet][0]]*nVar*nVar],
+               lineletInvDiag.data());
+
+    for (auto iElem = 1ul; iElem < nElem; iElem++) {
 
       /*--- Setup pointers to required matrices and vectors ---*/
-      im1Point = LineletPoint[iLinelet][iElem-1];
-      iPoint = LineletPoint[iLinelet][iElem];
+      auto im1Point = LineletPoint[iLinelet][iElem-1];
+      auto iPoint = LineletPoint[iLinelet][iElem];
 
-      d = GetBlock(iPoint, iPoint);
-      l = GetBlock(iPoint, im1Point);
-      u = GetBlock(im1Point, iPoint);
+      auto d = &matrix[dia_ptr[iPoint]*nVar*nVar];
+      auto l = GetBlock(iPoint, im1Point);
+      auto u = GetBlock(im1Point, iPoint);
 
-      inv_dm1 = &LineletInvDiag[(iElem-1)*nVar*nVar];
-      d_prime = &LineletInvDiag[iElem*nVar*nVar];
-      b_prime = &LineletVector[iElem*nVar];
+      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
+      auto d_prime = &lineletInvDiag[iElem*nVar*nVar];
+      auto b_prime = &lineletVector[iElem*nVar];
 
       /*--- Invert previous modified diagonal ---*/
-      MatrixInverse(inv_dm1, inv_dm1);
+      MatrixCopy(inv_dm1, aux_block);
+      MatrixInverse(aux_block, inv_dm1);
 
       /*--- Left-multiply by lower block to obtain the weight ---*/
-      MatrixMatrixProduct(l, inv_dm1, block_weight);
+      MatrixMatrixProduct(l, inv_dm1, aux_block);
 
       /*--- Multiply weight by upper block to modify current diagonal ---*/
-      MatrixMatrixProduct(block_weight, u, d_prime);
+      MatrixMatrixProduct(aux_block, u, d_prime);
       MatrixSubtraction(d, d_prime, d_prime);
 
       /*--- Update the rhs ---*/
-      MatrixVectorProduct(block_weight, &LineletVector[(iElem-1)*nVar], aux_vector);
+      MatrixVectorProduct(aux_block, &lineletVector[(iElem-1)*nVar], aux_vector);
       VectorSubtraction(b_prime, aux_vector, b_prime);
 
       /*--- Cache upper block pointer for the backward substitution phase ---*/
-      LineletUpper[iElem-1] = u;
+      lineletUpper[iElem-1] = u;
     }
 
     /*--- Backwards substitution, LineletVector becomes the solution ---*/
 
     /*--- x_n = d_n^{-1} * b_n ---*/
-    Gauss_Elimination(&LineletInvDiag[(nElem-1)*nVar*nVar], &LineletVector[(nElem-1)*nVar]);
+    Gauss_Elimination(&lineletInvDiag[(nElem-1)*nVar*nVar], &lineletVector[(nElem-1)*nVar]);
 
     /*--- x_i = d_i^{-1}*(b_i - u_i*x_{i+1}) ---*/
-    for (iElem = nElem-1; iElem > 0; --iElem) {
-      inv_dm1 = &LineletInvDiag[(iElem-1)*nVar*nVar];
-      MatrixVectorProduct(LineletUpper[iElem-1], &LineletVector[iElem*nVar], aux_vector);
-      VectorSubtraction(&LineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
-      MatrixVectorProduct(inv_dm1, aux_vector, &LineletVector[(iElem-1)*nVar]);
+    for (auto iElem = nElem-1; iElem > 0; --iElem) {
+      auto inv_dm1 = &lineletInvDiag[(iElem-1)*nVar*nVar];
+      MatrixVectorProduct(lineletUpper[iElem-1], &lineletVector[iElem*nVar], aux_vector);
+      VectorSubtraction(&lineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
+      MatrixVectorProduct(inv_dm1, aux_vector, &lineletVector[(iElem-1)*nVar]);
     }
 
     /*--- Copy results to product vector ---*/
 
-    for (iElem = 0; iElem < nElem; iElem++) {
-      iPoint = LineletPoint[iLinelet][iElem];
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod[iPoint*nVar+iVar] = LineletVector[iElem*nVar+iVar];
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+      auto iPoint = LineletPoint[iLinelet][iElem];
+      for (auto iVar = 0ul; iVar < nVar; iVar++)
+        prod[iPoint*nVar+iVar] = lineletVector[iElem*nVar+iVar];
     }
 
   }
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  SU2_OMP_MASTER
+  {
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res) {
-
+void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f,
+                                             CSysVector<ScalarType> & res) const {
+  SU2_OMP_BARRIER
+  SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    RowProduct(sol, iPoint);
-    VectorSubtraction(prod_row_vector, &f[iPoint*nVar], &res[iPoint*nVar]);
+    ScalarType aux_vec[MAXNVAR];
+    RowProduct(sol, iPoint, aux_vec);
+    VectorSubtraction(aux_vec, &f[iPoint*nVar], &res[iPoint*nVar]);
   }
-
 }
 
 template<class ScalarType>
@@ -1518,13 +1645,15 @@ Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> CSysMatrix<ScalarType>
 
   // TODO: this function needs a better implementation!
   Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> eigen_matrix(nPoint*nVar, nPoint*nVar);
+
+  /* deactivated the simpler call, because row_ptr is const since version 7.0.5 leading to conversition errors.
   if (nVar==1) {
 
     Eigen::Map<Eigen::SparseMatrix<ScalarType, Eigen::RowMajor, unsigned long int> > eigen_map(nPoint*nVar,nPoint*nVar,nnz,row_ptr,col_ind,matrix);
     eigen_matrix = eigen_map;
 
   } else {
-
+  */
     eigen_matrix.setZero();
     unsigned long iVar, jVar;
     auto row=0;
@@ -1539,7 +1668,6 @@ Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> CSysMatrix<ScalarType>
         }
       }
     }
-  }
 
   return eigen_matrix;
 
@@ -1549,37 +1677,119 @@ template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b) {
 
-  /*--- Both row and column associated with node i are eliminated (Block_ii = I and all else 0) to preserve eventual symmetry. ---*/
-  /*--- The vector is updated with the product of column i by the known (enforced) solution at node i. ---*/
+  /*--- Eliminate the row associated with node i (Block_ii = I and all other Block_ij = 0).
+   *    To preserve eventual symmetry, also attempt to eliminate the column, if the sparse pattern is not
+   *    symmetric the entire column may not be eliminated, the result (matrix and vector) is still correct.
+   *    The vector is updated with the product of column i by the known (enforced) solution at node i. ---*/
 
-  unsigned long iPoint, iVar, jVar, index, mat_begin;
+  for (auto index = row_ptr[node_i]; index < row_ptr[node_i+1]; ++index) {
 
-  /*--- Delete whole row first. ---*/
-  for (index = row_ptr[node_i]*nVar*nVar; index < row_ptr[node_i+1]*nVar*nVar; ++index)
-    matrix[index] = 0.0;
+    auto node_j = col_ind[index];
 
-  /*--- Update b with the column product and delete column. ---*/
-  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; ++index) {
-      if (col_ind[index] == node_i)
-      {
-        mat_begin = index*nVar*nVar;
+    /*--- The diagonal block is handled outside the loop. ---*/
+    if (node_j == node_i) continue;
 
-        for(iVar = 0; iVar < nVar; ++iVar)
-          for(jVar = 0; jVar < nVar; ++jVar)
-            b[iPoint*nVar+iVar] -= matrix[mat_begin+iVar*nVar+jVar] * x_i[jVar];
+    /*--- Delete block j on row i (bij) and ATTEMPT to delete block i on row j (bji). ---*/
+    auto bij = &matrix[index*nVar*nVar];
+    auto bji = GetBlock(node_j, node_i);
 
-        /*--- If on diagonal, set diagonal of block to 1, else delete block. ---*/
-        if (iPoint == node_i)
-          for (iVar = 0; iVar < nVar; ++iVar) matrix[mat_begin+iVar*(nVar+1)] = 1.0;
-        else
-          for (iVar = 0; iVar < nVar*nVar; iVar++) matrix[mat_begin+iVar] = 0.0;
+    /*--- The "attempt" part. ---*/
+    if (bji == nullptr) {
+      node_j = node_i;
+      bji = bij;
+    }
+
+    for(auto iVar = 0ul; iVar < nVar; ++iVar) {
+      for(auto jVar = 0ul; jVar < nVar; ++jVar) {
+        /*--- Column product. ---*/
+        b[node_j*nVar+iVar] -= bji[iVar*nVar+jVar] * x_i[jVar];
+        /*--- Delete blocks. ---*/
+        bij[iVar*nVar+jVar] = bji[iVar*nVar+jVar] = 0.0;
       }
     }
+
   }
 
-  /*--- Set know solution in rhs vector. ---*/
-  for (iVar = 0; iVar < nVar; iVar++) b[node_i*nVar+iVar] = x_i[iVar];
+  /*--- Set the diagonal block to the identity. ---*/
+  SetVal2Diag(node_i, 1.0);
+
+  /*--- Set known solution in rhs vector. ---*/
+  b.SetBlock(node_i, x_i);
+
+}
+
+template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar,
+                                                  OtherType x_i, CSysVector<OtherType> & b) {
+
+  for (auto index = row_ptr[node_i]; index < row_ptr[node_i+1]; ++index) {
+
+    const auto node_j = col_ind[index];
+
+    /*--- Delete row iVar of block j on row i (bij) and ATTEMPT
+     *    to delete column iVar block i on row j (bji). ---*/
+
+    auto bij = &matrix[index*nVar*nVar];
+    auto bji = GetBlock(node_j, node_i);
+
+    /*--- The "attempt" part. ---*/
+    if (bji != nullptr) {
+      for(auto jVar = 0ul; jVar < nVar; ++jVar) {
+        /*--- Column product. ---*/
+        b[node_j*nVar+jVar] -= bji[jVar*nVar+iVar] * x_i;
+        /*--- Delete entries. ---*/
+        bji[jVar*nVar+iVar] = 0.0;
+      }
+    }
+
+    /*--- Delete row. ---*/
+    for(auto jVar = 0ul; jVar < nVar; ++jVar)
+      bij[iVar*nVar+jVar] = 0.0;
+
+    /*--- Set the diagonal entry of the block to 1. ---*/
+    if (node_j == node_i)
+      bij[iVar*(nVar+1)] = 1.0;
+  }
+
+  /*--- Set known solution in rhs vector. ---*/
+  b(node_i, iVar) = x_i;
+
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
+
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+
+    auto block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
+
+    for (auto k = 0ul; k < nVar*nEqn; ++k) block_ii[k] = 0.0;
+
+    for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
+      auto block_ji = &matrix[col_ptr[k]*nVar*nEqn];
+      if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);
+    }
+  }
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMatrix<ScalarType>& B) {
+
+  /*--- Check that the sparse structure is shared between the two matrices,
+   *    comparing pointers is ok as they are obtained from CGeometry. ---*/
+  bool ok = (row_ptr == B.row_ptr) && (col_ind == B.col_ind) &&
+            (nVar == B.nVar) && (nEqn == B.nEqn) && (nnz == B.nnz);
+
+  if (!ok) {
+    SU2_OMP_MASTER
+    SU2_MPI::Error("Matrices do not have compatible sparsity.", CURRENT_FUNCTION);
+  }
+
+  SU2_OMP_FOR_STAT(omp_light_size)
+  for (auto i = 0ul; i < nnz*nVar*nEqn; ++i)
+    matrix[i] += alpha*B.matrix[i];
 
 }
 
@@ -1587,50 +1797,55 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
                                                        unsigned short kind_fact, bool transposed) {
 #ifdef HAVE_PASTIX
-  pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
-  pastix_wrapper.Factorize(geometry, config, kind_fact, transposed);
+  /*--- Pastix will launch nested threads. ---*/
+  SU2_OMP_MASTER
+  {
+    pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
+    pastix_wrapper.Factorize(geometry, config, kind_fact, transposed);
+  }
+  SU2_OMP_BARRIER
 #else
+  SU2_OMP_MASTER
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
 #endif
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                         CGeometry *geometry, CConfig *config) {
+                                                         CGeometry *geometry, CConfig *config) const {
 #ifdef HAVE_PASTIX
-  pastix_wrapper.Solve(vec,prod);
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER
+  {
+    pastix_wrapper.Solve(vec,prod);
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  }
+  SU2_OMP_BARRIER
 #else
+  SU2_OMP_MASTER
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
 #endif
 }
 
-#ifdef CODI_REVERSE_TYPE
-template<>
-void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
-                                                      unsigned short kind_fact, bool transposed) {
-  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
-}
-template<>
-void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2double> & vec, CSysVector<su2double> & prod,
-                                                        CGeometry *geometry, CConfig *config) {
-  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
-}
-#endif
-
 /*--- Explicit instantiations ---*/
+#ifdef CODI_FORWARD_TYPE
+/*--- In forward AD only the active type is used. ---*/
 template class CSysMatrix<su2double>;
-template void  CSysMatrix<su2double>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
-template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
-template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-
-#ifdef CODI_REVERSE_TYPE
-template class CSysMatrix<passivedouble>;
-template void  CSysMatrix<passivedouble>::InitiateComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short);
-template void  CSysMatrix<passivedouble>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short);
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+#else
+/*--- Base and reverse AD, matrix is passive (either float or double). ---*/
+template class CSysMatrix<su2mixedfloat>;
+template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixedfloat>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+/*--- In reverse AD (or mixed precision) the passive matrix is also used to communicate active (or double) vectors resp.. ---*/
+template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 #endif
+#endif // CODI_FORWARD_TYPE

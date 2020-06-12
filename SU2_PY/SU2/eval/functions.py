@@ -3,14 +3,14 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -165,6 +165,11 @@ def aerodynamics( config, state=None ):
     
     # initialize
     state = su2io.State(state)
+
+    # Make sure to output aerodynamic coeff.
+    if not 'AERO_COEFF' in config['HISTORY_OUTPUT']:
+        config['HISTORY_OUTPUT'].append('AERO_COEFF')
+
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
@@ -217,7 +222,18 @@ def aerodynamics( config, state=None ):
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
-    
+
+    # files: restarts
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') =='YES':
+        if  'RESTART_FILE_1' in files: # not the case for directdiff restart
+            name = files['RESTART_FILE_1']
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+        if 'RESTART_FILE_2' in files:  # not the case for 1st order time stepping
+            name = files['RESTART_FILE_2']
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
 
@@ -229,7 +245,8 @@ def aerodynamics( config, state=None ):
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
-        config['RESTART_SOL'] = 'NO'
+        if config.get('TIME_DOMAIN', 'NO') != 'YES': #rules out steady state optimization special cases.
+            config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
         
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 
@@ -246,19 +263,33 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config,info)
+
+
+
+            konfig = copy.deepcopy(config)
+            ''' 
+            If the time convergence criterion was activated, we have less time iterations. 
+            Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
+            info.WND_CAUCHY_DATA'''
+            if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':  # Tranfer Convergence Data, if necessary
+                konfig['TIME_ITER']         = info.WND_CAUCHY_DATA['TIME_ITER']
+                konfig['ITER_AVERAGE_OBJ']  = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
+                konfig['UNST_ADJOINT_ITER'] = info.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']
+
+            su2io.restart2solution(konfig,info)
             state.update(info)
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_zones(name,config)
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_zones(name,konfig)
+            name = su2io.expand_time(name,konfig)
             push.extend(name)
             
             # equivarea files to push
@@ -277,7 +308,7 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['FLOW_META'])
                 
     #: with output redirection
-    su2io.update_persurface(config,state)
+    su2io.update_persurface(konfig,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.historyOutFields:
