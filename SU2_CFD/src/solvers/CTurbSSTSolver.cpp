@@ -1568,10 +1568,13 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       switch(geometry->node[jPoint]->GetWall_VTK_Type()) {
         case LINE:
           nWall = 2;
+          break;
         case TRIANGLE:
           nWall = 3;
+          break;
         case QUADRILATERAL:
           nWall = 4;
+          break;
         default:
           /* This should not happen. */
           SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
