@@ -1539,9 +1539,9 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
                                       CConfig        *config) {
   
   unsigned long jPoint, total_index;
-  unsigned short iVar, kNode;
+  unsigned short kNode;
   long iElem;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, k = 0.0, beta_1 = constants[4];
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, k = 0.0, beta_1 = constants[4];
   su2double *weights;
   
   /*--- Communicate values needed for WF ---*/
@@ -1555,14 +1555,13 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       
       density = solver[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
       laminar_viscosity = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-      eddy_viscosity = solver[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
       k = nodes->GetPrimitive(jPoint, 0);
       
       weights = geometry->node[jPoint]->GetWall_Interpolation_Weights();
       
       distance = geometry->node[jPoint]->GetWall_Distance();
       
-      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
+      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance);
       su2double Omega = 0.0;
       
       for (kNode = 0; kNode < 4; kNode++) {
@@ -1570,7 +1569,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
         const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
         const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
         
-        const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
+        const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0));
         Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
       }
       
