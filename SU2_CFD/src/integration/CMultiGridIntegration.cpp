@@ -196,22 +196,17 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       }
 
-
       /*--- Space integration ---*/
 
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
   
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
 
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
       
-
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
 
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
-
 
     }
 

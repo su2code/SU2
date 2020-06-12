@@ -31,11 +31,6 @@
 #include <cmath>
 #include <cstdlib>
 
-#include <iostream>
-#include <fstream>
-using namespace std;
-
-
 /*!
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers

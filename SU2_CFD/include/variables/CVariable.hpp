@@ -1951,10 +1951,6 @@ public:
    */
   inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
-  //virtual inline void uselesstestfunction(void) {  }
-
-
-
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.
