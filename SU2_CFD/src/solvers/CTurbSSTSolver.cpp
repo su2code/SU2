@@ -621,9 +621,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
-  unsigned short iDim, counter;
+  unsigned short iDim;
   su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
-  su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
+  su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v, Area, SumArea;
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
@@ -634,9 +634,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- average value based on neighbors ---*/
+      /*--- Average value based on neighbors ---*/
       Solution[1] = 0.;
-      counter = 0;
+      SumArea = 0.;
       for (unsigned short jNeigh = 0; jNeigh < geometry->node[iPoint]->GetnPoint(); jNeigh++) {
         jPoint = geometry->node[iPoint]->GetPoint(jNeigh);
         if (!geometry->node[jPoint]->GetSolidBoundary()) {
@@ -661,11 +661,19 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
           laminar_viscosity_v = fluidModel->GetLaminarViscosity();
           
-          Solution[1] += 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
-          counter++;
+          /*--- Calculate area for averaging---*/
+          const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
+          const su2double *Normal = geometry->edge[iEdge]->GetNormal();
+          
+          Area = 0.;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          SumArea += Area;
+          
+          Solution[1] += 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance)*Area;
         }
       }
-      Solution[1] /= su2double(counter);
+      Solution[1] /= SumArea;
 //      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 ////      distance = geometry->node[jPoint]->GetWall_Distance();
 //      distance = 0.;
