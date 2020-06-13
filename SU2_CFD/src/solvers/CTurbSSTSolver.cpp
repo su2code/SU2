@@ -632,7 +632,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   convergence is compromised as we are providing nu tilde values for the
   first point of the wall  ---*/
   
-  if (!config->GetWall_Functions()) {
+//  if (!config->GetWall_Functions()) {
 
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -687,7 +687,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         }
       }
     }
-  }
+//  }
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
