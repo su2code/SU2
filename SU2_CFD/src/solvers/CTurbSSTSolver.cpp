@@ -1784,7 +1784,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
               counter++;
               if (counter > max_iter) {
 //                cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_turbulent" << endl;
-//                break;
+                break;
               }
 
             }
