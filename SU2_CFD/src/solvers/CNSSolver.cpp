@@ -575,7 +575,25 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         WallShearStress = sqrt(WallShearStress);
 
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-        WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
+        WallDistMod = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim];
+        WallDistMod = sqrt(WallDistMod);
+        
+        /*--- Scale the stress tensor by the ratio of the wall shear stress
+         to the computed representation of the shear stress ---*/
+
+        if (nodes->GetTauWall(iPoint) > 0) {
+          const su2double TauWall = nodes->GetTauWall(iPoint);
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++)
+              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+          }
+        }
 
         /*--- Compute y+ and non-dimensional velocity ---*/
 
