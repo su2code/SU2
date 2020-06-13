@@ -208,7 +208,7 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
                                const su2double val_tau_wall) {
 
   unsigned short iDim, jDim;
-  su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
+  su2double TauNormal, TauElem[3], TauTangent[3], Area, UnitNormal[3];
 
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -418,10 +418,12 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
                                    const su2double *val_normal) {
 
   /*--- QCR and wall functions are **not** accounted for here ---*/
-
+  /*--- BCM: account for wall functions ---*/
+  
+  const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : 1.0;
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-  const su2double xi = total_viscosity*val_area/(Density*val_proj_vector);
+  const su2double xi = WF_Factor*total_viscosity*val_area/(Density*val_proj_vector);
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {

@@ -629,8 +629,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
   
   /*--- The dirichlet condition is used only without wall function, otherwise the
-  convergence is compromised as we are providing nu tilde values for the
-  first point of the wall  ---*/
+  convergence is compromised ---*/
   
   if (!config->GetWall_Functions()) {
 
