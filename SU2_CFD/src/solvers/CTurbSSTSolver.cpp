@@ -639,41 +639,25 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
       if (geometry->node[iPoint]->GetDomain()) {
+        
+        jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        
+        distance = geometry->node[jPoint]->GetWall_Distance();
+        
+        density_s = flowNodes->GetDensity(iPoint);
+        density_v = flowNodes->GetDensity(jPoint);
+        
+        energy_v = flowNodes->GetEnergy(jPoint);
+        vel2_v = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
+        k_v = nodes->GetSolution(jPoint,0)/density_v;
+        staticenergy_v = energy_v - 0.5*vel2_v - k_v;
 
-        /*--- Average value based on neighbors ---*/
-        Solution[1] = 0.;
-        SumArea = 0.;
-        for (unsigned short jNeigh = 0; jNeigh < geometry->node[iPoint]->GetnPoint(); jNeigh++) {
-          jPoint = geometry->node[iPoint]->GetPoint(jNeigh);
-          if (!geometry->node[jPoint]->GetSolidBoundary()) {
-            distance = geometry->node[jPoint]->GetWall_Distance();
-            
-            density_s = flowNodes->GetDensity(iPoint);
-            density_v = flowNodes->GetDensity(jPoint);
-            
-            energy_v = flowNodes->GetEnergy(jPoint);
-            vel2_v = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
-            k_v = nodes->GetSolution(jPoint,0)/density_v;
-            staticenergy_v = energy_v - 0.5*vel2_v - k_v;
-
-            fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
-            laminar_viscosity_v = fluidModel->GetLaminarViscosity();
-            
-            /*--- Calculate area for averaging---*/
-            const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
-            const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-            
-            Area = 0.;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
-            SumArea += Area;
-            
-            Solution[1] += 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance)*Area;
-          }
-        }
-        Solution[1] /= SumArea;
+        fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
+        laminar_viscosity_v = fluidModel->GetLaminarViscosity();
+        
         Solution[0] = 0.0;
+        Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,Solution);
@@ -1566,7 +1550,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, jDim, iNode, iMarker;
+  unsigned short iDim, jDim, iNode, iVar, iMarker;
   unsigned long iVertex, iPoint, iPoint_Neighbor, counter;
 
   su2double *Normal, Area;
@@ -1815,13 +1799,16 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
             Solution[0] = Density_Normal*k;
             Solution[1] = Density_Normal*Omega;
 
-            nodes->SetSolution(iPoint_Neighbor,Solution);
-            nodes->SetSolution_Old(iPoint_Neighbor,Solution);
-            LinSysRes.SetBlock_Zero(iPoint_Neighbor);
+            /*--- Set the solution values and zero the residual ---*/
+            nodes->SetSolution_Old(iPoint,Solution);
+            nodes->SetSolution(iPoint,Solution);
+            LinSysRes.SetBlock_Zero(iPoint);
 
-            /*--- includes 1 in the diagonal ---*/
-
-            Jacobian.DeleteValsRowi(iPoint_Neighbor);
+            /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+            for (iVar = 0; iVar < nVar; iVar++) {
+              const unsigned long total_index = iPoint*nVar+iVar;
+              Jacobian.DeleteValsRowi(total_index);
+            }
 
           }
 
