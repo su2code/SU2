@@ -42,6 +42,8 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
+                           
+  if (config->GetWall_Functions()) WallMap.resize(nPoint) = -1;
 }
 
 bool CNSVariable::SetVorticity_StrainMag() {

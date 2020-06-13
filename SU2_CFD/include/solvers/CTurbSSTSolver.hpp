@@ -361,23 +361,14 @@ public:
   inline su2double GetOmega_Inf(void) const override { return omega_Inf; }
   
   /*!
-   * \brief Compute the off-wall values of omega;
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Correct_Omega_WF(CGeometry      *geometry,
-                        CSolver        **solver,
-                        CConfig        *config);
-  
-  /*!
-   * \brief Communicate values needed for wall function computation;
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void WF_Comms(CGeometry *geometry,
-                CSolver   **solver,
-                CConfig   *config);
+  void ComputeWallFunction(CGeometry *geometry,
+                           CSolver** solver,
+                           CConfig* config) override;
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.

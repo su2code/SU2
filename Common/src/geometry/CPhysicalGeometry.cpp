@@ -12198,7 +12198,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
                    node[iPoint]->SetWall_Rank(rankID);
                    node[iPoint]->SetWall_Marker(markerID);
                    node[iPoint]->SetWall_Element(elemID);
-                   node[iPoint]->SetWall_VTK_Type(vtkID);
+                   node[iPoint]->SetWall_nNode(vtkID);
                    node[iPoint]->SetWall_Interpolation_Weights(weights);
                    break;
                  } // if jVertex

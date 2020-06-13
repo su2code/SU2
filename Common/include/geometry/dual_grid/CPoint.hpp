@@ -69,7 +69,7 @@ private:
   short Wall_Rank;                    /*!< \brief Rank of the nearest wall element. */
   short Wall_Marker;                  /*!< \brief Marker of the nearest wall element. */
   long Wall_Element;                  /*!< \brief Index of the nearest wall element. */
-  short Wall_VTK_Type;                /*!< \brief VTK type of wall element. */
+  unsigned short Wall_nNode;          /*!< \brief Number of nodes in wall element. */
   bool Bool_Wall_Neighbor;            /*!< \brief Whether this node neighbors a solid boundary. */
   su2double Wall_Interp_Weights[4];   /*!<\brief Interpolation weights at nearest wall element. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
@@ -152,10 +152,26 @@ public:
   inline void SetWall_Element(long val_element) { Wall_Element = val_element; }
   
   /*!
-   * \brief Set the index of the nearest wall element.
+   * \brief Set the number of nodes in the nearest wall element.
    * \param[in] val_element - Index of the element.
    */
-  inline void SetWall_VTK_Type(short val_vtk) { Wall_VTK_Type = val_vtk; }
+  inline void SetWall_nNode(short val_vtk) {
+    switch(val_vtk) {
+      case LINE:
+        Wall_nNode = 2;
+        break;
+      case TRIANGLE:
+        Wall_nNode = 3;
+        break;
+      case QUADRILATERAL:
+        Wall_nNode = 4;
+        break;
+      default:
+        /* This should not happen. */
+        SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
+    }
+    
+  }
   
   /*!
    * \brief Set whether the node neighbors a solid wall.
@@ -199,9 +215,9 @@ public:
   inline long GetWall_Element(void) { return Wall_Element; }
   
   /*!
-   * \brief Get the index of the nearest wall element.
+   * \brief Get the number of nodes in the nearest wall element.
    */
-  inline short GetWall_VTK_Type(void) { return Wall_VTK_Type; }
+  inline unsigned short GetWall_nNode(void) { return Wall_nNode; }
   
   /*!
    * \brief Get whether the node neighbors a solid wall.

@@ -45,11 +45,6 @@ protected:
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
 
   MatrixType Primitive;       /*!< \brief Primitive form of the solution. */
-  
-  MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
-  MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
-  
-  su2vector<long> WallMap; /*!< \brief Node indices corresponding to wall value matrix entries. */
 
 public:
   /*!
@@ -131,18 +126,4 @@ public:
    */
   inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
   
-  inline void InitializeWallSolution(unsigned long nWallElem) override {
-    WallDensity.resize(nWallElem,4) = su2double(0.0);
-    WallLamVisc.resize(nWallElem,4) = su2double(0.0);
-  }
-  
-  inline void SetWallMap(unsigned long iPoint, long index) override { WallMap(iPoint) = index; }
-  
-  inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) override { WallDensity(WallMap(iPoint),jNode) = density; }
-  
-  inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) override { WallLamVisc(WallMap(iPoint),jNode) = lamvisc; }
-  
-  inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) override { return WallDensity(WallMap(iPoint),jNode); }
-  
-  inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) override { return WallLamVisc(WallMap(iPoint),jNode); }
 };

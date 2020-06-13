@@ -121,6 +121,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       break;
   }
 
+  /*--- Initialize the wall index map and solution matrices on the first iteration. ---*/
+  if (config->GetWall_Functions()) {
+    unsigned long counter = 0;
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+        nodes->SetWallMap(iPoint,counter);
+        counter++;
+      }
+    }
+    if (counter > 0) nodes->InitializeWallSolution(counter);
+  }
+
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -257,7 +269,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if (wall_functions) {
     SU2_OMP_MASTER
-    SetTauWall_WF(geometry, solver_container, config);
+    ComputeWallFunction(geometry, solver_container, config);
     SU2_OMP_BARRIER
   }
 
@@ -1850,7 +1862,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   }
 }
 
-void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
@@ -1895,7 +1907,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Identify the boundary by string name ---*/
 
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+//      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
       /*--- Get the specified wall heat flux from config ---*/
 

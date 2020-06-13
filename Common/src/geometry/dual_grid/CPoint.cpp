@@ -145,7 +145,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Wall_Rank = -1;
   Wall_Marker = -1;
   Wall_Element = -1;
-  Wall_VTK_Type = -1;
+  Wall_nNode = 0;
   Bool_Wall_Neighbor = false;
 }
 
@@ -267,7 +267,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Wall_Rank = -1;
   Wall_Marker = -1;
   Wall_Element = -1;
-  Wall_VTK_Type = -1;
+  Wall_nNode = 0;
   Bool_Wall_Neighbor = false;
 
 }
@@ -391,7 +391,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Wall_Rank = -1;
   Wall_Marker = -1;
   Wall_Element = -1;
-  Wall_VTK_Type = -1;
+  Wall_nNode = 0;
   Bool_Wall_Neighbor = false;
 
 }
