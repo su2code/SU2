@@ -1970,7 +1970,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           WallDistMod = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
-            WallDistMod += WallDist[iDim]*WallDist[iDim];
+            WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim] ;
           WallDistMod = sqrt(WallDistMod);
 
           /*--- Compute mach number ---*/

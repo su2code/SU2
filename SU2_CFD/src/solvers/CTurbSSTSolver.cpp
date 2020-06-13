@@ -1683,7 +1683,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
             WallDistMod = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              WallDistMod += WallDist[iDim]*WallDist[iDim];
+              WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim] ;
             WallDistMod = sqrt(WallDistMod);
 
             /*--- Compute mach number ---*/
@@ -1783,8 +1783,8 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
               counter++;
               if (counter > max_iter) {
-                cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_turbulent" << endl;
-                break;
+//                cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_turbulent" << endl;
+//                break;
               }
 
             }
