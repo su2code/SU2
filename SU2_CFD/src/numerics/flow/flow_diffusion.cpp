@@ -420,7 +420,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   /*--- QCR and wall functions are **not** accounted for here ---*/
   /*--- BCM: account for wall functions ---*/
   
-  const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : 1.0;
+  const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
   const su2double xi = WF_Factor*total_viscosity*val_area/(Density*val_proj_vector);
