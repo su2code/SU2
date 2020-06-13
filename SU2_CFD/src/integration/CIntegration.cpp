@@ -75,6 +75,12 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
+  
+  /*--- Use wall function to set off wall turbulence values ---*/
+  
+  if((config->GetWall_Functions()) && (RunTime_EqSystem == RUNTIME_TURB_SYS)) {
+    solver_container[MainSolver]->ComputeWallFunction(geometry, solver_container, config);
+  }
 
   /// TODO: No boundary condition supports hybrid parallelism yet, master thread does all the work.
 
@@ -173,11 +179,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         }
         break;
     }
-  
-  /*--- Use wall function to set off wall turbulence values ---*/
-  if((config->GetWall_Functions()) && (RunTime_EqSystem == RUNTIME_TURB_SYS)) {
-    solver_container[MainSolver]->ComputeWallFunction(geometry, solver_container, config);
-  }
   
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are

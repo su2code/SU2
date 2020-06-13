@@ -623,7 +623,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned short iDim;
   su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
-  su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v, Area, SumArea;
+  su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
