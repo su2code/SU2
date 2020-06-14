@@ -1598,9 +1598,9 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
     if (geometry->node[jPoint]->GetBool_Wall_Neighbor()) {
 
-      Omega_vis = 0.;
-      Omega_log = 0.;
+      Omega = 0.;
       Eddy_Visc = 0.;
+      
       for(iNode = 0; iNode < geometry->node[jPoint]->GetWall_nNode(); iNode++) {
 
         /*--- Compute dual-grid area and boundary normal ---*/
@@ -1638,14 +1638,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
         VelTangMod = sqrt(VelTangMod);
 
         /*--- Compute normal distance of the interior point from the wall ---*/
-
-//            for (iDim = 0; iDim < nDim; iDim++)
-//              WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-//
-//            WallDistMod = 0.0;
-//            for (iDim = 0; iDim < nDim; iDim++)
-//              WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim] ;
-//            WallDistMod = sqrt(WallDistMod);
+        
         WallDistMod = geometry->node[jPoint]->GetWall_Distance();
 
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
@@ -1662,89 +1655,6 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
          by using the stress tensor on the surface ---*/
 
         Lam_Visc_Wall = flowNodes->GetWallLamVisc(jPoint, iNode);
-//        grad_primvar  = flowNodes->GetGradient_Primitive(iPoint);
-//
-//        div_vel = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          div_vel += grad_primvar[iDim+1][iDim];
-//
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          for (jDim = 0 ; jDim < nDim; jDim++) {
-//            Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-//            tau[iDim][jDim] = Lam_Visc_Wall*(  grad_primvar[jDim+1][iDim]
-//                                             + grad_primvar[iDim+1][jDim]) -
-//            TWO3*Lam_Visc_Wall*div_vel*Delta;
-//          }
-//          TauElem[iDim] = 0.0;
-//          for (jDim = 0; jDim < nDim; jDim++)
-//            TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
-//        }
-//
-//        /*--- Compute wall shear stress as the magnitude of the wall-tangential
-//         component of the shear stress tensor---*/
-//
-//        TauNormal = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauNormal += TauElem[iDim] * UnitNormal[iDim];
-//
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-//
-//        WallShearStress = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          WallShearStress += TauTangent[iDim]*TauTangent[iDim];
-//        WallShearStress = sqrt(WallShearStress);
-//
-//        /*--- Calculate the quantities from boundary layer theory and
-//         iteratively solve for a new wall shear stress. Use the current wall
-//         shear stress as a starting guess for the wall function. ---*/
-//
-//        Tau_Wall_Old = WallShearStress;
-//        counter = 0; diff = 1.0;
-//
-//        while (diff > tol) {
-//
-//          /*--- Friction velocity and u+ ---*/
-//
-//          U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
-//          U_Plus = VelTangMod/U_Tau;
-//
-//          /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
-//
-//          Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-//          Beta = 0.0; // For adiabatic flows only
-//          Q    = sqrt(Beta*Beta + 4.0*Gam);
-//          Phi  = asin(-1.0*Beta/Q);
-//
-//          /*--- Y+ defined by White & Christoph (compressibility and heat transfer) ---*/
-//
-//          Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
-//
-//          /*--- Spalding's universal form for the BL velocity with the
-//           outer velocity form of White & Christoph above. ---*/
-//
-//          Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)*
-//                                            (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
-//                                             kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
-//
-//          /*--- Calculate an updated value for the wall shear stress
-//           using the y+ value, the definition of y+, and the definition of
-//           the friction velocity. ---*/
-//
-//          Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
-//
-//          /*--- Difference between the old and new Tau. Update old value. ---*/
-//
-//          diff = fabs(Tau_Wall-Tau_Wall_Old);
-//          Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
-//
-//          counter++;
-//          if (counter > max_iter) {
-////                cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_turbulent" << endl;
-//            break;
-//          }
-//
-//        }
         
         Tau_Wall_Old = flowNodes->GetWallTau(jPoint, iNode);
         
@@ -1764,13 +1674,15 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
         const su2double w = geometry->node[jPoint]->GetWall_Interpolation_Weights()[iNode];
 
         dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
-        Eddy_Visc += Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                   (1.0 + kappa*U_Plus
-                                  + kappa*kappa*U_Plus*U_Plus/2.0)
-                                  - Lam_Visc_Normal/Lam_Visc_Wall)*w;
+        Eddy_Visc += w*Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                                     (1.0 + kappa*U_Plus
+                                    + kappa*kappa*U_Plus*U_Plus/2.0)
+                                    - Lam_Visc_Normal/Lam_Visc_Wall);
         
-        Omega_vis += 6. * Lam_Visc_Wall/ (beta_1 * Density_Wall* pow(WallDistMod, 2.0))*w;
-        Omega_log += U_Tau/( 0.3 * 0.41 * WallDistMod)*w;
+        Omega_vis = 6. * Lam_Visc_Wall/ (beta_1 * Density_Wall* pow(WallDistMod, 2.0));
+        Omega_log = U_Tau/( 0.3 * 0.41 * WallDistMod);
+        
+        Omega += w*sqrt(pow(Omega_vis, 2.) + pow(Omega_log, 2.));
         
       }
       
@@ -1782,7 +1694,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       
       /*--- Now compute the TKE and dissipation at the first point off of the wall ---*/
       
-      Omega = sqrt(pow(Omega_vis, 2.) + pow(Omega_log, 2.));
+      
       k = Eddy_Visc*Omega/Density_Normal;
 
       Solution[0] = Density_Normal*k;
