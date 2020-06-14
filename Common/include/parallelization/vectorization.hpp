@@ -180,6 +180,7 @@ FORCEINLINE T NAME(const T& x) {\
 }
 
 MAKE_UNARY_FUN(sqrt,::sqrt)
+MAKE_UNARY_FUN(abs,std::abs)
 
 #undef MAKE_UNARY_FUN
 
@@ -197,7 +198,7 @@ FORCEINLINE T NAME(const T& a, typename T::Scalar b) {\
 template<class T>\
 FORCEINLINE T NAME(typename T::Scalar b, const T& a) {\
   T res; FOREACH res[k] = IMPL(b, a[k]); return res;\
-}\
+}
 
 MAKE_BINARY_FUN(max,std::max)
 MAKE_BINARY_FUN(min,std::min)
@@ -207,6 +208,3 @@ MAKE_BINARY_FUN(pow,::pow)
 
 #undef FOREACH
 } // namespace
-
-using su2vdouble = simd::Array<su2double>;
-using su2vulong = simd::Array<unsigned long>;
