@@ -1674,10 +1674,9 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
         const su2double w = geometry->node[jPoint]->GetWall_Interpolation_Weights()[iNode];
 
         dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
-        Eddy_Visc += w*Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                     (1.0 + kappa*U_Plus
-                                    + kappa*kappa*U_Plus*U_Plus/2.0)
-                                    - Lam_Visc_Normal/Lam_Visc_Wall);
+        Eddy_Visc += w*max(Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                          (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                         - Lam_Visc_Normal/Lam_Visc_Wall), 0.0);
         
         Omega_vis = 6. * Lam_Visc_Wall/ (beta_1 * Density_Wall* pow(WallDistMod, 2.0));
         Omega_log = U_Tau/( 0.3 * 0.41 * WallDistMod);
@@ -1687,8 +1686,6 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       }
       
       /*--- Eddy viscosity should be always a positive number ---*/
-
-      Eddy_Visc = max(0.0, Eddy_Visc);
       
       Density_Normal  = flowNodes->GetDensity(jPoint);
       
