@@ -1747,10 +1747,17 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 //        }
         
         Tau_Wall_Old = flowNodes->GetWallTau(jPoint, iNode);
-
-        /*--- Now compute the TKE and dissipation at the first point off of the wall ---*/
         
         U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
+        U_Plus = VelTangMod/U_Tau;
+        Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+        Beta = 0.0; // For adiabatic flows only
+        Q    = sqrt(Beta*Beta + 4.0*Gam);
+        Phi  = asin(-1.0*Beta/Q);
+        
+        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) ---*/
+
+        Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
 
         Lam_Visc_Normal = flowNodes->GetLaminarViscosity(jPoint);
         
@@ -1772,6 +1779,8 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       Eddy_Visc = max(0.0, Eddy_Visc);
       
       Density_Normal  = flowNodes->GetDensity(jPoint);
+      
+      /*--- Now compute the TKE and dissipation at the first point off of the wall ---*/
       
       Omega = sqrt(pow(Omega_vis, 2.) + pow(Omega_log, 2.));
       k = Eddy_Visc*Omega/Density_Normal;
