@@ -1591,9 +1591,6 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
   su2double kappa = 0.4;
   su2double B = 5.5;
   
-  /*--- Communicate values needed for WF ---*/
-  WallFunctionComms(geometry, solver, config);
-  
   for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
 
     if (geometry->node[jPoint]->GetBool_Wall_Neighbor()) {

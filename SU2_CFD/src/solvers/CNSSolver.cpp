@@ -2107,5 +2107,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
     }
   }
+  
+  /*--- Communicate values needed for WF in turbulence model ---*/
+  WallFunctionComms(geometry, solver, config);
 
 }
