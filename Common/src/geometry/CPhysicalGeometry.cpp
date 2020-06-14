@@ -12184,30 +12184,27 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       if (dist < node[iPoint]->GetWall_Distance())
         node[iPoint]->SetWall_Distance(dist);
 
-       /*--- BCM: Set nearest element and marker. These will be used
-        for wall functions ---*/
-       if (!node[iPoint]->GetSolidBoundary()) {
-         for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
-           const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-           if (node[jPoint]->GetSolidBoundary()) {
-             for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-               if (config->GetViscous_Wall(iMarker)) {
-                 const long jVertex = node[jPoint]->GetVertex(iMarker);
-                 if (jVertex != -1) {
-                   node[iPoint]->SetBool_Wall_Neighbor(true);
-                   node[iPoint]->SetWall_Rank(rankID);
-                   node[iPoint]->SetWall_Marker(markerID);
-                   node[iPoint]->SetWall_Element(elemID);
-                   node[iPoint]->SetWall_nNode(vtkID);
-                   node[iPoint]->SetWall_Interpolation_Weights(weights);
-                   break;
-                 } // if jVertex
-               } // if iMarker Viscous Wall
-             } // iMarker
-           } // if jPoint Solid Boundary
-           if (node[iPoint]->GetBool_Wall_Neighbor()) break;
-         } // iNode
-       } // if iPoint !Solid Boundary
+      /*--- BCM: Set nearest element and marker. These will be used
+            for wall functions ---*/
+      string markerTag = config->GetMarker_All_TagBound(markerID);
+      if (config->GetWallFunction_Treatment(markerTag) != NO_WALL_FUNCTION) {
+        if (!node[iPoint]->GetSolidBoundary()) {
+          for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+            const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
+            const long jVertex = node[jPoint]->GetVertex(markerID);
+            if (jVertex != -1) {
+              node[iPoint]->SetBool_Wall_Neighbor(true);
+              node[iPoint]->SetWall_Rank(rankID);
+              node[iPoint]->SetWall_Marker(markerID);
+              node[iPoint]->SetWall_Element(elemID);
+              node[iPoint]->SetWall_nNode(vtkID);
+              node[iPoint]->SetWall_Interpolation_Weights(weights);
+              break;
+            } // if jVertex
+            if (node[iPoint]->GetBool_Wall_Neighbor()) break;
+          } // iNode
+        } // if iPoint !Solid Boundary
+      } // if markerID WALL_FUNCTION
     }
   }
 }
