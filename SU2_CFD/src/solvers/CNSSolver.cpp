@@ -369,7 +369,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   /*--- Wall shear stress values (wall functions) ---*/
 
   numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(iPoint));
+                       nodes->GetTauWall(jPoint));
 
   /*--- Set values for gradient Jacobian ---*/
     

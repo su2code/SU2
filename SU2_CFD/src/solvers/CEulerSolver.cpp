@@ -9535,7 +9535,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
-        visc_numerics->SetTauWall(-1.0, -1.0);
+        visc_numerics->SetTauWall(nodes->GetTauWall(iPoint),
+                                  nodes->GetTauWall(iPoint));
         
         /*--- Set values for gradient Jacobian ---*/
 
@@ -9747,7 +9748,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
-        visc_numerics->SetTauWall(-1.0, -1.0);
+        visc_numerics->SetTauWall(nodes->GetTauWall(iPoint),
+                                  nodes->GetTauWall(iPoint));
         
         /*--- Set values for gradient Jacobian ---*/
 
