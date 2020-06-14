@@ -1551,27 +1551,21 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
   
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  unsigned short iDim, jDim, iNode, iVar, iMarker;
-  unsigned long iVertex, iPoint, jPoint, counter;
+  unsigned short iDim, iNode, iVar;
+  unsigned long jPoint;
 
   su2double Area;
-  su2double div_vel, Normal[3], UnitNormal[3];
-  su2double **grad_primvar, tau[3][3];
-  su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
+  su2double Normal[3], UnitNormal[3];
+  su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDistMod;
   su2double Lam_Visc_Normal, dypw_dyp, Eddy_Visc;
   su2double T_Normal, P_Normal, Density_Normal;
-  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
-  su2double *Coord, *Coord_Normal;
-  su2double diff, Delta;
+  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall_Old;
   su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double k, Omega, Omega_vis, Omega_log;
   
   const su2double beta_1 = constants[4];
-
-  unsigned short max_iter = 100;
-  su2double tol = 1e-10;
 
   /*--- Compute the recovery factor ---*/
   // su2double-check: laminar or turbulent Pr for this?
