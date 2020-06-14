@@ -5518,7 +5518,6 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
               flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6]);
               flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6+1]);
               flowNodes->SetWallTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6+2]);
-              const unsigned long kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
               for (unsigned short iDim = 0; iDim < nDim; iDim++)
                 flowNodes->SetWallNormal(iPoint, kNode, iDim, bufDRecv[countPerElem*offset+kNode*6+3+iDim]);
             }
