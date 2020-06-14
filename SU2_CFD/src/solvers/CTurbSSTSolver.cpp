@@ -1560,7 +1560,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
   su2double Lam_Visc_Normal, dypw_dyp, Eddy_Visc;
   su2double T_Normal, P_Normal, Density_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall_Old;
-  su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
+  su2double U_Tau, U_Tau_vis, U_Tau_log, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double k, Omega, Omega_vis, Omega_log;
