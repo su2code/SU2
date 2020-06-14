@@ -910,6 +910,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   su2double heat_flux_vec[3];
   su2double div_vel = 0.0;
   
+  const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
+  
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double Cv = Cp/Gamma;
   const su2double heat_flux_factor = Cp/Prandtl_Lam;
@@ -923,8 +925,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   for (unsigned short iDim = 0 ; iDim < nDim; iDim++) {
     heat_flux_vec[iDim] = heat_flux_factor*Mean_GradPrimVar[0][iDim];
     for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
-      stress_tensor[iDim][jDim] = ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
-                                - TWO3*div_vel*delta[iDim][jDim];
+      stress_tensor[iDim][jDim] = WF_Factor*( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
+                                            - TWO3*div_vel*delta[iDim][jDim];
   }
 
   /*--- Jacobian wrt laminar viscosity ---*/
@@ -975,6 +977,8 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
                                              const CConfig   *config) {
   
   if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+    
+    const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
         
     const su2double a1 = 0.31;
     
@@ -990,8 +994,8 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++) {
       heat_flux_vec[iDim] = heat_flux_factor*Mean_GradPrimVar[0][iDim];
       for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
-        stress_tensor[iDim][jDim] = ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
-                                  - TWO3*div_vel*delta[iDim][jDim];
+        stress_tensor[iDim][jDim] = WF_Factor*( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
+                                              - TWO3*div_vel*delta[iDim][jDim];
     }
   
     /*--- Jacobian wrt eddy viscosity ---*/
