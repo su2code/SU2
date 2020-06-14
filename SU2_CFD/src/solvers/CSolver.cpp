@@ -5215,7 +5215,9 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
 
   int iRank, iSend, iRecv;
   
-  unsigned short countPerElem = 8;
+  /*--- Density, laminar viscosity, tau_wall, and normal of each node of wall element. ---*/
+  
+  unsigned short countPerElem = 24;
   
   int *nElemSend = new int[size+1]; nElemSend[0] = 0;
   int *nElemRecv = new int[size+1]; nElemRecv[0] = 0;
@@ -5335,7 +5337,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
     /*--- Variables ---*/
     else if (i == 2) {
       commType = COMM_TYPE_DOUBLE;
-      countPerElem = 8;
+      countPerElem = 24;
       
       /*--- Fill send buffers with variables based on received
             markers and elements. ---*/
@@ -5350,8 +5352,12 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
             const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
             for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
               const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
-              bufDSend[offset+kNode]   = flowNodes->GetDensity(kPoint);
-              bufDSend[offset+kNode+4] = flowNodes->GetLaminarViscosity(kPoint);
+              bufDSend[offset+kNode*6]   = flowNodes->GetDensity(kPoint);
+              bufDSend[offset+kNode*6+1] = flowNodes->GetLaminarViscosity(kPoint);
+              bufDSend[offset+kNode*6+2] = flowNodes->GetTauWall(kPoint);
+              const unsigned long kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+              for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                bufDSend[offset+kNode*6+3+iDim] = geometry->vertex[MarkerID][kVertex]->GetNormal(iDim);
             }
           }
         }
@@ -5509,8 +5515,12 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           if ((geometry->node[iPoint]->GetWall_Marker() == MarkerID) &&
               (geometry->node[iPoint]->GetWall_Element() == ElemID)) {
             for (unsigned short kNode = 0; kNode < 4; kNode++) {
-              flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode]);
-              flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode+4]);
+              flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6]);
+              flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6+1]);
+              flowNodes->SetWallTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6+2]);
+              const unsigned long kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+              for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                flowNodes->SetWallNormal(iPoint, kNode, iDim, bufDRecv[countPerElem*offset+kNode*6+3+iDim]);
             }
           }
         }
@@ -5522,6 +5532,10 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
           flowNodes->SetWallDensity(iPoint, kNode, flowNodes->GetDensity(kPoint));
           flowNodes->SetWallLamVisc(iPoint, kNode, flowNodes->GetLaminarViscosity(kPoint));
+          flowNodes->SetWallTau(iPoint, kNode, flowNodes->GetTauWall(kPoint));
+          const unsigned long kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            flowNodes->SetWallNormal(iPoint, kNode, iDim, geometry->vertex[MarkerID][kVertex]->GetNormal(iDim));
         }
       }
     }
@@ -5549,6 +5563,10 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
         const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
         flowNodes->SetWallDensity(iPoint, kNode, flowNodes->GetDensity(kPoint));
         flowNodes->SetWallLamVisc(iPoint, kNode, flowNodes->GetLaminarViscosity(kPoint));
+        flowNodes->SetWallTau(iPoint, kNode, flowNodes->GetTauWall(kPoint));
+        const unsigned long kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          flowNodes->SetWallNormal(iPoint, kNode, iDim, geometry->vertex[MarkerID][kVertex]->GetNormal(iDim));
       }
     }
   }

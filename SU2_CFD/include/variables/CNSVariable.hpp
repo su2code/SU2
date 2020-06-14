@@ -48,6 +48,8 @@ private:
   
   MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
   MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
+  MatrixType WallTau;     /*!< \brief Stress at the wall, needed for wall functions. */
+  VectorOfMatrix WallNormal;  /*!< \brief Normal at the wall, needed for wall functions. */
   
   su2vector<long> WallMap; /*!< \brief Node indices corresponding to wall value matrix entries. */
 
@@ -241,22 +243,44 @@ public:
   inline void InitializeWallSolution(unsigned long nWallNeigh) override {
     WallDensity.resize(nWallNeigh,4) = su2double(0.0);
     WallLamVisc.resize(nWallNeigh,4) = su2double(0.0);
+    WallTau.resize(nWallNeigh,4) = su2double(0.0);
+    WallNormal.resize(nWallNeigh,4,3,0.0);
   }
   
   /*!
    * \brief Set the map of local node index to index in wall variable MatrixTypes.
   */
-  inline void SetWallMap(unsigned long iPoint, long index) override { WallMap(iPoint) = index; }
+  inline void SetWallMap(unsigned long iPoint, long index) override {
+    WallMap(iPoint) = index;
+  }
   
   /*!
    * \brief Set the density at a DOF of the nearest wall element.
   */
-  inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) override { WallDensity(WallMap(iPoint),jNode) = density; }
+  inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) override {
+    WallDensity(WallMap(iPoint),jNode) = density;
+  }
   
   /*!
    * \brief Set the laminar viscosity at a DOF of the nearest wall element.
   */
-  inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) override { WallLamVisc(WallMap(iPoint),jNode) = lamvisc; }
+  inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) override {
+    WallLamVisc(WallMap(iPoint),jNode) = lamvisc;
+  }
+  
+  /*!
+   * \brief Set the stressat a DOF of the nearest wall element.
+  */
+  inline void SetWallTau(unsigned long iPoint, unsigned short jNode, su2double tau) override {
+    WallTau(WallMap(iPoint),jNode) = tau;
+  }
+  
+  /*!
+   * \brief Set the normal at a DOF of the nearest wall element.
+  */
+  inline void SetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim, su2double normal) override {
+    WallNormal(WallMap(iPoint),jNode,iDim) = normal;
+  }
   
   /*!
    * \brief Get the density at a DOF of the nearest wall element.
@@ -267,5 +291,15 @@ public:
    * \brief Get the laminar viscosity at a DOF of the nearest wall element.
   */
   inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) override { return WallLamVisc(WallMap(iPoint),jNode); }
+  
+  /*!
+   * \brief Get the stress at a DOF of the nearest wall element.
+  */
+  inline su2double GetWallTau(unsigned long iPoint, unsigned short jNode) override { return WallTau(WallMap(iPoint),jNode); }
+  
+  /*!
+   * \brief Get the normal at a DOF of the nearest wall element.
+  */
+  inline su2double GetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim) override { return WallNormal(WallMap(iPoint),jNode,iDim); }
 
 };
