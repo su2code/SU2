@@ -1564,7 +1564,6 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
   su2double U_Tau, U_Plus = 0.0, Gam = 0.0, Beta = 0.0, Phi, Q = 0.0, Y_Plus_White = 0.0, Y_Plus;
-  su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double k, Omega, Omega_vis, Omega_log;
@@ -1573,14 +1572,6 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
   unsigned short max_iter = 100;
   su2double tol = 1e-10;
-  
-  /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
-
-  su2double *VelInf = config->GetVelocity_FreeStreamND();
-  VelInfMod = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    VelInfMod += VelInf[iDim];
-  VelInfMod = sqrt(VelInfMod);
 
   /*--- Compute the recovery factor ---*/
   // su2double-check: laminar or turbulent Pr for this?
@@ -1640,7 +1631,8 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
 
-        T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
+//        T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
+        T_Wall = T_Normal/(1.+Recovery*Gamma_Minus_One/2.*pow(VelTangMod,2.));
 
         /*--- Extrapolate the pressure from the interior & compute the
          wall density using the equation of state ---*/
