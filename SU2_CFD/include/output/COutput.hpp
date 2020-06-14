@@ -30,7 +30,6 @@
 #include <fstream>
 #include <cmath>
 #include <map>
-#include <time.h>
 #include <sstream>
 #include <iomanip>
 #include <limits>

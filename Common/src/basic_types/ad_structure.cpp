@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -41,7 +41,6 @@ namespace AD {
   su2double::TapeType::Position StartPosition, EndPosition;
   std::vector<su2double::TapeType::Position> TapePositions;
 
-  bool Status = false;
   bool PreaccActive = false;
   bool PreaccEnabled = true;
 

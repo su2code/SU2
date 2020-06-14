@@ -174,7 +174,7 @@ public:
  * \author E. van der Weide
  * \version 7.0.5 "Blackbird"
  */
-class CSurfaceElementFEM;   // Forward declaration to avoid problems.
+struct CSurfaceElementFEM;   // Forward declaration to avoid problems.
 struct CSortBoundaryFaces {
  /*!
   * \brief Operator used for the comparison.
@@ -442,8 +442,8 @@ struct CBoundaryFEM {
  */
 class CMeshFEM: public CGeometry {
 protected:
-  unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
-  unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
+  unsigned long nVolElemTot{0};    /*!< \brief Total number of local volume elements, including halos. */
+  unsigned long nVolElemOwned{0};  /*!< \brief Number of owned local volume elements. */
 
   vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
                                                                   per time level. Cumulative storage. */
@@ -489,13 +489,13 @@ protected:
   vector<CFEMStandardBoundaryFace> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
                                                                           faces used for the geometry of the DG solver. */
 
-  CBlasStructure *blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
+  CBlasStructure *blasFunctions{nullptr}; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
 
 public:
   /*!
   * \brief Constructor of the class.
   */
- CMeshFEM(void) : CGeometry() { blasFunctions = nullptr; }
+ CMeshFEM(void) : CGeometry() { }
 
   /*!
   * \overload
@@ -1249,10 +1249,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CDummyMeshFEM_DG(CConfig *config);
-
-  /*!
-	 * \brief Destructor of the class.
-	 */
-  ~CDummyMeshFEM_DG() override;
 
 };

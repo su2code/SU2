@@ -55,105 +55,11 @@
 #endif
 
 
-CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  Local_to_Global_Point  = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-  SpanWiseValue           = nullptr;
-
-}
+CPhysicalGeometry::CPhysicalGeometry() : CGeometry() { }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
 
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  Local_to_Global_Point = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
-
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-  SpanWiseValue           = nullptr;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -201,7 +107,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
 
-  assert((nDim == 2) || (nDim == 3));
+  assert(((nDim == 2) || (nDim == 3)) && "There shall be bugs.");
 
   /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
 
@@ -276,120 +182,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
-                                     CConfig *config) {
-
-  /*--- Get rank and size. ---*/
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  /*--- Initialize several class data members for later. ---*/
-
-  Local_to_Global_Point  = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  /*--- Arrays for defining the linear partitioning. ---*/
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
+                                     CConfig *config) : CGeometry() {
 
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-
-  /*--- Initialize counters for the points/elements local to a rank. ---*/
-
-  nLocal_Point         = 0;
-  nLocal_PointDomain   = 0;
-  nLocal_PointGhost    = 0;
-  nLocal_PointPeriodic = 0;
-  nLocal_Line          = 0;
-  nLocal_BoundTria     = 0;
-  nLocal_BoundQuad     = 0;
-  nLocal_Tria          = 0;
-  nLocal_Quad          = 0;
-  nLocal_Tetr          = 0;
-  nLocal_Hexa          = 0;
-  nLocal_Pris          = 0;
-  nLocal_Pyra          = 0;
-
-  Local_Coords = nullptr;
-  Local_Points = nullptr;
-  Local_Colors = nullptr;
-
-  /*--- Arrays for holding the element connectivity. ---*/
-
-  Conn_Line      = nullptr;
-  Conn_BoundTria = nullptr;
-  Conn_BoundQuad = nullptr;
-
-  Conn_Line_Linear      = nullptr;
-  Conn_BoundTria_Linear = nullptr;
-  Conn_BoundQuad_Linear = nullptr;
-
-  Conn_Tria = nullptr;
-  Conn_Quad = nullptr;
-  Conn_Tetr = nullptr;
-  Conn_Hexa = nullptr;
-  Conn_Pris = nullptr;
-  Conn_Pyra = nullptr;
-
-  /*--- Arrays for holding the element IDs. ---*/
-
-  ID_Line             = nullptr;
-  ID_BoundTria        = nullptr;
-  ID_BoundQuad        = nullptr;
-  ID_Line_Linear      = nullptr;
-  ID_BoundTria_Linear = nullptr;
-  ID_BoundQuad_Linear = nullptr;
-
-  ID_Tria = nullptr;
-  ID_Quad = nullptr;
-  ID_Tetr = nullptr;
-  ID_Hexa = nullptr;
-  ID_Pris = nullptr;
-  ID_Pyra = nullptr;
-
-  Elem_ID_Line             = nullptr;
-  Elem_ID_BoundTria        = nullptr;
-  Elem_ID_BoundQuad        = nullptr;
-  Elem_ID_Line_Linear      = nullptr;
-  Elem_ID_BoundTria_Linear = nullptr;
-  Elem_ID_BoundQuad_Linear = nullptr;
 
   /*--- The new geometry class has the same problem dimension/zone. ---*/
 
@@ -475,29 +270,26 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
-  Neighbors.clear();
-  Color_List.clear();
+  decltype(Neighbors)().swap(Neighbors);
+  decltype(Color_List)().swap(Color_List);
 
   delete [] Local_Points;
   delete [] Local_Colors;
   delete [] Local_Coords;
 
-  if (nLinear_Line > 0      && Conn_Line_Linear      != nullptr)
-    delete [] Conn_Line_Linear;
-  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != nullptr)
-    delete [] Conn_BoundTria_Linear;
-  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != nullptr)
-    delete [] Conn_BoundQuad_Linear;
+  delete [] Conn_Line_Linear;
+  delete [] Conn_BoundTria_Linear;
+  delete [] Conn_BoundQuad_Linear;
 
-  if (nLocal_Line > 0      && Conn_Line      != nullptr) delete [] Conn_Line;
-  if (nLocal_BoundTria > 0 && Conn_BoundTria != nullptr) delete [] Conn_BoundTria;
-  if (nLocal_BoundQuad > 0 && Conn_BoundQuad != nullptr) delete [] Conn_BoundQuad;
-  if (nLocal_Tria > 0      && Conn_Tria      != nullptr) delete [] Conn_Tria;
-  if (nLocal_Quad > 0      && Conn_Quad      != nullptr) delete [] Conn_Quad;
-  if (nLocal_Tetr > 0      && Conn_Tetr      != nullptr) delete [] Conn_Tetr;
-  if (nLocal_Hexa > 0      && Conn_Hexa      != nullptr) delete [] Conn_Hexa;
-  if (nLocal_Pris > 0      && Conn_Pris      != nullptr) delete [] Conn_Pris;
-  if (nLocal_Pyra > 0      && Conn_Pyra      != nullptr) delete [] Conn_Pyra;
+  delete [] Conn_Line;
+  delete [] Conn_BoundTria;
+  delete [] Conn_BoundQuad;
+  delete [] Conn_Tria;
+  delete [] Conn_Quad;
+  delete [] Conn_Tetr;
+  delete [] Conn_Hexa;
+  delete [] Conn_Pris;
+  delete [] Conn_Pyra;
 
   delete [] ID_Line;
   delete [] ID_BoundTria;
@@ -2497,7 +2289,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   jElem = 0;
   nElem = Local_Elem;
-  elem  = new CPrimalGrid*[nElem];
+  elem  = new CPrimalGrid*[nElem] ();
 
   /*--- Store the elements of each type in the proper containers. ---*/
 
@@ -4021,7 +3813,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
   /*--- Allocate space for the CGNS interior elements in our SU2 data
    structure. Note that we only instantiate our rank's local set. ---*/
 
-  elem = new CPrimalGrid*[nElem];
+  elem = new CPrimalGrid*[nElem] ();
 
   /*--- Some temporaries for the loop below. ---*/
 
@@ -7114,8 +6906,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 void CPhysicalGeometry::SetCoord_CG(void) {
 
-  SU2_OMP_PARALLEL
-  {
   unsigned short iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
 
@@ -7170,10 +6960,12 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     edges->SetCoord_CG(iEdge, Coord.data());
   }
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
+
+  SU2_OMP_MASTER {
+
   unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
   unsigned long Neighbor_Point, iVertex, iPoint, iElem;
   long iEdge;
@@ -7251,55 +7043,45 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
-    const unsigned short nNeigh = nodes->GetnPoint(iPoint);
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,omp_get_max_threads()))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double* Coord_i = nodes->GetCoord(iPoint);
 
-    /*--- If using AD, computing the maximum grid length can generate
-     * a lot of unnecessary overhead since we would store all computations
-     * of each grid length, even though we only need the maximum value.
-     * We solve that by finding the neighbor that's furthest away
-     * (corresponding to the maximum distance) using passive calculations,
-     * then set the max using the AD datatype. ---*/
+    /*--- If using AD, stop the recording to find the most distant
+     * neighbor, then enable it again and recompute the distance.
+     * This reduces the overhead of storing irrelevant computations. ---*/
 
-    passivedouble passive_max_delta=0;
-    unsigned short max_neighbor = 0;
-    for (unsigned short iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+    const bool wasActive = AD::BeginPassive();
+
+    su2double max_delta=0;
+    auto max_neighbor = iPoint;
+    for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
 
       /*-- Calculate the cell-center to cell-center length ---*/
 
       const unsigned long jPoint  = nodes->GetPoint(iPoint, iNeigh);
       const su2double* Coord_j = nodes->GetCoord(jPoint);
 
-      passivedouble delta_aux = 0;
-      for (unsigned short iDim = 0;iDim < nDim; iDim++){
-        delta_aux += pow(SU2_TYPE::GetValue(Coord_j[iDim])-SU2_TYPE::GetValue(Coord_i[iDim]), 2.);
-      }
+      su2double delta = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
 
       /*--- Only keep the maximum length ---*/
 
-      if (delta_aux > passive_max_delta) {
-        passive_max_delta = delta_aux;
-        max_neighbor = iNeigh;
+      if (delta > max_delta) {
+        max_delta = delta;
+        max_neighbor = jPoint;
       }
     }
 
-    /*--- Now that we know where the maximum distance is, repeat
-     * calculation with the AD-friendly su2double datatype ---*/
+    AD::EndPassive(wasActive);
 
-    const unsigned long jPoint  = nodes->GetPoint(iPoint, max_neighbor);
-    const su2double* Coord_j = nodes->GetCoord(jPoint);
-
-    su2double max_delta = 0;
-    for (unsigned short iDim = 0;iDim < nDim; iDim++) {
-      max_delta += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
-    }
-    max_delta = sqrt(max_delta);
-
+    /*--- Recompute and set. ---*/
+    const su2double* Coord_j = nodes->GetCoord(max_neighbor);
+    max_delta = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
     nodes->SetMaxLength(iPoint, max_delta);
   }
 
@@ -7707,7 +7489,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   string Marker_Tag;
 
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist_local, maxdist_global;
-  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
+  const su2double *center, *angles, *trans;
+  su2double translation[3]={0.0,0.0,0.0}, dx, dy, dz;
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
@@ -8180,6 +7963,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
 
+  SU2_OMP_MASTER {
+
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
   su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
@@ -8279,6 +8064,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<< endl;
     if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
+
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {
