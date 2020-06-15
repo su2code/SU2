@@ -680,15 +680,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         
         density_s = flowNodes->GetDensity(iPoint);
         density_v = flowNodes->GetDensity(jPoint);
-        
-        energy_v = flowNodes->GetEnergy(jPoint);
-        vel2_v = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(flowNodes->GetSolution(jPoint,iDim+1)/density_v, 2.);
-        k_v = nodes->GetSolution(jPoint,0)/density_v;
-        staticenergy_v = energy_v - 0.5*vel2_v - k_v;
-
-        fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
-        laminar_viscosity_v = fluidModel->GetLaminarViscosity();
+        laminar_viscosity_v = flowNodes->GetLaminarViscosity(jPoint);
       }
       
       Solution[0] = 0.0;
