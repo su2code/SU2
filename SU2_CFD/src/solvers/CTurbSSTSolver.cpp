@@ -1618,9 +1618,9 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
         /*--- Compute the shear stress at the wall in the regular fashion
          by using the stress tensor on the surface ---*/
 
-        Lam_Visc_Wall = flowNodes->GetWallLamVisc(jPoint, iNode);
+        Lam_Visc_Wall = flowNodes->GetLaminarViscosity(jPoint);
         
-        Tau_Wall_Old = flowNodes->GetWallTau(jPoint, iNode);
+        Tau_Wall_Old = flowNodes->GetTauWall(jPoint);
         
         U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
         U_Plus = VelTangMod/U_Tau;
