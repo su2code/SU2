@@ -741,6 +741,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   unsigned short requestedMGlevels = config->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
+  bool wall_models = config->GetWall_Functions();
 
   /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
@@ -805,10 +806,16 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Check the orientation before computing geometrical quantities ---*/
 
   geometry[MESH_0]->SetBoundVolume();
-  if (config->GetReorientElements()) {
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
-    geometry[MESH_0]->Check_IntElem_Orientation(config);
-    geometry[MESH_0]->Check_BoundElem_Orientation(config);
+  
+  /*--- Not needed when a wall treatment is used, because this has
+              already been done. ---*/
+
+  if( !wall_models ) {
+    if (config->GetReorientElements()) {
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+      geometry[MESH_0]->Check_IntElem_Orientation(config);
+      geometry[MESH_0]->Check_BoundElem_Orientation(config);
+    }
   }
 
   /*--- Create the edge structure ---*/
@@ -822,11 +829,27 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
   geometry[MESH_0]->SetCoord_CG();
 
-  /*--- Create the control volume structures ---*/
+  if (wall_models){
 
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-  geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
-  geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+    /*--- If using wall model, update the control volume structures ---*/
+
+    if ((rank == MASTER_NODE) && (!fea)) cout << "Updating the control volume structure." << endl;
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+
+    /*--- Interpolate the donor information for the wall model, if needed. ---*/
+
+    if ((rank == MASTER_NODE) && (!fea)) cout << "Preprocessing for the wall models." << endl;
+    geometry[MESH_0]->WallModelPreprocessing(config);
+  }
+  else{
+
+    /*--- Create the control volume structures ---*/
+
+    if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+    geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  }
 
   /*--- Visualize a dual control volume if requested ---*/
 
