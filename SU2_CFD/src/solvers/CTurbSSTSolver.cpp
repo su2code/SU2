@@ -655,16 +655,25 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
           su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
-          density_v += donorCoeff*flowNodes->GetSolution(donorPoint,0);
-          energy_v  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
-          k_v       += donorCoeff*nodes->GetSolution(donorPoint,0);
+//          density_v += donorCoeff*flowNodes->GetSolution(donorPoint,0);
+//          energy_v  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
+//          k_v       += donorCoeff*nodes->GetSolution(donorPoint,0);
+//
+//          for (iDim = 0; iDim < nDim; iDim++) vel_v[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
+          
+          density_v += donorCoeff*flowNodes->GetDensity(donorPoint);
+          energy_v  += donorCoeff*flowNodes->GetEnergy(donorPoint);
+          k_v       += donorCoeff*nodes->GetPrimitive(donorPoint,0);
 
-          for (iDim = 0; iDim < nDim; iDim++) vel_v[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
+          for (iDim = 0; iDim < nDim; iDim++) vel_v[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
         
-        energy_v /= density_v;
-        k_v      /= density_v;
-        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(vel_v[iDim]/density_v, 2.);
+//        energy_v /= density_v;
+//        k_v      /= density_v;
+//        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(vel_v[iDim]/density_v, 2.);
+//        staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+        
+        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(vel_v[iDim], 2.);
         staticenergy_v = energy_v - 0.5*vel2_v - k_v;
 
         /*--- Load the fluid model to compute viscosity at exchange location---*/
