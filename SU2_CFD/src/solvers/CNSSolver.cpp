@@ -1890,8 +1890,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  su2double kappa = 0.4;
-  su2double B = 5.5;
+  su2double kappa = 0.41;
+  su2double B = 5.0;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
