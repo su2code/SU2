@@ -1955,7 +1955,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               
               for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
               
-              if (tkeNeeded) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint,0);
+              if (tkeNeeded && solver[TURB_SOL] != nullptr) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint,0);
             }
             
             /*--- Compute primitives at exchange location ---*/
