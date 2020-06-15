@@ -2137,11 +2137,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
             counter++;
             if (counter == max_iter) {
-              cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
-              cout << rank << " " << iPoint;
-              for (iDim = 0; iDim < nDim; iDim++)
-                cout << " " << Coord[iDim];
-              cout << endl;
               converged = false;
               nodes->SetTauWall(iPoint,-1.0);
               break;
