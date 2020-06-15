@@ -125,7 +125,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
   {
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
@@ -162,7 +162,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
    * \brief Store the solution range based eps^2 parameter.
    */
   template<class FieldType>
-  inline void preprocess(CGeometry& geometry, CConfig& config, size_t varBegin,
+  inline void preprocess(CGeometry& geometry, const CConfig& config, size_t varBegin,
                          size_t varEnd, const FieldType& field)
   {
     /*--- Determine the max and min global value for each variable. ---*/
@@ -258,7 +258,7 @@ struct CLimiterDetails<SHARP_EDGES>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
   {
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
     su2double L = config.GetRefElemLength();
@@ -299,7 +299,7 @@ struct CLimiterDetails<WALL_DISTANCE>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
   {
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
     su2double L = config.GetRefElemLength();

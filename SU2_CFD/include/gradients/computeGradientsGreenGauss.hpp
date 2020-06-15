@@ -53,7 +53,7 @@ void computeGradientsGreenGauss(CSolver* solver,
                                 MPI_QUANTITIES kindMpiComm,
                                 PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry,
-                                CConfig& config,
+                                const CConfig& config,
                                 const FieldType& field,
                                 size_t varBegin,
                                 size_t varEnd,
@@ -165,22 +165,19 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- If no solver was provided we do not communicate ---*/
 
-  SU2_OMP_MASTER
-  if (solver != nullptr)
+  if (solver == nullptr) return;
+
+  /*--- Account for periodic contributions. ---*/
+
+  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
   {
-    /*--- Account for periodic contributions. ---*/
-
-    for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
-    {
-      solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
-      solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
-    }
-
-    /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
-
-    solver->InitiateComms(&geometry, &config, kindMpiComm);
-    solver->CompleteComms(&geometry, &config, kindMpiComm);
+    solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
   }
-  SU2_OMP_BARRIER
+
+  /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
+
+  solver->InitiateComms(&geometry, &config, kindMpiComm);
+  solver->CompleteComms(&geometry, &config, kindMpiComm);
 
 }
