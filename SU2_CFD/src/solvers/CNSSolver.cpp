@@ -2128,7 +2128,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             counter++;
             if (counter == max_iter) {
               converged = false;
-              nodes->SetTauWall(iPoint,Tau_Wall);
+              nodes->SetTauWall(iPoint,-1.0);
               break;
             }
 
@@ -2137,9 +2137,18 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           if (!converged) continue;
 
+          /*--- Calculate an updated value for the wall shear stress
+            using the y+ value, the definition of y+, and the definition of
+            the friction velocity. ---*/
+
+          Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+
           /*--- Store this value for the wall shear stress at the node.  ---*/
 
           nodes->SetTauWall(iPoint,Tau_Wall);
+          nodes->SetTemperature(iPoint,T_Wall);
+          nodes->SetSolution(iPoint, 0, Density_Wall);
+          nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
 
 
         }
