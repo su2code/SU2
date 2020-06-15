@@ -2128,7 +2128,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             counter++;
             if (counter == max_iter) {
               converged = false;
-              nodes->SetTauWall_Flag(iPoint,-1.0);
+              nodes->SetTauWall(iPoint,-1.0);
               break;
             }
 
