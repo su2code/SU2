@@ -12,6 +12,7 @@
 *.su2
 *.dat
 *.vtk
+*.vtm
 *.csv
 *.plt
 *.szplt
