@@ -1526,60 +1526,6 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 }
 
-//void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
-//
-//  unsigned long jPoint, total_index;
-//  unsigned short kNode;
-//  long iElem;
-//  su2double distance, density = 0.0, laminar_viscosity = 0.0, k = 0.0, beta_1 = constants[4];
-//  su2double *weights;
-//
-//  /*--- Communicate values needed for WF ---*/
-//  WallFunctionComms(geometry, solver, config);
-//
-//  for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//    if (geometry->node[jPoint]->GetBool_Wall_Neighbor()) {
-//
-//      iElem = geometry->node[jPoint]->GetWall_Element();
-//
-//      density = solver[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-//      laminar_viscosity = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-//      k = nodes->GetPrimitive(jPoint, 0);
-//
-//      weights = geometry->node[jPoint]->GetWall_Interpolation_Weights();
-//
-//      distance = geometry->node[jPoint]->GetWall_Distance();
-//
-//      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance);
-//      su2double Omega = 0.0;
-//
-//      unsigned short nWall = geometry->node[jPoint]->GetWall_nNode();
-//
-//      for (kNode = 0; kNode < nWall; kNode++) {
-//
-//        const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
-//        const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
-//
-//        if (DensityWall != DensityWall) cout << "Nan detected at rank " << rank << ", node "<< jPoint << endl;
-//        if (DensityWall < 1.0E-16) cout << "Small value detected at " << rank << ", node " << jPoint << endl;
-//
-//        const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0));
-//        Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
-//      }
-//
-//      nodes->SetSolution_Old(jPoint,1,density*Omega);
-//      nodes->SetSolution(jPoint,1,density*Omega);
-//      LinSysRes.SetBlock_Zero(jPoint,1);
-//
-//      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-//      total_index = jPoint*nVar+1;
-//      Jacobian.DeleteValsRowi(total_index);
-//    }
-//  }
-//
-//}
-
 void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   /*--- Local variables ---*/

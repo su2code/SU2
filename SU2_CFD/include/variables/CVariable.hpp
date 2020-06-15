@@ -503,26 +503,6 @@ public:
     su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
   }
-  
-  virtual void InitializeWallSolution(unsigned long nWallElem) { }
-  
-  virtual inline void SetWallMap(unsigned long iPoint, long index) { }
-  
-  virtual inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) { }
-  
-  virtual inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) { }
-  
-  virtual inline void SetWallTau(unsigned long iPoint, unsigned short jNode, su2double tau) { }
-  
-  virtual inline void SetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim, su2double normal) { }
-  
-  virtual inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) { return 0.; }
-  
-  virtual inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) { return 0.; }
-  
-  virtual inline su2double GetWallTau(unsigned long iPoint, unsigned short jNode) { return 0.; }
-  
-  virtual inline su2double GetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim) { return 0.; }
 
   /*!
    * \brief Get the entire solution of the problem.

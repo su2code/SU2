@@ -4328,14 +4328,6 @@ public:
                                           CSolver** solver,
                                           CConfig* config) { }
   
-  /*!
-   * \brief Communicate values needed for wall function computation;
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void WallFunctionComms(CGeometry *geometry,
-                         CSolver   **solver,
-                         CConfig   *config);
 
   /*!
    * \brief A virtual member.

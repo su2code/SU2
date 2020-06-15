@@ -1837,9 +1837,6 @@ void CTurbSASolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, C
   su2double kappa = 0.4;
   su2double B = 5.5;
   
-//  /*--- Communicate values needed for WF ---*/
-//  WallFunctionComms(geometry, solver, config);
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
