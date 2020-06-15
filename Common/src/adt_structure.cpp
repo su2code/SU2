@@ -705,6 +705,8 @@ bool CADTElemClass::DetermineContainingElement(const su2double *coor,
                                                int             &rankID,
                                                su2double       *parCoor,
                                                su2double       *weightsInterpol) {
+  
+  AD_BEGIN_PASSIVE
 
   /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
      it only contains the root leaf. Make sure to wipe out any data from a
@@ -779,6 +781,8 @@ bool CADTElemClass::DetermineContainingElement(const su2double *coor,
     frontLeaves = frontLeavesNew;
     if(frontLeaves.size() == 0) break;
   }
+  
+  AD_END_PASSIVE
 
   /* If this point is reached, no element is found that contains the coordinate
      and false must be returned. */
