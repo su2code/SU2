@@ -2045,6 +2045,19 @@ public:
       /*--- For some wall function types, some additional info
             is needed, which is extracted from option_value. ---*/
       switch( this->walltype[i] ) {
+          
+        case STANDARD_WALL_FUNCTION: {
+
+          /* Standard wall function. The exchange distance must be specified. */
+          this->doubleInfo[i] = new su2double[1];
+
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          break;
+        }
 
         case EQUILIBRIUM_WALL_MODEL: {
 

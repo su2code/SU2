@@ -628,17 +628,52 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
   
-  /*--- The dirichlet condition is used only without wall function, otherwise the
-  convergence is compromised ---*/
-  
-//  if (!config->GetWall_Functions()) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-      if (geometry->node[iPoint]->GetDomain()) {
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      if (geometry->vertex[val_marker][iVertex]->GetDonorFound()){
         
+        /*--- Identify the boundary by string name ---*/
+        const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+        const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+        distance = doubleInfo[0];
+
+        /*--- Load the coefficients and interpolate---*/
+        unsigned short nDonors = geometry->vertex[val_marker][iVertex]->GetnDonorPoints();
+        
+        density_v = 0.;
+        energy_v = 0.;
+        k_v = 0.;
+        vel2_v = 0.;
+        su2double vel_v[3] = {0., 0., 0.};
+
+        for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+          unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
+          su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
+
+          density_v += donorCoeff*flowNodes->GetSolution(donorPoint,0);
+          energy_v  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
+          k_v       += donorCoeff*nodes->GetSolution(donorPoint,0);
+
+          for (iDim = 0; iDim < nDim; iDim++) vel_v[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
+        }
+        
+        energy_v /= density_v;
+        k_v      /= density_v;
+        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(vel_v[iDim]/density_v, 2.);
+        staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+
+        /*--- Load the fluid model to compute viscosity at exchange location---*/
+        GetFluidModel()->SetTDState_rhoe(density_v, staticenergy_v);
+        laminar_viscosity_v = fluidModel->GetLaminarViscosity();
+
+      }
+      else {
+      
         jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
         distance = geometry->node[jPoint]->GetWall_Distance();
@@ -654,23 +689,23 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
         fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
         laminar_viscosity_v = fluidModel->GetLaminarViscosity();
-        
-        Solution[0] = 0.0;
-        Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+      }
+      
+      Solution[0] = 0.0;
+      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
 
-        /*--- Set the solution values and zero the residual ---*/
-        nodes->SetSolution_Old(iPoint,Solution);
-        nodes->SetSolution(iPoint,Solution);
-        LinSysRes.SetBlock_Zero(iPoint);
+      /*--- Set the solution values and zero the residual ---*/
+      nodes->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
 
-        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
       }
     }
-//  }
+  }
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,

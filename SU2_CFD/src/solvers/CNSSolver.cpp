@@ -1018,10 +1018,6 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
-//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
-//  }
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -1269,11 +1265,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         as well as the wall function treatment.---*/
 
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
-
-//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
-//  }
 
   /*--- Loop over boundary points ---*/
 
@@ -1589,13 +1580,6 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-//  /*--- Retrieve the specified wall function treatment.---*/
-//
-//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
-//      SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
-//  }
-
   /*--- Loop over boundary points ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1900,6 +1884,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
   unsigned short max_iter = 100;
   su2double tol = 1e-12;
+  
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
 
@@ -1925,7 +1911,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
       /*--- Identify the boundary by string name ---*/
 
-//      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
       /*--- Get the specified wall heat flux from config ---*/
 
@@ -1959,41 +1945,102 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           for (iDim = 0; iDim < nDim; iDim++)
             UnitNormal[iDim] = -Normal[iDim]/Area;
+          
+          if (geometry->vertex[iMarker][iVertex]->GetDonorFound()){
+          
+            /*--- Get the distance to the exchange location ---*/
+            const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+            WallDistMod = doubleInfo[0];
 
-          /*--- Get the velocity, pressure, and temperature at the nearest
-           (normal) interior point. ---*/
+            /*--- Get the density, momentum, and energy at the exchange location. ---*/
+            
+            su2double Density_Normal = 0., Energy_Normal = 0., Tke_Normal = 0.;
+            for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
+            
+            unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
+            for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+              unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
+              su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
+              
+              Density_Normal += donorCoeff*nodes->GetSolution(donorPoint,0);
+              Energy_Normal  += donorCoeff*nodes->GetSolution(donorPoint,nVar-1);
+              
+              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
+              
+              if (tkeNeeded) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint,0);
+            }
+            
+            /*--- Compute primitives at exchange location ---*/
 
-          for (iDim = 0; iDim < nDim; iDim++)
-            Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
-          P_Normal = nodes->GetPressure(Point_Normal);
-          T_Normal = nodes->GetTemperature(Point_Normal);
+            Energy_Normal /= Density_Normal;
+            Tke_Normal    /= Density_Normal;
+            su2double Vel2_Normal = 0.;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Vel[iDim] /= Density_Normal;
+              Vel2_Normal += pow(Vel[iDim], 2.);
+            }
+            const su2double StaticEnergy_Normal = Energy_Normal - 0.5*Vel2_Normal - Tke_Normal;
 
-          /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+            /*--- Load the fluid model to compute viscosity at exchange location---*/
+            GetFluidModel()->SetTDState_rhoe(Density_Normal, StaticEnergy_Normal);
+            P_Normal = GetFluidModel()->GetPressure();
+            T_Normal = GetFluidModel()->GetTemperature();
 
-          VelNormal = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            VelNormal += Vel[iDim] * UnitNormal[iDim];
-          for (iDim = 0; iDim < nDim; iDim++)
-            VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+            /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
-          VelTangMod = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            VelTangMod += VelTang[iDim]*VelTang[iDim];
-          VelTangMod = sqrt(VelTangMod);
+            VelNormal = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              VelNormal += Vel[iDim] * UnitNormal[iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+              VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
 
-          /*--- Compute normal distance of the interior point from the wall ---*/
+            VelTangMod = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              VelTangMod += VelTang[iDim]*VelTang[iDim];
+            VelTangMod = sqrt(VelTangMod);
 
-          for (iDim = 0; iDim < nDim; iDim++)
-            WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+            /*--- Compute normal distance of the interior point from the wall ---*/
 
-          WallDistMod = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim] ;
-          WallDistMod = sqrt(WallDistMod);
+            for (iDim = 0; iDim < nDim; iDim++)
+              WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
 
-          /*--- Compute mach number ---*/
+            WallDistMod = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              WallDistMod += WallDist[iDim]*WallDist[iDim];
+            WallDistMod = sqrt(WallDistMod);
+          }
+          else {
+            /*--- Get the velocity, pressure, and temperature at the nearest
+             (normal) interior point. ---*/
 
-          // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+            for (iDim = 0; iDim < nDim; iDim++)
+              Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
+            P_Normal = nodes->GetPressure(Point_Normal);
+            T_Normal = nodes->GetTemperature(Point_Normal);
+
+            /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+
+            VelNormal = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              VelNormal += Vel[iDim] * UnitNormal[iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+              VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+
+            VelTangMod = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              VelTangMod += VelTang[iDim]*VelTang[iDim];
+            VelTangMod = sqrt(VelTangMod);
+
+            /*--- Compute normal distance of the interior point from the wall ---*/
+
+            for (iDim = 0; iDim < nDim; iDim++)
+              WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+
+            WallDistMod = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              WallDistMod += WallDist[iDim]*WallDist[iDim];
+            WallDistMod = sqrt(WallDistMod);
+          }
 
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
 

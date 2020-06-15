@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CGeometry.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
@@ -576,6 +576,29 @@ public:
    */
   inline virtual bool FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                                unsigned short &face_second_elem) {return false;}
+  
+  #ifdef HAVE_MPI
+     /*!
+      * \brief Function which determines the additional halo elements needed for
+               the interpolation of the data at the exchange points for the wall
+               model treatment. Only needed in parallel model.
+      * \param[in] config - Definition of the particular problem.
+      */
+     inline virtual void AddWallModelDonorHalos(CConfig *config){}
+  #endif
+  
+  /*!
+  * \brief Function that computes the interpolation information for the exchange
+           location for the wall model treatment.
+  * \param[in] config - Definition of the particular problem.
+  */
+  inline virtual void WallModelPreprocessing(CConfig *config) {}
+
+  /*!
+  * \brief Function, which builds the ADT of the locally stored volume elements.
+  * \param[out] localVolumeADT - Pointer to the ADT to be built.
+  */
+  inline virtual void BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) {}
 
   /*!
    * \brief Sets area to be positive in Z direction.
