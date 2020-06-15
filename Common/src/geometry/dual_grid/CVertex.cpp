@@ -60,6 +60,8 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   Donor_Proc    = nullptr;
   Donor_Coeff   = nullptr;
   nDonor_Points = 1;
+  Donor_Elem    = 0;
+  Donor_Found   = false;
 
 }
 
@@ -118,9 +120,9 @@ void CVertex::Allocate_DonorInfo(unsigned short nDonor) {
 
   nDonor_Points = nDonor;
 
-  delete [] Donor_Points;
-  delete [] Donor_Proc;
-  delete [] Donor_Coeff;
+  if (Donor_Points != NULL) delete [] Donor_Points;
+  if (Donor_Proc != NULL) delete [] Donor_Proc;
+  if (Donor_Coeff != NULL) delete [] Donor_Coeff;
 
   Donor_Points = new unsigned long [nDonor_Points];
   Donor_Proc   = new unsigned long [nDonor_Points];

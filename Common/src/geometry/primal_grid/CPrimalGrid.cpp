@@ -40,6 +40,9 @@ CPrimalGrid::CPrimalGrid(void) {
   Coord_FaceElems_CG = NULL;
   JacobianFaceIsConstant = NULL;
   GlobalIndex = 0;
+  
+  nProcElemIsOnlyInterpolDonor = 0;
+  ProcElemIsOnlyInterpolDonor  = NULL;
 
 }
 
@@ -51,6 +54,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (ElementOwnsFace != NULL) delete[] ElementOwnsFace;
  if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
+  if (ProcElemIsOnlyInterpolDonor != NULL) delete[] ProcElemIsOnlyInterpolDonor;
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
