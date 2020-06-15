@@ -1995,6 +1995,7 @@ public:
             must be specified. Hence the counter must be updated
             accordingly. ---*/
       switch( typeWF ) {
+        case STANDARD_WALL_FUNCTION:    counter += 1; break;
         case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
         case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
         case LOGARITHMIC_WALL_MODEL: counter += 3; break;
