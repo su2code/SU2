@@ -668,7 +668,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         staticenergy_v = energy_v - 0.5*vel2_v - k_v;
 
         /*--- Load the fluid model to compute viscosity at exchange location---*/
-        GetFluidModel()->SetTDState_rhoe(density_v, staticenergy_v);
+        fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
         laminar_viscosity_v = fluidModel->GetLaminarViscosity();
 
       }
