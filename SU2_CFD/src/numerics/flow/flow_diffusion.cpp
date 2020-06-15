@@ -58,8 +58,10 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   Proj_Mean_GradTurbVar_Edge = 0.0;
 
   tau_jacobian_i = new su2double* [nDim];
+  tau_jacobian_j = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     tau_jacobian_i[iDim] = new su2double [nVar];
+    tau_jacobian_j[iDim] = new su2double [nVar];
   }
 
   heat_flux_jac_i = new su2double[nVar];
@@ -103,6 +105,12 @@ CAvgGrad_Base::~CAvgGrad_Base() {
       delete [] tau_jacobian_i[iDim];
     }
     delete [] tau_jacobian_i;
+  }
+  if (tau_jacobian_j != nullptr) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      delete [] tau_jacobian_j[iDim];
+    }
+    delete [] tau_jacobian_j;
   }
 
   delete [] heat_flux_jac_i;
@@ -423,12 +431,14 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-  const su2double xi = WF_Factor*total_viscosity*val_area/(Density*val_proj_vector);
+  const su2double xi_i = WF_Factor*total_viscosity*val_area/(Density*val_proj_vector);
+  const su2double xi_j = WF_Factor*total_viscosity*val_area/(Density*val_proj_vector);
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       // Jacobian w.r.t. momentum
-      tau_jacobian_i[iDim][jDim+1] = -xi*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
+      tau_jacobian_i[iDim][jDim+1] = -xi_i*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
+      tau_jacobian_j[iDim][jDim+1] = -xi_j*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
     }
     // Jacobian w.r.t. density
     tau_jacobian_i[iDim][0] = 0;
@@ -530,21 +540,39 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[1][1];
     val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][2];
     val_Proj_Jac_Tensor_i[2][3] = val_dS*tau_jacobian_i[1][3];
-    const su2double contraction = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
-                                  tau_jacobian_i[1][0]*val_Mean_PrimVar[2];
-    val_Proj_Jac_Tensor_i[3][0] = val_dS*(contraction - heat_flux_jac_i[0]);
+    
+    val_Proj_Jac_Tensor_j[0][0] = 0.0;
+    val_Proj_Jac_Tensor_j[0][1] = 0.0;
+    val_Proj_Jac_Tensor_j[0][2] = 0.0;
+    val_Proj_Jac_Tensor_j[0][3] = 0.0;
+    val_Proj_Jac_Tensor_j[1][0] = -val_dS*tau_jacobian_j[0][0];
+    val_Proj_Jac_Tensor_j[1][1] = -val_dS*tau_jacobian_j[0][1];
+    val_Proj_Jac_Tensor_j[1][2] = -val_dS*tau_jacobian_j[0][2];
+    val_Proj_Jac_Tensor_j[1][3] = -val_dS*tau_jacobian_j[0][3];
+    val_Proj_Jac_Tensor_j[2][0] = -val_dS*tau_jacobian_j[1][0];
+    val_Proj_Jac_Tensor_j[2][1] = -val_dS*tau_jacobian_j[1][1];
+    val_Proj_Jac_Tensor_j[2][2] = -val_dS*tau_jacobian_j[1][2];
+    val_Proj_Jac_Tensor_j[2][3] = -val_dS*tau_jacobian_j[1][3];
+    
+    const su2double contraction_i = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
+                                    tau_jacobian_i[1][0]*val_Mean_PrimVar[2];
+    
+    val_Proj_Jac_Tensor_i[3][0] = val_dS*(contraction_i - heat_flux_jac_i[0]);
     val_Proj_Jac_Tensor_i[3][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
     val_Proj_Jac_Tensor_i[3][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
     val_Proj_Jac_Tensor_i[3][3] = -val_dS*heat_flux_jac_i[3];
     
-    val_Proj_Jac_Tensor_j[3][0] = -val_dS*(contraction - heat_flux_jac_j[0]);
-    val_Proj_Jac_Tensor_j[3][1] = val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_j[1]);
-    val_Proj_Jac_Tensor_j[3][2] = val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_j[2]);
+    const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
+                                    tau_jacobian_j[1][0]*val_Mean_PrimVar[2];
+    
+    val_Proj_Jac_Tensor_j[3][0] = -val_dS*(contraction_j - heat_flux_jac_j[0]);
+    val_Proj_Jac_Tensor_j[3][1] = val_dS*(tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
+    val_Proj_Jac_Tensor_j[3][2] = val_dS*(tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
     val_Proj_Jac_Tensor_j[3][3] = val_dS*heat_flux_jac_j[3];
 
-    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+//    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
+//      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+//        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
     CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
@@ -580,24 +608,50 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     val_Proj_Jac_Tensor_i[3][2] = val_dS*tau_jacobian_i[2][2];
     val_Proj_Jac_Tensor_i[3][3] = val_dS*tau_jacobian_i[2][3];
     val_Proj_Jac_Tensor_i[3][4] = val_dS*tau_jacobian_i[2][4];
-    const su2double contraction = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
-                                  tau_jacobian_i[1][0]*val_Mean_PrimVar[2] +
-                                  tau_jacobian_i[2][0]*val_Mean_PrimVar[3];
-    val_Proj_Jac_Tensor_i[4][0] = val_dS*(contraction - heat_flux_jac_i[0]);
+    
+    val_Proj_Jac_Tensor_j[0][0] = 0.0;
+    val_Proj_Jac_Tensor_j[0][1] = 0.0;
+    val_Proj_Jac_Tensor_j[0][2] = 0.0;
+    val_Proj_Jac_Tensor_j[0][3] = 0.0;
+    val_Proj_Jac_Tensor_j[0][4] = 0.0;
+    val_Proj_Jac_Tensor_j[1][0] = -val_dS*tau_jacobian_j[0][0];
+    val_Proj_Jac_Tensor_j[1][1] = -val_dS*tau_jacobian_j[0][1];
+    val_Proj_Jac_Tensor_j[1][2] = -val_dS*tau_jacobian_j[0][2];
+    val_Proj_Jac_Tensor_j[1][3] = -val_dS*tau_jacobian_j[0][3];
+    val_Proj_Jac_Tensor_j[1][4] = -val_dS*tau_jacobian_j[0][4];
+    val_Proj_Jac_Tensor_j[2][0] = -val_dS*tau_jacobian_j[1][0];
+    val_Proj_Jac_Tensor_j[2][1] = -val_dS*tau_jacobian_j[1][1];
+    val_Proj_Jac_Tensor_j[2][2] = -val_dS*tau_jacobian_j[1][2];
+    val_Proj_Jac_Tensor_j[2][3] = -val_dS*tau_jacobian_j[1][3];
+    val_Proj_Jac_Tensor_j[2][4] = -val_dS*tau_jacobian_j[1][4];
+    val_Proj_Jac_Tensor_j[3][0] = -val_dS*tau_jacobian_j[2][0];
+    val_Proj_Jac_Tensor_j[3][1] = -val_dS*tau_jacobian_j[2][1];
+    val_Proj_Jac_Tensor_j[3][2] = -val_dS*tau_jacobian_j[2][2];
+    val_Proj_Jac_Tensor_j[3][3] = -val_dS*tau_jacobian_j[2][3];
+    val_Proj_Jac_Tensor_j[3][4] = -val_dS*tau_jacobian_j[2][4];
+    
+    const su2double contraction_i = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
+                                    tau_jacobian_i[1][0]*val_Mean_PrimVar[2] +
+                                    tau_jacobian_i[2][0]*val_Mean_PrimVar[3];
+    val_Proj_Jac_Tensor_i[4][0] = val_dS*(contraction_i - heat_flux_jac_i[0]);
     val_Proj_Jac_Tensor_i[4][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
     val_Proj_Jac_Tensor_i[4][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
     val_Proj_Jac_Tensor_i[4][3] = -val_dS*(tau_jacobian_i[2][0] + heat_flux_jac_i[3]);
     val_Proj_Jac_Tensor_i[4][4] = -val_dS*heat_flux_jac_i[4];
     
-    val_Proj_Jac_Tensor_j[4][0] = -val_dS*(contraction - heat_flux_jac_j[0]);
+    const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
+                                    tau_jacobian_j[1][0]*val_Mean_PrimVar[2] +
+                                    tau_jacobian_j[2][0]*val_Mean_PrimVar[3];
+    
+    val_Proj_Jac_Tensor_j[4][0] = -val_dS*(contraction_j - heat_flux_jac_j[0]);
     val_Proj_Jac_Tensor_j[4][1] = val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_j[1]);
     val_Proj_Jac_Tensor_j[4][2] = val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_j[2]);
     val_Proj_Jac_Tensor_j[4][3] = val_dS*(tau_jacobian_i[2][0] + heat_flux_jac_j[3]);
     val_Proj_Jac_Tensor_j[4][4] = val_dS*heat_flux_jac_j[4];
 
-    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+//    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
+//      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+//        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
     CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
