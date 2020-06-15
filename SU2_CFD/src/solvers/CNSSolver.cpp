@@ -1986,16 +1986,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             for (iDim = 0; iDim < nDim; iDim++)
               VelTangMod += VelTang[iDim]*VelTang[iDim];
             VelTangMod = sqrt(VelTangMod);
-
-            /*--- Compute normal distance of the interior point from the wall ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-
-            WallDistMod = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              WallDistMod += WallDist[iDim]*WallDist[iDim];
-            WallDistMod = sqrt(WallDistMod);
           }
           else {
             /*--- Get the velocity, pressure, and temperature at the nearest
