@@ -182,7 +182,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) override final;
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).

@@ -56,13 +56,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py']
+        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py','streamwise_periodic_regression.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py']
         include:
           - testscript: 'tutorials.py'
             tag: MPI
           - testscript: 'parallel_regression.py'
             tag: MPI
           - testscript: 'parallel_regression_AD.py'
+            tag: MPI
+          - testscript: 'streamwise_periodic_regression.py'
             tag: MPI
           - testscript: 'serial_regression.py'
             tag: NoMPI
