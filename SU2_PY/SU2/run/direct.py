@@ -91,11 +91,13 @@ def direct ( config ):
     # adapt the history_filename, if a restart solution is chosen
     # check for 'RESTART_ITER' is to avoid forced restart situation in "compute_polar.py"...
     if konfig.get('RESTART_SOL','NO') == 'YES' and konfig.get('RESTART_ITER',1) != 1:
-        konfig['CONV_FILENAME'] = 'config_CFD'
+        if konfig.get('CONFIG_LIST',[]) != []: # Does this fix work for multizone cases?
+            konfig['CONV_FILENAME'] = 'config_CFD' # this is a hardcoded filename and therfore probably not really great
         restart_iter = '_'+str(konfig['RESTART_ITER']).zfill(5)
         history_filename = konfig['CONV_FILENAME'] + restart_iter + plot_extension
     else:
-        konfig['CONV_FILENAME'] = 'config_CFD'
+        if konfig.get('CONFIG_LIST',[]) != []:
+            konfig['CONV_FILENAME'] = 'config_CFD'
         history_filename = konfig['CONV_FILENAME'] + plot_extension
         
 

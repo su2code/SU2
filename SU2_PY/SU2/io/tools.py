@@ -155,7 +155,10 @@ def read_history( History_filename, nZones = 1):
         var = key
         for field in historyOutFields:
             
-            if key.split('[')[0] == historyOutFields[field]['HEADER']:
+            if key == historyOutFields[field]['HEADER'] and nZones == 1:
+                var = field
+
+            if key.split('[')[0] == historyOutFields[field]['HEADER'] and nZones > 1:
                 var = field + '[' + key.split('[')[1]
                 
         history_data[var] = plot_data[key]
@@ -326,11 +329,16 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     # pull only these functions
     Func_Values = ordered_bunch()
     for this_objfun in historyOutFields:
-        for iZone in range(nZones):
-            # TODO check and change for one zone
-            if this_objfun + '[' + str(iZone) + ']' in history_data:
+        if nZones == 1:
+            if this_objfun in history_data:
                 if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
-                    Func_Values[this_objfun + '[' + str(iZone) + ']'] = history_data[this_objfun + '[' + str(iZone) + ']'] 
+                    Func_Values[this_objfun] = history_data[this_objfun]
+        else:
+            for iZone in range(nZones):
+                # TODO check and change for one zone
+                if this_objfun + '[' + str(iZone) + ']' in history_data:
+                    if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
+                        Func_Values[this_objfun + '[' + str(iZone) + ']'] = history_data[this_objfun + '[' + str(iZone) + ']']
 
     if 'TIME_MARCHING' in special_cases:
         # for unsteady cases, average time-accurate objective function values
