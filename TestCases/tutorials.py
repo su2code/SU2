@@ -144,7 +144,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-1.909272, -6.407306, 4.284191, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-1.909272, -6.407306, 4.284191]
     tutorial_nicfd_nozzle.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_nicfd_nozzle.timeout   = 1600
     tutorial_nicfd_nozzle.tol       = 0.00001
@@ -157,7 +157,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 500
-    tutorial_unst_naca0012.test_vals     = [500, 0, 0.302003, 0.665069, -5.300141, 0.000000,  0.0000e+00,  0.0000e+00]
+    tutorial_unst_naca0012.test_vals     = [500, 0, -5.300141, 0.665069, 0.302003, 0.000000,  0.0000e+00,  0.0000e+00]
     tutorial_unst_naca0012.su2_exec      = "mpirun -np 2 SU2_CFD"
     tutorial_unst_naca0012.timeout       = 1600
     tutorial_unst_naca0012.tol           = 0.00001
