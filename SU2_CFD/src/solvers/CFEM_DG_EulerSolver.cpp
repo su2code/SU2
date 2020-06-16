@@ -7717,8 +7717,11 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     }
   }
 
-  const char* env_naca_dim = std::getenv("NACA_DIM");
-  int naca_dim= std::atoi(env_naca_dim);
+  int naca_dim = 0;
+  if(const char* env_naca_dim = std::getenv("NACA_DIM")) {
+      naca_dim = std::atoi(env_naca_dim);
+      if(naca_dim) printf("Getting NACA_DIM = %d from environment\n", naca_dim);
+  }
   Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
   Eigen::MatrixXd Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
   std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
@@ -7736,8 +7739,10 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     }
   }
   sort(boundary_list.begin(), boundary_list.end());
-  boundary_list.push_back(boundary_list[1]);
-  boundary_list.erase(boundary_list.begin()+1);
+  if (boundary_list.size() !=0) {
+    boundary_list.push_back(boundary_list[1]);
+    boundary_list.erase(boundary_list.begin()+1);
+  }
   // for (int i = 0; i < boundary_list.size(); ++i){
   //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
   // }
