@@ -585,6 +585,14 @@ public:
       * \param[in] config - Definition of the particular problem.
       */
      inline virtual void AddWallModelDonorHalos(CConfig *config){}
+  
+  /*!
+   * \brief Function which determines the additional halo elements needed for
+            the interpolation of the data at the exchange points for the wall
+            model treatment. Only needed in parallel model.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void AddWallModelSurfaceDonorHalos(CConfig *config){}
   #endif
   
   /*!

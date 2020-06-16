@@ -622,10 +622,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
   unsigned short iDim;
-  su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, beta_1 = constants[4];
+  su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, eddy_viscosity_v = 0.0, beta_1 = constants[4];
   su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
   
-  const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -705,6 +705,46 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
+    }
+  }
+  
+  /*--- Set K and Omega at the first point of the wall ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+      
+      /*--- Properties at the wall ---*/
+      su2double Density_Wall  = 0.;
+      su2double Lam_Visc_Wall = 0.;
+      su2double U_Tau = 0.;
+      const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
+      for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+        const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
+        Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
+        Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
+        U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
+      }
+
+      /*--- Wall function ---*/
+      eddy_viscosity_v = flowNodes->GetEddyViscosity(iPoint);
+      density_v  = flowNodes->GetDensity(iPoint);
+      distance = geometry->node[iPoint]->GetWall_Distance();
+      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
+      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+
+      Solution[0] = Omega * eddy_viscosity_v;
+      Solution[1] = density_v * Omega;
+      
+      nodes->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+      
     }
   }
 }
