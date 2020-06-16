@@ -2198,6 +2198,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetSolution(iPoint, 0, Density_Wall);
           nodes->SetPrimitive(iPoint, nDim+2, Density_Wall);
           nodes->SetPrimitive(iPoint, nDim+1, P_Wall);
+          nodes->SetLaminarViscosity(iPoint, Lam_Visc_Wall);
 
 
         }
