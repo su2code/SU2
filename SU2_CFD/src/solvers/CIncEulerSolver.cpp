@@ -31,9 +31,9 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
-#include "../../include/thermophysical/CConstantDensity.hpp"
-#include "../../include/thermophysical/CIncIdealGas.hpp"
-#include "../../include/thermophysical/CIncIdealGasPolynomial.hpp"
+#include "../../include/fluid/CConstantDensity.hpp"
+#include "../../include/fluid/CIncIdealGas.hpp"
+#include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -3577,7 +3577,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
 
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
@@ -3586,7 +3586,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
                              *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -3605,7 +3605,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
-void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
   const auto& primitives = nodes->GetPrimitive();

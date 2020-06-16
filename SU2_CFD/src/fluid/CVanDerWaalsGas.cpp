@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/thermophysical/CVanDerWaalsGas.hpp"
+#include "../../include/fluid/CVanDerWaalsGas.hpp"
 
 CVanDerWaalsGas::CVanDerWaalsGas(su2double gamma, su2double R, su2double Pstar, su2double Tstar) : CIdealGas(gamma, R) {
   a = 27.0 / 64.0 * Gas_Constant * Gas_Constant * Tstar * Tstar / Pstar;

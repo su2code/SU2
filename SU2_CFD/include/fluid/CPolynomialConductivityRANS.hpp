@@ -70,7 +70,9 @@ class CPolynomialConductivityRANS final : public CConductivityModel {
     /* Evaluate the new kt from the coefficients and temperature. */
     kt_ = coeffs_[0];
     for (int i = 1; i < N; ++i) {
-      kt_ += coeffs_[i] * pow(t, i);
+      su2double t_i = t;
+      for (int j = 1; j < i; ++j) t_i *= t;
+      kt_ += coeffs_[i] * t_i;
     }
 
     /* Add the component due to turbulence to compute effective conductivity. */

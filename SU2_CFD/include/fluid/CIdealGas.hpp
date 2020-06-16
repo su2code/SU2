@@ -39,18 +39,13 @@ class CIdealGas : public CFluidModel {
   su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
   su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
-  bool ComputeEntropy;            /*!< \brief Whether or not to compute entropy. */
+  bool ComputeEntropy{true};      /*!< \brief Whether or not to compute entropy. */
 
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CIdealGas(su2double gamma, su2double R);
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CIdealGas(su2double gamma, su2double R, bool CompEntropy);
+  CIdealGas(su2double gamma, su2double R, bool CompEntropy = true);
 
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy

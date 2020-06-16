@@ -207,17 +207,17 @@ class CFluidModel {
   /*!
    * \brief Set specific heat Cp model.
    */
-  virtual void SetCpModel(CConfig* config) {}
+  virtual void SetCpModel(const CConfig* config) {}
 
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(CConfig* config);
+  void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set thermal conductivity model.
    */
-  void SetThermalConductivityModel(CConfig* config);
+  void SetThermalConductivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented

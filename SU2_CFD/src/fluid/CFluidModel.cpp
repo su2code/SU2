@@ -27,18 +27,18 @@
 
 #include <utility>
 
-#include "../../include/thermophysical/CFluidModel.hpp"
-#include "../../include/thermophysical/CConstantConductivity.hpp"
-#include "../../include/thermophysical/CConstantConductivityRANS.hpp"
-#include "../../include/thermophysical/CConstantPrandtl.hpp"
-#include "../../include/thermophysical/CConstantPrandtlRANS.hpp"
-#include "../../include/thermophysical/CConstantViscosity.hpp"
-#include "../../include/thermophysical/CPolynomialConductivity.hpp"
-#include "../../include/thermophysical/CPolynomialConductivityRANS.hpp"
-#include "../../include/thermophysical/CPolynomialViscosity.hpp"
-#include "../../include/thermophysical/CSutherland.hpp"
+#include "../../include/fluid/CFluidModel.hpp"
+#include "../../include/fluid/CConstantConductivity.hpp"
+#include "../../include/fluid/CConstantConductivityRANS.hpp"
+#include "../../include/fluid/CConstantPrandtl.hpp"
+#include "../../include/fluid/CConstantPrandtlRANS.hpp"
+#include "../../include/fluid/CConstantViscosity.hpp"
+#include "../../include/fluid/CPolynomialConductivity.hpp"
+#include "../../include/fluid/CPolynomialConductivityRANS.hpp"
+#include "../../include/fluid/CPolynomialViscosity.hpp"
+#include "../../include/fluid/CSutherland.hpp"
 
-void CFluidModel::SetLaminarViscosityModel(CConfig* config) {
+void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
     case CONSTANT_VISCOSITY:
       LaminarViscosity = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND()));
@@ -57,7 +57,7 @@ void CFluidModel::SetLaminarViscosityModel(CConfig* config) {
   }
 }
 
-void CFluidModel::SetThermalConductivityModel(CConfig* config) {
+void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
   switch (config->GetKind_ConductivityModel()) {
     case CONSTANT_CONDUCTIVITY:
       if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {

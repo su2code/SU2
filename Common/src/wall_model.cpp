@@ -27,7 +27,7 @@
  */
 
 #include "../include/wall_model.hpp"
-#include "../../SU2_CFD/include/thermophysical/CFluidModel.hpp"
+#include "../../SU2_CFD/include/fluid/CFluidModel.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined (HAVE_MKL) || defined(HAVE_LAPACK)

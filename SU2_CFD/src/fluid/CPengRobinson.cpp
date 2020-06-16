@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/thermophysical/CPengRobinson.hpp"
+#include "../../include/fluid/CPengRobinson.hpp"
 
 CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w)
     : CIdealGas(gamma, R) {

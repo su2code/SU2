@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../thermophysical/CFluidModel.hpp"
+#include "../fluid/CFluidModel.hpp"
 #include "../task_definition.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../sgs_model.hpp"
@@ -60,6 +60,8 @@ using namespace std;
 
 class CSolver {
 protected:
+  enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
+
   int rank,       /*!< \brief MPI Rank. */
   size;           /*!< \brief MPI Size. */
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
@@ -196,13 +198,25 @@ public:
   }
 
   /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   */
+  void GetCommCountAndType(const CConfig* config,
+                           unsigned short commType,
+                           unsigned short &COUNT_PER_POINT,
+                           unsigned short &MPI_TYPE) const;
+
+  /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   void InitiateComms(CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType);
 
   /*!
@@ -212,8 +226,24 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   void CompleteComms(CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType);
+
+  /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   * \param[out] ICOUNT - Number of rows of matrices associated with the communication.
+   * \param[out] JCOUNT - Number of columns of the same matrices.
+   */
+  void GetPeriodicCommCountAndType(const CConfig* config,
+                                   unsigned short commType,
+                                   unsigned short &COUNT_PER_POINT,
+                                   unsigned short &MPI_TYPE,
+                                   unsigned short &ICOUNT,
+                                   unsigned short &JCOUNT) const;
 
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI periodic communication and to launch non-blocking sends and recvs.
@@ -223,7 +253,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   void InitiatePeriodicComms(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short val_periodic_index,
                              unsigned short commType);
 
@@ -235,7 +265,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   void CompletePeriodicComms(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short val_periodic_index,
                              unsigned short commType);
 
@@ -539,27 +569,27 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config);
+  void SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Add External to Solution vector.
@@ -584,7 +614,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the solution.
@@ -592,28 +622,28 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry *geometry, CConfig *config);
+  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute slope limiter.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
+  void SetSolution_Limiter(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -1627,7 +1657,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   inline virtual void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                               CConfig *config,
+                                               const CConfig *config,
                                                bool reconstruction = false) { }
 
   /*!
@@ -1636,14 +1666,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry,
+                                               const CConfig *config,
+                                               bool reconstruction = false) { }
 
   /*!
    * \brief A virtual member.

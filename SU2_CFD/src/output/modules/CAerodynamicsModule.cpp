@@ -82,12 +82,16 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, 
   const auto iVertex   = pointInfo.iVertex;
   const auto iMarker   = pointInfo.iMarker;
 
+  const bool solidWall     = config->GetSolid_Wall(iMarker);
+  const bool inletBoundary = config->GetInlet(iMarker);
+  const bool viscousWall   = config->GetViscous_Wall(iMarker);
+
   std::fill(std::begin(Moment), std::end(Moment), 0.0);
   std::fill(std::begin(Force), std::end(Force), 0.0);
   std::fill(std::begin(SkinFriction), std::end(SkinFriction), 0.0);
-  Heatflux = 0.0;
 
-  if (config->GetSolid_Wall(iMarker)){
+  if (solidWall || inletBoundary){
+
     const su2double RefDensity     = config->GetDensity_FreeStreamND();
     const su2double RefTemperature = config->GetTemperature_FreeStreamND();
     const su2double* RefVelocity   = config->GetVelocity_FreeStreamND();
@@ -134,7 +138,7 @@ void CAerodynamicsModule::LoadSurfaceData(CVolumeOutFieldManager& volumeFields, 
       Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
     }
 
-    if (config->GetViscous()){
+    if (viscousWall){
 
       const auto& Grad_Primitive = solver->GetNodes()->GetGradient_Primitive(iPoint);
       su2double div_vel = 0.0; for (int iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Primitive[iDim+1][iDim];

@@ -57,7 +57,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    * \brief Set the temperature polynomial coefficients for variable Cp.
    * \param[in] config - configuration container for the problem.
    */
-  void SetCpModel(CConfig* config) override {
+  void SetCpModel(const CConfig* config) override {
     for (int i = 0; i < N; ++i) {
       coeffs_[i] = config->GetCp_PolyCoeffND(i);
     }
@@ -75,7 +75,9 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     /* Evaluate the new Cp from the coefficients and temperature. */
     Cp = coeffs_[0];
     for (int i = 1; i < N; ++i) {
-      Cp += coeffs_[i] * pow(t, i);
+      su2double t_i = t;
+      for (int j = 1; j < i; ++j) t_i *= t;
+      Cp += coeffs_[i] * t_i;
     }
     Cv = Cp / Gamma;
   }

@@ -37,8 +37,6 @@
 #endif
 #include <fstream>
 #include <cmath>
-#include <time.h>
-#include <fstream>
 
 #include "COutput.hpp"
 #include "../../../Common/include/CConfig.hpp"

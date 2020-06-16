@@ -114,7 +114,7 @@ private:
   /*!
    * \brief Initialize the matrix format that PaStiX requires.
    */
-  void Initialize(CGeometry *geometry, CConfig *config);
+  void Initialize(CGeometry *geometry, const CConfig *config);
 
 public:
   /*!
@@ -169,7 +169,7 @@ public:
    * \param[in] kind_fact - Type of factorization.
    * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void Factorize(CGeometry *geometry, CConfig *config, unsigned short kind_fact, bool transposed);
+  void Factorize(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed);
 
   /*!
    * \brief Runs the "solve" task for any rhs/sol with operator []
