@@ -2046,8 +2046,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
 
           //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
-          T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
-//          T_Wall = T_Normal/(1.+Recovery*Gamma_Minus_One/2.*pow(VelTangMod,2.));
+//          T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
+          T_Wall = T_Normal/(1.+Recovery*Gamma_Minus_One/2.*pow(VelTangMod,2.));
 
           /*--- Extrapolate the pressure from the interior & compute the
            wall density using the equation of state ---*/
