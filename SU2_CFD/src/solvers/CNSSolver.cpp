@@ -2184,6 +2184,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
     }
   }
   
+  InitiateComms(geometry, config, PRIMITIVE);
+  CompleteComms(geometry, config, PRIMITIVE);
   InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
   CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
   
