@@ -893,25 +893,26 @@ void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
 void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
   PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
 
-  if (fabs(historyFieldsAll["CL_DRIVER_COMMAND"].value) > 1e-16){
+  if (fabs(modules->GetHistoryFields().GetValueByKey("CL_DRIVER_COMMAND")) > 1e-16){
     FixedCLSummary.AddColumn("Fixed CL Mode", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Current CL" << historyFieldsAll["LIFT"].value;
+    FixedCLSummary << "Current CL" << modules->GetHistoryFields().GetValueByKey("LIFT");
     FixedCLSummary << "Target CL" << config->GetTarget_CL();
-    FixedCLSummary << "Previous AOA" << historyFieldsAll["PREV_AOA"].value;
+    FixedCLSummary << "Previous AOA" << modules->GetHistoryFields().GetValueByKey("PREV_AOA");
     if (config->GetFinite_Difference_Mode()){
-      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyFieldsAll["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" <<  modules->GetHistoryFields().GetValueByKey("CL_DRIVER_COMMAND");
       lastInnerIter = curInnerIter - 1;
     }
     else
-      FixedCLSummary << "Changed AoA by" << historyFieldsAll["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changed AoA by" <<  modules->GetHistoryFields().GetValueByKey("CL_DRIVER_COMMAND");
     FixedCLSummary.PrintFooter();
     SetScreen_Header(config);
   }
 
-  else if (config->GetFinite_Difference_Mode() && historyFieldsAll["AOA"].value == historyFieldsAll["PREV_AOA"].value){
+  else if (config->GetFinite_Difference_Mode() &&
+           modules->GetHistoryFields().GetValueByKey("AOA") ==  modules->GetHistoryFields().GetValueByKey("PREV_AOA")){
     FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);

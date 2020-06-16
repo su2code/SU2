@@ -37,6 +37,7 @@
 #include "modules/CDirectDiffModule.hpp"
 #include "modules/CUserFunctionModule.hpp"
 #include "modules/CTurbOutputModule.hpp"
+#include "modules/CFixedCLModule.hpp"
 #include "modules/CFVMBaseModule.hpp"
 #include "modules/CVortexIdentificationModule.hpp"
 
@@ -79,12 +80,14 @@ private:
                              CFlowCompOutputModule,
                              CTurbOutputModule,
                              CAerodynamicsModule,
+                             CFixedCLModule,
                              CVortexIdentificationModule,
                              CFlowCoefficientModule,
                              CResidualModule,
                              CDirectDiffModule,
                              CUserFunctionModule,
-                             CConvergenceModule>;
+                             CConvergenceModule,
+                             CTimeConvergenceModule>;
 
 //  CModuleManager<Modules> modules;
 
