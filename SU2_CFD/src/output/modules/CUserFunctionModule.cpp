@@ -25,6 +25,13 @@ CUserFunctionModule::CUserFunctionModule(CConfig* config, int nDim) : CSolverOut
   for (int iField = 0; iField < config->GetnScreenOutput(); iField++) {
     addInlineUserFunction(config->GetScreenOutput_Field(iField), historyUserFunctions);
   }
+
+  for (int iField = 0; iField < config->GetnConv_Field(); iField++){
+    addInlineUserFunction(config->GetConv_Field(iField), historyUserFunctions);
+  }
+
+  addInlineUserFunction(config->GetObjectiveFunction(), historyUserFunctions);
+
   for (int iField = 0; iField < config->GetnVolumeOutput(); iField++) {
     addInlineUserFunction(config->GetVolumeOutput_Field(iField), volumeUserFunctions);
   }
