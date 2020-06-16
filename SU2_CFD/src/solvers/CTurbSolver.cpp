@@ -450,6 +450,16 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Build implicit system ---*/
+  
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+      LinSysRes.SetBlock_Zero(iPoint);
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+    }
+  }
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
