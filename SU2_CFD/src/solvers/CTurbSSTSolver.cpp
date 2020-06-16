@@ -718,7 +718,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       
-      /*--- Properties at the wall ---*/
+      /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
       bool converged = true;
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
@@ -755,9 +755,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
 
       Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
-      Eddy_Visc = Lam_Visc_Wall*(1.+dYpw_dYp
-                                 -kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2))
-                                 -Lam_Visc_Normal;
+      Eddy_Visc = 1.+dYpw_dYp-kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2);
+      Eddy_Visc = Lam_Visc_Wall*Eddy_Visc - Lam_Visc_Normal;
       Eddy_Visc = max(Eddy_Visc,0.);
       
 //      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);

@@ -1928,7 +1928,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
         /*--- Check if the node belongs to the domain (i.e, not a halo node)
          and the neighbor is not part of the physical boundary ---*/
 
-        if (geometry->node[iPoint]->GetDomain()) {
+//        if (geometry->node[iPoint]->GetDomain()) {
 
           /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
@@ -2173,7 +2173,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
 
 
-        }
+//        }
 
       }
 
