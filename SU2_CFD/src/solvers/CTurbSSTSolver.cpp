@@ -1574,13 +1574,13 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       VelMod = sqrt(VelMod);
 
       const su2double U_Plus = VelMod/U_Tau;
-      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-kappa*B);
-      const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
+      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+      const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
 
       Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
-      Eddy_Visc = 1.+dYpw_dYp-kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2);
-      Eddy_Visc = Lam_Visc_Wall*Eddy_Visc - Lam_Visc_Normal;
-      Eddy_Visc = max(Eddy_Visc,0.);
+      Eddy_Visc = Lam_Visc_Wall*(1.0 + dYpw_dYp - kappa*exp(-1.0*kappa*B)*
+                  (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                  - Lam_Visc_Normal/Lam_Visc_Wall);
       
 //      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
       
