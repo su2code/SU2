@@ -2181,6 +2181,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   }
   
   /*--- Communicate values needed for WF ---*/
+  InitiateComms(geometry, config, WALL_FUNCTION);
+  CompleteComms(geometry, config, WALL_FUNCTION);
   WallFunctionComms(geometry, solver, config);
 
 }

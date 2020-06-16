@@ -1943,6 +1943,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nPrimVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case WALL_FUNCTION:
+      COUNT_PER_POINT  = 4;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case PRIMITIVE_LIMITER:
       COUNT_PER_POINT  = nPrimVarGrad;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -2086,6 +2090,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case PRIMITIVE:
             for (iVar = 0; iVar < nPrimVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetPrimitive(iPoint, iVar);
+            break;
+          case WALL_FUNCTION:
+            bufDSend[buf_offset+0] = base_nodes->GetDensity(iPoint);
+            bufDSend[buf_offset+1] = base_nodes->GetLaminarViscosity(iPoint);
+            bufDSend[buf_offset+2] = base_nodes->GetTauWall(iPoint);
+            bufDSend[buf_offset+3] = base_nodes->GetTemperature(iPoint);
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -2268,6 +2278,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case PRIMITIVE:
             for (iVar = 0; iVar < nPrimVar; iVar++)
               base_nodes->SetPrimitive(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case WALL_FUNCTION:
+            base_nodes->SetSolution(iPoint, 0, bufDRecv[buf_offset+0]);
+            base_nodes->SetLaminarViscosity(iPoint, bufDRecv[buf_offset+1]);
+            base_nodes->SetTauWall(iPoint, bufDRecv[buf_offset+2]);
+            base_nodes->SetTemperature(iPoint, bufDRecv[buf_offset+3]);
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
