@@ -563,7 +563,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
 
 /* development comments:
- * Started with a new function cal since the old one was overloaded with debugging stuff
+ * Main routine to call the Sobolev smoothing solver and postprocess the derivatives.
  * 17.02.2020 T. Dick
  */
 void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
@@ -593,7 +593,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE || config->GetSobMode()==PARAM_LEVEL_SEQUENTIAL) {
 
     /// variable declarations
-    unsigned iDV, nDVtotal=0;
+    unsigned nDVtotal=0;
     unsigned nPoint = geometry->GetnPoint();
     nDVtotal = config->GetnDV_Total();
 
@@ -602,61 +602,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
     param_jacobi =  new su2double[nDVtotal*nPoint*nDim];
 
     /// get the Jacobian of the parametrization for simplicity in the rest of the function
-    // GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
-    // GetParameterizationJacobianPreaccumulation(geometry, config, surface_movement[ZONE_0], param_jacobi);
-    // GetParameterizationJacobianForward(geometry,config,surface_movement[ZONE_0], param_jacobi);
-
-
-  // for debuging and speed tests
-  // some temporary test stuff
-  auto start = std::chrono::high_resolution_clock::now();
-  GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
-  auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-  std::cout << "Execution required: " << duration.count() << std::endl;
-  std::ofstream file("jac1.txt");
-  if (file.is_open()) {
-      file << Cast2Eigenmatrix(geometry, config, param_jacobi) << '\n';
-  }
-
-  su2double* param_jacobi2;
-  param_jacobi2 =  new su2double[nDVtotal*nPoint*nDim];
-  start = std::chrono::high_resolution_clock::now();
-  GetParameterizationJacobianForward(geometry, config, surface_movement[ZONE_0], param_jacobi2);
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-  std::cout << "Execution required: " << duration.count() << std::endl;
-  std::ofstream file2("jac2.txt");
-  if (file2.is_open()) {
-      file2 << Cast2Eigenmatrix(geometry, config, param_jacobi2) << '\n';
-  }
-
-  /*
-  ofstream DV_Jacobian ("DV_Jacobian.txt");
-  DV_Jacobian.precision(17);
-  auto iDVindex=0;
-  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
-    auto nDV_Value =  config->GetnDV_Value(iDV);
-    for (auto iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-
-      for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          auto nVertex = geometry->nVertex[iMarker];
-          for (auto iVertex = 0; iVertex <nVertex; iVertex++) {
-            auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            for (auto iDim = 0; iDim < nDim; iDim++){
-              auto total_index = iPoint*nDim+iDim;
-              DV_Jacobian << param_jacobi[iDVindex*nPoint*nDim + total_index] << ",";
-            }
-          }
-        }
-      }
-      iDVindex++;
-      DV_Jacobian << std::endl;
-    }
-  }
-  DV_Jacobian.close();
-  */
+    GetParameterizationJacobianForward(geometry,config,surface_movement[ZONE_0], param_jacobi);
 
     /// calculate the normal output gradient similar to SU2_DOT
     solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, grid_movement[ZONE_0][INST_0], param_jacobi);

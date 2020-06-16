@@ -88,6 +88,13 @@ namespace AD{
   inline double GetDerivative(int index) {return 0.0;}
 
   /*!
+   * \brief Extracts the adjoint value for an AD type su2double
+   * \param[in] data - An su2double
+   * \return Derivative value.
+   */
+  inline double GetDerivativeValue(su2double& data) {return 0.0;}
+
+  /*!
    * \brief Clears the currently stored adjoints but keeps the computational graph.
    */
   inline void ClearAdjoints() {}
@@ -343,6 +350,10 @@ namespace AD{
 
   FORCEINLINE double GetDerivative(int index) {
     return AD::globalTape.getGradient(index);
+  }
+
+  FORCEINLINE double GetDerivativeValue(su2double& data) {
+    return data.getGradient();
   }
 
   /*--- Base case for parameter pack expansion. ---*/

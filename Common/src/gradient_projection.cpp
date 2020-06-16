@@ -238,7 +238,7 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
               VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
               for (iDim=0; iDim<nDim; iDim++) {
-                Jacobian[iDV_index*nPoint*nDim+iPoint*nDim+iDim] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+                Jacobian[iDV_index*nPoint*nDim+iPoint*nDim+iDim] = AD::GetDerivativeValue(VarCoord[iDim]);
               }
             }
           }

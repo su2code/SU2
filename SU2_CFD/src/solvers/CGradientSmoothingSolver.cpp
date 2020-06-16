@@ -154,11 +154,11 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   /*--- Term ij of the Jacobian ---*/
-  Jacobian_ij = new su2double*[nDim];
+  Jacobian_block = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    Jacobian_ij[iDim] = new su2double [nDim];
+    Jacobian_block[iDim] = new su2double [nDim];
     for (jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_ij[iDim][jDim] = 0.0;
+      Jacobian_block[iDim][jDim] = 0.0;
     }
   }
 
@@ -182,6 +182,13 @@ CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
       delete [] element_container[iVar];
     }
     delete [] element_container;
+  }
+
+  if (Jacobian_block != nullptr) {
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      delete [] Jacobian_block[iDim];
+    }
+    delete [] Jacobian_block;
   }
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -325,15 +332,15 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
         if ( config->GetSepDim() ) {
 
-          Jacobian_ij[0][0] = DHiDHj[dir][dir] + HiHj;
-          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+          Jacobian_block[0][0] = DHiDHj[dir][dir] + HiHj;
+          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
 
         } else {
 
           for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ij[iDim][iDim] = DHiDHj[iDim][iDim] + HiHj;
+            Jacobian_block[iDim][iDim] = DHiDHj[iDim][iDim] + HiHj;
           }
-          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
 
         }
       }
@@ -397,8 +404,8 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
         DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
-        Jacobian_ij[0][0] = DHiDHj[0][0] + HiHj;
-        Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], Jacobian_ij);
+        Jacobian_block[0][0] = DHiDHj[0][0] + HiHj;
+        Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], Jacobian_block);
 
       }
     }

@@ -41,8 +41,9 @@ public:
 
   CElement*** element_container  = nullptr;  /*!< \brief Container which stores the element information. */
 
+  su2double **Jacobian_block = nullptr;      /*!< \brief Submatrix to assemble the Jacobian matrix. */
   su2double **mZeros_Aux  = nullptr;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
-  su2double **mId_Aux = nullptr;            /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
+  su2double **mId_Aux = nullptr;             /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
 
   unsigned short dir;             /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
