@@ -53,7 +53,7 @@ def main():
 
     # 3D laminar channnel with 1 cell in flow direction, streamwise periodic
     sp_pipeSlice_3d_dp_hf_tp           = TestCase('sp_pipeSlice_3d_dp_hf_tp')
-    sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pipeSlice_3d_dp_hf_tp"
+    sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
     sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
     sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
     sp_pipeSlice_3d_dp_hf_tp.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
@@ -64,25 +64,25 @@ def main():
 
     # create 2D pin case pressure drop periodic with heatflux BC and temperature periodicity (without turbulence model for now)
     sp_pinArray_2d_dp_hf_tp           = TestCase('sp_pinArray_2d_dp_hf_tp')
-    sp_pinArray_2d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pinArray_pinArray_2d_dp_hf_tp"
+    sp_pinArray_2d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 10
     sp_pinArray_2d_dp_hf_tp.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
     sp_pinArray_2d_dp_hf_tp.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_2d_dp_hf_tp.timeout   = 1600
     sp_pinArray_2d_dp_hf_tp.tol       = 0.00001
-    test_list.append(sp_pinArray_2d_dp_hf_tp)
+    #test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     # create 2D pin case massflow periodic with heatflux BC and prescribed heat (without turbulence model for now)
     sp_pinArray_2d_mf_hf           = TestCase('sp_pinArray_2d_mf_hf')
-    sp_pinArray_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pinArray_2d_mf_hf"
+    sp_pinArray_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 10
     sp_pinArray_2d_mf_hf.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
     sp_pinArray_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_2d_mf_hf.timeout   = 1600
     sp_pinArray_2d_mf_hf.tol       = 0.00001
-    test_list.append(sp_pinArray_2d_mf_hf)
+    #test_list.append(sp_pinArray_2d_mf_hf)
 
     # create simple small 3D pin case massflow periodic with heatflux BC and temperature periodicity (without turbulence model for now)
     sp_pinArray_3d_mf_hf_tp           = TestCase('sp_pinArray_3d_mf_hf_tp')
@@ -93,15 +93,15 @@ def main():
     sp_pinArray_3d_mf_hf_tp.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_3d_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_mf_hf_tp.tol       = 0.00001
-    test_list.append(sp_pinArray_3d_mf_hf_tp)
+    #test_list.append(sp_pinArray_3d_mf_hf_tp)
 
     # create 2D CHT case with HF BC and  
     sp_pinArray_cht_2d_mf_hf           = TestCase('sp_pinArray_cht_2d_mf_hf')
-    sp_pinArray_cht_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pinArray_cht_2d_mf_hf"
+    sp_pinArray_cht_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_mf_hf.cfg_file  = "sp_pinArray_cht_2d_mf_hf.cfg"
-    sp_pinArray_cht_2d_mf_hf.test_iter = 10
-    sp_pinArray_cht_2d_mf_hf.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
-    sp_pinArray_cht_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
+    sp_pinArray_cht_2d_mf_hf.test_iter = 100
+    sp_pinArray_cht_2d_mf_hf.test_vals = [100, 0.347683, -0.586679, -1.251935, -0.598357, 208.023676, 3.6085e+02] #last 7 lines
+    sp_pinArray_cht_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_mf_hf.timeout   = 1600
     sp_pinArray_cht_2d_mf_hf.tol       = 0.00001
     test_list.append(sp_pinArray_cht_2d_mf_hf)
@@ -119,7 +119,7 @@ def main():
     sp_da_pinArray_2d_dp_hf_tp.su2_exec  = "parallel_computation.py -f"
     sp_da_pinArray_2d_dp_hf_tp.timeout   = 1600
     sp_da_pinArray_2d_dp_hf_tp.tol       = 0.00001
-    test_list.append(sp_pinArray_2d_dp_hf_tp)
+    #test_list.append(sp_pinArray_2d_dp_hf_tp)
     
     # 2D DA case cht pressure drop, heat obj function
     sp_da_pinArray_cht_2d_mf_hf           = TestCase('sp_pinArray_cht_2d_mf_hf')
@@ -130,7 +130,7 @@ def main():
     sp_da_pinArray_cht_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
     sp_da_pinArray_cht_2d_mf_hf.timeout   = 1600
     sp_da_pinArray_cht_2d_mf_hf.tol       = 0.00001
-    test_list.append(sp_pinArray_cht_2d_mf_hf)
+    #test_list.append(sp_pinArray_cht_2d_mf_hf)
 
     pass_list = [ test.run_test() for test in test_list ]
 
