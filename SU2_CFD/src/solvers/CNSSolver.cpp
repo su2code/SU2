@@ -120,6 +120,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       /*--- Already done upstream. ---*/
       break;
   }
+             
+  /*--- Initialize the wall index map and solution matrices on the first iteration. ---*/
+  if (config->GetWall_Functions()) {
+    unsigned long counter = 0;
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+        nodes->SetWallMap(iPoint,counter);
+        counter++;
+      }
+    }
+    if (counter > 0) nodes->InitializeWallSolution(counter);
+  }
 
 }
 
