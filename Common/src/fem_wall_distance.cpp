@@ -172,7 +172,7 @@ void CMeshFEM_DG::SetWallDistance(su2double val){
   }
 }
 
-void CMeshFEM_DG::SetWallDistance(CConfig *config, CADTElemClass *WallADT){
+void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the wall distance of the integration points of   ---*/

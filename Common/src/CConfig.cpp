@@ -8763,7 +8763,7 @@ unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
   return WallFunction;
 }
 
-unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
+unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) const {
   unsigned short *intInfo = NULL;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
@@ -8776,7 +8776,7 @@ unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
   return intInfo;
 }
 
-su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
+su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) const {
   su2double *doubleInfo = NULL;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {

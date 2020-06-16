@@ -6786,7 +6786,7 @@ public:
    * \param[in] val_marker - String of the viscous wall marker.
    * \return Pointer to the integer info for the given marker.
    */
-  unsigned short* GetWallFunction_IntInfo(string val_marker);
+  unsigned short* GetWallFunction_IntInfo(string val_marker) const;
 
   /*!
    * \brief Get the additional double info for the wall function treatment
@@ -6794,7 +6794,7 @@ public:
    * \param[in] val_marker - String of the viscous wall marker.
    * \return Pointer to the double info for the given marker.
    */
-  su2double* GetWallFunction_DoubleInfo(string val_marker);
+  su2double* GetWallFunction_DoubleInfo(string val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.

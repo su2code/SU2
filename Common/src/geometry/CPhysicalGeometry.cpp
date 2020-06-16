@@ -13092,7 +13092,7 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
 }
 
-void CPhysicalGeometry::SetWallDistance(CConfig *config, CADTElemClass *WallADT){
+void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
 
 
   /*--------------------------------------------------------------------------*/
