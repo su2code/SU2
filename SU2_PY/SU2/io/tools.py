@@ -335,7 +335,6 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
                     Func_Values[this_objfun] = history_data[this_objfun]
         else:
             for iZone in range(nZones):
-                # TODO check and change for one zone
                 if this_objfun + '[' + str(iZone) + ']' in history_data:
                     if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
                         Func_Values[this_objfun + '[' + str(iZone) + ']'] = history_data[this_objfun + '[' + str(iZone) + ']']
