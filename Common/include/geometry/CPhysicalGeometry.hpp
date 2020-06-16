@@ -426,7 +426,7 @@ public:
                model treatment. Only needed in parallel model.
       * \param[in] config - Definition of the particular problem.
       */
-     void AddWallModelSurfaceDonorHalos(CConfig *config) override;
+  void AddWallModelSurfaceDonorHalos(CConfig *config) override {}
   #endif
   
   /*!
