@@ -5360,7 +5360,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
               else
                 U_Tau = -1.;
               bufDSend[offset+kNode*4+2] = U_Tau;
-              bufDSend[offset+kNode*4+2] = flowNodes->GetTemperature(kPoint);
+              bufDSend[offset+kNode*4+3] = flowNodes->GetTemperature(kPoint);
             }
           }
         }
@@ -5521,7 +5521,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
               flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4]);
               flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+1]);
               flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
-              flowNodes->SetWallTemp(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
+              flowNodes->SetWallTemp(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+3]);
             }
           }
         }
