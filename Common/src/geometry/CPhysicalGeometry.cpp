@@ -13122,7 +13122,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       string markerTag = config->GetMarker_All_TagBound(markerID);
       if (config->GetWallFunction_Treatment(markerTag) != NO_WALL_FUNCTION) {
         const su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
-        if (!node[iPoint]->GetSolidBoundary() && dist <= exchange) {
+        if (!node[iPoint]->GetSolidBoundary() && node[iPoint]->GetWall_Distance() <= exchange) {
           node[iPoint]->SetBool_Wall_Neighbor(true);
           node[iPoint]->SetWall_Rank(rankID);
           node[iPoint]->SetWall_Marker(markerID);

@@ -1989,14 +1989,10 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               
               Density_Normal += donorCoeff*nodes->GetSolution(donorPoint,0);
               Energy_Normal  += donorCoeff*nodes->GetSolution(donorPoint,nVar-1);
-//              Density_Normal += donorCoeff*nodes->GetDensity(donorPoint);
-//              Energy_Normal  += donorCoeff*nodes->GetEnergy(donorPoint);
               
               for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
-//              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);
               
               if (tkeNeeded && solver[TURB_SOL] != nullptr) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint,0);
-//              if (tkeNeeded && solver[TURB_SOL] != nullptr) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetPrimitive(donorPoint,0);
             }
             
             /*--- Compute primitives at exchange location ---*/
@@ -2009,12 +2005,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               Vel2_Normal += pow(Vel[iDim], 2.);
             }
             const su2double StaticEnergy_Normal = Energy_Normal - 0.5*Vel2_Normal - Tke_Normal;
-            
-//            su2double Vel2_Normal = 0.;
-//            for (iDim = 0; iDim < nDim; iDim++) {
-//              Vel2_Normal += pow(Vel[iDim], 2.);
-//            }
-//            const su2double StaticEnergy_Normal = Energy_Normal - 0.5*Vel2_Normal - Tke_Normal;
 
             /*--- Load the fluid model to compute viscosity at exchange location---*/
             GetFluidModel()->SetTDState_rhoe(Density_Normal, StaticEnergy_Normal);
