@@ -5533,12 +5533,14 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           const unsigned short MarkerID = bufSSend[offset];
           if ((geometry->node[iPoint]->GetWall_Marker() == MarkerID) &&
               (geometry->node[iPoint]->GetWall_Element() == ElemID)) {
-            for (unsigned short kNode = 0; kNode < 4; kNode++) {
+            const unsigned short nNodeElem = geometry->node[iPoint]->GetWall_nNode();
+            for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
               flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4]);
               flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+1]);
               flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
               flowNodes->SetWallTemp(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+3]);
             }
+            break;
           }
         }
       }
