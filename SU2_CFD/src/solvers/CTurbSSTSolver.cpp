@@ -622,8 +622,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
   unsigned short iDim;
-  su2double distance, density_s = 0.0, density_v = 0.0, laminar_viscosity_v = 0.0, eddy_viscosity_v = 0.0, beta_1 = constants[4];
-  su2double energy_v = 0.0, vel2_v = 0.0, staticenergy_v, k_v;
+  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, beta_1 = constants[4];
+  su2double Energy_Normal = 0.0, VelMod = 0.0, staticEnergy_Normal, Tke;
+  
+  const su2double kappa = 0.41;
+  const su2double B = 5.0;
+  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
   
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
@@ -645,40 +651,40 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         /*--- Load the coefficients and interpolate---*/
         unsigned short nDonors = geometry->vertex[val_marker][iVertex]->GetnDonorPoints();
         
-        density_v = 0.;
-        energy_v = 0.;
-        k_v = 0.;
-        vel2_v = 0.;
-        su2double vel_v[3] = {0., 0., 0.};
+        Density_Normal = 0.;
+        Energy_Normal = 0.;
+        Tke = 0.;
+        VelMod = 0.;
+        su2double Vel[3] = {0., 0., 0.};
 
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
           unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
           su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
-//          density_v += donorCoeff*flowNodes->GetSolution(donorPoint,0);
-//          energy_v  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
-//          k_v       += donorCoeff*nodes->GetSolution(donorPoint,0);
+//          Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint,0);
+//          Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
+//          Tke       += donorCoeff*nodes->GetSolution(donorPoint,0);
 //
-//          for (iDim = 0; iDim < nDim; iDim++) vel_v[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
+//          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
           
-          density_v += donorCoeff*flowNodes->GetDensity(donorPoint);
-          energy_v  += donorCoeff*flowNodes->GetEnergy(donorPoint);
-          k_v       += donorCoeff*nodes->GetPrimitive(donorPoint,0);
+          Density_Normal += donorCoeff*flowNodes->GetDensity(donorPoint);
+          Energy_Normal  += donorCoeff*flowNodes->GetEnergy(donorPoint);
+          Tke            += donorCoeff*nodes->GetPrimitive(donorPoint,0);
 
-          for (iDim = 0; iDim < nDim; iDim++) vel_v[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
+          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
         
-//        energy_v /= density_v;
-//        k_v      /= density_v;
-//        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(vel_v[iDim]/density_v, 2.);
-//        staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+//        Energy_Normal /= Density_Normal;
+//        Tke      /= Density_Normal;
+//        for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(Vel[iDim]/Density_Normal, 2.);
+//        staticEnergy_Normal = Energy_Normal - 0.5*VelMod - Tke;
         
-        for (iDim = 0; iDim < nDim; iDim++) vel2_v += pow(vel_v[iDim], 2.);
-        staticenergy_v = energy_v - 0.5*vel2_v - k_v;
+        for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(Vel[iDim], 2.);
+        staticEnergy_Normal = Energy_Normal - 0.5*VelMod - Tke;
 
         /*--- Load the fluid model to compute viscosity at exchange location---*/
-        fluidModel->SetTDState_rhoe(density_v, staticenergy_v);
-        laminar_viscosity_v = fluidModel->GetLaminarViscosity();
+        fluidModel->SetTDState_rhoe(Density_Normal, staticEnergy_Normal);
+        Lam_Visc_Normal = fluidModel->GetLaminarViscosity();
 
       }
       else {
@@ -687,13 +693,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         
         distance = geometry->node[jPoint]->GetWall_Distance();
         
-        density_s = flowNodes->GetDensity(iPoint);
-        density_v = flowNodes->GetDensity(jPoint);
-        laminar_viscosity_v = flowNodes->GetLaminarViscosity(jPoint);
+        Density_Wall = flowNodes->GetDensity(iPoint);
+        Density_Normal = flowNodes->GetDensity(jPoint);
+        Lam_Visc_Normal = flowNodes->GetLaminarViscosity(jPoint);
       }
       
       Solution[0] = 0.0;
-      Solution[1] = 60.0*density_s*laminar_viscosity_v/(density_v*beta_1*distance*distance);
+      Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
@@ -717,32 +723,51 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
+      su2double T_Wall = 0.;
       const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
       for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
         const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
+        T_Wall        += donorCoeff*flowNodes->GetWallTemp(iPoint, iNode);
         
-        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) converged = false;
+        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
+          converged = false;
+          break;
+        }
       }
       
       if (!converged) continue;
 
       /*--- Wall function ---*/
-      const su2double kappa = 0.41;
-      const su2double B = 5.0;
+      const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+      const su2double Beta = 0.0; // For adiabatic flows only
+      const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
+      const su2double Phi  = asin(-1.0*Beta/Q);
       
-      eddy_viscosity_v = flowNodes->GetEddyViscosity(iPoint);
+      VelMod = 0.;
+      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
       
-      density_v  = flowNodes->GetDensity(iPoint);
+      const su2double U_Plus = sqrt(VelMod)/U_Tau;
+      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+      const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
+      
+      Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
+      Eddy_Visc = Lam_Visc_Wall*(1.+dYpw_dYp
+                                 -kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2))
+                                 -Lam_Visc_Normal;
+      
+//      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
+      
+      Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
       su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
       su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
 
-      Solution[0] = Omega * eddy_viscosity_v;
-      Solution[1] = density_v * Omega;
+      Solution[0] = Omega * Eddy_Visc;
+      Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
       nodes->SetSolution(iPoint,Solution);
