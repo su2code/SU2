@@ -104,46 +104,6 @@ public:
    */
   ~CFlowCompOutput(void) override;
 
-
-  /*!
-   * \brief Load the history output field values
-   * \param[in] config - Definition of the particular problem.
-   */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-
-  /*!
-   * \brief Set the values of the volume output fields for a surface point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] iMarker - Index of the surface marker.
-   * \param[in] iVertex - Index of the vertex on the marker.
-   */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
-                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
-
-  /*!
-   * \brief Set the available volume output fields
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetVolumeOutputFields(CConfig *config) override;
-
-  /*!
-   * \brief Set the values of the volume output fields for a point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
-
-  /*!
-   * \brief Set the available history output fields
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHistoryOutputFields(CConfig *config) override;
-
   /*!
    * \brief Check whether the base values for relative residuals should be initialized
    * \param[in] config - Definition of the particular problem.
