@@ -163,12 +163,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   /*--- Before we proceed with the zone loop we have to compute the wall distances.
      * This computation depends on all zones at once. ---*/
-  if (!config_container[ZONE_0]->GetWall_Functions()) {
-    if (rank == MASTER_NODE)
-      cout << "Computing wall distances." << endl;
 
-    CGeometry::ComputeWallDistance(config_container, geometry_container);
-  }
+  CGeometry::ComputeWallDistance(config_container, geometry_container);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -838,10 +834,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     if ((rank == MASTER_NODE) && (!fea)) cout << "Updating the control volume structure." << endl;
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    
-    /*--- Perform wall distance computation to get donor nodes ---*/
-    
-    geometry[MESH_0]->ComputeWallDistance(config_container, geometry_container);
 
     /*--- Interpolate the donor information for the wall model, if needed. ---*/
 
