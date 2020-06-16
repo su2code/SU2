@@ -623,7 +623,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned short iDim;
   su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, beta_1 = constants[4];
-  su2double Energy_Normal = 0.0, VelMod = 0.0, staticEnergy_Normal, Tke;
+  su2double Energy_Normal = 0.0, VelMod = 0.0, StaticEnergy_Normal, Tke;
   
   const su2double kappa = 0.41;
   const su2double B = 5.0;
@@ -661,29 +661,29 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
           su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
-//          Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint,0);
-//          Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
-//          Tke       += donorCoeff*nodes->GetSolution(donorPoint,0);
-//
-//          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
-          
-          Density_Normal += donorCoeff*flowNodes->GetDensity(donorPoint);
-          Energy_Normal  += donorCoeff*flowNodes->GetEnergy(donorPoint);
-          Tke            += donorCoeff*nodes->GetPrimitive(donorPoint,0);
+          Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint,0);
+          Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint,nVar-1);
+          Tke       += donorCoeff*nodes->GetSolution(donorPoint,0);
 
-          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
+          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
+          
+//          Density_Normal += donorCoeff*flowNodes->GetDensity(donorPoint);
+//          Energy_Normal  += donorCoeff*flowNodes->GetEnergy(donorPoint);
+//          Tke            += donorCoeff*nodes->GetPrimitive(donorPoint,0);
+//
+//          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
         
-//        Energy_Normal /= Density_Normal;
-//        Tke      /= Density_Normal;
-//        for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(Vel[iDim]/Density_Normal, 2.);
-//        staticEnergy_Normal = Energy_Normal - 0.5*VelMod - Tke;
+        Energy_Normal /= Density_Normal;
+        Tke      /= Density_Normal;
+        for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(Vel[iDim]/Density_Normal, 2.);
+        StaticEnergy_Normal = Energy_Normal - 0.5*VelMod - Tke;
         
         for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(Vel[iDim], 2.);
-        staticEnergy_Normal = Energy_Normal - 0.5*VelMod - Tke;
+        StaticEnergy_Normal = Energy_Normal - 0.5*VelMod - Tke;
 
         /*--- Load the fluid model to compute viscosity at exchange location---*/
-        fluidModel->SetTDState_rhoe(Density_Normal, staticEnergy_Normal);
+        fluidModel->SetTDState_rhoe(Density_Normal, StaticEnergy_Normal);
         Lam_Visc_Normal = fluidModel->GetLaminarViscosity();
 
       }
