@@ -64,9 +64,11 @@ TEST_CASE("Aerodynamics Module", "[Output Module]"){
 
   modules.LoadData({ModuleTestCase->config.get(), ModuleTestCase->geometry.get(), ModuleTestCase->solver},{0,0});
 
-  CHECK(modules.GetHistoryFields().GetValueByKey("LIFT") == Approx(0.5338212762));
-  CHECK(modules.GetHistoryFields().GetValueByKey("DRAG") == Approx(-2.3919536834));
 
+  CHECK(modules.GetHistoryFields().GetValueByKey("FORCE_Y") == modules.GetHistoryFields().GetValueByKey("SIDEFORCE"));
+  CHECK(modules.GetHistoryFields().GetValueByKey("SIDEFORCE") == Approx(-1.9387861639));
+  CHECK(modules.GetHistoryFields().GetValueByKey("SIDEFORCE") == modules.GetHistoryFields().GetValueByKey("SIDEFORCE@y_minus") +
+        modules.GetHistoryFields().GetValueByKey("SIDEFORCE@y_plus"));
 }
 
 TEST_CASE("Convergence Module", "[Output Module]"){
