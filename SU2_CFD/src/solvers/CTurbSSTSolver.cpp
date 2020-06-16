@@ -748,15 +748,17 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
       VelMod = 0.;
       for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      VelMod = sqrt(VelMod);
       
-      const su2double U_Plus = sqrt(VelMod)/U_Tau;
-      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+      const su2double U_Plus = VelMod/U_Tau;
+      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-kappa*B);
       const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
       
       Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
       Eddy_Visc = Lam_Visc_Wall*(1.+dYpw_dYp
                                  -kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2))
                                  -Lam_Visc_Normal;
+      Eddy_Visc = max(Eddy_Visc,0.);
       
 //      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
       
