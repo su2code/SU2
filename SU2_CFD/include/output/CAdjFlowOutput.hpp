@@ -31,6 +31,27 @@
 #include "modules/CCommonModule.hpp"
 #include "modules/CConvergenceModule.hpp"
 #include "modules/CResidualModule.hpp"
+#include "modules/CFVMBaseModule.hpp"
+
+class CAdjFlowCompOutputModule : public CSolverOutputModule {
+
+public:
+
+  CAdjFlowCompOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim){}
+
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
+
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
+
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
+
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+};
 
 /*! \class CAdjFlowCompOutput
  *  \brief Output class for compressible flow adjoint problems.
@@ -40,6 +61,8 @@
 class CAdjFlowCompOutput final: public COutput {
 
   using Modules = ModuleList<CCommonModule,
+                             CFVMBaseModule,
+                             CAdjFlowCompOutputModule,
                              CConvergenceModule,
                              CResidualModule>;
 
