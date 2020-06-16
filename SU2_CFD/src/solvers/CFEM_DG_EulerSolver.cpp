@@ -7717,6 +7717,61 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     }
   }
 
+  const char* env_naca_dim = std::getenv("NACA_DIM");
+  int naca_dim= std::atoi(env_naca_dim);
+  Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+  Eigen::MatrixXd Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
+  std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
+  std::vector<pair<int, int>> boundary_list(naca_dim);
+  std::vector<pair<int, int>> boundary_list_temp(naca_dim);
+  for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
+    if (boundaries[iMarker].markerTag == "airfoil") {
+      for (int j = 0; j < naca_dim; ++j){
+        int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
+        int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
+        int Point_min = min(Point1, Point2);
+        int Point_max = max(Point1, Point2);
+        boundary_list[j] = pair<int, int>(Point_min, Point_max);
+      }
+    }
+  }
+  sort(boundary_list.begin(), boundary_list.end());
+  boundary_list.push_back(boundary_list[1]);
+  boundary_list.erase(boundary_list.begin()+1);
+  // for (int i = 0; i < boundary_list.size(); ++i){
+  //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
+  // }
+  // cout << endl;
+  for (int i = 0; i < nVolElemOwned; ++i){
+    const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
+    const unsigned long nDOFs  = volElem[i].nDOFsSol;
+    element_edgelist[i].resize(nDOFs);
+    element_edgelist[i][0] = make_pair<int, int>(min(DOFs[0], DOFs[1]), max(DOFs[0], DOFs[1]));
+    element_edgelist[i][1] = make_pair<int, int>(min(DOFs[1], DOFs[3]), max(DOFs[1], DOFs[3]));
+    element_edgelist[i][2] = make_pair<int, int>(min(DOFs[2], DOFs[3]), max(DOFs[2], DOFs[3]));
+    element_edgelist[i][3] = make_pair<int, int>(min(DOFs[0], DOFs[2]), max(DOFs[0], DOFs[2]));
+  }
+  for (int layer = 0; layer < naca_dim; ++layer){
+    for (int i = 0; i < element_edgelist.size(); ++i) {
+      for (int k = 0; k < element_edgelist[i].size(); ++k) {
+        auto iter = std::find(boundary_list.begin(), boundary_list.end(), element_edgelist[i][k]);
+        if (iter != boundary_list.end()) {
+          const unsigned long offset = volElem[i].offsetDOFsSolLocal;
+          int index_j = iter-boundary_list.begin();
+          // cout << "index_j = " << index_j << ", with original boundaries (" << boundary_list[index_j].first << ", "
+          // << boundary_list[index_j].second <<"), and new boundaries (" << element_edgelist[i][(k+2)%nVar].first << ", "
+          // << element_edgelist[i][(k+2)%nVar].second << "), and offset = " << offset << " and layer = " << layer << endl;
+          boundary_list_temp[index_j] = element_edgelist[i][(k+2)%nVar];
+          element_edgelist[i].clear();
+          Coord_ij(1, offset/nVar) = index_j;
+          Coord_ij(0, offset/nVar) = layer;
+        }
+      }
+    }
+    boundary_list = boundary_list_temp;
+  }
+  // cout << Coord_ij.format(CleanFmt) << endl;
+
   // dummy preconditioner
   class precond {
   public: 
@@ -7734,7 +7789,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
   }
   unsigned long IterLinSol;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, &m_loc[0], &fst_row[0]);
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 150, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
