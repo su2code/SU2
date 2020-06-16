@@ -853,7 +853,7 @@ public:
    * \brief Set the wall distance based on an previously constructed ADT
    * \param[in] WallADT - The ADT to compute the wall distance
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(CConfig *config, CADTElemClass* WallADT) override;
 
   /*!
    * \brief Set wall distances a specific value

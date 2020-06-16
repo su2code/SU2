@@ -1708,7 +1708,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] WallADT - The ADT to compute the wall distance
    */
-  virtual void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {}
+  virtual void SetWallDistance(CConfig *config, CADTElemClass* WallADT) {}
 
   /*!
    * \brief Set wall distances a specific value

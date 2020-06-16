@@ -13092,7 +13092,7 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
 }
 
-void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
+void CPhysicalGeometry::SetWallDistance(CConfig *config, CADTElemClass *WallADT){
 
 
   /*--------------------------------------------------------------------------*/
@@ -13121,22 +13121,15 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
             for wall functions ---*/
       string markerTag = config->GetMarker_All_TagBound(markerID);
       if (config->GetWallFunction_Treatment(markerTag) != NO_WALL_FUNCTION) {
-        if (!node[iPoint]->GetSolidBoundary()) {
-          for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
-            const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-            const long jVertex = node[jPoint]->GetVertex(markerID);
-            if (jVertex != -1) {
-              node[iPoint]->SetBool_Wall_Neighbor(true);
-              node[iPoint]->SetWall_Rank(rankID);
-              node[iPoint]->SetWall_Marker(markerID);
-              node[iPoint]->SetWall_Element(elemID);
-              node[iPoint]->SetWall_nNode(vtkID);
-              node[iPoint]->SetWall_Interpolation_Weights(weights);
-              break;
-            } // if jVertex
-            if (node[iPoint]->GetBool_Wall_Neighbor()) break;
-          } // iNode
-        } // if iPoint !Solid Boundary
+        const su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
+        if (!node[iPoint]->GetSolidBoundary() && dist <= exchange) {
+          node[iPoint]->SetBool_Wall_Neighbor(true);
+          node[iPoint]->SetWall_Rank(rankID);
+          node[iPoint]->SetWall_Marker(markerID);
+          node[iPoint]->SetWall_Element(elemID);
+          node[iPoint]->SetWall_nNode(vtkID);
+          node[iPoint]->SetWall_Interpolation_Weights(weights);
+        } // if iPoint !Solid Boundary and distance < exchange height
       } // if markerID WALL_FUNCTION
     }
   }
