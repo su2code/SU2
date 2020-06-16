@@ -143,6 +143,8 @@ void CModuleManager<ModuleList>::LoadData(const SolverData& solverData, const It
 
   CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadHistoryData, historyFieldsAll, solverData, iterationInfo);
 
+  for (const auto& field : historyFieldsAll.GetCollection().GetFieldsByType({FieldType::PER_SURFACE_COEFFICIENT})){ field->second.value = 0.0; }
+
   const auto* config = solverData.config;
 
   for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){

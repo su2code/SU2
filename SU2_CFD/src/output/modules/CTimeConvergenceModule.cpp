@@ -42,7 +42,9 @@ void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager 
   WndCauchy_Value = 0.0;
   TimeConvergence = false;
 
-  const auto& coefficentFields = historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT});
+  const auto& coefficentFields = historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT,
+                                                                                FieldType::AUTO_COEFFICIENT,
+                                                                                FieldType::PER_SURFACE_COEFFICIENT});
 
   for (auto field : coefficentFields){
     historyFields.AddField(avgPrefix + field->first, "tavg["  + field->second.fieldName + "]",
@@ -52,6 +54,9 @@ void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager 
   const auto& wndConvergenceFields = historyFields.GetCollection().GetFieldsByKey(wndConvFields);
 
   for (const auto& field : wndConvergenceFields){
+    if (field->first.substr(0,4) != "TAVG"){
+      SU2_MPI::Error("Option values for CONV_WINDOW_FIELD must be time-averaged quantities", CURRENT_FUNCTION);
+    }
     historyFields.AddField("CAUCHY_" + field->first,"Cauchy["  + field->second.fieldName + "]",
                            ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
                            "Cauchy residual value of field set with WND_CONV_FIELD." ,
@@ -70,7 +75,7 @@ void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager& historyFie
      config->GetnInner_Iter()-1 <=  Iter; //Check, if Inner_Iter is converged
 
   if (Inner_IterConv){
-    for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT})){
+    for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT, FieldType::PER_SURFACE_COEFFICIENT})){
       windowedTimeAverages[field->first].addValue(field->second.value, TimeIter,  config->GetStartWindowIteration());
       historyFields.SetFieldValue(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(config->GetKindWindow()));
     }

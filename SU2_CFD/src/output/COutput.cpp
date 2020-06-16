@@ -174,16 +174,7 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output, bool cus
 
   headerNeeded = false;
 
-  std::vector<string> notFound;
-  const auto& screenFields = modules->GetHistoryFields().GetFieldsByKey(requestedScreenFields, notFound);
 
-  if (!notFound.empty()){
-    for (const auto& field : notFound)
-      SU2_MPI::Error("History field " + field + " not found.", CURRENT_FUNCTION);
-  }
-  for (const auto& field : screenFields){
-    convergenceTable->AddColumn(field->second.fieldName, fieldWidth);
-  }
 
 
 }
@@ -236,6 +227,8 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   if (modules->GetHistoryFields().CheckKey("CONVERGENCE"))
     convergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value));
 
+  if (modules->GetHistoryFields().CheckKey("TIME_CONVERGENCE"))
+    TimeConvergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetItemByKey("TIME_CONVERGENCE").value));
 
   /*--- Output using only the master node ---*/
 
@@ -247,7 +240,28 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
     /*--- Write the screen header---------------------------------------------------------------------------*/
     write_header = WriteScreen_Header(config);
-    if (write_header) SetScreen_Header(config);
+
+    if (write_header){
+
+      std::vector<string> notFound;
+      const auto& screenFields = modules->GetHistoryFields().GetFieldsByKey(requestedScreenFields, notFound);
+
+      if (!notFound.empty()){
+        for (const auto& field : notFound)
+          cout << "History field " << field << " not found" << endl;
+      }
+
+      delete convergenceTable;
+
+      convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
+
+      for (const auto& field : screenFields){
+        convergenceTable->AddColumn(field->second.fieldName, fieldWidth);
+      }
+
+      SetScreen_Header(config);
+
+    }
 
     /*--- Write the screen output---------------------------------------------------------------------------*/
     write_screen = WriteScreen_Output(config);
@@ -830,7 +844,7 @@ void COutput::PrintConvergenceSummary(){
   ConvSummary.SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   ConvSummary.PrintHeader();
 
-  const auto& convFieldRef = historyFieldsAll.GetFieldsByKey(convFields);
+  const auto& convFieldRef = modules->GetHistoryFields().GetFieldsByKey(convFields);
 
   for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT}, convFieldRef)){
     ConvSummary << field->second.fieldName

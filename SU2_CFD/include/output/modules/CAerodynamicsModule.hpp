@@ -7,7 +7,7 @@ protected:
   su2double factor, Alpha, Beta, RefLength, Gas_Constant, Gamma, Prandtl_Lam;
   bool axisymmetric;
 
-  su2double Force[3], Moment[3], SkinFriction[3], Heatflux, Y_Plus;
+  su2double Force[3], Moment[3], SkinFriction[3], Y_Plus;
 
 public:
 

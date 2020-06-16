@@ -136,8 +136,6 @@ void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& histor
       }
 
       convergence = fieldConverged && convergence;
-    }else {
-      SU2_MPI::Error("Convergence field " + convField + " not found.", CURRENT_FUNCTION);
     }
   }
 
