@@ -41,7 +41,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  TauWall_i = 0; TauWall_j = 0;
+  TauWall_i = -1.0; TauWall_j = -1.0;
 
   Mean_PrimVar = new su2double [nPrimVar];
 
