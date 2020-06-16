@@ -262,6 +262,9 @@ def adjoint( func_name, config, state=None ):
     if 'INV_DESIGN_CP' in special_cases:
         pull.append(files['TARGET_CP'])
 
+    if 'INLET_FILE' in files:
+        link.append(files['INLET_FILE'])
+    
     # files: target heat flux coefficient
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         pull.append(files['TARGET_HEATFLUX'])
@@ -703,6 +706,8 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
+    if 'INLET_FILE' in files:
+        link.append(files['INLET_FILE'])
        
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
@@ -977,6 +982,9 @@ def directdiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
+    if 'INLET_FILE' in files:
+        link.append(files['INLET_FILE'])
+        
     # output redirection
     with redirect_folder('DIRECTDIFF',pull,link) as push:
         with redirect_output(log_directdiff):

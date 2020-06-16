@@ -243,7 +243,9 @@ def aerodynamics( config, state=None ):
     # files: target heat flux distribution
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
          'TARGET_HEATFLUX' in files ) :
-        pull.append( files['TARGET_HEATFLUX'] )
+        
+    if ( 'INLET_FILE' in files ) :
+        link.append( files['INLET_FILE'] ) 
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
@@ -362,6 +364,9 @@ def stability( config, state=None, step=1e-2 ):
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
+
+    if ( 'INLET_FILE' in files ) :
+        link.append( files['INLET_FILE'] )
 
     # pull needed files, start folder
     with redirect_folder( folder, pull, link ) as push:
@@ -507,7 +512,10 @@ def multipoint( config, state=None, step=1e-2 ):
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
         'TARGET_HEATFLUX' in files ) :
       pull.append( files['TARGET_HEATFLUX'] )
-
+    
+    if ( 'INLET_FILE' in files ) :
+        link.append( files['INLET_FILE'] )
+    
     # pull needed files, start folder_0
     with redirect_folder( folder[0], pull, link ) as push:
       with redirect_output(log_direct):

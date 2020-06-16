@@ -293,6 +293,10 @@ class State(ordered_bunch):
         if 'INV_DESIGN_HEATFLUX' in special_cases:
           register_file('TARGET_HEATFLUX',targetheatflux_name)
         
+        if config.get('SPECIFIED_INLET_PROFILE', 'NO') == 'YES':
+            inlet_filename = config.get('INLET_FILENAME', 'inlet.dat')
+            register_file('INLET_FILE', inlet_filename)
+            
         return
     
     def __setitem__(self,k,v):
