@@ -243,9 +243,10 @@ def aerodynamics( config, state=None ):
     # files: target heat flux distribution
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
          'TARGET_HEATFLUX' in files ) :
+         pull.append( files['TARGET_HEATFLUX'] )
         
     if ( 'INLET_FILE' in files ) :
-         link.append( files['INLET_FILE'] ) 
+        link.append( files['INLET_FILE'] ) 
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
