@@ -1928,7 +1928,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
         /*--- Check if the node belongs to the domain (i.e, not a halo node)
          and the neighbor is not part of the physical boundary ---*/
 
-//        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->node[iPoint]->GetDomain()) {
 
           /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
@@ -1958,10 +1958,10 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             su2double Density_Normal = 0., Energy_Normal = 0., Tke_Normal = 0.;
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
             
-            unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
+            const unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
             for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
-              unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
-              su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
+              const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
+              const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
               Density_Normal += donorCoeff*nodes->GetSolution(donorPoint,0);
               Energy_Normal  += donorCoeff*nodes->GetSolution(donorPoint,nVar-1);
@@ -2173,7 +2173,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
 
 
-//        }
+        }
 
       }
 

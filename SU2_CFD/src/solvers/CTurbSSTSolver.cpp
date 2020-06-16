@@ -622,14 +622,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
   unsigned short iDim;
-  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, beta_1 = constants[4];
+  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, beta_1 = constants[4];
   su2double Energy_Normal = 0.0, VelMod = 0.0, StaticEnergy_Normal, Tke;
-  
-  const su2double kappa = 0.41;
-  const su2double B = 5.0;
-  const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
   
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
@@ -711,75 +705,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
-    }
-  }
-  
-  /*--- Set K and Omega at the first point of the wall ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
-      
-      /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
-      bool converged = true;
-      su2double Density_Wall  = 0.;
-      su2double Lam_Visc_Wall = 0.;
-      su2double U_Tau = 0.;
-      su2double T_Wall = 0.;
-      const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
-      for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
-        const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
-        Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
-        Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
-        U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
-        T_Wall        += donorCoeff*flowNodes->GetWallTemp(iPoint, iNode);
-        
-        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
-          converged = false;
-          break;
-        }
-      }
-      
-      if (!converged) continue;
-
-      /*--- Wall function ---*/
-      const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-      const su2double Beta = 0.0; // For adiabatic flows only
-      const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-      const su2double Phi  = asin(-1.0*Beta/Q);
-
-      VelMod = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
-      VelMod = sqrt(VelMod);
-
-      const su2double U_Plus = VelMod/U_Tau;
-      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-kappa*B);
-      const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
-
-      Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
-      Eddy_Visc = 1.+dYpw_dYp-kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2);
-      Eddy_Visc = Lam_Visc_Wall*Eddy_Visc - Lam_Visc_Normal;
-      Eddy_Visc = max(Eddy_Visc,0.);
-      
-//      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
-      
-      Density_Normal  = flowNodes->GetDensity(iPoint);
-      distance = geometry->node[iPoint]->GetWall_Distance();
-      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
-      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
-      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-
-      Solution[0] = Omega * Eddy_Visc;
-      Solution[1] = Density_Normal * Omega;
-      
-      nodes->SetSolution_Old(iPoint,Solution);
-      nodes->SetSolution(iPoint,Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-      
     }
   }
 }
@@ -1602,7 +1527,90 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 }
 
-void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) { }
+void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
+  
+  unsigned long iPoint, total_index;
+  unsigned short iVar;
+  unsigned short iDim;
+  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
+  
+  const su2double kappa = 0.41;
+  const su2double B = 5.0;
+  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
+  
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
+  
+  /*--- Set K and Omega at the first point of the wall ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+      
+      /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
+      bool converged = true;
+      su2double Density_Wall  = 0.;
+      su2double Lam_Visc_Wall = 0.;
+      su2double U_Tau = 0.;
+      su2double T_Wall = 0.;
+      const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
+      for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+        const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
+        Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
+        Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
+        U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
+        T_Wall        += donorCoeff*flowNodes->GetWallTemp(iPoint, iNode);
+        
+        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
+          converged = false;
+          break;
+        }
+      }
+      
+      if (!converged) continue;
+
+      /*--- Wall function ---*/
+      const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+      const su2double Beta = 0.0; // For adiabatic flows only
+      const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
+      const su2double Phi  = asin(-1.0*Beta/Q);
+
+      VelMod = 0.;
+      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      VelMod = sqrt(VelMod);
+
+      const su2double U_Plus = VelMod/U_Tau;
+      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-kappa*B);
+      const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
+
+      Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
+      Eddy_Visc = 1.+dYpw_dYp-kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2);
+      Eddy_Visc = Lam_Visc_Wall*Eddy_Visc - Lam_Visc_Normal;
+      Eddy_Visc = max(Eddy_Visc,0.);
+      
+//      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
+      
+      Density_Normal  = flowNodes->GetDensity(iPoint);
+      distance = geometry->node[iPoint]->GetWall_Distance();
+      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
+      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+
+      Solution[0] = Omega * Eddy_Visc;
+      Solution[1] = Density_Normal * Omega;
+      
+      nodes->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+      
+    }
+  }
+}
 
 void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                      CGeometry                  *geometry,

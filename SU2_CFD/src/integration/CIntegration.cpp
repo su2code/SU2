@@ -174,11 +174,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
     
-//  /*--- Use wall function to set off wall turbulence values ---*/
-//  
-//  if((config->GetWall_Functions()) && (RunTime_EqSystem == RUNTIME_TURB_SYS)) {
-//    solver_container[MainSolver]->ComputeWallFunction(geometry, solver_container, config);
-//  }
+  /*--- Use wall function to set off wall turbulence values ---*/
+  
+  if((config->GetWall_Functions()) && (RunTime_EqSystem == RUNTIME_TURB_SYS)) {
+    solver_container[MainSolver]->ComputeWallFunction(geometry, solver_container, config);
+  }
   
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
