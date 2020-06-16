@@ -741,26 +741,26 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       if (!converged) continue;
 
       /*--- Wall function ---*/
-      const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-      const su2double Beta = 0.0; // For adiabatic flows only
-      const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-      const su2double Phi  = asin(-1.0*Beta/Q);
+//      const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+//      const su2double Beta = 0.0; // For adiabatic flows only
+//      const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
+//      const su2double Phi  = asin(-1.0*Beta/Q);
+//
+//      VelMod = 0.;
+//      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+//      VelMod = sqrt(VelMod);
+//
+//      const su2double U_Plus = VelMod/U_Tau;
+//      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-kappa*B);
+//      const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
+//
+//      Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
+//      Eddy_Visc = Lam_Visc_Wall*(1.+dYpw_dYp
+//                                 -kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2))
+//                                 -Lam_Visc_Normal;
+//      Eddy_Visc = max(Eddy_Visc,0.);
       
-      VelMod = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
-      VelMod = sqrt(VelMod);
-      
-      const su2double U_Plus = VelMod/U_Tau;
-      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-kappa*B);
-      const su2double dYpw_dYp =2.*Ypw*kappa*sqrt(Gam)/Q*sqrt(1.-pow((2.*Gam*U_Plus-Beta)/Q, 2.));
-      
-      Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
-      Eddy_Visc = Lam_Visc_Wall*(1.+dYpw_dYp
-                                 -kappa*exp(-kappa*B)*(1.+kappa*U_Plus+pow(kappa*U_Plus,2.)/2))
-                                 -Lam_Visc_Normal;
-      Eddy_Visc = max(Eddy_Visc,0.);
-      
-//      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
+      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
       
       Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
