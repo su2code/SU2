@@ -270,7 +270,7 @@ public:
    * \brief Set the stressat a DOF of the nearest wall element.
   */
   inline void SetWallUTau(unsigned long iPoint, unsigned short jNode, su2double utau) override {
-    WallUTau(WallMap(iPoint),jNode) = tau;
+    WallUTau(WallMap(iPoint),jNode) = utau;
   }
 
   /*!
