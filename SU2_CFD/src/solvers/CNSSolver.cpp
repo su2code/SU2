@@ -2079,8 +2079,12 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           /*--- Compute the shear stress at the wall in the regular fashion
            by using the stress tensor on the surface ---*/
+          
+          const su2double StaticEnergy_Wall = T_Wall*Gas_Constant/Gamma_Minus_One;
+          GetFluidModel()->SetTDState_rhoe(Density_Wall, StaticEnergy_Wall);
+          Lam_Visc_Wall = GetFluidModel()->GetLaminarViscosity();
 
-          Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
+//          Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
           grad_primvar  = nodes->GetGradient_Primitive(iPoint);
 
           div_vel = 0.0;
