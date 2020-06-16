@@ -2168,7 +2168,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetTauWall(iPoint,Tau_Wall);
           nodes->SetTemperature(iPoint,T_Wall);
           nodes->SetSolution(iPoint, 0, Density_Wall);
-          nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
+          nodes->SetPrimitive(iPoint, nDim+2, Density_Wall);
+          nodes->SetPrimitive(iPoint, nDim+1, P_Wall);
 
 
         }
