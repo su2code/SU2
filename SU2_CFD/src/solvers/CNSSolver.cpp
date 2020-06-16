@@ -1879,11 +1879,11 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   su2double diff, Delta, grad_diff;
   su2double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
   su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
-  su2double Gas_Constant = config->GetGas_ConstantND();
-  su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  unsigned short max_iter = 1000;
-  su2double tol = 1e-12;
+  const unsigned short max_iter = 1000;
+  const su2double tol = 1e-12;
   bool converged = true;
   
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
@@ -1898,12 +1898,12 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- Compute the recovery factor ---*/
   // Double-check: laminar or turbulent Pr for this?
-  su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
+  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  su2double kappa = 0.41;
-  su2double B = 5.0;
+  const su2double kappa = 0.41;
+  const su2double B = 5.0;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 

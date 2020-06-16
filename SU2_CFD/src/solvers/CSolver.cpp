@@ -5217,7 +5217,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
 
   /*--- Density, laminar viscosity, tau_wall, and normal of each node of wall element. ---*/
 
-  unsigned short countPerElem = 12;
+  unsigned short countPerElem = 16;
 
   int *nElemSend = new int[size+1]; nElemSend[0] = 0;
   int *nElemRecv = new int[size+1]; nElemRecv[0] = 0;
@@ -5337,7 +5337,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
     /*--- Variables ---*/
     else if (i == 2) {
       commType = COMM_TYPE_DOUBLE;
-      countPerElem = 12;
+      countPerElem = 16;
 
       /*--- Fill send buffers with variables based on received
             markers and elements. ---*/
@@ -5352,14 +5352,15 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
             const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
             for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
               const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
-              bufDSend[offset+kNode*6]   = flowNodes->GetDensity(kPoint);
-              bufDSend[offset+kNode*6+1] = flowNodes->GetLaminarViscosity(kPoint);
+              bufDSend[offset+kNode*4]   = flowNodes->GetDensity(kPoint);
+              bufDSend[offset+kNode*4+1] = flowNodes->GetLaminarViscosity(kPoint);
               su2double U_Tau;
               if (flowNodes->GetTauWall(kPoint) > 0)
                 U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
               else
                 U_Tau = -1.;
-              bufDSend[offset+kNode*6+2] = U_Tau;
+              bufDSend[offset+kNode*4+2] = U_Tau;
+              bufDSend[offset+kNode*4+2] = flowNodes->GetTemperature(kPoint);
             }
           }
         }
@@ -5517,9 +5518,10 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           if ((geometry->node[iPoint]->GetWall_Marker() == MarkerID) &&
               (geometry->node[iPoint]->GetWall_Element() == ElemID)) {
             for (unsigned short kNode = 0; kNode < 4; kNode++) {
-              flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6]);
-              flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6+1]);
-              flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*6+2]);
+              flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4]);
+              flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+1]);
+              flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
+              flowNodes->SetWallTemp(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
             }
           }
         }
@@ -5537,6 +5539,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           else
             U_Tau = -1.;
           flowNodes->SetWallUTau(iPoint, kNode, U_Tau);
+          flowNodes->SetWallTemp(iPoint, kNode, flowNodes->GetTemperature(kPoint));
         }
       }
     }
@@ -5570,6 +5573,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
         else
           U_Tau = -1.;
         flowNodes->SetWallUTau(iPoint, kNode, U_Tau);
+        flowNodes->SetWallTemp(iPoint, kNode, flowNodes->GetTemperature(kPoint));
       }
     }
   }

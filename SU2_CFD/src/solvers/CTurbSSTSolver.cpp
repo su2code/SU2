@@ -730,7 +730,11 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       if (!converged) continue;
 
       /*--- Wall function ---*/
+      const su2double kappa = 0.41;
+      const su2double B = 5.0;
+      
       eddy_viscosity_v = flowNodes->GetEddyViscosity(iPoint);
+      
       density_v  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
       su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));

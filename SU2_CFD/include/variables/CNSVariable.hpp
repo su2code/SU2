@@ -48,7 +48,8 @@ private:
   
   MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
   MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
-  MatrixType WallUTau;     /*!< \brief Stress at the wall, needed for wall functions. */
+  MatrixType WallUTau;     /*!< \brief Friction velocity at the wall, needed for wall functions. */
+  MatrixType WallTemp;     /*!< \brief Temperature at the wall, needed for wall functions. */
 
   su2vector<long> WallMap; /*!< \brief Node indices corresponding to wall value matrix entries. */
 
@@ -238,54 +239,67 @@ public:
   /*!
    * \brief Initialize the structure to store the solution at the wall.
    * \param[in] nWallElem - Number of nodes adjacent to wall.
-  */
+   */
   inline void InitializeWallSolution(unsigned long nWallNeigh) override {
     WallDensity.resize(nWallNeigh,4) = su2double(0.0);
     WallLamVisc.resize(nWallNeigh,4) = su2double(0.0);
-    WallUTau.resize(nWallNeigh,4) = su2double(0.0);
+    WallUTau.resize(nWallNeigh,4)    = su2double(0.0);
+    WallTemp.resize(nWallNeigh,4)    = su2double(0.0);
   }
 
   /*!
    * \brief Set the map of local node index to index in wall variable MatrixTypes.
-  */
+   */
   inline void SetWallMap(unsigned long iPoint, long index) override {
     WallMap(iPoint) = index;
   }
 
   /*!
    * \brief Set the density at a DOF of the nearest wall element.
-  */
+   */
   inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) override {
     WallDensity(WallMap(iPoint),jNode) = density;
   }
 
   /*!
    * \brief Set the laminar viscosity at a DOF of the nearest wall element.
-  */
+   */
   inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) override {
     WallLamVisc(WallMap(iPoint),jNode) = lamvisc;
   }
 
   /*!
-   * \brief Set the stressat a DOF of the nearest wall element.
-  */
+   * \brief Set the friction velocity at a DOF of the nearest wall element.
+   */
   inline void SetWallUTau(unsigned long iPoint, unsigned short jNode, su2double utau) override {
     WallUTau(WallMap(iPoint),jNode) = utau;
+  }
+  
+  /*!
+   * \brief Set the temperature at a DOF of the nearest wall element.
+   */
+  inline void SetWallTemp(unsigned long iPoint, unsigned short jNode, su2double temp) override {
+    WallTemp(WallMap(iPoint),jNode) = temp;
   }
 
   /*!
    * \brief Get the density at a DOF of the nearest wall element.
-  */
+   */
   inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) override { return WallDensity(WallMap(iPoint),jNode); }
 
   /*!
    * \brief Get the laminar viscosity at a DOF of the nearest wall element.
-  */
+   */
   inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) override { return WallLamVisc(WallMap(iPoint),jNode); }
 
   /*!
-   * \brief Get the stress at a DOF of the nearest wall element.
-  */
+   * \brief Get the friction velocity at a DOF of the nearest wall element.
+   */
   inline su2double GetWallUTau(unsigned long iPoint, unsigned short jNode) override { return WallUTau(WallMap(iPoint),jNode); }
+  
+  /*!
+   * \brief Get the temperature at a DOF of the nearest wall element.
+   */
+  inline su2double GetWallTemp(unsigned long iPoint, unsigned short jNode) override { return WallTemp(WallMap(iPoint),jNode); }
 
 };

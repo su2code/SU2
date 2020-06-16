@@ -513,12 +513,16 @@ public:
   virtual inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) { }
 
   virtual inline void SetWallUTau(unsigned long iPoint, unsigned short jNode, su2double tau) { }
+  
+  virtual inline void SetWallTemp(unsigned long iPoint, unsigned short jNode, su2double temp) { }
 
   virtual inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) { return 0.; }
 
   virtual inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) { return 0.; }
 
   virtual inline su2double GetWallUTau(unsigned long iPoint, unsigned short jNode) { return 0.; }
+  
+  virtual inline su2double GetWallTemp(unsigned long iPoint, unsigned short jNode) { return 0.; }
 
   /*!
    * \brief Get the entire solution of the problem.
