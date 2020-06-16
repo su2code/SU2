@@ -271,6 +271,30 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_MASTER
     ComputeWallFunction(geometry, solver_container, config);
     SU2_OMP_BARRIER
+    
+    /*--- Recompute gradients and limiters ---*/
+
+    if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+      switch (config->GetKind_Gradient_Method_Recon()) {
+        case GREEN_GAUSS:
+          SetPrimitive_Gradient_GG(geometry, config, true); break;
+        case LEAST_SQUARES:
+        case WEIGHTED_LEAST_SQUARES:
+          SetPrimitive_Gradient_LS(geometry, config, true); break;
+        default: break;
+      }
+    }
+
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetPrimitive_Gradient_GG(geometry, config);
+    }
+    else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetPrimitive_Gradient_LS(geometry, config);
+    }
+
+    if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+      SetPrimitive_Limiter(geometry, config);
+    }
   }
 
 
