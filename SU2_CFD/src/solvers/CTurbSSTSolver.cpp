@@ -760,7 +760,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                  -Lam_Visc_Normal;
       Eddy_Visc = max(Eddy_Visc,0.);
       
-      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
+//      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
       
       Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
