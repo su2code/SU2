@@ -5354,7 +5354,11 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
               const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
               bufDSend[offset+kNode*6]   = flowNodes->GetDensity(kPoint);
               bufDSend[offset+kNode*6+1] = flowNodes->GetLaminarViscosity(kPoint);
-              const su2double U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
+              su2double U_Tau;
+              if (flowNodes->GetTauWall(kPoint) > 0)
+                U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
+              else
+                U_Tau = -1.;
               bufDSend[offset+kNode*6+2] = U_Tau;
             }
           }
@@ -5527,7 +5531,11 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
           flowNodes->SetWallDensity(iPoint, kNode, flowNodes->GetDensity(kPoint));
           flowNodes->SetWallLamVisc(iPoint, kNode, flowNodes->GetLaminarViscosity(kPoint));
-          const su2double U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
+          su2double U_Tau;
+          if (flowNodes->GetTauWall(kPoint) > 0)
+            U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
+          else
+            U_Tau = -1.;
           flowNodes->SetWallUTau(iPoint, kNode, U_Tau);
         }
       }
@@ -5556,7 +5564,11 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
         const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
         flowNodes->SetWallDensity(iPoint, kNode, flowNodes->GetDensity(kPoint));
         flowNodes->SetWallLamVisc(iPoint, kNode, flowNodes->GetLaminarViscosity(kPoint));
-        const su2double U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
+        su2double U_Tau;
+        if (flowNodes->GetTauWall(kPoint) > 0)
+          U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
+        else
+          U_Tau = -1.;
         flowNodes->SetWallUTau(iPoint, kNode, U_Tau);
       }
     }

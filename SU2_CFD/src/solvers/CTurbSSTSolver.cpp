@@ -713,6 +713,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       
       /*--- Properties at the wall ---*/
+      bool converged = true;
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
@@ -722,7 +723,11 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
+        
+        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) converged = false;
       }
+      
+      if (!converged) continue;
 
       /*--- Wall function ---*/
       eddy_viscosity_v = flowNodes->GetEddyViscosity(iPoint);
