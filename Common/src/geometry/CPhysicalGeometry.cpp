@@ -13189,7 +13189,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
                 node[iPoint]->SetWall_nNode(vtkID);
                 node[iPoint]->SetWall_Interpolation_Weights(weights);
                 
-                maxWallDist = max(maxWallDist, 1.1*dist);
+                maxWallDist = max(maxWallDist, 5.0*dist);
                 break;
               } // if jVertex
             } // iNode
