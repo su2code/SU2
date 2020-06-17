@@ -1573,21 +1573,21 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
       VelMod = sqrt(VelMod);
 
-      const su2double U_Plus = VelMod/U_Tau;
-      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+      const su2double Up  = VelMod/U_Tau;
+      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*Up - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
       
-      const su2double Yp = U_Plus + Ypw - (exp(-1.0*kappa*B)*
-                           (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
-                           kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
+      const su2double Yp = Up + Ypw - (exp(-1.0*kappa*B)*
+                           (1.0 + kappa*Up + kappa*kappa*Up*Up/2.0 +
+                           kappa*kappa*kappa*Up*Up*Up/6.0));
       
       /*--- Disable calculation if Y+ is too small or large ---*/
       if (Yp < 5.0 || Yp > 1.0e4) continue;
       
-      const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
+      const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*Up - Beta,2.0)/(Q*Q), -0.5);
 
       Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
       Eddy_Visc = Lam_Visc_Wall*(1.0 + dYpw_dYp - kappa*exp(-1.0*kappa*B)*
-                  (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                  (1.0 + kappa*Up + kappa*kappa*Up*Up/2.0)
                   - Lam_Visc_Normal/Lam_Visc_Wall);
       
 //      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
