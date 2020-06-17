@@ -13170,26 +13170,28 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 
       /*--- BCM: Set nearest element and marker. These will be used
             for wall functions ---*/
-      string markerTag = config->GetMarker_All_TagBound(markerID);
-      cout << markerTag << endl;
-      if ((config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) &&
-          (!node[iPoint]->GetSolidBoundary()) &&
+      if ((!node[iPoint]->GetSolidBoundary()) &&
           (iPoint < nPointDomain)) {
-        for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
-          const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-          const long jVertex = node[jPoint]->GetVertex(markerID);
-          if (jVertex != -1) {
-            node[iPoint]->SetBool_Wall_Neighbor(true);
-            node[iPoint]->SetWall_Rank(rankID);
-            node[iPoint]->SetWall_Marker(markerID);
-            node[iPoint]->SetWall_Element(elemID);
-            node[iPoint]->SetWall_nNode(vtkID);
-            node[iPoint]->SetWall_Interpolation_Weights(weights);
-            
-            maxWallDist = max(maxWallDist, 1.1*dist);
-            break;
-          } // if jVertex
-        } // iNode
+        for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+          if (node[iPoint]->GetBool_Wall_Neighbor()) break;
+          if(config->GetViscous_Wall(iMarker)) {
+            for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+              const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
+              const long jVertex = node[jPoint]->GetVertex(iMarker);
+              if (jVertex != -1) {
+                node[iPoint]->SetBool_Wall_Neighbor(true);
+                node[iPoint]->SetWall_Rank(rankID);
+                node[iPoint]->SetWall_Marker(markerID);
+                node[iPoint]->SetWall_Element(elemID);
+                node[iPoint]->SetWall_nNode(vtkID);
+                node[iPoint]->SetWall_Interpolation_Weights(weights);
+                
+                maxWallDist = max(maxWallDist, 1.1*dist);
+                break;
+              } // if jVertex
+            } // iNode
+          } // if viscous
+        } // iMarker
       } // if markerID WALL_FUNCTION && iPoint !SolidBoundary && iPoint in domain
     }
     
