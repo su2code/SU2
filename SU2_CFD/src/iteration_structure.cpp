@@ -597,6 +597,16 @@ bool CFluidIteration::Monitor(COutput *output,
   if (config[val_iZone]->GetFixed_CL_Mode()){
     StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone]);
   }
+  
+  /*--- Check if wall functions are being used, and if they've switched on yet ---*/
+  if((StopCalc) &&
+     (config[val_iZone]->GetWall_Functions()) &&
+     (!config[val_iZone]->GetDiscrete_Adjoint()) &&
+     (config[val_iZone]->GetInnerIter() < config[val_iZone]->GetWallFunction_Start_Iter()) &&
+     (!config[val_iZone]->GetRestart())) {
+    StopCalc = false;
+    config[val_iZone]->SetWallFunction_Start_Iter(config[val_iZone]->GetInnerIter());
+  }
 
   return StopCalc;
 

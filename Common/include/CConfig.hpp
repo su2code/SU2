@@ -8919,10 +8919,15 @@ public:
   bool GetWall_Functions(void) const { return Wall_Functions; }
   
   /*!
-   * \brief Get the restart iteration
-   * \return Iteration for the restart of multizone problems
+   * \brief Get the iteration to begin using wall functions
+   * \return Iteration to begin using wall functions
    */
   unsigned long GetWallFunction_Start_Iter(void) const { return WallFunction_Start_Iter; }
+  
+  /*!
+   * \brief Set the iteration to begin using wall functions
+   */
+  void SetWallFunction_Start_Iter(unsigned long val_wf_iter) { WallFunction_Start_Iter = val_wf_iter; }
 
   /*!
    * \brief Get the AD support.
