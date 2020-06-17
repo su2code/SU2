@@ -2161,15 +2161,15 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetPrimitive(iPoint, nDim+1, P_Wall);
           nodes->SetLaminarViscosity(iPoint, Lam_Visc_Wall);
           
-          /*--- Scale velocity gradient ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (jDim = 0; jDim < nDim; jDim++) {
-              const su2double grad = Tau_Wall/WallShearStress*nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
-              const su2double grad_recon = Tau_Wall/WallShearStress*nodes->GetGradient_Reconstruction(iPoint, iDim+1, jDim);
-              nodes->SetGradient_Primitive(iPoint, iDim+1, jDim, grad);
-              nodes->SetGradient_Reconstruction(iPoint, iDim+1, jDim, grad_recon);
-            }
-          }
+//          /*--- Scale velocity gradient ---*/
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            for (jDim = 0; jDim < nDim; jDim++) {
+//              const su2double grad = Tau_Wall/WallShearStress*nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
+//              const su2double grad_recon = Tau_Wall/WallShearStress*nodes->GetGradient_Reconstruction(iPoint, iDim+1, jDim);
+//              nodes->SetGradient_Primitive(iPoint, iDim+1, jDim, grad);
+//              nodes->SetGradient_Reconstruction(iPoint, iDim+1, jDim, grad_recon);
+//            }
+//          }
 
 
         }
@@ -2179,10 +2179,10 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
     }
   }
   
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
+//  InitiateComms(geometry, config, PRIMITIVE);
+//  CompleteComms(geometry, config, PRIMITIVE);
+//  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
+//  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
   
   /*--- Communicate values needed for WF ---*/
   InitiateComms(geometry, config, WALL_FUNCTION);
