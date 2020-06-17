@@ -621,12 +621,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
-  unsigned short iDim;
   su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, beta_1 = constants[4];
-  su2double Energy_Normal = 0.0, VelMod = 0.0, StaticEnergy_Normal, Tke;
   
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  CFluidModel *fluidModel = solver_container[FLOW_SOL]->GetFluidModel();
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -641,6 +638,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
         const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
         distance = doubleInfo[0];
+        cout << distance << endl;
 
         /*--- Load the coefficients and interpolate---*/
         unsigned short nDonors = geometry->vertex[val_marker][iVertex]->GetnDonorPoints();
