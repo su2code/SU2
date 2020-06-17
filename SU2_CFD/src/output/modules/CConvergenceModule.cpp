@@ -20,6 +20,8 @@ CConvergenceModule::CConvergenceModule(CConfig* config, int nDim) : CModifierMod
   cauchySerie = vector<vector<su2double>>(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
   cauchyValue = 0.0;
   convergence = false;
+  partConvNew.resize(convFields.size());
+  partConvOld.resize(convFields.size());
 
   if (nCauchy_Elems > 1000){
     SU2_MPI::Error("Number of Cauchy Elems must be smaller than 1000", CURRENT_FUNCTION);
@@ -35,6 +37,16 @@ void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &his
   cauchyValue = 0.0;
   convergence = false;
 
+  historyFields.AddField("CONVERGENCE", "Convergence", ScreenOutputFormat::INTEGER,
+                         "CONVERGENCE", "Convergence indicator", FieldType::DEFAULT);
+
+  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+    const auto &convField = convFields[iField_Conv];
+    if (!historyFields.GetCollection().CheckKey(convField)){
+      convFields.erase(convFields.begin() + iField_Conv);
+    }
+  }
+
   /*--- Filter convergence fields which are coefficients ---*/
 
   const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT, FieldType::AUTO_COEFFICIENT, FieldType::PER_SURFACE_COEFFICIENT},
@@ -47,92 +59,90 @@ void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &his
   }
 }
 
-void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields,
                                                  const IterationInfo& iterationInfo){
 
-  const auto* config = solverData.config;
   const auto Iter = iterationInfo.Iter;
   unsigned short iCounter;
 
   convergence = true;
+  const auto& outField = historyFields.GetCollection().GetFieldsByKey(convFields);
 
-  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+  int iField_Conv = 0;
 
+  for (const auto& field : outField){
 
-    const auto &convField = convFields[iField_Conv];
+    bool fieldConverged = false;
 
-    if (historyFields.GetCollection().CheckKey(convField)){
+    su2double monitor = field->second.value;
 
-      bool fieldConverged = false;
+    /*--- Cauchy based convergence criteria ---*/
 
-      const auto& outField = historyFields.GetCollection()[convField];
+    if (field->second.fieldType == FieldType::COEFFICIENT ||
+        field->second.fieldType == FieldType::AUTO_COEFFICIENT ||
+        field->second.fieldType == FieldType::PER_SURFACE_COEFFICIENT) {
 
-      su2double monitor = outField.value;
-
-      /*--- Cauchy based convergence criteria ---*/
-
-      if (outField.fieldType == FieldType::COEFFICIENT ||
-          outField.fieldType == FieldType::AUTO_COEFFICIENT ||
-          outField.fieldType == FieldType::PER_SURFACE_COEFFICIENT) {
-
-        if (Iter == 0){
-          for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
-            cauchySerie[iField_Conv][iCounter] = 0.0;
-          }
-          newFunc[iField_Conv] = monitor;
+      if (Iter == 0){
+        for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
+          cauchySerie[iField_Conv][iCounter] = 0.0;
         }
-
-        oldFunc[iField_Conv] = newFunc[iField_Conv];
         newFunc[iField_Conv] = monitor;
-        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
+      }
 
-        cauchySerie[iField_Conv][Iter % nCauchy_Elems] = cauchyFunc;
-        cauchyValue = 0.0;
-        for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++)
-          cauchyValue += cauchySerie[iField_Conv][iCounter];
+      oldFunc[iField_Conv] = newFunc[iField_Conv];
+      newFunc[iField_Conv] = monitor;
+      cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
 
-        cauchyValue /= nCauchy_Elems;
+      cauchySerie[iField_Conv][Iter % nCauchy_Elems] = cauchyFunc;
+      cauchyValue = 0.0;
+      for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++)
+        cauchyValue += cauchySerie[iField_Conv][iCounter];
 
-        if (cauchyValue >= cauchyEps) { fieldConverged = false;}
-        else { fieldConverged = true;}
+      cauchyValue /= nCauchy_Elems;
 
-        /*--- Start monitoring only if the current iteration
+      if (cauchyValue >= cauchyEps) { fieldConverged = false;}
+      else { fieldConverged = true;}
+
+      /*--- Start monitoring only if the current iteration
          *  is larger than the number of cauchy elements and
          * the number of start-up iterations --- */
 
-        if (Iter < max(config->GetStartConv_Iter(), nCauchy_Elems)){
-          fieldConverged = false;
-        }
-
-        historyFields.SetFieldValue("CAUCHY_" + convField, cauchyValue);
-
-        if(Iter == 0){
-          historyFields.SetFieldValue("CAUCHY_" + convField, 1.0);
-        }
-      }
-
-
-      /*--- Residual based convergence criteria ---*/
-
-      if (outField.fieldType == FieldType::RESIDUAL ||
-          outField.fieldType == FieldType::AUTO_RESIDUAL) {
-
-        /*--- Check the convergence ---*/
-
-        if (Iter != 0 && (monitor <= minLogResidual)) { fieldConverged = true;  }
-        else { fieldConverged = false; }
-
-      }
-
-      /*--- Do not apply any convergence criteria of the number
-     of iterations is less than a particular value ---*/
-
-      if (Iter < config->GetStartConv_Iter()) {
+      if (Iter < max(convStartIter, nCauchy_Elems)){
         fieldConverged = false;
       }
 
-      convergence = fieldConverged && convergence;
+      historyFields.SetFieldValue("CAUCHY_" + field->first, cauchyValue);
+
+      if(Iter == 0){
+        historyFields.SetFieldValue("CAUCHY_" + field->first, 1.0);
+      }
     }
+
+
+    /*--- Residual based convergence criteria ---*/
+
+    if (field->second.fieldType == FieldType::RESIDUAL ||
+        field->second.fieldType == FieldType::AUTO_RESIDUAL) {
+
+      /*--- Check the convergence ---*/
+
+      if (Iter != 0 && (monitor <= minLogResidual)) { fieldConverged = true;  }
+      else { fieldConverged = false; }
+
+    }
+
+    /*--- Do not apply any convergence criteria of the number
+     of iterations is less than a particular value ---*/
+
+    if (Iter < convStartIter) {
+      fieldConverged = false;
+    }
+
+    partConvNew[iField_Conv] = fieldConverged;
+
+    convergence = fieldConverged && convergence;
+
+    iField_Conv++;
   }
 
   if (convFields.empty()) convergence = false;
