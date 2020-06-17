@@ -178,7 +178,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   if((config->GetWall_Functions()) &&
      (RunTime_EqSystem == RUNTIME_TURB_SYS) &&
-     ((config->GetDiscrete_Adjoint()) || (config->GetInnerIter() > 100) || (config->GetRestart()))) {
+     ((config->GetDiscrete_Adjoint()) || (config->GetInnerIter() > config->GetWallFunction_Start_Iter()) || (config->GetRestart()))) {
     solver_container[MainSolver]->ComputeWallFunction(geometry, solver_container, config);
   }
   
