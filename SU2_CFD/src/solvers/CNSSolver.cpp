@@ -2128,14 +2128,16 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             counter++;
             if (counter == max_iter) {
               converged = false;
-              nodes->SetTauWall(iPoint,-1.0);
               break;
             }
 
           }
           /* --- If not converged or Y+ too large, jump to the next point. --- */
 
-          if (!converged || Y_Plus > 1.0e4) continue;
+          if (!converged || Y_Plus > 1.0e4) {
+            nodes->SetTauWall(iPoint,-1.0);
+            continue;
+          }
 
           /*--- Calculate an updated value for the wall shear stress
             using the y+ value, the definition of y+, and the definition of
