@@ -13199,7 +13199,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
         su2double globalMaxDist;
 #ifdef HAVE_MPI
         SU2_MPI::Allreduce(&maxWallDist[iMarker], &globalMaxDist, 1,
-                           MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                           MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
         globalMaxDist = maxWallDist[iMarker];
 #endif
