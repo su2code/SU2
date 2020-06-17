@@ -188,7 +188,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter > 100) || (config->GetRestart())));
+  
+  bool restart              = config->GetRestart();
+  unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
+  bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter > WFStartIter) || (restart)));
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -269,6 +272,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
+    /*--- First reset CFL if needed ---*/
+    if ((InnerIter == WFStartIter) && (!restart) && (!disc_adjoint)) {
+      ResetCFLAdapt();
+      const su2double CFL = config->GetCFL(iMesh);
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+        nodes->SetLocalCFL(iPoint, CFL);
+      }
+      Min_CFL_Local = CFL;
+      Max_CFL_Local = CFL;
+      Avg_CFL_Local = CFL;
+    }
     SU2_OMP_MASTER
     ComputeWallFunction(geometry, solver_container, config);
     SU2_OMP_BARRIER

@@ -949,6 +949,7 @@ private:
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
+  unsigned long WallFunction_Start_Iter;  /*!< \brief Iteration to start using wall functions with the turbulence model */
   long ExtraHeatOutputZone;      /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
@@ -8916,6 +8917,12 @@ public:
    * \return <code>TRUE</code> if wall functions are on; otherwise <code>FALSE</code>.
    */
   bool GetWall_Functions(void) const { return Wall_Functions; }
+  
+  /*!
+   * \brief Get the restart iteration
+   * \return Iteration for the restart of multizone problems
+   */
+  unsigned long GetWallFunction_Start_Iter(void) const { return WallFunction_Start_Iter; }
 
   /*!
    * \brief Get the AD support.
