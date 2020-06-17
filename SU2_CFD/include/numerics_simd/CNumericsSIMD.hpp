@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is masize_tained by the SU2 Foundation
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -60,7 +60,7 @@ template<size_t Rows, size_t Cols = Rows> using MatrixDbl<Rows,Cols> = Matrix<Do
 
 /*!
  * \class CNumericsSIMD
- * \brief Base class to define the size_terface.
+ * \brief Base class to define the interface.
  */
 class CNumericsSIMD {
 public:
@@ -128,10 +128,10 @@ template<size_t nDim>
 FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm(vector)); }
 
 template<size_t nDim, class Coord_t>
-FORCEINLINE VectorDbl<nDim> distanceVector(Int iPosize_t, Int jPosize_t, const Coord_t& coords) {
+FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t& coords) {
   VectorDbl<nDim> vector_ij;
-  auto coord_i = coords.innerIter<nDim>(iPosize_t);
-  auto coord_j = coords.innerIter<nDim>(jPosize_t);
+  auto coord_i = coords.innerIter<nDim>(iPoint);
+  auto coord_j = coords.innerIter<nDim>(jPoint);
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     vector_ij(iDim) = 0.5 * (*(coord_j++) - *(coord_i++));
   }
@@ -147,45 +147,45 @@ FORCEINLINE VectorDbl<nVar> gatherVariables(Int_t idx, const Field_t& vars) {
 }
 
 template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
-FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPosize_t,
+FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPoint,
                                            const VectorDbl<nDim>& vector_ij,
                                            const Field_t& field,
                                            const Gradient_t& gradient) {
-  auto vars = gatherVariables<nVar>(iPosize_t, field);
+  auto vars = gatherVariables<nVar>(iPoint, field);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += dot(gradient.innerIter<nVar,nDim>(iPosize_t,iVar), vector_ij);
+    vars(iVar) += dot(gradient.innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
   }
   return vars;
 }
 
 template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
-FORCEINLINE VectorDbl<nVar> musclPosize_tLimited(Int iPosize_t,
+FORCEINLINE VectorDbl<nVar> musclPointLimited(Int iPoint,
                                               const VectorDbl<nDim>& vector_ij,
                                               const Field_t& field,
                                               const Field_t& limiter,
                                               const Gradient_t& gradient) {
-  auto vars = gatherVariables<nVar>(iPosize_t, field);
-  auto itLim = limiter.innerIter<nVar>(iPosize_t);
+  auto vars = gatherVariables<nVar>(iPoint, field);
+  auto itLim = limiter.innerIter<nVar>(iPoint);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += *(itLim++) * dot(gradient.innerIter<nVar,nDim>(iPosize_t,iVar), vector_ij);
+    vars(iVar) += *(itLim++) * dot(gradient.innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
   }
   return vars;
 }
 
 template<size_t nDim, size_t nVar, class Field_t, class Gradient_t>
-FORCEINLINE void musclEdgeLimited(Int iPosize_t,
-                                  Int jPosize_t,
+FORCEINLINE void musclEdgeLimited(Int iPoint,
+                                  Int jPoint,
                                   const VectorDbl<nDim>& vector_ij,
                                   const Field_t& field,
                                   const Gradient_t& gradient,
                                   VectorDbl<nVar>& vars_i,
                                   VectorDbl<nVar>& vars_j) {
-  vars_i = gatherVariables<nVar>(iPosize_t, field);
-  vars_j = gatherVariables<nVar>(jPosize_t, field);
+  vars_i = gatherVariables<nVar>(iPoint, field);
+  vars_j = gatherVariables<nVar>(jPoint, field);
 
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    auto proj_i = dot(gradient.innerIter<nVar,nDim>(iPosize_t,iVar), vector_ij);
-    auto proj_j = dot(gradient.innerIter<nVar,nDim>(jPosize_t,iVar), vector_ij);
+    auto proj_i = dot(gradient.innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
+    auto proj_j = dot(gradient.innerIter<nVar,nDim>(jPoint,iVar), vector_ij);
     auto delta_ij = vars_j(iVar) - vars_i(iVar);
     auto delta_ij_2 = pow(delta_ij,2);
     /// TODO: Customize the limiter function
@@ -214,7 +214,7 @@ struct CCompressiblePrimitives {
 };
 
 template<size_t nDim, class Variable_t>
-FORCEINLINE CPair<CCompressibleConservatives<nDim> > getCompressiblePrimitives(Int iPosize_t, Int jPosize_t, bool muscl,
+FORCEINLINE CPair<CCompressibleConservatives<nDim> > getCompressiblePrimitives(Int iPoint, Int jPoint, bool muscl,
                                                                                ENUM_LIMITER limiterType,
                                                                                const VectorDbl<nDim>& vector_ij,
                                                                                const Variable_t& solution) {
@@ -226,19 +226,19 @@ FORCEINLINE CPair<CCompressibleConservatives<nDim> > getCompressiblePrimitives(I
   const auto& limiters = solution.Limiter_Primitive;
 
   if (!muscl) {
-    V.i.all = gatherVariables<nVar>(iPosize_t, primitives);
-    V.j.all = gatherVariables<nVar>(jPosize_t, primitives);
+    V.i.all = gatherVariables<nVar>(iPoint, primitives);
+    V.j.all = gatherVariables<nVar>(jPoint, primitives);
   }
   else {
     switch (limiterType) {
     case NO_LIMITER:
-      V.i.all = musclUnlimited<nVar>(iPosize_t, vector_ij, primitives, gradients);
-      V.j.all = musclUnlimited<nVar>(jPosize_t,-vector_ij, primitives, gradients);
+      V.i.all = musclUnlimited<nVar>(iPoint, vector_ij, primitives, gradients);
+      V.j.all = musclUnlimited<nVar>(jPoint,-vector_ij, primitives, gradients);
     case VAN_ALBADA_EDGE:
-      musclEdgeLimited(iPosize_t, jPosize_t, vector_ij, primitives, gradients, V.i.all, V.j.all);
+      musclEdgeLimited(iPoint, jPoint, vector_ij, primitives, gradients, V.i.all, V.j.all);
     default:
-      V.i.all = musclPosize_tLimited<nVar>(iPosize_t, vector_ij, primitives, limiters, gradients);
-      V.j.all = musclPosize_tLimited<nVar>(jPosize_t,-vector_ij, primitives, limiters, gradients);
+      V.i.all = musclPointLimited<nVar>(iPoint, vector_ij, primitives, limiters, gradients);
+      V.j.all = musclPointLimited<nVar>(jPoint,-vector_ij, primitives, limiters, gradients);
     }
     /// TODO: Extra reconstruction checks needed.
   }
@@ -461,7 +461,7 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomIterator veloc
  * \brief Base class for Roe schemes, derived classes implement
  * the dissipation term in a static method "finalizeResidual".
  */
-template<class Derived, int NDIM>
+template<class Derived, size_t NDIM>
 class CRoeBase : public CNumericsSIMD {
 protected:
   enum: size_t {nDim = NDIM};
@@ -498,12 +498,12 @@ public:
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto solution = static_cast<CEulerVariable&>(solution_);
 
-    const auto iPosize_t = geometry.edges->GetNodes(iEdge,0);
-    const auto jPosize_t = geometry.edges->GetNodes(iEdge,1);
+    const auto iPoint = geometry.edges->GetNodes(iEdge,0);
+    const auto jPoint = geometry.edges->GetNodes(iEdge,1);
 
     /*--- Geometrix properties. ---*/
 
-    const auto vector_ij = distanceVector(iPosize_t, jPosize_t, geometry.nodes->Coord);
+    const auto vector_ij = distanceVector(iPoint, jPoint, geometry.nodes->Coord);
 
     const auto normal = loadVariables<nDim>(iEdge, geometry.edges->Normal);
     const auto area = norm(normal);
@@ -514,7 +514,7 @@ public:
 
     /*--- Reconstructed primitives. ---*/
 
-    auto V = getCompressiblePrimitives(iPosize_t, jPosize_t,
+    auto V = getCompressiblePrimitives(iPoint, jPoint,
                                        config.GetKind_SlopeLimit_Flow(),
                                        vector_ij, solution);
 
@@ -538,8 +538,8 @@ public:
     Double projGridVel = 0.0, projVel = roeAvg.projVel;
     if (dynamicGrid) {
       const auto& gridVel = geometry.nodes->GridVel;
-      projGridVel = 0.5*(dot(gridVel.innerIter<nDim>(iPosize_t), unitNormal)+
-                         dot(gridVel.innerIter<nDim>(jPosize_t), unitNormal));
+      projGridVel = 0.5*(dot(gridVel.innerIter<nDim>(iPoint), unitNormal)+
+                         dot(gridVel.innerIter<nDim>(jPoint), unitNormal));
       projVel -= projGridVel;
     }
 
@@ -581,7 +581,7 @@ public:
     /*--- Correct for grid motion ---*/
 
     if (dynamicGrid) {
-      for (size_t iVar = 0; iVar < nVar; iVar++) {
+      for (size_t iVar = 0; iVar < nVar; ++iVar) {
         Double dFdU = projGridVel * area * 0.5;
         flux(iVar) -= dFdU * (U.i.all(iVar) + U.j.all(iVar));
 
@@ -606,8 +606,8 @@ public:
  * \class CRoeScheme
  * \brief Classical Roe scheme.
  */
-template<int nDim>
-class CRoeScheme : public CRoeBase<CRoeScheme,nDim> {
+template<size_t NDIM>
+class CRoeScheme : public CRoeBase<CRoeScheme,NDIM> {
 public:
   CRoeScheme(const CConfig& config) : CRoeBase(config) {}
 
@@ -631,10 +631,10 @@ public:
     auto pMatInv = pMatrixInv(gamma, roeAvg.density, roeAvg.velocity,
                               roeAvg.projVel, roeAvg.soundSpeed, unitNormal);
 
-    /*--- Diference between conservative variables at jPosize_t and iPosize_t. ---*/
+    /*--- Diference between conservative variables at jPoint and iPoint. ---*/
 
     VectorDbl<nVar> deltaU;
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
       deltaU(iVar) = U.j.all(iVar) - U.i.all(iVar);
     }
 
@@ -643,12 +643,12 @@ public:
     /// TODO: Low dissipation computation would go here.
     Double dissipation = 1.0;
 
-    for (size_t iVar = 0; iVar < nVar; iVar++) {
-      for (size_t jVar = 0; jVar < nVar; jVar++) {
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      for (size_t jVar = 0; jVar < nVar; ++jVar) {
         /*--- Compute |projModJacTensor| = P x |Lambda| x P^-1. ---*/
 
         Double projModJacTensor = 0.0;
-        for (size_t kVar = 0; kVar < nVar; kVar++) {
+        for (size_t kVar = 0; kVar < nVar; ++kVar) {
           projModJacTensor += pMat(iVar,kVar) * lambda(kVar) * pMatInv(kVar,jVar);
         }
 
