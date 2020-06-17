@@ -13204,6 +13204,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
         globalMaxDist = maxWallDist[iMarker];
 #endif
         config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
+        cout << "Global max[" << markerTag << "] = " << globalMaxDist << endl;
       }
     }
   }
