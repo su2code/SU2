@@ -1581,7 +1581,7 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
                            kappa*kappa*kappa*Up*Up*Up/6.0));
       
       /*--- Disable calculation if Y+ is too small or large ---*/
-      if (Yp < 5.0 || Yp > 1.0e4) continue;
+      if (Yp < 5.0 || Yp > 1.0e3) continue;
       
       const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*Up - Beta,2.0)/(Q*Q), -0.5);
 

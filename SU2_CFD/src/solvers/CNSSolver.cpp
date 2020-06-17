@@ -2134,7 +2134,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           }
           /* --- If not converged or Y+ too large, jump to the next point. --- */
 
-          if (!converged || Y_Plus > 1.0e4) {
+          if (!converged || Y_Plus > 1.0e3) {
             nodes->SetTauWall(iPoint,-1.0);
             continue;
           }
