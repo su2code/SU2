@@ -5702,11 +5702,13 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   /*---         of doing this. So this may need some improvement.          ---*/
   /*--------------------------------------------------------------------------*/
 
-  SetPoint_Connectivity();
-  SetRCM_Ordering(config);
-  SetPoint_Connectivity();
-  SetElement_Connectivity();
-  SetBoundVolume();
+  if (!config->GetWall_Functions()) {
+    SetPoint_Connectivity();
+    SetRCM_Ordering(config);
+    SetPoint_Connectivity();
+    SetElement_Connectivity();
+    SetBoundVolume();
+  }
 
   /*--- Correct the orientation of the elements and flip the negative ones. ---*/
   Check_IntElem_Orientation(config);
