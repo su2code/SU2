@@ -325,7 +325,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   
   SetPrimitive_Variables(solver_container);
-  if (config->GetWall_Functions()) ComputeWallFunction(geometry, solver_container, config);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
