@@ -8792,6 +8792,15 @@ su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) const {
   return doubleInfo;
 }
 
+void CConfig::SetWallFunction_DoubleInfo(string val_marker, unsigned short val_ind, su2double val_double) const {
+  for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
+    if(Marker_WallFunctions[iMarker] == val_marker) {
+      DoubleInfo_WallFunctions[iMarker][val_ind] = val_double;
+      break;
+    }
+  }
+}
+
 su2double CConfig::GetEngineInflow_Target(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)

@@ -2887,6 +2887,12 @@ public:
    * \return Total number of DV markers.
    */
   unsigned short GetnMarker_DV(void) const { return nMarker_DV; }
+  
+  /*!
+   * \brief Get the total number of DV markers.
+   * \return Total number of DV markers.
+   */
+  unsigned short GetnMarker_WallFunctions(void) const { return nMarker_WallFunctions; }
 
   /*!
    * \brief Get the total number of moving markers.
@@ -6796,6 +6802,14 @@ public:
    * \return Pointer to the double info for the given marker.
    */
   su2double* GetWallFunction_DoubleInfo(string val_marker) const;
+  
+  /*!
+   * \brief Set the additional double info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the double info for the given marker.
+   */
+  void SetWallFunction_DoubleInfo(string val_marker, unsigned short val_ind, su2double val_double) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
