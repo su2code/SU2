@@ -13148,7 +13148,8 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
   
-  vector<su2double> maxWallDist(config->GetnMarker_All(), numeric_limits<su2double>::epsilon());
+  unsigned short nMarker_WallFunctions = config->GetnMarker_WallFunctions();
+  su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
   if (!WallADT->IsEmpty()){
     /*--- Solid wall boundary nodes are present. Compute the wall
@@ -13184,7 +13185,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
             node[iPoint]->SetWall_nNode(vtkID);
             node[iPoint]->SetWall_Interpolation_Weights(weights);
             
-            maxWallDist[markerID] = max(maxWallDist[markerID], 1.1*dist);
+            maxWallDist = max(maxWallDist, 1.1*dist);
             break;
           } // if jVertex
         } // iNode
@@ -13193,18 +13194,18 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
     
     /*--- Now specify the exchange distance based on the maximum distance of nodes
           that neighbor solid surfaces ---*/
-    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    su2double globalMaxDist;
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&maxWallDist[iMarker], &globalMaxDist, 1,
+                       MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    globalMaxDist = maxWallDist;
+#endif
+    cout << "Global max = " << globalMaxDist << endl;
+    for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; ++iMarker) {
       string markerTag = config->GetMarker_All_TagBound(iMarker);
       if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-        su2double globalMaxDist;
-#ifdef HAVE_MPI
-        SU2_MPI::Allreduce(&maxWallDist[iMarker], &globalMaxDist, 1,
-                           MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-        globalMaxDist = maxWallDist[iMarker];
-#endif
         config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
-        cout << "Global max[" << markerTag << "] = " << globalMaxDist << endl;
       }
     }
   }
