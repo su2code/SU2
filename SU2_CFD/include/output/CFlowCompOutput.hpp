@@ -82,14 +82,13 @@ private:
                              CAerodynamicsModule,
                              CFixedCLModule,
                              CVortexIdentificationModule,
-                             CFlowCoefficientModule,
-                             CResidualModule,
-                             CDirectDiffModule,
-                             CUserFunctionModule,
-                             CConvergenceModule,
-                             CTimeConvergenceModule>;
+                             CFlowCoefficientModule>;
 
-//  CModuleManager<Modules> modules;
+  using Modifiers = ModuleList<CResidualModule,
+                               CDirectDiffModule,
+                               CUserFunctionModule,
+                               CConvergenceModule,
+                               CTimeConvergenceModule>;
 
 public:
 

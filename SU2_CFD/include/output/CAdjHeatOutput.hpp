@@ -40,8 +40,11 @@
 class CAdjHeatOutput final: public COutput {
 
   using Modules = ModuleList<CCommonModule,
-                             CConvergenceModule,
-                             CResidualModule>;
+                             CFVMBaseModule>;
+
+  using Modifiers = ModuleList<CResidualModule,
+                               CConvergenceModule>;
+
 public:
 
   /*!

@@ -2,7 +2,7 @@
 
 #include "../../../../Common/include/CConfig.hpp"
 
-CUserFunctionModule::CUserFunctionModule(CConfig* config, int nDim) : CSolverOutputModule(nDim) {
+CUserFunctionModule::CUserFunctionModule(CConfig* config, int nDim) : CModifierModule(nDim) {
 
   Parser::CFunctionParser funcParser;
   funcParser.ParseFunctionsFromFile("functions.su2x");
@@ -44,7 +44,7 @@ CUserFunctionModule::CUserFunctionModule(CConfig* config, int nDim) : CSolverOut
   }
 }
 
-void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager& volumeFields) {
+void CUserFunctionModule::DefineVolumeFieldModifier(CVolumeOutFieldManager &volumeFields) {
 
   volumeFunctionFields.clear();
 
@@ -71,17 +71,13 @@ void CUserFunctionModule::DefineVolumeFields(CVolumeOutFieldManager& volumeField
   }
 }
 
-void CUserFunctionModule::LoadSurfaceData(CVolumeOutFieldManager&, const SolverData&, const IterationInfo&,
-                                          const PointInfo&) {
+void CUserFunctionModule::LoadSurfaceDataModifier(CVolumeOutFieldManager&, const IterationInfo&) {
   EvalUserFunctions(volumeScope.get(), volumeFunctionFields);
 }
 
-void CUserFunctionModule::LoadVolumeData(CVolumeOutFieldManager&, const SolverData&, const IterationInfo&,
-                                         const PointInfo&) {
+void CUserFunctionModule::LoadVolumeDataModifier(CVolumeOutFieldManager&, const IterationInfo&) {
   EvalUserFunctions(volumeScope.get(), volumeFunctionFields);
 }
-
-void CUserFunctionModule::DefineHistoryFields(CHistoryOutFieldManager&) {}
 
 void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) {
 
@@ -110,7 +106,7 @@ void CUserFunctionModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& hi
   }
 }
 
-void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager&, const SolverData&, const IterationInfo&) {
+void CUserFunctionModule::LoadHistoryDataModifier(CHistoryOutFieldManager&, const IterationInfo&) {
   EvalUserFunctions(historyScope.get(), historyFunctionFields);
 }
 

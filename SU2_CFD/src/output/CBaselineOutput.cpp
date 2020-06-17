@@ -33,7 +33,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) :
-  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(config, nDim))) {
 
   /*--- Set the requested volume fields to all fields in the solver ---*/
 

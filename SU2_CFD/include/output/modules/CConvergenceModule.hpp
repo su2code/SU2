@@ -3,7 +3,7 @@
 
 #include "COutputModule.hpp"
 
-class CConvergenceModule : public CSolverOutputModule {
+class CConvergenceModule : public CModifierModule {
 
   su2double cauchyValue = 0,         /*!< \brief Summed value of the convergence indicator. */
   cauchyFunc = 0;                    /*!< \brief Current value of the convergence indicator at one iteration. */

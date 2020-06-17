@@ -39,9 +39,10 @@
  */
 class CAdjElasticityOutput final : public COutput {
 
-  using Modules = ModuleList<CCommonModule,
-                             CConvergenceModule,
-                             CResidualModule>;
+  using Modules = ModuleList<CCommonModule>;
+
+  using Modifiers = ModuleList<CResidualModule,
+                               CConvergenceModule>;
 
 private:
   unsigned short nVar_FEM; //!< Number of FEM variables

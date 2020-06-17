@@ -2,7 +2,7 @@
 
 #include "COutputModule.hpp"
 
-class CDirectDiffModule : public CSolverOutputModule {
+class CDirectDiffModule : public CModifierModule {
 
 
   COutFieldManager::FieldRefVector modifiedFields, baseFields;
@@ -12,7 +12,7 @@ public:
 
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyField) override;
 
-  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields,
                                const IterationInfo& iterationInfo) override;
 
 };

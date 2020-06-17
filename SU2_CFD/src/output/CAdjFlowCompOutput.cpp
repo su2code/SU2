@@ -32,11 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
-
-  turb_model = config->GetKind_Turb_Model();
-
-  cont_adj = config->GetContinuous_Adjoint();
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(config, nDim))) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -90,10 +86,6 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) :
   /*--- Add the obj. function extension --- */
 
   restartFilename = config->GetObjFunc_Extension(restartFilename);
-
-  /*--- Set the default convergence field --- */
-
-  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_DENSITY");
 
 }
 

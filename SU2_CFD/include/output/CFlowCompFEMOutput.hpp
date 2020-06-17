@@ -39,6 +39,7 @@ class CVariable;
 class CFlowCompFEMOutput final: public CFlowOutput {
 
   using Modules = ModuleList<>;
+  using Modifiers = ModuleList<>;
 
 private:
 

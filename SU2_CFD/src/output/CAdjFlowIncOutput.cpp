@@ -32,15 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
-
-  turb_model = config->GetKind_Turb_Model();
-
-  heat = config->GetEnergy_Equation();
-
-  weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  rad_model = config->GetKind_RadiationModel();
+  COutput(config, nDim, false, false, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(config, nDim))) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

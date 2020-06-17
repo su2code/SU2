@@ -4,7 +4,7 @@
 #include "COutputModule.hpp"
 #include "../tools/CWindowingTools.hpp"
 
-class CTimeConvergenceModule : public CSolverOutputModule {
+class CTimeConvergenceModule : public CModifierModule {
 
   std::vector<std::string> wndConvFields;                /*!< \brief Name of the field to be monitored for convergence. */
   std::vector<std::vector<su2double> > WndCauchy_Serie;  /*!< \brief Complete Cauchy serial. */
@@ -19,16 +19,19 @@ class CTimeConvergenceModule : public CSolverOutputModule {
 
   map<std::string, CWindowedAverage> windowedTimeAverages;
 
+  unsigned long startWindowIteration = 0;
+  unsigned long startWindowConvIteration = 0;
+  bool windowCauchyCrit = false;
+  WINDOW_FUNCTION kindWindow = SQUARE;
+  unsigned long nIter = 0;
 
 public:
 
   CTimeConvergenceModule(CConfig* config, int nDim);
 
-  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
-
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields,
                        const IterationInfo& iterationInfo) override;
 
 };

@@ -29,7 +29,7 @@
 #include "../../include/output/CMultizoneOutput.hpp"
 
 CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) :
-  COutput(driver_config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(driver_config, nDim))) {
+  COutput(driver_config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(driver_config, nDim))) {
 
   unsigned short iZone = 0;
   rank = SU2_MPI::GetRank();
@@ -76,10 +76,6 @@ CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, uns
   if (driver_config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
 
   historyFilename += hist_ext;
-
-  /*--- Set the default convergence field --- */
-
-  if (convFields.empty() ) convFields.emplace_back("AVG_BGS_RES[0]");
 
 }
 

@@ -1,13 +1,15 @@
 #include "../../../include/output/modules/CConvergenceModule.hpp"
 #include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
-CConvergenceModule::CConvergenceModule(CConfig* config, int nDim) : CSolverOutputModule(nDim){
+CConvergenceModule::CConvergenceModule(CConfig* config, int nDim) : CModifierModule(nDim){
 
   /*--- Initialize convergence monitoring structure ---*/
 
   nCauchy_Elems = config->GetCauchy_Elems();
   cauchyEps = config->GetCauchy_Eps();
   minLogResidual = config->GetMinLogResidual();
+  convStartIter = config->GetStartConv_Iter();
 
   for (unsigned short iField = 0; iField < config->GetnConv_Field(); iField++){
     convFields.emplace_back(config->GetConv_Field(iField));

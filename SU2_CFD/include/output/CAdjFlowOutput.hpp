@@ -62,14 +62,11 @@ class CAdjFlowCompOutput final: public COutput {
 
   using Modules = ModuleList<CCommonModule,
                              CFVMBaseModule,
-                             CAdjFlowCompOutputModule,
-                             CConvergenceModule,
-                             CResidualModule>;
+                             CAdjFlowCompOutputModule>;
 
+  using Modifiers = ModuleList<CResidualModule,
+                               CConvergenceModule>;
 private:
-
-  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
 
 public:
 

@@ -2,7 +2,8 @@
 
 #include "../../../../Common/include/CConfig.hpp"
 
-CResidualModule::CResidualModule(CConfig* config, int nDim) : CSolverOutputModule(nDim) {}
+CResidualModule::CResidualModule(CConfig* config, int nDim) : CModifierModule(nDim),
+  TimeDomain(config->GetTime_Domain()) {}
 
 void CResidualModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) {
 
@@ -29,15 +30,14 @@ void CResidualModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& histor
   }
 }
 
-void CResidualModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+void CResidualModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields,
                                               const IterationInfo& iterationInfo) {
 
-  const auto* config = solverData.config;
   const auto Iter    = iterationInfo.Iter;
 
   map<string, pair<su2double, int> > Average;
 
-  bool InitResidual = config->GetTime_Domain() ? Iter == 0 : Iter < 2;
+  bool InitResidual = TimeDomain ? Iter == 0 : Iter < 2;
 
   for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::RESIDUAL})) {
     if (InitResidual || (field->second.value > initialResiduals[field->first])) {

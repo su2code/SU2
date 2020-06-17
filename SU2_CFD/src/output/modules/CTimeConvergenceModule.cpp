@@ -64,20 +64,18 @@ void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager 
   }
 }
 
-void CTimeConvergenceModule::LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
-                                             const IterationInfo& iterationInfo){
+void CTimeConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager &historyFields, const IterationInfo &iterationInfo){
 
-  const auto* config  = solverData.config;
   const auto Iter     = iterationInfo.Iter;
   const auto TimeIter = iterationInfo.TimeIter;
 
-  bool Inner_IterConv = historyFields.GetCollection().GetValueByKey("CONVERGENCE") ||
-     config->GetnInner_Iter()-1 <=  Iter; //Check, if Inner_Iter is converged
+  bool Inner_IterConv = historyFields.GetFieldValue("CONVERGENCE") ||
+                        nIter-1 <=  Iter; //Check, if Inner_Iter is converged
 
   if (Inner_IterConv){
     for (const auto& field : historyFields.GetCollection().GetFieldsByType({FieldType::COEFFICIENT, FieldType::PER_SURFACE_COEFFICIENT})){
-      windowedTimeAverages[field->first].addValue(field->second.value, TimeIter,  config->GetStartWindowIteration());
-      historyFields.SetFieldValue(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(config->GetKindWindow()));
+      windowedTimeAverages[field->first].addValue(field->second.value, TimeIter,  startWindowIteration);
+      historyFields.SetFieldValue(avgPrefix + field->first, windowedTimeAverages[field->first].WindowedUpdate(kindWindow));
     }
   }
 

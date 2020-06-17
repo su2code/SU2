@@ -32,7 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) :
-  CFlowOutput(config, nDim, true, true, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
+  CFlowOutput(config, nDim, true, true, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(config, nDim))) {
 
   turb_model = config->GetKind_Turb_Model();
 
@@ -77,10 +77,6 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) :
   /*--- Set the restart filename --- */
 
   restartFilename = config->GetRestart_FileName();
-
-  /*--- Set the default convergence field --- */
-
-  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
 
 }
 

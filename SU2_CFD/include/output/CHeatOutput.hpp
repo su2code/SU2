@@ -65,11 +65,13 @@ class CHeatOutput final: public COutput {
 
   using Modules = ModuleList<CCommonModule,
                              CFVMBaseModule,
-                             CHeatOutputModule,
-                             CResidualModule,
-                             CDirectDiffModule,
-                             CUserFunctionModule,
-                             CConvergenceModule>;
+                             CHeatOutputModule>;
+
+  using Modifiers = ModuleList<CResidualModule,
+                               CDirectDiffModule,
+                               CUserFunctionModule,
+                               CConvergenceModule,
+                               CTimeConvergenceModule>;
 public:
 
   /*!

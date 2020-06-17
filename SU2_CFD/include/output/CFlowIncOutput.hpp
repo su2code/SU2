@@ -77,11 +77,13 @@ class CFlowIncOutput final: public CFlowOutput {
                              CTurbOutputModule,
                              CAerodynamicsModule,
                              CVortexIdentificationModule,
-                             CFlowCoefficientModule,
-                             CResidualModule,
-                             CDirectDiffModule,
-                             CUserFunctionModule,
-                             CConvergenceModule>;
+                             CFlowCoefficientModule>;
+
+  using Modifiers = ModuleList<CResidualModule,
+                               CDirectDiffModule,
+                               CUserFunctionModule,
+                               CConvergenceModule,
+                               CTimeConvergenceModule>;
 private:
 
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/

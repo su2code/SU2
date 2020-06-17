@@ -39,7 +39,7 @@
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
 #include "fields/COutFieldCollection.hpp"
-#include "modules/CModuleManager.hpp"
+#include "module_manager/CModuleManager.hpp"
 
 class CGeometry;
 class CSolver;

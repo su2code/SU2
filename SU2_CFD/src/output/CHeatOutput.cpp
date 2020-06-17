@@ -31,7 +31,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
+  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(config, nDim))) {
 
   multiZone = config->GetMultizone_Problem();
 
@@ -69,11 +69,6 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) :
   /*--- Set the restart filename --- */
 
   restartFilename = config->GetRestart_FileName();
-
-  /*--- Set the default convergence field --- */
-
-  if (convFields.empty() ) convFields.emplace_back("RMS_TEMPERATURE");
-
 
 }
 

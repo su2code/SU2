@@ -32,7 +32,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) :
-  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules>(config, nDim))) {
+  COutput(config, nDim, false, true, moduleManagerPtr(new CModuleManager<Modules, Modifiers>(config, nDim))) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -91,10 +91,6 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) :
   /*--- Set the restart filename --- */
 
   restartFilename = config->GetRestart_FileName();
-
-  /*--- Set the default convergence field --- */
-
-  if (convFields.empty() ) convFields.emplace_back("RMS_DISP_X");
 
 }
 

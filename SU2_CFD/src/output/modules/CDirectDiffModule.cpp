@@ -4,7 +4,7 @@
 
 constexpr static char prefix[] = "D_";
 
-CDirectDiffModule::CDirectDiffModule(CConfig* config, int nDim) : CSolverOutputModule(nDim, config->GetDirectDiff()) {}
+CDirectDiffModule::CDirectDiffModule(CConfig* config, int nDim) : CModifierModule(nDim, config->GetDirectDiff()) {}
 
 void CDirectDiffModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) {
   modifiedFields.clear();
@@ -19,7 +19,7 @@ void CDirectDiffModule::DefineHistoryFieldModifier(CHistoryOutFieldManager& hist
   }
 }
 
-void CDirectDiffModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData&,
+void CDirectDiffModule::LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields,
                                                 const IterationInfo&) {
   for (unsigned int iField = 0; iField < baseFields.size(); iField++) {
     historyFields.SetFieldValue(modifiedFields[iField]->first,
