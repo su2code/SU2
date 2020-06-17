@@ -298,6 +298,14 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
     }
   }
 
+  if (periodic)
+  {
+    for (size_t iDim = 0; iDim < nDim; ++iDim)
+      for (size_t jDim = 0; jDim < nDim; ++jDim)
+        AD::SetPreaccOut(Smatrix[iDim][jDim]);
+    AD::EndPreacc();
+  }
+
   /*--- Computation of the gradient: S*c ---*/
 
   for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -309,11 +317,14 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
         Cvector[iDim] += Smatrix[iDim][jDim] * gradient(iPoint, iVar, jDim);
 
     for (size_t iDim = 0; iDim < nDim; ++iDim)
-    {
       gradient(iPoint, iVar, iDim) = Cvector[iDim];
-      AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
-    }
   }
 
-  AD::EndPreacc();
+  if (!periodic)
+  {
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
+    AD::EndPreacc();
+  }
 }
