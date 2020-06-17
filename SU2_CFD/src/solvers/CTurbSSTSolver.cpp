@@ -638,7 +638,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
         const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
         distance = doubleInfo[0];
-        cout << distance << endl;
 
         /*--- Load the coefficients and interpolate---*/
         unsigned short nDonors = geometry->vertex[val_marker][iVertex]->GetnDonorPoints();
