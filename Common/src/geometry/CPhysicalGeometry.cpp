@@ -13171,6 +13171,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       /*--- BCM: Set nearest element and marker. These will be used
             for wall functions ---*/
       string markerTag = config->GetMarker_All_TagBound(markerID);
+      cout << markerTag << endl;
       if ((config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) &&
           (!node[iPoint]->GetSolidBoundary()) &&
           (iPoint < nPointDomain)) {
