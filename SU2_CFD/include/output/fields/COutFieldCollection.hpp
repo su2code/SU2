@@ -19,15 +19,6 @@ protected:
   using CurrentType::insertionVector;
   using CurrentType::map;
 
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            cacheIndexVector;
-  /*! \brief Current value of the cache index */
-  unsigned short                                cacheIndex;
-  /*! \brief Boolean to store whether the field index cache should be build. */
-  bool                                          buildIndexCache;
-
-  bool cacheEnabled = false;
-
 private:
 
   /*!
@@ -207,15 +198,5 @@ public:
     insertionVector[i]->second.value = value;
   }
 };
-
-/*!
- * \brief Typedef for a collection of history fields
- */
-//typedef COutFieldCollection<COutputField> COutFieldCollection;
-
-/*!
- * \brief Typedef for a collection of volume fields
- */
-//typedef COutFieldCollection<COutputField> COutFieldCollection;
 
 

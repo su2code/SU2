@@ -27,12 +27,6 @@ CConvergenceModule::CConvergenceModule(CConfig* config, int nDim) : CModifierMod
 }
 
 
-void CConvergenceModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
-
-  historyFields.AddField("CONVERGENCE", "Convergence", ScreenOutputFormat::INTEGER,
-                         "CONVERGENCE", "Convergence indicator", FieldType::DEFAULT);
-}
-
 void CConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 
   newFunc = vector<su2double>(convFields.size());

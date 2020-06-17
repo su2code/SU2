@@ -28,11 +28,6 @@ CTimeConvergenceModule::CTimeConvergenceModule(CConfig* config, int nDim) : CSol
 
 }
 
-void CTimeConvergenceModule::DefineHistoryFields(CHistoryOutFieldManager &historyFields){
-
-  historyFields.AddField("TIME_CONVERGENCE", "Time Convergence", ScreenOutputFormat::INTEGER,
-                         "CONVERGENCE", "Time Convergence indicator", FieldType::DEFAULT);
-}
 
 void CTimeConvergenceModule::DefineHistoryFieldModifier(CHistoryOutFieldManager &historyFields){
 

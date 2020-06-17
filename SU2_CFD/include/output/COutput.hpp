@@ -100,12 +100,6 @@ protected:
   std::string multiZoneHeaderString;                    //!< Multizone header string
   bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
 
-  //! Structure to store the value of the running averages
-  map<string, CWindowedAverage> windowedTimeAverages;
-
-  //! Structure to store the value initial residuals for relative residual computation
-  std::map<string, su2double> initialResiduals;
-
   /*----------------------------- Volume output ----------------------------*/
 
   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
@@ -125,39 +119,13 @@ protected:
   /*! \brief Number of requested volume field names in the config file. */
   unsigned short nRequestedVolumeFields = 0;
 
-  /*----------------------------- Convergence monitoring ----------------------------*/
-
-  su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
-  cauchyFunc;                    /*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter; /*!< \brief Number of elements of the Cauchy serial. */
-  vector<vector<su2double> > cauchySerie;        /*!< \brief Complete Cauchy serial. */
-  unsigned long nCauchy_Elems;   /*!< \brief Total number of cauchy elems to monitor */
-  su2double cauchyEps;           /*!< \brief Defines the threshold when to stop the solver. */
-  su2double minLogResidual;      /*!< \brief Minimum value of the residual to reach */
-  vector<su2double> oldFunc,     /*!< \brief Old value of the coefficient. */
-  newFunc;                       /*!< \brief Current value of the coefficient. */
-  bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
-  su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
-  vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
-
   /*----------------------------- Adaptive CFL ----------------------------*/
 
   su2double rhoResNew,    /*!< New value of the residual for adaptive CFL routine. */
   rhoResOld;              /*!< Old value of the residual for adaptive CFL routine. */
 
-  /*----------------------------- Time Convergence monitoring ----------------------------*/
-  vector<string> wndConvFields;                /*!< \brief Name of the field to be monitored for convergence. */
-  vector<vector<su2double> > WndCauchy_Serie;  /*!< \brief Complete Cauchy serial. */
-  unsigned long nWndCauchy_Elems;              /*!< \brief Total number of cauchy elems to monitor */
-  su2double wndCauchyEps;                      /*!< \brief Defines the threshold when to stop the solver. */
 
-  vector<su2double> WndOld_Func;  /*!< \brief Old value of the objective function (the function which is monitored). */
-  vector<su2double> WndNew_Func;  /*!< \brief Current value of the objective function (the function which is monitored). */
-  su2double WndCauchy_Func;       /*!< \brief Current value of the convergence indicator at one iteration. */
-  su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
-  bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
-
-
+  bool convergence, TimeConvergence;
   bool customOutput = true;
 
   typedef std::unique_ptr<CModuleManagerBase<SolverData, IterationInfo>> moduleManagerPtr;
@@ -285,17 +253,9 @@ public:
     curInnerIter = InnerIter;
   }
 
-  const COutFieldCollection& GetHistoryFieldsAll(){
+  const CHistoryOutFieldManager& GetHistoryFieldsAll() const {
     return modules->GetHistoryFields();
   }
-
-  /*!
-   * \brief Monitor the convergence of an output field
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Iteration - Index of the current iteration.
-   * \return Boolean indicating whether the problem is converged.
-   */
-  bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
 
   /*!
    * \brief Print a summary of the convergence to screen.
@@ -307,14 +267,6 @@ public:
    * \return Boolean indicating whether the problem is converged.
    */
   bool GetConvergence() const {return convergence;}
-
-  /*!
-     * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] Iteration - Index of the current iteration.
-     * \return Boolean indicating whether the problem is converged.
-     */
-  bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
 
   /*!
    * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
@@ -360,21 +312,6 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
 
-//  inline void AddCustomHistoryOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
-
-//    COutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "User-defined field", type);
-//    string tokenName = name;
-//    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
-//    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
-//    customField.tokenRef = &historyFieldsAll.GetScope()[tokenName];
-//    customField.userFunction = userFunction;
-//    historyFieldsAll.AddItem(name, customField);
-
-//  }
-
-//  inline void AddCustomHistoryOutput(string name){
-//    AddCustomHistoryOutput(name, CreateInlineUserFunction(name));
-//  }
 protected:
 
   /*----------------------------- Protected member functions ----------------------------*/
@@ -452,40 +389,6 @@ protected:
     }
   }
 
-//  inline interpreter::UserFunction* CreateInlineUserFunction(string name){
-//    interpreter::BlockStatement body;
-//    string rawName = name;
-//    rawName.pop_back();
-//    rawName.erase(0,1);
-
-//    string funcName = rawName;
-//    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
-//    replace_if(funcName.begin(),funcName.end(),::isblank,'_');
-//    std::string func = "{"
-//                       " var = " + rawName + ";"
-//                       " return var; }";
-
-//    body.compile(func.c_str());
-
-//    return new interpreter::UserFunction({},body, funcName, interpreter::FunctionType::HISTFIELD);
-
-//  }
-
-
-//  inline void AddCustomVolumeOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
-
-//    COutputField customField(name, "CUSTOM", "User-defined field", type);
-//    string tokenName = name;
-//    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
-//    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
-//    customField.tokenRef = &volumeFieldsAll.GetScope()[tokenName];
-//    customField.userFunction = userFunction;
-//    volumeFieldsAll.AddItem(name, customField);
-
-//  }
-
-  void CustomIntegration(CGeometry *geometry, unsigned long iPoint);
-
   /*!
    * \brief Set the value of a history output field for a specific surface marker
    * \param[in] name - Name of the field.
@@ -516,26 +419,14 @@ protected:
    * \param[in] name - Name of the field.
    * \param[in] value - The new value of this field.
    */
-  su2double GetVolumeOutputValue(string name, unsigned long iPoint);
+  inline su2double GetVolumeOutputValue(string name, unsigned long iPoint){return 0.0;};
 
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
    * \param[in] value - The new value of this field.
    */
-  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
-
-  /*!
-   * \brief Set the value of a volume output field
-   * \param[in] name - Name of the field.
-   * \param[in] value - The new value of this field.
-   */
-  void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
-
-  /*!
-   * \brief CheckHistoryOutput
-   */
-  void CheckHistoryOutput(CConfig *config);
+  inline void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){};
 
   /*!
    * \brief Open the history file and write the header.
@@ -544,32 +435,12 @@ protected:
   void PrepareHistoryFile(CConfig *config);
 
   /*!
-   * \brief SetUserDefinedHistoryFields
-   * \param config
-   */
-  void SetUserDefinedHistoryFields(CConfig* config);
-
-  /*!
    * \brief Load up the values of the requested volume fields into ::Local_Data array.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - The container holding all solution data.
    */
   void LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
-
-
-  void LoadSurfaceData(CConfig* config, CGeometry* geometry, CSolver** solver);
-  /*!
-   * \brief Postprocess_HistoryData
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocess_HistoryData(CConfig *config);
-
-  /*!
-   * \brief Postprocess_HistoryFields
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocess_HistoryFields(CConfig *config);
 
   /*!
    * \brief Check whether we should print output.
@@ -583,18 +454,6 @@ protected:
 
     return (iIter % iFreq == 0);
   }
-
-  /*!
-   * \brief Set the history fields common for all solvers.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCommonHistoryFields(CConfig *config);
-
-  /*!
-   * \brief Load values of the history fields common for all solvers.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void LoadCommonHistoryData(CConfig *config);
 
   /*!
    * \brief Allocates the data sorters if necessary.

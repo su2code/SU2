@@ -120,47 +120,6 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output, bool cus
 
   noWriting = false;
 
-  /*--- Initialize convergence monitoring structure ---*/
-
-  nCauchy_Elems = config->GetCauchy_Elems();
-  cauchyEps = config->GetCauchy_Eps();
-  minLogResidual = config->GetMinLogResidual();
-
-  for (unsigned short iField = 0; iField < config->GetnConv_Field(); iField++){
-    convFields.emplace_back(config->GetConv_Field(iField));
-  }
-
-  newFunc = vector<su2double>(convFields.size());
-  oldFunc = vector<su2double>(convFields.size());
-  cauchySerie = vector<vector<su2double>>(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
-  cauchyValue = 0.0;
-  convergence = false;
-
-  /*--- Initialize time convergence monitoring structure ---*/
-
-  nWndCauchy_Elems = config->GetWnd_Cauchy_Elems();
-  wndCauchyEps     = config->GetWnd_Cauchy_Eps();
-
-  wndConvFields.reserve(config->GetnWndConv_Field());
-  for (unsigned short iField = 0; iField < config->GetnWndConv_Field(); iField++){
-    wndConvFields.emplace_back(config->GetWndConv_Field(iField));
-  }
-
-  WndOld_Func = vector<su2double>(wndConvFields.size());
-  WndNew_Func = vector<su2double>(wndConvFields.size());
-  WndCauchy_Serie = vector<vector<su2double>>(wndConvFields.size(), vector<su2double>(nWndCauchy_Elems, 0.0));
-  WndCauchy_Value = 0.0;
-  TimeConvergence = false;
-
-  /*--- Check that the number of cauchy elems is not too large ---*/
-
-  if (nCauchy_Elems > 1000){
-    SU2_MPI::Error("Number of Cauchy Elems must be smaller than 1000", CURRENT_FUNCTION);
-  }
-  if (nWndCauchy_Elems > 1000){
-    SU2_MPI::Error("Number of Time Cauchy Elems must be smaller than 1000", CURRENT_FUNCTION);
-  }
-
   /*--- Initialize all convergence flags to false. ---*/
 
   convergence        = false;
@@ -208,27 +167,13 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   bool write_header, write_history, write_screen;
 
-//  LoadSurfaceData(config, geometry, solver_container);
-
-  /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-
-//  LoadCommonHistoryData(config);
-
-//  LoadHistoryData(config, geometry, solver_container);
-
-//  Convergence_Monitoring(config, curInnerIter);
-
-//  Postprocess_HistoryData(config);
-
-//  MonitorTimeConvergence(config, curTimeIter);
-
   modules->LoadData(SolverData{config, geometry, solver_container}, {curInnerIter, TimeIter});
 
-  if (modules->GetHistoryFields().CheckKey("CONVERGENCE"))
-    convergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetItemByKey("CONVERGENCE").value));
+  if (modules->GetHistoryFields().GetCollection().CheckKey("CONVERGENCE"))
+    convergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetFieldValue("CONVERGENCE")));
 
-  if (modules->GetHistoryFields().CheckKey("TIME_CONVERGENCE"))
-    TimeConvergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetItemByKey("TIME_CONVERGENCE").value));
+  if (modules->GetHistoryFields().GetCollection().CheckKey("TIME_CONVERGENCE"))
+    TimeConvergence = static_cast<bool>(SU2_TYPE::Int(modules->GetHistoryFields().GetFieldValue("TIME_CONVERGENCE")));
 
   /*--- Output using only the master node ---*/
 
@@ -244,7 +189,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
     if (write_header){
 
       std::vector<string> notFound;
-      const auto& screenFields = modules->GetHistoryFields().GetFieldsByKey(requestedScreenFields, notFound);
+      const auto& screenFields = modules->GetHistoryFields().GetCollection().GetFieldsByKey(requestedScreenFields, notFound);
 
       if (!notFound.empty()){
         for (const auto& field : notFound)
@@ -267,6 +212,8 @@ void COutput::SetHistory_Output(CGeometry *geometry,
     write_screen = WriteScreen_Output(config);
     if (write_screen) SetScreen_Output(config);
 
+    modules->PrintToStream(&std::cout);
+
   }
 
 }
@@ -275,17 +222,8 @@ void COutput::SetHistory_Output(CGeometry *geometry,
                                 CSolver **solver_container,
                                 CConfig *config) {
 
-  LoadSurfaceData(config, geometry, solver_container);
+  modules->LoadData(SolverData{config, geometry, solver_container}, {0, 0});
 
-  /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-
-  LoadCommonHistoryData(config);
-
-  LoadHistoryData(config, geometry, solver_container);
-
-  Convergence_Monitoring(config, curInnerIter);
-
-  Postprocess_HistoryData(config);
 }
 
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
@@ -298,15 +236,15 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
-  LoadCommonHistoryData(driver_config);
+//  LoadCommonHistoryData(driver_config);
 
-  LoadMultizoneHistoryData(output, config);
+//  LoadMultizoneHistoryData(output, config);
 
-  Convergence_Monitoring(driver_config, curOuterIter);
+//  Convergence_Monitoring(driver_config, curOuterIter);
 
-  Postprocess_HistoryData(driver_config);
+//  Postprocess_HistoryData(driver_config);
 
-  MonitorTimeConvergence(driver_config, curTimeIter);
+//  MonitorTimeConvergence(driver_config, curTimeIter);
 
   /*--- Output using only the master node ---*/
 
@@ -844,215 +782,26 @@ void COutput::PrintConvergenceSummary(){
   ConvSummary.SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   ConvSummary.PrintHeader();
 
-  const auto& convFieldRef = modules->GetHistoryFields().GetFieldsByKey(convFields);
+//  const auto& convFieldRef = modules->GetHistoryFields().GetFieldsByKey(convFields);
 
-  for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT}, convFieldRef)){
-    ConvSummary << field->second.fieldName
-                << field->second.value
-                << " < " + PrintingToolbox::to_string(cauchyEps)
-                << (field->second.value < cauchyEps ? "Yes" : "No");
-  }
+//  for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT}, convFieldRef)){
+//    ConvSummary << field->second.fieldName
+//                << field->second.value
+//                << " < " + PrintingToolbox::to_string(cauchyEps)
+//                << (field->second.value < cauchyEps ? "Yes" : "No");
+//  }
 
-  for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::RESIDUAL,
-                                                                      FieldType::AUTO_RESIDUAL}, convFieldRef)){
-    ConvSummary << field->second.fieldName
-                << field->second.value
-                << " < " + PrintingToolbox::to_string(minLogResidual)
-                << (field->second.value < minLogResidual ? "Yes" : "No");
-  }
+//  for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::RESIDUAL,
+//                                                                      FieldType::AUTO_RESIDUAL}, convFieldRef)){
+//    ConvSummary << field->second.fieldName
+//                << field->second.value
+//                << " < " + PrintingToolbox::to_string(minLogResidual)
+//                << (field->second.value < minLogResidual ? "Yes" : "No");
+//  }
 
-  ConvSummary.PrintFooter();
+//  ConvSummary.PrintFooter();
 }
 
-bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
-
-  unsigned short iCounter;
-
-  convergence = true;
-
-  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
-
-    bool fieldConverged = false;
-
-    const string &convField = convFields[iField_Conv];
-
-    if (GetHistoryFieldsAll().CheckKey(convField)){
-
-      const COutputField& outField = historyFieldsAll[convField];
-
-      su2double monitor = outField.value;
-
-      /*--- Cauchy based convergence criteria ---*/
-
-      if (outField.fieldType == FieldType::COEFFICIENT) {
-
-        if (Iteration == 0){
-          for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
-            cauchySerie[iField_Conv][iCounter] = 0.0;
-          }
-          newFunc[iField_Conv] = monitor;
-        }
-
-        oldFunc[iField_Conv] = newFunc[iField_Conv];
-        newFunc[iField_Conv] = monitor;
-        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
-
-        cauchySerie[iField_Conv][Iteration % nCauchy_Elems] = cauchyFunc;
-        cauchyValue = 0.0;
-        for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++)
-          cauchyValue += cauchySerie[iField_Conv][iCounter];
-
-        cauchyValue /= nCauchy_Elems;
-
-        if (cauchyValue >= cauchyEps) { fieldConverged = false;}
-        else { fieldConverged = true;}
-
-        /*--- Start monitoring only if the current iteration
-         *  is larger than the number of cauchy elements and
-         * the number of start-up iterations --- */
-
-        if (Iteration < max(config->GetStartConv_Iter(), nCauchy_Elems)){
-          fieldConverged = false;
-        }
-
-        SetHistoryOutputValue("CAUCHY_" + convField, cauchyValue);
-
-        if(Iteration == 0){
-          SetHistoryOutputValue("CAUCHY_" + convField, 1.0);
-        }
-      }
-
-
-      /*--- Residual based convergence criteria ---*/
-
-      if (outField.fieldType == FieldType::RESIDUAL ||
-          outField.fieldType == FieldType::AUTO_RESIDUAL) {
-
-        /*--- Check the convergence ---*/
-
-        if (Iteration != 0 && (monitor <= minLogResidual)) { fieldConverged = true;  }
-        else { fieldConverged = false; }
-
-      }
-
-      /*--- Do not apply any convergence criteria of the number
-     of iterations is less than a particular value ---*/
-
-      if (Iteration < config->GetStartConv_Iter()) {
-        fieldConverged = false;
-      }
-
-      convergence = fieldConverged && convergence;
-    }
-  }
-
-  if (convFields.empty()) convergence = false;
-
-  /*--- Apply the same convergence criteria to all the processors ---*/
-
-#ifdef HAVE_MPI
-
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-
-  /*--- Convergence criteria ---*/
-
-  sbuf_conv[0] = convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-  /*-- Compute global convergence criteria in the master node --*/
-
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-
-  if (sbuf_conv[0] == 1) { convergence = true; }
-  else { convergence = false;  }
-
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-
-#endif
-
-  return convergence;
-}
-
-bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteration) {
-
-  bool Inner_IterConv = GetConvergence() || config->GetnInner_Iter()-1 <= curInnerIter; //Check, if Inner_Iter is converged
-
-  if(TimeIteration == 0){
-    for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
-      const string WndConv_Field= wndConvFields[iField_Conv];
-      if (GetHistoryFieldsAll().CheckKey(WndConv_Field)){
-        SetHistoryOutputValue("CAUCHY_"+ WndConv_Field, 1.0);
-      }
-    }
-  }
-  if(Inner_IterConv && TimeIteration >= config->GetStartWindowIteration()){
-    TimeConvergence = true;
-    unsigned short iCounter;
-
-    for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
-      bool fieldConverged = false;
-      const string WndConv_Field= wndConvFields[iField_Conv];
-
-      if (GetHistoryFieldsAll().CheckKey(WndConv_Field)){
-        su2double monitor = historyFieldsAll[WndConv_Field].value;
-
-        /*--- Cauchy based convergence criteria ---*/
-
-        if (historyFieldsAll[WndConv_Field].fieldType == FieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
-          if (TimeIteration == config->GetStartWindowIteration()){
-            for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
-              WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
-            }
-            WndNew_Func[iField_Conv] = monitor;
-          }
-          WndOld_Func[iField_Conv] = WndNew_Func[iField_Conv];
-          WndNew_Func[iField_Conv] = monitor;
-          WndCauchy_Func = fabs(WndNew_Func[iField_Conv] - WndOld_Func[iField_Conv]);
-          WndCauchy_Serie[iField_Conv][TimeIteration % nWndCauchy_Elems] = WndCauchy_Func;
-          WndCauchy_Value = 1.0;
-
-          if (TimeIteration >= nWndCauchy_Elems+config->GetStartWindowIteration()){
-            WndCauchy_Value = 0.0;
-            for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
-              WndCauchy_Value += WndCauchy_Serie[iField_Conv][iCounter];
-            }
-            WndCauchy_Value /= nWndCauchy_Elems;
-          }
-          if (WndCauchy_Value >= wndCauchyEps){fieldConverged = false;}
-          else{fieldConverged = true;}
-
-          /*--- Start monitoring only if the current iteration is larger than the
-           *  number of cauchy elements and the number of start-up iterations ---*/
-
-          if (TimeIteration <  config->GetStartWindowIteration() + max(config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
-            fieldConverged = false;
-          }
-          SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
-        }
-        TimeConvergence = fieldConverged && TimeConvergence;
-
-        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-
-        if (monitor != monitor){
-          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
-      }
-    }
-
-    /*--- Do not apply any convergence criterion if the option is disabled. */
-    if(!config->GetWnd_Cauchy_Crit()){TimeConvergence = false;}
-    if(wndConvFields.empty()){TimeConvergence = false;}
-  }
-  return TimeConvergence;
-}
 
 void COutput::SetHistoryFile_Header(CConfig *config) {
 
@@ -1274,107 +1023,6 @@ void COutput::PrepareHistoryFile(CConfig *config){
 }
 
 
-void COutput::SetUserDefinedHistoryFields(CConfig *config){
-
-//  regex exp("\\{\\S*\\}");
-
-//  /*--- Add inline defined output fields ---*/
-
-//  for (const auto& reqField : requestedScreenFields){
-//    if (regex_match(reqField, exp)){
-//      AddCustomHistoryOutput(reqField);
-//    }
-//  }
-
-//  /*--- Add output fields defined in function file ---*/
-
-//  for (const auto function : historyUserFunctions){
-//    if (function->getType() == interpreter::FunctionType::HISTFIELD){
-//      AddCustomHistoryOutput(function->name(), function, FieldType::CUSTOM_EVAL);
-//    }
-//  }
-
-//  std::vector<std::string> markerNames;
-//  for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
-//    markerNames.push_back(config->GetMarker_CfgFile_TagBound(iMarker_CfgFile));
-//    /*--- Make marker names available as string variables ---*/
-
-//    historyFieldsAll.GetScope()[markerNames[iMarker_CfgFile]] = markerNames[iMarker_CfgFile];
-//  }
-//  for (const auto& volField : volumeFieldsAll.GetFieldsByType({FieldType::SURFACE_INTEGRATE,
-//                                                               FieldType::CUSTOM_SURFACE_INTEGRATE})){
-//    AddHistoryOutputPerSurface(volField->first, volField->first, ScreenOutputFormat::SCIENTIFIC,
-//                               volField->second.outputGroup, markerNames, volField->second.description);
-
-//    historyFieldsAll.GetScope()[volField->first] = CppFunction(&getSurfaceValue, {"markerName"}, volField->first);
-//  }
-
-//  historyFieldsAll.UpdateTokens();
-//  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
-}
-
-void COutput::CheckHistoryOutput(CConfig* config){
-
-  auto printInfo = [&](const std::vector<string>& fields, const std::string& info){
-    if (rank == MASTER_NODE){
-      for (unsigned int i = 0; i < fields.size(); i++){
-        if (i == 0) {
-          cout << info << endl;
-        }
-        cout << fields[i];
-        if (i != fields.size()-1){
-          cout << ", ";
-        } else {
-          cout << endl;
-        }
-      }
-    }
-  };
-
-  /*--- Set screen convergence output header and remove unavailable fields ---*/
-
-  string requestedField;
-  vector<string> FieldsToRemove;
-  vector<bool> FoundField(nRequestedHistoryFields, false);
-
-  const auto& screenFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, FieldsToRemove);
-
-  /*--- Add fields to the screen output table--- */
-
-  for (const auto& field : screenFields){
-    convergenceTable->AddColumn(field->second.fieldName, fieldWidth);
-  }
-
-  requestedScreenFields = COutFieldCollection::GetKeys(screenFields);
-  nRequestedScreenFields = requestedScreenFields.size();
-
-  printInfo(requestedScreenFields, "Monitoring fields on screen: ");
-
-  /*--- Print info that fields have been removed to screen ---*/
-
-  printInfo(FieldsToRemove, "Fields ignored: ");
-
-  const auto& histFieldsWithName = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields);
-  const auto& histFieldsWithGroup = GetHistoryFieldsAll().GetFieldsByGroup(requestedHistoryFields);
-
-  requestedHistoryFields =
-      COutFieldCollection::GetKeys(COutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName));
-  nRequestedHistoryFields = requestedHistoryFields.size();
-
-  const auto& convergenceFields = GetHistoryFieldsAll().GetFieldsByKey(convFields, FieldsToRemove);
-
-  convFields = COutFieldCollection::GetKeys(convergenceFields);
-
-  printInfo(convFields, "Convergence monitoring fields: ");
-  printInfo(FieldsToRemove, "Fields ignored: ");
-
-  const auto& timeConvergenceFields = GetHistoryFieldsAll().GetFieldsByKey(wndConvFields, FieldsToRemove);
-
-  wndConvFields = COutFieldCollection::GetKeys(timeConvergenceFields);
-  printInfo(wndConvFields, "Time Convergence monitoring fields: ");
-  printInfo(FieldsToRemove, "Fields ignored: ");
-
-}
 
 void COutput::PreprocessVolumeOutput(CConfig *config, bool wrt){
 
@@ -1545,82 +1193,6 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
   }
 }
 
-void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver){
-
-  unsigned short iMarker = 0;
-  unsigned long iPoint = 0;
-  unsigned long iVertex = 0;
-
-  const auto& userDefinedFields      = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL});
-  const auto& userDefinedIntegration = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_SURFACE_INTEGRATE});
-  const auto& integrationFields      = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_SURFACE_INTEGRATE, FieldType::SURFACE_INTEGRATE});
-
-  /*--- Reset the offset cache and index --- */
-
-  volumeFieldsAll.SetCaching(true);
-
-  for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
-
-    const string markerNameCfg =  config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-      const string markerName = config->GetMarker_All_TagBound(iMarker);
-
-      /*--- We only want to have surface values on solid walls ---*/
-
-      if (markerName == markerNameCfg){
-
-        for (const auto& field : integrationFields){
-          field->second.value = 0.0;
-        }
-
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          /*--- Load the surface data into the data sorter. --- */
-
-          if(geometry->nodes->GetDomain(iPoint)){
-
-            volumeFieldsAll.StartCaching();
-
-            LoadVolumeData(config, geometry, solver, iPoint);
-
-            LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
-
-            if (!userDefinedFields.empty() || !userDefinedIntegration.empty()){
-//              volumeFieldsAll.UpdateTokens();
-//              volumeFieldsAll.EvalCustomFields(userDefinedFields);
-//              volumeFieldsAll.EvalCustomFields(userDefinedIntegration, true);
-            }
-            WriteToDataSorter(iPoint);
-          }
-        }
-      }
-    }
-
-    std::vector<su2double> sendBuffer(integrationFields.size());
-    std::vector<su2double> recvBuffer(integrationFields.size());
-
-    for (unsigned int iField = 0; iField < integrationFields.size(); iField++){
-      sendBuffer[iField] = integrationFields[iField]->second.value;
-    }
-
-    SU2_MPI::Allreduce(sendBuffer.data(), recvBuffer.data(), integrationFields.size(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    for (unsigned int iField = 0; iField < integrationFields.size(); iField++){
-      integrationFields[iField]->second.value = recvBuffer[iField];
-    }
-
-    for (const auto& field : integrationFields){
-      historyFieldsAll.SetValueByKey(field->first + "@" + markerNameCfg, field->second.value);
-    }
-  }
-
-  volumeFieldsAll.SetCaching(false);
-}
-
 void COutput::WriteToDataSorter(unsigned long iPoint){
   if (volumeDataSorter != nullptr){
     for (const auto& field : volumeFieldsAll.GetReferencesAll()){
@@ -1631,171 +1203,6 @@ void COutput::WriteToDataSorter(unsigned long iPoint){
   }
 }
 
-void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
-
-  COutputField& field = volumeFieldsAll.GetItemByKey(name);
-  switch(field.fieldType){
-    case FieldType::SURFACE_INTEGRATE:
-      field.value += value;
-      break;
-    default:
-      field.value = value;
-      break;
-  }
-}
-
-su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
-  return volumeFieldsAll.GetItemByKey(name).value;
-}
-
-void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value){
-
-//  const su2double scaling = 1.0 / su2double(curAbsTimeIter + 1);
-
-//  if (buildFieldIndexCache){
-
-//    /*--- Build up the offset cache to speed up subsequent
-//     * calls of this routine since the order of calls is
-//     * the same for every value of iPoint --- */
-
-//    if (volumeFieldsAll.CheckKey(name)){
-
-//      const int index = volumeFieldsAll.GetIndex(name);
-//      fieldIndexCache.push_back(index);
-//      const su2double old_value = volumeFieldsAll.GetItemByIndex(index).value;
-//      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
-//      volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), new_value);
-
-//    } else {
-//      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
-//    }
-//  } else {
-
-//    /*--- Use the offset cache for the access ---*/
-
-//    const int index = fieldIndexCache[cachePosition++];
-
-//    const su2double old_value = volumeFieldsAll.GetItemByIndex(index).value;
-//    const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
-//    volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), new_value);
-
-//    if (cachePosition == fieldIndexCache.size()){
-//      cachePosition = 0;
-//    }
-//  }
-
-}
-
-
-
-
-
-void COutput::Postprocess_HistoryData(CConfig *config){
-
-  map<string, pair<su2double, int> > Average;
-  map<string, int> Count;
-
-  for (const auto& field : historyFieldsAll.GetFieldsByType({FieldType::RESIDUAL})){
-    if (SetInit_Residuals(config) || (field->second.value > initialResiduals[field->first])) {
-      initialResiduals[field->first] = field->second.value;
-    }
-    SetHistoryOutputValue("REL_" + field->first, field->second.value - initialResiduals[field->first]);
-    Average[field->second.outputGroup].first += field->second.value;
-    Average[field->second.outputGroup].second++;
-  }
-
-  for (const auto& field : historyFieldsAll.GetFieldsByType({FieldType::COEFFICIENT})){
-    if (SetUpdate_Averages(config)){
-      if (config->GetTime_Domain()){
-        windowedTimeAverages[field->first].addValue(field->second.value, config->GetTimeIter(), config->GetStartWindowIteration());
-        SetHistoryOutputValue("TAVG_" + field->first, windowedTimeAverages[field->first].WindowedUpdate(config->GetKindWindow()));
-        if (config->GetDirectDiff()){
-          SetHistoryOutputValue("D_TAVG_" + field->first, SU2_TYPE::GetDerivative(windowedTimeAverages[field->first].GetVal()));
-        }
-      }
-    }
-    if (config->GetDirectDiff()){
-      SetHistoryOutputValue("D_" + field->first, SU2_TYPE::GetDerivative(field->second.value));
-    }
-  }
-
-  map<string, pair<su2double, int> >::iterator it = Average.begin();
-  for (it = Average.begin(); it != Average.end(); it++){
-    const su2double& value = it->second.first;
-    const int& count = it->second.second;
-    const su2double average = value/count;
-    if (historyFieldsAll.CheckKey("AVG_" + it->first))
-      SetHistoryOutputValue("AVG_" + it->first, average);
-  }
-
-//  historyFieldsAll.UpdateTokens();
-//  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
-
-}
-
-void COutput::Postprocess_HistoryFields(CConfig *config){
-
-  map<string, bool> Average;
-  map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
-
-  for (const auto& field : historyFieldsAll.GetFieldsByType({FieldType::RESIDUAL})){
-    AddHistoryOutput("REL_" + field->first, "rel" + field->second.fieldName, field->second.screenFormat,
-                     "REL_" + field->second.outputGroup,  "Relative residual.", FieldType::AUTO_RESIDUAL);
-    Average[field->second.outputGroup] = true;
-  }
-
-  map<string, bool>::iterator it = Average.begin();
-  for (it = Average.begin(); it != Average.end(); it++){
-    if (AverageGroupName.count(it->first) > 0) {
-      AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", ScreenOutputFormat::FIXED,
-          "AVG_" + it->first , "Average residual over all solution variables.", FieldType::AUTO_RESIDUAL);
-    }
-  }
-
-  const auto& coefficentFields = historyFieldsAll.GetFieldsByType({FieldType::COEFFICIENT});
-
-  if (config->GetTime_Domain()){
-    for (auto field : coefficentFields){
-      AddHistoryOutput("TAVG_"   + field->first, "tavg["  + field->second.fieldName + "]",
-                       field->second.screenFormat, "TAVG_"   + field->second.outputGroup, "Time averaged values.",
-                       FieldType::AUTO_COEFFICIENT);
-    }
-  }
-
-  if (config->GetDirectDiff()){
-    for (const auto& field : coefficentFields){
-      AddHistoryOutput("D_" + field->first, "d[" + field->second.fieldName + "]",
-                       field->second.screenFormat, "D_" + field->second.outputGroup,
-                       "Derivative value (DIRECT_DIFF=YES)", FieldType::AUTO_COEFFICIENT);
-    }
-  }
-
-  if (config->GetTime_Domain() && config->GetDirectDiff()){
-    for (const auto& field : coefficentFields){
-      AddHistoryOutput("D_TAVG_" + field->first, "dtavg[" + field->second.fieldName + "]",
-                       field->second.screenFormat, "D_TAVG_" + field->second.outputGroup,
-                       "Derivative of the time averaged value (DIRECT_DIFF=YES)", FieldType::AUTO_COEFFICIENT);
-    }
-  }
-
-  /*--- Filter convergence fields which are coefficients ---*/
-
-  const auto& convergenceFields = COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT},
-                                                                       historyFieldsAll.GetFieldsByKey(convFields));
-  for (const auto& field : convergenceFields){
-    AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
-                     ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.",
-                     FieldType::AUTO_COEFFICIENT);
-  }
-
-  const auto& wndConvergenceFields = historyFieldsAll.GetFieldsByKey(wndConvFields);
-
-  for (const auto& field : wndConvergenceFields){
-    AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
-                     ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.",
-                     FieldType::AUTO_COEFFICIENT);
-  }
-}
 
 bool COutput::WriteScreen_Header(CConfig *config) {
 
@@ -1938,53 +1345,6 @@ bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force
   }
 }
 
-void COutput::SetCommonHistoryFields(CConfig *config){
-
-  /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
-  /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Time iteration index");
-  /// DESCRIPTION: The outer iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
-  /// DESCRIPTION: The inner iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
-  /// END_GROUP
-
-  /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
-  /// Description: The current time
-  AddHistoryOutput("CUR_TIME", "Cur_Time", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current physical time (s)");
-  /// Description: The current time step
-  AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
-
-  /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time");
-
-  AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
-}
-
-void COutput::LoadCommonHistoryData(CConfig *config){
-
-  SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
-
-  /*--- Update the current time only if the time iteration has changed ---*/
-
-  if (SU2_TYPE::Int(historyFieldsAll["TIME_ITER"].value) != static_cast<int>(curTimeIter)) {
-    SetHistoryOutputValue("CUR_TIME",  historyFieldsAll["CUR_TIME"].value + historyFieldsAll["TIME_STEP"].value);
-  }
-
-  SetHistoryOutputValue("TIME_ITER",  curTimeIter);
-  SetHistoryOutputValue("INNER_ITER", curInnerIter);
-  SetHistoryOutputValue("OUTER_ITER", curOuterIter);
-
-  su2double StopTime, UsedTime;
-
-  StopTime = SU2_MPI::Wtime();
-
-  UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
-
-  SetHistoryOutputValue("WALL_TIME", UsedTime);
-
-  SetHistoryOutputValue("NONPHYSICAL_POINTS", config->GetNonphysical_Points());
-}
 
 
 void COutput::PrintHistoryFields(){

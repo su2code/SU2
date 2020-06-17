@@ -2973,43 +2973,43 @@ void CFlowOutput::SetTimeAveragedFields(){
 }
 
 void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flow){
-  SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
-  SetAvgVolumeOutputValue("MEAN_VELOCITY_X", iPoint, Node_Flow->GetVelocity(iPoint,0));
-  SetAvgVolumeOutputValue("MEAN_VELOCITY_Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
-  if (nDim == 3)
-    SetAvgVolumeOutputValue("MEAN_VELOCITY_Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
+//  SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
+//  SetAvgVolumeOutputValue("MEAN_VELOCITY_X", iPoint, Node_Flow->GetVelocity(iPoint,0));
+//  SetAvgVolumeOutputValue("MEAN_VELOCITY_Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
+//  if (nDim == 3)
+//    SetAvgVolumeOutputValue("MEAN_VELOCITY_Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
 
-  SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
+//  SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
 
-  SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
-  SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(iPoint,1),2));
-  SetAvgVolumeOutputValue("RMS_UV", iPoint, Node_Flow->GetVelocity(iPoint,0) * Node_Flow->GetVelocity(iPoint,1));
-  SetAvgVolumeOutputValue("RMS_P", iPoint, pow(Node_Flow->GetPressure(iPoint),2));
-  if (nDim == 3){
-    SetAvgVolumeOutputValue("RMS_W", iPoint, pow(Node_Flow->GetVelocity(iPoint,2),2));
-    SetAvgVolumeOutputValue("RMS_VW", iPoint, Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,1));
-    SetAvgVolumeOutputValue("RMS_UW", iPoint,  Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,0));
-  }
+//  SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
+//  SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(iPoint,1),2));
+//  SetAvgVolumeOutputValue("RMS_UV", iPoint, Node_Flow->GetVelocity(iPoint,0) * Node_Flow->GetVelocity(iPoint,1));
+//  SetAvgVolumeOutputValue("RMS_P", iPoint, pow(Node_Flow->GetPressure(iPoint),2));
+//  if (nDim == 3){
+//    SetAvgVolumeOutputValue("RMS_W", iPoint, pow(Node_Flow->GetVelocity(iPoint,2),2));
+//    SetAvgVolumeOutputValue("RMS_VW", iPoint, Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,1));
+//    SetAvgVolumeOutputValue("RMS_UW", iPoint,  Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,0));
+//  }
 
-  const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY_X", iPoint);
-  const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);
-  const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY_Y", iPoint);
-  const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);
-  const su2double uvmean = GetVolumeOutputValue("RMS_UV", iPoint);
-  const su2double pmean  = GetVolumeOutputValue("MEAN_PRESSURE", iPoint);
-  const su2double ppmean = GetVolumeOutputValue("RMS_P", iPoint);
+//  const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY_X", iPoint);
+//  const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);
+//  const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY_Y", iPoint);
+//  const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);
+//  const su2double uvmean = GetVolumeOutputValue("RMS_UV", iPoint);
+//  const su2double pmean  = GetVolumeOutputValue("MEAN_PRESSURE", iPoint);
+//  const su2double ppmean = GetVolumeOutputValue("RMS_P", iPoint);
 
-  SetVolumeOutputValue("UUPRIME", iPoint, -(umean*umean - uumean));
-  SetVolumeOutputValue("VVPRIME", iPoint, -(vmean*vmean - vvmean));
-  SetVolumeOutputValue("UVPRIME", iPoint, -(umean*vmean - uvmean));
-  SetVolumeOutputValue("PPRIME",  iPoint, -(pmean*pmean - ppmean));
-  if (nDim == 3){
-    const su2double wmean  = GetVolumeOutputValue("MEAN_VELOCITY_Z", iPoint);
-    const su2double wwmean = GetVolumeOutputValue("RMS_W", iPoint);
-    const su2double uwmean = GetVolumeOutputValue("RMS_UW", iPoint);
-    const su2double vwmean = GetVolumeOutputValue("RMS_VW", iPoint);
-    SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
-    SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
-    SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
-  }
+//  SetVolumeOutputValue("UUPRIME", iPoint, -(umean*umean - uumean));
+//  SetVolumeOutputValue("VVPRIME", iPoint, -(vmean*vmean - vvmean));
+//  SetVolumeOutputValue("UVPRIME", iPoint, -(umean*vmean - uvmean));
+//  SetVolumeOutputValue("PPRIME",  iPoint, -(pmean*pmean - ppmean));
+//  if (nDim == 3){
+//    const su2double wmean  = GetVolumeOutputValue("MEAN_VELOCITY_Z", iPoint);
+//    const su2double wwmean = GetVolumeOutputValue("RMS_W", iPoint);
+//    const su2double uwmean = GetVolumeOutputValue("RMS_UW", iPoint);
+//    const su2double vwmean = GetVolumeOutputValue("RMS_VW", iPoint);
+//    SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
+//    SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
+//    SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+//  }
 }
