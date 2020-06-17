@@ -602,7 +602,7 @@ bool CFluidIteration::Monitor(COutput *output,
   if((StopCalc) &&
      (config[val_iZone]->GetWall_Functions()) &&
      (!config[val_iZone]->GetDiscrete_Adjoint()) &&
-     (config[val_iZone]->GetInnerIter() < config[val_iZone]->GetWallFunction_Start_Iter()) &&
+     (config[val_iZone]->GetInnerIter() <= config[val_iZone]->GetWallFunction_Start_Iter()) &&
      (!config[val_iZone]->GetRestart())) {
     StopCalc = false;
     config[val_iZone]->SetWallFunction_Start_Iter(config[val_iZone]->GetInnerIter());
