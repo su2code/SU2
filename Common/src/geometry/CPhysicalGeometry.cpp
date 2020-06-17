@@ -13148,7 +13148,6 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
   
-  unsigned short nMarker_WallFunctions = config->GetnMarker_WallFunctions();
   su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
   if (!WallADT->IsEmpty()){
