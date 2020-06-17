@@ -183,11 +183,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool wall_functions       = config->GetWall_Functions();
+  bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter > 100) || (config->GetRestart())));
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
