@@ -2147,9 +2147,9 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             }
 
           }
-          /* --- If not converged jump to the next point. --- */
+          /* --- If not converged or Y+ too large, jump to the next point. --- */
 
-          if (!converged || Y_Plus_White > 1.0e4) continue;
+          if (!converged || Y_Plus > 1.0e4) continue;
 
           /*--- Calculate an updated value for the wall shear stress
             using the y+ value, the definition of y+, and the definition of
