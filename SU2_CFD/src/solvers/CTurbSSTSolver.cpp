@@ -325,6 +325,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   
   SetPrimitive_Variables(solver_container);
+  if (config->GetWall_Functions()) ComputeWallFunction(geometry, solver_container, config);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
@@ -332,8 +333,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
   
   /*--- Compute eddy viscosity ---*/
-  
-  if (config->GetWall_Functions()) ComputeWallFunction(geometry, solver_container, config);
 
 //  solver_container[FLOW_SOL]->Preprocessing(geometry, solver_container, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   SetEddyViscosity(geometry, solver_container);
