@@ -272,17 +272,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    /*--- First reset CFL if needed ---*/
-    if ((InnerIter == WFStartIter) && (!restart) && (!disc_adjoint)) {
-      ResetCFLAdapt();
-      const su2double CFL = config->GetCFL(iMesh);
-      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-        nodes->SetLocalCFL(iPoint, CFL);
-      }
-      Min_CFL_Local = CFL;
-      Max_CFL_Local = CFL;
-      Avg_CFL_Local = CFL;
-    }
+//    /*--- First reset CFL if needed ---*/
+//    if ((InnerIter == WFStartIter) && (!restart) && (!disc_adjoint)) {
+//      ResetCFLAdapt();
+//      const su2double CFL = config->GetCFL(iMesh);
+//      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+//        nodes->SetLocalCFL(iPoint, CFL);
+//      }
+//      Min_CFL_Local = CFL;
+//      Max_CFL_Local = CFL;
+//      Avg_CFL_Local = CFL;
+//    }
     SU2_OMP_MASTER
     ComputeWallFunction(geometry, solver_container, config);
     SU2_OMP_BARRIER
