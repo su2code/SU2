@@ -169,18 +169,21 @@ void CAdjFlowCompOutputModule::DefineVolumeFields(CVolumeOutFieldManager &volume
   volumeFields.AddField("ADJ_DENSITY",    "Adjoint_Density",    "SOLUTION", "Adjoint density", FieldType::DEFAULT);
   volumeFields.AddField("ADJ_MOM_X", "Adjoint_Momentum_x", "SOLUTION", "x-component of the adjoint momentum vector", FieldType::DEFAULT);
   volumeFields.AddField("ADJ_MOM_Y", "Adjoint_Momentum_y", "SOLUTION", "y-component of the adjoint momentum vector", FieldType::DEFAULT);
-  volumeFields.AddField("ADJ_MOM_Z", "Adjoint_Momentum_z", "SOLUTION", "z-component of the adjoint momentum vector", FieldType::DEFAULT);
+  if (nDim == 3)
+    volumeFields.AddField("ADJ_MOM_Z", "Adjoint_Momentum_z", "SOLUTION", "z-component of the adjoint momentum vector", FieldType::DEFAULT);
   volumeFields.AddField("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION", "Adjoint energy", FieldType::DEFAULT);
 
   volumeFields.AddField("RES_ADJ_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL", "Residual of the adjoint density", FieldType::DEFAULT);
   volumeFields.AddField("RES_ADJ_MOM_X", "Residual_Adjoint_Momentum_x", "RESIDUAL", "Residual of the adjoint x-momentum", FieldType::DEFAULT);
   volumeFields.AddField("RES_ADJ_MOM_Y", "Residual_Adjoint_Momentum_y", "RESIDUAL", "Residual of the adjoint y-momentum", FieldType::DEFAULT);
-  volumeFields.AddField("RES_ADJ_MOM_Z", "Residual_Adjoint_Momentum_z", "RESIDUAL", "Residual of the adjoint z-momentum", FieldType::DEFAULT);
+  if (nDim == 3)
+    volumeFields.AddField("RES_ADJ_MOM_Z", "Residual_Adjoint_Momentum_z", "RESIDUAL", "Residual of the adjoint z-momentum", FieldType::DEFAULT);
   volumeFields.AddField("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL", "Residual of the adjoint energy", FieldType::DEFAULT);
 
   volumeFields.AddField("SENSITIVITY_X", "Sensitivity_x", "SENSITIVITY", "x-component of the sensitivity vector", FieldType::DEFAULT);
   volumeFields.AddField("SENSITIVITY_Y", "Sensitivity_y", "SENSITIVITY", "y-component of the sensitivity vector", FieldType::DEFAULT);
-  volumeFields.AddField("SENSITIVITY_Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector", FieldType::DEFAULT);
+  if (nDim == 3)
+    volumeFields.AddField("SENSITIVITY_Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector", FieldType::DEFAULT);
   volumeFields.AddField("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction", FieldType::SURFACE_INTEGRATE);
 
 }

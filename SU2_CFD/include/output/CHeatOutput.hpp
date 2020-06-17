@@ -34,6 +34,7 @@
 #include "modules/CDirectDiffModule.hpp"
 #include "modules/CUserFunctionModule.hpp"
 #include "modules/CFVMBaseModule.hpp"
+#include "modules/CTimeConvergenceModule.hpp"
 
 class CHeatOutputModule final : public CSolverOutputModule {
 

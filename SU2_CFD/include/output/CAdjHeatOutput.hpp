@@ -31,6 +31,7 @@
 #include "modules/CCommonModule.hpp"
 #include "modules/CConvergenceModule.hpp"
 #include "modules/CResidualModule.hpp"
+#include "modules/CFVMBaseModule.hpp"
 
 /*! \class CAdjHeatOutput
  *  \brief Output class for adjoint heat output.

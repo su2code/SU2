@@ -31,6 +31,32 @@
 #include "modules/CCommonModule.hpp"
 #include "modules/CConvergenceModule.hpp"
 #include "modules/CResidualModule.hpp"
+#include "modules/CFVMBaseModule.hpp"
+
+class CAdjFlowIncOutputModule : public CSolverOutputModule {
+  bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
+  bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
+  unsigned short rad_model;  /*!< \brief The kind of radiation model */
+
+public:
+
+  CAdjFlowIncOutputModule(CConfig *config, int nDim) : CSolverOutputModule(nDim),
+    heat(config->GetEnergy_Equation()), weakly_coupled_heat(config->GetWeakly_Coupled_Heat()),
+  rad_model(config->GetKind_RadiationModel()){}
+
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
+
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
+
+  void DefineVolumeFields(CVolumeOutFieldManager& volumeFields) override;
+
+  void LoadVolumeData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                      const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+
+  void LoadSurfaceData(CVolumeOutFieldManager& volumeFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo, const PointInfo& pointInfo) override;
+};
 
 /*! \class CAdjFlowIncOutput
  *  \brief Output class for incompressible flow discrete adjoint problems.
