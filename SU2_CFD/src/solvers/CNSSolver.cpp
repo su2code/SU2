@@ -1955,7 +1955,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
             /*--- Get the density, momentum, and energy at the exchange location. ---*/
             
-            su2double Density_Normal = 0., Energy_Normal = 0., Tke_Normal = 0.;
+            P_Normal = 0.;
+            T_Normal = 0.;
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
             
             const unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
@@ -1963,24 +1964,14 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
-              Density_Normal += donorCoeff*nodes->GetDensity(donorPoint);
-              Energy_Normal  += donorCoeff*nodes->GetEnergy(donorPoint);
+              P_Normal += donorCoeff*nodes->GetPressure(donorPoint);
+              T_Normal += donorCoeff*nodes->GetTemperature(donorPoint);
               
-              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);
-              
-              if (tkeNeeded && solver[TURB_SOL] != nullptr) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetPrimitive(donorPoint,0);
+              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);              
             }
             
-            /*--- Compute primitives at exchange location ---*/
-
             su2double Vel2_Normal = 0.;
             for (iDim = 0; iDim < nDim; iDim++) Vel2_Normal += pow(Vel[iDim], 2.);
-            const su2double StaticEnergy_Normal = Energy_Normal - 0.5*Vel2_Normal - Tke_Normal;
-
-            /*--- Load the fluid model to compute viscosity at exchange location---*/
-            GetFluidModel()->SetTDState_rhoe(Density_Normal, StaticEnergy_Normal);
-            P_Normal = GetFluidModel()->GetPressure();
-            T_Normal = GetFluidModel()->GetTemperature();
 
             /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
