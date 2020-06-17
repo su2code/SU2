@@ -113,9 +113,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   direct_output->PreprocessHistoryOutput(config, false);
 
   ObjectiveFunction = config->GetObjectiveFunction();
-  if (!ObjectiveFunction.empty() && !direct_output->GetHistoryFieldsAll().CheckKey(ObjectiveFunction)){
-//    direct_output->AddCustomHistoryOutput(ObjectiveFunction);
-  }
 
 }
 
@@ -399,9 +396,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
         break;
     }
   } else {
-
-    ObjFunc = direct_output->GetHistoryFieldsAll().GetFieldsByKey({ObjectiveFunction})[0]->second.value;
-    cout << "FUNCTION VALUE " << ObjFunc << endl;
+    ObjFunc = direct_output->GetHistoryFieldsAll().GetFieldValue(ObjectiveFunction);
   }
 
 

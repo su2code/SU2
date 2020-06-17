@@ -128,7 +128,7 @@ void CModuleManager<ModuleList, ModifierModuleList>::LoadData(const SolverData& 
         CSolverOutputModule::for_each(modules, CSolverOutputModule::ActionLoadHistoryDataPerSurface, historyFieldsAll, solverData, iterationInfo);
 
         for (const auto& field : coefficients){
-          historyFieldsAll.GetCollection().GetItemByKey(GetPerSurfaceName(field->first, markerName)).value = field->second.value;
+          historyFieldsAll.SetFieldValue(GetPerSurfaceName(field->first, markerName), field->second.value);
         }
       }
     }

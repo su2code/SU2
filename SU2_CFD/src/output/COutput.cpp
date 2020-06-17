@@ -810,8 +810,8 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
 
   vector<string> notFound, nameNotFound;
 
-  const auto& histFieldsWithName  = modules->GetHistoryFields().GetFieldsByKey(requestedHistoryFields, nameNotFound);
-  const auto& histFieldsWithGroup = modules->GetHistoryFields().GetFieldsByGroup(nameNotFound, notFound);
+  const auto& histFieldsWithName  = modules->GetHistoryFields().GetCollection().GetFieldsByKey(requestedHistoryFields, nameNotFound);
+  const auto& histFieldsWithGroup = modules->GetHistoryFields().GetCollection().GetFieldsByGroup(nameNotFound, notFound);
   const auto& histFields          = COutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName);
 
   if (!notFound.empty()){
@@ -842,8 +842,8 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 
   vector<string> notFound, nameNotFound;
 
-  const auto& histFieldsWithName  = modules->GetHistoryFields().GetFieldsByKey(requestedHistoryFields, nameNotFound);
-  const auto& histFieldsWithGroup = modules->GetHistoryFields().GetFieldsByGroup(nameNotFound, notFound);
+  const auto& histFieldsWithName  = modules->GetHistoryFields().GetCollection().GetFieldsByKey(requestedHistoryFields, nameNotFound);
+  const auto& histFieldsWithGroup = modules->GetHistoryFields().GetCollection().GetFieldsByGroup(nameNotFound, notFound);
   const auto& histFields          = COutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName);
 
   if (!notFound.empty()){
@@ -872,7 +872,7 @@ void COutput::SetScreen_Output(CConfig *config) {
   string RequestedField;
   vector<string> notFound;
 
-  const auto& histFieldsWithName  = modules->GetHistoryFields().GetFieldsByKey(requestedScreenFields, notFound);
+  const auto& histFieldsWithName  = modules->GetHistoryFields().GetCollection().GetFieldsByKey(requestedScreenFields, notFound);
   if (!notFound.empty()){
     for (const auto &field : notFound){
       SU2_MPI::Error("History output field/group " + field + " not found.", CURRENT_FUNCTION);
@@ -957,19 +957,19 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Set the common history fields for all solvers ---*/
 
-  SetCommonHistoryFields(driver_config);
+//  SetCommonHistoryFields(driver_config);
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
-  SetMultizoneHistoryOutputFields(output, config);
+//  SetMultizoneHistoryOutputFields(output, config);
 
   /*--- Set any user defined output fields --- */
 
-  SetUserDefinedHistoryFields(driver_config);
+//  SetUserDefinedHistoryFields(driver_config);
 
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
-  Postprocess_HistoryFields(driver_config);
+//  Postprocess_HistoryFields(driver_config);
 
   /*--- We use a fixed size of the file output summary table ---*/
 
@@ -1082,7 +1082,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config, bool wrt){
  * object gets an offset so that we know where to find the data in the Local_Data() array.
  *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-    for (const auto& field : modules->GetVolumeFields().GetReferencesAll()){
+    for (const auto& field : modules->GetVolumeFields().GetCollection().GetReferencesAll()){
       for (unsigned int iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
         const string& RequestedField = requestedVolumeFields[iReqField];
         if (((RequestedField == field->second.outputGroup) || (RequestedField == field->first))
@@ -1166,7 +1166,7 @@ void COutput::LoadVolumeData(CConfig* config, CGeometry* geometry, CSolver** sol
 
       for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
 
-        volumeFieldsAll.StartCaching();
+//        volumeFieldsAll.StartCaching();
 
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
 
@@ -1355,7 +1355,7 @@ void COutput::PrintHistoryFields(){
 
     unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
 
-    for (const auto& field : modules->GetHistoryFields().GetReferencesAll()){
+    for (const auto& field : modules->GetHistoryFields().GetCollection().GetReferencesAll()){
       if (field->second.description != ""){
         if (field->first.size() > NameSize){
           NameSize =field->first.size();
@@ -1379,7 +1379,7 @@ void COutput::PrintHistoryFields(){
 
     HistoryFieldTable.PrintHeader();
 
-    for (const auto& field : modules->GetHistoryFields().GetReferencesAll()){
+    for (const auto& field :modules->GetHistoryFields().GetCollection().GetReferencesAll()){
 
       if (field->second.fieldType == FieldType::DEFAULT
           || field->second.fieldType == FieldType::COEFFICIENT
@@ -1420,7 +1420,7 @@ void COutput::PrintHistoryFields(){
 
     std::map<string, bool> GroupVisited;
 
-    for (const auto& field : modules->GetHistoryFields().GetReferencesAll()){
+    for (const auto& field : modules->GetHistoryFields().GetCollection().GetReferencesAll()){
 
       if ((field->second.fieldType == FieldType::AUTO_COEFFICIENT ||
            field->second.fieldType == FieldType::AUTO_RESIDUAL ||
@@ -1462,7 +1462,7 @@ void COutput::PrintVolumeFields(){
 
     unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
 
-    for (const auto& field : modules->GetVolumeFields().GetReferencesAll()){
+    for (const auto& field : modules->GetVolumeFields().GetCollection().GetReferencesAll()){
       if (field->second.description != ""){
         if (field->first.size() > NameSize){
           NameSize = field->first.size();
@@ -1485,7 +1485,7 @@ void COutput::PrintVolumeFields(){
 
     VolumeFieldTable.PrintHeader();
 
-    for (const auto& field : modules->GetVolumeFields().GetReferencesAll()){
+    for (const auto& field : modules->GetVolumeFields().GetCollection().GetReferencesAll()){
       if (field->second.description != "" &&
           field->second.fieldType != FieldType::SURFACE_INTEGRATE &&
           field->second.fieldType != FieldType::CUSTOM_SURFACE_INTEGRATE){

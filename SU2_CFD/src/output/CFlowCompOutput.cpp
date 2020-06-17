@@ -79,24 +79,19 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) :
 
   restartFilename = config->GetRestart_FileName();
 
-
-  /*--- Set the default convergence field --- */
-
-  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
-
-  if (config->GetFixed_CL_Mode()) {
-    bool found = false;
-    for (unsigned short iField = 0; iField < convFields.size(); iField++)
-      if (convFields[iField] == "LIFT") found = true;
-    if (!found) {
-      if (rank == MASTER_NODE)
-        cout<<"  Fixed CL: Adding LIFT as Convergence Field to ensure convergence to target CL"<<endl;
-      convFields.emplace_back("LIFT");
-      newFunc.resize(convFields.size());
-      oldFunc.resize(convFields.size());
-      cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
-    }
-  }
+//  if (config->GetFixed_CL_Mode()) {
+//    bool found = false;
+//    for (unsigned short iField = 0; iField < convFields.size(); iField++)
+//      if (convFields[iField] == "LIFT") found = true;
+//    if (!found) {
+//      if (rank == MASTER_NODE)
+//        cout<<"  Fixed CL: Adding LIFT as Convergence Field to ensure convergence to target CL"<<endl;
+//      convFields.emplace_back("LIFT");
+//      newFunc.resize(convFields.size());
+//      oldFunc.resize(convFields.size());
+//      cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
+//    }
+//  }
 }
 
 CFlowCompOutput::~CFlowCompOutput(void) {}
@@ -293,26 +288,26 @@ void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
 void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
   PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
 
-  if (fabs(modules->GetHistoryFields().GetValueByKey("CL_DRIVER_COMMAND")) > 1e-16){
+  if (fabs(modules->GetHistoryFields().GetFieldValue("CL_DRIVER_COMMAND")) > 1e-16){
     FixedCLSummary.AddColumn("Fixed CL Mode", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Current CL" << modules->GetHistoryFields().GetValueByKey("LIFT");
+    FixedCLSummary << "Current CL" << modules->GetHistoryFields().GetFieldValue("LIFT");
     FixedCLSummary << "Target CL" << config->GetTarget_CL();
-    FixedCLSummary << "Previous AOA" << modules->GetHistoryFields().GetValueByKey("PREV_AOA");
+    FixedCLSummary << "Previous AOA" << modules->GetHistoryFields().GetFieldValue("PREV_AOA");
     if (config->GetFinite_Difference_Mode()){
-      FixedCLSummary << "Changed AoA by (Finite Difference step)" <<  modules->GetHistoryFields().GetValueByKey("CL_DRIVER_COMMAND");
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" <<  modules->GetHistoryFields().GetFieldValue("CL_DRIVER_COMMAND");
       lastInnerIter = curInnerIter - 1;
     }
     else
-      FixedCLSummary << "Changed AoA by" <<  modules->GetHistoryFields().GetValueByKey("CL_DRIVER_COMMAND");
+      FixedCLSummary << "Changed AoA by" <<  modules->GetHistoryFields().GetFieldValue("CL_DRIVER_COMMAND");
     FixedCLSummary.PrintFooter();
     SetScreen_Header(config);
   }
 
   else if (config->GetFinite_Difference_Mode() &&
-           modules->GetHistoryFields().GetValueByKey("AOA") ==  modules->GetHistoryFields().GetValueByKey("PREV_AOA")){
+           modules->GetHistoryFields().GetFieldValue("AOA") ==  modules->GetHistoryFields().GetFieldValue("PREV_AOA")){
     FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);

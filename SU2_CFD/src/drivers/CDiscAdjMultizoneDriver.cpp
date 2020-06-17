@@ -723,7 +723,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         }
 
         if(!FieldName.empty())
-          ObjFunc += direct_output[iZone]->GetHistoryFieldsAll().GetFieldsByKey({FieldName})[0]->second.value*Weight_ObjFunc;
+          ObjFunc += direct_output[iZone]->GetHistoryFieldsAll().GetFieldValue(FieldName)*Weight_ObjFunc;
 
         break;
       }
