@@ -1575,6 +1575,10 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
 
       const su2double U_Plus = VelMod/U_Tau;
       const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+      
+      /*--- Disable calculation if Y+ is too large ---*/
+      if (Ypw > 1.0e4) continue;
+      
       const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
 
       Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
