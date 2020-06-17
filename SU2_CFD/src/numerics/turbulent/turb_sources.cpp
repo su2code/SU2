@@ -869,10 +869,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
          Jacobian_i[0][0] += factor*a1/(VorticityMag*F2_i)*Volume;
        }
      }
-//     else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-//       Jacobian_i[0][0] = 20.0*beta_star*TurbVar_i[1]*Volume;
-//       Jacobian_i[0][1] = 20.0*beta_star*TurbVar_i[0]*Volume;
-//     }
+     else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+       Jacobian_i[0][0] = 20.0*beta_star*TurbVar_i[1]*Volume;
+       Jacobian_i[0][1] = 20.0*beta_star*TurbVar_i[0]*Volume;
+     }
      
      /*--- omega production Jacobian ---*/
      if ((pw > 0) && (pw <= 20.0*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta)) {
@@ -880,10 +880,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
          Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
        }
      }
-//     else if (pw > 20.0*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta) {
-//       Jacobian_i[1][1] = 20.0*beta_star*alfa_blended*Density_i*zeta*Volume;
-//       if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] *= 2.0;
-//     }
+     else if (pw > 20.0*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta) {
+       Jacobian_i[1][1] = 20.0*beta_star*alfa_blended*Density_i*zeta*Volume;
+       if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] *= 2.0;
+     }
    }
     
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
