@@ -49,6 +49,19 @@
 
 using namespace std;
 
+class CMultizoneOutputModule : public CSolverOutputModule {
+
+public:
+  CMultizoneOutputModule(CConfig* config, int nDim) : CSolverOutputModule(nDim) {}
+
+
+  void LoadHistoryData(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+                       const IterationInfo& iterationInfo) override;
+
+  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
+
+};
+
 /*!
  * \class CDriverOutput
  * \brief Class for writing the multizone output.
