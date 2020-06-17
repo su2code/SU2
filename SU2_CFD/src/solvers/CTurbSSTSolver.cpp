@@ -1576,8 +1576,12 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       const su2double U_Plus = VelMod/U_Tau;
       const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
       
+      const su2double Yp = U_Plus + Ypw - (exp(-1.0*kappa*B)*
+                           (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
+                           kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
+      
       /*--- Disable calculation if Y+ is too small or large ---*/
-      if (Ypw < 5.0 || Ypw > 1.0e4) continue;
+      if (Yp < 5.0 || Yp > 1.0e4) continue;
       
       const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
 
@@ -1590,9 +1594,13 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       
       Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
-      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
-      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
-      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
+      const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+//      const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      const su2double Omega_b1 = Omega_i + Omega_0;
+      const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
+      const su2double blend = tanh(pow(Yp/10., 4.));
+      const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
 
       Solution[0] = Omega * Eddy_Visc;
       Solution[1] = Density_Normal * Omega;
