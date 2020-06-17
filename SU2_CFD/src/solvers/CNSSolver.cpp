@@ -1966,7 +1966,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               Density_Normal += donorCoeff*nodes->GetDensity(donorPoint);
               Energy_Normal  += donorCoeff*nodes->GetEnergy(donorPoint);
               
-              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim+1);
+              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);
               
               if (tkeNeeded && solver[TURB_SOL] != nullptr) Tke_Normal += donorCoeff*solver[TURB_SOL]->GetNodes()->GetPrimitive(donorPoint,0);
             }
