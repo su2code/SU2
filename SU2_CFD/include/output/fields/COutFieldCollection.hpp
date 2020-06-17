@@ -150,30 +150,8 @@ public:
     return CurrentType::GetReferences(type, dummy, insertionVector, findFieldWithType);
   }
 
-  void SetCaching(bool cacheEnable){
-    cacheEnabled = cacheEnable;
-    cacheIndex = 0;
-    cacheIndexVector.clear();
-  }
-
-  void StartCaching(){
-    buildIndexCache = cacheIndexVector.empty();
-  }
-
   ItemType& GetItemByKey(const KeyType& key){
-    if (cacheEnabled){
-      if (buildIndexCache){
-        const int index = CurrentType::GetIndex(key);
-        cacheIndexVector.push_back(index);
-        return CurrentType::GetItemByIndex(index);
-      } else {
-        const int index = cacheIndexVector[cacheIndex++];
-        if (cacheIndex == cacheIndexVector.size()) cacheIndex = 0;
-        return CurrentType::GetItemByIndex(index);
-      }
-    } else {
-      return CurrentType::GetItemByKey(key);
-    }
+    return CurrentType::GetItemByKey(key);
   }
 
   su2double GetValueByKey(const KeyType& key){
