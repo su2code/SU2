@@ -3586,7 +3586,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long  iPoint, jPoint, iElem, nDomain, iDomain, jDomain;
   unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
-  unsigned short iNode, jNode;
+  unsigned short iNode, jNode, iProc;
   vector<unsigned long>::iterator it;
 
   vector<vector<unsigned long> > SendTransfLocal;       /*!< \brief Vector to store the type of transformation for this send point. */
@@ -3612,166 +3612,204 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 #endif
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
-    cout << "Establishing MPI communication patterns." << endl;
+      cout << "Establishing MPI communication patterns." << endl;
 
-  nDomain = size;
+    nDomain = size;
 
-  SendTransfLocal.resize(nDomain);
-  ReceivedTransfLocal.resize(nDomain);
-  SendDomainLocal.resize(nDomain);
-  ReceivedDomainLocal.resize(nDomain);
+    SendTransfLocal.resize(nDomain);
+    ReceivedTransfLocal.resize(nDomain);
+    SendDomainLocal.resize(nDomain);
+    ReceivedDomainLocal.resize(nDomain);
 
-  /*--- Loop over the all the points of the elements on this rank in order
-   to find the points with different colors. Create the send/received lists
-   from this information. ---*/
+    /*--- Loop over the all the points of the elements on this rank in order
+     to find the points with different colors. Create the send/received lists
+     from this information. ---*/
 
-  for (iElem = 0; iElem < nElem; iElem++) {
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+    for (iElem = 0; iElem < nElem; iElem++) {
+      for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
 
-      iPoint  = elem[iElem]->GetNode(iNode);
-      iDomain = node[iPoint]->GetColor();
+        iPoint  = elem[iElem]->GetNode(iNode);
+        iDomain = node[iPoint]->GetColor();
 
-      if (iDomain == (unsigned long) rank) {
-        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+        if (iDomain == (unsigned long) rank) {
+          for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
-          jPoint  = elem[iElem]->GetNode(jNode);
-          jDomain = node[jPoint]->GetColor();
+            jPoint  = elem[iElem]->GetNode(jNode);
+            jDomain = node[jPoint]->GetColor();
 
-          /*--- If one of the neighbors is a different color and connected
-           by an edge, then we add them to the list. ---*/
+            /*--- If one of the neighbors is a different color and connected
+             by an edge, then we add them to the list. ---*/
 
-          if (iDomain != jDomain) {
+            if (iDomain != jDomain) {
 
-            /*--- We send from iDomain to jDomain the value of iPoint,
-             we save the global value becuase we need to sort the lists. ---*/
+              /*--- We send from iDomain to jDomain the value of iPoint,
+               we save the global value becuase we need to sort the lists. ---*/
 
-            SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
+              SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
 
-            /*--- We send from jDomain to iDomain the value of jPoint,
-             we save the global value becuase we need to sort the lists. ---*/
+              /*--- We send from jDomain to iDomain the value of jPoint,
+               we save the global value becuase we need to sort the lists. ---*/
 
-            ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+              ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
 
+            }
           }
         }
       }
     }
-  }
 
-  /*--- Sort the points that must be sent and delete repeated points, note
-   that the sorting should be done with the global index (not the local). ---*/
+    if (wmles){
 
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    sort(SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
-    it = unique(SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
-    SendDomainLocal[iDomain].resize(it - SendDomainLocal[iDomain].begin());
-  }
+      /*--- The points of the elements that are only used as donors for interpolation
+            must be added to the communication pattern. ---*/
+      for (iElem = 0; iElem < nElem; iElem++) {
 
-  /*--- Sort the points that must be received and delete repeated points, note
-   that the sorting should be done with the global point (not the local). ---*/
+        for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
+          iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
 
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    sort(ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
-    it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
-    ReceivedDomainLocal[iDomain].resize(it - ReceivedDomainLocal[iDomain].begin());
-  }
+          if(iDomain == (unsigned long) rank) {
 
-  /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total
-   number of points in the simulation  ---*/
-  Max_GlobalPoint = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
-      Max_GlobalPoint = Local_to_Global_Point[iPoint];
-  }
+            /*--- This is a halo element that only serves as a donor for interpolation
+                  on this processor. This means that all its points are halo points as
+                  well and must be added to the receive pattern. ---*/
+            for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
-  /*--- Set the value of some of the points ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+              jPoint  = elem[iElem]->GetNode(jNode);
+              jDomain = node[jPoint]->GetColor();
+              ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+            }
+          }
+          else {
 
-  /*--- Add the new MPI send boundaries, reset the transformation,
-   and save the local value. ---*/
+            /*--- This element is only an interpolation donor on rank iDomain.
+                  Add the owned points of this element to the send pattern. ---*/
+            for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    if (SendDomainLocal[iDomain].size() != 0) {
-      nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
-      for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+              jPoint  = elem[iElem]->GetNode(jNode);
+              jDomain = node[jPoint]->GetColor();
 
-        MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
-        if (MI != Global_to_Local_Point.end())
-          iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
-        else iPoint = -1;
-
-        SendDomainLocal[iDomain][iVertex] = iPoint;
-        SendTransfLocal[iDomain].push_back(0);
+              if(jDomain == (unsigned long) rank)
+                SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
+            }
+          }
+        }
       }
-      nElem_Bound[nMarker] = nVertexDomain[nMarker];
-      bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
-      nMarker++;
     }
-  }
 
-  /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    if (ReceivedDomainLocal[iDomain].size() != 0) {
-      nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
-      for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+    /*--- Sort the points that must be sent and delete repeated points, note
+     that the sorting should be done with the global index (not the local). ---*/
 
-        MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
-        if (MI != Global_to_Local_Point.end())
-          iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
-        else iPoint = -1;
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      sort(SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
+      it = unique(SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
+      SendDomainLocal[iDomain].resize(it - SendDomainLocal[iDomain].begin());
+    }
 
-        ReceivedDomainLocal[iDomain][iVertex] = iPoint;
-        ReceivedTransfLocal[iDomain].push_back(0);
+    /*--- Sort the points that must be received and delete repeated points, note
+     that the sorting should be done with the global point (not the local). ---*/
+
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      sort(ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
+      it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
+      ReceivedDomainLocal[iDomain].resize(it - ReceivedDomainLocal[iDomain].begin());
+    }
+
+    /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total
+     number of points in the simulation  ---*/
+    Max_GlobalPoint = 0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
+        Max_GlobalPoint = Local_to_Global_Point[iPoint];
+    }
+
+    /*--- Set the value of some of the points ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+
+    /*--- Add the new MPI send boundaries, reset the transformation,
+     and save the local value. ---*/
+
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      if (SendDomainLocal[iDomain].size() != 0) {
+        nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
+        for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+
+          MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
+          if (MI != Global_to_Local_Point.end())
+            iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+          else iPoint = -1;
+
+          SendDomainLocal[iDomain][iVertex] = iPoint;
+          SendTransfLocal[iDomain].push_back(0);
+        }
+        nElem_Bound[nMarker] = nVertexDomain[nMarker];
+        bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
+        nMarker++;
       }
-      nElem_Bound[nMarker] = nVertexDomain[nMarker];
-      bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
-      nMarker++;
     }
-  }
 
-  /*--- First compute the Send/Receive boundaries ---*/
-  Counter_Send = 0; 	Counter_Receive = 0;
-  for (iDomain = 0; iDomain < nDomain; iDomain++)
-    if (SendDomainLocal[iDomain].size() != 0) Counter_Send++;
+    /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      if (ReceivedDomainLocal[iDomain].size() != 0) {
+        nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
+        for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
 
-  for (iDomain = 0; iDomain < nDomain; iDomain++)
-    if (ReceivedDomainLocal[iDomain].size() != 0) Counter_Receive++;
+          MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
+          if (MI != Global_to_Local_Point.end())
+            iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+          else iPoint = -1;
 
-  iMarkerSend    = nMarker - Counter_Send - Counter_Receive;
-  iMarkerReceive = nMarker - Counter_Receive;
-
-  /*--- First we do the send ---*/
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    if (SendDomainLocal[iDomain].size() != 0) {
-      for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerSend); iVertex++) {
-        LocalNode = SendDomainLocal[iDomain][iVertex];
-        bound[iMarkerSend][iVertex] = new CVertexMPI(LocalNode, nDim);
-        bound[iMarkerSend][iVertex]->SetRotation_Type(SendTransfLocal[iDomain][iVertex]);
+          ReceivedDomainLocal[iDomain][iVertex] = iPoint;
+          ReceivedTransfLocal[iDomain].push_back(0);
+        }
+        nElem_Bound[nMarker] = nVertexDomain[nMarker];
+        bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
+        nMarker++;
       }
-      Marker_All_SendRecv[iMarkerSend] = iDomain+1;
-      iMarkerSend++;
     }
-  }
 
-  /*--- Second we do the receive ---*/
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    if (ReceivedDomainLocal[iDomain].size() != 0) {
-      for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerReceive); iVertex++) {
-        LocalNode = ReceivedDomainLocal[iDomain][iVertex];
-        bound[iMarkerReceive][iVertex] = new CVertexMPI(LocalNode, nDim);
-        bound[iMarkerReceive][iVertex]->SetRotation_Type(ReceivedTransfLocal[iDomain][iVertex]);
+    /*--- First compute the Send/Receive boundaries ---*/
+    Counter_Send = 0;   Counter_Receive = 0;
+    for (iDomain = 0; iDomain < nDomain; iDomain++)
+      if (SendDomainLocal[iDomain].size() != 0) Counter_Send++;
+
+    for (iDomain = 0; iDomain < nDomain; iDomain++)
+      if (ReceivedDomainLocal[iDomain].size() != 0) Counter_Receive++;
+
+    iMarkerSend    = nMarker - Counter_Send - Counter_Receive;
+    iMarkerReceive = nMarker - Counter_Receive;
+
+    /*--- First we do the send ---*/
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      if (SendDomainLocal[iDomain].size() != 0) {
+        for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerSend); iVertex++) {
+          LocalNode = SendDomainLocal[iDomain][iVertex];
+          bound[iMarkerSend][iVertex] = new CVertexMPI(LocalNode, nDim);
+          bound[iMarkerSend][iVertex]->SetRotation_Type(SendTransfLocal[iDomain][iVertex]);
+        }
+        Marker_All_SendRecv[iMarkerSend] = iDomain+1;
+        iMarkerSend++;
       }
-      Marker_All_SendRecv[iMarkerReceive] = -(iDomain+1);
-      iMarkerReceive++;
     }
+
+    /*--- Second we do the receive ---*/
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      if (ReceivedDomainLocal[iDomain].size() != 0) {
+        for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerReceive); iVertex++) {
+          LocalNode = ReceivedDomainLocal[iDomain][iVertex];
+          bound[iMarkerReceive][iVertex] = new CVertexMPI(LocalNode, nDim);
+          bound[iMarkerReceive][iVertex]->SetRotation_Type(ReceivedTransfLocal[iDomain][iVertex]);
+        }
+        Marker_All_SendRecv[iMarkerReceive] = -(iDomain+1);
+        iMarkerReceive++;
+      }
+    }
+
+    /*--- Free memory ---*/
+
+    delete [] nVertexDomain;
+
   }
-
-  /*--- Free memory ---*/
-
-  delete [] nVertexDomain;
-
-}
 
 void CPhysicalGeometry::SetBoundaries(CConfig *config) {
 
