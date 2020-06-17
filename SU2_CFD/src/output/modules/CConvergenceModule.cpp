@@ -162,3 +162,38 @@ void CConvergenceModule::LoadHistoryDataModifier(CHistoryOutFieldManager& histor
   historyFields.SetFieldValue("CONVERGENCE", convergence);
 
 }
+
+void CConvergenceModule::PrintToStream(std::ostream *stream, const CHistoryOutFieldManager& historyOutFields){
+
+  if ((partConvNew != partConvOld) || convergence){
+    PrintingToolbox::CTablePrinter  ConvSummary(stream);
+
+    ConvSummary.AddColumn("Convergence Field", 28);
+    ConvSummary.AddColumn("Value", 14);
+    ConvSummary.AddColumn("Criterion", 14);
+    ConvSummary.AddColumn("Converged",12);
+    ConvSummary.SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+    ConvSummary.PrintHeader();
+
+    const auto& convFieldRef = historyOutFields.GetCollection().GetFieldsByKey(convFields);
+
+    for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT}, convFieldRef)){
+      ConvSummary << field->second.fieldName
+                  << field->second.value
+                  << " < " + PrintingToolbox::to_string(cauchyEps)
+                  << (field->second.value < cauchyEps ? "Yes" : "No");
+    }
+
+    for (const auto& field : COutFieldCollection::GetFieldsByType({FieldType::RESIDUAL,
+                                                                  FieldType::AUTO_RESIDUAL}, convFieldRef)){
+      ConvSummary << field->second.fieldName
+                  << field->second.value
+                  << " < " + PrintingToolbox::to_string(minLogResidual)
+                  << (field->second.value < minLogResidual ? "Yes" : "No");
+    }
+
+    partConvOld = partConvNew;
+
+    ConvSummary.PrintFooter();
+  }
+}

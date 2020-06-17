@@ -17,16 +17,20 @@ class CConvergenceModule : public CModifierModule {
   bool convergence = false;              /*!< \brief To indicate if the solver has converged or not. */
   su2double initResidual = 0;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
   std::vector<std::string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
+
+  unsigned long convStartIter = 0;
+
+  std::vector<bool> partConvNew, partConvOld;
 public:
 
   CConvergenceModule(CConfig* config, int nDim);
 
-  void DefineHistoryFields(CHistoryOutFieldManager& historyFields) override;
-
   void DefineHistoryFieldModifier(CHistoryOutFieldManager& historyFields) override;
 
-  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields, const SolverData& solverData,
+  void LoadHistoryDataModifier(CHistoryOutFieldManager& historyFields,
                                const IterationInfo& iterationInfo) override;
+
+  void PrintToStream(std::ostream* stream, const CHistoryOutFieldManager& historyFields) override;
 
 };
 
