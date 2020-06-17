@@ -213,16 +213,6 @@ struct CCompressiblePrimitives {
   FORCEINLINE Double* velocity() { return &velocity(0); }
 };
 
-template<size_t nDim>
-struct CCompressibleConservatives {
-  enum : size_t {nVar = nDim+2};
-  VectorDbl<nVar> all;
-  Double& density = all(0);
-  Double& rhoEnergy = all(nDim+1);
-  FORCEINLINE Double& momentum(size_t iDim) { return all(iDim+1); }
-  FORCEINLINE Double* momentum() { return &momentum(0); }
-};
-
 template<size_t nDim, class Variable_t>
 FORCEINLINE CPair<CCompressibleConservatives<nDim> > getCompressiblePrimitives(Int iPosize_t, Int jPosize_t, bool muscl,
                                                                                ENUM_LIMITER limiterType,
@@ -256,6 +246,16 @@ FORCEINLINE CPair<CCompressibleConservatives<nDim> > getCompressiblePrimitives(I
 }
 
 template<size_t nDim>
+struct CCompressibleConservatives {
+  enum : size_t {nVar = nDim+2};
+  VectorDbl<nVar> all;
+  Double& density = all(0);
+  Double& rhoEnergy = all(nDim+1);
+  FORCEINLINE Double& momentum(size_t iDim) { return all(iDim+1); }
+  FORCEINLINE Double* momentum() { return &momentum(0); }
+};
+
+template<size_t nDim>
 FORCEINLINE CCompressibleConservatives<nDim> getCompressibleConservatives(const CCompressiblePrimitives<nDim>& V) {
   CCompressibleConservatives<nDim> U;
   U.density = V.density;
@@ -263,6 +263,31 @@ FORCEINLINE CCompressibleConservatives<nDim> getCompressibleConservatives(const 
     U.momentum(iDim) = V.density * V.velocity(iDim);
   }
   U.rhoEnergy = V.density * V.enthalpy - V.pressure;
+}
+
+template<size_t nDim>
+struct CRoeVariables {
+  Double density;
+  VectorDbl<nDim> velocity;
+  Double enthalpy;
+  Double speedSound;
+  Double projVel;
+};
+
+template<size_t nDim>
+FORCEINLINE CRoeVariables<nDim> getRoeAveragedVariables(Double gamma,
+                                                        const CPair<CCompressibleConservatives<nDim> >& V,
+                                                        const VectorDbl<nDim>& normal) {
+  CRoeVariables<nDim> roeAvg;
+  auto R = sqrt(abs(V.j.density / V.i.density));
+  roeAvg.density = R * V.i.density;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) / (R+1);
+  }
+  roeAvg.enthalpy = (R*V.j.enthalpy + V.i.enthalpy) / (R+1);
+  roeAvg.soundSpeed = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
+  roeAvg.projVel = dot(roeAvg.velocity, normal);
+  return roeAvg;
 }
 
 template<size_t nDim>
@@ -432,18 +457,24 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomIterator veloc
 }
 
 /*!
- * \class CRoeScheme
- * \brief Classic Roe scheme, with or without viscous terms.
+ * \class CRoeBase
+ * \brief Base class for Roe schemes, derived classes implement
+ * the dissipation term in a static method "finalizeResidual".
  */
-template<size_t nDim, bool VISCOUS>
-class CRoeScheme final : public CFinalLink<nDim> {
-private:
-  const Double kappa;
-  const Double gamma;
-  const Double entropyFix;
+template<class Derived, int NDIM>
+class CRoeBase : public CNumericsSIMD {
+protected:
+  enum: size_t {nDim = NDIM};
+  enum: size_t {nVar = CCompressibleConservatives<nDim>::nVar};
+
+  const su2double kappa;
+  const su2double gamma;
+  const su2double entropyFix;
   const bool dynamicGrid;
 
-public:
+  /*!
+   * \brief Constructor.
+   */
   CRoeScheme(const CConfig& config) :
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
@@ -452,18 +483,20 @@ public:
 
   }
 
+public:
+  /*!
+   * \brief Implementation of the base Roe flux.
+   */
   void ComputeFlux(unsigned long iEdge,
                    const CConfig& config,
                    const CGeometry& geometry,
                    const CVariable& solution_,
                    UpdateType updateType,
                    CSysVector& vector,
-                   CSysMatrix& matrix) override {
+                   CSysMatrix& matrix) override final {
 
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto solution = static_cast<CEulerVariable&>(solution_);
-
-    constexpr size_t nVar = CCompressibleConservatives<nDim>::nVar;
 
     const auto iPosize_t = geometry.edges->GetNodes(iEdge,0);
     const auto jPosize_t = geometry.edges->GetNodes(iEdge,1);
@@ -493,40 +526,32 @@ public:
 
     /*--- Roe averaged variables. ---*/
 
-    auto R = sqrt(abs(V.j.density / V.i.density));
-    auto densityRoe = R * V.i.density;
-    VectorDbl<nDim> velocityRoe;
-    for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      velocityRoe(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) / (R+1);
-    }
-    auto enthalpyRoe = (R*V.j.enthalpy + V.i.enthalpy) / (R+1);
-    auto soundSpeedRoe = sqrt((gamma-1) * (enthalpyRoe - 0.5*squaredNorm(velocityRoe)));
+    auto roeAvg = getRoeAveragedVariables(gamma, V, unitNormal);
 
-    /*--- P tensor and inverse P tensor. ---*/
+    /*--- P tensor. ---*/
 
-    auto projVelRoe = dot(velocityRoe, unitNormal);
-    auto pMat = pMatrix(gamma, densityRoe, velocityRoe, projVelRoe, soundSpeedRoe, unitNormal);
-    auto pMatInv = pMatrixInv(gamma, densityRoe, velocityRoe, projVelRoe, soundSpeedRoe, unitNormal);
+    auto pMat = pMatrix(gamma, roeAvg.density, roeAvg.velocity,
+                        roeAvg.projVel, roeAvg.soundSpeed, unitNormal);
 
     /*--- Grid motion. ---*/
 
-    Double projGridVel = 0.0;
+    Double projGridVel = 0.0, projVel = roeAvg.projVel;
     if (dynamicGrid) {
       const auto& gridVel = geometry.nodes->GridVel;
       projGridVel = 0.5*(dot(gridVel.innerIter<nDim>(iPosize_t), unitNormal)+
                          dot(gridVel.innerIter<nDim>(jPosize_t), unitNormal));
-      projVelRoe -= projGridVel;
+      projVel -= projGridVel;
     }
 
     /*--- Convective eigenvalues. ---*/
 
-    VectorDbl<nVar> lambda = projVelRoe;
-    lambda(nDim) += soundSpeedRoe;
-    lambda(nDim+1) -= soundSpeedRoe;
+    VectorDbl<nVar> lambda = projVel;
+    lambda(nDim) += roeAvg.soundSpeed;
+    lambda(nDim+1) -= roeAvg.soundSpeed;
 
     /*--- Apply Mavriplis' entropy correction to eigenvalues. ---*/
 
-    auto maxLambda = abs(projVelRoe) + soundSpeedRoe;
+    auto maxLambda = abs(projVel) + roeAvg.soundSpeed;
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
       lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
@@ -548,6 +573,64 @@ public:
       jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.rhoEnergy/U.j.density, normal, kappa);
     }
 
+    /*--- Finalize in derived class (static polymorphism). ---*/
+
+    Derived::finalizeResidual(flux, jac_i, jac_j, implicit, gamma, kappa, area,
+                              unitNormal, V, U, roeAvg, lambda, pMat);
+
+    /*--- Correct for grid motion ---*/
+
+    if (dynamicGrid) {
+      for (size_t iVar = 0; iVar < nVar; iVar++) {
+        Double dFdU = projGridVel * area * 0.5;
+        flux(iVar) -= dFdU * (U.i.all(iVar) + U.j.all(iVar));
+
+        if (implicit) {
+          jac_i(iVar,iVar) -= dFdU;
+          jac_j(iVar,iVar) -= dFdU;
+        }
+      }
+    }
+
+    /*--- Update the vector and system matrix. ---*/
+
+
+    if (implicit) {
+
+
+    }
+  }
+};
+
+/*!
+ * \class CRoeScheme
+ * \brief Classical Roe scheme.
+ */
+template<int nDim>
+class CRoeScheme : public CRoeBase<CRoeScheme,nDim> {
+public:
+  CRoeScheme(const CConfig& config) : CRoeBase(config) {}
+
+  template<class... Ts>
+  FORCEINLINE static void finalizeResidual(VectorDbl<nVar>& flux,
+                                           MatrixDbl<nVar>& jac_i,
+                                           MatrixDbl<nVar>& jac_j,
+                                           bool implicit;
+                                           Double gamma,
+                                           Double kappa,
+                                           Double area,
+                                           const VectorDbl<nDim>& unitNormal,
+                                           const CPair<CCompressiblePrimitives<nDim> >& V,
+                                           const CPair<CCompressibleConservatives<nDim> >& U,
+                                           const CRoeVariables& roeAvg,
+                                           const VectorDbl<nVar>& lambda,
+                                           const MatrixDbl<nVar>& pMat,
+                                           Ts&...) {
+    /*--- Inverse P tensor. ---*/
+
+    auto pMatInv = pMatrixInv(gamma, roeAvg.density, roeAvg.velocity,
+                              roeAvg.projVel, roeAvg.soundSpeed, unitNormal);
+
     /*--- Diference between conservative variables at jPosize_t and iPosize_t. ---*/
 
     VectorDbl<nVar> deltaU;
@@ -555,11 +638,10 @@ public:
       deltaU(iVar) = U.j.all(iVar) - U.i.all(iVar);
     }
 
-    /// TODO: Low dissipation computation would go here.
-
-    Double dissipation = 1.0;
-
     /*--- Dissipation terms. ---*/
+
+    /// TODO: Low dissipation computation would go here.
+    Double dissipation = 1.0;
 
     for (size_t iVar = 0; iVar < nVar; iVar++) {
       for (size_t jVar = 0; jVar < nVar; jVar++) {
@@ -581,14 +663,6 @@ public:
           jac_j(iVar,jVar) -= dDdU;
         }
       }
-    }
-
-    /*--- Update the vector and system matrix. ---*/
-
-
-    if (implicit) {
-
-
     }
   }
 };
