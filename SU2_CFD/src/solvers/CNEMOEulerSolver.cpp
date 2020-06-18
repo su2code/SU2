@@ -1270,16 +1270,16 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
                                        CConfig *config, unsigned short iMesh) {
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iSpecies, iVar, jVar;
-  double *U_i, *U_j, *V_i, *V_j;
-  double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
-  double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
-  double *Limiter_i, *Limiter_j;
-  double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
-  double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
-  double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
+  su2double *U_i, *U_j, *V_i, *V_j;
+  su2double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
+  su2double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
+  su2double *Limiter_i, *Limiter_j;
+  su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
+  su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
+  su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
 
 
-  double lim_i, lim_j, lim_ij;
+  su2double lim_i, lim_j, lim_ij;
 
   unsigned long InnerIter = config->GetInnerIter();
   
