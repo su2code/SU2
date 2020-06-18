@@ -5732,10 +5732,13 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
     if (rank == MASTER_NODE) {
       string markerTag;
       for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-        markerTag = config->GetMarker_All_TagBound(iMarker);
-        if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-          su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
-          cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
+        if( config->GetViscous_Wall(iMarker)) {
+          markerTag = config->GetMarker_All_TagBound(iMarker);
+          if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
+            su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
+            cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
+            break;
+          }
         }
       }
     }
@@ -13228,9 +13231,11 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 #endif
 //    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-      string markerTag = config->GetMarker_All_TagBound(iMarker);
-      if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-        config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
+      if(config->GetViscous_Wall(iMarker)) {
+        string markerTag = config->GetMarker_All_TagBound(iMarker);
+        if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
+          config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
+        }
       }
     }
   }
