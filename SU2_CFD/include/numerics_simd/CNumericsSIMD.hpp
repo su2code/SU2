@@ -532,7 +532,7 @@ public:
                    const CVariable& solution_,
                    UpdateType updateType,
                    CSysVector<su2double>& vector,
-                   CSysMatrix<su2mixedfloat>& matrix) const override final {
+                   CSysMatrix<su2mixedfloat>& matrix) const final {
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
