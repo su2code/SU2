@@ -41,22 +41,22 @@
 enum class UpdateType {COLORING, REDUCTION};
 
 /*--- Scalar types (SIMD). ---*/
-using Double = simd::Array<su2double>
-using Int = simd::Array<unsigned long, Double::Size>
+using Double = simd::Array<su2double>;
+using Int = simd::Array<unsigned long, Double::Size>;
 
 /*--- Static vector types. ---*/
 template<class Type, size_t Size>
-using Vector<Type,Size> = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, Type::Align, Size, 1>;
+using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, Type::Align, Size, 1>;
 
-template<size_t Size> using VectorInt<Size> = Vector<Int, Size>;
-template<size_t Size> using VectorDbl<Size> = Vector<Double, Size>;
+template<size_t Size> using VectorInt = Vector<Int, Size>;
+template<size_t Size> using VectorDbl = Vector<Double, Size>;
 
 /*--- Static matrix types. ---*/
 template<class Type, size_t Rows, size_t Cols>
-using Matrix<Type,Rows,Cols> = C2DContainer<unsigned long, Type, StorageType::RowMajor, Type::Align, Rows, Cols>;
+using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, Type::Align, Rows, Cols>;
 
-template<size_t Rows, size_t Cols = Rows> using MatrixInt<Rows,Cols> = Matrix<Int, Rows, Cols>;
-template<size_t Rows, size_t Cols = Rows> using MatrixDbl<Rows,Cols> = Matrix<Double, Rows, Cols>;
+template<size_t Rows, size_t Cols = Rows> using MatrixInt = Matrix<Int, Rows, Cols>;
+template<size_t Rows, size_t Cols = Rows> using MatrixDbl = Matrix<Double, Rows, Cols>;
 
 /*!
  * \class CNumericsSIMD
@@ -79,16 +79,16 @@ public:
                            const CGeometry& geometry,
                            const CVariable& solution,
                            UpdateType updateType,
-                           CSysVector& vector,
-                           CSysMatrix& matrix) const = 0;
+                           CSysVector<su2double>& vector,
+                           CSysMatrix<su2mixedfloat>& matrix) const = 0;
 
   /*! \brief Destructor of the class. */
-  virtual ~CNumerics(void) = default;
+  virtual ~CNumericsSIMD(void) = default;
 };
 
 template<size_t nDim>
 FORCEINLINE Double dot(const VectorDbl<nDim>& a,
-                       const VectorDbl<nDim>& b,) {
+                       const VectorDbl<nDim>& b) {
   Double sum = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     sum += a(iDim) * b(iDim);
@@ -138,11 +138,13 @@ FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t
   return vector_ij;
 }
 
-template<size_t nVar, template Int_t, class Field_t>
-FORCEINLINE VectorDbl<nVar> gatherVariables(Int_t idx, const Field_t& vars) {
+template<size_t nVar, class Field_t>
+FORCEINLINE VectorDbl<nVar> gatherVariables(Int idx, const Field_t& vars) {
   VectorDbl<nVar> v;
   auto it = vars.innerIter<nVar>(idx);
-  while (it.go()) v(iVar) = *(it++);
+  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+    v(iVar) = *(it++);
+  }
   return v;
 }
 
@@ -189,8 +191,8 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
     auto delta_ij = vars_j(iVar) - vars_i(iVar);
     auto delta_ij_2 = pow(delta_ij,2);
     /// TODO: Customize the limiter function
-    auto lim_i = (delta_ij_2 + 2*proj_i*delta_ij) / (4*pow(proj_i,2) + delta_ij_2 + eps);
-    auto lim_j = (delta_ij_2 + 2*proj_j*delta_ij) / (4*pow(proj_j,2) + delta_ij_2 + eps);
+    auto lim_i = (delta_ij_2 + 2*proj_i*delta_ij) / (4*pow(proj_i,2) + delta_ij_2 + EPS);
+    auto lim_j = (delta_ij_2 + 2*proj_j*delta_ij) / (4*pow(proj_j,2) + delta_ij_2 + EPS);
     vars_i(iVar) += lim_i * proj_i;
     vars_j(iVar) -= lim_j * proj_j;
   }
@@ -214,12 +216,12 @@ struct CCompressiblePrimitives {
 };
 
 template<size_t nDim, class Variable_t>
-FORCEINLINE CPair<CCompressibleConservatives<nDim> > getCompressiblePrimitives(Int iPoint, Int jPoint, bool muscl,
-                                                                               ENUM_LIMITER limiterType,
-                                                                               const VectorDbl<nDim>& vector_ij,
-                                                                               const Variable_t& solution) {
+FORCEINLINE CPair<CCompressiblePrimitives<nDim> > getCompressiblePrimitives(Int iPoint, Int jPoint, bool muscl,
+                                                                            ENUM_LIMITER limiterType,
+                                                                            const VectorDbl<nDim>& vector_ij,
+                                                                            const Variable_t& solution) {
   CPair<CCompressiblePrimitives<nDim> > V;
-  constexpr size_t nVar = V::nVar;
+  constexpr size_t nVar = CCompressiblePrimitives<nDim>::nVar;
 
   const auto& primitives = solution.Primitive;
   const auto& gradients = solution.Gradient_Reconstruction;
@@ -306,7 +308,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
     pMat(1,1) = density*normal(1);
 
     pMat(2,0) = velocity(1);
-    pMat(2,1) = -density*normal(0);
+    pMat(2,1) = -1*density*normal(0);
 
     pMat(3,0) = vel2;
     pMat(3,1) = density*(velocity(0)*normal(1) - velocity(1)*normal(0));
@@ -359,10 +361,10 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 
   if (nDim == 2) {
     auto tmp = (gamma-1)/c2;
-    pMatInv(0,0) =  1.0 - tmp*vel2;
+    pMatInv(0,0) = 1.0 - tmp*vel2;
     pMatInv(0,1) = tmp*velocity(0);
     pMatInv(0,2) = tmp*velocity(1);
-    pMatInv(0,3) = -tmp;
+    pMatInv(0,3) = -1*tmp;
 
     pMatInv(1,0) = (normal(0)*velocity(1)-normal(1)*velocity(0))/density;
     pMatInv(1,1) = normal(1)/density;
@@ -375,30 +377,30 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
     pMatInv(0,1) = tmp*velocity(0);
     pMatInv(0,2) = tmp*velocity(1) + normal(2)/density;
     pMatInv(0,3) = tmp*velocity(2) - normal(1)/density;
-    pMatInv(0,4) = -tmp;
+    pMatInv(0,4) = -1*tmp;
 
     tmp = (gamma-1)/c2 * normal(1);
     pMatInv(1,0) = normal(1) - tmp*vel2 + (normal(2)*velocity(0)-normal(0)*velocity(2))/density;
     pMatInv(1,1) = tmp*velocity(0) - normal(2)/density;
     pMatInv(1,2) = tmp*velocity(1);
     pMatInv(1,3) = tmp*velocity(2) + normal(0)/density;
-    pMatInv(1,4) = -tmp;
+    pMatInv(1,4) = -1*tmp;
 
     tmp = (gamma-1)/c2 * normal(2);
     pMatInv(2,0) = normal(2) - tmp*vel2 - (normal(1)*velocity(0)-normal(0)*velocity(1))/density;
     pMatInv(2,1) = tmp*velocity(0) + normal(1)/density;
-    pMatInv(2,2) = tmp*velocity(1) - normal(0)/density+;
+    pMatInv(2,2) = tmp*velocity(1) - normal(0)/density;
     pMatInv(2,3) = tmp*velocity(2);
-    pMatInv(2,4) = -tmp;
+    pMatInv(2,4) = -1*tmp;
   }
 
   /*--- Last two rows. ---*/
 
-  auto gamma_minus_1_on_rho_times_c = (gamma-1) / (density*speedSound);
+  auto gamma_minus_1_on_rho_times_c = (gamma-1) / (density*soundSpeed);
 
   for (size_t iVar = nDim; iVar < nDim+2; ++iVar) {
     Double sign = (iVar==nDim)? 1 : -1;
-    pMatInv(iVar,0) = -sign*projVel/density + gamma_minus_1_on_rho_times_c * vel2;
+    pMatInv(iVar,0) = -1*sign*projVel/density + gamma_minus_1_on_rho_times_c * vel2;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       pMatInv(iVar,iDim+1) = sign*normal(iDim)/density - gamma_minus_1_on_rho_times_c * velocity(iDim);
     }
@@ -409,8 +411,8 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 }
 
 template<size_t nDim>
-FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim>& V
-                                               const CCompressibleConservatives<nDim>& U
+FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim>& V,
+                                               const CCompressibleConservatives<nDim>& U,
                                                const VectorDbl<nDim>& normal) {
   VectorDbl<nDim+2> flux = dot(U.momentum(), normal);
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -459,7 +461,7 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomIterator veloc
 /*!
  * \class CRoeBase
  * \brief Base class for Roe schemes, derived classes implement
- * the dissipation term in a static method "finalizeResidual".
+ *        the dissipation term in a "finalizeResidual" method.
  */
 template<class Derived, size_t NDIM>
 class CRoeBase : public CNumericsSIMD {
@@ -475,10 +477,10 @@ protected:
   /*!
    * \brief Constructor.
    */
-  CRoeScheme(const CConfig& config) :
+  CRoeBase(const CConfig& config) :
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
-    entropyFix(config.GetEntropyFix_Coeff())
+    entropyFix(config.GetEntropyFix_Coeff()),
     dynamicGrid(config.GetDynamic_Grid()) {
 
   }
@@ -492,20 +494,21 @@ public:
                    const CGeometry& geometry,
                    const CVariable& solution_,
                    UpdateType updateType,
-                   CSysVector& vector,
-                   CSysMatrix& matrix) override final {
+                   CSysVector<su2double>& vector,
+                   CSysMatrix<su2mixedfloat>& matrix) override final {
 
-    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const auto solution = static_cast<CEulerVariable&>(solution_);
+    const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const auto solution = static_cast<const CEulerVariable&>(solution_);
 
-    const auto iPoint = geometry.edges->GetNodes(iEdge,0);
-    const auto jPoint = geometry.edges->GetNodes(iEdge,1);
+    const auto iPoint = geometry.edges->GetNode<Int>(iEdge,0);
+    const auto jPoint = geometry.edges->GetNode<Int>(iEdge,1);
+    const auto iEdges = Int(iEdge,1);
 
-    /*--- Geometrix properties. ---*/
+    /*--- Geometric properties. ---*/
 
-    const auto vector_ij = distanceVector(iPoint, jPoint, geometry.nodes->Coord);
+    const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->Coord);
 
-    const auto normal = loadVariables<nDim>(iEdge, geometry.edges->Normal);
+    const auto normal = gatherVariables<nDim>(iEdges, geometry.edges->Normal);
     const auto area = norm(normal);
     VectorDbl<nDim> unitNormal;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -578,7 +581,7 @@ public:
     Derived::finalizeResidual(flux, jac_i, jac_j, implicit, gamma, kappa, area,
                               unitNormal, V, U, roeAvg, lambda, pMat);
 
-    /*--- Correct for grid motion ---*/
+    /*--- Correct for grid motion. ---*/
 
     if (dynamicGrid) {
       for (size_t iVar = 0; iVar < nVar; ++iVar) {
@@ -606,23 +609,26 @@ public:
  * \class CRoeScheme
  * \brief Classical Roe scheme.
  */
-template<size_t NDIM>
-class CRoeScheme : public CRoeBase<CRoeScheme,NDIM> {
+template<size_t nDim>
+class CRoeScheme : public CRoeBase<CRoeScheme<nDim>,nDim> {
+private:
+  using Base = CRoeBase<CRoeScheme<nDim>,nDim>;
+  enum: size_t {nVar = Base::nVar};
 public:
-  CRoeScheme(const CConfig& config) : CRoeBase(config) {}
+  CRoeScheme(const CConfig& config) : Base(config) {}
 
   template<class... Ts>
   FORCEINLINE static void finalizeResidual(VectorDbl<nVar>& flux,
                                            MatrixDbl<nVar>& jac_i,
                                            MatrixDbl<nVar>& jac_j,
-                                           bool implicit;
+                                           bool implicit,
                                            Double gamma,
                                            Double kappa,
                                            Double area,
                                            const VectorDbl<nDim>& unitNormal,
                                            const CPair<CCompressiblePrimitives<nDim> >& V,
                                            const CPair<CCompressibleConservatives<nDim> >& U,
-                                           const CRoeVariables& roeAvg,
+                                           const CRoeVariables<nDim>& roeAvg,
                                            const VectorDbl<nVar>& lambda,
                                            const MatrixDbl<nVar>& pMat,
                                            Ts&...) {

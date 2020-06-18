@@ -35,12 +35,13 @@
  * \author F. Palacios
  */
 class CEdge {
-  static_assert(su2activematrix::Storage == StorageType::RowMajor, "Needed to return normal as pointer.");
-
+  static_assert(su2activematrix::IsRowMajor, "Needed to return normal as pointer.");
 private:
-  su2matrix<unsigned long> Nodes; /*!< \brief Vector to store the node indices of the edge. */
-  su2activematrix Normal;         /*!< \brief Normal (area) of the edge. */
-  su2activematrix Coord_CG;       /*!< \brief Center-of-gravity (mid point) of the edge. */
+  using Index = unsigned long;
+  using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
+  NodeArray Nodes;           /*!< \brief Vector to store the node indices of the edge. */
+  su2activematrix Normal;    /*!< \brief Normal (area) of the edge. */
+  su2activematrix Coord_CG;  /*!< \brief Center-of-gravity (mid point) of the edge. */
 
 public:
   enum NodePosition : unsigned long {LEFT = 0, RIGHT = 1};
@@ -83,6 +84,14 @@ public:
    * \return Index of the node that composes the edge.
    */
   inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge,iNode); }
+
+  /*!
+   * \brief SIMD version of GetNode, iNode returned for multiple sequential iEdges
+   */
+  template<class IndexSIMD_t>
+  FORCEINLINE IndexSIMD_t GetNode(unsigned long iEdge, unsigned long iNode) const {
+    return IndexSIMD_t(&Nodes(iEdge,iNode));
+  }
 
   /*!
    * \brief Set the node indices of an edge.

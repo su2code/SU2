@@ -29,6 +29,7 @@
 
 #include "allocation_toolbox.hpp"
 #include "../basic_types/datatype_structure.hpp"
+#include "../parallelization/vectorization.hpp"
 
 #include <utility>
 #include <type_traits>
@@ -371,6 +372,60 @@ public:
   using Index = Index_t;
   using Scalar = Scalar_t;
   static constexpr StorageType Storage = Store;
+  static constexpr bool IsRowMajor = (Store==StorageType::RowMajor);
+  static constexpr bool IsColumnMajor = (Store==StorageType::ColumnMajor);
+
+  /*!
+   * \brief Scalar iterator to the inner dimension of the container, read-only.
+   */
+  class CInnerIter {
+   private:
+    const Index m_increment;
+    const Scalar* m_ptr;
+   public:
+    CInnerIter() = delete;
+
+    FORCEINLINE CInnerIter(const Scalar* ptr, Index increment) noexcept :
+      m_increment(increment),
+      m_ptr(ptr) {
+    }
+
+    FORCEINLINE Scalar operator* () const noexcept { return *m_ptr; }
+
+    FORCEINLINE Scalar operator++(int) noexcept {
+      auto ret = *(*this); m_ptr += m_increment; return ret;
+    }
+  };
+
+  /*!
+   * \brief SIMD iterator to the inner dimension of the container,
+   * read-only, generic non-contiguous access.
+   */
+  template<class IndexSIMD_t>
+  class CInnerIterGather {
+   private:
+    static_assert(std::is_integral<typename IndexSIMD_t::Scalar>::value,"");
+    enum {Size = IndexSIMD_t::Size};
+    IndexSIMD_t m_offsets;
+    const Index m_increment;
+    const Scalar* const m_data;
+   public:
+    CInnerIterGather() = delete;
+
+    FORCEINLINE CInnerIterGather(const Scalar* data, Index increment, IndexSIMD_t offsets) noexcept :
+      m_offsets(offsets),
+      m_increment(increment),
+      m_data(data) {
+    }
+
+    FORCEINLINE simd::Array<Scalar,Size> operator* () const noexcept {
+      return simd::Array<Scalar,Size>(m_data, m_offsets);
+    }
+
+    FORCEINLINE simd::Array<Scalar,Size> operator++(int) noexcept {
+      auto ret = *(*this); m_offsets += m_increment; return ret;
+    }
+  };
 
 private:
   /*!
@@ -483,13 +538,31 @@ public:
   {
     for(size_t i=0; i<size(); ++i) m_data[i] = value;
   }
+
+  /*!
+   * \brief Get a scalar iterator to the inner dimension of the container.
+   */
+  template<size_t nCols>
+  FORCEINLINE CInnerIter innerIter(Index_t row) const noexcept
+  {
+    return CInnerIter(&m_data[IsRowMajor? row*nCols : row], IsRowMajor? 1 : this->rows());
+  }
+
+  /*!
+   * \brief Get a SIMD gather iterator to the inner dimension of the container.
+   */
+  template<size_t nCols, class IndexSIMD_t>
+  FORCEINLINE CInnerIterGather<IndexSIMD_t> innerIter(IndexSIMD_t row) const noexcept
+  {
+    return CInnerIterGather<IndexSIMD_t>(m_data, IsRowMajor? 1 : this->rows(), IsRowMajor? row*nCols : row);
+  }
 };
 
 /*!
  * \brief Useful typedefs with default template parameters
  */
 template<class T> using su2vector = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor, 64, DynamicSize, DynamicSize>;
 
 using su2activevector = su2vector<su2double>;
 using su2activematrix = su2matrix<su2double>;
@@ -503,33 +576,66 @@ using su2passivematrix = su2matrix<passivedouble>;
  *        but still present the "su2double**" interface to the outside world.
  *        The "interface" part should be replaced by something more efficient, e.g. a "matrix view".
  */
-struct CVectorOfMatrix {
-  su2activevector storage;
-  su2matrix<su2double*> interface;
-  unsigned long M, N;
+class CVectorOfMatrix {
+public:
+  using Index = su2activevector::Index;
+  using Scalar = su2activevector::Scalar;
+  static constexpr bool IsRowMajor = true;
+  static constexpr bool IsColumnMajor = false;
 
+  using CInnerIter = su2activevector::CInnerIter;
+  template<class T> using CInnerIterGather = su2activevector::CInnerIterGather<T>;
+
+private:
+  su2activevector storage;
+  su2matrix<Scalar*> interface;
+  Index M, N;
+
+public:
   CVectorOfMatrix() = default;
 
-  CVectorOfMatrix(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
+  CVectorOfMatrix(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
     resize(length, rows, cols, value);
   }
 
-  void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
+  void resize(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
     M = rows;
     N = cols;
     storage.resize(length*rows*cols) = value;
     interface.resize(length,rows);
 
-    for(unsigned long i=0; i<length; ++i)
-      for(unsigned long j=0; j<rows; ++j)
+    for(Index i=0; i<length; ++i)
+      for(Index j=0; j<rows; ++j)
         interface(i,j) = &(*this)(i,j,0);
   }
 
-  su2double& operator() (unsigned long i, unsigned long j, unsigned long k) { return storage(i*M*N + j*N + k); }
-  const su2double& operator() (unsigned long i, unsigned long j, unsigned long k) const { return storage(i*M*N + j*N + k); }
+  /*!
+   * \brief Element-wise access.
+   */
+  Scalar& operator() (Index i, Index j, Index k) noexcept { return storage(i*M*N + j*N + k); }
+  const Scalar& operator() (Index i, Index j, Index k) const noexcept { return storage(i*M*N + j*N + k); }
 
-  su2double** operator[] (unsigned long i) { return interface[i]; }
-  const su2double* const* operator[] (unsigned long i) const { return interface[i]; }
+  /*!
+   * \brief Matrix-wise access.
+   */
+  Scalar** operator[] (Index i) noexcept { return interface[i]; }
+  const Scalar* const* operator[] (Index i) const noexcept { return interface[i]; }
+
+  /*!
+   * \brief Get a scalar iterator to the inner-most dimension of the container.
+   */
+  template<size_t nRows, size_t nCols>
+  FORCEINLINE CInnerIter innerIter(Index i, Index j) const noexcept {
+    return CInnerIter(&storage(i*nRows*nCols + j*nCols), 1);
+  }
+
+  /*!
+   * \brief Get a SIMD gather iterator to the inner-most dimension of the container.
+   */
+  template<size_t nRows, size_t nCols, class IndexSIMD_t>
+  FORCEINLINE CInnerIterGather<IndexSIMD_t> innerIter(IndexSIMD_t i, Index j) const noexcept {
+    return CInnerIterGather<IndexSIMD_t>(storage.data(), 1, i*nRows*nCols + j*nCols);
+  }
 };
 
 /*!

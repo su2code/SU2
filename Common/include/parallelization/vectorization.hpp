@@ -62,7 +62,7 @@ constexpr size_t simdLen<su2double>() { return SIMD_SIZE / sizeof(passivedouble)
 template<class Scalar_t, size_t N = simdLen<Scalar_t>()>
 class Array {
 #define FOREACH SU2_OMP_SIMD for(size_t k=0; k<N; ++k)
-
+  static_assert(N > 0, "Invalid SIMD size");
 public:
   using Scalar = Scalar_t;
   enum : size_t {Size = N};
@@ -87,6 +87,9 @@ public:
   FORCEINLINE Array(std::initializer_list<Scalar> vals) {
     auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }
   }
+
+  // linearly spaced
+  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }
 
   // load
   FORCEINLINE Array(const Scalar* ptr) { load(ptr); }

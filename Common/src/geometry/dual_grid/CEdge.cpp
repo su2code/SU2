@@ -27,14 +27,16 @@
 
 #include "../../../include/geometry/dual_grid/CEdge.hpp"
 #include "../../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../../include/omp_structure.hpp"
 
 using namespace GeometryToolbox;
 
-
-CEdge::CEdge(unsigned long nEdge, unsigned long nDim) :
-  Nodes(nEdge,2), Normal(nEdge,nDim), Coord_CG(nEdge,nDim) {
-  Normal = su2double(0.0);
-  Coord_CG = su2double(0.0);
+CEdge::CEdge(unsigned long nEdge, unsigned long nDim) {
+  /*--- Allocate with padding. ---*/
+  const auto nEdgeSIMD = nextMultiple(nEdge, simd::simdLen<su2double>());
+  Nodes.resize(nEdgeSIMD,2) = 0;
+  Normal.resize(nEdgeSIMD,nDim) = su2double(0.0);
+  Coord_CG.resize(nEdgeSIMD,nDim) = su2double(0.0);
 }
 
 void CEdge::SetZeroValues(void) {

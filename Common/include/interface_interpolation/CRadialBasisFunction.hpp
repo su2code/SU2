@@ -34,8 +34,7 @@
  * \brief Radial basis function interpolation.
  */
 class CRadialBasisFunction final : public CInterpolator {
-  static_assert(su2passivematrix::Storage == StorageType::RowMajor,
-                "This class relies on row major storage throughout.");
+  static_assert(su2passivematrix::IsRowMajor, "This class relies on row major storage throughout.");
 private:
   unsigned long MinDonors = 0, AvgDonors = 0, MaxDonors = 0;
   passivedouble Density = 0.0, AvgCorrection = 0.0, MaxCorrection = 0.0;
