@@ -597,18 +597,18 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Scale the stress tensor by the ratio of the wall shear stress
          to the computed representation of the shear stress ---*/
 
-//        if (nodes->GetTauWall(iPoint) > 0) {
-//          const su2double TauWall = nodes->GetTauWall(iPoint);
-//          for (iDim = 0 ; iDim < nDim; iDim++)
-//            for (jDim = 0 ; jDim < nDim; jDim++)
-//              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
-//          
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            TauElem[iDim] = 0.0;
-//            for (jDim = 0; jDim < nDim; jDim++)
-//              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-//          }
-//        }
+        if (nodes->GetTauWall(iPoint) > 0) {
+          const su2double TauWall = nodes->GetTauWall(iPoint);
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++)
+              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+          }
+        }
 
         /*--- Compute y+ and non-dimensional velocity ---*/
 
@@ -2161,14 +2161,14 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetPrimitive(iPoint, nDim+1, P_Wall);
           nodes->SetLaminarViscosity(iPoint, Lam_Visc_Wall);
           
-          /*--- Scale tau at the node.  ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (jDim = 0; jDim < nDim; jDim++) {
-              const su2double grad = Tau_Wall/WallShearStress*nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
-              nodes->SetGradient_Primitive(iPoint, iDim+1, jDim, grad);
-            }
-          }
+//          /*--- Scale tau at the node.  ---*/
+//
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            for (jDim = 0; jDim < nDim; jDim++) {
+//              const su2double grad = Tau_Wall/WallShearStress*nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
+//              nodes->SetGradient_Primitive(iPoint, iDim+1, jDim, grad);
+//            }
+//          }
 
         }
 
@@ -2179,8 +2179,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   
   InitiateComms(geometry, config, PRIMITIVE);
   CompleteComms(geometry, config, PRIMITIVE);
-  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
+//  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
+//  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
   
   /*--- Communicate values needed for WF ---*/
   InitiateComms(geometry, config, WALL_FUNCTION);
