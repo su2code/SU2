@@ -31,6 +31,9 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "../basic_types/datatype_structure.hpp"
+#include "../omp_structure.hpp"
+#include "../parallelization/vectorization.hpp"
 
 /*!
  * \class CSysVector
@@ -327,6 +330,41 @@ public:
   inline void SetBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
+  }
+
+  /*!
+   * \brief Vectorized version of SetBlock, sets multiple iPoint's.
+   * \param[in] Overwrite - True: write over existing data; False: add to existing data.
+   * \param[in] iPoint - SIMD integer, the positions to update.
+   * \param[in] vector - Vector of SIMD scalars.
+   * \param[in] alpha - Optional scale factor (axpy type operation).
+   */
+  template<class T, size_t N, class VectorSIMD_t, bool Overwrite = true>
+  FORCEINLINE void SetBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector, ScalarType alpha = 1) {
+    const auto nVar = vector.rows();
+    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+      SU2_OMP_SIMD
+      for (auto k = 0ul; k < N; ++k) {
+        vec_val[iPoint[k]*nVar+iVar] *= 1-Overwrite;
+        vec_val[iPoint[k]*nVar+iVar] += alpha * vector(iVar)[k];
+      }
+    }
+  }
+
+  /*!
+   * \brief Vectorized version of AddBlock, see SetBlock.
+   */
+  template<class T, size_t N, class VectorSIMD_t>
+  FORCEINLINE void AddBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector, ScalarType alpha = 1) {
+    SetBlock<T, N, VectorSIMD_t, false>(iPoint, vector, alpha);
+  }
+
+  /*!
+   * \brief Vectorized version of SubtractBlock, see SetBlock.
+   */
+  template<class T, size_t N, class VectorSIMD_t>
+  FORCEINLINE void SubtractBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector) {
+    SetBlock<T, N, VectorSIMD_t, false>(iPoint, vector, -1);
   }
 
   /*!

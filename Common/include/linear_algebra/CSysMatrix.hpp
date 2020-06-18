@@ -30,6 +30,7 @@
 
 #include "../../include/mpi_structure.hpp"
 #include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/vectorization.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
@@ -559,6 +560,40 @@ public:
   }
 
   /*!
+   * \brief SIMD version, does the update for multiple edges and points.
+   */
+  template<class MatrixSIMD_t, class T, size_t N>
+  FORCEINLINE void UpdateBlocks(simd::Array<T,N> iEdge, simd::Array<T,N> iPoint, simd::Array<T,N> jPoint,
+                                const MatrixSIMD_t& block_i, const MatrixSIMD_t& block_j) {
+
+    /*--- Fetch the blocks for all edges. ---*/
+    ScalarType* bii[N] = {nullptr};
+    ScalarType* bjj[N] = {nullptr};
+    ScalarType* bij[N] = {nullptr};
+    ScalarType* bji[N] = {nullptr};
+
+    for (auto k = 0ul; k < N; ++k) {
+      bii[k] = &matrix[dia_ptr[iPoint[k]]*block_i.size()];
+      bjj[k] = &matrix[dia_ptr[jPoint[k]]*block_i.size()];
+      bij[k] = &matrix[edge_ptr(iEdge[k],0)*block_i.size()];
+      bji[k] = &matrix[edge_ptr(iEdge[k],1)*block_i.size()];
+    }
+
+    /*--- Unpack the SIMD elements of the input blocks. ---*/
+    for (auto iVar = 0ul; iVar < block_i.rows(); ++iVar) {
+      for (auto jVar = 0ul; jVar < block_i.cols(); ++jVar) {
+        SU2_OMP_SIMD
+        for (auto k = 0ul; k < N; ++k) {
+          *(bii[k]++) += PassiveAssign(block_i(iVar,jVar)[k]);
+          *(bij[k]++) =  PassiveAssign(block_j(iVar,jVar)[k]);
+          *(bji[k]++) = -PassiveAssign(block_i(iVar,jVar)[k]);
+          *(bjj[k]++) -= PassiveAssign(block_j(iVar,jVar)[k]);
+        }
+      }
+    }
+  }
+
+  /*!
    * \brief Sets 2 blocks ij and ji (add to i* sub from j*) associated with
    *        one edge of an FVM-type sparse pattern.
    * \note The template parameter Sign, can be used create a "subtractive"
@@ -600,6 +635,33 @@ public:
   template<class OtherType>
   inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
     SetBlocks<OtherType,-1,false>(iEdge, block_i, block_j);
+  }
+
+  /*!
+   * \brief SIMD version, does the update for multiple edges.
+   */
+  template<class MatrixSIMD_t, class T, size_t N>
+  FORCEINLINE void SetBlocks(simd::Array<T,N> iEdge, const MatrixSIMD_t& block_i, const MatrixSIMD_t& block_j) {
+
+    /*--- Fetch blocks for all edges. ---*/
+    ScalarType* bij[N] = {nullptr};
+    ScalarType* bji[N] = {nullptr};
+
+    for (auto k = 0ul; k < N; ++k) {
+      bij[k] = &matrix[edge_ptr(iEdge[k],0)*block_i.size()];
+      bji[k] = &matrix[edge_ptr(iEdge[k],1)*block_i.size()];
+    }
+
+    /*--- Unpack the SIMD elements of the input blocks. ---*/
+    for (auto iVar = 0ul; iVar < block_i.rows(); ++iVar) {
+      for (auto jVar = 0ul; jVar < block_i.cols(); ++jVar) {
+        SU2_OMP_SIMD
+        for (auto k = 0ul; k < N; ++k) {
+          *(bij[k]++) = PassiveAssign(block_j(iVar,jVar)[k]);
+          *(bji[k]++) = -PassiveAssign(block_i(iVar,jVar)[k]);
+        }
+      }
+    }
   }
 
   /*!

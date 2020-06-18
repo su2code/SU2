@@ -137,6 +137,11 @@ public:
   inline su2double *GetCoord(unsigned long iPoint) { return Coord[iPoint]; }
 
   /*!
+   * \brief Get the entire matrix of coordinates of the control volumes.
+   */
+  inline const su2activematrix& GetCoord() const { return Coord; }
+
+  /*!
    * \brief Set the coordinates for the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] iDim - Position to store the coordinate.

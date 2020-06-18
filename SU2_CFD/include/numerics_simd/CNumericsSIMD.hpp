@@ -130,8 +130,8 @@ FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm
 template<size_t nDim, class Coord_t>
 FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t& coords) {
   VectorDbl<nDim> vector_ij;
-  auto coord_i = coords.innerIter<nDim>(iPoint);
-  auto coord_j = coords.innerIter<nDim>(jPoint);
+  auto coord_i = coords.template innerIter<nDim>(iPoint);
+  auto coord_j = coords.template innerIter<nDim>(jPoint);
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     vector_ij(iDim) = 0.5 * (*(coord_j++) - *(coord_i++));
   }
@@ -141,7 +141,7 @@ FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t
 template<size_t nVar, class Field_t>
 FORCEINLINE VectorDbl<nVar> gatherVariables(Int idx, const Field_t& vars) {
   VectorDbl<nVar> v;
-  auto it = vars.innerIter<nVar>(idx);
+  auto it = vars.template innerIter<nVar>(idx);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
     v(iVar) = *(it++);
   }
@@ -151,11 +151,12 @@ FORCEINLINE VectorDbl<nVar> gatherVariables(Int idx, const Field_t& vars) {
 template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
 FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPoint,
                                            const VectorDbl<nDim>& vector_ij,
+                                           Double direction,
                                            const Field_t& field,
                                            const Gradient_t& gradient) {
   auto vars = gatherVariables<nVar>(iPoint, field);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += dot(gradient.innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
+    vars(iVar) += direction * dot(gradient.template innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
   }
   return vars;
 }
@@ -163,13 +164,14 @@ FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPoint,
 template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
 FORCEINLINE VectorDbl<nVar> musclPointLimited(Int iPoint,
                                               const VectorDbl<nDim>& vector_ij,
+                                              Double direction,
                                               const Field_t& field,
                                               const Field_t& limiter,
                                               const Gradient_t& gradient) {
   auto vars = gatherVariables<nVar>(iPoint, field);
-  auto itLim = limiter.innerIter<nVar>(iPoint);
+  auto itLim = limiter.template innerIter<nVar>(iPoint);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += *(itLim++) * dot(gradient.innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
+    vars(iVar) += *(itLim++) * direction * dot(gradient.template innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
   }
   return vars;
 }
@@ -186,8 +188,8 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
   vars_j = gatherVariables<nVar>(jPoint, field);
 
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    auto proj_i = dot(gradient.innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
-    auto proj_j = dot(gradient.innerIter<nVar,nDim>(jPoint,iVar), vector_ij);
+    auto proj_i = dot(gradient.template innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
+    auto proj_j = dot(gradient.template innerIter<nVar,nDim>(jPoint,iVar), vector_ij);
     auto delta_ij = vars_j(iVar) - vars_i(iVar);
     auto delta_ij_2 = pow(delta_ij,2);
     /// TODO: Customize the limiter function
@@ -207,12 +209,17 @@ template<size_t nDim>
 struct CCompressiblePrimitives {
   enum : size_t {nVar = nDim+4};
   VectorDbl<nVar> all;
-  Double& temperature = all(0);
-  Double& pressure = all(nDim+1);
-  Double& density = all(nDim+2);
-  Double& enthalpy = all(nDim+3);
+  FORCEINLINE Double& temperature() { return all(0); }
+  FORCEINLINE Double& pressure() { return all(nDim+1); }
+  FORCEINLINE Double& density() { return all(nDim+2); }
+  FORCEINLINE Double& enthalpy() { return all(nDim+3); }
   FORCEINLINE Double& velocity(size_t iDim) { return all(iDim+1); }
-  FORCEINLINE Double* velocity() { return &velocity(0); }
+  FORCEINLINE const Double& temperature() const { return all(0); }
+  FORCEINLINE const Double& pressure() const { return all(nDim+1); }
+  FORCEINLINE const Double& density() const { return all(nDim+2); }
+  FORCEINLINE const Double& enthalpy() const { return all(nDim+3); }
+  FORCEINLINE const Double& velocity(size_t iDim) const { return all(iDim+1); }
+  FORCEINLINE const Double* velocity() const { return &velocity(0); }
 };
 
 template<size_t nDim, class Variable_t>
@@ -223,9 +230,9 @@ FORCEINLINE CPair<CCompressiblePrimitives<nDim> > getCompressiblePrimitives(Int 
   CPair<CCompressiblePrimitives<nDim> > V;
   constexpr size_t nVar = CCompressiblePrimitives<nDim>::nVar;
 
-  const auto& primitives = solution.Primitive;
-  const auto& gradients = solution.Gradient_Reconstruction;
-  const auto& limiters = solution.Limiter_Primitive;
+  const auto& primitives = solution.GetPrimitive();
+  const auto& gradients = solution.GetGradient_Reconstruction();
+  const auto& limiters = solution.GetLimiter_Primitive();
 
   if (!muscl) {
     V.i.all = gatherVariables<nVar>(iPoint, primitives);
@@ -234,13 +241,16 @@ FORCEINLINE CPair<CCompressiblePrimitives<nDim> > getCompressiblePrimitives(Int 
   else {
     switch (limiterType) {
     case NO_LIMITER:
-      V.i.all = musclUnlimited<nVar>(iPoint, vector_ij, primitives, gradients);
-      V.j.all = musclUnlimited<nVar>(jPoint,-vector_ij, primitives, gradients);
+      V.i.all = musclUnlimited<nVar>(iPoint, vector_ij, 1, primitives, gradients);
+      V.j.all = musclUnlimited<nVar>(jPoint, vector_ij,-1, primitives, gradients);
+      break;
     case VAN_ALBADA_EDGE:
       musclEdgeLimited(iPoint, jPoint, vector_ij, primitives, gradients, V.i.all, V.j.all);
+      break;
     default:
-      V.i.all = musclPointLimited<nVar>(iPoint, vector_ij, primitives, limiters, gradients);
-      V.j.all = musclPointLimited<nVar>(jPoint,-vector_ij, primitives, limiters, gradients);
+      V.i.all = musclPointLimited<nVar>(iPoint, vector_ij, 1, primitives, limiters, gradients);
+      V.j.all = musclPointLimited<nVar>(jPoint, vector_ij,-1, primitives, limiters, gradients);
+      break;
     }
     /// TODO: Extra reconstruction checks needed.
   }
@@ -251,20 +261,24 @@ template<size_t nDim>
 struct CCompressibleConservatives {
   enum : size_t {nVar = nDim+2};
   VectorDbl<nVar> all;
-  Double& density = all(0);
-  Double& rhoEnergy = all(nDim+1);
+  FORCEINLINE Double& density() { return all(0); }
+  FORCEINLINE Double& rhoEnergy() { return all(nDim+1); }
   FORCEINLINE Double& momentum(size_t iDim) { return all(iDim+1); }
-  FORCEINLINE Double* momentum() { return &momentum(0); }
+  FORCEINLINE const Double& density() const { return all(0); }
+  FORCEINLINE const Double& rhoEnergy() const { return all(nDim+1); }
+  FORCEINLINE const Double& momentum(size_t iDim) const { return all(iDim+1); }
+  FORCEINLINE const Double* momentum() const { return &momentum(0); }
 };
 
 template<size_t nDim>
 FORCEINLINE CCompressibleConservatives<nDim> getCompressibleConservatives(const CCompressiblePrimitives<nDim>& V) {
   CCompressibleConservatives<nDim> U;
-  U.density = V.density;
+  U.density() = V.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    U.momentum(iDim) = V.density * V.velocity(iDim);
+    U.momentum(iDim) = V.density() * V.velocity(iDim);
   }
-  U.rhoEnergy = V.density * V.enthalpy - V.pressure;
+  U.rhoEnergy() = V.density() * V.enthalpy() - V.pressure();
+  return U;
 }
 
 template<size_t nDim>
@@ -278,26 +292,26 @@ struct CRoeVariables {
 
 template<size_t nDim>
 FORCEINLINE CRoeVariables<nDim> getRoeAveragedVariables(Double gamma,
-                                                        const CPair<CCompressibleConservatives<nDim> >& V,
+                                                        const CPair<CCompressiblePrimitives<nDim> >& V,
                                                         const VectorDbl<nDim>& normal) {
   CRoeVariables<nDim> roeAvg;
-  auto R = sqrt(abs(V.j.density / V.i.density));
-  roeAvg.density = R * V.i.density;
+  auto R = sqrt(abs(V.j.density() / V.i.density()));
+  roeAvg.density = R * V.i.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) / (R+1);
   }
-  roeAvg.enthalpy = (R*V.j.enthalpy + V.i.enthalpy) / (R+1);
-  roeAvg.soundSpeed = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
+  roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) / (R+1);
+  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
   roeAvg.projVel = dot(roeAvg.velocity, normal);
   return roeAvg;
 }
 
 template<size_t nDim>
 FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const VectorDbl<nDim>& velocity,
-                                      Double projVel, Double soundSpeed, const VectorDbl<nDim>& normal) {
+                                      Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMat;
 
-  auto oneOnC = 1/soundSpeed;
+  auto oneOnC = 1/speedSound;
   auto vel2 = 0.5*squaredNorm(velocity);
 
   if (nDim == 2) {
@@ -345,18 +359,18 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
     pMat(iDim+1,nDim+1) = 0.5*density*(velocity(iDim)*oneOnC - normal(iDim));
   }
 
-  pMat(nDim+1,nDim) = 0.5*density*(vel2*oneOnC + projVel + soundSpeed/(gamma-1));
-  pMat(nDim+1,nDim+1) = 0.5*density*(vel2*oneOnC - projVel + soundSpeed/(gamma-1));
+  pMat(nDim+1,nDim) = 0.5*density*(vel2*oneOnC + projVel + speedSound/(gamma-1));
+  pMat(nDim+1,nDim+1) = 0.5*density*(vel2*oneOnC - projVel + speedSound/(gamma-1));
 
   return pMat;
 }
 
 template<size_t nDim>
 FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const VectorDbl<nDim>& velocity,
-                                         Double projVel, Double soundSpeed, const VectorDbl<nDim>& normal) {
+                                         Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMatInv;
 
-  auto c2 = pow(soundSpeed,2);
+  auto c2 = pow(speedSound,2);
   auto vel2 = 0.5*squaredNorm(velocity);
 
   if (nDim == 2) {
@@ -368,7 +382,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 
     pMatInv(1,0) = (normal(0)*velocity(1)-normal(1)*velocity(0))/density;
     pMatInv(1,1) = normal(1)/density;
-    pMatInv(1,2) = -normal(0)/density;
+    pMatInv(1,2) = -1*normal(0)/density;
     pMatInv(1,3) = 0.0;
   }
   else {
@@ -396,7 +410,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 
   /*--- Last two rows. ---*/
 
-  auto gamma_minus_1_on_rho_times_c = (gamma-1) / (density*soundSpeed);
+  auto gamma_minus_1_on_rho_times_c = (gamma-1) / (density*speedSound);
 
   for (size_t iVar = nDim; iVar < nDim+2; ++iVar) {
     Double sign = (iVar==nDim)? 1 : -1;
@@ -414,12 +428,13 @@ template<size_t nDim>
 FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim>& V,
                                                const CCompressibleConservatives<nDim>& U,
                                                const VectorDbl<nDim>& normal) {
-  VectorDbl<nDim+2> flux = dot(U.momentum(), normal);
+  auto mdot = dot(U.momentum(), normal);
+  VectorDbl<nDim+2> flux;
+  flux(0) = mdot;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    flux(iDim+1) *= V.velocity(iDim);
-    flux(iDim+1) += V.pressure * normal(iDim);
+    flux(iDim+1) = mdot*V.velocity(iDim) + normal(iDim)*V.pressure();
   }
-  flux(nDim+1) *= V.enthalpy;
+  flux(nDim+1) = mdot*V.enthalpy();
   return flux;
 }
 
@@ -456,6 +471,28 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomIterator veloc
   jac(nDim+1,nDim+1) = scale * gamma * projVel;
 
   return jac;
+}
+
+template<size_t nVar>
+FORCEINLINE void updateLinearSystem(Int iEdge,
+                                    Int iPoint,
+                                    Int jPoint,
+                                    bool implicit,
+                                    UpdateType updateType,
+                                    const VectorDbl<nVar>& flux,
+                                    const MatrixDbl<nVar>& jac_i,
+                                    const MatrixDbl<nVar>& jac_j,
+                                    CSysVector<su2double>& vector,
+                                    CSysMatrix<su2mixedfloat>& matrix) {
+  if (updateType == UpdateType::COLORING) {
+    vector.AddBlock(iPoint, flux);
+    vector.SubtractBlock(jPoint, flux);
+    if(implicit) matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j);
+  }
+  else {
+    vector.SetBlock(iEdge, flux);
+    if (implicit) matrix.SetBlocks(iEdge, jac_i, jac_j);
+  }
 }
 
 /*!
@@ -495,10 +532,10 @@ public:
                    const CVariable& solution_,
                    UpdateType updateType,
                    CSysVector<su2double>& vector,
-                   CSysMatrix<su2mixedfloat>& matrix) override final {
+                   CSysMatrix<su2mixedfloat>& matrix) const override final {
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const auto solution = static_cast<const CEulerVariable&>(solution_);
+    const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode<Int>(iEdge,0);
     const auto jPoint = geometry.edges->GetNode<Int>(iEdge,1);
@@ -506,9 +543,9 @@ public:
 
     /*--- Geometric properties. ---*/
 
-    const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->Coord);
+    const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
 
-    const auto normal = gatherVariables<nDim>(iEdges, geometry.edges->Normal);
+    const auto normal = gatherVariables<nDim>(iEdges, geometry.edges->GetNormal());
     const auto area = norm(normal);
     VectorDbl<nDim> unitNormal;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -517,8 +554,8 @@ public:
 
     /*--- Reconstructed primitives. ---*/
 
-    auto V = getCompressiblePrimitives(iPoint, jPoint,
-                                       config.GetKind_SlopeLimit_Flow(),
+    auto V = getCompressiblePrimitives(iPoint, jPoint, config.GetMUSCL_Flow(),
+                                       static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow()),
                                        vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
@@ -534,13 +571,13 @@ public:
     /*--- P tensor. ---*/
 
     auto pMat = pMatrix(gamma, roeAvg.density, roeAvg.velocity,
-                        roeAvg.projVel, roeAvg.soundSpeed, unitNormal);
+                        roeAvg.projVel, roeAvg.speedSound, unitNormal);
 
     /*--- Grid motion. ---*/
 
     Double projGridVel = 0.0, projVel = roeAvg.projVel;
     if (dynamicGrid) {
-      const auto& gridVel = geometry.nodes->GridVel;
+      const auto& gridVel = geometry.nodes->GetGridVel();
       projGridVel = 0.5*(dot(gridVel.innerIter<nDim>(iPoint), unitNormal)+
                          dot(gridVel.innerIter<nDim>(jPoint), unitNormal));
       projVel -= projGridVel;
@@ -548,16 +585,19 @@ public:
 
     /*--- Convective eigenvalues. ---*/
 
-    VectorDbl<nVar> lambda = projVel;
-    lambda(nDim) += roeAvg.soundSpeed;
-    lambda(nDim+1) -= roeAvg.soundSpeed;
+    VectorDbl<nVar> lambda;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      lambda(iDim) = projVel;
+    }
+    lambda(nDim) = projVel + roeAvg.speedSound;
+    lambda(nDim+1) = projVel - roeAvg.speedSound;
 
     /*--- Apply Mavriplis' entropy correction to eigenvalues. ---*/
 
-    auto maxLambda = abs(projVel) + roeAvg.soundSpeed;
+    auto maxLambda = abs(projVel) + roeAvg.speedSound;
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = simd::max(abs(lambda(iVar)), entropyFix*maxLambda);
     }
 
     /*--- Inviscid fluxes and Jacobians. ---*/
@@ -572,8 +612,8 @@ public:
 
     MatrixDbl<nVar> jac_i, jac_j;
     if (implicit) {
-      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.rhoEnergy/U.i.density, normal, kappa);
-      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.rhoEnergy/U.j.density, normal, kappa);
+      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.rhoEnergy()/U.i.density(), normal, kappa);
+      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.rhoEnergy()/U.j.density(), normal, kappa);
     }
 
     /*--- Finalize in derived class (static polymorphism). ---*/
@@ -597,11 +637,8 @@ public:
 
     /*--- Update the vector and system matrix. ---*/
 
-
-    if (implicit) {
-
-
-    }
+    updateLinearSystem(iEdges, iPoint, jPoint, implicit, updateType,
+                       flux, jac_i, jac_j, vector, matrix);
   }
 };
 
@@ -635,7 +672,7 @@ public:
     /*--- Inverse P tensor. ---*/
 
     auto pMatInv = pMatrixInv(gamma, roeAvg.density, roeAvg.velocity,
-                              roeAvg.projVel, roeAvg.soundSpeed, unitNormal);
+                              roeAvg.projVel, roeAvg.speedSound, unitNormal);
 
     /*--- Diference between conservative variables at jPoint and iPoint. ---*/
 

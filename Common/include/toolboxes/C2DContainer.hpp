@@ -392,8 +392,8 @@ public:
 
     FORCEINLINE Scalar operator* () const noexcept { return *m_ptr; }
 
-    FORCEINLINE Scalar operator++(int) noexcept {
-      auto ret = *(*this); m_ptr += m_increment; return ret;
+    FORCEINLINE CInnerIter operator++(int) noexcept {
+      auto ret = *this; m_ptr += m_increment; return ret;
     }
   };
 
@@ -422,8 +422,8 @@ public:
       return simd::Array<Scalar,Size>(m_data, m_offsets);
     }
 
-    FORCEINLINE simd::Array<Scalar,Size> operator++(int) noexcept {
-      auto ret = *(*this); m_offsets += m_increment; return ret;
+    FORCEINLINE CInnerIterGather operator++(int) noexcept {
+      auto ret = *this; m_offsets += m_increment; return ret;
     }
   };
 
@@ -551,10 +551,10 @@ public:
   /*!
    * \brief Get a SIMD gather iterator to the inner dimension of the container.
    */
-  template<size_t nCols, class IndexSIMD_t>
-  FORCEINLINE CInnerIterGather<IndexSIMD_t> innerIter(IndexSIMD_t row) const noexcept
+  template<size_t nCols, class T, size_t N>
+  FORCEINLINE CInnerIterGather<simd::Array<T,N> > innerIter(simd::Array<T,N> row) const noexcept
   {
-    return CInnerIterGather<IndexSIMD_t>(m_data, IsRowMajor? 1 : this->rows(), IsRowMajor? row*nCols : row);
+    return CInnerIterGather<simd::Array<T,N> >(m_data, IsRowMajor? 1 : this->rows(), IsRowMajor? row*nCols : row);
   }
 };
 
@@ -584,7 +584,8 @@ public:
   static constexpr bool IsColumnMajor = false;
 
   using CInnerIter = su2activevector::CInnerIter;
-  template<class T> using CInnerIterGather = su2activevector::CInnerIterGather<T>;
+  template<class T, size_t N>
+  using CInnerIterGather = su2activevector::CInnerIterGather<simd::Array<T,N> >;
 
 private:
   su2activevector storage;
@@ -632,9 +633,9 @@ public:
   /*!
    * \brief Get a SIMD gather iterator to the inner-most dimension of the container.
    */
-  template<size_t nRows, size_t nCols, class IndexSIMD_t>
-  FORCEINLINE CInnerIterGather<IndexSIMD_t> innerIter(IndexSIMD_t i, Index j) const noexcept {
-    return CInnerIterGather<IndexSIMD_t>(storage.data(), 1, i*nRows*nCols + j*nCols);
+  template<size_t nRows, size_t nCols, class T, size_t N>
+  FORCEINLINE CInnerIterGather<T,N> innerIter(simd::Array<T,N> i, Index j) const noexcept {
+    return CInnerIterGather<T,N>(storage.data(), 1, i*nRows*nCols + j*nCols);
   }
 };
 

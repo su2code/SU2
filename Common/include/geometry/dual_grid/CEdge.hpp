@@ -178,6 +178,11 @@ public:
   inline const su2double* GetNormal(unsigned long iEdge) const { return Normal[iEdge]; }
 
   /*!
+   * \brief Get the entire matrix of edge normals.
+   */
+  inline const su2activematrix& GetNormal() const { return Normal; }
+
+  /*!
    * \brief Initialize normal vector to 0.
    */
   void SetZeroValues(void);
