@@ -2420,7 +2420,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
         /*--- Setup the interpolation. ---*/
 
-        interpolation[donor][target] = CInterpolatorFactory::createInterpolator(geometry, config, donor, target);
+        interpolation[donor][target] = CInterpolatorFactory::CreateInterpolator(geometry, config, donor, target);
 
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 

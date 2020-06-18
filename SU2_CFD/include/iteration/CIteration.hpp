@@ -116,7 +116,7 @@ class CIteration {
   virtual void Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                          unsigned short val_iInst){};
+                          unsigned short val_iInst){}
 
   /*!
    * \brief A virtual member.
@@ -133,7 +133,7 @@ class CIteration {
   virtual void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                       unsigned short val_iInst){};
+                       unsigned short val_iInst){}
 
   /*!
    * \brief A virtual member.
@@ -150,7 +150,7 @@ class CIteration {
   virtual void Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                      CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                      CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                     unsigned short val_iInst){};
+                     unsigned short val_iInst){}
 
   /*!
    * \brief A virtual member.
@@ -167,7 +167,7 @@ class CIteration {
   virtual void Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                       CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                       CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                      unsigned short val_iInst){};
+                      unsigned short val_iInst){}
 
   /*!
    * \brief A virtual member.
@@ -184,7 +184,7 @@ class CIteration {
   virtual void Predictor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                          CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                          CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                         unsigned short val_iInst){};
+                         unsigned short val_iInst){}
 
   /*!
    * \brief A virtual member.
@@ -201,7 +201,7 @@ class CIteration {
   virtual void Relaxation(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                          unsigned short val_iInst){};
+                          unsigned short val_iInst){}
 
   /*!
    * \brief A virtual member.
@@ -212,7 +212,7 @@ class CIteration {
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                        unsigned short val_iInst) {
     return false;
-  };
+  }
 
   /*!
    * \brief A virtual member.
@@ -236,7 +236,7 @@ class CIteration {
   virtual void Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                           unsigned short val_iInst){};
+                           unsigned short val_iInst) {}
 
   virtual void InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
                                  unsigned short iInst) {}
