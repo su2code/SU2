@@ -599,8 +599,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              consistently by using the complete control volume info
              from both sides of the periodic face. ---*/
 
-            for (iVar = 0; iVar< nVar; iVar++)
-            Und_Lapl[iVar] = 0.0;
+            for (iVar = 0; iVar < nVar; iVar++)
+              Und_Lapl[iVar] = 0.0;
 
             for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
               jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
@@ -772,7 +772,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Rotate the partial gradients in space for all variables. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 
