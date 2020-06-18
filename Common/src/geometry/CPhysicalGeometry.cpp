@@ -13215,7 +13215,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
             } // iNode
           } // if viscous
         } // iMarker
-      } // if markerID WALL_FUNCTION && iPoint !SolidBoundary && iPoint in domain
+      } // iPoint !SolidBoundary && iPoint in domain
     }
     
     /*--- Now specify the exchange distance based on the maximum distance of nodes

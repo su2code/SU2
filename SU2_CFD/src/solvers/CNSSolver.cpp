@@ -2072,7 +2072,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
 
-          if (Y_Plus_Start < 5.0) {
+          if (Y_Plus_Start < 5.0 || Y_Plus_Start > 1.0e3) {
             nodes->SetTauWall(iPoint,-1.0);
             nodes->SetTauWallFactor(iPoint,1.0);
             continue;
