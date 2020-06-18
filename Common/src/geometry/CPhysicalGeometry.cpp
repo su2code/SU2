@@ -3725,15 +3725,6 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     /*--- Set the value of some of the points ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
-  
-    /*--- Deallocate the bound variables ---*/
-
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-     for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
-       if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
-      if (bound[iMarker] != NULL) delete [] bound[iMarker];
-      bound[iMarker] = NULL;
-    }
 
     /*--- Add the new MPI send boundaries, reset the transformation,
      and save the local value. ---*/
@@ -5711,13 +5702,11 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   /*---         of doing this. So this may need some improvement.          ---*/
   /*--------------------------------------------------------------------------*/
 
-  if (!config->GetWall_Functions()) {
-    SetPoint_Connectivity();
-    SetRCM_Ordering(config);
-    SetPoint_Connectivity();
-    SetElement_Connectivity();
-    SetBoundVolume();
-  }
+  SetPoint_Connectivity();
+  SetRCM_Ordering(config);
+  SetPoint_Connectivity();
+  SetElement_Connectivity();
+  SetBoundVolume();
 
   /*--- Correct the orientation of the elements and flip the negative ones. ---*/
   Check_IntElem_Orientation(config);
@@ -5734,6 +5723,14 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   for (unsigned short iMarker = 0 ; iMarker < nMarker; iMarker++) {
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+  }
+  
+  /*--- Set the wall distance if using wall functions, to get the exchange location. ---*/
+  if (config->GetWall_Functions()) {
+    unique_ptr<CADTElemClass> WallADT = ComputeViscousWallADT(config);
+    if (WallADT && !WallADT->IsEmpty()){
+      SetWallDistance(config, WallADT.get());
+    }
   }
 
   /* Build the local ADT of the volume elements, including halo elements. */

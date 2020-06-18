@@ -771,17 +771,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
   delete geometry_aux;
-  
-  if (wall_models){
-    /*--- If using wall model, compute the wall distance to get the exchange distance ---*/
-    geometry[MESH_0]->SetBoundaries(config);
-    geometry[MESH_0]->SetPoint_Connectivity();
-    geometry[MESH_0]->SetRCM_Ordering(config);
-    geometry[MESH_0]->SetPoint_Connectivity();
-    geometry[MESH_0]->SetElement_Connectivity();
-    geometry[MESH_0]->SetBoundVolume();
-    geometry[MESH_0]->ComputeWallDistance(config_container, geometry_container);
-  }
 
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetSendReceive(config);
