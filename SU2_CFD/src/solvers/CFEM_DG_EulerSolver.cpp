@@ -7725,7 +7725,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
   Eigen::MatrixXd Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
   std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
-  std::vector<pair<int, int>> boundary_list(naca_dim);
+  std::vector<pair<int, int>> boundary_list;
   std::vector<pair<int, int>> boundary_list_temp(naca_dim);
   for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
     if (boundaries[iMarker].markerTag == "airfoil") {
@@ -7734,15 +7734,26 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
         int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
         int Point_min = min(Point1, Point2);
         int Point_max = max(Point1, Point2);
-        boundary_list[j] = pair<int, int>(Point_min, Point_max);
+        int found = false;
+        for (auto i = boundary_list.begin(); i != boundary_list.end(); ++i) {
+          if (i->second == Point1) {
+            boundary_list.insert(i+1, pair<int, int>(Point1, Point2));
+            found = true;
+            break;
+          }
+          else if (i->first == Point2) {
+            boundary_list.insert(i, pair<int, int>(Point1, Point2));
+            found = true;
+            break;
+          }
+        }
+        if (found == false) {
+          boundary_list.push_back(pair<int, int>(Point1, Point2));
+        }
       }
     }
   }
-  sort(boundary_list.begin(), boundary_list.end());
-  if (boundary_list.size() !=0) {
-    boundary_list.push_back(boundary_list[1]);
-    boundary_list.erase(boundary_list.begin()+1);
-  }
+  // assert(boundary_list.size() == naca_dim);
   // for (int i = 0; i < boundary_list.size(); ++i){
   //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
   // }
