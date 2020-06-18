@@ -13094,8 +13094,8 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
   /* Loop over the boundary markers. */
 
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-//  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+//  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
 
 
     /* Check for a viscous wall. */
@@ -13227,8 +13227,8 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 #else
     globalMaxDist = maxWallDist;
 #endif
-    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-//    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+//    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
       if(config->GetViscous_Wall(iMarker)) {
         string markerTag = config->GetMarker_All_TagBound(iMarker);
         if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
