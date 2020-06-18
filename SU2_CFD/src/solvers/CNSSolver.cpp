@@ -2078,6 +2078,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           if (Y_Plus_Start < 5.0) {
             nodes->SetTauWall(iPoint,-1.0);
+            nodes->SetTauWallFactor(iPoint,1.0);
             continue;
           }
 
@@ -2149,15 +2150,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           nodes->SetPrimitive(iPoint, nDim+2, Density_Wall);
           nodes->SetPrimitive(iPoint, nDim+1, P_Wall);
           nodes->SetLaminarViscosity(iPoint, Lam_Visc_Wall);
-          
-//          /*--- Scale tau at the node.  ---*/
-//
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            for (jDim = 0; jDim < nDim; jDim++) {
-//              const su2double grad = Tau_Wall/WallShearStress*nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
-//              nodes->SetGradient_Primitive(iPoint, iDim+1, jDim, grad);
-//            }
-//          }
 
         }
 
@@ -2168,8 +2160,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   
   InitiateComms(geometry, config, PRIMITIVE);
   CompleteComms(geometry, config, PRIMITIVE);
-//  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
-//  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
   
   /*--- Communicate values needed for WF ---*/
   InitiateComms(geometry, config, WALL_FUNCTION);

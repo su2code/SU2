@@ -2890,7 +2890,7 @@ public:
   
   inline virtual void SetTauWallFactor(unsigned long iPoint, su2double val_tau_wall_fac) {}
 
-  inline virtual su2double GetTauWallFactor(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetTauWallFactor(unsigned long iPoint) const { return 1.0; }
 
   inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}
