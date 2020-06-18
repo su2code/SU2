@@ -411,23 +411,21 @@ public:
   bool FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                 unsigned short &face_second_elem) override;
   
-  #ifdef HAVE_MPI
-    /*!
-     * \brief Function which determines the additional halo elements needed for
-              the interpolation of the data at the exchange points for the wall
-              model treatment. Only needed in parallel model.
-     * \param[in] config - Definition of the particular problem.
-     */
-    void AddWallModelDonorHalos(CConfig *config) override;
-  
-     /*!
-      * \brief Function which determines the additional halo elements needed for
-               the interpolation of the data at the exchange points for the wall
-               model treatment. Only needed in parallel model.
-      * \param[in] config - Definition of the particular problem.
-      */
+  /*!
+   * \brief Function which determines the additional halo elements needed for
+            the interpolation of the data at the exchange points for the wall
+            model treatment. Only needed in parallel model.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddWallModelDonorHalos(CConfig *config) override;
+
+   /*!
+    * \brief Function which determines the additional halo elements needed for
+             the interpolation of the data at the exchange points for the wall
+             model treatment. Only needed in parallel model.
+    * \param[in] config - Definition of the particular problem.
+    */
   void AddWallModelSurfaceDonorHalos(CConfig *config) override {}
-  #endif
   
   /*!
    * \brief Function that computes the interpolation information for the exchange

@@ -577,14 +577,13 @@ public:
   inline virtual bool FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                                unsigned short &face_second_elem) {return false;}
   
-  #ifdef HAVE_MPI
-     /*!
-      * \brief Function which determines the additional halo elements needed for
-               the interpolation of the data at the exchange points for the wall
-               model treatment. Only needed in parallel model.
-      * \param[in] config - Definition of the particular problem.
-      */
-     inline virtual void AddWallModelDonorHalos(CConfig *config){}
+   /*!
+    * \brief Function which determines the additional halo elements needed for
+             the interpolation of the data at the exchange points for the wall
+             model treatment. Only needed in parallel model.
+    * \param[in] config - Definition of the particular problem.
+    */
+   inline virtual void AddWallModelDonorHalos(CConfig *config){}
   
   /*!
    * \brief Function which determines the additional halo elements needed for
@@ -593,7 +592,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void AddWallModelSurfaceDonorHalos(CConfig *config){}
-  #endif
   
   /*!
   * \brief Function that computes the interpolation information for the exchange

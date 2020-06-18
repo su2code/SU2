@@ -3602,14 +3602,12 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
           additional elements (and nodes) may be added as halo's. Only needed
           in parallel mode. ---*/
 
-#ifdef HAVE_MPI
   if (wmles){
     if (rank == MASTER_NODE)
       cout << "Adding wall model donor elements to the halo list. " << endl;
 
     AddWallModelDonorHalos(config);
   }
-#endif
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
       cout << "Establishing MPI communication patterns." << endl;
@@ -5692,7 +5690,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   delete localVolumeADT;
 }
 
-#ifdef HAVE_MPI
 void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
@@ -5734,6 +5731,8 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
     }
   }
 
+#ifdef HAVE_MPI
+  
   /* Build the local ADT of the volume elements, including halo elements. */
   CADTElemClass *localVolumeADT;
   BuildLocalVolumeADT(localVolumeADT);
@@ -6402,6 +6401,8 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
 
   /* Delete the memory of localVolumeADT again. */
   delete localVolumeADT;
+  
+#endif
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 7. Reset the data structures needed to compute the normals    ---*/
@@ -6448,7 +6449,6 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   if (nVertex != NULL) {delete [] nVertex; nVertex = NULL;}
 
 }
-#endif
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
