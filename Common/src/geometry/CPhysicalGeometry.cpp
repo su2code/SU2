@@ -6170,7 +6170,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
       SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
       doubleRecvBuf[i].resize(sizeMess);
 
-      SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+      SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
                     source, rank+3, MPI_COMM_WORLD, &status);
     }
 
