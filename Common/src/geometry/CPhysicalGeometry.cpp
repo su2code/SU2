@@ -5727,6 +5727,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   
   /*--- Set the wall distance if using wall functions, to get the exchange location. ---*/
   if (config->GetWall_Functions()) {
+    SetWallDistance(numeric_limits<su2double>::max());
     unique_ptr<CADTElemClass> WallADT = ComputeViscousWallADT(config);
     if (WallADT && !WallADT->IsEmpty()){
       SetWallDistance(config, WallADT.get());
