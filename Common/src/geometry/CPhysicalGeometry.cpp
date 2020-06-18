@@ -3734,6 +3734,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       if (bound[iMarker] != NULL) delete [] bound[iMarker];
     }
     if (bound != NULL) delete [] bound;
+    bound = NULL;
 
     /*--- Add the new MPI send boundaries, reset the transformation,
      and save the local value. ---*/
