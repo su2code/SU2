@@ -1897,19 +1897,11 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  const unsigned short max_iter = 1000;
-  const su2double tol = 1e-12;
+  const unsigned short max_iter = 50;
+  const su2double tol = 1e-6;
   bool converged = true;
   
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-
-  /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
-
-  su2double *VelInf = config->GetVelocity_FreeStreamND();
-  VelInfMod = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    VelInfMod += VelInf[iDim];
-  VelInfMod = sqrt(VelInfMod);
 
   /*--- Compute the recovery factor ---*/
   // Double-check: laminar or turbulent Pr for this?
