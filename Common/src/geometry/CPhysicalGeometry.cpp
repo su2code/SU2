@@ -13094,8 +13094,8 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
   /* Loop over the boundary markers. */
 
-//  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+//  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
 
 
     /* Check for a viscous wall. */
