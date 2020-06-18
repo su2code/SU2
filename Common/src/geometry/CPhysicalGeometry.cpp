@@ -3725,6 +3725,15 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     /*--- Set the value of some of the points ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+  
+    /*--- Deallocate the bound variables ---*/
+
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+     for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
+       if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
+      if (bound[iMarker] != NULL) delete [] bound[iMarker];
+    }
+    if (bound != NULL) delete [] bound;
 
     /*--- Add the new MPI send boundaries, reset the transformation,
      and save the local value. ---*/
