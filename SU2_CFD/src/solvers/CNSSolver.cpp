@@ -1888,8 +1888,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   const su2double tol = 1e-6;
   bool converged = true;
   
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-
   /*--- Compute the recovery factor ---*/
   // Double-check: laminar or turbulent Pr for this?
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
@@ -1963,9 +1961,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               
               for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);              
             }
-            
-            su2double Vel2_Normal = 0.;
-            for (iDim = 0; iDim < nDim; iDim++) Vel2_Normal += pow(Vel[iDim], 2.);
 
             /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
@@ -2071,6 +2066,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           counter = 0; diff = 1.0;
           U_Tau = sqrt(WallShearStress/Density_Wall);
           Y_Plus = 0.0; // to avoid warning
+          converged = true;
 
           su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
