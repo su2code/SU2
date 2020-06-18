@@ -1944,7 +1944,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case WALL_FUNCTION:
-      COUNT_PER_POINT  = 4;
+      COUNT_PER_POINT  = 5;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_LIMITER:
@@ -2095,7 +2095,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset+0] = base_nodes->GetDensity(iPoint);
             bufDSend[buf_offset+1] = base_nodes->GetLaminarViscosity(iPoint);
             bufDSend[buf_offset+2] = base_nodes->GetTauWall(iPoint);
-            bufDSend[buf_offset+3] = base_nodes->GetTemperature(iPoint);
+            bufDSend[buf_offset+3] = base_nodes->GetTauWallFactor(iPoint);
+            bufDSend[buf_offset+4] = base_nodes->GetTemperature(iPoint);
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -2283,7 +2284,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
             base_nodes->SetSolution(iPoint, 0, bufDRecv[buf_offset+0]);
             base_nodes->SetLaminarViscosity(iPoint, bufDRecv[buf_offset+1]);
             base_nodes->SetTauWall(iPoint, bufDRecv[buf_offset+2]);
-            base_nodes->SetTemperature(iPoint, bufDRecv[buf_offset+3]);
+            base_nodes->SetTauWallFactor(iPoint, bufDRecv[buf_offset+3]);
+            base_nodes->SetTemperature(iPoint, bufDRecv[buf_offset+4]);
             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -6496,13 +6498,16 @@ void CSolver::ViscousMetric(CSolver                    **solver,
       //--- TODO: Code SA
     }
   }
+  
+  //--- Account for wall functions
+  su2double wf = varFlo->GetTauWallFactor(iPoint);
 
   divu = 0.0; for (iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
 
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
-      tau[iDim][jDim]  = (mu+mut)*( gradu[jDim][iDim] + gradu[iDim][jDim] ) 
-                       - (2./3.)*((mu+mut)*divu+r*k)*delta[iDim][jDim];
+      tau[iDim][jDim]  = wf*((mu+mut)*( gradu[jDim][iDim] + gradu[iDim][jDim] )
+                       - (2./3.)*((mu+mut)*divu+r*k)*delta[iDim][jDim]);
     }
   }
 
@@ -6510,7 +6515,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
+      factor += (tau[iDim][jDim]+wf*(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
@@ -6540,8 +6545,8 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   if (sst) {
     weights[1][nVarFlo] += -factor;
     for (iDim = 0; iDim < nDim; ++iDim) {
-      weights[1][nVarFlo] += -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
-                                     + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+      weights[1][nVarFlo] += -(2./3.)*wf*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+                                        + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
   }
 
@@ -6558,7 +6563,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   if(nDim == 3) {
     const unsigned short rui = 1, rvi = 2, rwi = 3, rei = 4,
                          xxi = 0, xyi = 1, xzi = 2, yyi = 3, yzi = 4, zzi = 5;
-    TmpWeights[1] += -(mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+    TmpWeights[1] += -(mu+mut)*wf/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
                                       +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
                                       +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
                                       +varAdjFlo->GetHessian(iPoint, rvi, xyi)
@@ -6571,7 +6576,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
                    + (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                             +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhou
-    TmpWeights[2] += -(mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rvi, xxi)
+    TmpWeights[2] += -(mu+mut)*wf/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rvi, xxi)
                                       +4.*varAdjFlo->GetHessian(iPoint, rvi, yyi)
                                       +3.*varAdjFlo->GetHessian(iPoint, rvi, zzi)
                                       +varAdjFlo->GetHessian(iPoint, rui, xyi)
@@ -6584,7 +6589,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
                    + (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                             +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhov
-    TmpWeights[3] += -(mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rwi, xxi)
+    TmpWeights[3] += -(mu+mut)*wf/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rwi, xxi)
                                       +3.*varAdjFlo->GetHessian(iPoint, rwi, yyi)
                                       +4.*varAdjFlo->GetHessian(iPoint, rwi, zzi)
                                       +varAdjFlo->GetHessian(iPoint, rui, xzi)
@@ -6605,7 +6610,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   else {
     const unsigned short rui = 1, rvi = 2, rei = 3,
                          xxi = 0, xyi = 1, yyi = 2;
-    TmpWeights[1] += -(mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+    TmpWeights[1] += -(mu+mut)*wf/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
                                       +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
                                       +varAdjFlo->GetHessian(iPoint, rvi, xyi)
                                       +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
@@ -6613,7 +6618,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
                                       +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi))
                    + (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhou
-    TmpWeights[2] += -(mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rvi, xxi)
+    TmpWeights[2] += -(mu+mut)*wf/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rvi, xxi)
                                       +4.*varAdjFlo->GetHessian(iPoint, rvi, yyi)
                                       +varAdjFlo->GetHessian(iPoint, rui, xyi)
                                       +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)

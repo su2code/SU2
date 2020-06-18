@@ -38,6 +38,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   Vorticity.resize(nPoint,3) = su2double(0.0);
   StrainMag.resize(nPoint) = su2double(0.0);
   Tau_Wall.resize(nPoint) = su2double(-1.0);
+  Tau_Wall_Factor.resize(nPoint) = su2double(1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint) = su2double(0.0);

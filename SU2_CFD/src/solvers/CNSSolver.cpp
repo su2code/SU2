@@ -532,12 +532,15 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
 
         /*--- Evaluate Tau ---*/
+        
+        const su2double wf = nodes->GetTauWallFactor(iPoint);
 
         div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
+            Tau[iDim][jDim] *= wf;
           }
         }
 
@@ -593,22 +596,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         WallDistMod = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim];
         WallDistMod = sqrt(WallDistMod);
-        
-        /*--- Scale the stress tensor by the ratio of the wall shear stress
-         to the computed representation of the shear stress ---*/
-
-        if (nodes->GetTauWall(iPoint) > 0) {
-          const su2double TauWall = nodes->GetTauWall(iPoint);
-          for (iDim = 0 ; iDim < nDim; iDim++)
-            for (jDim = 0 ; jDim < nDim; jDim++)
-              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            TauElem[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++)
-              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-          }
-        }
 
         /*--- Compute y+ and non-dimensional velocity ---*/
 
@@ -2143,6 +2130,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
           if (!converged || Y_Plus > 1.0e3) {
             nodes->SetTauWall(iPoint,-1.0);
+            nodes->SetTauWallFactor(iPoint,1.0);
             continue;
           }
 
@@ -2155,6 +2143,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           /*--- Store this value for the wall shear stress at the node.  ---*/
 
           nodes->SetTauWall(iPoint,Tau_Wall);
+          nodes->SetTauWallFactor(iPoint,Tau_Wall/WallShearStress);
           nodes->SetTemperature(iPoint,T_Wall);
           nodes->SetSolution(iPoint, 0, Density_Wall);
           nodes->SetPrimitive(iPoint, nDim+2, Density_Wall);

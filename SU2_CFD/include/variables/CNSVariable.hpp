@@ -42,6 +42,7 @@ private:
   MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
   VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  VectorType Tau_Wall_Factor; /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
@@ -196,6 +197,17 @@ public:
    * \return Value of the wall shear stress computed by a wall function.
    */
   inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  
+  /*!
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  inline void SetTauWallFactor(unsigned long iPoint, su2double val_tau_wall_fac) override { Tau_Wall_Factor(iPoint) = val_tau_wall_fac; }
+
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  inline su2double GetTauWallFactor(unsigned long iPoint) const override { return Tau_Wall_Factor(iPoint); }
 
   /*!
    * \brief Get the DES length scale

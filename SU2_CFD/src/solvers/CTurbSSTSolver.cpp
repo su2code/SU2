@@ -1654,15 +1654,18 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     gradk[iDim]     = varTur->GetGradient(iPoint, 0, iDim);
     gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
   }
+  
+  //--- Account for wall functions
+  su2double wf = varFlo->GetTauWallFactor(iPoint);
 
   divu = 0.0; for (iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
 
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
-      taut[iDim][jDim] = mut*( gradu[jDim][iDim] + gradu[iDim][jDim] ) 
+      taut[iDim][jDim] = wf*(mut*( gradu[jDim][iDim] + gradu[iDim][jDim] )
                        - (2./3.)*mut*divu*delta[iDim][jDim]
-                       - (2./3.)*r*k*delta[iDim][jDim];
-      pk += taut[iDim][jDim]*gradu[iDim][jDim];
+                       - (2./3.)*r*k*delta[iDim][jDim]);
+      pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
     }
   }
 
@@ -1713,7 +1716,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (taut[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/max(mut,eps)
+      factor += (taut[iDim][jDim]+wf*(2./3.)*r*k*delta[iDim][jDim])/max(mut,eps)
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
