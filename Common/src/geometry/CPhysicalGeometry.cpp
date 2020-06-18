@@ -5729,16 +5729,14 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
     if (WallADT && !WallADT->IsEmpty()){
       SetWallDistance(config, WallADT.get());
     }
-    if (rank == MASTER_NODE) {
-      string markerTag;
-      for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-        if( config->GetViscous_Wall(iMarker)) {
-          markerTag = config->GetMarker_All_TagBound(iMarker);
-          if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-            su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
-            cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
-            break;
-          }
+    string markerTag;
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+      if( config->GetViscous_Wall(iMarker)) {
+        markerTag = config->GetMarker_All_TagBound(iMarker);
+        if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
+          su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
+          cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
+          break;
         }
       }
     }
