@@ -385,12 +385,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   /*--- Allocate buffers for matrices that need rotation. ---*/
 
-  su2double **jacBlock = new su2double*[ICOUNT];
-  su2double **rotBlock = new su2double*[ICOUNT];
-  for (iVar = 0; iVar < ICOUNT; iVar++) {
-    jacBlock[iVar] = new su2double[JCOUNT];
-    rotBlock[iVar] = new su2double[JCOUNT];
-  }
+  su2activematrix jacBlock(ICOUNT,JCOUNT);
+  su2activematrix rotBlock(ICOUNT,JCOUNT);
 
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. It will be reallocated whenever
@@ -1206,13 +1202,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   delete [] Sol_Max;
   delete [] rotPrim_i;
   delete [] rotPrim_j;
-
-  for (iVar = 0; iVar < ICOUNT; iVar++) {
-    delete [] jacBlock[iVar];
-    delete [] rotBlock[iVar];
-  }
-  delete [] jacBlock;
-  delete [] rotBlock;
 
 }
 
