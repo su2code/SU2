@@ -30,7 +30,6 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 
-#include "../iteration_structure.hpp"
 #include "../integration/CIntegration.hpp"
 #include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
@@ -42,6 +41,8 @@ using namespace std;
 
 class COutputLegacy;
 class CInterpolator;
+class CIteration;
+class COutput;
 
 /*!
  * \class CDriver
