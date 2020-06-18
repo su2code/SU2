@@ -454,7 +454,7 @@ public:
   /*!
    * \brief Reset the boundary of a control volume.
    */
-  inline void ResetBoundary(void) { if (Vertex != NULL) {delete [] Vertex; Vertex = NULL;} Boundary = false; }
+  inline void ResetBoundary(void) { if (Vertex != NULL) {delete [] Vertex; Vertex = NULL; Boundary = false;} }
 
   /*!
    * \overload
