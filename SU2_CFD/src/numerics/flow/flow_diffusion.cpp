@@ -984,8 +984,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   for (unsigned short iDim = 0 ; iDim < nDim; iDim++) {
     heat_flux_vec[iDim] = heat_flux_factor*Mean_GradPrimVar[0][iDim];
     for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
-      stress_tensor[iDim][jDim] = WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
-                                            - TWO3*div_vel*delta[iDim][jDim];
+      stress_tensor[iDim][jDim] = WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
+                                            - TWO3*div_vel*delta[iDim][jDim] );
   }
 
   /*--- Jacobian wrt laminar viscosity ---*/
@@ -1054,8 +1054,8 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++) {
       heat_flux_vec[iDim] = heat_flux_factor*Mean_GradPrimVar[0][iDim];
       for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
-        stress_tensor[iDim][jDim] = WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim] )
-                                              - TWO3*div_vel*delta[iDim][jDim];
+        stress_tensor[iDim][jDim] = WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
+                                              - TWO3*div_vel*delta[iDim][jDim] );
     }
   
     /*--- Jacobian wrt eddy viscosity ---*/
