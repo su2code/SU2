@@ -576,8 +576,7 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
    the data and send from the neighbor ranks. ---*/
 
   iMessage = 0;
-  int nP2P = (val_reverse) ? nP2PSend : nP2PRecv;
-  for (iRecv = 0; iRecv < nP2P; iRecv++) {
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
 
     /*--- In some instances related to the adjoint solver, we need
      to reverse the direction of communications such that the normal
@@ -613,11 +612,11 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
       switch (commType) {
         case COMM_TYPE_DOUBLE:
           SU2_MPI::Irecv(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
-                         source, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
           break;
         case COMM_TYPE_UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
-                         source, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
           break;
         default:
           SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
@@ -720,11 +719,11 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
     switch (commType) {
       case COMM_TYPE_DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
-                       dest, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
         break;
       case COMM_TYPE_UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
-                       dest, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
