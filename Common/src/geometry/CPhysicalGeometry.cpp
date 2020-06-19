@@ -6454,7 +6454,7 @@ void CPhysicalGeometry::AddWallModelSurfaceDonorHalos(CConfig *config) {
     SetWallDistance(config, WallADT.get());
   }
   string markerTag;
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( config->GetViscous_Wall(iMarker)) {
       markerTag = config->GetMarker_All_TagBound(iMarker);
       if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
