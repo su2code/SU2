@@ -5412,6 +5412,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
             case DRAG_COEFFICIENT: cout << "Cauchy criteria for Drag using "
               << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+            case ENTROPY_GENERATION: cout<< "Cauchy critertia for Entropy Generation using "
+              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
           }
 
         if (ContinuousAdjoint || DiscreteAdjoint)
