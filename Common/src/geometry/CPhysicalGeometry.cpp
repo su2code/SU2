@@ -5723,25 +5723,9 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   }
   
   /*--- Set the wall distance if using wall functions, to get the exchange location. ---*/
-  /*if (config->GetWall_Functions()) {
-    config->SetnMarker_All(nMarker);
-    SetWallDistance(numeric_limits<su2double>::max());
-    unique_ptr<CADTElemClass> WallADT = ComputeViscousWallADT(config);
-    if (WallADT && !WallADT->IsEmpty()){
-      SetWallDistance(config, WallADT.get());
-    }
-    string markerTag;
-    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-      if( config->GetViscous_Wall(iMarker)) {
-        markerTag = config->GetMarker_All_TagBound(iMarker);
-        if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-          su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
-          cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
-          break;
-        }
-      }
-    }
-  }*/
+  if (config->GetWall_Functions()) {
+    AddWallModelSurfaceDonorHalos(config);
+  }
 
 #ifdef HAVE_MPI
   
@@ -6460,6 +6444,26 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
 
   if (nVertex != NULL) {delete [] nVertex; nVertex = NULL;}
 
+}
+
+void CPhysicalGeometry::AddWallModelSurfaceDonorHalos(CConfig *config) {
+  config->SetnMarker_All(nMarker);
+  SetWallDistance(numeric_limits<su2double>::max());
+  unique_ptr<CADTElemClass> WallADT = ComputeViscousWallADT(config);
+  if (WallADT && !WallADT->IsEmpty()){
+    SetWallDistance(config, WallADT.get());
+  }
+  string markerTag;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if( config->GetViscous_Wall(iMarker)) {
+      markerTag = config->GetMarker_All_TagBound(iMarker);
+      if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
+        su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
+        cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
+        break;
+      }
+    }
+  }
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
@@ -13096,8 +13100,6 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
   /* Loop over the boundary markers. */
 
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-//  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-
 
     /* Check for a viscous wall. */
     if( config->GetViscous_Wall(iMarker)) {
@@ -13170,7 +13172,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
   
-//  su2double maxWallDist = numeric_limits<su2double>::epsilon();
+  su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
   if (!WallADT->IsEmpty()){
     /*--- Solid wall boundary nodes are present. Compute the wall
@@ -13194,10 +13196,10 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       if ((!node[iPoint]->GetSolidBoundary()) &&
           (iPoint < nPointDomain)) {
         for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-//          if (node[iPoint]->GetBool_Wall_Neighbor()) {
-//            maxWallDist = max(maxWallDist, 5.0*dist);
-//            break;
-//          }
+          if (node[iPoint]->GetBool_Wall_Neighbor()) {
+            maxWallDist = max(maxWallDist, 5.0*dist);
+            break;
+          }
           if(config->GetViscous_Wall(iMarker)) {
             for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
               const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
@@ -13210,7 +13212,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
                 node[iPoint]->SetWall_nNode(vtkID);
                 node[iPoint]->SetWall_Interpolation_Weights(weights);
                 
-                //maxWallDist = max(maxWallDist, 5.0*dist);
+                maxWallDist = max(maxWallDist, 5.0*dist);
                 break;
               } // if jVertex
             } // iNode
@@ -13221,7 +13223,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
     
     /*--- Now specify the exchange distance based on the maximum distance of nodes
           that neighbor solid surfaces ---*/
-    /*su2double globalMaxDist;
+    su2double globalMaxDist;
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
                        MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -13229,13 +13231,12 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
     globalMaxDist = maxWallDist;
 #endif
     for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-//    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
       if(config->GetViscous_Wall(iMarker)) {
         string markerTag = config->GetMarker_All_TagBound(iMarker);
         if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
           config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
         }
       }
-    }*/
+    }
   }
 }
