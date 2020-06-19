@@ -3504,7 +3504,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
 
   if (wmles){
-    
+
     /*--- The points of the elements that are only used as donors for interpolation
           must be added to the communication pattern. ---*/
     for (iElem = 0; iElem < nElem; iElem++) {
@@ -5236,7 +5236,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               std::cout << "Coord:        " << Coord[0] << " " << Coord[1] << " " << Coord[2] << std::endl;
               std::cout << "normals:      " << normals[0] << " " << normals[1] << " " << normals[2] << std::endl;
               std::cout << "coorExchange: " << coorExchange[0] << " " << coorExchange[1] << " " << coorExchange[2] << std::endl << std::endl;
-              SU2_MPI::Error("Donor element not found. This should not happen", CURRENT_FUNCTION);
+              //SU2_MPI::Error("Donor element not found. This should not happen", CURRENT_FUNCTION);
 
             }
           }
@@ -5460,7 +5460,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
       if(rank == MASTER_NODE) {
         cout << "There are " << nFailedPoints
              << " for which no global donor element was found." << endl;
-        SU2_MPI::Error("Global donor search failure", CURRENT_FUNCTION);
+        //SU2_MPI::Error("Global donor search failure", CURRENT_FUNCTION);
       }
     }
 

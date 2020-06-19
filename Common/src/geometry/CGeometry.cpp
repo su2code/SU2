@@ -453,9 +453,9 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
   for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+          (config->GetMarker_All_SendRecv(iMarker) < 0)) {
 
-        MarkerR  = iMarker+1;
+        MarkerR  = iMarker;
         nVertexR = geometry->nVertex[MarkerR];
         iRank    = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
 
@@ -4164,4 +4164,3 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
   }
 }
-
