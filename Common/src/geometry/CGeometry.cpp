@@ -450,12 +450,31 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
   /*--- Build lists of local index values for receive. ---*/
 
   count = 0;
+//  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//      if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+//          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+//
+//        MarkerR  = iMarker+1;
+//        nVertexR = geometry->nVertex[MarkerR];
+//        iRank    = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+//
+//        if (iRank == Neighbors_P2PRecv[iRecv]) {
+//          for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+//            Local_Point_P2PRecv[count] = geometry->vertex[MarkerR][iVertex]->GetNode();
+//            count++;
+//          }
+//        }
+//
+//      }
+//    }
+//  }
   for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+          (config->GetMarker_All_SendRecv(iMarker) < 0)) {
 
-        MarkerR  = iMarker+1;
+        MarkerR  = iMarker;
         nVertexR = geometry->nVertex[MarkerR];
         iRank    = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
 
