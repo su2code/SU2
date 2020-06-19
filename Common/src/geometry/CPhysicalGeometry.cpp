@@ -13216,22 +13216,22 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
         } // iMarker
       } // iPoint !SolidBoundary && iPoint in domain
     }
-    
-    /*--- Now specify the exchange distance based on the maximum distance of nodes
-          that neighbor solid surfaces ---*/
-    su2double globalMaxDist;
+  }
+  
+  /*--- Now specify the exchange distance based on the maximum distance of nodes
+        that neighbor solid surfaces ---*/
+  su2double globalMaxDist;
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
-                       MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
+                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-    globalMaxDist = maxWallDist;
+  globalMaxDist = maxWallDist;
 #endif
-    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-      if(config->GetViscous_Wall(iMarker)) {
-        string markerTag = config->GetMarker_All_TagBound(iMarker);
-        if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-          config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
-        }
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if(config->GetViscous_Wall(iMarker)) {
+      string markerTag = config->GetMarker_All_TagBound(iMarker);
+      if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
+        config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
       }
     }
   }
