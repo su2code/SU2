@@ -6464,6 +6464,7 @@ void CPhysicalGeometry::AddWallModelSurfaceDonorHalos(CConfig *config) {
       }
     }
   }
+  config->SetnMarker_All(config->GetnMarker_Max());
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
