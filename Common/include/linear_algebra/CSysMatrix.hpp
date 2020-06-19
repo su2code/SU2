@@ -528,9 +528,9 @@ public:
    * \param[in] block_i - Adds to ii, subs from ji.
    * \param[in] block_j - Adds to ij, subs from jj.
    */
-  template<class OtherType, int Sign = 1>
+  template<class MatrixType, int Sign = 1>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
-                           const OtherType* const* block_i, const OtherType* const* block_j) {
+                           const MatrixType& block_i, const MatrixType& block_j) {
 
     ScalarType *bii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
     ScalarType *bjj = &matrix[dia_ptr[jPoint]*nVar*nEqn];
@@ -553,18 +553,18 @@ public:
   /*!
    * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
    */
-  template<class OtherType>
+  template<class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
-                              const OtherType* const* block_i, const OtherType* const* block_j) {
-    UpdateBlocks<OtherType,-1>(iEdge, iPoint, jPoint, block_i, block_j);
+                              const MatrixType& block_i, const MatrixType& block_j) {
+    UpdateBlocks<MatrixType,-1>(iEdge, iPoint, jPoint, block_i, block_j);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges and points.
    */
-  template<class MatrixSIMD_t, class T, size_t N>
+  template<class MatrixTypeSIMD, class T, size_t N>
   FORCEINLINE void UpdateBlocks(simd::Array<T,N> iEdge, simd::Array<T,N> iPoint, simd::Array<T,N> jPoint,
-                                const MatrixSIMD_t& block_i, const MatrixSIMD_t& block_j) {
+                                const MatrixTypeSIMD& block_i, const MatrixTypeSIMD& block_j) {
 
     /*--- Fetch the blocks for all edges. ---*/
     ScalarType* bii[N] = {nullptr};
@@ -604,8 +604,8 @@ public:
    * \param[in] block_i - Subs from ji.
    * \param[in] block_j - Adds to ij.
    */
-  template<class OtherType, int Sign = 1, bool Overwrite = true>
-  inline void SetBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+  template<class MatrixType, int Sign = 1, bool Overwrite = true>
+  inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
 
     ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
     ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
@@ -624,24 +624,24 @@ public:
   /*!
    * \brief Short-hand for the "additive overwrite" version of SetBlocks.
    */
-  template<class OtherType>
-  inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
-    SetBlocks<OtherType,1,false>(iEdge, block_i, block_j);
+  template<class MatrixType>
+  inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
+    SetBlocks<MatrixType,1,false>(iEdge, block_i, block_j);
   }
 
   /*!
    * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of SetBlocks.
    */
-  template<class OtherType>
-  inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
-    SetBlocks<OtherType,-1,false>(iEdge, block_i, block_j);
+  template<class MatrixType>
+  inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
+    SetBlocks<MatrixType,-1,false>(iEdge, block_i, block_j);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges.
    */
-  template<class MatrixSIMD_t, class T, size_t N>
-  FORCEINLINE void SetBlocks(simd::Array<T,N> iEdge, const MatrixSIMD_t& block_i, const MatrixSIMD_t& block_j) {
+  template<class MatrixTypeSIMD, class T, size_t N>
+  FORCEINLINE void SetBlocks(simd::Array<T,N> iEdge, const MatrixTypeSIMD& block_i, const MatrixTypeSIMD& block_j) {
 
     /*--- Fetch blocks for all edges. ---*/
     ScalarType* bij[N] = {nullptr};

@@ -1109,7 +1109,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
         nodes->SetSolution_Old(iPoint,&T_Conjugate);
-        LinSysRes.SetBlock_Zero(iPoint, 0);
+        LinSysRes(iPoint, 0) = 0.0;
         nodes->SetRes_TruncErrorZero(iPoint);
 
         if (implicit) {

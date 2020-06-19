@@ -1139,7 +1139,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
     }
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+      LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- If the wall is moving, there are additional residual contributions
@@ -1294,7 +1294,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     }
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+      LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Get transport coefficients ---*/

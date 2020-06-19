@@ -2,7 +2,7 @@
  * \file CSysVector.hpp
  * \brief Declararion of the vector class used in the solution of
  *        large, distributed, sparse linear systems.
- * \author F. Palacios, J. Hicken, T. Economon
+ * \author F. Palacios, J. Hicken, T. Economon, P. Gomes
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -37,12 +37,7 @@
 
 /*!
  * \class CSysVector
- * \brief Class for holding and manipulating vectors needed by linear solvers
- * \author J. Hicken.
- *
- * We could use the STL vector as a base class here, but this gives us
- * more flexibility with the underlying data (e.g. we may decide to
- * use a block storage scheme rather than a continuous storage scheme).
+ * \brief Class for holding and manipulating vectors needed by linear solvers.
  */
 template<class ScalarType>
 class CSysVector {
@@ -71,7 +66,6 @@ private:
                   const ScalarType* val, bool valIsArray);
 
 public:
-
   /*!
    * \brief default constructor of the class.
    */
@@ -131,6 +125,11 @@ public:
   }
 
   /*!
+   * \brief class destructor
+   */
+  ~CSysVector();
+
+  /*!
    * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
    * \param[in] other - source CSysVector
    */
@@ -138,9 +137,11 @@ public:
   void PassiveCopy(const CSysVector<T>& other);
 
   /*!
-   * \brief class destructor
+   * \brief copies the contents of the calling CSysVector into an array
+   * \param[out] u_array - array into which information is being copied
+   * \pre u_array must be allocated and have the same size as CSysVector
    */
-  ~CSysVector();
+  void CopyToArray(ScalarType* u_array) const;
 
   /*!
    * \brief Initialize the class with a scalar.
@@ -277,59 +278,67 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  inline ScalarType & operator[](unsigned long i) { return vec_val[i]; }
+  inline ScalarType& operator[] (unsigned long i) { return vec_val[i]; }
+  inline const ScalarType& operator[] (unsigned long i) const { return vec_val[i]; }
 
   /*!
-   * \brief indexing operator with assignment not permitted
-   * \param[in] i = local index to access
+   * \brief Get the value of the residual.
+   * \param[in] iPoint - index of the point where set the residual.
+   * \param[in] iVar - inde of the residual to be set.
+   * \return Value of the residual.
    */
-  inline const ScalarType & operator[](unsigned long i) const { return vec_val[i]; }
-
-  /*!
-   * \brief copies the contents of the calling CSysVector into an array
-   * \param[out] u_array - array into which information is being copied
-   * \pre u_array must be allocated and have the same size as CSysVector
-   */
-  void CopyToArray(ScalarType* u_array) const;
-
-  /*!
-   * \brief Subtract val_residual to the residual.
-   * \param[in] val_ipoint - index of the point where subtract the residual.
-   * \param[in] val_residual - Value to subtract to the residual.
-   */
-  inline void SubtractBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
+  inline ScalarType& operator() (unsigned long iPoint, unsigned long iVar) {
+    return vec_val[iPoint*nVar+iVar];
+  }
+  inline const ScalarType& operator() (unsigned long iPoint, unsigned long iVar) const {
+    return vec_val[iPoint*nVar+iVar];
   }
 
   /*!
-   * \brief Add val_residual to the residual.
-   * \param[in] val_ipoint - index of the point where add the residual.
-   * \param[in] val_residual - Value to add to the residual.
+   * \brief Get the value of the residual.
+   * \param[in] iPoint - index of the point where set the residual.
+   * \return Pointer to the residual.
    */
-  inline void AddBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
+  inline ScalarType* GetBlock(unsigned long iPoint) { return &vec_val[iPoint*nVar]; }
+  inline const ScalarType* GetBlock(unsigned long iPoint) const { return &vec_val[iPoint*nVar]; }
+
+  /*!
+   * \brief Set the residual to zero.
+   * \param[in] iPoint - index of the point where set the residual.
+   */
+  inline void SetBlock_Zero(unsigned long iPoint) {
     for (auto iVar = 0ul; iVar < nVar; iVar++)
-      vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
+      vec_val[iPoint*nVar+iVar] = 0.0;
   }
 
   /*!
-   * \brief Set val_residual to the residual.
-   * \param[in] val_ipoint - index of the point where set the residual.
-   * \param[in] val_var - inde of the residual to be set.
-   * \param[in] val_residual - Value to set to the residual.
+   * \brief Set "block" to the vector.
+   * \param[in] iPoint - index of the point where set the residual.
+   * \param[in] block - Value to set to the residual.
+   * \param[in] alpha - Scale factor (axpy-type operation).
    */
-  inline void SetBlock(unsigned long val_ipoint, unsigned long val_var, ScalarType val_residual) {
-    vec_val[val_ipoint*nVar+val_var] = val_residual;
+  template<class VectorType, bool Overwrite = true>
+  FORCEINLINE void SetBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+      vec_val[iPoint*nVar+iVar] *= 1-Overwrite;
+      vec_val[iPoint*nVar+iVar] += alpha * block[iVar];
+    }
   }
 
   /*!
-   * \brief Set val_residual to the residual.
-   * \param[in] val_ipoint - index of the point where set the residual.
-   * \param[in] val_residual - Value to set to the residual.
+   * \brief Add "block" to the vector, see SetBlock.
    */
-  inline void SetBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
+  template<class VectorType>
+  FORCEINLINE void AddBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
+    SetBlock<VectorType,false>(iPoint, block, alpha);
+  }
+
+  /*!
+   * \brief Subtract "block" from the vector, see SetBlock.
+   */
+  template<class VectorType>
+  FORCEINLINE void SubtractBlock(unsigned long iPoint, const VectorType& block) {
+    SetBlock<VectorType,false>(iPoint, block, -1);
   }
 
   /*!
@@ -339,7 +348,7 @@ public:
    * \param[in] vector - Vector of SIMD scalars.
    * \param[in] alpha - Optional scale factor (axpy type operation).
    */
-  template<class T, size_t N, class VectorSIMD_t, bool Overwrite = true>
+  template<size_t N, class T, class VectorSIMD_t, bool Overwrite = true>
   FORCEINLINE void SetBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector, ScalarType alpha = 1) {
     const auto nVar = vector.rows();
     for (auto iVar = 0ul; iVar < nVar; ++iVar) {
@@ -354,55 +363,17 @@ public:
   /*!
    * \brief Vectorized version of AddBlock, see SetBlock.
    */
-  template<class T, size_t N, class VectorSIMD_t>
+  template<size_t N, class T, class VectorSIMD_t>
   FORCEINLINE void AddBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector, ScalarType alpha = 1) {
-    SetBlock<T, N, VectorSIMD_t, false>(iPoint, vector, alpha);
+    SetBlock<N, T, VectorSIMD_t, false>(iPoint, vector, alpha);
   }
 
   /*!
    * \brief Vectorized version of SubtractBlock, see SetBlock.
    */
-  template<class T, size_t N, class VectorSIMD_t>
+  template<size_t N, class T, class VectorSIMD_t>
   FORCEINLINE void SubtractBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector) {
-    SetBlock<T, N, VectorSIMD_t, false>(iPoint, vector, -1);
-  }
-
-  /*!
-   * \brief Set the residual to zero.
-   * \param[in] val_ipoint - index of the point where set the residual.
-   */
-  inline void SetBlock_Zero(unsigned long val_ipoint) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      vec_val[val_ipoint*nVar+iVar] = 0.0;
-  }
-
-  /*!
-   * \brief Set the velocity residual to zero.
-   * \param[in] val_ipoint - index of the point where set the residual.
-   * \param[in] val_var - inde of the residual to be set.
-   */
-  inline void SetBlock_Zero(unsigned long val_ipoint, unsigned long val_var) {
-    vec_val[val_ipoint*nVar+val_var] = 0.0;
-  }
-
-  /*!
-   * \brief Get the value of the residual.
-   * \param[in] val_ipoint - index of the point where set the residual.
-   * \return Pointer to the residual.
-   */
-  inline ScalarType *GetBlock(unsigned long val_ipoint) { return &vec_val[val_ipoint*nVar]; }
-
-  /*!
-   * \brief Get the value of the residual.
-   * \param[in] val_ipoint - index of the point where set the residual.
-   * \param[in] val_var - inde of the residual to be set.
-   * \return Value of the residual.
-   */
-  inline const ScalarType& operator() (unsigned long val_ipoint, unsigned long val_var) const {
-    return vec_val[val_ipoint*nVar+val_var];
-  }
-  inline ScalarType& operator() (unsigned long val_ipoint, unsigned long val_var) {
-    return vec_val[val_ipoint*nVar+val_var];
+    SetBlock<N, T, VectorSIMD_t, false>(iPoint, vector, -1);
   }
 
 };

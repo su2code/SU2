@@ -1367,7 +1367,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
-                    LinSysRes.SetBlock_Zero(iPoint, iVar);
+                    LinSysRes(iPoint, iVar) = 0.0;
                     total_index = iPoint*nVar+iVar;
                     Jacobian.DeleteValsRowi(total_index);
                   }

@@ -139,23 +139,21 @@ public:
   FORCEINLINE Scalar dot(const Array& other) const { return (*this * other).sum(); }
 
 };
-#undef FOREACH
-#define FOREACH SU2_OMP_SIMD for(size_t k=0; k<T::Size; ++k)
 
 /*--- Math, logical, and relational operators, with arrays and scalars. ---*/
 
 #define MAKE_OPERATOR(OP)\
-template<class T>\
-FORCEINLINE T operator OP (const T& a, const T& b) {\
-  T res; FOREACH res[k] = a[k] OP b[k]; return res;\
+template<class T, size_t N>\
+FORCEINLINE Array<T,N> operator OP (const Array<T,N>& a, const Array<T,N>& b) {\
+  Array<T,N> res; FOREACH res[k] = a[k] OP b[k]; return res;\
 }\
-template<class T>\
-FORCEINLINE T operator OP (const T& a, typename T::Scalar b) {\
-  T res; FOREACH res[k] = a[k] OP b; return res;\
+template<class T, size_t N, class U>\
+FORCEINLINE Array<T,N> operator OP (const Array<T,N>& a, U b) {\
+  Array<T,N> res; FOREACH res[k] = a[k] OP b; return res;\
 }\
-template<class T>\
-FORCEINLINE T operator OP (typename T::Scalar b, const T& a) {\
-  T res; FOREACH res[k] = b OP a[k]; return res;\
+template<class T, size_t N, class U>\
+FORCEINLINE Array<T,N> operator OP (U b, const Array<T,N>& a) {\
+  Array<T,N> res; FOREACH res[k] = b OP a[k]; return res;\
 }
 
 MAKE_OPERATOR(+)
@@ -177,9 +175,9 @@ MAKE_OPERATOR(|)
  * the created function, IMPL is the scalar implementation. ---*/
 
 #define MAKE_UNARY_FUN(NAME,IMPL)\
-template<class T>\
-FORCEINLINE T NAME(const T& x) {\
-  T res; FOREACH res[k] = IMPL(x[k]); return res;\
+template<class T, size_t N>\
+FORCEINLINE Array<T,N> NAME(const Array<T,N>& x) {\
+  Array<T,N> res; FOREACH res[k] = IMPL(x[k]); return res;\
 }
 
 MAKE_UNARY_FUN(sqrt,::sqrt)
@@ -190,17 +188,17 @@ MAKE_UNARY_FUN(abs,std::abs)
 /*--- Functions of two arguments, with arrays and scalars. ---*/
 
 #define MAKE_BINARY_FUN(NAME,IMPL)\
-template<class T>\
-FORCEINLINE T NAME(const T& a, const T& b) {\
-  T res; FOREACH res[k] = IMPL(a[k], b[k]); return res;\
+template<class T, size_t N>\
+FORCEINLINE Array<T,N> NAME(const Array<T,N>& a, const Array<T,N>& b) {\
+  Array<T,N> res; FOREACH res[k] = IMPL(a[k], b[k]); return res;\
 }\
-template<class T>\
-FORCEINLINE T NAME(const T& a, typename T::Scalar b) {\
-  T res; FOREACH res[k] = IMPL(a[k], b); return res;\
+template<class T, size_t N, class U>\
+FORCEINLINE Array<T,N> NAME(const Array<T,N>& a, U b) {\
+  Array<T,N> res; FOREACH res[k] = IMPL(a[k], b); return res;\
 }\
-template<class T>\
-FORCEINLINE T NAME(typename T::Scalar b, const T& a) {\
-  T res; FOREACH res[k] = IMPL(b, a[k]); return res;\
+template<class T, size_t N, class U>\
+FORCEINLINE Array<T,N> NAME(U b, const Array<T,N>& a) {\
+  Array<T,N> res; FOREACH res[k] = IMPL(b, a[k]); return res;\
 }
 
 MAKE_BINARY_FUN(max,std::max)

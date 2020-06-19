@@ -10461,7 +10461,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             /*--- Accumulate the residuals to compute the average ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] += weight*residual.residual[iVar];
+              Residual[iVar] += weight*residual[iVar];
               for (jVar = 0; jVar < nVar; jVar++)
                 Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
             }
@@ -10521,7 +10521,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
               /*--- Accumulate the residuals to compute the average ---*/
 
               for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] += weight*residual.residual[iVar];
+                Residual[iVar] += weight*residual[iVar];
                 for (jVar = 0; jVar < nVar; jVar++)
                   Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
               }

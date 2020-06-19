@@ -178,8 +178,7 @@ public:
   }
 
   /*!
-   * Vectors do not provide operator [] as it is redundant
-   * since operator () already returns by reference.
+   * Vectors provide both [] and () with the same behavior.
    */
 #define VECTOR_ACCESSORS(M,ROWMAJOR)                                    \
   UNIV_ACCESSORS                                                        \
@@ -194,6 +193,18 @@ public:
   }                                                                     \
                                                                         \
   const Scalar_t& operator() (const Index_t i) const noexcept           \
+  {                                                                     \
+    assert(i>=0 && i<M);                                                \
+    return m_data[i];                                                   \
+  }                                                                     \
+                                                                        \
+  Scalar_t& operator[] (const Index_t i) noexcept                       \
+  {                                                                     \
+    assert(i>=0 && i<M);                                                \
+    return m_data[i];                                                   \
+  }                                                                     \
+                                                                        \
+  const Scalar_t& operator[] (const Index_t i) const noexcept           \
   {                                                                     \
     assert(i>=0 && i<M);                                                \
     return m_data[i];                                                   \
@@ -369,6 +380,8 @@ private:
   using Base::m_allocate;
 public:
   using Base::size;
+  using Base::rows;
+  using Base::cols;
   using Index = Index_t;
   using Scalar = Scalar_t;
   static constexpr StorageType Storage = Store;
@@ -542,19 +555,18 @@ public:
   /*!
    * \brief Get a scalar iterator to the inner dimension of the container.
    */
-  template<size_t nCols>
   FORCEINLINE CInnerIter innerIter(Index_t row) const noexcept
   {
-    return CInnerIter(&m_data[IsRowMajor? row*nCols : row], IsRowMajor? 1 : this->rows());
+    return CInnerIter(&m_data[IsRowMajor? row*cols() : row], IsRowMajor? 1 : rows());
   }
 
   /*!
    * \brief Get a SIMD gather iterator to the inner dimension of the container.
    */
-  template<size_t nCols, class T, size_t N>
+  template<class T, size_t N>
   FORCEINLINE CInnerIterGather<simd::Array<T,N> > innerIter(simd::Array<T,N> row) const noexcept
   {
-    return CInnerIterGather<simd::Array<T,N> >(m_data, IsRowMajor? 1 : this->rows(), IsRowMajor? row*nCols : row);
+    return CInnerIterGather<simd::Array<T,N> >(m_data, IsRowMajor? 1 : rows(), IsRowMajor? row*cols() : row);
   }
 };
 
@@ -625,17 +637,16 @@ public:
   /*!
    * \brief Get a scalar iterator to the inner-most dimension of the container.
    */
-  template<size_t nRows, size_t nCols>
   FORCEINLINE CInnerIter innerIter(Index i, Index j) const noexcept {
-    return CInnerIter(&storage(i*nRows*nCols + j*nCols), 1);
+    return CInnerIter(&storage(i*M*N + j*N), 1);
   }
 
   /*!
    * \brief Get a SIMD gather iterator to the inner-most dimension of the container.
    */
-  template<size_t nRows, size_t nCols, class T, size_t N>
+  template<class T, size_t N>
   FORCEINLINE CInnerIterGather<T,N> innerIter(simd::Array<T,N> i, Index j) const noexcept {
-    return CInnerIterGather<T,N>(storage.data(), 1, i*nRows*nCols + j*nCols);
+    return CInnerIterGather<T,N>(storage.data(), 1, i*M*N + j*N);
   }
 };
 

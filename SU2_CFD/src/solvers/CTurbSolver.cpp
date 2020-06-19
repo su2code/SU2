@@ -467,7 +467,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         /*--- Accumulate the residuals to compute the average ---*/
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          LinSysRes(iPoint,iVar) += weight*residual.residual[iVar];
+          LinSysRes(iPoint,iVar) += weight*residual[iVar];
           for (auto jVar = 0u; jVar < nVar; jVar++)
             Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
         }

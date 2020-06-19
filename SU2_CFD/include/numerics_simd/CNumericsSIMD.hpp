@@ -40,23 +40,37 @@
  */
 enum class UpdateType {COLORING, REDUCTION};
 
+#if !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 /*--- Scalar types (SIMD). ---*/
 using Double = simd::Array<su2double>;
 using Int = simd::Array<unsigned long, Double::Size>;
+inline Int linSpaced(unsigned long x0, unsigned long dx) { return Int(x0,dx); }
+#else
+/*--- No SIMD with AD. ---*/
+using Double = su2double;
+using Int = unsigned long;
+inline Int linSpaced(Int x0, Int) { return x0; }
+#endif
 
 /*--- Static vector types. ---*/
 template<class Type, size_t Size>
-using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, Type::Align, Size, 1>;
+using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, simd::SIMD_SIZE, Size, 1>;
 
 template<size_t Size> using VectorInt = Vector<Int, Size>;
 template<size_t Size> using VectorDbl = Vector<Double, Size>;
 
 /*--- Static matrix types. ---*/
 template<class Type, size_t Rows, size_t Cols>
-using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, Type::Align, Rows, Cols>;
+using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, simd::SIMD_SIZE, Rows, Cols>;
 
 template<size_t Rows, size_t Cols = Rows> using MatrixInt = Matrix<Int, Rows, Cols>;
 template<size_t Rows, size_t Cols = Rows> using MatrixDbl = Matrix<Double, Rows, Cols>;
+
+#ifdef CODI_FORWARD_TYPE
+using SparseMatrixType = CSysMatrix<su2double>;
+#else
+using SparseMatrixType = CSysMatrix<su2mixedfloat>;
+#endif
 
 /*!
  * \class CNumericsSIMD
@@ -80,7 +94,7 @@ public:
                            const CVariable& solution,
                            UpdateType updateType,
                            CSysVector<su2double>& vector,
-                           CSysMatrix<su2mixedfloat>& matrix) const = 0;
+                           SparseMatrixType& matrix) const = 0;
 
   /*! \brief Destructor of the class. */
   virtual ~CNumericsSIMD(void) = default;
@@ -130,8 +144,8 @@ FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm
 template<size_t nDim, class Coord_t>
 FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t& coords) {
   VectorDbl<nDim> vector_ij;
-  auto coord_i = coords.template innerIter<nDim>(iPoint);
-  auto coord_j = coords.template innerIter<nDim>(jPoint);
+  auto coord_i = coords.innerIter(iPoint);
+  auto coord_j = coords.innerIter(jPoint);
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     vector_ij(iDim) = 0.5 * (*(coord_j++) - *(coord_i++));
   }
@@ -141,7 +155,7 @@ FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t
 template<size_t nVar, class Field_t>
 FORCEINLINE VectorDbl<nVar> gatherVariables(Int idx, const Field_t& vars) {
   VectorDbl<nVar> v;
-  auto it = vars.template innerIter<nVar>(idx);
+  auto it = vars.innerIter(idx);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
     v(iVar) = *(it++);
   }
@@ -156,7 +170,7 @@ FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPoint,
                                            const Gradient_t& gradient) {
   auto vars = gatherVariables<nVar>(iPoint, field);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += direction * dot(gradient.template innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
+    vars(iVar) += direction * dot(gradient.innerIter(iPoint,iVar), vector_ij);
   }
   return vars;
 }
@@ -169,9 +183,9 @@ FORCEINLINE VectorDbl<nVar> musclPointLimited(Int iPoint,
                                               const Field_t& limiter,
                                               const Gradient_t& gradient) {
   auto vars = gatherVariables<nVar>(iPoint, field);
-  auto itLim = limiter.template innerIter<nVar>(iPoint);
+  auto itLim = limiter.innerIter(iPoint);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += *(itLim++) * direction * dot(gradient.template innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
+    vars(iVar) += *(itLim++) * direction * dot(gradient.innerIter(iPoint,iVar), vector_ij);
   }
   return vars;
 }
@@ -188,8 +202,8 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
   vars_j = gatherVariables<nVar>(jPoint, field);
 
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    auto proj_i = dot(gradient.template innerIter<nVar,nDim>(iPoint,iVar), vector_ij);
-    auto proj_j = dot(gradient.template innerIter<nVar,nDim>(jPoint,iVar), vector_ij);
+    auto proj_i = dot(gradient.innerIter(iPoint,iVar), vector_ij);
+    auto proj_j = dot(gradient.innerIter(jPoint,iVar), vector_ij);
     auto delta_ij = vars_j(iVar) - vars_i(iVar);
     auto delta_ij_2 = pow(delta_ij,2);
     /// TODO: Customize the limiter function
@@ -295,7 +309,7 @@ FORCEINLINE CRoeVariables<nDim> getRoeAveragedVariables(Double gamma,
                                                         const CPair<CCompressiblePrimitives<nDim> >& V,
                                                         const VectorDbl<nDim>& normal) {
   CRoeVariables<nDim> roeAvg;
-  auto R = sqrt(abs(V.j.density() / V.i.density()));
+  Double R = sqrt(abs(V.j.density() / V.i.density()));
   roeAvg.density = R * V.i.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) / (R+1);
@@ -311,8 +325,8 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
                                       Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMat;
 
-  auto oneOnC = 1/speedSound;
-  auto vel2 = 0.5*squaredNorm(velocity);
+  Double oneOnC = 1/speedSound;
+  Double vel2 = 0.5*squaredNorm(velocity);
 
   if (nDim == 2) {
     pMat(0,0) = 1.0;
@@ -370,11 +384,11 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
                                          Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMatInv;
 
-  auto c2 = pow(speedSound,2);
-  auto vel2 = 0.5*squaredNorm(velocity);
+  Double c2 = pow(speedSound,2);
+  Double vel2 = 0.5*squaredNorm(velocity);
 
   if (nDim == 2) {
-    auto tmp = (gamma-1)/c2;
+    Double tmp = (gamma-1)/c2;
     pMatInv(0,0) = 1.0 - tmp*vel2;
     pMatInv(0,1) = tmp*velocity(0);
     pMatInv(0,2) = tmp*velocity(1);
@@ -386,7 +400,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
     pMatInv(1,3) = 0.0;
   }
   else {
-    auto tmp = (gamma-1)/c2 * normal(0);
+    Double tmp = (gamma-1)/c2 * normal(0);
     pMatInv(0,0) = normal(0) - tmp*vel2 - (normal(2)*velocity(1)-normal(1)*velocity(2))/density;
     pMatInv(0,1) = tmp*velocity(0);
     pMatInv(0,2) = tmp*velocity(1) + normal(2)/density;
@@ -410,7 +424,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 
   /*--- Last two rows. ---*/
 
-  auto gamma_minus_1_on_rho_times_c = (gamma-1) / (density*speedSound);
+  Double gamma_minus_1_on_rho_times_c = (gamma-1) / (density*speedSound);
 
   for (size_t iVar = nDim; iVar < nDim+2; ++iVar) {
     Double sign = (iVar==nDim)? 1 : -1;
@@ -428,7 +442,7 @@ template<size_t nDim>
 FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim>& V,
                                                const CCompressibleConservatives<nDim>& U,
                                                const VectorDbl<nDim>& normal) {
-  auto mdot = dot(U.momentum(), normal);
+  Double mdot = dot(U.momentum(), normal);
   VectorDbl<nDim+2> flux;
   flux(0) = mdot;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -444,10 +458,10 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomIterator veloc
                                               Double scale) {
   MatrixDbl<nDim+2> jac;
 
-  auto projVel = dot(velocity, normal);
-  auto gamma_m_1 = gamma-1;
-  auto phi = 0.5*gamma_m_1*squaredNorm<nDim>(velocity);
-  auto a1 = gamma*energy - phi;
+  Double projVel = dot(velocity, normal);
+  Double gamma_m_1 = gamma-1;
+  Double phi = 0.5*gamma_m_1*squaredNorm<nDim>(velocity);
+  Double a1 = gamma*energy - phi;
 
   jac(0,0) = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -483,7 +497,7 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
                                     const MatrixDbl<nVar>& jac_i,
                                     const MatrixDbl<nVar>& jac_j,
                                     CSysVector<su2double>& vector,
-                                    CSysMatrix<su2mixedfloat>& matrix) {
+                                    SparseMatrixType& matrix) {
   if (updateType == UpdateType::COLORING) {
     vector.AddBlock(iPoint, flux);
     vector.SubtractBlock(jPoint, flux);
@@ -500,10 +514,9 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
  * \brief Base class for Roe schemes, derived classes implement
  *        the dissipation term in a "finalizeResidual" method.
  */
-template<class Derived, size_t NDIM>
+template<class Derived, size_t nDim>
 class CRoeBase : public CNumericsSIMD {
 protected:
-  enum: size_t {nDim = NDIM};
   enum: size_t {nVar = CCompressibleConservatives<nDim>::nVar};
 
   const su2double kappa;
@@ -532,14 +545,14 @@ public:
                    const CVariable& solution_,
                    UpdateType updateType,
                    CSysVector<su2double>& vector,
-                   CSysMatrix<su2mixedfloat>& matrix) const final {
+                   SparseMatrixType& matrix) const final {
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode<Int>(iEdge,0);
     const auto jPoint = geometry.edges->GetNode<Int>(iEdge,1);
-    const auto iEdges = Int(iEdge,1);
+    const auto iEdges = linSpaced(iEdge,1);
 
     /*--- Geometric properties. ---*/
 
@@ -578,8 +591,8 @@ public:
     Double projGridVel = 0.0, projVel = roeAvg.projVel;
     if (dynamicGrid) {
       const auto& gridVel = geometry.nodes->GetGridVel();
-      projGridVel = 0.5*(dot(gridVel.innerIter<nDim>(iPoint), unitNormal)+
-                         dot(gridVel.innerIter<nDim>(jPoint), unitNormal));
+      projGridVel = 0.5*(dot(gridVel.innerIter(iPoint), unitNormal)+
+                         dot(gridVel.innerIter(jPoint), unitNormal));
       projVel -= projGridVel;
     }
 
@@ -594,10 +607,10 @@ public:
 
     /*--- Apply Mavriplis' entropy correction to eigenvalues. ---*/
 
-    auto maxLambda = abs(projVel) + roeAvg.speedSound;
+    Double maxLambda = abs(projVel) + roeAvg.speedSound;
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = simd::max(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
     }
 
     /*--- Inviscid fluxes and Jacobians. ---*/
@@ -695,7 +708,7 @@ public:
           projModJacTensor += pMat(iVar,kVar) * lambda(kVar) * pMatInv(kVar,jVar);
         }
 
-        auto dDdU = projModJacTensor * (1-kappa) * area * dissipation;
+        Double dDdU = projModJacTensor * (1-kappa) * area * dissipation;
 
         /*--- Update flux and Jacobians. ---*/
 
