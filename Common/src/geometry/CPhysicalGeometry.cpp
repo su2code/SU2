@@ -13198,7 +13198,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
         for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
           if (node[iPoint]->GetBool_Wall_Neighbor()) {
             maxWallDist = max(maxWallDist, 5.0*dist);
-            break;
+//            break;
           }
           if(config->GetViscous_Wall(iMarker)) {
             for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
