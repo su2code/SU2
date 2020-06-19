@@ -6447,7 +6447,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
 }
 
 void CPhysicalGeometry::AddWallModelSurfaceDonorHalos(CConfig *config) {
-//  config->SetnMarker_All(nMarker);
+  config->SetnMarker_All(nMarker);
   SetWallDistance(numeric_limits<su2double>::max());
   unique_ptr<CADTElemClass> WallADT = ComputeViscousWallADT(config);
   if (WallADT && !WallADT->IsEmpty()){
@@ -13099,8 +13099,7 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
   /* Loop over the boundary markers. */
 
-//  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
 
     /* Check for a viscous wall. */
     if( config->GetViscous_Wall(iMarker)) {
@@ -13196,7 +13195,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
             for wall functions ---*/
       if ((!node[iPoint]->GetSolidBoundary()) &&
           (iPoint < nPointDomain)) {
-        for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+        for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
           if(config->GetViscous_Wall(iMarker)) {
             for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
               const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
@@ -13226,7 +13225,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
                      MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if(config->GetViscous_Wall(iMarker)) {
       string markerTag = config->GetMarker_All_TagBound(iMarker);
       if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
