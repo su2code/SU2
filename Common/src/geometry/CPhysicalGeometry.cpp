@@ -13236,6 +13236,6 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
           config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
         }
       }
-    }
-  }*/
+    }*/
+  }
 }
