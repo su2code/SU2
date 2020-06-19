@@ -495,6 +495,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       
       if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
       else { Convergence = true; Convergence_FullMG = true; }
+
+      cout<<"Cauchy Parameter Value: "<< Cauchy_Value <<endl;
       
     }
     
