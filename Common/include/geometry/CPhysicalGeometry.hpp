@@ -517,13 +517,13 @@ public:
    * \brief Check the volume element orientation.
    * \param[in] config - Definition of the particular problem.
    */
-  void Check_IntElem_Orientation(CConfig *config) override;
+  void Check_IntElem_Orientation(const CConfig *config) override;
 
   /*!
    * \brief Check the volume element orientation.
    * \param[in] config - Definition of the particular problem.
    */
-  void Check_BoundElem_Orientation(CConfig *config) override;
+  void Check_BoundElem_Orientation(const CConfig *config) override;
 
   /*!
    * \brief Set the domains for grid grid partitioning using ParMETIS.

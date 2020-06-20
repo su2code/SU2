@@ -4346,7 +4346,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
   unsigned long tria_flip=0, quad_flip=0, tet_flip=0, prism_flip=0, hexa_flip=0, pyram_flip=0;
   unsigned long quad_error=0, prism_error=0, hexa_error=0, pyram_error=0;
@@ -4513,7 +4513,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
   unsigned long line_flip = 0, triangle_flip = 0, quad_flip = 0, quad_error = 0;
 
@@ -4567,7 +4567,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
          * point should point in the positive z direction. ---*/
         su2double a[2]={0.0}, b[2]={0.0};
         GeometryToolbox::Distance(2, Coord_2, Coord_1, a);
-        GeometryToolbox::Distance(2, Coord_3, Coord_1, a);
+        GeometryToolbox::Distance(2, Coord_3, Coord_1, b);
         bool test = a[0]*b[1]-b[0]*a[1] < 0.0;
 
         if (test) {
