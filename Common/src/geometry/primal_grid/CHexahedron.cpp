@@ -89,16 +89,6 @@ CHexahedron::~CHexahedron() {
 }
 
 void CHexahedron::Change_Orientation(void) {
-  unsigned long Point_1, Point_3, Point_5, Point_7;
-
-  Point_1 = Nodes[1];
-  Point_3 = Nodes[3];
-  Point_5 = Nodes[5];
-  Point_7 = Nodes[7];
-  Nodes[1] = Point_3;
-  Nodes[3] = Point_1;
-  Nodes[5] = Point_7;
-  Nodes[7] = Point_5;
-
+  swap(Nodes[1], Nodes[3]);
+  swap(Nodes[5], Nodes[7]);
 }
-
