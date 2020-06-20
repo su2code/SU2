@@ -1,7 +1,7 @@
 /*!
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
- * \author F. Palacios, A. Bueno, T. Economon
+ * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

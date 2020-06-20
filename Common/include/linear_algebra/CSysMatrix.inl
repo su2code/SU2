@@ -4,7 +4,7 @@
  * \note These are the "private" inlines, they are not needed outside
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
- * \author F. Palacios, A. Bueno, T. Economon
+ * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

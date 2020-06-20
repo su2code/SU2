@@ -2,7 +2,7 @@
  * \file CSysMatrix.hpp
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
- * \author F. Palacios, A. Bueno, T. Economon
+ * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -66,7 +66,6 @@ class CGeometry;
 /*!
  * \class CSysMatrix
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
- * \author A. Bueno, F. Palacios, P. Gomes
  */
 template<class ScalarType>
 class CSysMatrix {

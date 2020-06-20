@@ -583,31 +583,29 @@ using su2passivevector = su2vector<passivedouble>;
 using su2passivematrix = su2matrix<passivedouble>;
 
 /*!
- * \class CVectorOfMatrix
- * \brief This contrived container is used to store small matrices in a contiguous manner
- *        but still present the "su2double**" interface to the outside world.
- *        The "interface" part should be replaced by something more efficient, e.g. a "matrix view".
+ * \class C3DContainerDecorator
+ * \brief Decorate a vector type (Storage) with 3 dimensions.
  */
-class CVectorOfMatrix {
+template<class Storage>
+class C3DContainerDecorator {
 public:
-  using Index = su2activevector::Index;
-  using Scalar = su2activevector::Scalar;
+  using Scalar = typename Storage::Scalar;
+  using Index = typename Storage::Index;
   static constexpr bool IsRowMajor = true;
   static constexpr bool IsColumnMajor = false;
 
-  using CInnerIter = su2activevector::CInnerIter;
+  using CInnerIter = typename Storage::CInnerIter;
   template<class T, size_t N>
-  using CInnerIterGather = su2activevector::CInnerIterGather<simd::Array<T,N> >;
+  using CInnerIterGather = typename Storage::template CInnerIterGather<simd::Array<T,N> >;
 
 private:
-  su2activevector storage;
-  su2matrix<Scalar*> interface;
+  Storage storage;
   Index M, N;
 
 public:
-  CVectorOfMatrix() = default;
+  C3DContainerDecorator() = default;
 
-  CVectorOfMatrix(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
+  C3DContainerDecorator(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
     resize(length, rows, cols, value);
   }
 
@@ -615,24 +613,21 @@ public:
     M = rows;
     N = cols;
     storage.resize(length*rows*cols) = value;
-    interface.resize(length,rows);
-
-    for(Index i=0; i<length; ++i)
-      for(Index j=0; j<rows; ++j)
-        interface(i,j) = &(*this)(i,j,0);
   }
+
+  /*!
+   * \brief Container sizes.
+   */
+  Index size() const noexcept { return storage.size(); }
+  Index length() const noexcept { return size()/(M*N); }
+  Index rows() const noexcept { return M; }
+  Index cols() const noexcept { return N; }
 
   /*!
    * \brief Element-wise access.
    */
   Scalar& operator() (Index i, Index j, Index k) noexcept { return storage(i*M*N + j*N + k); }
   const Scalar& operator() (Index i, Index j, Index k) const noexcept { return storage(i*M*N + j*N + k); }
-
-  /*!
-   * \brief Matrix-wise access.
-   */
-  Scalar** operator[] (Index i) noexcept { return interface[i]; }
-  const Scalar* const* operator[] (Index i) const noexcept { return interface[i]; }
 
   /*!
    * \brief Get a scalar iterator to the inner-most dimension of the container.
@@ -648,6 +643,44 @@ public:
   FORCEINLINE CInnerIterGather<T,N> innerIter(simd::Array<T,N> i, Index j) const noexcept {
     return CInnerIterGather<T,N>(storage.data(), 1, i*M*N + j*N);
   }
+};
+
+/*!
+ * \brief Some typedefs for the
+ */
+using C3DIntMatrix = C3DContainerDecorator<su2vector<unsigned long> >;
+using C3DDoubleMatrix = C3DContainerDecorator<su2activevector>;
+
+/*!
+ * \class CVectorOfMatrix
+ * \brief This contrived container is used to store small matrices in a contiguous manner
+ *        but still present the "su2double**" interface to the outside world.
+ *        The "interface" part should be replaced by something more efficient, e.g. a "matrix view".
+ */
+class CVectorOfMatrix: public C3DDoubleMatrix {
+private:
+  su2matrix<Scalar*> interface;
+
+public:
+  CVectorOfMatrix() = default;
+
+  CVectorOfMatrix(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
+    resize(length, rows, cols, value);
+  }
+
+  void resize(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
+    C3DDoubleMatrix::resize(length, rows, cols, value);
+    interface.resize(length,rows);
+    for(Index i=0; i<length; ++i)
+      for(Index j=0; j<rows; ++j)
+        interface(i,j) = &(*this)(i,j,0);
+  }
+
+  /*!
+   * \brief Matrix-wise access.
+   */
+  Scalar** operator[] (Index i) noexcept { return interface[i]; }
+  const Scalar* const* operator[] (Index i) const noexcept { return interface[i]; }
 };
 
 /*!

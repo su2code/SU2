@@ -86,11 +86,11 @@ public:
   inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge,iNode); }
 
   /*!
-   * \brief SIMD version of GetNode, iNode returned for multiple sequential iEdges
+   * \brief SIMD version of GetNode, iNode returned for multiple iEdges
    */
-  template<class IndexSIMD_t>
-  FORCEINLINE IndexSIMD_t GetNode(unsigned long iEdge, unsigned long iNode) const {
-    return IndexSIMD_t(&Nodes(iEdge,iNode));
+  template<class T, size_t N>
+  FORCEINLINE simd::Array<T,N> GetNode(simd::Array<T,N> iEdge, unsigned long iNode) const {
+    return simd::Array<T,N>(Nodes[iNode], iEdge);
   }
 
   /*!

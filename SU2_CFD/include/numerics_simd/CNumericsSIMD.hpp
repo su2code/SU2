@@ -44,12 +44,10 @@ enum class UpdateType {COLORING, REDUCTION};
 /*--- Scalar types (SIMD). ---*/
 using Double = simd::Array<su2double>;
 using Int = simd::Array<unsigned long, Double::Size>;
-inline Int linSpaced(unsigned long x0, unsigned long dx) { return Int(x0,dx); }
 #else
 /*--- No SIMD with AD. ---*/
 using Double = su2double;
 using Int = unsigned long;
-inline Int linSpaced(Int x0, Int) { return x0; }
 #endif
 
 /*--- Static vector types. ---*/
@@ -80,7 +78,7 @@ class CNumericsSIMD {
 public:
   /*!
    * \brief Interface for edge flux computation.
-   * \param[in] iEdge - The starting edge for flux computation.
+   * \param[in] iEdge - The edges for flux computation.
    * \param[in] config - Problem definitions.
    * \param[in] geometry - Problem geometry.
    * \param[in] solution - Solution variables.
@@ -88,7 +86,7 @@ public:
    * \param[in,out] vector - Target for the fluxes.
    * \param[in,out] matrix - Target for the flux Jacobians.
    */
-  virtual void ComputeFlux(unsigned long iEdge,
+  virtual void ComputeFlux(Int iEdge,
                            const CConfig& config,
                            const CGeometry& geometry,
                            const CVariable& solution,
@@ -275,12 +273,15 @@ template<size_t nDim>
 struct CCompressibleConservatives {
   enum : size_t {nVar = nDim+2};
   VectorDbl<nVar> all;
+
   FORCEINLINE Double& density() { return all(0); }
   FORCEINLINE Double& rhoEnergy() { return all(nDim+1); }
   FORCEINLINE Double& momentum(size_t iDim) { return all(iDim+1); }
   FORCEINLINE const Double& density() const { return all(0); }
   FORCEINLINE const Double& rhoEnergy() const { return all(nDim+1); }
   FORCEINLINE const Double& momentum(size_t iDim) const { return all(iDim+1); }
+
+  FORCEINLINE Double energy() const { return rhoEnergy() / density(); }
   FORCEINLINE const Double* momentum() const { return &momentum(0); }
 };
 
@@ -539,7 +540,7 @@ public:
   /*!
    * \brief Implementation of the base Roe flux.
    */
-  void ComputeFlux(unsigned long iEdge,
+  void ComputeFlux(Int iEdge,
                    const CConfig& config,
                    const CGeometry& geometry,
                    const CVariable& solution_,
@@ -550,15 +551,14 @@ public:
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
-    const auto iPoint = geometry.edges->GetNode<Int>(iEdge,0);
-    const auto jPoint = geometry.edges->GetNode<Int>(iEdge,1);
-    const auto iEdges = linSpaced(iEdge,1);
+    const auto iPoint = geometry.edges->GetNode(iEdge,0);
+    const auto jPoint = geometry.edges->GetNode(iEdge,1);
 
     /*--- Geometric properties. ---*/
 
     const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
 
-    const auto normal = gatherVariables<nDim>(iEdges, geometry.edges->GetNormal());
+    const auto normal = gatherVariables<nDim>(iEdge, geometry.edges->GetNormal());
     const auto area = norm(normal);
     VectorDbl<nDim> unitNormal;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -625,8 +625,8 @@ public:
 
     MatrixDbl<nVar> jac_i, jac_j;
     if (implicit) {
-      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.rhoEnergy()/U.i.density(), normal, kappa);
-      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.rhoEnergy()/U.j.density(), normal, kappa);
+      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.energy(), normal, kappa);
+      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, kappa);
     }
 
     /*--- Finalize in derived class (static polymorphism). ---*/
@@ -650,7 +650,7 @@ public:
 
     /*--- Update the vector and system matrix. ---*/
 
-    updateLinearSystem(iEdges, iPoint, jPoint, implicit, updateType,
+    updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType,
                        flux, jac_i, jac_j, vector, matrix);
   }
 };
