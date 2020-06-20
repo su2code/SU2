@@ -4346,7 +4346,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
   unsigned long tria_flip=0, quad_flip=0, tet_flip=0, prism_flip=0, hexa_flip=0, pyram_flip=0;
   unsigned long quad_error=0, prism_error=0, hexa_error=0, pyram_error=0;
@@ -4502,7 +4502,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
       if (pyram_error) cout << pyram_error << " PYRAMID, ";
       if (prism_error) cout << prism_error << " PRISM, ";
       if (hexa_error) cout << hexa_error << " HEXAHEDRON, ";
-      cout << "volume elements are distorded and COULD NOT be repaired." << endl;
+      cout << "volume elements are distorted and were NOT repaired." << endl;
     }
 
     if (tria_flip+quad_flip+tet_flip+hexa_flip+pyram_flip+prism_flip+
@@ -4513,7 +4513,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
   unsigned long line_flip = 0, triangle_flip = 0, quad_flip = 0, quad_error = 0;
 
@@ -4567,7 +4567,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
          * point should point in the positive z direction. ---*/
         su2double a[2]={0.0}, b[2]={0.0};
         GeometryToolbox::Distance(2, Coord_2, Coord_1, a);
-        GeometryToolbox::Distance(2, Coord_3, Coord_1, a);
+        GeometryToolbox::Distance(2, Coord_3, Coord_1, b);
         bool test = a[0]*b[1]-b[0]*a[1] < 0.0;
 
         if (test) {
@@ -4599,15 +4599,17 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
         auto Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2);
         auto Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3);
 
-        /*--- Divide quadrilateral/pyramid into two triangles/tetrahedrons. ---*/
+        /*--- Divide quadrilateral/pyramid into triangles/tetrahedrons. ---*/
         auto test_1 = checkTetra(Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_Domain);
-        auto test_2 = checkTetra(Point_1_Surface, Point_3_Surface, Point_4_Surface, Point_Domain);
+        auto test_2 = checkTetra(Point_2_Surface, Point_3_Surface, Point_4_Surface, Point_Domain);
+        auto test_3 = checkTetra(Point_3_Surface, Point_4_Surface, Point_1_Surface, Point_Domain);
+        auto test_4 = checkTetra(Point_4_Surface, Point_1_Surface, Point_2_Surface, Point_Domain);
 
-        if (test_1 && test_2) {
+        if (test_1 && test_2 && test_3 && test_4) {
           bound[iMarker][iElem_Surface]->Change_Orientation();
           quad_flip++;
         }
-        else if (test_1 || test_2) {
+        else if (test_1 || test_2 || test_3 || test_4) {
           /*--- If one test fails and the other passes the
            * element probably has serious problems. ---*/
           quad_error++;
