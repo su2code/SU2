@@ -4362,7 +4362,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     su2double a[nDim]={0.0}, b[nDim]={0.0};
     GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
     GeometryToolbox::Distance(nDim, Coord_3, Coord_1, b);
-    return a[0]*b[1]-b[0]*a[1] < 0.0;
+    return a[0]*b[1]-a[1]*b[0] < 0.0;
   };
 
   /*--- Lambda to test tetrahedrons, volume must be positive,
@@ -4502,7 +4502,8 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
       if (pyram_error) cout << pyram_error << " PYRAMID, ";
       if (prism_error) cout << prism_error << " PRISM, ";
       if (hexa_error) cout << hexa_error << " HEXAHEDRON, ";
-      cout << "volume elements are distorted and were NOT repaired." << endl;
+      cout << "volume elements are distorted.\n    It was not possible "
+              "to determine if their orientation is correct." << endl;
     }
 
     if (tria_flip+quad_flip+tet_flip+hexa_flip+pyram_flip+prism_flip+
@@ -4515,7 +4516,9 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
 void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
-  unsigned long line_flip = 0, triangle_flip = 0, quad_flip = 0, quad_error = 0;
+  unsigned long line_flip = 0, tria_flip = 0, quad_flip = 0, quad_error = 0;
+
+  SU2_OMP_PARALLEL_(reduction(+:line_flip,tria_flip,quad_flip,quad_error)) {
 
   /*--- Lambda to test tetrahedrons. ---*/
   auto checkTetra = [&](unsigned long Point_1, unsigned long Point_2,
@@ -4537,6 +4540,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
     if (config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY) continue;
 
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
     for (auto iElem_Surface = 0ul; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
 
       /*--- Pick a reference point inside the domain that is not part of the surface element. ---*/
@@ -4565,10 +4569,11 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
         /*--- The normal of the triangle formed by the line and domain
          * point should point in the positive z direction. ---*/
-        su2double a[2]={0.0}, b[2]={0.0};
-        GeometryToolbox::Distance(2, Coord_2, Coord_1, a);
-        GeometryToolbox::Distance(2, Coord_3, Coord_1, b);
-        bool test = a[0]*b[1]-b[0]*a[1] < 0.0;
+        constexpr int nDim = 2;
+        su2double a[nDim]={0.0}, b[nDim]={0.0};
+        GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
+        GeometryToolbox::Distance(nDim, Coord_3, Coord_1, b);
+        bool test = a[0]*b[1]-a[1]*b[0] < 0.0;
 
         if (test) {
           bound[iMarker][iElem_Surface]->Change_Orientation();
@@ -4588,7 +4593,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
          * resulting in a tetrahedron with positive volume. ---*/
         if (checkTetra(Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_Domain)) {
           bound[iMarker][iElem_Surface]->Change_Orientation();
-          triangle_flip++;
+          tria_flip++;
         }
       }
 
@@ -4600,42 +4605,44 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
         auto Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3);
 
         /*--- Divide quadrilateral/pyramid into triangles/tetrahedrons. ---*/
-        auto test_1 = checkTetra(Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_Domain);
-        auto test_2 = checkTetra(Point_2_Surface, Point_3_Surface, Point_4_Surface, Point_Domain);
-        auto test_3 = checkTetra(Point_3_Surface, Point_4_Surface, Point_1_Surface, Point_Domain);
-        auto test_4 = checkTetra(Point_4_Surface, Point_1_Surface, Point_2_Surface, Point_Domain);
+        int test_1 = checkTetra(Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_Domain);
+        int test_2 = checkTetra(Point_2_Surface, Point_3_Surface, Point_4_Surface, Point_Domain);
+        int test_3 = checkTetra(Point_3_Surface, Point_4_Surface, Point_1_Surface, Point_Domain);
+        int test_4 = checkTetra(Point_4_Surface, Point_1_Surface, Point_2_Surface, Point_Domain);
 
-        if (test_1 && test_2 && test_3 && test_4) {
+        if (test_1+test_2+test_3+test_4 >= 3) {
+          /*--- If 3 or 4 tests fail there is > 75% chance flipping is the right choice. ---*/
           bound[iMarker][iElem_Surface]->Change_Orientation();
           quad_flip++;
         }
-        else if (test_1 || test_2 || test_3 || test_4) {
-          /*--- If one test fails and the other passes the
-           * element probably has serious problems. ---*/
+        else if (test_1+test_2+test_3+test_4 == 2) {
+          /*--- If 50/50 we cannot be sure of what to do -> report to user.
+           * If only one test fails it is probably (75%) due to skewness or warping. ---*/
           quad_error++;
         }
       }
     }
-  }
+  }} // end SU2_OMP_PARALLEL
 
   auto reduce = [](unsigned long& val) {
     unsigned long tmp = val;
     SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   };
-  reduce(line_flip); reduce(triangle_flip);
+  reduce(line_flip); reduce(tria_flip);
   reduce(quad_flip); reduce(quad_error);
 
   if (rank == MASTER_NODE) {
     string start("There has been a re-orientation of ");
     if (line_flip) cout << start << line_flip << " LINE surface elements." << endl;
-    if (triangle_flip) cout << start << triangle_flip << " TRIANGLE surface elements." << endl;
+    if (tria_flip) cout << start << tria_flip << " TRIANGLE surface elements." << endl;
     if (quad_flip) cout << start << quad_flip << " QUADRILATERAL surface elements." << endl;
 
     if (quad_error) {
-      cout << ">>> WARNING: " << quad_error << " QUADRILATERAL surface elements are distorted." << endl;
+      cout << ">>> WARNING: " << quad_error << " QUADRILATERAL surface elements are distorted.\n"
+              "    It was not possible to determine if their orientation is correct." << endl;
     }
 
-    if (line_flip+triangle_flip+quad_flip+quad_error == 0) {
+    if (line_flip+tria_flip+quad_flip+quad_error == 0) {
       cout << "All surface elements are correctly orientend." << endl;
     }
   }
