@@ -3675,7 +3675,6 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
             jPoint  = elem[iElem]->GetNode(jNode);
             jDomain = node[jPoint]->GetColor();
             ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
-            SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
           }
         }
         else {
@@ -3687,10 +3686,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
             jPoint  = elem[iElem]->GetNode(jNode);
             jDomain = node[jPoint]->GetColor();
 
-            if(jDomain == (unsigned long) rank) {
+            if(jDomain == (unsigned long) rank)
               SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
-              ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
-            }
           }
         }
       }
