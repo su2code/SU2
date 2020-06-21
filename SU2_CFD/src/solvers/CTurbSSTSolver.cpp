@@ -295,16 +295,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SetValZero();
   }
   
-  /*--- Set flow solver primitives to values stored in turb solver ---*/
-
-//  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-//
-//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-//    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-//      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
-//    }
-//  }
-  
   /*--- Set primitives and gradients since flow primitives have updated ---*/
   
   Postprocessing(geometry, solver_container, config, iMesh);
@@ -333,13 +323,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
-//  solver_container[FLOW_SOL]->Preprocessing(geometry, solver_container, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   SetEddyViscosity(geometry, solver_container);
-  
-  /*--- Store variables from the mean flow solver ---*/
-
-//  SetFlowPrimitive(solver_container);
-//  SetFlowGradient(solver_container);
 
 }
 
@@ -489,7 +473,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       /*--- Gradient of the primitive and conservative variables ---*/
 
       numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
-//      numerics->SetPrimVarGradient(nodes->GetFlowGradient(iPoint), nullptr);
 
       /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -1575,11 +1558,11 @@ void CTurbSSTSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, 
       distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
-      const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-//      const su2double Omega_b1 = Omega_i + Omega_0;
-//      const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
-//      const su2double blend = tanh(pow(Yp/10., 4.));
-//      const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
+//      const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      const su2double Omega_b1 = Omega_i + Omega_0;
+      const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
+      const su2double blend = tanh(pow(Yp/10., 4.));
+      const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
 
       Solution[0] = Omega * Eddy_Visc;
       Solution[1] = Density_Normal * Omega;
