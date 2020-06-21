@@ -533,7 +533,7 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
    the data and send from the neighbor ranks. ---*/
 
   iMessage = 0;
-  int nP2P = (val_reverse) ? nP2PSend : nP2PRecv;
+  const int nP2P = (val_reverse) ? nP2PSend : nP2PRecv;
   for (iRecv = 0; iRecv < nP2P; iRecv++) {
 
     /*--- In some instances related to the adjoint solver, we need
