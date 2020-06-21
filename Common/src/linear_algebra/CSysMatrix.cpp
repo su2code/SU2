@@ -269,14 +269,16 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
+  
+  int nP2P = (reverse) ? geometry->nP2PRecv : geometry->nP2PSend;
 
-  if (geometry->nP2PSend > 0) {
+  if (nP2P > 0) {
 
     /*--- Post all non-blocking recvs first before sends. ---*/
 
     geometry->PostP2PRecvs(geometry, config, MPI_TYPE, reverse);
 
-    for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
+    for (iMessage = 0; iMessage < nP2P; iMessage++) {
 
       switch (commType) {
 
