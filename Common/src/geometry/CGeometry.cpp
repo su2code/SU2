@@ -342,8 +342,8 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
   nP2PSend = 0; nP2PRecv = 0;
 
   for (iRank = 0; iRank < size; iRank++) {
-    if ((iRank != rank) && ((nPoint_Send_All[iRank+1] > 0) || (nPoint_Send_All[iRank+1] > 0))) nP2PSend++;
-    if ((iRank != rank) && ((nPoint_Recv_All[iRank+1] > 0) || (nPoint_Recv_All[iRank+1] > 0))) nP2PRecv++;
+    if ((iRank != rank) && ((nPoint_Send_All[iRank+1] > 0) || (nPoint_Recv_All[iRank+1] > 0))) nP2PSend++;
+    if ((iRank != rank) && ((nPoint_Recv_All[iRank+1] > 0) || (nPoint_Send_All[iRank+1] > 0))) nP2PRecv++;
 
     nPoint_Send_All[iRank+1] += nPoint_Send_All[iRank];
     nPoint_Recv_All[iRank+1] += nPoint_Recv_All[iRank];
