@@ -314,15 +314,17 @@ public:
 
   /*!
    * \brief Set "block" to the vector.
+   * \note Template param Overwrite can be set to false to update existing values.
    * \param[in] iPoint - index of the point where set the residual.
    * \param[in] block - Value to set to the residual.
    * \param[in] alpha - Scale factor (axpy-type operation).
    */
   template<class VectorType, bool Overwrite = true>
   FORCEINLINE void SetBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      vec_val[iPoint*nVar+iVar] *= 1-Overwrite;
-      vec_val[iPoint*nVar+iVar] += alpha * block[iVar];
+    if(Overwrite) {
+      for(auto i=0ul; i<nVar; ++i) vec_val[iPoint*nVar+i] = alpha*block[i];
+    } else {
+      for(auto i=0ul; i<nVar; ++i) vec_val[iPoint*nVar+i] += alpha*block[i];
     }
   }
 
@@ -335,11 +337,11 @@ public:
   }
 
   /*!
-   * \brief Subtract "block" from the vector, see SetBlock.
+   * \brief Subtract "block" from the vector, see AddBlock.
    */
   template<class VectorType>
   FORCEINLINE void SubtractBlock(unsigned long iPoint, const VectorType& block) {
-    SetBlock<VectorType,false>(iPoint, block, -1);
+    AddBlock(iPoint, block, -1);
   }
 
   /*!
