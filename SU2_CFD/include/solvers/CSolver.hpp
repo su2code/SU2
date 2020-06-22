@@ -379,20 +379,6 @@ public:
                         CConfig                    *config,
                         unsigned long              iPoint,
                         vector<vector<su2double> > &weights);
-  
-  /*!
-   * \brief Compute the scalar dissipation (e.g. due to JST flux) terms of the goal-oriented metric.
-   * \param[in] solver - Physical definition of the problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iPoint - Index of current node.
-   * \param[in] weights - Weights of each Hessian in the metric.
-   */
-  void DissipativeMetric(CSolver                    **solver,
-                         CGeometry                  *geometry,
-                         CConfig                    *config,
-                         unsigned long              iPoint,
-                         vector<vector<su2double> > &weights);
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.

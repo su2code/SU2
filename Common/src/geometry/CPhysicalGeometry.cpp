@@ -3746,7 +3746,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     }
   }
 
-  /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
+  /*--- Add the new MPI receive boundaries, reset the transformation,
+   and save the local value ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
