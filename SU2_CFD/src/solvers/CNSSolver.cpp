@@ -1942,11 +1942,13 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           if (geometry->vertex[iMarker][iVertex]->GetDonorFound()){
           
             /*--- Get the distance to the exchange location ---*/
+            
             const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
             WallDistMod = doubleInfo[0];
 
-            /*--- Get the density, momentum, and energy at the exchange location. ---*/
+            /*--- Get the density, momentum, and energy at the exchange location ---*/
             
+            su2double Density_Normal = 0., Energy_Normal = 0.;
             P_Normal = 0.;
             T_Normal = 0.;
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
@@ -1956,13 +1958,22 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
-              P_Normal += donorCoeff*nodes->GetPressure(donorPoint);
-              T_Normal += donorCoeff*nodes->GetTemperature(donorPoint);
+              Density_Normal  += donorCoeff*nodes->GetSolution(donorPoint, 0);
+              Energy_Normal += donorCoeff*nodes->GetSolution(donorPoint, nDim+1);
               
-              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);              
+              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
             }
+            
+            /*--- Compute the primitives at the exchange location ---*/
+            
+            Energy_Normal /= Density_Normal;
+            for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] /= Density_Normal;
+            
+            GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
+            P_Normal = GetFluidModel()->GetPressure();
+            T_Normal = GetFluidModel()->GetTemperature();
 
-            /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+            /*--- Compute the wall-parallel velocity at the exchange location ---*/
 
             VelNormal = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -2025,7 +2036,6 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
           GetFluidModel()->SetTDState_rhoe(Density_Wall, StaticEnergy_Wall);
           Lam_Visc_Wall = GetFluidModel()->GetLaminarViscosity();
 
-//          Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
           grad_primvar  = nodes->GetGradient_Primitive(iPoint);
 
           div_vel = 0.0;

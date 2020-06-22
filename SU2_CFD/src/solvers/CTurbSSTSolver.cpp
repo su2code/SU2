@@ -604,7 +604,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
-  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, beta_1 = constants[4];
+  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Energy_Normal = 0.0, Lam_Visc_Normal = 0.0, beta_1 = constants[4];
   
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   
@@ -622,7 +622,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
         distance = doubleInfo[0];
 
-        /*--- Load the coefficients and interpolate---*/
+        /*--- Load the coefficients and interpolate ---*/
         unsigned short nDonors = geometry->vertex[val_marker][iVertex]->GetnDonorPoints();
 
         Density_Normal = 0.;
@@ -632,10 +632,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
           su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
-          Density_Normal  += donorCoeff*flowNodes->GetDensity(donorPoint);
-          Lam_Visc_Normal += donorCoeff*flowNodes->GetLaminarViscosity(donorPoint);
+          Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
+          Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1);
         }
-
+        Energy_Normal /= Density_Normal;
+        solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
+        Lam_Visc_Normal = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
       }
       else {
       
