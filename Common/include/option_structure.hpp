@@ -353,7 +353,7 @@ enum ENUM_INLET_SPANWISEINTERPOLATION {
   LINEAR_1D = 1,
   AKIMA_1D = 2,
 };
-static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
+static const MapType<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
   MakePair("NONE", NO_INTERPOLATION)
   MakePair("LINEAR_1D",LINEAR_1D)
   MakePair("AKIMA_1D",AKIMA_1D)
@@ -366,7 +366,7 @@ enum ENUM_INLET_INTERPOLATIONTYPE {
   VR_VTHETA = 0,
   ALPHA_PHI = 1,
 };
-static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
+static const MapType<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
   MakePair("VR_VTHETA",VR_VTHETA)
   MakePair("ALPHA_PHI",ALPHA_PHI)
 };
