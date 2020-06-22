@@ -3705,6 +3705,19 @@ public:
   }
 
   /*!
+   * \brief Return true if a NEMO solver is in use.
+   */
+  bool GetNEMOProblem(void) const {
+    switch (Kind_Solver) {
+      case NEMO_EULER : case NEMO_NAVIER_STOKES: //case NEMO_RANS:
+      //case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.
    */

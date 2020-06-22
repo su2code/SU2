@@ -103,10 +103,12 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Dissipation_ij = 1.0;
 
-  if ((config->GetKind_Solver() == NEMO_EULER)                 ||
-      (config->GetKind_Solver() == NEMO_NAVIER_STOKES) ) { //         ||
+  //if ((config->GetKind_Solver() == NEMO_EULER)                 ||
+  //    (config->GetKind_Solver() == NEMO_NAVIER_STOKES) ) { //         ||
       //(config->GetKind_Solver() == DISC_ADJ_NEMO_EULER)        ||
-      //(config->GetKind_Solver() == DISC_ADJ_NEMO_NAVIER_STOKES) ) {
+      //(config->GetKind_Solver() == DISC_ADJ_NEMO_NAVIER_STOKES) ) 
+  if (config->GetNEMOProblem()){
+
     nSpecies = nVar - nDim - 2;
 
     hs     = new su2double[nSpecies];
