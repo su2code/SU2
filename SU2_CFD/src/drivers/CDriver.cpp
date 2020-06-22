@@ -2480,6 +2480,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
 
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       if(config->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
           cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
@@ -2491,14 +2492,6 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
           cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
         iteration = new CFluidIteration(config);
       }
-      break;
-
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: 
-
-      if (rank == MASTER_NODE)
-          cout << ": NEMO Two-Temp Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CNEMOIteration(config);
-
       break;  
 
     case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
