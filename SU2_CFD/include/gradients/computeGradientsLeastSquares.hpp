@@ -148,7 +148,7 @@ void computeGradientsLeastSquares(CSolver* solver,
 
     if (periodic)
     {
-      /*--- A second loop is required after periodic comms. ---*/
+      /*--- A second loop is required after periodic comms, checkpoint the preacc. ---*/
 
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         for (size_t jDim = 0; jDim < nDim; ++jDim)
@@ -163,7 +163,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     else {
       /*--- Periodic comms are not needed, solve the LS problem for iPoint. ---*/
 
-      solveLeastSquares(iPoint, false, nDim, varBegin, varEnd, gradient, Rmatrix);
+      solveLeastSquares(iPoint, false, nDim, varBegin, varEnd, Rmatrix, gradient);
     }
   }
 
@@ -181,7 +181,7 @@ void computeGradientsLeastSquares(CSolver* solver,
 
     SU2_OMP_FOR_DYN(chunkSize)
     for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
-      solveLeastSquares(iPoint, true, nDim, varBegin, varEnd, gradient, Rmatrix);
+      solveLeastSquares(iPoint, true, nDim, varBegin, varEnd, Rmatrix, gradient);
   }
 
   /*--- If no solver was provided we do not communicate ---*/
@@ -196,14 +196,17 @@ void computeGradientsLeastSquares(CSolver* solver,
 
 }
 
+/*!
+ * \brief Solve the LS problem prepared above.
+ */
 template<class GradientType, class RMatrixType>
 FORCEINLINE void solveLeastSquares(size_t iPoint,
                                    bool periodic,
                                    size_t nDim,
                                    size_t varBegin,
                                    size_t varEnd,
-                                   GradientType& gradient,
-                                   RMatrixType& Rmatrix) {
+                                   const RMatrixType& Rmatrix,
+                                   GradientType& gradient) {
   constexpr size_t MAXNDIM = 3;
 
   /*--- Entries of upper triangular matrix R. ---*/
@@ -300,6 +303,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   if (periodic)
   {
+    /*--- Stop preacc here as gradient is in/out. ---*/
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
         AD::SetPreaccOut(Smatrix[iDim][jDim]);
@@ -322,6 +326,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   if (!periodic)
   {
+    /*--- Stop preacc here instead as gradient is only out. ---*/
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
