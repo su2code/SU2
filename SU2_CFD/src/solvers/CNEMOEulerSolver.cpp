@@ -2868,6 +2868,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     Energy_FreeStream    = rhoE/Density_FreeStream;
   }
 
+  config->SetDensity_FreeStream(Density_FreeStream);
+
   /*-- Compute the freestream energy. ---*/
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
 
