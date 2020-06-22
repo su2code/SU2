@@ -351,10 +351,7 @@ void CNumerics::GetInviscidProjFlux(const su2double *val_U,
                                     su2double *val_Proj_Flux) {
   unsigned short iSpecies, iVar;
   su2double rho, u, v, w, rhoEve, P, H;
-  su2double *rhos;
-
-  /*--- Allocate arrays ---*/
-  rhos = new su2double[nSpecies];
+  const su2double *rhos;
 
   /*--- Initialize vectors ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -368,9 +365,7 @@ void CNumerics::GetInviscidProjFlux(const su2double *val_U,
   P      = val_V[P_INDEX];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
-  }
+  rhos = &val_V[RHOS_INDEX];
 
   if (nDim == 2) {
 
@@ -419,11 +414,7 @@ void CNumerics::GetInviscidProjFlux(const su2double *val_U,
     val_Proj_Flux[nSpecies+3] += (rho*w*H)          * val_normal[2];
     val_Proj_Flux[nSpecies+4] += (rhoEve*w)         * val_normal[2];
   }
-
-  delete [] rhos;
 }
-
-
 
 void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
                                        const su2double *val_velocity,
