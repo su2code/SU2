@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <cassert>
 
 #include "../basic_types/datatype_structure.hpp"
 #include "../omp_structure.hpp"
@@ -346,34 +347,38 @@ public:
    * \param[in] Overwrite - True: write over existing data; False: add to existing data.
    * \param[in] iPoint - SIMD integer, the positions to update.
    * \param[in] vector - Vector of SIMD scalars.
-   * \param[in] alpha - Optional scale factor (axpy type operation).
+   * \param[in] mask - Optional scale factor (axpy type operation).
+   * \note Nothing is updated if the mask is 0.
    */
-  template<size_t N, class T, class VectorSIMD_t, bool Overwrite = true>
-  FORCEINLINE void SetBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector, ScalarType alpha = 1) {
-    const auto nVar = vector.rows();
-    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-      SU2_OMP_SIMD
-      for (auto k = 0ul; k < N; ++k) {
-        vec_val[iPoint[k]*nVar+iVar] *= 1-Overwrite;
-        vec_val[iPoint[k]*nVar+iVar] += alpha * vector(iVar)[k];
-      }
+  template<size_t N, class T, class VecTypeSIMD, class F = ScalarType, bool Overwrite = true>
+  FORCEINLINE void SetBlock(simd::Array<T,N> iPoint, const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
+
+    static_assert(VecTypeSIMD::StaticSize, "This method requires static size vectors.");
+    constexpr size_t nVar = VecTypeSIMD::StaticSize;
+    assert(nVar == this->nVar);
+
+    /*--- "Transpose" and scale input vector. ---*/
+    ScalarType vec[N][nVar];
+
+    for (size_t i=0; i<nVar; ++i)
+      for (size_t k=0; k<N; ++k)
+        vec[k][i] = mask[k] * vector[i][k];
+
+    /*--- Update one by one skipping if mask is 0. ---*/
+    for (size_t k=0; k<N; ++k) {
+      if (mask[k]==0) continue;
+      auto dst = &vec_val[iPoint[k]*nVar];
+      if(Overwrite) for (size_t i=0; i<nVar; ++i) dst[i] = vec[k][i];
+      else for (size_t i=0; i<nVar; ++i) dst[i] += vec[k][i];
     }
   }
 
   /*!
    * \brief Vectorized version of AddBlock, see SetBlock.
    */
-  template<size_t N, class T, class VectorSIMD_t>
-  FORCEINLINE void AddBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector, ScalarType alpha = 1) {
-    SetBlock<N, T, VectorSIMD_t, false>(iPoint, vector, alpha);
-  }
-
-  /*!
-   * \brief Vectorized version of SubtractBlock, see SetBlock.
-   */
-  template<size_t N, class T, class VectorSIMD_t>
-  FORCEINLINE void SubtractBlock(simd::Array<T,N> iPoint, const VectorSIMD_t& vector) {
-    SetBlock<N, T, VectorSIMD_t, false>(iPoint, vector, -1);
+  template<size_t N, class T, class VecTypeSIMD, class F = ScalarType>
+  FORCEINLINE void AddBlock(simd::Array<T,N> iPoint, const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
+    SetBlock<N, T, VecTypeSIMD, F, false>(iPoint, vector, mask);
   }
 
 };

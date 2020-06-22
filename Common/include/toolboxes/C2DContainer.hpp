@@ -387,6 +387,7 @@ public:
   static constexpr StorageType Storage = Store;
   static constexpr bool IsRowMajor = (Store==StorageType::RowMajor);
   static constexpr bool IsColumnMajor = (Store==StorageType::ColumnMajor);
+  static constexpr size_t StaticSize = StaticRows*StaticCols;
 
   /*!
    * \brief Scalar iterator to the inner dimension of the container, read-only.

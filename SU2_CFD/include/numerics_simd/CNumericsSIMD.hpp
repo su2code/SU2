@@ -83,14 +83,17 @@ public:
    * \param[in] geometry - Problem geometry.
    * \param[in] solution - Solution variables.
    * \param[in] updateType - Type of update done on vector and matrix.
+   * \param[in] updateMask - SIMD array of 1's and 0's, the latter prevent the update.
    * \param[in,out] vector - Target for the fluxes.
    * \param[in,out] matrix - Target for the flux Jacobians.
+   * \note The update mask is used to handle "remainder" edges (nEdge mod simdSize).
    */
   virtual void ComputeFlux(Int iEdge,
                            const CConfig& config,
                            const CGeometry& geometry,
                            const CVariable& solution,
                            UpdateType updateType,
+                           Double updateMask,
                            CSysVector<su2double>& vector,
                            SparseMatrixType& matrix) const = 0;
 
@@ -494,19 +497,20 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
                                     Int jPoint,
                                     bool implicit,
                                     UpdateType updateType,
+                                    Double updateMask,
                                     const VectorDbl<nVar>& flux,
                                     const MatrixDbl<nVar>& jac_i,
                                     const MatrixDbl<nVar>& jac_j,
                                     CSysVector<su2double>& vector,
                                     SparseMatrixType& matrix) {
   if (updateType == UpdateType::COLORING) {
-    vector.AddBlock(iPoint, flux);
-    vector.SubtractBlock(jPoint, flux);
-    if(implicit) matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j);
+    vector.AddBlock(iPoint, flux, updateMask);
+    vector.AddBlock(jPoint, flux, -1*updateMask);
+    if(implicit) matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j, updateMask);
   }
   else {
-    vector.SetBlock(iEdge, flux);
-    if (implicit) matrix.SetBlocks(iEdge, jac_i, jac_j);
+    vector.SetBlock(iEdge, flux, updateMask);
+    if(implicit) matrix.SetBlocks(iEdge, jac_i, jac_j, updateMask);
   }
 }
 
@@ -545,6 +549,7 @@ public:
                    const CGeometry& geometry,
                    const CVariable& solution_,
                    UpdateType updateType,
+                   Double updateMask,
                    CSysVector<su2double>& vector,
                    SparseMatrixType& matrix) const final {
 
@@ -651,7 +656,7 @@ public:
     /*--- Update the vector and system matrix. ---*/
 
     updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType,
-                       flux, jac_i, jac_j, vector, matrix);
+                       updateMask, flux, jac_i, jac_j, vector, matrix);
   }
 };
 

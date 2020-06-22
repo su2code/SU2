@@ -36,6 +36,7 @@
 
 #include <cstdlib>
 #include <vector>
+#include <cassert>
 
 using namespace std;
 
@@ -518,18 +519,17 @@ public:
 
   /*!
    * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
-   * \note The template parameter Sign, can be used create a "subtractive"
-   *       update i.e. subtract from row i and add to row j instead.
-   *       This method assumes an FVM-type sparse pattern.
+   * \note This method assumes an FVM-type sparse pattern.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
    * \param[in] iPoint - Row to which we add the blocks.
    * \param[in] jPoint - Row from which we subtract the blocks.
    * \param[in] block_i - Adds to ii, subs from ji.
    * \param[in] block_j - Adds to ij, subs from jj.
+   * \param[in] scale - Scale blocks during update (axpy type op).
    */
-  template<class MatrixType, int Sign = 1>
+  template<class MatrixType, class OtherType = ScalarType>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
-                           const MatrixType& block_i, const MatrixType& block_j) {
+                           const MatrixType& block_i, const MatrixType& block_j, OtherType scale = 1) {
 
     ScalarType *bii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
     ScalarType *bjj = &matrix[dia_ptr[jPoint]*nVar*nEqn];
@@ -540,10 +540,10 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bii[offset] += PassiveAssign(block_i[iVar][jVar]) * Sign;
-        bij[offset] += PassiveAssign(block_j[iVar][jVar]) * Sign;
-        bji[offset] -= PassiveAssign(block_i[iVar][jVar]) * Sign;
-        bjj[offset] -= PassiveAssign(block_j[iVar][jVar]) * Sign;
+        bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
+        bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
+        bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
+        bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
         ++offset;
       }
     }
@@ -555,39 +555,50 @@ public:
   template<class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
                               const MatrixType& block_i, const MatrixType& block_j) {
-    UpdateBlocks<MatrixType,-1>(iEdge, iPoint, jPoint, block_i, block_j);
+    UpdateBlocks(iEdge, iPoint, jPoint, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges and points.
+   * \note Nothing is updated if the mask is 0.
    */
-  template<class MatrixTypeSIMD, class T, size_t N>
-  FORCEINLINE void UpdateBlocks(simd::Array<T,N> iEdge, simd::Array<T,N> iPoint, simd::Array<T,N> jPoint,
-                                const MatrixTypeSIMD& block_i, const MatrixTypeSIMD& block_j) {
+  template<class MatTypeSIMD, class I, size_t N, class F = ScalarType>
+  FORCEINLINE void UpdateBlocks(simd::Array<I,N> iEdge, simd::Array<I,N> iPoint, simd::Array<I,N> jPoint,
+                                const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F,N> mask = 1) {
 
-    /*--- Fetch the blocks for all edges. ---*/
-    ScalarType* bii[N] = {nullptr};
-    ScalarType* bjj[N] = {nullptr};
-    ScalarType* bij[N] = {nullptr};
-    ScalarType* bji[N] = {nullptr};
+    static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
+    static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
+    constexpr size_t blkSz = MatTypeSIMD::StaticSize;
+    assert(blkSz == nVar*nEqn);
 
-    for (auto k = 0ul; k < N; ++k) {
-      bii[k] = &matrix[dia_ptr[iPoint[k]]*block_i.size()];
-      bjj[k] = &matrix[dia_ptr[jPoint[k]]*block_i.size()];
-      bij[k] = &matrix[edge_ptr(iEdge[k],0)*block_i.size()];
-      bji[k] = &matrix[edge_ptr(iEdge[k],1)*block_i.size()];
+    /*--- "Transpose" the blocks, scale, and possibly convert types,
+     * giving the compiler the chance to vectorize all of these. ---*/
+    ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
+
+    for (size_t i=0; i<blkSz; ++i) {
+      for (size_t k=0; k<N; ++k) {
+        blk_i[k][i] = -1*PassiveAssign(mask[k] * block_i.data()[i][k]);
+        blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
+      }
     }
 
-    /*--- Unpack the SIMD elements of the input blocks. ---*/
-    for (auto iVar = 0ul; iVar < block_i.rows(); ++iVar) {
-      for (auto jVar = 0ul; jVar < block_i.cols(); ++jVar) {
-        SU2_OMP_SIMD
-        for (auto k = 0ul; k < N; ++k) {
-          *(bii[k]++) += PassiveAssign(block_i(iVar,jVar)[k]);
-          *(bij[k]++) =  PassiveAssign(block_j(iVar,jVar)[k]);
-          *(bji[k]++) = -PassiveAssign(block_i(iVar,jVar)[k]);
-          *(bjj[k]++) -= PassiveAssign(block_j(iVar,jVar)[k]);
-        }
+    /*--- Update one by one skipping if mask is 0. ---*/
+    for (size_t k=0; k<N; ++k) {
+      if (mask[k]==0) continue;
+
+      /*--- Fetch the blocks. ---*/
+      auto bii = &matrix[dia_ptr[iPoint[k]]*blkSz];
+      auto bjj = &matrix[dia_ptr[jPoint[k]]*blkSz];
+      auto bij = &matrix[edge_ptr(iEdge[k],0)*blkSz];
+      auto bji = &matrix[edge_ptr(iEdge[k],1)*blkSz];
+
+      /*--- Update, block i was negated during transpose in the
+       * hope the assignments below become non-temporal stores. ---*/
+      for (size_t i=0; i<blkSz; ++i) {
+        bii[i] -= blk_i[k][i];
+        bjj[i] -= blk_j[k][i];
+        bij[i] = blk_j[k][i];
+        bji[i] = blk_i[k][i];
       }
     }
   }
@@ -595,16 +606,16 @@ public:
   /*!
    * \brief Sets 2 blocks ij and ji (add to i* sub from j*) associated with
    *        one edge of an FVM-type sparse pattern.
-   * \note The template parameter Sign, can be used create a "subtractive"
-   *       update i.e. subtract from row i and add to row j instead.
-   *       The parameter Overwrite allows completely writing over the
+   * \note The parameter Overwrite allows completely writing over the
    *       current values held by the matrix (true), or updating them (false).
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
    * \param[in] block_i - Subs from ji.
    * \param[in] block_j - Adds to ij.
+   * \param[in] scale - Scale blocks during update (axpy type op).
    */
-  template<class MatrixType, int Sign = 1, bool Overwrite = true>
-  inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
+  template<class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
+  inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i,
+                        const MatrixType& block_j, OtherType scale = 1) {
 
     ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
     ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
@@ -613,8 +624,8 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar]) * Sign;
-        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar]) * Sign;
+        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar] * scale);
+        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar] * scale);
         ++offset;
       }
     }
@@ -623,9 +634,10 @@ public:
   /*!
    * \brief Short-hand for the "additive overwrite" version of SetBlocks.
    */
-  template<class MatrixType>
-  inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
-    SetBlocks<MatrixType,1,false>(iEdge, block_i, block_j);
+  template<class MatrixType, class OtherType = ScalarType>
+  inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i,
+                           const MatrixType& block_j, OtherType scale = 1) {
+    SetBlocks<MatrixType,OtherType,false>(iEdge, block_i, block_j, scale);
   }
 
   /*!
@@ -633,32 +645,46 @@ public:
    */
   template<class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
-    SetBlocks<MatrixType,-1,false>(iEdge, block_i, block_j);
+    UpdateBlocks(iEdge, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges.
+   * \note Nothing is updated if the mask is 0.
    */
-  template<class MatrixTypeSIMD, class T, size_t N>
-  FORCEINLINE void SetBlocks(simd::Array<T,N> iEdge, const MatrixTypeSIMD& block_i, const MatrixTypeSIMD& block_j) {
+  template<class MatTypeSIMD, class T, size_t N, class F = ScalarType>
+  FORCEINLINE void SetBlocks(simd::Array<T,N> iEdge, const MatTypeSIMD& block_i,
+                             const MatTypeSIMD& block_j, simd::Array<F,N> mask = 1) {
 
-    /*--- Fetch blocks for all edges. ---*/
-    ScalarType* bij[N] = {nullptr};
-    ScalarType* bji[N] = {nullptr};
+    static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
+    static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
+    constexpr size_t blkSz = MatTypeSIMD::StaticSize;
+    assert(blkSz == nVar*nEqn);
 
-    for (auto k = 0ul; k < N; ++k) {
-      bij[k] = &matrix[edge_ptr(iEdge[k],0)*block_i.size()];
-      bji[k] = &matrix[edge_ptr(iEdge[k],1)*block_i.size()];
+    /*--- "Transpose" the blocks, scale, and possibly convert types,
+     * giving the compiler the chance to vectorize all of these. ---*/
+    ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
+
+    for (size_t i=0; i<blkSz; ++i) {
+      for (size_t k=0; k<N; ++k) {
+        blk_i[k][i] = -1*PassiveAssign(mask[k] * block_i.data()[i][k]);
+        blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
+      }
     }
 
-    /*--- Unpack the SIMD elements of the input blocks. ---*/
-    for (auto iVar = 0ul; iVar < block_i.rows(); ++iVar) {
-      for (auto jVar = 0ul; jVar < block_i.cols(); ++jVar) {
-        SU2_OMP_SIMD
-        for (auto k = 0ul; k < N; ++k) {
-          *(bij[k]++) = PassiveAssign(block_j(iVar,jVar)[k]);
-          *(bji[k]++) = -PassiveAssign(block_i(iVar,jVar)[k]);
-        }
+    /*--- Update one by one skipping if mask is 0. ---*/
+    for (size_t k=0; k<N; ++k) {
+      if (mask[k]==0) continue;
+
+      /*--- Fetch the blocks. ---*/
+      auto bij = &matrix[edge_ptr(iEdge[k],0)*blkSz];
+      auto bji = &matrix[edge_ptr(iEdge[k],1)*blkSz];
+
+      /*--- Update, block i was negated during transpose in the
+       * hope the assignments below become non-temporal stores. ---*/
+      for (size_t i=0; i<blkSz; ++i) {
+        bij[i] = blk_j[k][i];
+        bji[i] = blk_i[k][i];
       }
     }
   }
