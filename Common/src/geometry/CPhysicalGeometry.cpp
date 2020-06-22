@@ -5697,6 +5697,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /* Delete the memory of localVolumeADT again. */
   delete localVolumeADT;
   
+  cout << "Rank: " << rank << ". Local volume ADT deleted." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  
   /* Reset nodes that only belong to donor elements */
   if (nDonor_Point > 0) {
     nElem -= nDonor_Elem;
