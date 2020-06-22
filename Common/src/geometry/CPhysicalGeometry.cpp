@@ -5690,15 +5690,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   const int nGlobalDonorNoFound = displs.back() + recvCounts.back();
 
   if (rank == MASTER_NODE) cout << " Number of donor elements not found: " << nGlobalDonorNoFound << endl;
-  
-  cout << "Rank: " << rank << ". Delete local volume ADT." << endl;
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   /* Delete the memory of localVolumeADT again. */
   delete localVolumeADT;
-  
-  cout << "Rank: " << rank << ". Local volume ADT deleted." << endl;
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
   /* Reset nodes that only belong to donor elements */
   if (nDonor_Point > 0) {
@@ -5723,9 +5717,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 //    SetControlVolume(config, UPDATE);
 //    SetBoundControlVolume(config, UPDATE);
   }
-  
-  cout << "Rank: " << rank << ". Wall model preprocessing complete." << endl;
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
 }
 
 void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
