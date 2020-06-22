@@ -360,7 +360,11 @@ public:
   /*!
    * \brief Reset the points that compose the control volume.
    */
-  inline void ErasePoint(unsigned short val_point) { Point.erase(Point.begin()+val_point); nPoint = Point.size(); }
+  inline void ErasePoint(unsigned short val_point) {
+    Point.erase(Point.begin()+val_point);
+    Edge.erase(Edge.begin()+val_point)
+    nPoint = Point.size();
+  }
 
   /*!
    * \brief Set the points that compose the control volume.
