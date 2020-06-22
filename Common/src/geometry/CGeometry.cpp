@@ -3177,6 +3177,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   SU2_MPI::Allreduce(&MyMaxK, &MaxK, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MynPointDomain, &TotalnPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
+  
+  cout << "Rank: " << rank << ". Computing MeanK." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   /*--- Compute the mean ---*/
   MeanK /= su2double(TotalnPointDomain);
@@ -3198,6 +3201,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   su2double MySigmaK = SigmaK; SigmaK = 0.0;
   SU2_MPI::Allreduce(&MySigmaK, &SigmaK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
+  
+  cout << "Rank: " << rank << ". Computing SigmaK." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
