@@ -3604,6 +3604,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   if (wmles){
     nDonor_Elem = 0;
+    nDonor_Point = 0;
 #ifdef HAVE_MPI
     if (rank == MASTER_NODE)
       cout << "Adding wall model donor elements to the halo list. " << endl;
@@ -5694,32 +5695,21 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   delete localVolumeADT;
   
   /* Reset nodes that only belong to donor elements */
-  unsigned short nDonor_Node = 0;
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    bool donorOnly = true;
-    for (unsigned short iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
-      const unsigned short jElem = node[iPoint]->GetElem(iElem);
-      if (elem[jElem]->GetNProcElemIsOnlyInterpolDonor() == 0) {
-        donorOnly = false;
-        break;
+  if (nDonor_Point > 0) {
+    for (unsigned long iPoint = nPoint-nDonor_Point; iPoint < nPoint; iPoint++) {
+        for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
+          const unsigned long jPoint = node[iPoint]->GetPoint(jNode);
+          for (unsigned short iNode = 0; iNode < node[jPoint]->GetnPoint(); iNode++) {
+            const unsigned long kPoint = node[jPoint]->GetPoint(iNode);
+            if (kPoint == iPoint) { node[jPoint]->ErasePoint(iNode); break; }
+          }
+        node[iPoint]->ResetElem();
+        node[iPoint]->ResetPoint();
+        node[iPoint]->SetnNeighbor(0);
       }
     }
-    if (donorOnly) {
-      for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
-        const unsigned long jPoint = node[iPoint]->GetPoint(jNode);
-        for (unsigned short iNode = 0; iNode < node[jPoint]->GetnPoint(); iNode++) {
-          const unsigned long kPoint = node[jPoint]->GetPoint(iNode);
-          if (kPoint == iPoint) { node[jPoint]->ErasePoint(iNode); break; }
-        }
-      }
-      node[iPoint]->ResetElem();
-      node[iPoint]->ResetPoint();
-      node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
-      nDonor_Node++;
-    }
+    SetEdges();
   }
-  
-  if (nDonor_Node > 0) SetEdges();
   
   /* Remove nDonor_Elem to prevent connectivity-related issues */
   nElem -= nDonor_Elem;
@@ -6260,6 +6250,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
       }
 
       /*--- Reallocate the array Local_to_Global_Point. ---*/
+      nDonor_Point = newNodesGlobalID.size();
       const unsigned long nPointNew  = nPoint + newNodesGlobalID.size();
       long *tmpLocal_to_Global_Point = new long[nPointNew];
       memcpy(tmpLocal_to_Global_Point, Local_to_Global_Point, nPoint*sizeof(long));

@@ -53,6 +53,7 @@ class CPhysicalGeometry final : public CGeometry {
   nLocal_PointDomain,
   nLocal_PointGhost,
   nLocal_PointPeriodic,
+  nDonor_Point,
   nLocal_Elem,
   nLocal_Bound_Elem,
   nDonor_Elem,

@@ -1562,7 +1562,6 @@ void CGeometry::SetEdges(void) {
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge++) {
       if (edge[iEdge] != NULL) {delete edge[iEdge]; edge[iEdge] = NULL;}
-      
     }
     delete [] edge; edge = NULL;
   }
