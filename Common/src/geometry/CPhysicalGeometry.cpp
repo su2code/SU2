@@ -5713,6 +5713,8 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       node[iPoint]->ResetEdge();
     }
     SetEdges();
+    SetControlVolume(config, UPDATE);
+    SetBoundControlVolume(config, UPDATE);
   }
   
   /* Remove nDonor_Elem to prevent connectivity-related issues */
