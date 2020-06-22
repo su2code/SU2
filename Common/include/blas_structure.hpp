@@ -4,11 +4,11 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>blass_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,7 +29,6 @@
 
 #pragma once
 
-#include "datatype_structure.hpp"
 #include "CConfig.hpp"
 
 /* LIBXSMM include files, if supported. */
@@ -39,9 +38,9 @@
 
 /*!
  * \class CBlasStructure
- * \brief Class, which serves as an interface to the BLAS functionalities needed. 
+ * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  */
 class CBlasStructure {
 public:

@@ -2,7 +2,7 @@
  * \file output_flow_inc.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -181,9 +181,18 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
 
+  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
+  /// DESCRIPTION: Merit
+  AddHistoryOutput("MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CT
+  AddHistoryOutput("CT",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CQ
+  AddHistoryOutput("CQ",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+
   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Maximal heatflux
   AddHistoryOutput("HEATFLUX_MAX", "maxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Temperature
@@ -284,7 +293,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (weakly_coupled_heat){
-    SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
+    SetHistoryOutputValue("TOTAL_HEATFLUX",     heat_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_TEMPERATURE",         log10(heat_solver->GetRes_RMS(0)));
@@ -292,7 +301,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     if (multiZone) SetHistoryOutputValue("BGS_TEMPERATURE",         log10(heat_solver->GetRes_BGS(0)));
   }
   if (heat){
-    SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
+    SetHistoryOutputValue("TOTAL_HEATFLUX",     flow_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
     if (nDim == 3) SetHistoryOutputValue("RMS_TEMPERATURE",         log10(flow_solver->GetRes_RMS(4)));
@@ -331,6 +340,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
+
+  /*--- Set rotating frame coefficients --- */
+
+  SetRotatingFrameCoefficients(config, flow_solver);
 
 }
 
@@ -470,9 +483,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Heat = NULL;
-  CVariable* Node_Turb = NULL;
-  CVariable* Node_Rad = NULL;
+  CVariable* Node_Heat = nullptr;
+  CVariable* Node_Turb = nullptr;
+  CVariable* Node_Rad = nullptr;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
@@ -481,12 +494,12 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
 
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -519,10 +532,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   if (config->GetGrid_Movement()){
-    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel()[0]);
-    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel()[1]);
+    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
+    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
-      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
+      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
 
   su2double VelMag = 0.0;
@@ -593,7 +606,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
-    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance());
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
@@ -638,8 +651,7 @@ bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
 }
 
 bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){
-  return false;
 
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
 
 }

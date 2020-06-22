@@ -2,7 +2,7 @@
  * \file CSurfaceFEMDataSorter.cpp
  * \brief Datasorter for FEM surfaces.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
-#include "../../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../../Common/include/fem/fem_geometry_structure.hpp"
 #include <numeric>
 
 CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
@@ -68,7 +68,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
 CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
 
-  if (linearPartitioner != NULL) delete linearPartitioner;
+  delete linearPartitioner;
   delete [] passiveDoubleBuffer;
 
 }
@@ -82,7 +82,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   }
 
   const int VARS_PER_POINT = GlobalField_Counter;
-  
+
   const unsigned long nElemLine = GetnElem(LINE);
   const unsigned long nElemTria = GetnElem(TRIANGLE);
   const unsigned long nElemQuad = GetnElem(QUADRILATERAL);
@@ -220,9 +220,9 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nPoints = globalSurfaceDOFIDs.size();
 
-  if (passiveDoubleBuffer != NULL){
+
     delete [] passiveDoubleBuffer;
-  }
+
 
   passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
@@ -247,7 +247,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   /* Determine the offset for my surface DOFs. */
   unsigned long offsetSurfaceDOFs = 0;
-  
+
   nSurfaceDOFsRanks.resize(size, 0);
 #ifdef HAVE_MPI
 
@@ -340,9 +340,9 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
       markerList.push_back(config->GetMarker_All_TagBound(iMarker));
     }
   }
-  
+
   /*--- Call the sort connectivity routine ---*/
-  
+
   SortConnectivity(config, geometry, markerList);
 
 }
@@ -350,7 +350,7 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) {
 
   nElemPerType.fill(0);
-  
+
   SortSurfaceConnectivity(config, geometry, LINE         , markerList);
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
@@ -423,7 +423,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
     /* Allocate the memory to store the connectivity if the size is
        larger than zero. */
-    int *Conn_SubElem = NULL;
+    int *Conn_SubElem = nullptr;
     if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
 
     /*--- Repeat the loop over the surface elements of the boundary markers
@@ -458,22 +458,22 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
         }
       }
     }
-    
-    nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;    
+
+    nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
 
     /*--- Store the particular global element count in the class data,
           and set the class data pointer to the connectivity array. ---*/
     switch (Elem_Type) {
       case LINE:
-        if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
+        delete [] Conn_Line_Par;
         Conn_Line_Par = Conn_SubElem;
         break;
       case TRIANGLE:
-        if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+        delete [] Conn_Tria_Par;
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
-        if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+        delete [] Conn_Quad_Par;
         Conn_Quad_Par = Conn_SubElem;
         break;
       default:

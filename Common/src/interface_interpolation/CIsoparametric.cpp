@@ -2,7 +2,7 @@
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,7 +73,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
 
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /* High level procedure:
      * - Loop through vertices of the target grid;
@@ -82,10 +82,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
      */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = config[donorZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = config[targetZone]->FindInterfaceMarker(iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
@@ -176,11 +176,11 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
       const auto iPoint = target_vertex->GetNode();
 
-      if (!target_geometry->node[iPoint]->GetDomain()) continue;
+      if (!target_geometry->nodes->GetDomain(iPoint)) continue;
       totalCount += 1;
 
       /*--- Coordinates of the target point. ---*/
-      const su2double* coord_i = target_geometry->node[iPoint]->GetCoord();
+      const su2double* coord_i = target_geometry->nodes->GetCoord(iPoint);
 
       /*--- Find the closest donor vertex. ---*/
       su2double minDist = 1e9;
@@ -384,8 +384,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
   /*--- Finding Xi and Eta is a "third order" effect that we do not
    *    differentiate (also because we need to iterate). ---*/
-  const bool tapeActive = AD::TapeActive();
-  AD::StopRecording();
+
+  const bool wasActive = AD::BeginPassive();
 
   for (int iter = 0; iter < NITER; ++iter) {
 
@@ -431,7 +431,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
     if (eps < tol) break;
   }
 
-  if (tapeActive) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
   int outOfBounds = 0;
 

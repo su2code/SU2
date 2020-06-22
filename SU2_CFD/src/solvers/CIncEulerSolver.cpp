@@ -2,7 +2,7 @@
  * \file solution_direct_mean_inc.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,56 +31,57 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
-
+#include "../../include/fluid/CConstantDensity.hpp"
+#include "../../include/fluid/CIncIdealGas.hpp"
+#include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
 
-  CD_Inv  = NULL; CL_Inv  = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
-  CoPx_Inv = NULL; CoPy_Inv = NULL; CoPz_Inv = NULL;
+  CD_Inv  = nullptr; CL_Inv  = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
+  CoPx_Inv = nullptr; CoPy_Inv = nullptr; CoPz_Inv = nullptr;
 
-  CD_Mnt  = NULL; CL_Mnt  = NULL; CSF_Mnt = NULL;  CEff_Mnt = NULL;
-  CMx_Mnt = NULL; CMy_Mnt = NULL; CMz_Mnt = NULL;
-  CFx_Mnt = NULL; CFy_Mnt = NULL; CFz_Mnt = NULL;
-  CoPx_Mnt = NULL; CoPy_Mnt = NULL; CoPz_Mnt = NULL;
+  CD_Mnt  = nullptr; CL_Mnt  = nullptr; CSF_Mnt = nullptr;  CEff_Mnt = nullptr;
+  CMx_Mnt = nullptr; CMy_Mnt = nullptr; CMz_Mnt = nullptr;
+  CFx_Mnt = nullptr; CFy_Mnt = nullptr; CFz_Mnt = nullptr;
+  CoPx_Mnt = nullptr; CoPy_Mnt = nullptr; CoPz_Mnt = nullptr;
 
-  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
-  ForceInviscid = NULL; MomentInviscid = NULL;
-  ForceMomentum = NULL; MomentMomentum = NULL;
+  CPressure = nullptr; CPressureTarget = nullptr; HeatFlux = nullptr; HeatFluxTarget = nullptr; YPlus = nullptr;
+  ForceInviscid = nullptr; MomentInviscid = nullptr;
+  ForceMomentum = nullptr; MomentMomentum = nullptr;
 
   /*--- Surface based array initialization ---*/
 
-  Surface_CL_Inv  = NULL; Surface_CD_Inv  = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv  = nullptr; Surface_CD_Inv  = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL_Mnt  = NULL; Surface_CD_Mnt  = NULL; Surface_CSF_Mnt = NULL; Surface_CEff_Mnt = NULL;
-  Surface_CFx_Mnt = NULL; Surface_CFy_Mnt = NULL; Surface_CFz_Mnt = NULL;
-  Surface_CMx_Mnt = NULL; Surface_CMy_Mnt = NULL; Surface_CMz_Mnt = NULL;
+  Surface_CL_Mnt  = nullptr; Surface_CD_Mnt  = nullptr; Surface_CSF_Mnt = nullptr; Surface_CEff_Mnt = nullptr;
+  Surface_CFx_Mnt = nullptr; Surface_CFy_Mnt = nullptr; Surface_CFz_Mnt = nullptr;
+  Surface_CMx_Mnt = nullptr; Surface_CMy_Mnt = nullptr; Surface_CMz_Mnt = nullptr;
 
-  Surface_CL  = NULL; Surface_CD  = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL  = nullptr; Surface_CD  = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr; Surface_CFy = nullptr; Surface_CFz = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
 
-  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+  CMerit_Inv = nullptr;  CT_Inv = nullptr;  CQ_Inv = nullptr;
 
   /*--- Numerical methods array initialization ---*/
 
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
-  Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  CharacPrimVar = NULL;
-  Smatrix = NULL; Cvector = NULL;
-  Preconditioner = NULL;
+  iPoint_UndLapl = nullptr;
+  jPoint_UndLapl = nullptr;
+  Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
+  CharacPrimVar = nullptr;
+  Preconditioner = nullptr;
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  SlidingState     = NULL;
-  SlidingStateNodes = NULL;
+  SlidingState     = nullptr;
+  SlidingStateNodes = nullptr;
 
   nodes = nullptr;
 }
@@ -146,49 +147,48 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Basic array initialization ---*/
 
-  CD_Inv  = NULL; CL_Inv  = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
-  CoPx_Inv = NULL; CoPy_Inv = NULL; CoPz_Inv = NULL;
+  CD_Inv  = nullptr; CL_Inv  = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
+  CoPx_Inv = nullptr; CoPy_Inv = nullptr; CoPz_Inv = nullptr;
 
-  CD_Mnt  = NULL; CL_Mnt  = NULL; CSF_Mnt = NULL; CEff_Mnt = NULL;
-  CMx_Mnt = NULL; CMy_Mnt = NULL; CMz_Mnt = NULL;
-  CFx_Mnt = NULL; CFy_Mnt = NULL; CFz_Mnt = NULL;
-  CoPx_Mnt= NULL;   CoPy_Mnt= NULL;   CoPz_Mnt= NULL;
+  CD_Mnt  = nullptr; CL_Mnt  = nullptr; CSF_Mnt = nullptr; CEff_Mnt = nullptr;
+  CMx_Mnt = nullptr; CMy_Mnt = nullptr; CMz_Mnt = nullptr;
+  CFx_Mnt = nullptr; CFy_Mnt = nullptr; CFz_Mnt = nullptr;
+  CoPx_Mnt= nullptr;   CoPy_Mnt= nullptr;   CoPz_Mnt= nullptr;
 
-  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
-  ForceInviscid = NULL; MomentInviscid = NULL;
-  ForceMomentum = NULL;  MomentMomentum = NULL;
+  CPressure = nullptr; CPressureTarget = nullptr; HeatFlux = nullptr; HeatFluxTarget = nullptr; YPlus = nullptr;
+  ForceInviscid = nullptr; MomentInviscid = nullptr;
+  ForceMomentum = nullptr;  MomentMomentum = nullptr;
 
   /*--- Surface based array initialization ---*/
 
-  Surface_CL_Inv  = NULL; Surface_CD_Inv  = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv  = nullptr; Surface_CD_Inv  = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL_Mnt  = NULL; Surface_CD_Mnt  = NULL; Surface_CSF_Mnt = NULL; Surface_CEff_Mnt= NULL;
-  Surface_CFx_Mnt = NULL; Surface_CFy_Mnt = NULL; Surface_CFz_Mnt = NULL;
-  Surface_CMx_Mnt = NULL; Surface_CMy_Mnt = NULL; Surface_CMz_Mnt = NULL;
+  Surface_CL_Mnt  = nullptr; Surface_CD_Mnt  = nullptr; Surface_CSF_Mnt = nullptr; Surface_CEff_Mnt= nullptr;
+  Surface_CFx_Mnt = nullptr; Surface_CFy_Mnt = nullptr; Surface_CFz_Mnt = nullptr;
+  Surface_CMx_Mnt = nullptr; Surface_CMy_Mnt = nullptr; Surface_CMz_Mnt = nullptr;
 
-  Surface_CL  = NULL; Surface_CD  = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL  = nullptr; Surface_CD  = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
 
-  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+  CMerit_Inv = nullptr;  CT_Inv = nullptr;  CQ_Inv = nullptr;
 
   /*--- Numerical methods array initialization ---*/
 
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
-  Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  CharacPrimVar = NULL;
-  Smatrix = NULL; Cvector = NULL;
-  Preconditioner = NULL;
+  iPoint_UndLapl = nullptr;
+  jPoint_UndLapl = nullptr;
+  Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
+  CharacPrimVar = nullptr;
+  Preconditioner = nullptr;
 
   /*--- Fluid model pointer initialization ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
   /*--- Set the gamma value ---*/
 
@@ -308,22 +308,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   else {
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -510,8 +494,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   SlidingStateNodes  = new int*         [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
+    SlidingState[iMarker]      = nullptr;
+    SlidingStateNodes[iMarker] = nullptr;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
@@ -523,7 +507,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
         SlidingStateNodes[iMarker][iPoint] = 0;
         for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
+          SlidingState[iMarker][iPoint][iVar] = nullptr;
       }
 
     }
@@ -610,103 +594,103 @@ CIncEulerSolver::~CIncEulerSolver(void) {
 
   /*--- Array deallocation ---*/
 
-  if (CD_Inv  != NULL)  delete [] CD_Inv;
-  if (CL_Inv  != NULL)  delete [] CL_Inv;
-  if (CSF_Inv != NULL)  delete [] CSF_Inv;
-  if (CMx_Inv != NULL)  delete [] CMx_Inv;
-  if (CMy_Inv != NULL)  delete [] CMy_Inv;
-  if (CMz_Inv != NULL)  delete [] CMz_Inv;
-  if (CFx_Inv != NULL)  delete [] CFx_Inv;
-  if (CFy_Inv != NULL)  delete [] CFy_Inv;
-  if (CFz_Inv != NULL)  delete [] CFz_Inv;
-  if (CoPx_Inv != NULL) delete [] CoPx_Inv;
-  if (CoPy_Inv != NULL) delete [] CoPy_Inv;
-  if (CoPz_Inv != NULL) delete [] CoPz_Inv;
+   delete [] CD_Inv;
+   delete [] CL_Inv;
+   delete [] CSF_Inv;
+   delete [] CMx_Inv;
+   delete [] CMy_Inv;
+   delete [] CMz_Inv;
+   delete [] CFx_Inv;
+   delete [] CFy_Inv;
+   delete [] CFz_Inv;
+  delete [] CoPx_Inv;
+  delete [] CoPy_Inv;
+  delete [] CoPz_Inv;
 
-  if (Surface_CL_Inv   != NULL) delete [] Surface_CL_Inv;
-  if (Surface_CD_Inv   != NULL) delete [] Surface_CD_Inv;
-  if (Surface_CSF_Inv  != NULL) delete [] Surface_CSF_Inv;
-  if (Surface_CEff_Inv != NULL) delete [] Surface_CEff_Inv;
-  if (Surface_CFx_Inv  != NULL) delete [] Surface_CFx_Inv;
-  if (Surface_CFy_Inv  != NULL) delete [] Surface_CFy_Inv;
-  if (Surface_CFz_Inv  != NULL) delete [] Surface_CFz_Inv;
-  if (Surface_CMx_Inv  != NULL) delete [] Surface_CMx_Inv;
-  if (Surface_CMy_Inv  != NULL) delete [] Surface_CMy_Inv;
-  if (Surface_CMz_Inv  != NULL) delete [] Surface_CMz_Inv;
+  delete [] Surface_CL_Inv;
+  delete [] Surface_CD_Inv;
+  delete [] Surface_CSF_Inv;
+  delete [] Surface_CEff_Inv;
+  delete [] Surface_CFx_Inv;
+  delete [] Surface_CFy_Inv;
+  delete [] Surface_CFz_Inv;
+  delete [] Surface_CMx_Inv;
+  delete [] Surface_CMy_Inv;
+  delete [] Surface_CMz_Inv;
 
-  if (CD_Mnt  != NULL)  delete [] CD_Mnt;
-  if (CL_Mnt  != NULL)  delete [] CL_Mnt;
-  if (CSF_Mnt != NULL)  delete [] CSF_Mnt;
-  if (CMx_Mnt != NULL)  delete [] CMx_Mnt;
-  if (CMy_Mnt != NULL)  delete [] CMy_Mnt;
-  if (CMz_Mnt != NULL)  delete [] CMz_Mnt;
-  if (CFx_Mnt != NULL)  delete [] CFx_Mnt;
-  if (CFy_Mnt != NULL)  delete [] CFy_Mnt;
-  if (CFz_Mnt != NULL)  delete [] CFz_Mnt;
-  if (CoPx_Mnt != NULL) delete [] CoPx_Mnt;
-  if (CoPy_Mnt != NULL) delete [] CoPy_Mnt;
-  if (CoPz_Mnt != NULL) delete [] CoPz_Mnt;
+   delete [] CD_Mnt;
+   delete [] CL_Mnt;
+   delete [] CSF_Mnt;
+   delete [] CMx_Mnt;
+   delete [] CMy_Mnt;
+   delete [] CMz_Mnt;
+   delete [] CFx_Mnt;
+   delete [] CFy_Mnt;
+   delete [] CFz_Mnt;
+  delete [] CoPx_Mnt;
+  delete [] CoPy_Mnt;
+  delete [] CoPz_Mnt;
 
-  if (Surface_CL_Mnt   != NULL) delete [] Surface_CL_Mnt;
-  if (Surface_CD_Mnt   != NULL) delete [] Surface_CD_Mnt;
-  if (Surface_CSF_Mnt  != NULL) delete [] Surface_CSF_Mnt;
-  if (Surface_CEff_Mnt != NULL) delete [] Surface_CEff_Mnt;
-  if (Surface_CFx_Mnt  != NULL) delete [] Surface_CFx_Mnt;
-  if (Surface_CFy_Mnt  != NULL) delete [] Surface_CFy_Mnt;
-  if (Surface_CFz_Mnt  != NULL) delete [] Surface_CFz_Mnt;
-  if (Surface_CMx_Mnt  != NULL) delete [] Surface_CMx_Mnt;
-  if (Surface_CMy_Mnt  != NULL) delete [] Surface_CMy_Mnt;
-  if (Surface_CMz_Mnt  != NULL) delete [] Surface_CMz_Mnt;
+  delete [] Surface_CL_Mnt;
+  delete [] Surface_CD_Mnt;
+  delete [] Surface_CSF_Mnt;
+  delete [] Surface_CEff_Mnt;
+  delete [] Surface_CFx_Mnt;
+  delete [] Surface_CFy_Mnt;
+  delete [] Surface_CFz_Mnt;
+  delete [] Surface_CMx_Mnt;
+  delete [] Surface_CMy_Mnt;
+  delete [] Surface_CMz_Mnt;
 
-  if (Surface_CL   != NULL) delete [] Surface_CL;
-  if (Surface_CD   != NULL) delete [] Surface_CD;
-  if (Surface_CSF  != NULL) delete [] Surface_CSF;
-  if (Surface_CEff != NULL) delete [] Surface_CEff;
-  if (Surface_CFx  != NULL) delete [] Surface_CFx;
-  if (Surface_CFy  != NULL) delete [] Surface_CFy;
-  if (Surface_CFz  != NULL) delete [] Surface_CFz;
-  if (Surface_CMx  != NULL) delete [] Surface_CMx;
-  if (Surface_CMy  != NULL) delete [] Surface_CMy;
-  if (Surface_CMz  != NULL) delete [] Surface_CMz;
+  delete [] Surface_CL;
+  delete [] Surface_CD;
+  delete [] Surface_CSF;
+  delete [] Surface_CEff;
+  delete [] Surface_CFx;
+  delete [] Surface_CFy;
+  delete [] Surface_CFz;
+  delete [] Surface_CMx;
+  delete [] Surface_CMy;
+  delete [] Surface_CMz;
 
-  if (CEff_Inv   != NULL) delete [] CEff_Inv;
-  if (CMerit_Inv != NULL) delete [] CMerit_Inv;
-  if (CT_Inv     != NULL) delete [] CT_Inv;
-  if (CQ_Inv     != NULL) delete [] CQ_Inv;
+  delete [] CEff_Inv;
+  delete [] CMerit_Inv;
+  delete [] CT_Inv;
+  delete [] CQ_Inv;
 
-  if (CEff_Mnt   != NULL) delete [] CEff_Mnt;
-  if (CMerit_Mnt != NULL) delete [] CMerit_Mnt;
-  if (CT_Mnt     != NULL) delete [] CT_Mnt;
-  if (CQ_Mnt     != NULL) delete [] CQ_Mnt;
+  delete [] CEff_Mnt;
+  delete [] CMerit_Mnt;
+  delete [] CT_Mnt;
+  delete [] CQ_Mnt;
 
-  if (ForceInviscid  != NULL) delete [] ForceInviscid;
-  if (MomentInviscid != NULL) delete [] MomentInviscid;
-  if (ForceMomentum  != NULL) delete [] ForceMomentum;
-  if (MomentMomentum != NULL) delete [] MomentMomentum;
+  delete [] ForceInviscid;
+  delete [] MomentInviscid;
+  delete [] ForceMomentum;
+  delete [] MomentMomentum;
 
-  if (Primitive   != NULL) delete [] Primitive;
-  if (Primitive_i != NULL) delete [] Primitive_i;
-  if (Primitive_j != NULL) delete [] Primitive_j;
+  delete [] Primitive;
+  delete [] Primitive_i;
+  delete [] Primitive_j;
 
-  if (Preconditioner != NULL) {
+  if (Preconditioner != nullptr) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete [] Preconditioner[iVar];
     delete [] Preconditioner;
   }
 
-  if (CPressure != NULL) {
+  if (CPressure != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressure[iMarker];
     delete [] CPressure;
   }
 
-  if (CPressureTarget != NULL) {
+  if (CPressureTarget != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
 
-  if (CharacPrimVar != NULL) {
+  if (CharacPrimVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex<nVertex[iMarker]; iVertex++)
         delete [] CharacPrimVar[iMarker][iVertex];
@@ -715,11 +699,11 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] CharacPrimVar;
   }
 
-  if (SlidingState != NULL) {
+  if (SlidingState != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
+      if ( SlidingState[iMarker] != nullptr ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != nullptr ){
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -730,31 +714,31 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] SlidingState;
   }
 
-  if ( SlidingStateNodes != NULL ){
+  if ( SlidingStateNodes != nullptr ){
     for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != NULL)
+        if (SlidingStateNodes[iMarker] != nullptr)
             delete [] SlidingStateNodes[iMarker];
     }
     delete [] SlidingStateNodes;
   }
 
-  if (Inlet_Ttotal != NULL) {
+  if (Inlet_Ttotal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != NULL)
+      if (Inlet_Ttotal[iMarker] != nullptr)
         delete [] Inlet_Ttotal[iMarker];
     delete [] Inlet_Ttotal;
   }
 
-  if (Inlet_Ptotal != NULL) {
+  if (Inlet_Ptotal != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != NULL)
+      if (Inlet_Ptotal[iMarker] != nullptr)
         delete [] Inlet_Ptotal[iMarker];
     delete [] Inlet_Ptotal;
   }
 
-  if (Inlet_FlowDir != NULL) {
+  if (Inlet_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != NULL) {
+      if (Inlet_FlowDir[iMarker] != nullptr) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
           delete [] Inlet_FlowDir[iMarker][iVertex];
         delete [] Inlet_FlowDir[iMarker];
@@ -763,30 +747,30 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
-  if (HeatFlux != NULL) {
+  if (HeatFlux != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
 
-  if (HeatFluxTarget != NULL) {
+  if (HeatFluxTarget != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFluxTarget[iMarker];
     }
     delete [] HeatFluxTarget;
   }
 
-  if (YPlus != NULL) {
+  if (YPlus != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] YPlus[iMarker];
     }
     delete [] YPlus;
   }
 
-  if (FluidModel != NULL) delete FluidModel;
+  delete FluidModel;
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -853,7 +837,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      FluidModel = new CIncIdealGasPolynomial(config->GetGas_Constant(), Pressure_Thermodynamic);
+      FluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
@@ -1003,16 +987,14 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case CONSTANT_DENSITY:
       FluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
 
     case INC_IDEAL_GAS:
       FluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
 
     case INC_IDEAL_GAS_POLY:
-      FluidModel = new CIncIdealGasPolynomial(Gas_ConstantND, Pressure_ThermodynamicND);
+      FluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
@@ -1020,9 +1002,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
         FluidModel->SetCpModel(config);
       }
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
-
+      FluidModel->SetTDState_T(Temperature_FreeStreamND);
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1399,7 +1380,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
         su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
         /* Set the solution in this DOF to the initial condition provided by
@@ -1418,11 +1399,11 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
     Solution = new su2double[nVar];
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+        Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-        for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-          Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-          Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+          Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+          Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
           Solution_Fine = solver_container[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
           for (iVar = 0; iVar < nVar; iVar++) {
             Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -1443,11 +1424,11 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       Solution = new su2double[nVar_Turb];
       for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+          Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
           for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
-          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-            Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+          for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+            Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+            Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
             Solution_Fine = solver_container[iMesh-1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
             for (iVar = 0; iVar < nVar_Turb; iVar++) {
               Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -1509,8 +1490,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   unsigned long InnerIter = config->GetInnerIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
@@ -1563,7 +1543,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if (implicit && !Output) Jacobian.SetValZero();
 
   /*--- Error message ---*/
 
@@ -1607,14 +1587,15 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
-  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
+  su2double Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
   Mean_BetaInc2, Lambda, Local_Delta_Time,
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
+  const su2double* Normal;
 
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -1632,10 +1613,10 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Point identification, Normal vector and area ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
 
     Area = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -1650,8 +1631,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     /*--- Adjustment for grid movement ---*/
 
     if (dynamic_grid) {
-      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
       ProjVel_i = 0.0; ProjVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
@@ -1663,8 +1644,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     /*--- Inviscid contribution ---*/
 
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
 
   }
 
@@ -1693,7 +1674,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVel += GridVel[iDim]*Normal[iDim];
@@ -1703,7 +1684,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       /*--- Inviscid contribution ---*/
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
       }
 
@@ -1716,7 +1697,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     if (Vol != 0.0) {
       Local_Delta_Time  = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
@@ -1819,16 +1800,16 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iEdge, iPoint, jPoint;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-    numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+    numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
 
     /*--- Set primitive variables w/o reconstruction ---*/
 
@@ -1848,7 +1829,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Grid movement ---*/
 
     if (dynamic_grid) {
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
     }
 
     /*--- Compute residuals, and Jacobians ---*/
@@ -1875,13 +1856,13 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = nullptr, *Limiter_j = nullptr;
 
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
 
   unsigned long InnerIter = config->GetInnerIter();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
@@ -1892,13 +1873,13 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Points in edge and normal vectors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Grid movement ---*/
 
     if (dynamic_grid)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
 
     /*--- Get primitive variables ---*/
 
@@ -1910,8 +1891,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     if (muscl) {
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+        Vector_i[iDim] = 0.5*(geometry->nodes->GetCoord(jPoint, iDim) - geometry->nodes->GetCoord(iPoint, iDim));
+        Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
       }
 
       Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -2034,7 +2015,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned long iPoint;
 
-  const bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool rotating_frame = config->GetRotating_Frame();
   const bool axisymmetric   = config->GetAxisymmetric();
   const bool body_force     = config->GetBody_Force();
@@ -2061,7 +2042,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the volume of the dual mesh cell ---*/
 
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the rotating frame source residual ---*/
 
@@ -2092,7 +2073,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the volume of the dual mesh cell ---*/
 
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the rotating frame source residual ---*/
 
@@ -2113,7 +2094,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the conservative variables ---*/
 
-      numerics->SetConservative(nodes->GetSolution(iPoint), NULL);
+      numerics->SetConservative(nodes->GetSolution(iPoint), nullptr);
 
       /*--- Set incompressible density ---*/
 
@@ -2121,7 +2102,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the volume of the dual mesh cell ---*/
 
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the rotating frame source residual ---*/
 
@@ -2146,7 +2127,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-        su2double yCoord          = geometry->node[iPoint]->GetCoord(1);
+        su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
         su2double yVelocity       = nodes->GetVelocity(iPoint,1);
         su2double Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
                                      nodes->GetEddyViscosity(iPoint));
@@ -2177,7 +2158,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Conservative variables w/o reconstruction ---*/
 
-      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
       /*--- Set incompressible density  ---*/
 
@@ -2186,12 +2167,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set control volume ---*/
 
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Set y coordinate ---*/
 
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                         geometry->node[iPoint]->GetCoord());
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                         geometry->nodes->GetCoord(iPoint));
 
       /*--- If viscous, we need gradients for extra terms. ---*/
 
@@ -2199,11 +2180,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Gradient of the primitive variables ---*/
 
-        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), NULL);
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
 
         /*--- Load the aux variable gradient that we already computed. ---*/
 
-        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), NULL);
+        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
       }
 
@@ -2235,7 +2216,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set control volume ---*/
 
-      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Compute the residual ---*/
 
@@ -2253,7 +2234,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)) {
 
-          auto Volume = geometry->node[iPoint]->GetVolume();
+          auto Volume = geometry->nodes->GetVolume(iPoint);
 
           /*--- Subtract integrated source from the residual. ---*/
           LinSysRes(iPoint, nDim+1) -= config->GetHeatSource_Val()*Volume;
@@ -2278,10 +2259,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/
-        su2double Volume = geometry->node[iPoint]->GetVolume();
+        su2double Volume = geometry->nodes->GetVolume(iPoint);
 
         /*--- Get the current point coordinates. ---*/
-        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        const su2double *coor = geometry->nodes->GetCoord(iPoint);
 
         /*--- Get the MMS source term. ---*/
         vector<su2double> sourceMan(nVar,0.0);
@@ -2314,8 +2295,9 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
-  su2double *Normal, Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
+  su2double Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
   Mean_BetaInc2, Lambda, ProjVel, ProjVel_i, ProjVel_j, *GridVel, *GridVel_i, *GridVel_j;
+  const su2double* Normal;
 
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
@@ -2332,10 +2314,10 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
     /*--- Point identification, Normal vector and area ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
     Area = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
     Area = sqrt(Area);
@@ -2349,8 +2331,8 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     /*--- Adjustment for grid movement ---*/
 
     if (dynamic_grid) {
-      GridVel_i = geometry->node[iPoint]->GetGridVel();
-      GridVel_j = geometry->node[jPoint]->GetGridVel();
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      GridVel_j = geometry->nodes->GetGridVel(jPoint);
       ProjVel_i = 0.0; ProjVel_j =0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
@@ -2362,8 +2344,8 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     /*--- Inviscid contribution ---*/
 
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddLambda(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddLambda(jPoint,Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddLambda(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddLambda(jPoint,Lambda);
 
   }
 
@@ -2391,7 +2373,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVel += GridVel[iDim]*Normal[iDim];
@@ -2401,7 +2383,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       /*--- Inviscid contribution ---*/
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         nodes->AddLambda(iPoint,Lambda);
       }
 
@@ -2436,33 +2418,33 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Solution differences ---*/
 
     for (iVar = 0; iVar < nVar; iVar++)
       Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
 
-    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+    boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
     /*--- Both points inside the domain, or both in the boundary ---*/
 
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint,Diff);
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint,Diff);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint,Diff);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint,Diff);
     }
 
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
     if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint,Diff);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint,Diff);
 
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
 
     if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint,Diff);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint,Diff);
 
   }
 
@@ -2499,27 +2481,27 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Get the pressure, or density for incompressible solvers ---*/
 
     Pressure_i = nodes->GetDensity(iPoint);
     Pressure_j = nodes->GetDensity(jPoint);
 
-    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+    boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
     /*--- Both points inside the domain, or both on the boundary ---*/
 
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
 
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
         jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
       }
 
-      if (geometry->node[jPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(jPoint)) {
         iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
         jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
       }
@@ -2529,7 +2511,7 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
     if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
         jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
       }
@@ -2537,7 +2519,7 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
 
     if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(jPoint)) {
         iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
         jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
       }
@@ -2567,7 +2549,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
+  su2double Pressure = 0.0, *Normal = nullptr, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
   factor, RefVel2 = 0.0, RefDensity = 0.0, RefPressure,
   Force[3] = {0.0,0.0,0.0};
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
@@ -2586,7 +2568,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea   = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
 
-  su2double *Origin = NULL;
+  su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -2700,10 +2682,10 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Note that the pressure coefficient is computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
+        if ( (geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES) ) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Coord = geometry->node[iPoint]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
@@ -2711,7 +2693,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           /*--- Force computation, note the minus sign due to the
@@ -2957,7 +2939,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
+  su2double *Normal = nullptr, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
   factor, RefVel2 = 0.0, RefDensity = 0.0,
   Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density;
   string Marker_Tag, Monitoring_Tag;
@@ -2980,7 +2962,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   su2double Beta      = config->GetAoS()*PI_NUMBER/180.0;
   su2double RefArea   = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
-  su2double *Origin = NULL;
+  su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -3071,10 +3053,10 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Note that the pressure coefficient is computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
+        if ( (geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES) ) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Coord = geometry->node[iPoint]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
           Density   = nodes->GetDensity(iPoint);
 
           Area = 0.0;
@@ -3091,7 +3073,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           /*--- Force computation, note the minus sign due to the
@@ -3350,8 +3332,8 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Update the solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+    Vol = (geometry->nodes->GetVolume(iPoint) +
+           geometry->nodes->GetPeriodicVolume(iPoint));
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
 
     Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -3365,7 +3347,7 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
           Res += Preconditioner[iVar][jVar]*(Residual[jVar] + Res_TruncError[jVar]);
         nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
       }
     }
   }
@@ -3401,8 +3383,8 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   /*--- Update the solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+    Vol = (geometry->nodes->GetVolume(iPoint) +
+           geometry->nodes->GetPeriodicVolume(iPoint));
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -3417,7 +3399,7 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
           Res += Preconditioner[iVar][jVar]*(local_Residual[jVar] + local_Res_TruncError[jVar]);
         nodes->AddSolution(iPoint,iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
       }
     }
   }
@@ -3462,8 +3444,8 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
     /*--- Read the volume ---*/
 
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+    Vol = (geometry->nodes->GetVolume(iPoint) +
+           geometry->nodes->GetPeriodicVolume(iPoint));
 
     /*--- Apply the preconditioner and add to the diagonal. ---*/
 
@@ -3492,7 +3474,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -3593,7 +3575,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
 
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
@@ -3602,7 +3584,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
                              *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
-void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -3621,7 +3603,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
-void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) {
 
   auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
   const auto& primitives = nodes->GetPrimitive();
@@ -3943,7 +3925,7 @@ void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   su2double  Velocity[3] = {0.0,0.0,0.0};
 
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
 
   /*--- Access the primitive variables at this node. ---*/
@@ -4041,7 +4023,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   su2double *V_infty, *V_domain;
 
-  bool implicit      = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  bool implicit      = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous       = config->GetViscous();
 
   su2double *Normal = new su2double[nDim];
@@ -4057,7 +4039,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
 
@@ -4103,8 +4085,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the convective residual using an upwind scheme ---*/
 
@@ -4132,8 +4114,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                                geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -4179,7 +4161,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double dV[3] = {0.0,0.0,0.0};
   su2double Damping = config->GetInc_Inlet_Damping();
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
 
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
@@ -4200,7 +4182,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
 
@@ -4355,8 +4337,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -4384,8 +4366,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                                geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -4430,7 +4412,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
   su2double Damping = config->GetInc_Outlet_Damping();
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
@@ -4450,7 +4432,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Index of the closest interior node ---*/
 
@@ -4563,8 +4545,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -4593,8 +4575,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                                geometry->nodes->GetCoord(Point_Normal));
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -4652,7 +4634,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
        viscous  = config->GetViscous();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
@@ -4743,7 +4725,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*-------------------------------------------------------------------------------*/
       /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
@@ -4757,7 +4739,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
       /*--- Grid movement ---*/
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -4808,8 +4790,8 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*-------------------------------------------------------------------------------*/
 
         /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[iPoint]->GetCoord());
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                                geometry->nodes->GetCoord(iPoint));
         visc_numerics->SetNormal(Normal);
 
         /*--- Set the primitive and Secondary variables. ---*/
@@ -4919,7 +4901,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
 
   su2double *Normal = new su2double[nDim];
@@ -4936,7 +4918,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
@@ -4976,7 +4958,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
             conv_numerics->SetNormal(Normal);
 
             if (dynamic_grid)
-              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+              conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
             /*--- Compute the convective residual using an upwind scheme ---*/
 
@@ -5021,7 +5003,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
               /*--- Set the normal vector and the coordinates ---*/
 
               visc_numerics->SetNormal(Normal);
-              visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+              visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
 
               /*--- Primitive variables, and gradient ---*/
 
@@ -5102,7 +5084,7 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
     unsigned short iVar;
     unsigned long iVertex, iPoint, total_index;
 
-    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
     /*--- Get the physical time. ---*/
 
@@ -5119,11 +5101,11 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
 
         /*--- Get the coordinates for the current node. ---*/
 
-        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        const su2double *coor = geometry->nodes->GetCoord(iPoint);
 
         /*--- Get the conservative state from the verification solution. ---*/
 
@@ -5171,9 +5153,10 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double *V_time_nM1, *V_time_n, *V_time_nP1;
   su2double U_time_nM1[5], U_time_n[5], U_time_nP1[5];
   su2double Volume_nM1, Volume_nP1, TimeStep;
-  su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
+  su2double *GridVel_i = nullptr, *GridVel_j = nullptr, Residual_GCL;
+  const su2double* Normal;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy   = config->GetEnergy_Equation();
 
   /*--- Store the physical time step ---*/
@@ -5231,7 +5214,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
 
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order). Note that for an
@@ -5303,14 +5286,14 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       /*--- Get indices for nodes i & j plus the face normal ---*/
 
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      Normal = geometry->edge[iEdge]->GetNormal();
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      Normal = geometry->edges->GetNormal(iEdge);
 
       /*--- Grid velocities stored at nodes i & j ---*/
 
-      GridVel_i = geometry->node[iPoint]->GetGridVel();
-      GridVel_j = geometry->node[jPoint]->GetGridVel();
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
       /*--- Compute the GCL term by averaging the grid velocities at the
        edge mid-point and dotting with the face normal. ---*/
@@ -5378,7 +5361,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
         /*--- Grid velocities stored at boundary node i ---*/
 
-        GridVel_i = geometry->node[iPoint]->GetGridVel();
+        GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
         /*--- Compute the GCL term by dotting the grid velocity with the face
          normal. The normal is negated to match the boundary convention. ---*/
@@ -5460,8 +5443,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        grids, the volumes will change. On rigidly transforming grids, the
        volumes will remain constant. ---*/
 
-      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source residual. Due to the
        introduction of the GCL term above, the remainder of the source residual
@@ -5513,7 +5496,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  su2double *V_outlet = NULL, Velocity[3], MassFlow,
+  su2double *V_outlet = nullptr, Velocity[3], MassFlow,
   Velocity2, Density, Area, AxiFactor;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
@@ -5562,15 +5545,15 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
             V_outlet = nodes->GetPrimitive(iPoint);
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
             if (axisymmetric) {
-              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
               else
                 AxiFactor = 1.0;
             } else {
@@ -5759,7 +5742,7 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        const su2double *coor = geometry->nodes->GetCoord(iPoint);
         su2double *solDOF     = nodes->GetSolution(iPoint);
 
         /* Get local error from the verification solution class. */
@@ -5770,8 +5753,8 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
           VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
-                                             geometry->node[iPoint]->GetGlobalIndex(),
-                                             geometry->node[iPoint]->GetCoord());
+                                             geometry->nodes->GetGlobalIndex(iPoint),
+                                             geometry->nodes->GetCoord(iPoint));
         }
       }
 
@@ -5916,8 +5899,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
-          geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+          geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
         }
       }
 
@@ -5930,7 +5913,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim];}
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
         }
       }
 
@@ -6002,11 +5985,11 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;

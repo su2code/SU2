@@ -1,7 +1,7 @@
 /*!
  * \file CInterpolatorFactory.cpp
  * \brief Factory to generate interpolator objects.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
 #include "../../include/interface_interpolation/CSlidingMesh.hpp"
 
 namespace CInterpolatorFactory {
-CInterpolator* createInterpolator(CGeometry ****geometry_container,
+CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
                                   unsigned iZone, unsigned jZone, bool verbose) {
 

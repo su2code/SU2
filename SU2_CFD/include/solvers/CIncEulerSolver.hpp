@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -236,7 +236,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncEulerSolver(void);
+  ~CIncEulerSolver(void) override;
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -438,7 +438,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -449,7 +449,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -457,7 +457,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
+  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -1418,7 +1418,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -1480,7 +1480,7 @@ public:
     int iVar;
 
     for( iVar = 0; iVar < nPrimVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
         delete [] SlidingState[val_marker][val_vertex][iVar];
     }
 

@@ -2,7 +2,7 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 #pragma once
 
-#include "../../include/datatype_structure.hpp"
+#include "../../include/basic_types/datatype_structure.hpp"
 #include "../../include/toolboxes/C2DContainer.hpp"
 #include <vector>
 
@@ -108,13 +108,6 @@ public:
    * \brief Print information about the interpolation.
    */
   virtual void PrintStatistics(void) const { }
-
-  /*!
-   * \brief Find the index of the interface marker shared by that zone
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker_interface - Interface tag.
-   */
-  static int FindInterfaceMarker(const CConfig *config, unsigned short val_marker_interface);
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.

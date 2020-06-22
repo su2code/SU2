@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,10 +80,10 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     for (iDim = 0; iDim < nDim; ++iDim)
-      nodes->SetMesh_Coord(iPoint, iDim, geometry->node[iPoint]->GetCoord(iDim));
+      nodes->SetMesh_Coord(iPoint, iDim, geometry->nodes->GetCoord(iPoint, iDim));
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
@@ -155,7 +155,9 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   }
 
   /*--- Compute the element volumes using the reference coordinates ---*/
-  SetMinMaxVolume(geometry, config, false);
+  SU2_OMP_PARALLEL {
+    SetMinMaxVolume(geometry, config, false);
+  }
 
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
@@ -177,97 +179,99 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
 
-  /*--- Shared reduction variables. ---*/
+  /*--- This routine is for post processing, it does not need to be recorded. ---*/
+  const bool wasActive = AD::BeginPassive();
 
-  unsigned long ElemCounter = 0;
-  su2double MaxVolume = -1E22, MinVolume = 1E22;
+  /*--- Initialize shared reduction variables. ---*/
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER {
+    MaxVolume = -1E22; MinVolume = 1E22;
+    ElemCounter = 0;
+  }
 
-  SU2_OMP_PARALLEL
+  /*--- Local min/max, final reduction outside loop. ---*/
+  su2double maxVol = -1E22, minVol = 1E22;
+  unsigned long elCount = 0;
+
+  /*--- Loop over the elements in the domain. ---*/
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+
+    int thread = omp_get_thread_num();
+
+    int EL_KIND;
+    unsigned short iNode, nNodes, iDim;
+
+    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+
+    CElement* fea_elem = element_container[FEA_TERM][EL_KIND + thread*MAX_FE_KINDS];
+
+    /*--- For the number of nodes, we get the coordinates from
+     *    the connectivity matrix and the geometry structure. ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      auto indexNode = geometry->elem[iElem]->GetNode(iNode);
+
+      /*--- Compute the volume with the reference or current coordinates. ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        su2double val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
+        if (updated)
+          val_Coord += nodes->GetSolution(indexNode,iDim);
+
+        fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
+      }
+    }
+
+    /*--- Compute the volume of the element (or the area in 2D cases ). ---*/
+
+    su2double ElemVolume;
+    if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
+    else           ElemVolume = fea_elem->ComputeVolume();
+
+    maxVol = max(maxVol, ElemVolume);
+    minVol = min(minVol, ElemVolume);
+
+    if (updated) element[iElem].SetCurr_Volume(ElemVolume);
+    else element[iElem].SetRef_Volume(ElemVolume);
+
+    /*--- Count distorted elements. ---*/
+    if (ElemVolume <= 0.0) elCount++;
+  }
+  SU2_OMP_CRITICAL
   {
-    /*--- Local min/max, final reduction outside loop. ---*/
-    su2double maxVol = -1E22, minVol = 1E22;
+    MaxVolume = max(MaxVolume, maxVol);
+    MinVolume = min(MinVolume, minVol);
+    ElemCounter += elCount;
+  }
+  SU2_OMP_BARRIER
 
-    /*--- Loop over the elements in the domain. ---*/
+  SU2_OMP_MASTER
+  {
+    elCount = ElemCounter; maxVol = MaxVolume; minVol = MinVolume;
+    SU2_MPI::Allreduce(&elCount, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  }
+  SU2_OMP_BARRIER
 
-    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(+:ElemCounter) nowait)
-    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+  /*--- Volume from 0 to 1 ---*/
 
-      int thread = omp_get_thread_num();
-
-      int EL_KIND;
-      unsigned short iNode, nNodes, iDim;
-
-      GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
-
-      CElement* fea_elem = element_container[FEA_TERM][EL_KIND + thread*MAX_FE_KINDS];
-
-      /*--- For the number of nodes, we get the coordinates from
-       *    the connectivity matrix and the geometry structure. ---*/
-
-      for (iNode = 0; iNode < nNodes; iNode++) {
-
-        auto indexNode = geometry->elem[iElem]->GetNode(iNode);
-
-        /*--- Compute the volume with the reference or current coordinates. ---*/
-        for (iDim = 0; iDim < nDim; iDim++) {
-          su2double val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
-          if (updated)
-            val_Coord += nodes->GetSolution(indexNode,iDim);
-
-          fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
-        }
-      }
-
-      /*--- Compute the volume of the element (or the area in 2D cases ). ---*/
-
-      su2double ElemVolume;
-      if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
-      else           ElemVolume = fea_elem->ComputeVolume();
-
-      maxVol = max(maxVol, ElemVolume);
-      minVol = min(minVol, ElemVolume);
-
-      if (updated) element[iElem].SetCurr_Volume(ElemVolume);
-      else element[iElem].SetRef_Volume(ElemVolume);
-
-      /*--- Count distorted elements. ---*/
-      if (ElemVolume <= 0.0) ElemCounter++;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+    if (updated) {
+      su2double ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
+      element[iElem].SetCurr_Volume(ElemVolume);
     }
-    SU2_OMP_CRITICAL
-    {
-      MaxVolume = max(MaxVolume, maxVol);
-      MinVolume = min(MinVolume, minVol);
+    else {
+      su2double ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
+      element[iElem].SetRef_Volume(ElemVolume);
     }
-    SU2_OMP_BARRIER
-
-    SU2_OMP_MASTER
-    {
-      unsigned long ElemCounter_Local = ElemCounter;
-      su2double MaxVolume_Local = MaxVolume;
-      su2double MinVolume_Local = MinVolume;
-      SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    }
-    SU2_OMP_BARRIER
-
-    /*--- Volume from  0 to 1 ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
-      if (updated) {
-        su2double ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
-        element[iElem].SetCurr_Volume(ElemVolume);
-      }
-      else {
-        su2double ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
-        element[iElem].SetRef_Volume(ElemVolume);
-      }
-    }
-
-  } // end SU2_OMP_PARALLEL
+  }
 
   /*--- Store the maximum and minimum volume. ---*/
+  SU2_OMP_MASTER {
   if (updated) {
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
@@ -280,14 +284,12 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
+  } SU2_OMP_BARRIER
+
+  AD::EndPassive(wasActive);
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
-
-  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
-  unsigned short iMarker, iDim;
-  su2double dist, MaxDistance_Local, MinDistance_Local;
-  int rankID;
 
   /*--- Initialize min and max distance ---*/
 
@@ -295,11 +297,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
 
-  nVertex_SolidWall = 0;
-  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+  unsigned long nVertex_SolidWall = 0;
+  for(auto iMarker=0u; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if(config->GetSolid_Wall(iMarker)) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -313,17 +313,16 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   /*--- Retrieve and store the coordinates of the no-slip boundary nodes
    and their local point IDs. ---*/
 
-  ii = 0; jj = 0;
-  for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-         (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-      for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        PointIDs[jj++] = iPoint;
-        for (iDim=0; iDim<nDim; ++iDim){
-          Coord_bound[ii++] = nodes->GetMesh_Coord(iPoint,iDim);
-        }
+
+  for (unsigned long iMarker=0, ii=0, jj=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+
+    if (!config->GetSolid_Wall(iMarker)) continue;
+
+    for (auto iVertex=0u; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
+      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      PointIDs[jj++] = iPoint;
+      for (auto iDim=0u; iDim<nDim; ++iDim){
+        Coord_bound[ii++] = nodes->GetMesh_Coord(iPoint,iDim);
       }
     }
   }
@@ -333,47 +332,60 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
                               PointIDs.data(), true);
 
-
+  SU2_OMP_PARALLEL
+  {
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
    for each interior mesh node. ---*/
 
   if( WallADT.IsEmpty() ) {
 
-    /*--- No solid wall boundary nodes in the entire mesh.
-     Set the wall distance to zero for all nodes. ---*/
+    /*--- No solid wall boundary nodes in the entire mesh. Set the
+     wall distance to MaxDistance so we get stiffness of 1. ---*/
 
-    geometry->SetWallDistance(0.0);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      nodes->SetWallDistance(iPoint, MaxDistance);
+    }
   }
   else {
+    su2double MaxDistance_Local = -1E22, MinDistance_Local = 1E22;
 
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
-
-    for(iPoint=0; iPoint< nPoint; ++iPoint) {
-
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for(auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      su2double dist;
+      unsigned long pointID;
+      int rankID;
       WallADT.DetermineNearestNode(nodes->GetMesh_Coord(iPoint), dist,
                                    pointID, rankID);
       nodes->SetWallDistance(iPoint,dist);
 
-      MaxDistance = max(MaxDistance, dist);
+      MaxDistance_Local = max(MaxDistance_Local, dist);
 
       /*--- To discard points on the surface we use > EPS ---*/
 
-      if (sqrt(dist) > EPS)  MinDistance = min(MinDistance, dist);
+      if (dist > EPS)  MinDistance_Local = min(MinDistance_Local, dist);
 
     }
+    SU2_OMP_CRITICAL
+    {
+      MaxDistance = max(MaxDistance, MaxDistance_Local);
+      MinDistance = min(MinDistance, MinDistance_Local);
+    }
+    SU2_OMP_BARRIER
 
-    MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
-    MinDistance_Local = MinDistance; MinDistance = 0.0;
-
-    SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
+    SU2_OMP_MASTER
+    {
+      MaxDistance_Local = MaxDistance;
+      MinDistance_Local = MinDistance;
+      SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    }
+    SU2_OMP_BARRIER
   }
 
-  SU2_OMP_PARALLEL
-  {
   /*--- Normalize distance from 0 to 1 ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
@@ -400,8 +412,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     element[iElem].SetWallDistance(ElemDist);
   }
-  }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
@@ -475,16 +487,14 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
-  SU2_OMP_PARALLEL
-  {
+  SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
   }
 
@@ -494,6 +504,8 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
 
+  SU2_OMP_PARALLEL {
+
   /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
   UpdateGridCoord(geometry[MESH_0], config);
@@ -501,17 +513,16 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Update the dual grid. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
 
-  /*--- Check for failed deformation (negative volumes). ---*/
-  /*--- This is not recorded as it does not influence the solution. ---*/
-  AD::StopRecording();
-  SetMinMaxVolume(geometry[MESH_0], config, true);
-  if (ActiveTape) AD::StartRecording();
-
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
 
   /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);
+
+  /*--- Check for failed deformation (negative volumes). ---*/
+  SetMinMaxVolume(geometry[MESH_0], config, true);
+
+  } // end parallel
 
 }
 
@@ -520,7 +531,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       /*--- Retrieve the displacement from the solution of the linear system ---*/
@@ -530,7 +541,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
       su2double val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
       /*--- Update the geometry container ---*/
-      geometry->node[iPoint]->SetCoord(iDim, val_coord);
+      geometry->nodes->SetCoord(iPoint, iDim, val_coord);
     }
   }
 
@@ -560,7 +571,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
   /*--- Compute the velocity of each node in the domain of the current rank
    (halo nodes are not computed as the grid velocity is later communicated). ---*/
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
@@ -587,7 +598,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
       /*--- Store grid velocity for this point ---*/
 
-      geometry->node[iPoint]->SetGridVel(iDim, GridVel);
+      geometry->nodes->SetGridVel(iPoint, iDim, GridVel);
 
     }
   }
@@ -598,16 +609,14 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
 }
 
-void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
-
-  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
+void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
 
   /*--- Update the multigrid structure after moving the finest grid,
    including computing the grid velocities on the coarser levels
    when the problem is solved in unsteady conditions. ---*/
 
-  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
-    iMGfine = iMGlevel-1;
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    const auto iMGfine = iMGlevel-1;
     geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
     geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
@@ -728,7 +737,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         su2double curr_coord = Restart_Data[index+iDim];
         /// TODO: "Double deformation" in multizone adjoint if this is set here?
         ///       In any case it should not be needed as deformation is called before other solvers
-        ///geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+        ///geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, curr_coord);
 
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
@@ -995,7 +1004,7 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
         /*--- Index and coordinates of the current point ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->node[iPoint]->GetCoord();
+        Coord  = geometry->nodes->GetCoord(iPoint);
 
         /*--- Calculate non-dim. position from rotation center ---*/
 
@@ -1101,7 +1110,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
         /*--- Index and coordinates of the current point ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->node[iPoint]->GetCoord();
+        Coord  = geometry->nodes->GetCoord(iPoint);
 
         /*--- Calculate non-dim. position from rotation center ---*/
 

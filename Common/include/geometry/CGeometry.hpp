@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,6 +49,7 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 #include <memory>
+#include <unordered_map>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -58,7 +59,7 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../geometry_structure_fem_part.hpp"
+#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt_structure.hpp"
 
@@ -72,54 +73,57 @@ using namespace std;
  */
 class CGeometry {
 protected:
-  int rank;  /*!< \brief MPI Rank. */
-  int size;  /*!< \brief MPI Size. */
+  enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
+  enum : size_t {MAXNDIM = 3};
 
-  unsigned long nPoint,	        /*!< \brief Number of points of the mesh. */
-  nPointDomain,                 /*!< \brief Number of real points of the mesh. */
-  nPointGhost,                  /*!< \brief Number of ghost points of the mesh. */
-  nPointNode,                   /*!< \brief Size of the node array allocated to hold CPoint objects. */
-  Global_nPoint,                /*!< \brief Total number of nodes in a simulation across all processors (including halos). */
-  Global_nPointDomain,	        /*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
-  nElem,                        /*!< \brief Number of elements of the mesh. */
-  Global_nElem,	                /*!< \brief Total number of elements in a simulation across all processors (all types). */
-  Global_nElemDomain,           /*!< \brief Total number of elements in a simulation across all processors (excluding halos). */
-  nEdge,                        /*!< \brief Number of edges of the mesh. */
-  nFace,                        /*!< \brief Number of faces of the mesh. */
-  nelem_edge,                   /*!< \brief Number of edges in the mesh. */
-  Global_nelem_edge,            /*!< \brief Total number of edges in the mesh across all processors. */
-  nelem_triangle,               /*!< \brief Number of triangles in the mesh. */
-  Global_nelem_triangle,        /*!< \brief Total number of triangles in the mesh across all processors. */
-  nelem_quad,                   /*!< \brief Number of quadrangles in the mesh. */
-  Global_nelem_quad,            /*!< \brief Total number of quadrangles in the mesh across all processors. */
-  nelem_tetra,                  /*!< \brief Number of tetrahedra in the mesh. */
-  Global_nelem_tetra,           /*!< \brief Total number of tetrahedra in the mesh across all processors. */
-  nelem_hexa,                   /*!< \brief Number of hexahedra in the mesh. */
-  Global_nelem_hexa,            /*!< \brief Total number of hexahedra in the mesh across all processors. */
-  nelem_prism,                  /*!< \brief Number of prisms in the mesh. */
-  Global_nelem_prism,           /*!< \brief Total number of prisms in the mesh across all processors. */
-  nelem_pyramid,                /*!< \brief Number of pyramids in the mesh. */
-  Global_nelem_pyramid,         /*!< \brief Total number of pyramids in the mesh across all processors. */
-  nelem_edge_bound,             /*!< \brief Number of edges on the mesh boundaries. */
-  Global_nelem_edge_bound,      /*!< \brief Total number of edges on the mesh boundaries across all processors. */
-  nelem_triangle_bound,         /*!< \brief Number of triangles on the mesh boundaries. */
-  Global_nelem_triangle_bound,  /*!< \brief Total number of triangles on the mesh boundaries across all processors. */
-  nelem_quad_bound,             /*!< \brief Number of quads on the mesh boundaries. */
-  Global_nelem_quad_bound;      /*!< \brief Total number of quads on the mesh boundaries across all processors. */
+  const int size{SINGLE_NODE};    /*!< \brief MPI Size. */
+  const int rank{MASTER_NODE};    /*!< \brief MPI Rank. */
 
-  unsigned short nDim;	        /*!< \brief Number of dimension of the problem. */
-  unsigned short nZone;         /*!< \brief Number of zones in the problem. */
-  unsigned short nMarker;       /*!< \brief Number of different markers of the mesh. */
-  unsigned short nCommLevel;    /*!< \brief Number of non-blocking communication levels. */
+  unsigned long nPoint{0},        /*!< \brief Number of points of the mesh. */
+  nPointDomain{0},                /*!< \brief Number of real points of the mesh. */
+  nPointGhost{0},                 /*!< \brief Number of ghost points of the mesh. */
+  nPointNode{0},                  /*!< \brief Size of the node array allocated to hold CPoint objects. */
+  Global_nPoint{0},               /*!< \brief Total number of nodes in a simulation across all processors (including halos). */
+  Global_nPointDomain{0},	        /*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
+  nElem{0},                       /*!< \brief Number of elements of the mesh. */
+  Global_nElem{0},                /*!< \brief Total number of elements in a simulation across all processors (all types). */
+  Global_nElemDomain{0},          /*!< \brief Total number of elements in a simulation across all processors (excluding halos). */
+  nEdge{0},                       /*!< \brief Number of edges of the mesh. */
+  nFace{0},                       /*!< \brief Number of faces of the mesh. */
+  nelem_edge{0},                  /*!< \brief Number of edges in the mesh. */
+  Global_nelem_edge{0},           /*!< \brief Total number of edges in the mesh across all processors. */
+  nelem_triangle{0},              /*!< \brief Number of triangles in the mesh. */
+  Global_nelem_triangle{0},       /*!< \brief Total number of triangles in the mesh across all processors. */
+  nelem_quad{0},                  /*!< \brief Number of quadrangles in the mesh. */
+  Global_nelem_quad{0},           /*!< \brief Total number of quadrangles in the mesh across all processors. */
+  nelem_tetra{0},                 /*!< \brief Number of tetrahedra in the mesh. */
+  Global_nelem_tetra{0},          /*!< \brief Total number of tetrahedra in the mesh across all processors. */
+  nelem_hexa{0},                  /*!< \brief Number of hexahedra in the mesh. */
+  Global_nelem_hexa{0},           /*!< \brief Total number of hexahedra in the mesh across all processors. */
+  nelem_prism{0},                 /*!< \brief Number of prisms in the mesh. */
+  Global_nelem_prism{0},          /*!< \brief Total number of prisms in the mesh across all processors. */
+  nelem_pyramid{0},               /*!< \brief Number of pyramids in the mesh. */
+  Global_nelem_pyramid{0},        /*!< \brief Total number of pyramids in the mesh across all processors. */
+  nelem_edge_bound{0},            /*!< \brief Number of edges on the mesh boundaries. */
+  Global_nelem_edge_bound{0},     /*!< \brief Total number of edges on the mesh boundaries across all processors. */
+  nelem_triangle_bound{0},        /*!< \brief Number of triangles on the mesh boundaries. */
+  Global_nelem_triangle_bound{0}, /*!< \brief Total number of triangles on the mesh boundaries across all processors. */
+  nelem_quad_bound{0},            /*!< \brief Number of quads on the mesh boundaries. */
+  Global_nelem_quad_bound{0};     /*!< \brief Total number of quads on the mesh boundaries across all processors. */
 
-  unsigned short MGLevel;        /*!< \brief The mesh level index for the current geometry container. */
-  unsigned long Max_GlobalPoint; /*!< \brief Greater global point in the domain local structure. */
+  unsigned short nDim{0};         /*!< \brief Number of dimension of the problem. */
+  unsigned short nZone{0};        /*!< \brief Number of zones in the problem. */
+  unsigned short nMarker{0};      /*!< \brief Number of different markers of the mesh. */
+  unsigned short nCommLevel{0};   /*!< \brief Number of non-blocking communication levels. */
+
+  unsigned short MGLevel{0};        /*!< \brief The mesh level index for the current geometry container. */
+  unsigned long Max_GlobalPoint{0}; /*!< \brief Greater global point in the domain local structure. */
 
   /*--- Boundary information. ---*/
 
-  short *Marker_All_SendRecv;   /*!< \brief MPI Marker. */
-  su2double **CustomBoundaryTemperature;
-  su2double **CustomBoundaryHeatFlux;
+  short *Marker_All_SendRecv{nullptr};   /*!< \brief MPI Marker. */
+  su2double **CustomBoundaryTemperature{nullptr};
+  su2double **CustomBoundaryHeatFlux{nullptr};
 
   /*--- Create vectors and distribute the values among the different planes queues ---*/
 
@@ -129,42 +133,38 @@ protected:
   vector<vector<su2double> > FaceArea_plane;   /*!< \brief Vector containing area/volume associated with  new points appearing on a single plane */
   vector<vector<unsigned long> > Plane_points; /*!< \brief Vector containing points appearing on a single plane */
 
-  vector<su2double> XCoordList;	  /*!< \brief Vector containing points appearing on a single plane */
-  CPrimalGrid*** newBound;        /*!< \brief Boundary vector for new periodic elements (primal grid information). */
-  unsigned long *nNewElem_Bound;  /*!< \brief Number of new periodic elements of the boundary. */
+  vector<su2double> XCoordList;	          /*!< \brief Vector containing points appearing on a single plane */
 
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
+#if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
   vector<vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
-  idx_t *adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
-  idx_t *xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
-#endif
+  idx_t *adjacency{nullptr}; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
+  idx_t *xadj{nullptr};      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
 #endif
 
   /*--- Turbomachinery variables ---*/
 
-  unsigned short *nSpanWiseSections;     /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
-  unsigned short *nSpanSectionsByMarker; /*!< \brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
-  unsigned short nTurboPerf;             /*!< \brief Number of Span wise section for each turbo marker. */
-  su2double **SpanWiseValue;             /*!< \brief Span wise values for each turbo marker. */
-  long **nVertexSpan;                    /*!< \brief number of vertexes for span wise section for each marker.  */
-  unsigned long **nTotVertexSpan;        /*!< \brief number of vertexes at each span wise section for each marker.  */
-  unsigned long nVertexSpanMax[3];       /*!< \brief max number of vertexes for each span section for each marker flag.  */
-  su2double ***AverageTurboNormal;       /*!< \brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
-  su2double ***AverageNormal;            /*!< \brief Average boundary normal at each span wise section for each marker.*/
-  su2double ***AverageGridVel;           /*!< \brief Average boundary grid velocity at each span wise section for each marker.*/
-  su2double **AverageTangGridVel;        /*!< \brief Average tangential rotational speed at each span wise section for each marker.*/
-  su2double **SpanArea;                  /*!< \brief Area at each span wise section for each marker.*/
-  su2double **MaxAngularCoord;           /*!< \brief Max angular pitch at each span wise section for each marker.*/
-  su2double **MinAngularCoord;           /*!< \brief Max angular pitch at each span wise section for each marker.*/
-  su2double **MinRelAngularCoord;        /*!< \brief Min relative angular coord at each span wise section for each marker.*/
-  su2double **TurboRadius;               /*!< \brief Radius at each span wise section for each marker.*/
-  su2double **TangGridVelIn;
-  su2double **TangGridVelOut;            /*!< \brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
-  su2double **SpanAreaIn;
-  su2double **SpanAreaOut;               /*!< \brief Area at each span wise section for each turbomachinery marker.*/
-  su2double **TurboRadiusIn;
-  su2double **TurboRadiusOut;            /*!< \brief Radius at each span wise section for each turbomachinery marker*/
+  unsigned short *nSpanWiseSections{nullptr};     /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
+  unsigned short *nSpanSectionsByMarker{nullptr}; /*!< \brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
+  unsigned short nTurboPerf{0};                   /*!< \brief Number of Span wise section for each turbo marker. */
+  su2double **SpanWiseValue{nullptr};             /*!< \brief Span wise values for each turbo marker. */
+  long **nVertexSpan{nullptr};                    /*!< \brief number of vertexes for span wise section for each marker.  */
+  unsigned long **nTotVertexSpan{nullptr};        /*!< \brief number of vertexes at each span wise section for each marker.  */
+  unsigned long nVertexSpanMax[3] = {0};          /*!< \brief max number of vertexes for each span section for each marker flag.  */
+  su2double ***AverageTurboNormal{nullptr};       /*!< \brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
+  su2double ***AverageNormal{nullptr};            /*!< \brief Average boundary normal at each span wise section for each marker.*/
+  su2double ***AverageGridVel{nullptr};           /*!< \brief Average boundary grid velocity at each span wise section for each marker.*/
+  su2double **AverageTangGridVel{nullptr};        /*!< \brief Average tangential rotational speed at each span wise section for each marker.*/
+  su2double **SpanArea{nullptr};                  /*!< \brief Area at each span wise section for each marker.*/
+  su2double **MaxAngularCoord{nullptr};           /*!< \brief Max angular pitch at each span wise section for each marker.*/
+  su2double **MinAngularCoord{nullptr};           /*!< \brief Max angular pitch at each span wise section for each marker.*/
+  su2double **MinRelAngularCoord{nullptr};        /*!< \brief Min relative angular coord at each span wise section for each marker.*/
+  su2double **TurboRadius{nullptr};               /*!< \brief Radius at each span wise section for each marker.*/
+  su2double **TangGridVelIn{nullptr};
+  su2double **TangGridVelOut{nullptr};            /*!< \brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
+  su2double **SpanAreaIn{nullptr};
+  su2double **SpanAreaOut{nullptr};               /*!< \brief Area at each span wise section for each turbomachinery marker.*/
+  su2double **TurboRadiusIn{nullptr};
+  su2double **TurboRadiusOut{nullptr};            /*!< \brief Radius at each span wise section for each turbomachinery marker*/
 
   /*--- Sparsity patterns associated with the geometry. ---*/
 
@@ -181,74 +181,75 @@ protected:
   CCompressedSparsePatternUL
   edgeColoring,                          /*!< \brief Edge coloring structure for thread-based parallelization. */
   elemColoring;                          /*!< \brief Element coloring structure for thread-based parallelization. */
-  unsigned long edgeColorGroupSize = 1;  /*!< \brief Size of the edge groups within each color. */
-  unsigned long elemColorGroupSize = 1;  /*!< \brief Size of the element groups within each color. */
+  unsigned long edgeColorGroupSize{1};   /*!< \brief Size of the edge groups within each color. */
+  unsigned long elemColorGroupSize{1};   /*!< \brief Size of the element groups within each color. */
 
 public:
   /*--- Main geometric elements of the grid. ---*/
 
-  CPrimalGrid** elem;                    /*!< \brief Element vector (primal grid information). */
-  CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
-  CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
-  CPoint** node;                         /*!< \brief Node vector (dual grid information). */
-  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
-  CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
-  CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
-  unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */
-  unsigned long *nElem_Bound;            /*!< \brief Number of elements of the boundary. */
-  string *Tag_to_Marker;                 /*!< \brief Names of boundary markers. */
+  CPrimalGrid** elem{nullptr};           /*!< \brief Element vector (primal grid information). */
+  CPrimalGrid** face{nullptr};           /*!< \brief Face vector (primal grid information). */
+  CPrimalGrid*** bound{nullptr};	       /*!< \brief Boundary vector (primal grid information). */
+  CPoint* nodes{nullptr};                /*!< \brief Node vector (dual grid information). */
+  CEdge* edges{nullptr};                 /*!< \brief Edge vector (dual grid information). */
+  CVertex*** vertex{nullptr};            /*!< \brief Boundary Vertex vector (dual grid information). */
+  CTurboVertex**** turbovertex{nullptr}; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
+  unsigned long *nVertex{nullptr};       /*!< \brief Number of vertex for each marker. */
+  unsigned long *nElem_Bound{nullptr};   /*!< \brief Number of elements of the boundary. */
+  string *Tag_to_Marker{nullptr};        /*!< \brief Names of boundary markers. */
   vector<bool> bound_is_straight;        /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
 
   /*--- Partitioning-specific variables ---*/
 
-  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
-  unsigned long *beg_node;           /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
-  unsigned long *end_node;           /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
-  unsigned long *nPointLinear;       /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
-  unsigned long *nPointCumulative;   /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
+  unordered_map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unsigned long *beg_node{nullptr};         /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
+  unsigned long *end_node{nullptr};         /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
+  unsigned long *nPointLinear{nullptr};     /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
+  unsigned long *nPointCumulative{nullptr}; /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
 
   /*--- Data structures for point-to-point MPI communications. ---*/
 
-  int countPerPoint;                     /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
-  int nP2PSend;                          /*!< \brief Number of sends during point-to-point comms. */
-  int nP2PRecv;                          /*!< \brief Number of receives during point-to-point comms. */
-  int *nPoint_P2PSend;                   /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
-  int *nPoint_P2PRecv;                   /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
-  int *Neighbors_P2PSend;                /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
-  int *Neighbors_P2PRecv;                /*!< \brief Data structure holding the ranks of the neighbors for point-to-point recv comms. */
-  map<int, int> P2PSend2Neighbor;        /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point send comms. */
-  map<int, int> P2PRecv2Neighbor;        /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point recv comms. */
-  unsigned long *Local_Point_P2PSend;    /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
-  unsigned long *Local_Point_P2PRecv;    /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
-  su2double *bufD_P2PRecv;               /*!< \brief Data structure for su2double point-to-point receive. */
-  su2double *bufD_P2PSend;               /*!< \brief Data structure for su2double point-to-point send. */
-  unsigned short *bufS_P2PRecv;          /*!< \brief Data structure for unsigned long point-to-point receive. */
-  unsigned short *bufS_P2PSend;          /*!< \brief Data structure for unsigned long point-to-point send. */
-  SU2_MPI::Request *req_P2PSend;         /*!< \brief Data structure for point-to-point send requests. */
-  SU2_MPI::Request *req_P2PRecv;         /*!< \brief Data structure for point-to-point recv requests. */
+  int maxCountPerPoint{0};                /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
+  int nP2PSend{0};                        /*!< \brief Number of sends during point-to-point comms. */
+  int nP2PRecv{0};                        /*!< \brief Number of receives during point-to-point comms. */
+  int *nPoint_P2PSend{nullptr};           /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
+  int *nPoint_P2PRecv{nullptr};           /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
+  int *Neighbors_P2PSend{nullptr};        /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
+  int *Neighbors_P2PRecv{nullptr};        /*!< \brief Data structure holding the ranks of the neighbors for point-to-point recv comms. */
+  map<int, int> P2PSend2Neighbor;         /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point send comms. */
+  map<int, int> P2PRecv2Neighbor;         /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point recv comms. */
+  unsigned long
+  *Local_Point_P2PSend{nullptr},          /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
+  *Local_Point_P2PRecv{nullptr};          /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
+  su2double *bufD_P2PRecv{nullptr};       /*!< \brief Data structure for su2double point-to-point receive. */
+  su2double *bufD_P2PSend{nullptr};       /*!< \brief Data structure for su2double point-to-point send. */
+  unsigned short *bufS_P2PRecv{nullptr};  /*!< \brief Data structure for unsigned long point-to-point receive. */
+  unsigned short *bufS_P2PSend{nullptr};  /*!< \brief Data structure for unsigned long point-to-point send. */
+  SU2_MPI::Request *req_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
+  SU2_MPI::Request *req_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 
   /*--- Data structures for periodic communications. ---*/
 
-  int countPerPeriodicPoint;             /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
-  int nPeriodicSend;                     /*!< \brief Number of sends during periodic comms. */
-  int nPeriodicRecv;                     /*!< \brief Number of receives during periodic comms. */
-  int *nPoint_PeriodicSend;              /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
-  int *nPoint_PeriodicRecv;              /*!< \brief Data structure holding number of vertices for each recv in periodic comms. */
-  int *Neighbors_PeriodicSend;           /*!< \brief Data structure holding the ranks of the neighbors for periodic send comms. */
-  int *Neighbors_PeriodicRecv;           /*!< \brief Data structure holding the ranks of the neighbors for periodic recv comms. */
-  map<int, int> PeriodicSend2Neighbor;   /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic send comms. */
-  map<int, int> PeriodicRecv2Neighbor;   /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
+  int maxCountPerPeriodicPoint{0};        /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
+  int nPeriodicSend{0};                   /*!< \brief Number of sends during periodic comms. */
+  int nPeriodicRecv{0};                   /*!< \brief Number of receives during periodic comms. */
+  int *nPoint_PeriodicSend{nullptr};      /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
+  int *nPoint_PeriodicRecv{nullptr};      /*!< \brief Data structure holding number of vertices for each recv in periodic comms. */
+  int *Neighbors_PeriodicSend{nullptr};   /*!< \brief Data structure holding the ranks of the neighbors for periodic send comms. */
+  int *Neighbors_PeriodicRecv{nullptr};   /*!< \brief Data structure holding the ranks of the neighbors for periodic recv comms. */
+  map<int, int> PeriodicSend2Neighbor;    /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic send comms. */
+  map<int, int> PeriodicRecv2Neighbor;    /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
   unsigned long
-  *Local_Point_PeriodicSend,             /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
-  *Local_Point_PeriodicRecv,             /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
-  *Local_Marker_PeriodicSend,            /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be sent in periodic comms. */
-  *Local_Marker_PeriodicRecv;            /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be received in periodic comms. */
-  su2double *bufD_PeriodicRecv;          /*!< \brief Data structure for su2double periodic receive. */
-  su2double *bufD_PeriodicSend;          /*!< \brief Data structure for su2double periodic send. */
-  unsigned short *bufS_PeriodicRecv;     /*!< \brief Data structure for unsigned long periodic receive. */
-  unsigned short *bufS_PeriodicSend;     /*!< \brief Data structure for unsigned long periodic send. */
-  SU2_MPI::Request *req_PeriodicSend;    /*!< \brief Data structure for periodic send requests. */
-  SU2_MPI::Request *req_PeriodicRecv;    /*!< \brief Data structure for periodic recv requests. */
+  *Local_Point_PeriodicSend{nullptr},          /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
+  *Local_Point_PeriodicRecv{nullptr},          /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
+  *Local_Marker_PeriodicSend{nullptr},         /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be sent in periodic comms. */
+  *Local_Marker_PeriodicRecv{nullptr};         /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be received in periodic comms. */
+  su2double *bufD_PeriodicRecv{nullptr};       /*!< \brief Data structure for su2double periodic receive. */
+  su2double *bufD_PeriodicSend{nullptr};       /*!< \brief Data structure for su2double periodic send. */
+  unsigned short *bufS_PeriodicRecv{nullptr};  /*!< \brief Data structure for unsigned long periodic receive. */
+  unsigned short *bufS_PeriodicSend{nullptr};  /*!< \brief Data structure for unsigned long periodic send. */
+  SU2_MPI::Request *req_PeriodicSend{nullptr}; /*!< \brief Data structure for periodic send requests. */
+  SU2_MPI::Request *req_PeriodicRecv{nullptr}; /*!< \brief Data structure for periodic recv requests. */
 
   /*--- Mesh quality metrics. ---*/
 
@@ -292,9 +293,11 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
-   * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
+   * \param[in] countPerPoint - Number of variables per point.
+   * \param[in] val_reverse - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse);
+  void PostP2PRecvs(CGeometry *geometry, const CConfig *config, unsigned short commType,
+                    unsigned short countPerPoint, bool val_reverse) const;
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation.
@@ -302,10 +305,12 @@ public:
    * \param[in] geometry     - Geometrical definition of the problem.
    * \param[in] config       - Definition of the particular problem.
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] countPerPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse);
+  void PostP2PSends(CGeometry *geometry, const CConfig *config, unsigned short commType,
+                    unsigned short countPerPoint, int val_iMessage, bool val_reverse) const;
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.
@@ -326,8 +331,10 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[in] countPerPeriodicPoint - Number of variables per point.
    */
-  void PostPeriodicRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void PostPeriodicRecvs(CGeometry *geometry, const CConfig *config, unsigned short commType,
+                         unsigned short countPerPeriodicPoint);
 
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a periodic commucation.
@@ -335,9 +342,23 @@ public:
    * \param[in] geometry     - Geometrical definition of the problem.
    * \param[in] config       - Definition of the particular problem.
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] countPerPeriodicPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+  void PostPeriodicSends(CGeometry *geometry, const CConfig *config, unsigned short commType,
+                         unsigned short countPerPeriodicPoint, int val_iMessage) const;
+
+  /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   */
+  void GetCommCountAndType(const CConfig* config,
+                           unsigned short commType,
+                           unsigned short &COUNT_PER_POINT,
+                           unsigned short &MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to
@@ -346,7 +367,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void InitiateComms(CGeometry *geometry, const CConfig *config, unsigned short commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data into the geometry class.
@@ -354,7 +375,7 @@ public:
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void CompleteComms(CGeometry *geometry, const CConfig *config, unsigned short commType);
 
   /*!
    * \brief Get number of coordinates.
@@ -472,7 +493,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point);
+  long FindEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
@@ -480,7 +501,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  bool CheckEdge(unsigned long first_point, unsigned long second_point);
+  bool CheckEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the distance between a plane (defined by three point) and a point.
@@ -490,12 +511,12 @@ public:
    * \param[in] kCoord - Coordinates of the third point that defines the plane.
    * \return Signed distance.
    */
-  su2double Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord);
+  su2double Point2Plane_Distance(const su2double *Coord, const su2double *iCoord, const su2double *jCoord, const su2double *kCoord);
 
   /*!
    * \brief Create a file for testing the geometry.
    */
-  void TestGeometry(void);
+  void TestGeometry(void) const;
 
   /*!
    * \brief A virtual member.
@@ -584,9 +605,9 @@ public:
   inline virtual void SetPositive_ZArea(CConfig *config) {}
 
   /*!
-   * \brief Setas connectivity between points.
+   * \brief Set connectivity between points.
    */
-  inline virtual void SetPoint_Connectivity(void) {}
+  inline virtual void SetPoint_Connectivity() {}
 
   /*!
    * \brief Orders the RCM.
@@ -918,7 +939,7 @@ public:
                               su2double MinXCoord, su2double MaxXCoord,
                               su2double MinYCoord, su2double MaxYCoord,
                               su2double MinZCoord, su2double MaxZCoord,
-                              su2double *FlowVariable,
+                              const su2double *FlowVariable,
                               vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                               vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                               bool original_surface, CConfig *config);
@@ -1218,38 +1239,38 @@ public:
    * \param[in] Intersection - Definition of the particular problem.
    * \return If the intersection has has been successful.
    */
-  bool SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                              su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
+  bool SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
+                              const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
 
   /*!
    * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
    */
-  bool RayIntersectsTriangle(su2double orig[3], su2double dir[3],
-  su2double vert0[3], su2double vert1[3], su2double vert2[3],
+  bool RayIntersectsTriangle(const su2double orig[3], const su2double dir[3],
+  const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
   su2double *intersect);
 
   /*!
    * \brief Segment Intersects Triangle
    */
-  bool SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
+  bool SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3],
   su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
   /*!
    * \brief Segment Intersects Line (for 2D FFD Intersection)
    */
-  bool SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
+  bool SegmentIntersectsLine(const su2double point0[2], const su2double point1[2], const su2double vert0[2], const su2double vert1[2]);
 
   /*!
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config);
+  void RegisterCoordinates(CConfig *config) const;
 
   /*!
    * \brief Register the coordinates of the mesh nodes as output.
    * \param[in] config
    */
-  void RegisterOutput_Coordinates(CConfig *config);
+  void RegisterOutput_Coordinates(CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.

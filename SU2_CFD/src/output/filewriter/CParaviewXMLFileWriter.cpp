@@ -2,7 +2,7 @@
  * \file CParaviewXMLFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,9 +107,9 @@ void CParaviewXMLFileWriter::Write_Data(){
   */
 
   if (!bigEndian){
-    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">\n", MASTER_NODE);
+    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n", MASTER_NODE);
   } else {
-    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\">\n", MASTER_NODE);
+    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\" header_type=\"UInt64\">\n", MASTER_NODE);
   }
 
   WriteMPIString("<UnstructuredGrid>\n", MASTER_NODE);
@@ -329,9 +329,6 @@ void CParaviewXMLFileWriter::Write_Data(){
 void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize,
                                             unsigned long globalSize, unsigned long offset){
 
-
-  int totalByteSize, byteSize;
-
   std::string typeStr;
   unsigned long typeSize = 0;
 
@@ -339,15 +336,16 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
 
   /*--- Compute the size of the data to write in bytes ---*/
 
+  int byteSize;
   byteSize = arraySize*typeSize;
 
   /*--- The total data size ---*/
-
+  unsigned long totalByteSize;
   totalByteSize = globalSize*typeSize;
 
-  /*--- Only the master node writes the total size in bytes as int32 in front of the array data ---*/
+  /*--- Only the master node writes the total size in bytes as unsigned long in front of the array data ---*/
   
-  if (!WriteMPIBinaryData(&totalByteSize, sizeof(int), MASTER_NODE)){
+  if (!WriteMPIBinaryData(&totalByteSize, sizeof(unsigned long), MASTER_NODE)){
     SU2_MPI::Error("Writing array size failed", CURRENT_FUNCTION);
   }
   
@@ -391,6 +389,6 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
                  string(" offset=") + offsetStr +
                  string(" format=\"appended\"/>\n"), MASTER_NODE);
 
-  dataOffset += totalByteSize + sizeof(int);
+  dataOffset += totalByteSize + sizeof(unsigned long);
 
 }

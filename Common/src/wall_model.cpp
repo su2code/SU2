@@ -3,7 +3,7 @@
  * \brief File, which contains the implementation for the wall model functions
  *        for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
  */
 
 #include "../include/wall_model.hpp"
-#include "../../SU2_CFD/include/fluid_model.hpp"
+#include "../../SU2_CFD/include/fluid/CFluidModel.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined (HAVE_MKL) || defined(HAVE_LAPACK)

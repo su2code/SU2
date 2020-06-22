@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "../../include/solvers/CTurbSolver.hpp"
 #include "../../../Common/include/omp_structure.hpp"
@@ -125,10 +124,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Points in edge and normal vectors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edges->GetNode(iEdge,0);
+    auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive variables w/o reconstruction ---*/
 
@@ -145,14 +144,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     /*--- Grid Movement ---*/
 
     if (dynamic_grid)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                           geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                           geometry->nodes->GetGridVel(jPoint));
 
     if (muscl || musclFlow) {
       const su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-      const auto Coord_i = geometry->node[iPoint]->GetCoord();
-      const auto Coord_j = geometry->node[jPoint]->GetCoord();
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -250,14 +249,14 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Points in edge ---*/
 
-  auto iPoint = geometry->edge[iEdge]->GetNode(0);
-  auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
 
   /*--- Points coordinates, and normal vector ---*/
 
-  numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                     geometry->node[jPoint]->GetCoord());
-  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                     geometry->nodes->GetCoord(jPoint));
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
   /*--- Conservative variables w/o reconstruction ---*/
 
@@ -298,11 +297,11 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
 
-      auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
-      if (iPoint == geometry->edge[iEdge]->GetNode(0))
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
@@ -404,6 +403,111 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics, CConfig *config) {
+
+  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+  su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double solution_j[MAXNVAR] = {0.0};
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+      const auto nDonorVertex = GetnSlidingStates(iMarker,iVertex);
+
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
+
+      su2double* PrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      auto Jacobian_i = Jacobian.GetBlock(iPoint,iPoint);
+
+      /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+
+      for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
+
+        for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+          PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+        /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+        const su2double weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+        /*--- Set primitive variables ---*/
+
+        conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+
+        /*--- Set the turbulent variable states ---*/
+
+        for (auto iVar = 0u; iVar < nVar; ++iVar)
+          solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+        conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+
+        /*--- Set the normal vector ---*/
+
+        conv_numerics->SetNormal(Normal);
+
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+        auto residual = conv_numerics->ComputeResidual(config);
+
+        /*--- Accumulate the residuals to compute the average ---*/
+
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          LinSysRes(iPoint,iVar) += weight*residual.residual[iVar];
+          for (auto jVar = 0u; jVar < nVar; jVar++)
+            Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
+        }
+      }
+
+      /*--- Set the normal vector and the coordinates ---*/
+
+      visc_numerics->SetNormal(Normal);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+
+      /*--- Primitive variables ---*/
+
+      visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+
+      /*--- Turbulent variables and their gradients ---*/
+
+      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+
+      /*--- Menter's first blending function ---*/
+
+      if(sst) visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
+
+      /*--- Compute and update residual ---*/
+
+      auto residual = visc_numerics->ComputeResidual(config);
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+  }
+
+  delete [] PrimVar_j;
+
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
@@ -432,7 +536,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Read the volume ---*/
 
-    su2double Vol = (geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume());
+    su2double Vol = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
@@ -451,14 +555,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       if (Res > resMax[iVar]) {
         resMax[iVar] = Res;
         idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
       }
     }
   }
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
-    AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
 
   /*--- Initialize residual and solution at the ghost points ---*/
@@ -525,22 +629,19 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
 
-  SU2_OMP_MASTER
-  {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-
-    /*--- MPI solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION_EDDY);
-    CompleteComms(geometry, config, SOLUTION_EDDY);
-
-    /*--- Compute the root mean square residual ---*/
-
-    SetResidual_RMS(geometry, config);
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
+
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
+
+  /*--- Compute the root mean square residual ---*/
+  SU2_OMP_MASTER
+  SetResidual_RMS(geometry, config);
   SU2_OMP_BARRIER
 
 }
@@ -606,7 +707,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
   const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-  const bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
   const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -650,7 +751,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
 
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
@@ -714,7 +815,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-      GridVel_i = geometry->node[iPoint]->GetGridVel();
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
       U_time_n  = nodes->GetSolution_time_n(iPoint);
       Density_n = 1.0;
 
@@ -725,16 +826,16 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           Density_n = flowNodes->GetSolution_time_n(iPoint,0);
       }
 
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
 
-        iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-        Normal = geometry->edge[iEdge]->GetNormal();
+        iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        Normal = geometry->edges->GetNormal(iEdge);
 
-        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-        GridVel_j = geometry->node[jPoint]->GetGridVel();
+        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edge[iEdge]->GetNode(0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -763,7 +864,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
           /*--- Grid velocities stored at boundary node i ---*/
 
-          GridVel_i = geometry->node[iPoint]->GetGridVel();
+          GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
           /*--- Compute the GCL term by dotting the grid velocity with the face
            normal. The normal is negated to match the boundary convention. ---*/
@@ -814,8 +915,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        grids, the volumes will change. On rigidly transforming grids, the
        volumes will remain constant. ---*/
 
-      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source residual. Due to the
        introduction of the GCL term above, the remainder of the source residual
@@ -946,13 +1047,13 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
+  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  SU2_OMP_BARRIER
+
   /*--- MPI solution and compute the eddy viscosity ---*/
 
   solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-
-  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
-  SU2_OMP_BARRIER
 
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
@@ -962,11 +1063,11 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       su2double Solution_Coarse[MAXNVAR] = {0.0};
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -975,12 +1076,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
 
-    SU2_OMP_MASTER
-    {
-      solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    }
-    SU2_OMP_BARRIER
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
@@ -989,7 +1086,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Go back to single threaded execution. ---*/
   SU2_OMP_MASTER
   {
-
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;

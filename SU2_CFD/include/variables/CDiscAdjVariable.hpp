@@ -2,7 +2,7 @@
  * \file CDiscAdjVariable.hpp
  * \brief Main class for defining the variables of the adjoint solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,7 +62,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjVariable() = default;
+  ~CDiscAdjVariable() override = default;
 
   /*!
    * \brief Set the sensitivity at the node

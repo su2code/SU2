@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,8 +55,8 @@ protected:
   su2double Conv_Check[3];          /*!< \brief Current values for convergence check: UTOL, RTOL, ETOL. */
   su2double FSI_Conv[2];            /*!< \brief Values to check the convergence of the FSI problem. */
 
-  unsigned long idxIncrement;       /*!< \brief Index of the current load increment */
-  su2double loadIncrement;          /*!< \brief Coefficient that determines the amount of load which is applied. */
+  unsigned long idxIncrement = 0;   /*!< \brief Index of the current load increment */
+  su2double loadIncrement = 1.0;    /*!< \brief Coefficient that determines the amount of load which is applied. */
 
   su2double WAitken_Dyn;            /*!< \brief Aitken's dynamic coefficient. */
   su2double WAitken_Dyn_tn1;        /*!< \brief Aitken's dynamic coefficient in the previous iteration. */
@@ -83,7 +83,7 @@ protected:
   CSysVector<su2double> LinSysReact;  /*!< \brief Vector to store the residual before applying the BCs */
 
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+  CSysMatrix<su2mixedfloat> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
 #else
   CSysMatrix<su2double> MassMatrix;
 #endif
@@ -213,7 +213,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEASolver(void);
+  ~CFEASolver(void) override;
 
   /*!
    * \brief Set residuals to zero.
@@ -267,7 +267,7 @@ public:
   inline virtual su2double Get_ValCoord(const CGeometry *geometry,
                                         unsigned long indexNode,
                                         unsigned short iDim) const {
-    return geometry->node[indexNode]->GetCoord(iDim);
+    return geometry->nodes->GetCoord(indexNode, iDim);
   }
 
   /*!

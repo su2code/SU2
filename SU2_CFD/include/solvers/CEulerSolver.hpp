@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -412,7 +412,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerSolver(void);
+  ~CEulerSolver(void) override;
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -616,7 +616,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -627,7 +627,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -635,7 +635,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
+  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -830,7 +830,6 @@ public:
                   CConfig *config,
                   unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the boundary condition using characteristic recostruction.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -876,7 +875,6 @@ public:
                 CNumerics *visc_numerics,
                 CConfig *config,
                 unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose a subsonic inlet boundary condition.
@@ -942,7 +940,6 @@ public:
                  CConfig *config,
                  unsigned short val_marker) final;
 
-
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -958,7 +955,6 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) final;
-
 
   /*!
    * \brief Impose the nacelle inflow boundary condition.
@@ -996,7 +992,7 @@ public:
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline void Set_NewSolution(CGeometry *geometry) final { nodes->SetSolution_New(); }
+  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
@@ -1064,7 +1060,7 @@ public:
    * \brief Set gradients of coefficients for fixed CL mode
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCoefficient_Gradients(CConfig *config);
+  void SetCoefficient_Gradients(CConfig *config) const;
 
   /*!
    * \brief Update the solution using the explicit Euler scheme.
@@ -2146,7 +2142,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ttotal == NULL || Inlet_Ttotal[val_marker] == NULL)
+    else if (Inlet_Ttotal == nullptr || Inlet_Ttotal[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2168,7 +2164,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ptotal == NULL || Inlet_Ptotal[val_marker] == NULL)
+    else if (Inlet_Ptotal == nullptr || Inlet_Ptotal[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2192,7 +2188,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
         SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
@@ -2284,7 +2280,7 @@ public:
     int iVar;
 
     for( iVar = 0; iVar < nPrimVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
         delete [] SlidingState[val_marker][val_vertex][iVar];
     }
 

@@ -2,7 +2,7 @@
  * \file computeLimiters.hpp
  * \brief Compute limiters wrapper function.
  * \author P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ void computeLimiters(ENUM_LIMITER LimiterKind,
                      PERIODIC_QUANTITIES kindPeriodicComm1,
                      PERIODIC_QUANTITIES kindPeriodicComm2,
                      CGeometry& geometry,
-                     CConfig& config,
+                     const CConfig& config,
                      size_t varBegin,
                      size_t varEnd,
                      const FieldType& field,

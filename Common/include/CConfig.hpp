@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,7 +44,6 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
-#include "./datatype_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -570,7 +569,7 @@ private:
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
-  su2double Relaxation_Factor_AdjFlow;  /*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
+  su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;       /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -784,8 +783,6 @@ private:
   unsigned short
   Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;         /*!< \brief Particular average for the marker analyze. */
-  unsigned short
-  nPolyCoeffs;          /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,         /*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
@@ -819,14 +816,14 @@ private:
   Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
   Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
-  Mu_SND,                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  *CpPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
-  *MuPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
-  *KtPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
-  *CpPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
-  *MuPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
-  *KtPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
-  Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
+  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  su2double* CpPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
+  su2double* MuPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
+  su2double* KtPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
+  array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
+  array<su2double, N_POLY_COEFFS>MuPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
+  array<su2double, N_POLY_COEFFS>KtPolyCoefficientsND{0.0};   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  su2double Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
   Density_Solid,                   /*!< \brief Total density in solids. */
@@ -1019,9 +1016,9 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  su2double *default_cp_polycoeffs;     /*!< \brief Array for specific heat polynomial coefficients. */
-  su2double *default_mu_polycoeffs;     /*!< \brief Array for viscosity polynomial coefficients. */
-  su2double *default_kt_polycoeffs;     /*!< \brief Array for thermal conductivity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_cp_polycoeffs{0.0};     /*!< \brief Array for specific heat polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_mu_polycoeffs{0.0};     /*!< \brief Array for viscosity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_kt_polycoeffs{0.0};     /*!< \brief Array for thermal conductivity polynomial coefficients. */
   su2double *ExtraRelFacGiles;          /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
@@ -1279,6 +1276,11 @@ public:
   CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
 
   /*!
+   * \brief Constructor of the class which takes an istream buffer containing the config options.
+   */
+  CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
+
+  /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
   CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
@@ -1298,17 +1300,32 @@ public:
    */
   ~CConfig(void);
 
+  /*!
+  * \brief Initialize common fields of the config structure.
+  */
+  void Init();
+
+  /*!
+  * \brief Set the number of zones
+  */
   void SetnZone();
 
+  /*!
+  * \brief Set the physical dimension of the problem
+  */
   void SetnDim();
 
-  void SetHeader(unsigned short val_software);
+  /*!
+  * \brief Print the header to screen
+  * \param val_software - Kind of software component
+  */
+  void SetHeader(unsigned short val_software) const;
 
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
-  SU2_MPI::Comm GetMPICommunicator();
+  SU2_MPI::Comm GetMPICommunicator() const;
 
   /*!
    * \brief Set the MPI communicator for SU2.
@@ -2827,6 +2844,7 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void) const { return nMarker_NearFieldBound; }
+
   /*!
    * \brief Get the total number of deformable markers at the boundary.
    * \return Total number of deformable markers at the boundary.
@@ -3351,7 +3369,7 @@ public:
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
    */
-  void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface) { Marker_All_Deform_Mesh[val_marker] = val_interface; }
+  void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_deform) { Marker_All_Deform_Mesh[val_marker] = val_deform; }
 
   /*!
    * \brief Set if a in marker <i>val_marker</i> the flow load will be computed/employed.
@@ -3798,7 +3816,7 @@ public:
    * \brief Get the number of coefficients in the temperature polynomial models.
    * \return The the number of coefficients in the temperature polynomial models.
    */
-  unsigned short GetnPolyCoeffs(void) const { return nPolyCoeffs; }
+  unsigned short GetnPolyCoeffs(void) const { return N_POLY_COEFFS; }
 
   /*!
    * \brief Get the temperature polynomial coefficient for specific heat Cp.
@@ -3832,7 +3850,7 @@ public:
    * \brief Get the temperature polynomial coefficients for viscosity.
    * \return Non-dimensional temperature polynomial coefficients for viscosity.
    */
-  su2double* GetMu_PolyCoeffND(void) { return MuPolyCoefficientsND; }
+  const su2double* GetMu_PolyCoeffND(void) const { return MuPolyCoefficientsND.data(); }
 
   /*!
    * \brief Get the temperature polynomial coefficient for thermal conductivity.
@@ -3852,7 +3870,7 @@ public:
    * \brief Get the temperature polynomial coefficients for thermal conductivity.
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
-  su2double* GetKt_PolyCoeffND(void) { return KtPolyCoefficientsND; }
+  const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
 
   /*!
    * \brief Set the value of the non-dimensional constant viscosity.
@@ -3916,7 +3934,7 @@ public:
    * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
    * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
    */
-  bool GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+  bool GetReconstructionGradientRequired(void) const { return ReconstructionGradientRequired; }
 
   /*!
    * \brief Get flag for whether a least-squares gradient method is being applied.
@@ -3998,10 +4016,9 @@ public:
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
 
   /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   * \brief Get the relaxation factor for solution updates of adjoint solvers.
    */
-  su2double GetRelaxation_Factor_AdjFlow(void) const { return Relaxation_Factor_AdjFlow; }
+  su2double GetRelaxation_Factor_Adjoint(void) const { return Relaxation_Factor_Adjoint; }
 
   /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
@@ -5383,13 +5400,13 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_FileName(string val_filename, int val_iZone, string ext);
+  string GetMultizone_FileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5463,7 +5480,7 @@ public:
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, int val_iter, string ext);
+  string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
 
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.
@@ -5668,7 +5685,7 @@ public:
    * \param[in] val - new value of the origin
    * \return The mesh motion origin.
    */
-  void SetMotion_Origin(su2double* val) { for (int iDim = 0; iDim < 3; iDim++) Motion_Origin[iDim] = val[iDim]; }
+  void SetMotion_Origin(const su2double* val) { for (int iDim = 0; iDim < 3; iDim++) Motion_Origin[iDim] = val[iDim]; }
 
   /*!
    * \brief Get the mesh motion origin.
@@ -5683,7 +5700,7 @@ public:
    * \param[in] val - new value of the origin
    * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    */
-  void SetMarkerMotion_Origin(su2double* val, unsigned short iMarkerMoving) {
+  void SetMarkerMotion_Origin(const su2double* val, unsigned short iMarkerMoving) {
     for (int iDim = 0; iDim < 3; iDim++) MarkerMotion_Origin[3*iMarkerMoving + iDim] = val[iDim];
   }
 
@@ -6016,116 +6033,116 @@ public:
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Index in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TagBound(string val_marker);
+  unsigned short GetMarker_CfgFile_TagBound(string val_marker) const;
 
   /*!
    * \brief Get the name in the config information of the marker number <i>val_marker</i>.
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Name of the marker in the config information of the marker <i>val_marker</i>.
    */
-  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker) const;
 
   /*!
    * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
    * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_KindBC(string val_marker);
+  unsigned short GetMarker_CfgFile_KindBC(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Monitoring(string val_marker);
+  unsigned short GetMarker_CfgFile_Monitoring(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_GeoEval(string val_marker);
+  unsigned short GetMarker_CfgFile_GeoEval(string val_marker) const;
 
   /*!
    * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
    * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Designing(string val_marker);
+  unsigned short GetMarker_CfgFile_Designing(string val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Plotting(string val_marker);
+  unsigned short GetMarker_CfgFile_Plotting(string val_marker) const;
 
   /*!
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Analyze(string val_marker);
+  unsigned short GetMarker_CfgFile_Analyze(string val_marker) const;
 
   /*!
-   * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
+   * \brief Get the multi-physics interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker);
+  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker);
+  unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker) const;
 
   /*!
    * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
    * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker);
+  unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker) const;
 
   /*!
    * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
+  unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker) const;
 
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
    * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_DV(string val_marker);
+  unsigned short GetMarker_CfgFile_DV(string val_marker) const;
 
   /*!
    * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Moving(string val_marker);
+  unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
    * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker);
+  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker) const;
 
   /*!
    * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
    * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker);
+  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker) const;
 
   /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PyCustom(string val_marker);
+  unsigned short GetMarker_CfgFile_PyCustom(string val_marker) const;
 
   /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
    * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_PerBound(string val_marker);
+  unsigned short GetMarker_CfgFile_PerBound(string val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_marker</i>.
    * \return The interface which owns that marker <i>val_marker</i>.
    */
-  int GetMarker_ZoneInterface(string val_marker);
+  unsigned short GetMarker_ZoneInterface(string val_marker) const;
 
   /*!
    * \brief  Get the name of the marker <i>val_iMarker</i>.
@@ -6138,7 +6155,6 @@ public:
    * \return The number markers in the multizone interface
    */
   unsigned short GetnMarker_ZoneInterface(void) const { return nMarker_ZoneInterface; }
-
 
   /*!
    * \brief Determines whether a marker with index iMarker is a solid boundary.
@@ -6321,17 +6337,17 @@ public:
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotCenter(string val_marker);
+  const su2double *GetPeriodicRotCenter(string val_marker) const;
 
   /*!
    * \brief Angles of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotAngles(string val_marker);
+  const su2double *GetPeriodicRotAngles(string val_marker) const;
 
   /*!
    * \brief Translation vector for a rotational periodic boundary.
    */
-  su2double *GetPeriodicTranslation(string val_marker);
+  const su2double *GetPeriodicTranslation(string val_marker) const;
 
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
@@ -7990,6 +8006,11 @@ public:
   /*!
    * \brief Set the config file parsing.
    */
+  void SetConfig_Parsing(istream &config_buffer);
+
+  /*!
+   * \brief Set the config file parsing.
+   */
   bool SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]);
 
   /*!
@@ -8314,27 +8335,7 @@ public:
    * \brief Get the current number of non-physical reconstructions for 2nd-order upwinding.
    * \return Current number of non-physical reconstructions for 2nd-order upwinding.
    */
-  unsigned long GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
-
-  /*!
-   * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
-   x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
-   function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
-   the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
-   ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
-   condition for a natural spline, with zero second derivative on that boundary.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   */
-  void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
-
-  /*!
-   * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
-   and given the array y2a[1..n], which is the output from spline above, and given a value of
-   x, this routine returns a cubic-spline interpolated value y.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   * \return The interpolated value of for x.
-   */
-  su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
+  unsigned long GetNonphysical_Reconstr(void) const { return Nonphys_Reconstr; }
 
   /*!
    * \brief Start the timer for profiling subroutines.
@@ -8377,7 +8378,7 @@ public:
    *
    * \brief Set freestream turbonormal for initializing solution.
    */
-  void SetFreeStreamTurboNormal(su2double* turboNormal);
+  void SetFreeStreamTurboNormal(const su2double* turboNormal);
 
   /*!
    *
@@ -9364,5 +9365,12 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Find the marker index (if any) that is part of a given interface pair.
+   * \param[in] iInterface - Number of the interface pair being tested, starting at 0.
+   * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
+   */
+  short FindInterfaceMarker(unsigned short iInterface) const;
 
 };

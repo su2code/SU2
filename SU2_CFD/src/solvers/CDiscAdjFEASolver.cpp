@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -120,7 +120,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
@@ -649,27 +649,28 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
 
       AddRes_RMS(iVar,residual*residual);
-      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
     }
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
         residual = nodes->GetSolution_Accel(iPoint, iVar) - nodes->GetSolution_Old_Accel(iPoint, iVar);
 
         AddRes_RMS(iVar,residual*residual);
-        AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
       }
       for (iVar = 0; iVar < nVar; iVar++){
         residual = nodes->GetSolution_Vel(iPoint, iVar) - nodes->GetSolution_Old_Vel(iPoint, iVar);
 
         AddRes_RMS(iVar,residual*residual);
-        AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
       }
     }
   }
 
-  if(multizone) nodes->Set_OldSolution();
-
   SetResidual_RMS(geometry, config);
+
+  SetIterLinSolver(direct_solver->System.GetIterations());
+  SetResLinSolver(direct_solver->System.GetResidual());
 
 }
 
@@ -833,14 +834,14 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    su2double *Coord = geometry->node[iPoint]->GetCoord();
+    su2double *Coord = geometry->nodes->GetCoord(iPoint);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double Sensitivity;
 
       if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+        Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
       }
       else {
         Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);

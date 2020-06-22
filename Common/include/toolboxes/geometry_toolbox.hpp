@@ -1,7 +1,7 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

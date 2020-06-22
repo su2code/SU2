@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,6 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 
-#include "../iteration_structure.hpp"
 #include "../integration/CIntegration.hpp"
 #include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
@@ -42,6 +41,8 @@ using namespace std;
 
 class COutputLegacy;
 class CInterpolator;
+class CIteration;
+class COutput;
 
 /*!
  * \class CDriver
@@ -158,7 +159,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration);
+  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -190,7 +191,7 @@ protected:
    * \param[in] solver - Container vector with all the solutions.
    * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -214,7 +215,7 @@ protected:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics);
+  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const;
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -234,7 +235,7 @@ protected:
    * \param grid_movement
    * \param surface_movement
    */
-  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement);
+  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement) const;
 
   /*!
    * \brief Initialize Python interface functionalities
@@ -454,7 +455,7 @@ public:
    * \brief Get the current external iteration.
    * \return Current external iteration.
    */
-  unsigned long GetTime_Iter();
+  unsigned long GetTime_Iter() const;
 
   /*!
    * \brief Get the unsteady time step.
@@ -661,7 +662,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                    CConfig *config);
+                                    CConfig *config) const;
 
   /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
@@ -871,57 +872,57 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFluidDriver(void);
+  ~CFluidDriver(void) override;
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long InnerIter);
+  void Output(unsigned long InnerIter) override;
 
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  bool Monitor(unsigned long ExtIter) override;
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  void Preprocess(unsigned long Iter);
+  void Preprocess(unsigned long Iter) override;
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
-  void DynamicMeshUpdate(unsigned long TimeIter);
+  void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
    * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
    */
-  void StaticMeshUpdate();
+  void StaticMeshUpdate() override;
 
   /*!
    * \brief Perform a mesh deformation as initial condition (multiple zone).
    */
-  void SetInitialMesh();
+  void SetInitialMesh() override;
 
   /*!
    * \brief Process the boundary conditions and update the multigrid structure.
    */
-  void BoundaryConditionsUpdate();
+  void BoundaryConditionsUpdate() override;
 
   /*!
    * \brief Transfer data among different zones (multiple zone).
@@ -991,13 +992,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbomachineryDriver(void);
+  ~CTurbomachineryDriver(void) override;
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
 
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.
@@ -1012,7 +1013,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long TimeIter);
+  bool Monitor(unsigned long TimeIter) override;
 
 
 
@@ -1046,12 +1047,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CHBDriver(void);
+  ~CHBDriver(void) override;
 
   /*!
    * \brief Run a single iteration of a Harmonic Balance problem.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Computation and storage of the Harmonic Balance method source terms.
@@ -1075,10 +1076,10 @@ public:
   /*!
    * \brief Update the solution for the Harmonic Balance.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
    */
-  void ResetConvergence();
+  void ResetConvergence() override;
 };
