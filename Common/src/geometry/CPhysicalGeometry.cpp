@@ -5695,7 +5695,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   delete localVolumeADT;
   
   /* Reset nodes that only belong to donor elements */
-  if (nDonor_Point > 0) {
+  if (nDonor_Elem > 0) {
     nElem -= nDonor_Elem;
 //    for (unsigned long iPoint = nPoint-nDonor_Point; iPoint < nPoint; iPoint++) {
 //      for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
