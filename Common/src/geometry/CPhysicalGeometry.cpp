@@ -5694,6 +5694,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   delete localVolumeADT;
   
   /* Reset nodes that only belong to donor elements */
+  unsigned short nDonor_Node = 0;
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     bool donorOnly = true;
     for (unsigned short iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
@@ -5715,9 +5716,11 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       node[iPoint]->ResetElem();
       node[iPoint]->ResetPoint();
       node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
+      nDonor_Node++;
     }
   }
   /* Remove nDonor_Elem to prevent connectivity-related issues */
+  if (nDonor_Node > 0) SetEdges();
   nElem -= nDonor_Elem;
 }
 
