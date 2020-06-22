@@ -539,7 +539,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 
-  CNumericsSIMD* test = new CRoeScheme<3>(*config);
+  CNumericsSIMD* test = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config);
 }
 
 CEulerSolver::~CEulerSolver(void) {

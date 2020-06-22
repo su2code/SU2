@@ -73,6 +73,7 @@ using SparseMatrixType = CSysMatrix<su2mixedfloat>;
 /*!
  * \class CNumericsSIMD
  * \brief Base class to define the interface.
+ * \note See CNumericsEmptyDecorator.
  */
 class CNumericsSIMD {
 public:
@@ -101,15 +102,40 @@ public:
   virtual ~CNumericsSIMD(void) = default;
 };
 
-template<size_t nDim>
-FORCEINLINE Double dot(const VectorDbl<nDim>& a,
-                       const VectorDbl<nDim>& b) {
-  Double sum = 0.0;
-  for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    sum += a(iDim) * b(iDim);
-  }
-  return sum;
-}
+/*!
+ * \class CNumericsEmptyDecorator
+ * \brief Numerics classes that accept a compile-time decorator should use this
+ * class template as a "do-nothing" decorator and as a link to the interface when
+ * they are not being decorated.
+ * Compile-time decoration works by specifying the base class as a template parameter.
+ * Then the class being decorated should call a method of its base class to add some
+ * contribution to the flux/source and Jacobians just before writting the results to
+ * CSysVector and CSysMatrix. The mechanism can be used to chain any number of classes
+ * at compile-time, but its main purpose is to combine convective and viscous fluxes
+ * in the most (nearly) efficient way.
+ */
+template<size_t NDIM>
+class CNumericsEmptyDecorator : public CNumericsSIMD {
+protected:
+  enum: size_t {nDim = NDIM};
+
+  template<class... Ts>
+  CNumericsEmptyDecorator(Ts&...) {}
+
+  /*!
+   * \brief Empty method.
+   * \note All arguments listed just to illustrate the description above.
+   */
+  template<size_t nVar>
+  void updateFlux(Int iEdge,
+                  const CConfig& config,
+                  const CGeometry& geometry,
+                  const CVariable& solution,
+                  bool implicit,
+                  VectorDbl<nVar>& flux,
+                  MatrixDbl<nVar>& jac_i,
+                  MatrixDbl<nVar>& jac_j) const {}
+};
 
 template<size_t nDim, class ForwardIterator>
 FORCEINLINE Double dot(ForwardIterator iterator,
@@ -122,12 +148,8 @@ FORCEINLINE Double dot(ForwardIterator iterator,
 }
 
 template<size_t nDim>
-FORCEINLINE Double squaredNorm(const VectorDbl<nDim>& vector) {
-  Double sum = 0.0;
-  for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    sum += pow(vector(iDim),2);
-  }
-  return sum;
+FORCEINLINE Double dot(const VectorDbl<nDim>& a, const VectorDbl<nDim>& b) {
+  return dot(a.data(),b);
 }
 
 template<size_t nDim, class ForwardIterator>
@@ -137,6 +159,11 @@ FORCEINLINE Double squaredNorm(ForwardIterator iterator) {
     sum += pow(*(iterator++),2);
   }
   return sum;
+}
+
+template<size_t nDim>
+FORCEINLINE Double squaredNorm(const VectorDbl<nDim>& vector) {
+  return squaredNorm<nDim>(vector.data());
 }
 
 template<size_t nDim>
@@ -517,11 +544,18 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
 /*!
  * \class CRoeBase
  * \brief Base class for Roe schemes, derived classes implement
- *        the dissipation term in a "finalizeResidual" method.
+ * the dissipation term in a static "finalizeFlux" method.
+ * A base class implementing "updateFlux" is accepted as template parameter.
+ * Similarly to derived, that method should update the flux and Jacobians, but
+ * whereas "finalizeFlux" is passed data prepared by CRoeBase, "updateFlux"
+ * takes the same input arguments as "ComputeFlux", i.e. it must fetch the data
+ * it needs from CVariable, etc.. Derived is meant to implement small details,
+ * Base is meant to do heavy lifting like computing viscous fluxes.
  */
-template<class Derived, size_t nDim>
-class CRoeBase : public CNumericsSIMD {
+template<class Derived, class Base>
+class CRoeBase : public Base {
 protected:
+  enum: size_t {nDim = Base::nDim};
   enum: size_t {nVar = CCompressibleConservatives<nDim>::nVar};
 
   const su2double kappa;
@@ -530,9 +564,10 @@ protected:
   const bool dynamicGrid;
 
   /*!
-   * \brief Constructor.
+   * \brief Constructor, store some constants and forward args to base.
    */
-  CRoeBase(const CConfig& config) :
+  template<class... Ts>
+  CRoeBase(const CConfig& config, Ts&... args) : Base(config, args...),
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
     entropyFix(config.GetEntropyFix_Coeff()),
@@ -634,11 +669,6 @@ public:
       jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, kappa);
     }
 
-    /*--- Finalize in derived class (static polymorphism). ---*/
-
-    Derived::finalizeResidual(flux, jac_i, jac_j, implicit, gamma, kappa, area,
-                              unitNormal, V, U, roeAvg, lambda, pMat);
-
     /*--- Correct for grid motion. ---*/
 
     if (dynamicGrid) {
@@ -653,6 +683,15 @@ public:
       }
     }
 
+    /*--- Finalize in derived class (static polymorphism). ---*/
+
+    Derived::finalizeFlux(flux, jac_i, jac_j, implicit, gamma, kappa,
+                          area, unitNormal, V, U, roeAvg, lambda, pMat);
+
+    /*--- Add the contributions from the base class (static decorator). ---*/
+
+    Base::updateFlux(iEdge, config, geometry, solution_, implicit, flux, jac_i, jac_j);
+
     /*--- Update the vector and system matrix. ---*/
 
     updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType,
@@ -664,29 +703,38 @@ public:
  * \class CRoeScheme
  * \brief Classical Roe scheme.
  */
-template<size_t nDim>
-class CRoeScheme : public CRoeBase<CRoeScheme<nDim>,nDim> {
+template<class Decorator>
+class CRoeScheme : public CRoeBase<CRoeScheme<Decorator>,Decorator> {
 private:
-  using Base = CRoeBase<CRoeScheme<nDim>,nDim>;
+  using Base = CRoeBase<CRoeScheme<Decorator>,Decorator>;
+  enum: size_t {nDim = Base::nDim};
   enum: size_t {nVar = Base::nVar};
 public:
-  CRoeScheme(const CConfig& config) : Base(config) {}
-
+  /*!
+   * \brief Constructor, forward everything to base.
+   */
   template<class... Ts>
-  FORCEINLINE static void finalizeResidual(VectorDbl<nVar>& flux,
-                                           MatrixDbl<nVar>& jac_i,
-                                           MatrixDbl<nVar>& jac_j,
-                                           bool implicit,
-                                           Double gamma,
-                                           Double kappa,
-                                           Double area,
-                                           const VectorDbl<nDim>& unitNormal,
-                                           const CPair<CCompressiblePrimitives<nDim> >& V,
-                                           const CPair<CCompressibleConservatives<nDim> >& U,
-                                           const CRoeVariables<nDim>& roeAvg,
-                                           const VectorDbl<nVar>& lambda,
-                                           const MatrixDbl<nVar>& pMat,
-                                           Ts&...) {
+  CRoeScheme(Ts&... args) : Base(args...) {}
+
+  /*!
+   * \brief Updates flux and Jacobians with standard Roe dissipation.
+   * \note "Ts" is here just in case other schemes in the family need extra args.
+   */
+  template<class... Ts>
+  FORCEINLINE static void finalizeFlux(VectorDbl<nVar>& flux,
+                                       MatrixDbl<nVar>& jac_i,
+                                       MatrixDbl<nVar>& jac_j,
+                                       bool implicit,
+                                       Double gamma,
+                                       Double kappa,
+                                       Double area,
+                                       const VectorDbl<nDim>& unitNormal,
+                                       const CPair<CCompressiblePrimitives<nDim> >& V,
+                                       const CPair<CCompressibleConservatives<nDim> >& U,
+                                       const CRoeVariables<nDim>& roeAvg,
+                                       const VectorDbl<nVar>& lambda,
+                                       const MatrixDbl<nVar>& pMat,
+                                       Ts&...) {
     /*--- Inverse P tensor. ---*/
 
     auto pMatInv = pMatrixInv(gamma, roeAvg.density, roeAvg.velocity,
