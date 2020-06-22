@@ -1201,18 +1201,6 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   //Unused at the moment
   //bool centered = ((config->GetKind_Centered_NEMO() == JST) && (iMesh == MESH_0));
 
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-//  numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-//  numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-//  numerics->SetPIndex      ( nodes->GetPIndex()       );
-//  numerics->SetTIndex      ( nodes->GetTIndex()       );
-//  numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-//  numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-//  numerics->SetHIndex      ( nodes->GetHIndex()       );
-//  numerics->SetAIndex      ( nodes->GetAIndex()       );
-//  numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-//  numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
@@ -1230,6 +1218,8 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     numerics->SetdPdU(   nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
     numerics->SetdTdU(   nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
     numerics->SetdTvedU( nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
+    numerics->SetEve( nodes->GetEve(iPoint), nodes->GetEve(jPoint));
+    numerics->SetCvve( nodes->GetCvve(iPoint), nodes->GetCvve(jPoint));
 
     /*--- Set the largest convective eigenvalue ---*/
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
@@ -1520,18 +1510,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   eChm_local = 0;
   eVib_local = 0;
 
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-// numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-// numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-// numerics->SetPIndex      ( nodes->GetPIndex()       );
-// numerics->SetTIndex      ( nodes->GetTIndex()       );
-// numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-// numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-// numerics->SetHIndex      ( nodes->GetHIndex()       );
-// numerics->SetAIndex      ( nodes->GetAIndex()       );
-// numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-// numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
@@ -1582,7 +1560,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     
     if(!frozen){
-
         /*--- Compute the non-equilibrium chemistry ---*/
         numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
         /*--- Check for errors before applying source to the linear system ---*/
@@ -1600,19 +1577,11 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
             Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         } else
           eChm_local++;
-
     }      
 
     /*--- Compute vibrational energy relaxation ---*/
     /// NOTE: Jacobians don't account for relaxation time derivatives
-
     numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
-
-   //std::ofstream outfile;
-   //outfile.open("prints.txt", std::ios_base::app); // append instead of overwrite
-   //for(iVar = 0; iVar < nVar; iVar++){
-   // outfile << "Residual[" << iVar << "]=" << Residual[iVar] << endl; 
-   //}
     
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -3590,29 +3559,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
 
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
- //conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
- //conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
- //conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
- //conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
- //conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
- //conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
- //conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
- //conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
- //conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
- //conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
- //visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
- //visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
- //visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
- //visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
- //visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
- //visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
- //visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
- //visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
- //visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
- //visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3642,6 +3588,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
       conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+      conv_numerics->SetEve(nodes->GetEve(iPoint),       node_infty->GetEve(0));
+      conv_numerics->SetCvve(nodes->GetCvve(iPoint),     node_infty->GetCvve(0));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -3669,9 +3617,11 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
                                           node_infty->GetGradient_Primitive(0) );
 
         /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
-        visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
+        visc_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
+        visc_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
         visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+        visc_numerics->SetEve(nodes->GetEve(iPoint),       node_infty->GetEve(0));
+        visc_numerics->SetCvve(nodes->GetCvve(iPoint),     node_infty->GetCvve(0));
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -4001,29 +3951,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   su2double *Normal   = new su2double[nDim];
   su2double *Ys       = new su2double[nSpecies];
 
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
- // conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
- // conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
- // conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
- // conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
- // conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
- // conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
- // conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
- // conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
- // conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
- // conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-//
- // visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
- // visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
- // visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
- // visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
- // visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
- // visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
- // visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
- // visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
- // visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
- // visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
   unsigned short T_INDEX       = nodes->GetTIndex();
   unsigned short TVE_INDEX     = nodes->GetTveIndex();
   unsigned short VEL_INDEX     = nodes->GetVelIndex();
@@ -4275,6 +4202,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
       conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+      conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
+      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
 
       /*--- Compute the residual using an upwind scheme ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4511,6 +4440,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
       conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+      conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
+      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -4572,18 +4503,6 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
   su2double *Normal = new su2double[nDim];
 
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
- // conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
- // conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
- // conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
- // conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
- // conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
- // conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
- // conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
- // conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
- // conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
- // conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
 
@@ -4616,6 +4535,8 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
       conv_numerics->SetdPdU(   nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
       conv_numerics->SetdTdU(   nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
       conv_numerics->SetdTvedU( nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+      conv_numerics->SetEve( nodes->GetEve(iPoint),       nodes->GetEve(iPoint));
+      conv_numerics->SetCvve( nodes->GetCvve(iPoint),       nodes->GetCvve(iPoint));
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
