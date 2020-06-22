@@ -772,7 +772,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Rotate the partial gradients in space for all variables. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 

@@ -1,7 +1,7 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
+ * \file CIterationFactory.hpp
+ * \brief Headers of the iteration classes used by SU2_CFD.
+ *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
  * \version 7.0.5 "Blackbird"
  *
@@ -25,24 +25,22 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
-#include "CLI11.hpp"
+#include "CIteration.hpp"
 
-#include "drivers/CDriver.hpp"
-#include "drivers/CSinglezoneDriver.hpp"
-#include "drivers/CMultizoneDriver.hpp"
-#include "drivers/CDiscAdjSinglezoneDriver.hpp"
-#include "drivers/CDiscAdjMultizoneDriver.hpp"
-#include "drivers/CDummyDriver.hpp"
-#include "output/COutput.hpp"
-#include "../../Common/include/fem/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry/CGeometry.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/CConfig.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/interfaces/CInterface.hpp"
+class CIterationFactory {
+ public:
+  /*!
+   * \brief Deleted constructor to avoid creating instances of this class
+   */
+  CIterationFactory() = delete;
 
-using namespace std;
+  /*!
+   * \brief Create a new iteration instance based on the current main solver
+   * \param[in] kindSolver - The kind of main solver we are running
+   * \return               - Pointer to the allocated iteration instance
+   */
+  static CIteration* CreateIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config);
+};
