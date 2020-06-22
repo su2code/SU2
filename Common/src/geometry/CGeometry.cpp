@@ -3205,6 +3205,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();
+  
+  cout << "Rank: " << rank << ". Finding critical edges." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
@@ -3236,6 +3239,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   Buffer_Send_nVertex[0] = nLocalVertex;
 
   /*--- Communicate to all processors the total number of critical edge nodes. ---*/
+  
+  cout << "Rank: " << rank << ". Communicating critical edges." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #ifdef HAVE_MPI
   MaxLocalVertex = 0;
@@ -3271,6 +3277,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     for (iDim = 0; iDim < nDim; iDim++)
       Buffer_Send_Coord[iVertex*nDim+iDim] = node[iPoint]->GetCoord(iDim);
   }
+  
+  cout << "Rank: " << rank << ". Communicating critical edge coords." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -3285,6 +3294,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   /*--- Loop over all interior mesh nodes on the local partition and compute
    the distances to each of the no-slip boundary nodes in the entire mesh.
    Store the minimum distance to the wall for each interior mesh node. ---*/
+  
+  cout << "Rank: " << rank << ". Computing min dist to critical edges." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
     Coord = node[iPoint]->GetCoord();
