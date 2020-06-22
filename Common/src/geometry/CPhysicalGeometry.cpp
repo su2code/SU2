@@ -5720,8 +5720,8 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 //      node[iPoint]->ResetEdge();
 //    }
 //    SetEdges();
-    SetControlVolume(config, UPDATE);
-    SetBoundControlVolume(config, UPDATE);
+//    SetControlVolume(config, UPDATE);
+//    SetBoundControlVolume(config, UPDATE);
   }
   
   cout << "Rank: " << rank << ". Wall model preprocessing complete." << endl;
