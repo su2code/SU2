@@ -355,6 +355,8 @@ public:
    */
   inline void ResetPoint(void) { Point.clear(); Edge.clear(); nPoint = 0; }
   
+  inline void ResetEdge(void) { fill(Edge.begin(), Edge.end(), -1); }
+  
   /*!
    * \brief Reset the points that compose the control volume.
    */
