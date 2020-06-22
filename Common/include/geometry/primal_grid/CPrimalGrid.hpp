@@ -311,6 +311,13 @@ public:
    * \return Number of neighbors nodes of a node in the element.
    */
   virtual unsigned short GetnNeighbor_Nodes(unsigned short val_node) = 0;
+  
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_node - Local index of the node.
+   * \return Number of neighbors nodes of a node in the element.
+   */
+  virtual inline void SetnNeighbor_Nodes(unsigned short val_node, unsigned short val_nNode) { }
 
   /*!
    * \brief A pure virtual member.

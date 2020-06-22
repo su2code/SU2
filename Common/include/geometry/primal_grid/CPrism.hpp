@@ -103,6 +103,13 @@ public:
    * \return Number if neighbors of a node val_node.
    */
   inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return nNeighbor_Nodes[val_node]; }
+  
+  /*!
+   * \brief Set the number of neighbors nodes of a node.
+   * \param[in] val_node - Local index of the node.
+   * \param[in] val_nNode - Number of neighbor nodes.
+   */
+  inline void SetnNeighbor_Nodes(unsigned short val_node, unsigned short val_nNode) { nNeighbor_Nodes[val_node] = val_nNode; }
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.
