@@ -5697,23 +5697,23 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /* Reset nodes that only belong to donor elements */
   if (nDonor_Point > 0) {
     nElem -= nDonor_Elem;
-    for (unsigned long iPoint = nPoint-nDonor_Point; iPoint < nPoint; iPoint++) {
-      for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
-        const unsigned long jPoint = node[iPoint]->GetPoint(jNode);
-        for (unsigned short iNode = 0; iNode < node[jPoint]->GetnPoint(); iNode++) {
-          const unsigned long kPoint = node[jPoint]->GetPoint(iNode);
-          if (kPoint == iPoint) { node[jPoint]->ErasePoint(iNode); break; }
-        }
-      }
-      node[iPoint]->ResetElem();
-      node[iPoint]->ResetPoint();
-      node[iPoint]->SetnNeighbor(0);
-    }
-    
-    for (unsigned long iPoint = 0; iPoint < nPoint-nDonor_Point; iPoint++) {
-      node[iPoint]->ResetEdge();
-    }
-    SetEdges();
+//    for (unsigned long iPoint = nPoint-nDonor_Point; iPoint < nPoint; iPoint++) {
+//      for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
+//        const unsigned long jPoint = node[iPoint]->GetPoint(jNode);
+//        for (unsigned short iNode = 0; iNode < node[jPoint]->GetnPoint(); iNode++) {
+//          const unsigned long kPoint = node[jPoint]->GetPoint(iNode);
+//          if (kPoint == iPoint) { node[jPoint]->ErasePoint(iNode); break; }
+//        }
+//      }
+//      node[iPoint]->ResetElem();
+//      node[iPoint]->ResetPoint();
+//      node[iPoint]->SetnNeighbor(0);
+//    }
+//    
+//    for (unsigned long iPoint = 0; iPoint < nPoint-nDonor_Point; iPoint++) {
+//      node[iPoint]->ResetEdge();
+//    }
+//    SetEdges();
     SetControlVolume(config, UPDATE);
     SetBoundControlVolume(config, UPDATE);
   }
