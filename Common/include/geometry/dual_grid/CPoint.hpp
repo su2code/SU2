@@ -354,6 +354,11 @@ public:
    * \brief Reset the points that compose the control volume.
    */
   inline void ResetPoint(void) { Point.clear(); Edge.clear(); nPoint = 0; }
+  
+  /*!
+   * \brief Reset the points that compose the control volume.
+   */
+  inline void ErasePoint(unsigned short val_point) { Point.erase(Point.begin()+val_point); nPoint = Point.size(); }
 
   /*!
    * \brief Set the points that compose the control volume.

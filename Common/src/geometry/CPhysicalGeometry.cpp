@@ -5705,12 +5705,11 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       }
     }
     if (donorOnly) {
-      for (unsigned short iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
-        const unsigned short jElem = node[iPoint]->GetElem(iElem);
-        for (unsigned short iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++) {
-          if (elem[jElem]->GetNode(iNode) == iPoint) {
-            elem[jElem]->SetnNeighbor_Nodes(iNode, 0);
-          }
+      for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
+        const unsigned long jPoint = node[iPoint]->GetPoint(jNode);
+        for (unsigned short iNode = 0; iNode < node[jPoint]->GetnPoint(); iNode++) {
+          const unsigned long kPoint = node[jPoint]->GetPoint(iNode);
+          if (kPoint == iPoint) { node[jPoint]->ErasePoint(iNode); break; }
         }
       }
       node[iPoint]->ResetElem();
@@ -5719,8 +5718,10 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       nDonor_Node++;
     }
   }
-  /* Remove nDonor_Elem to prevent connectivity-related issues */
+  
   if (nDonor_Node > 0) SetEdges();
+  
+  /* Remove nDonor_Elem to prevent connectivity-related issues */
   nElem -= nDonor_Elem;
 }
 
