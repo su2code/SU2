@@ -55,6 +55,7 @@ class CPhysicalGeometry final : public CGeometry {
   nLocal_PointPeriodic,
   nLocal_Elem,
   nLocal_Bound_Elem,
+  nDonor_Elem,
   nGlobal_Elem,
   nGlobal_Bound_Elem,
   nLocal_Line,

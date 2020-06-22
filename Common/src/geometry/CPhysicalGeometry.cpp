@@ -3603,10 +3603,13 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
         in parallel mode. ---*/
 
   if (wmles){
+    nDonor_Elem = 0;
+#ifdef HAVE_MPI
     if (rank == MASTER_NODE)
       cout << "Adding wall model donor elements to the halo list. " << endl;
 
     AddWallModelDonorHalos(config);
+#endif
   }
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
@@ -5689,6 +5692,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
   /* Delete the memory of localVolumeADT again. */
   delete localVolumeADT;
+  
+  /* Remove nDonor_Elem to prevent connectivity-related issues */
+  nElem -= nDonor_Elem;
 }
 
 void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
@@ -6319,6 +6325,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
 
       /*--- Reallocate the element information and add the new
             entries at the end. ---*/
+      nDonorElem = nElemType.size();
       const unsigned long nElemNew  = nElem + newElemType.size();
       CPrimalGrid** tmpElem = new CPrimalGrid*[nElemNew];
       for(unsigned long i=0; i<nElem; ++i)
