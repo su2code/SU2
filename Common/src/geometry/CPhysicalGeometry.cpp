@@ -5696,6 +5696,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   
   /* Reset nodes that only belong to donor elements */
   if (nDonor_Point > 0) {
+    nElem -= nDonor_Elem;
     for (unsigned long iPoint = nPoint-nDonor_Point; iPoint < nPoint; iPoint++) {
         for (unsigned short jNode = 0; jNode < node[iPoint]->GetnPoint(); jNode++) {
           const unsigned long jPoint = node[iPoint]->GetPoint(jNode);
@@ -5716,9 +5717,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     SetControlVolume(config, UPDATE);
     SetBoundControlVolume(config, UPDATE);
   }
-  
-  /* Remove nDonor_Elem to prevent connectivity-related issues */
-  nElem -= nDonor_Elem;
 }
 
 void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
