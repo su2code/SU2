@@ -134,17 +134,6 @@ public:
   inline su2double GetViscosity_Inf(void) const override { return Viscosity_Inf; }
 
   /*!
-   * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
-   */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
-
-  /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
