@@ -6325,7 +6325,7 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
 
       /*--- Reallocate the element information and add the new
             entries at the end. ---*/
-      nDonor_Elem = nElemType.size();
+      nDonor_Elem = newElemType.size();
       const unsigned long nElemNew  = nElem + newElemType.size();
       CPrimalGrid** tmpElem = new CPrimalGrid*[nElemNew];
       for(unsigned long i=0; i<nElem; ++i)
