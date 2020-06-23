@@ -2190,7 +2190,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
   su2double **grad_primvar, tau[3][3];
 
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
-  su2double T_Normal, P_Normal;
+  su2double T_Normal, P_Normal, Lam_Visc_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta, grad_diff;
@@ -2296,6 +2296,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
             P_Normal = GetFluidModel()->GetPressure();
             T_Normal = GetFluidModel()->GetTemperature();
+            Lam_Visc_Normal = GetFluidModel()->GetLaminarViscosity();
 
             /*--- Compute the wall-parallel velocity at the exchange location ---*/
 
@@ -2318,6 +2319,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
             P_Normal = nodes->GetPressure(Point_Normal);
             T_Normal = nodes->GetTemperature(Point_Normal);
+            Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
 
             /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
@@ -2440,6 +2442,10 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             /* --- Newton Step --- */
 
             U_Tau_Rei = U_Tau_Rei - diff / grad_diff;
+
+            if (U_Tau_Rei != U_Tau_Rei) {
+              cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". U_Tau_Rei: " << U_Tau_Rei << ". Y_Plus: " << Y_Plus << ". U_Plus: " << U_Plus << ". diff: " << diff << ". gdiff << " << grad_diff << endl; 
+            }
 
             counter++;
             if (counter == max_iter) {
