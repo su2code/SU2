@@ -1215,6 +1215,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   if(DiscreteAdjoint == true){
     addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -5.0);
+    MinLogResidual=-5.0;
   }
   else
   {
