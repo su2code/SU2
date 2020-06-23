@@ -2432,10 +2432,10 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                         0.4 * Density_Wall * WallDistMod / (kappa * Lam_Visc_Wall * (0.4 * Y_Plus + 1.)) +
                         7.8 * (Y_Plus * Y_Plus / (33. * U_Tau_Rei) * exp(-Y_Plus / 3.) - 
                         Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 11.) - 
-                        Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi *
+                        Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi_Rei *
                         (1. / (kappa * U_Tau_Rei)) + (F_Log - F_Rei) *
                         (4. * pow(Y_Plus / 27., 4.) / U_Tau) * 
-                        pow(sech(pow(Y_Plus / 27., 4.)), 2.);
+                        pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.);
 
             /* --- Newton Step --- */
 
