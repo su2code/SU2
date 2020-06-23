@@ -530,7 +530,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_U,    const su2double *v
                                    su2double **val_Proj_Jac_Tensor) {
 
   unsigned short iDim, jDim, iVar, jVar, iSpecies, jSpecies;
-  su2double proj_vel, rho, u[3], rhoEve, H;
+  su2double proj_vel, rho, u[MAXNDIM], rhoEve, H;
   su2double *rhos;
 
   rhos = new su2double[nSpecies];
@@ -957,7 +957,7 @@ void CNumerics::GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
       val_p_tensor[nSpecies+4][iSpecies] = 0.0;
   }
 
-    val_p_tensor[nSpecies][nSpecies]     = l[0];
+    val_p_tensor[nSpecies][nSpecies]     = l[0]; //cat next 3 blocks correspond to 3dim - make it a loop
     val_p_tensor[nSpecies][nSpecies+1]   = m[0];
     val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
     val_p_tensor[nSpecies][nSpecies+3]   = (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
