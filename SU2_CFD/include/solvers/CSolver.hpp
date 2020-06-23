@@ -4310,9 +4310,19 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeWallFunction(CGeometry *geometry,
-                                          CSolver** solver,
-                                          CConfig* config) { }
+  inline virtual void ComputeNicholsWallFunction(CGeometry *geometry,
+                                                 CSolver** solver,
+                                                 CConfig* config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeKnoppWallFunction(CGeometry *geometry,
+                                               CSolver** solver,
+                                               CConfig* config) { }
   
   /*!
    * \brief Communicate values needed for wall function computation;

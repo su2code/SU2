@@ -510,8 +510,18 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeWallFunction(CGeometry *geometry,
-                           CSolver** solver,
-                           CConfig* config) override;
+  void ComputeNicholsWallFunction(CGeometry *geometry,
+                                  CSolver** solver,
+                                  CConfig* config) override;
+
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeKnoppWallFunction(CGeometry *geometry,
+                                CSolver** solver,
+                                CConfig* config) override;
 
 };
