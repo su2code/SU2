@@ -641,9 +641,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
           Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
           Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1);
-          Kine_Normal    += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
+          Kine_Normal    += donorCoeff*nodes->GetSolution(donorPoint, 0);
 
-          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
+          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
         }
         Energy_Normal /= Density_Normal;
         Kine_Normal   /= Density_Normal;
