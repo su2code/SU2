@@ -2439,13 +2439,13 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                         (4. * pow(Y_Plus / 27., 4.) / U_Tau) * 
                         pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.);
 
+            if (grad_diff != grad_diff) {
+              cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". VelTangMod: " << VelTangMod << ". pow(...): " << pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.) << endl; 
+            }
+
             /* --- Newton Step --- */
 
             U_Tau_Rei = U_Tau_Rei - diff / grad_diff;
-
-            if (U_Tau_Rei != U_Tau_Rei) {
-              cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". U_Tau_Rei: " << U_Tau_Rei << ". Y_Plus: " << Y_Plus << ". U_Plus: " << U_Plus << ". diff: " << diff << ". gdiff << " << grad_diff << endl; 
-            }
 
             counter++;
             if (counter == max_iter) {
