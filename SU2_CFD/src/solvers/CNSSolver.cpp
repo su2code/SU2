@@ -2406,58 +2406,61 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
           /*--- First solve for Riechardt U_Tau ---*/
 
-          while (fabs(diff) > tol) {
+          if (Y_Plus < 500.) {
 
-            /*--- y+ ---*/
+            while (fabs(diff) > tol) {
 
-            Y_Plus = Density_Wall*WallDistMod*U_Tau_Rei/Lam_Visc_Wall;
+              /*--- y+ ---*/
 
-            /*--- Spalding's universal form for the BL velocity. ---*/
+              Y_Plus = Density_Wall*WallDistMod*U_Tau_Rei/Lam_Visc_Wall;
 
-            F_Rei = log(1. + 0.4 * Y_Plus) / kappa + 
-                    7.8 * (1. - exp(-Y_Plus / 11.) - 
-                    (Y_Plus / 11.) * exp(-Y_Plus / 3.));
+              /*--- Spalding's universal form for the BL velocity. ---*/
 
-            /*--- Blending with classic log law. ---*/
+              F_Rei = log(1. + 0.4 * Y_Plus) / kappa + 
+                      7.8 * (1. - exp(-Y_Plus / 11.) - 
+                      (Y_Plus / 11.) * exp(-Y_Plus / 3.));
 
-            F_Log = log(Y_Plus) / kappa + 5.1;
-            Phi_Rei = tanh(pow(Y_Plus / 27., 4.));
-            U_Plus = (1. - Phi_Rei) * F_Rei + Phi_Rei * F_Log;
+              /*--- Blending with classic log law. ---*/
 
-            /* --- Define function for Newton method to zero --- */
+              F_Log = log(Y_Plus) / kappa + 5.1;
+              Phi_Rei = tanh(pow(Y_Plus / 27., 4.));
+              U_Plus = (1. - Phi_Rei) * F_Rei + Phi_Rei * F_Log;
 
-            diff = U_Plus - (VelTangMod / U_Tau_Rei);
+              /* --- Define function for Newton method to zero --- */
 
-            /* --- Gradient of function defined above --- */
+              diff = U_Plus - (VelTangMod / U_Tau_Rei);
 
-            grad_diff = VelTangMod /(U_Tau_Rei * U_Tau_Rei) + (1. - Phi_Rei) *
-                        0.4 * Density_Wall * WallDistMod / (kappa * Lam_Visc_Wall * (1. + 0.4 * Y_Plus)) +
-                        7.8 * (Y_Plus * Y_Plus / (33. * U_Tau_Rei) * exp(-Y_Plus / 3.) - 
-                        Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 11.) - 
-                        Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi_Rei *
-                        (1. / (kappa * U_Tau_Rei)) + (F_Log - F_Rei) *
-                        (4. * pow(Y_Plus / 27., 4.) / U_Tau) * 
-                        pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.);
+              /* --- Gradient of function defined above --- */
 
-            if (grad_diff != grad_diff) {
-              cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus << ". pow(...): " << pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.) << endl; 
+              grad_diff = VelTangMod /(U_Tau_Rei * U_Tau_Rei) + (1. - Phi_Rei) *
+                          0.4 * Density_Wall * WallDistMod / (kappa * Lam_Visc_Wall * (1. + 0.4 * Y_Plus)) +
+                          7.8 * (Y_Plus * Y_Plus / (33. * U_Tau_Rei) * exp(-Y_Plus / 3.) - 
+                          Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 11.) - 
+                          Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi_Rei *
+                          (1. / (kappa * U_Tau_Rei)) + (F_Log - F_Rei) *
+                          (4. * pow(Y_Plus / 27., 4.) / U_Tau) * 
+                          pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.);
+
+              if (grad_diff != grad_diff) {
+                cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus << ". pow(...): " << pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.) << endl; 
+              }
+
+              /* --- Newton Step --- */
+
+              U_Tau_Rei = U_Tau_Rei - diff / grad_diff;
+
+              counter++;
+              if (counter == max_iter) {
+                converged = false;
+                break;
+              }
+
             }
-
-            /* --- Newton Step --- */
-
-            U_Tau_Rei = U_Tau_Rei - diff / grad_diff;
-
-            counter++;
-            if (counter == max_iter) {
-              converged = false;
-              break;
-            }
-
           }
 
-          /*--- If not converged, jump to the next point. --- */
+          /*--- If not converged or y+ too large, jump to the next point. --- */
 
-          if (!converged) {
+          if (!converged || Y_Plus > 500.) {
             nodes->SetTauWall(iPoint,-1.0);
             nodes->SetTauWallFactor(iPoint,1.0);
             continue;
@@ -2467,7 +2470,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
           U_Tau_Spa = U_Tau_Rei;
 
-          if (Y_Plus < 500.) {
+          if (Y_Plus < 300.) {
 
             counter = 0; diff = 1.0;
 
