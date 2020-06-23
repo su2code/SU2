@@ -1795,7 +1795,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
-void CTurbSASolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CTurbSASolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   /*--- Local variables ---*/
 

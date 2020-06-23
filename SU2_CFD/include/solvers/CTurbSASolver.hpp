@@ -420,7 +420,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeWallFunction(CGeometry *geometry,
-                           CSolver** solver,
-                           CConfig* config) override;
+  void ComputeNicholsWallFunction(CGeometry *geometry,
+                                  CSolver** solver,
+                                  CConfig* config) override;
 };
