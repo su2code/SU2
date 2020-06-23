@@ -603,7 +603,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iVar;
+  unsigned short iVar, iDim;
   su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
   const su2double beta_1 = constants[4];
