@@ -949,7 +949,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-6;    // Tolerance for the Newton-Raphson method
-  Btol     = 1.0E-4;    // Tolerance for the Bisection method
+  Btol     = 1.0E-6;    // Tolerance for the Bisection method
   maxNIter = 18;        // Maximum Newton-Raphson iterations
   maxBIter = 32;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
@@ -1025,8 +1025,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     errT    = true;
   //  std::cout << "Tmax" << std::endl << std::endl;
   }
-
-
+  
   /*--- Vibrational-Electronic Temperature ---*/
 
   // Check for non-physical solutions
