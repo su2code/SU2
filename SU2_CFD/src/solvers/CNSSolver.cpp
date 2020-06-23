@@ -1884,7 +1884,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  const unsigned short max_iter = 100;
+  const unsigned short max_iter = 1000;
   const su2double tol = 1e-12;
   bool converged = true;
 
