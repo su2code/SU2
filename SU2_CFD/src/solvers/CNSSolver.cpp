@@ -2280,7 +2280,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               
               Density_Normal  += donorCoeff*nodes->GetSolution(donorPoint, 0);
               Energy_Normal   += donorCoeff*nodes->GetSolution(donorPoint, nDim+1);
-              if (tkeNeeded)
+              if (tkeNeeded && solver[TURB_SOL] != nullptr)
                 Kine_Normal   += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint, 0);
               
               for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
