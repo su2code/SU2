@@ -1887,6 +1887,8 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   const unsigned short max_iter = 50;
   const su2double tol = 1e-6;
   bool converged = true;
+
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
   
   /*--- Compute the recovery factor ---*/
   // Double-check: laminar or turbulent Pr for this?
@@ -1948,7 +1950,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
 
             /*--- Get the density, momentum, and energy at the exchange location ---*/
             
-            su2double Density_Normal = 0., Energy_Normal = 0.;
+            su2double Density_Normal = 0., Energy_Normal = 0., Kine_Normal = 0., VelMod = 0.;
             P_Normal = 0.;
             T_Normal = 0.;
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
@@ -1959,7 +1961,9 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
               Density_Normal  += donorCoeff*nodes->GetSolution(donorPoint, 0);
-              Energy_Normal += donorCoeff*nodes->GetSolution(donorPoint, nDim+1);
+              Energy_Normal   += donorCoeff*nodes->GetSolution(donorPoint, nDim+1);
+              if (tkeNeeded)
+                Kine_Normal   += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint, 0);
               
               for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
             }
@@ -1967,7 +1971,9 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
             /*--- Compute the primitives at the exchange location ---*/
             
             Energy_Normal /= Density_Normal;
-            for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] /= Density_Normal;
+            Kine_Normal   /= Density_Normal;
+            for (iDim = 0; iDim < nDim; iDim++) { Vel[iDim] /= Density_Normal; VelMod += Vel[iDim]*Vel[iDim]; }
+            Energy_Normal -= Kine_Normal + 0.5*VelMod;
             
             GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
             P_Normal = GetFluidModel()->GetPressure();
