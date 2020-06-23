@@ -604,7 +604,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iVar;
-  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Energy_Normal = 0.0, Lam_Visc_Normal = 0.0, beta_1 = constants[4];
+  su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
+  su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
+  const su2double beta_1 = constants[4];
   
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   
@@ -626,7 +628,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         unsigned short nDonors = geometry->vertex[val_marker][iVertex]->GetnDonorPoints();
 
         Density_Normal = 0.;
+        Energy_Normal  = 0.;
+        Kine_Normal    = 0.;
         Lam_Visc_Normal = 0.;
+
+        VelMode = 0.;
+        for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
 
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
           unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
@@ -634,8 +641,15 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
           Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
           Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1);
+          Kine_Normal    += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
+
+          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
         }
         Energy_Normal /= Density_Normal;
+        Kine_Normal   /= Density_Normal;
+        for (iDim = 0; iDim < nDim; iDim++) { Vel[iDim] /= Density_Normal; VelMod += Vel[iDim]*Vel[iDim]; }
+        Energy_Normal -= Kine_Normal + 0.5*VelMod;
+        
         solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
         Lam_Visc_Normal = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
       }
