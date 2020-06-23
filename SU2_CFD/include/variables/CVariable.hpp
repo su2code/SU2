@@ -105,6 +105,10 @@ protected:
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
+  /*!< \brief Inddex definition for NEMO variables. */
+  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX, nSpecies;
+
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
 public:

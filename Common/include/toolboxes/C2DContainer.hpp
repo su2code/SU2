@@ -596,7 +596,10 @@ struct C3DDummyMiddleView
   }
 };
 
-/* Decorate a vector type (Storage) with 3 dimensions */
+/*!
+ * \class C3DContainerDecorator
+ * \brief Decorate a vector type (Storage) with 3 dimensions. *
+ */
 template<class Storage>
 struct C3DContainerDecorator {
   using Scalar = typename Storage::Scalar;

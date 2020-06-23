@@ -155,6 +155,17 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     unsigned short nPrimVar     = nSpecies+nDim+8;
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
     unsigned long nPoint = 1;
+
+    RHOS_INDEX    = 0;
+    T_INDEX       = nSpecies;
+    TVE_INDEX     = nSpecies+1;
+    VEL_INDEX     = nSpecies+2;
+    P_INDEX       = nSpecies+nDim+2;
+    RHO_INDEX     = nSpecies+nDim+3;
+    H_INDEX       = nSpecies+nDim+4;
+    A_INDEX       = nSpecies+nDim+5;
+    RHOCVTR_INDEX = nSpecies+nDim+6;
+    RHOCVVE_INDEX = nSpecies+nDim+7;
     
   }
 

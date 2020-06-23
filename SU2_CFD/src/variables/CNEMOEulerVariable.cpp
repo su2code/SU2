@@ -55,7 +55,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
   nPrimVar     = val_nprimvar;
   nPrimVarGrad = val_nprimvargrad;
 
-  nSpecies     = config->GetnSpecies();
   ionization   = config->GetIonization();
 
   /*--- Array initialization ---*/
@@ -67,28 +66,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
 
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  //cat apagar isto se só for necessario no constructor já a seguir. same para o header disto
-
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
   }
-
-  //cat
-
-  /*--- Define structure of the primtive variable vector ---*/
-  // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-  // GradPrim:  [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
-  RHOS_INDEX    = 0;
-  T_INDEX       = nSpecies;
-  TVE_INDEX     = nSpecies+1;
-  VEL_INDEX     = nSpecies+2;
-  P_INDEX       = nSpecies+nDim+2;
-  RHO_INDEX     = nSpecies+nDim+3;
-  H_INDEX       = nSpecies+nDim+4;
-  A_INDEX       = nSpecies+nDim+5;
-  RHOCVTR_INDEX = nSpecies+nDim+6;
-  RHOCVVE_INDEX = nSpecies+nDim+7;
-
 }
 
 
@@ -116,24 +96,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   su2double RuSI, Ru, sqvel, num, denom, conc, soundspeed;
 
   /*--- Setting variable amounts ---*/
-  nSpecies     = config->GetnSpecies();
   nDim         = ndim;
   nPrimVar     = nvarprim;
   nPrimVarGrad = nvarprimgrad;
-
-  /*--- Define structure of the primtive variable vector ---*/
-  // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-  // GradPrim:  [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
-  RHOS_INDEX    = 0;
-  T_INDEX       = nSpecies;
-  TVE_INDEX     = nSpecies+1;
-  VEL_INDEX     = nSpecies+2;
-  P_INDEX       = nSpecies+nDim+2;
-  RHO_INDEX     = nSpecies+nDim+3;
-  H_INDEX       = nSpecies+nDim+4;
-  A_INDEX       = nSpecies+nDim+5;
-  RHOCVTR_INDEX = nSpecies+nDim+6;
-  RHOCVVE_INDEX = nSpecies+nDim+7;
 
   /*--- Allocate & initialize residual vectors ---*/
 

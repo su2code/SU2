@@ -50,18 +50,12 @@ class CNEMOEulerVariable : public CVariable {
 protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
-  unsigned long nSpecies;   /*!< \brief Number of species in the gas mixture. */
   VectorType Velocity2;		/*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
-  //cat
-
-  //VectorOfMatrix  Gradient;       /*!< \brief Gradient of the conservative variables (rho_1, ..., rho_s, u, v, w, E, Eve). */
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   
-  //cat
-
   /*--- Primitive variable definition ---*/
   MatrixType Primitive;	              /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
   MatrixType Primitive_Aux;           /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
@@ -82,11 +76,6 @@ protected:
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
 
   MatrixType Source;         /*!< \brief Source terms of the problem */
-
-  /*--- Index Definition ---*/
-
-  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
 
 public:
 

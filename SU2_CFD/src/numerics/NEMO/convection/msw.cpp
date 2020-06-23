@@ -1,9 +1,8 @@
 /*!
- * \file NEMO_slau.hpp
- * \brief Declaration of numerics classes for the NEMO family of schemes,
- *        including SLAU. The implementation is in NEMO.cpp.
+ * \file msw.cpp
+ * \brief Implementations of the modified Steger-Warming scheme.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "../../../../include/numerics/NEMO/convection/msw.hpp"
 
@@ -80,17 +78,6 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   }
 
   variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
-
-  RHOS_INDEX    = variable->GetRhosIndex()    ;
-  RHO_INDEX     = variable->GetRhoIndex()     ;
-  P_INDEX       = variable->GetPIndex()       ;
-  T_INDEX       = variable->GetTIndex()       ;
-  TVE_INDEX     = variable->GetTveIndex()     ;
-  VEL_INDEX     = variable->GetVelIndex()     ;
-  H_INDEX       = variable->GetHIndex()       ;
-  A_INDEX       = variable->GetAIndex()       ;
-  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
-  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {

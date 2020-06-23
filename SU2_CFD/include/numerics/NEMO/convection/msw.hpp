@@ -1,9 +1,8 @@
 /*!
- * \file NEMO_slau.hpp
- * \brief Declaration of numerics classes for the NEMO family of schemes,
- *        including SLAU. The implementation is in NEMO.cpp.
+ * \file msw.hpp
+ * \brief Declaration of numerics classes for modified Steger-Warming scheme. The implementation is in msw.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

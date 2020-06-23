@@ -78,6 +78,20 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+
+  if(config->GetNEMOProblem()){
+    nSpecies     = config->GetnSpecies();
+    RHOS_INDEX    = 0;
+    T_INDEX       = nSpecies;
+    TVE_INDEX     = nSpecies+1;
+    VEL_INDEX     = nSpecies+2;
+    P_INDEX       = nSpecies+nDim+2;
+    RHO_INDEX     = nSpecies+nDim+3;
+    H_INDEX       = nSpecies+nDim+4;
+    A_INDEX       = nSpecies+nDim+5;
+    RHOCVTR_INDEX = nSpecies+nDim+6;
+    RHOCVVE_INDEX = nSpecies+nDim+7;
+  }
 }
 
 void CVariable::Set_OldSolution() {

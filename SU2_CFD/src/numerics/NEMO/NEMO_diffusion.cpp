@@ -1,9 +1,9 @@
 /*!
- * \file NEMO_slau.hpp
- * \brief Declaration of numerics classes for the NEMO family of schemes,
- *        including SLAU. The implementation is in NEMO.cpp.
+ * \file NEMO_diffusion.cpp
+ * \brief Implementation of numerics classes for discretization
+ *        of viscous fluxes in fluid flow NEMO problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,17 +67,6 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
   variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
-
-  RHOS_INDEX    = variable->GetRhosIndex()    ;
-  RHO_INDEX     = variable->GetRhoIndex()     ;
-  P_INDEX       = variable->GetPIndex()       ;
-  T_INDEX       = variable->GetTIndex()       ;
-  TVE_INDEX     = variable->GetTveIndex()     ;
-  VEL_INDEX     = variable->GetVelIndex()     ;
-  H_INDEX       = variable->GetHIndex()       ;
-  A_INDEX       = variable->GetAIndex()       ;
-  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
-  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {

@@ -1713,7 +1713,7 @@ public:
    * \brief Get the vector of free stream mass fraction values.
    * \return Ratio of species mass to mixture mass.
    */
-  const su2double* GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
+  const su2double* GetMassFrac_FreeStream(void) const { return MassFrac_FreeStream; }
 
   /*!
    * \brief Get the value of the solid density.
@@ -5382,7 +5382,7 @@ public:
   bool GetIonization(void) const { return ionization; }
 
   /*!
-   * \brief Indicates whether electron gas is present in the gas mixture.
+   * \brief Indicates whether the flow is frozen (chemistry deactivated).
    */
   bool GetFrozen(void) const { return frozen; }
 

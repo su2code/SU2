@@ -4636,5 +4636,4 @@ protected:
                                unsigned short nVar,
                                CConfig        *config);
 
-
 };

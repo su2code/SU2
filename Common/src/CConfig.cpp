@@ -6685,11 +6685,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-  if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
 
-  if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||
-      Kind_Solver == NAVIER_STOKES || Kind_Solver == DISC_ADJ_NAVIER_STOKES ||
-      Kind_Solver == RANS          || Kind_Solver == DISC_ADJ_RANS) {
+        if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||
+            Kind_Solver == NAVIER_STOKES || Kind_Solver == DISC_ADJ_NAVIER_STOKES ||
+            Kind_Solver == RANS          || Kind_Solver == DISC_ADJ_RANS) {
           switch (Kind_RoeLowDiss) {
             case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
             case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;

@@ -1,9 +1,8 @@
 /*!
- * \file NEMO_slau.hpp
- * \brief Declaration of numerics classes for the NEMO family of schemes,
- *        including SLAU. The implementation is in NEMO.cpp.
+ * \file ausm.hpp
+ * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO. The implementation is in ausm.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
