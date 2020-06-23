@@ -2463,6 +2463,8 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
           if (Y_Plus < 500.) {
 
+            counter = 0; diff = 1.0;
+
             while (fabs(diff) > tol) {
 
               /*--- u+ ---*/
@@ -2514,6 +2516,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
           else Phi_Kno = 1.0;
 
           U_Tau = (1. - Phi_Kno) * U_Tau_Spa + Phi_Kno * U_Tau_Rei;
+          Y_Plus = Density_Wall*WallDistMod*U_Tau/Lam_Visc_Wall;
 
           /*--- Calculate an updated value for the wall shear stress
             using the y+ value, the definition of y+, and the definition of
