@@ -2398,8 +2398,8 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
            shear stress as a starting guess for the wall function. ---*/
 
           counter = 0; diff = 1.0;
-          U_Tau_Rei = sqrt(WallShearStress/Density_Wall);
-          Y_Plus = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
+          U_Tau_Rei = VelTangMod / WallDistMod;
+          Y_Plus = Density_Wall * U_Tau_Rei * WallDistMod / Lam_Visc_Wall;
           converged = true;
 
           /*--- First solve for Riechardt U_Tau ---*/
@@ -2429,7 +2429,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             /* --- Gradient of function defined above --- */
 
             grad_diff = VelTangMod /(U_Tau_Rei * U_Tau_Rei) + (1. - Phi_Rei) *
-                        0.4 * Density_Wall * WallDistMod / (kappa * Lam_Visc_Wall * (0.4 * Y_Plus + 1.)) +
+                        0.4 * Density_Wall * WallDistMod / (kappa * Lam_Visc_Wall * (1. + 0.4 * Y_Plus)) +
                         7.8 * (Y_Plus * Y_Plus / (33. * U_Tau_Rei) * exp(-Y_Plus / 3.) - 
                         Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 11.) - 
                         Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi_Rei *
@@ -2474,7 +2474,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               /*--- Spalding's universal form for the BL velocity. ---*/
 
               Y_Plus = U_Plus + (exp(-kappa * B) *
-                       (exp(-kappa * U_Plus) - kappa*U_Plus -
+                       (exp(kappa * U_Plus) - kappa*U_Plus -
                        kappa*kappa*U_Plus*U_Plus/2.0 -
                        kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
 
@@ -2484,7 +2484,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
               /* --- Gradient of function defined above --- */
               grad_diff = -VelTangMod / (U_Tau_Spa * U_Tau_Spa) + exp(-kappa * B) * 
-                          (kappa * U_Plus / U_Tau_Spa * exp(-kappa * U_Plus) + 
+                          (-kappa * U_Plus / U_Tau_Spa * exp(kappa * U_Plus) + 
                           kappa * U_Plus / U_Tau_Spa +
                           kappa * kappa * U_Plus * U_Plus / U_Tau_Spa +
                           kappa * kappa * kappa * U_Plus * U_Plus * U_Plus / U_Tau_Spa ) - 
