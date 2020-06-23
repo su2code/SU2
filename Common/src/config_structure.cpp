@@ -3679,6 +3679,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}
   }
 
+  if (DiscreteAdjoint){
+    MinLogResidual=-5.0;
+  }
+
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -5437,7 +5441,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
         if (ContinuousAdjoint || DiscreteAdjoint) {
-          this->MinLogResidual=-5.0;
           cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
           cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
         }
