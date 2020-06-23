@@ -7718,75 +7718,129 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   }
 
   int naca_dim = 0;
-  if(const char* env_naca_dim = std::getenv("NACA_DIM")) {
-      naca_dim = std::atoi(env_naca_dim);
-      if(naca_dim) printf("Getting NACA_DIM = %d from environment\n", naca_dim);
-  }
-  Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
   Eigen::MatrixXd Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
-  std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
-  std::vector<pair<int, int>> boundary_list;
-  std::vector<pair<int, int>> boundary_list_temp(naca_dim);
-  for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
-    if (boundaries[iMarker].markerTag == "airfoil") {
-      for (int j = 0; j < naca_dim; ++j){
-        int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
-        int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
-        int Point_min = min(Point1, Point2);
-        int Point_max = max(Point1, Point2);
-        int found = false;
-        for (auto i = boundary_list.begin(); i != boundary_list.end(); ++i) {
-          if (i->second == Point1) {
-            boundary_list.insert(i+1, pair<int, int>(Point1, Point2));
-            found = true;
-            break;
+  Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+  if(const char* env_naca_dim = std::getenv("NACA_DIM")) {
+    naca_dim = std::atoi(env_naca_dim);
+    if(naca_dim) printf("Getting NACA_DIM = %d from environment\n", naca_dim);
+    std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
+    std::vector<pair<int, int>> boundary_list;
+    std::vector<pair<int, int>> boundary_list_temp(naca_dim);
+    for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
+      if (boundaries[iMarker].markerTag == "airfoil") {
+        for (int j = 0; j < naca_dim; ++j){
+          int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
+          int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
+          int Point_min = min(Point1, Point2);
+          int Point_max = max(Point1, Point2);
+          int found = false;
+          for (auto i = boundary_list.begin(); i != boundary_list.end(); ++i) {
+            if (i->second == Point1) {
+              boundary_list.insert(i+1, pair<int, int>(Point1, Point2));
+              found = true;
+              break;
+            }
+            else if (i->first == Point2) {
+              boundary_list.insert(i, pair<int, int>(Point1, Point2));
+              found = true;
+              break;
+            }
           }
-          else if (i->first == Point2) {
-            boundary_list.insert(i, pair<int, int>(Point1, Point2));
-            found = true;
-            break;
+          if (found == false) {
+            boundary_list.push_back(pair<int, int>(Point1, Point2));
           }
-        }
-        if (found == false) {
-          boundary_list.push_back(pair<int, int>(Point1, Point2));
         }
       }
     }
+    // for (int i = 0; i < boundary_list.size(); ++i){
+    //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
+    // }
+    // cout << endl;
+    for (int i = 0; i < nVolElemOwned; ++i){
+      const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
+      const unsigned long nDOFs  = volElem[i].nDOFsSol;
+      element_edgelist[i].resize(nDOFs);
+      element_edgelist[i][0] = make_pair<int, int>(min(DOFs[0], DOFs[1]), max(DOFs[0], DOFs[1]));
+      element_edgelist[i][1] = make_pair<int, int>(min(DOFs[1], DOFs[3]), max(DOFs[1], DOFs[3]));
+      element_edgelist[i][2] = make_pair<int, int>(min(DOFs[2], DOFs[3]), max(DOFs[2], DOFs[3]));
+      element_edgelist[i][3] = make_pair<int, int>(min(DOFs[0], DOFs[2]), max(DOFs[0], DOFs[2]));
+    }
+    for (int layer = 0; layer < naca_dim; ++layer){
+      for (int i = 0; i < element_edgelist.size(); ++i) {
+        for (int k = 0; k < element_edgelist[i].size(); ++k) {
+          auto iter = std::find(boundary_list.begin(), boundary_list.end(), element_edgelist[i][k]);
+          if (iter != boundary_list.end()) {
+            const unsigned long offset = volElem[i].offsetDOFsSolLocal;
+            int index_j = iter-boundary_list.begin();
+            // cout << "index_j = " << index_j << ", with original boundaries (" << boundary_list[index_j].first << ", "
+            // << boundary_list[index_j].second <<"), and new boundaries (" << element_edgelist[i][(k+2)%nVar].first << ", "
+            // << element_edgelist[i][(k+2)%nVar].second << "), and offset = " << offset << " and layer = " << layer << endl;
+            boundary_list_temp[index_j] = element_edgelist[i][(k+2)%nVar];
+            element_edgelist[i].clear();
+            Coord_ij(1, offset/nVar) = index_j;
+            Coord_ij(0, offset/nVar) = layer;
+          }
+        }
+      }
+      boundary_list = boundary_list_temp;
+    }
+    // cout << Coord_ij.format(CleanFmt) << endl;
   }
-  // assert(boundary_list.size() == naca_dim);
-  // for (int i = 0; i < boundary_list.size(); ++i){
-  //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
-  // }
-  // cout << endl;
-  for (int i = 0; i < nVolElemOwned; ++i){
-    const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
-    const unsigned long nDOFs  = volElem[i].nDOFsSol;
-    element_edgelist[i].resize(nDOFs);
-    element_edgelist[i][0] = make_pair<int, int>(min(DOFs[0], DOFs[1]), max(DOFs[0], DOFs[1]));
-    element_edgelist[i][1] = make_pair<int, int>(min(DOFs[1], DOFs[3]), max(DOFs[1], DOFs[3]));
-    element_edgelist[i][2] = make_pair<int, int>(min(DOFs[2], DOFs[3]), max(DOFs[2], DOFs[3]));
-    element_edgelist[i][3] = make_pair<int, int>(min(DOFs[0], DOFs[2]), max(DOFs[0], DOFs[2]));
-  }
-  for (int layer = 0; layer < naca_dim; ++layer){
-    for (int i = 0; i < element_edgelist.size(); ++i) {
-      for (int k = 0; k < element_edgelist[i].size(); ++k) {
-        auto iter = std::find(boundary_list.begin(), boundary_list.end(), element_edgelist[i][k]);
-        if (iter != boundary_list.end()) {
-          const unsigned long offset = volElem[i].offsetDOFsSolLocal;
-          int index_j = iter-boundary_list.begin();
-          // cout << "index_j = " << index_j << ", with original boundaries (" << boundary_list[index_j].first << ", "
-          // << boundary_list[index_j].second <<"), and new boundaries (" << element_edgelist[i][(k+2)%nVar].first << ", "
-          // << element_edgelist[i][(k+2)%nVar].second << "), and offset = " << offset << " and layer = " << layer << endl;
-          boundary_list_temp[index_j] = element_edgelist[i][(k+2)%nVar];
-          element_edgelist[i].clear();
-          Coord_ij(1, offset/nVar) = index_j;
-          Coord_ij(0, offset/nVar) = layer;
+
+  int flatplate_dim = 0;
+  // Eigen::MatrixXd Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
+  // Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+  if(const char* env_flatplate_dim = std::getenv("FLATPLATE_DIM")) {
+    flatplate_dim = std::atoi(env_flatplate_dim);
+    if(flatplate_dim) printf("Getting FLATPLATE_DIM = %d from environment\n", flatplate_dim);
+    std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
+    std::vector<pair<int, int>> boundary_list;
+    std::vector<pair<int, int>> boundary_list_temp(flatplate_dim);
+    for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
+      if ((boundaries[iMarker].markerTag == "symmetry") || (boundaries[iMarker].markerTag == "wall")) {
+        for (int j = 0; j < boundaries[iMarker].surfElem.size(); ++j){
+          int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
+          int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
+          int Point_min = min(Point1, Point2);
+          int Point_max = max(Point1, Point2);
+          boundary_list.push_back(pair<int, int>(Point_min, Point_max));
         }
       }
     }
-    boundary_list = boundary_list_temp;
+    sort(boundary_list.begin(), boundary_list.end());
+    // for (int i = 0; i < boundary_list.size(); ++i){
+    //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
+    // }
+    // cout << endl;
+    for (int i = 0; i < nVolElemOwned; ++i){
+      const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
+      const unsigned long nDOFs  = volElem[i].nDOFsSol;
+      element_edgelist[i].resize(nDOFs);
+      element_edgelist[i][0] = make_pair<int, int>(min(DOFs[0], DOFs[1]), max(DOFs[0], DOFs[1]));
+      element_edgelist[i][1] = make_pair<int, int>(min(DOFs[1], DOFs[3]), max(DOFs[1], DOFs[3]));
+      element_edgelist[i][2] = make_pair<int, int>(min(DOFs[2], DOFs[3]), max(DOFs[2], DOFs[3]));
+      element_edgelist[i][3] = make_pair<int, int>(min(DOFs[0], DOFs[2]), max(DOFs[0], DOFs[2]));
+    }
+    for (int layer = 0; layer < flatplate_dim; ++layer){
+      for (int i = 0; i < element_edgelist.size(); ++i) {
+        for (int k = 0; k < element_edgelist[i].size(); ++k) {
+          auto iter = std::find(boundary_list.begin(), boundary_list.end(), element_edgelist[i][k]);
+          if (iter != boundary_list.end()) {
+            const unsigned long offset = volElem[i].offsetDOFsSolLocal;
+            int index_j = iter-boundary_list.begin();
+            // cout << "index_j = " << index_j << ", with original boundaries (" << boundary_list[index_j].first << ", "
+            // << boundary_list[index_j].second <<"), and new boundaries (" << element_edgelist[i][(k+2)%nVar].first << ", "
+            // << element_edgelist[i][(k+2)%nVar].second << "), and offset = " << offset << " and layer = " << layer << endl;
+            boundary_list_temp[index_j] = element_edgelist[i][(k+2)%nVar];
+            element_edgelist[i].clear();
+            Coord_ij(1, offset/nVar) = index_j;
+            Coord_ij(0, offset/nVar) = layer;
+          }
+        }
+      }
+      boundary_list = boundary_list_temp;
+    }
   }
-  // cout << Coord_ij.format(CleanFmt) << endl;
 
   // dummy preconditioner
   class precond {
