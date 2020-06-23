@@ -632,7 +632,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Kine_Normal    = 0.;
         Lam_Visc_Normal = 0.;
 
-        VelMode = 0.;
+        VelMod = 0.;
         for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
 
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
