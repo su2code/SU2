@@ -1912,10 +1912,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
     case SOLUTION_GRADIENT:
       COUNT_PER_POINT  = nVar*nDim*2;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case PRIMITIVE:
-      COUNT_PER_POINT  = nPrimVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;  
     case PRIMITIVE_GRADIENT:
       COUNT_PER_POINT  = nPrimVarGrad*nDim*2;
@@ -2808,12 +2804,10 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   const auto& solution = base_nodes->GetSolution();
   auto& rmatrix = base_nodes->GetRmatrix();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
- 
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
   computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
                                weighted, solution, 0, nVar, gradient, rmatrix);
-
 }
 
 void CSolver::Add_External_To_Solution() {
