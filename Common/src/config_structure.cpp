@@ -1213,8 +1213,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 10.0);
   /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   
-  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -12.0);
+  //addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -12.0);
   if(DiscreteAdjoint == true){MinLogResidual=-5.0;}
+  else
+  MinLogResidual=-12.0;
   
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
