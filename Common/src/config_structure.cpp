@@ -3680,7 +3680,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (DiscreteAdjoint){
-    MinLogResidual=-5.0;
+    MinLogResidual=-8.0;
   }
 
   /*--- If there are not design variables defined in the file ---*/
