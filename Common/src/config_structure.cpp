@@ -1213,10 +1213,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 10.0);
   /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   
-  //addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -12.0);
-  if(this->GetDiscrete_Adjoint() == true){MinLogResidual=-5.0;}
-  else
-    {MinLogResidual=-12.0;}
+  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -12.0);
   
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
@@ -5440,6 +5437,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
         if (ContinuousAdjoint || DiscreteAdjoint) {
+          MinLogResidual=-5.0;
           cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
           cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
         }
