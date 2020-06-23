@@ -434,17 +434,17 @@ void CFluidIteration::Iterate(COutput *output,
 
   }
   
-  /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
-
-  if (config[val_iZone]->GetDiscrete_Adjoint()) {
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
-                                                                  config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-    
-    su2double monitor = 1.0;
-    integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst],
-                                                                           numerics[val_iZone][val_iInst], config[val_iZone],
-                                                                           MESH_0, RUNTIME_FLOW_SYS, &monitor);
-  }
+//  /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
+//
+//  if (config[val_iZone]->GetDiscrete_Adjoint()) {
+//    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+//                                                                  config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+//    
+//    su2double monitor = 1.0;
+//    integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst],
+//                                                                           numerics[val_iZone][val_iInst], config[val_iZone],
+//                                                                           MESH_0, RUNTIME_FLOW_SYS, &monitor);
+//  }
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
