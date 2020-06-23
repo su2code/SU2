@@ -1888,6 +1888,7 @@ void CNSSolver::ComputeWallFunction(CGeometry *geometry, CSolver **solver, CConf
   const su2double tol = 1e-6;
   bool converged = true;
 
+  const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
   
   /*--- Compute the recovery factor ---*/
