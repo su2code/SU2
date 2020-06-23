@@ -7859,7 +7859,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
   }
   unsigned long IterLinSol;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 150, &m_loc[0], &fst_row[0]);
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
