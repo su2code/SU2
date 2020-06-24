@@ -6747,6 +6747,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
         case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
         case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
+        case MODIFIED_ADIABATIC_EFFICIENCY: AdjExt = "_mae";     break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
       }

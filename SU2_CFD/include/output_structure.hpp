@@ -166,6 +166,7 @@ class COutput {
         ***TurboVelocityOut,
         **EnthalpyOutIs,
         **EntropyGen,
+        **ModifiedAdiabaticEfficiency,
         **AbsFlowAngleIn,
         **TotalEnthalpyOut,
         **RothalpyIn,
@@ -718,6 +719,13 @@ public:
    * \param[in] iSpan - span section.
    */
   su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+   * \brief Give the Modified Adiabatic Efficiency for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetModifiedAdiabaticEfficiency(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.

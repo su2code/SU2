@@ -1263,6 +1263,7 @@ enum ENUM_OBJECTIVE {
   MASS_FLOW_OUT = 48,
   PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
+  MODIFIED_ADIABATIC_EFFICIENCY = 57,
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE=61               /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
 };
@@ -1307,6 +1308,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MASS_FLOW_OUT", MASS_FLOW_OUT)
 ("PRESSURE_RATIO",  PRESSURE_RATIO)
 ("ENTROPY_GENERATION",  ENTROPY_GENERATION)
+("MODIFIED_ADIABATIC_EFFICIENCY", MODIFIED_ADIABATIC_EFFICIENCY)
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
 ("REFERENCE_NODE", REFERENCE_NODE);

@@ -4468,6 +4468,9 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
   case MASS_FLOW_IN:
     solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
     break;
+  case MODIFIED_ADIABATIC_EFFICIENCY:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetModifiedAdiabaticEfficiency(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    break;
   default:
     break;
   }
