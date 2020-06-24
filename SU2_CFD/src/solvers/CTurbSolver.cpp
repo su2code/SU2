@@ -585,7 +585,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     localUnderRelaxation = 1.0;
-    if (sa_model) {
+    if (sa_model || sst_model) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
         /* We impose a limit on the maximum percentage that the
