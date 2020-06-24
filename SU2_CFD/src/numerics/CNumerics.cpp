@@ -542,10 +542,10 @@ void CNumerics::GetInviscidProjJac(const su2double *val_U,    const su2double *v
 
   unsigned short iDim, jDim, iVar, jVar, iSpecies, jSpecies;
   su2double proj_vel, rho, u[MAXNDIM], rhoEve, H;
-  su2double *rhos;
+  const su2double *rhos;
 
-  rhos = new su2double[nSpecies];
-
+  rhos = &val_V[RHOS_INDEX];
+  
   /*--- Initialize the Jacobian tensor ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
@@ -556,8 +556,6 @@ void CNumerics::GetInviscidProjJac(const su2double *val_U,    const su2double *v
   H      = val_V[H_INDEX];
   //H = (val_U[nSpecies+nDim]+val_V[P_INDEX])/val_V[RHO_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
   for (iDim = 0; iDim < nDim; iDim++)
     u[iDim] = val_V[VEL_INDEX+iDim];
 
@@ -605,8 +603,6 @@ void CNumerics::GetInviscidProjJac(const su2double *val_U,    const su2double *v
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = val_scale * val_Proj_Jac_Tensor[iVar][jVar];
-
-  delete [] rhos;
 }
 
 void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2double *val_velocity,
