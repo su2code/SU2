@@ -271,7 +271,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Compute the TauWall from the wall functions ---*/
 
-  if (wall_functions && !Output) {
+  if (wall_functions) {
     /*--- First reset CFL if needed ---*/
     if ((InnerIter == WFStartIter) && (!restart) && (!disc_adjoint)) {
       ResetCFLAdapt();
