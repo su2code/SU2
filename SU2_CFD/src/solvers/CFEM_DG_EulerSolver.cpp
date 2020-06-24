@@ -7458,8 +7458,8 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
     beta(k+1) = -sn(k) * beta(k);
     beta(k) = cs(k) * beta(k);
     error = abs(beta(k+1)) / r_norm;
-    if (rank == 0)
-      printf("error at iteration %d is %e\n", k, error);
+    // if (rank == 0)
+    //   printf("error at iteration %d is %e\n", k, error);
     if (error <= 1e-8) {
       if (rank == 0)
         printf("Converged error at iteration %d is %e\n", k, error);
