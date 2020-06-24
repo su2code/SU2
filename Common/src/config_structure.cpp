@@ -1214,6 +1214,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -12.0);
+
+  addDoubleOption("RESIDUAL_MINVAL_ADJOINT", MinLogResidualAdjoint, -9.0);
   
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
@@ -1744,7 +1746,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
+  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
   addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 1E-6);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
@@ -3680,7 +3682,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (DiscreteAdjoint){
-    MinLogResidual=-8.0;
+    MinLogResidual=MinLogResidualAdjoint;
   }
 
   /*--- If there are not design variables defined in the file ---*/

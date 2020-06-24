@@ -65,7 +65,7 @@ user_defined = 'SU2_MPI_COMMAND' in os.environ
 if user_defined:
     mpi_Command = os.environ['SU2_MPI_COMMAND']
 elif slurm_job:
-    mpi_Command = 'srun -n %i %s'
+    mpi_Command = 'mpirun -n %i %s'
 elif not which('mpirun') is None:
     mpi_Command = 'mpirun -n %i %s'
 elif not which('mpiexec') is None:

@@ -86,6 +86,7 @@ private:
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
   su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+  su2double MinLogResidualAdjoint; 
   su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
   su2double OrderMagResidual_BGS_F; /*!< \brief Order of magnitude reduction. */
