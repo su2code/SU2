@@ -3596,7 +3596,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
-  bool wmles = config->GetWall_Functions();
+  bool wfun = config->GetWall_Functions();
 
   /*--- Check for a wall treatment of the viscous boundaries. If present, some
         additional elements (and nodes) may be added as halo's. Only needed
@@ -3604,7 +3604,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   nDonor_Elem = 0;
   nDonor_Point = 0;
-  if (wmles){
+  if (wfun){
 #ifdef HAVE_MPI
     if (rank == MASTER_NODE)
       cout << "Adding wall model donor elements to the halo list. " << endl;
@@ -3660,7 +3660,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     }
   }
 
-  if (wmles){
+  if (wfun){
 
     /*--- The points of the elements that are only used as donors for interpolation
           must be added to the communication pattern. ---*/
@@ -13201,9 +13201,10 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
-  /*---        distance to a solid wall element                           ---*/
+  /*---        distance to a solid wall element                            ---*/
   /*--------------------------------------------------------------------------*/
-  
+
+  bool wfun = config->GetWall_Functions();
   su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
   if (!WallADT->IsEmpty()){
@@ -13225,44 +13226,48 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 
       /*--- BCM: Set nearest element and marker. These will be used
             for wall functions ---*/
-      if ((!node[iPoint]->GetSolidBoundary()) &&
-          (iPoint < nPointDomain)) {
-        for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-          if(config->GetViscous_Wall(iMarker)) {
-            for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
-              const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-              const long jVertex = node[jPoint]->GetVertex(iMarker);
-              if (jVertex != -1) {
-                node[iPoint]->SetBool_Wall_Neighbor(true);
-                node[iPoint]->SetWall_Rank(rankID);
-                node[iPoint]->SetWall_Marker(markerID);
-                node[iPoint]->SetWall_Element(elemID);
-                node[iPoint]->SetWall_nNode(vtkID);
-                node[iPoint]->SetWall_Interpolation_Weights(weights);
-                
-                maxWallDist = max(maxWallDist, 5.0*dist);
-                break;
-              } // if jVertex
-            } // iNode
-          } // if viscous
-        } // iMarker
-      } // iPoint !SolidBoundary && iPoint in domain
+      if (wfun) {
+        if ((!node[iPoint]->GetSolidBoundary()) &&
+            (iPoint < nPointDomain)) {
+          for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+            if(config->GetViscous_Wall(iMarker)) {
+              for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+                const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
+                const long jVertex = node[jPoint]->GetVertex(iMarker);
+                if (jVertex != -1) {
+                  node[iPoint]->SetBool_Wall_Neighbor(true);
+                  node[iPoint]->SetWall_Rank(rankID);
+                  node[iPoint]->SetWall_Marker(markerID);
+                  node[iPoint]->SetWall_Element(elemID);
+                  node[iPoint]->SetWall_nNode(vtkID);
+                  node[iPoint]->SetWall_Interpolation_Weights(weights);
+                  
+                  maxWallDist = max(maxWallDist, 5.0*dist);
+                  break;
+                }// if jVertex
+              }// iNode
+            }// if viscous
+          }// iMarker
+        }// iPoint !SolidBoundary && iPoint in domain
+      }// if wall functions
     }
   }
   
   /*--- Now specify the exchange distance based on the maximum distance of nodes
         that neighbor solid surfaces ---*/
-  su2double globalMaxDist = maxWallDist;
+  if (wfun) {
+    su2double globalMaxDist = maxWallDist;
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
-                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
+                       MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if(config->GetViscous_Wall(iMarker)) {
-      string markerTag = config->GetMarker_All_TagBound(iMarker);
-      if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-        config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
-      }
-    }
-  }
+    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+      if(config->GetViscous_Wall(iMarker)) {
+        string markerTag = config->GetMarker_All_TagBound(iMarker);
+        if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
+          config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
+        }// if wf wall
+      }// if viscous wall
+    }// iMarker
+  }// if wall functions
 }
