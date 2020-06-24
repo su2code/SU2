@@ -55,7 +55,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
     
   VorticityMag.resize(nPoint) = su2double(0.0);
   FlowPrimitive.resize(nPoint,nDim+7) = su2double(0.0);
-  FlowGradient.resize(nPoint,nDim+1) = su2double(0.0);
+  FlowGradient.resize(nPoint,nDim+1,nDim,0.0);
 
   muT.resize(nPoint) = mut;
 }
