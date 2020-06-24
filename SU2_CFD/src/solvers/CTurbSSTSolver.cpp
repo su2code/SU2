@@ -1606,8 +1606,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   
   const su2double kappa = 0.41;
   const su2double B = 5.0;
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
@@ -1654,7 +1652,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
 
 
-      const su2double Eddy_Lam_Ratio = kappa * exp(-kappa * Beta) * 
+      const su2double Eddy_Lam_Ratio = kappa * exp(-kappa * B) * 
                                        (exp(-kappa * Up) - 1. - kappa * Up - pow(kappa * Up, 2.) / 2.);
 
       
