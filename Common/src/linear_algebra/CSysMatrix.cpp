@@ -381,6 +381,25 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
 
+  /*--- Create a boolean for reversing the order of comms. ---*/
+
+  bool reverse = false;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  switch (commType) {
+    case SOLUTION_MATRIX:
+      reverse          = false;
+      break;
+    case SOLUTION_MATRIXTRANS:
+      reverse          = true;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+
   /*--- Set some local pointers to make access simpler. ---*/
 
   const su2double *bufDRecv = geometry->bufD_P2PRecv;
@@ -388,15 +407,18 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
 
-  if (geometry->nP2PRecv > 0) {
+  int nP2P = (reverse) ? geometry->nP2PSend : geometry->nP2PRecv;
 
-    for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
+  if (nP2P > 0) {
+
+    for (iMessage = 0; iMessage < nP2P; iMessage++) {
 
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
 
-      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
-                       &ind, &status);
+      SU2_MPI::Request *req_Recv = (reverse) ? geometry->req_P2PSend : geometry->req_P2PRecv;
+
+      SU2_MPI::Waitany(nP2P, req_Recv, &ind, &status);
 
       /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -486,7 +508,9 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
      data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+    nP2P = (reverse) ? geometry->nP2PRecv : geometry->nP2PSend;
+    SU2_MPI::Request *req_Send = (reverse) ? geometry->req_P2PRecv : geometry->req_P2PSend;
+    SU2_MPI::Waitall(nP2P, req_Send, MPI_STATUS_IGNORE);
 #endif
 
   }
