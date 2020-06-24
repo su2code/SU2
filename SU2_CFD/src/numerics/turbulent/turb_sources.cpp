@@ -38,12 +38,12 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
   /*--- Spalart-Allmaras closure constants ---*/
 
   cv1_3 = pow(7.1, 3.0);
-  k2    = pow(0.41, 2.0);
+  k2    = pow(0.41, 2.);
   cb1   = 0.1355;
   cw2   = 0.3;
   ct3   = 1.2;
   ct4   = 0.5;
-  cw3_6 = pow(2.0, 6.0);
+  cw3_6 = pow(2., 6.0);
   sigma = 2./3.;
   cb2   = 0.622;
   cb2_sigma = cb2/sigma;
@@ -112,7 +112,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
   /*--- Rotational correction term ---*/
 
-  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+  if (rotating_frame) { Omega += 2.*min(0.0, StrainMag_i-Omega); }
 
   if (dist_i > 1e-10) {
 
@@ -205,7 +205,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] +  2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
   }
 
@@ -252,7 +252,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
 
   /*--- Rotational correction term ---*/
 
-  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+  if (rotating_frame) { Omega += 2.*min(0.0, StrainMag_i-Omega); }
 
   if (dist_i > 1e-10) {
 
@@ -322,10 +322,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
     /* Compressibility Correction */
-    Jacobian_i[0] -= 2.0*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+    Jacobian_i[0] -= 2.*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
   }
 
@@ -382,13 +382,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
     for(jDim=0;jDim<nDim;++jDim){
       Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
   for(iDim=0;iDim<nDim;++iDim){
-    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+    Sbar-= ((2./3.)*pow(PrimVar_Grad_i[1+iDim][iDim],2.));}
 
   Omega= sqrt(max(Sbar,0.0));
 
   /*--- Rotational correction term ---*/
 
-  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+  if (rotating_frame) { Omega += 2.*min(0.0, StrainMag_i-Omega); }
 
   if (dist_i > 1e-10) {
 
@@ -443,16 +443,16 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
 
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
-    else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
+    else dShat = -S*pow(Ji,-2.)/nu + S*dfv1;
     Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
 
     /*--- Implicit part, destruction term ---*/
 
     dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-    dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
+    dr=(1-pow(tanh(r),2.))*(dr)/tanh(1.0);
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
   }
 
@@ -509,13 +509,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
     for(jDim=0;jDim<nDim;++jDim){
       Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
   for(iDim=0;iDim<nDim;++iDim){
-    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+    Sbar-= ((2./3.)*pow(PrimVar_Grad_i[1+iDim][iDim],2.));}
 
   Omega= sqrt(max(Sbar,0.0));
 
   /*--- Rotational correction term ---*/
 
-  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+  if (rotating_frame) { Omega += 2.*min(0.0, StrainMag_i-Omega); }
 
   if (dist_i > 1e-10) {
 
@@ -580,19 +580,19 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
 
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
-    else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
+    else dShat = -S*pow(Ji,-2.)/nu + S*dfv1;
     Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
 
     /*--- Implicit part, destruction term ---*/
 
     dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-    dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
+    dr=(1-pow(tanh(r),2.))*(dr)/tanh(1.0);
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
     /* Compressibility Correction */
-    Jacobian_i[0] -= 2.0*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+    Jacobian_i[0] -= 2.*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
   }
 
@@ -641,7 +641,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
   /*--- Rotational correction term ---*/
 
-  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+  if (rotating_frame) { Omega += 2.*min(0.0, StrainMag_i-Omega); }
 
   if (dist_i > 1e-10) {
 
@@ -705,7 +705,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
       if (r == 10.0) dr = 0.0;
       dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
       dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-      Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+      Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] +  2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
 
     }
 
@@ -739,7 +739,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
       /*--- Implicit part, destruction term ---*/
 
-      Jacobian_i[0] += 2.0*cw1*TurbVar_i[0]/dist_i_2*Volume;
+      Jacobian_i[0] += 2.*cw1*TurbVar_i[0]/dist_i_2*Volume;
 
     }
 
@@ -786,8 +786,6 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(StrainMag_i);
-  // AD::SetPreaccIn(VorticityMag_i);
   AD::SetPreaccIn(TurbVar_i, nVar);
   AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
@@ -845,21 +843,20 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      SetPerturbedRSM(TurbVar_i[0], config);
      SetPerturbedStrainMag(TurbVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-          - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+          - 2./3.*Density_i*TurbVar_i[0]*diverg;
    }
    else {
-     pk = -2.0/3.0*Density_i*TurbVar_i[0]*diverg;
      for (iDim = 0; iDim < nDim; iDim++) {
        for (jDim = 0; jDim < nDim; jDim++) {
          factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
-                  - 2.0/3.0*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
+                  - 2./3.*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
        }
      }
-     pk += Eddy_Viscosity_i*factor;
-     pw = alfa_blended*Density_i*(factor - 2.0/3.0*zeta*diverg);
+     pk = Eddy_Viscosity_i*factor - 2./3.*Density_i*TurbVar_i[0]*diverg;
+     pw = alfa_blended*Density_i*(factor - 2./3.*zeta*diverg);
        
      /*--- k production Jacobian ---*/
-     if ((pk > 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
+     if ((pk > 0.) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = -2./3.*diverg*Volume;
        if (TurbVar_i[1] > VorticityMag*F2_i/a1) {
          Jacobian_i[0][0] += factor/TurbVar_i[1]*Volume;
@@ -870,32 +867,32 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
        }
      }
      else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-       Jacobian_i[0][0] = 20.0*beta_star*TurbVar_i[1]*Volume;
-       Jacobian_i[0][1] = 20.0*beta_star*TurbVar_i[0]*Volume;
+       Jacobian_i[0][0] = 20.*beta_star*TurbVar_i[1]*Volume;
+       Jacobian_i[0][1] = 20.*beta_star*TurbVar_i[0]*Volume;
      }
      
      /*--- omega production Jacobian ---*/
-     if ((pw > 0) && (pw <= 20.0*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta)) {
+     if ((pw > 0.) && (pw <= 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta)) {
        if (TurbVar_i[1] > VorticityMag*F2_i/a1) {
          Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
        }
      }
-     else if (pw > 20.0*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta) {
-       Jacobian_i[1][1] = 20.0*beta_star*alfa_blended*Density_i*zeta*Volume;
-       if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] *= 2.0;
+     else if (pw > 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta) {
+       Jacobian_i[1][1] = 20.*beta_star*alfa_blended*Density_i*zeta*Volume;
+       if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] *= 2.;
      }
    }
     
-    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+    pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
-     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+     pw = PerturbedStrainMag * PerturbedStrainMag - 2./3.*zeta*diverg;
      pw = alfa_blended*Density_i*max(pw,0.0);
    }
    else {
-     pw = min(pw,20.0*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta);
+     pw = min(pw, 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta);
    }
     
    pk = max(pk, 0.0);
@@ -934,8 +931,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    Jacobian_i[0][0] += -beta_star*TurbVar_i[1]*Volume;
    Jacobian_i[0][1] += -beta_star*TurbVar_i[0]*Volume;
-   Jacobian_i[1][0] += 0.0;
-   Jacobian_i[1][1] += -2.0*beta_blended*TurbVar_i[1]*Volume;
+   Jacobian_i[1][1] += -2.*beta_blended*TurbVar_i[1]*Volume;
 
    Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   }
@@ -980,7 +976,7 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
   unsigned short iDim, jDim;
   su2double **S_ij = new su2double* [3];
   su2double divVel = 0;
-  su2double TWO3 = 2.0/3.0;
+  su2double TWO3 = 2./3.;
 
 
 
@@ -1027,7 +1023,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig*
 
   /* compute convex combination coefficients */
   su2double c1c = Eig_Val[2] - Eig_Val[1];
-  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+  su2double c2c = 2. * (Eig_Val[1] - Eig_Val[0]);
   su2double c3c = 3.0 * Eig_Val[0] + 1.0;
 
   /* define barycentric traingle corner points */
@@ -1099,7 +1095,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig*
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = 2. * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
       uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
@@ -1128,19 +1124,19 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
   /*--- Add diagonal part ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    PerturbedStrainMag += pow(StrainRate[iDim][iDim], 2.0);
+    PerturbedStrainMag += pow(StrainRate[iDim][iDim], 2.);
   }
 
   /*--- Add off diagonals ---*/
 
-  PerturbedStrainMag += 2.0*pow(StrainRate[1][0], 2.0);
+  PerturbedStrainMag += 2.*pow(StrainRate[1][0], 2.);
 
   if (nDim == 3) {
-    PerturbedStrainMag += 2.0*pow(StrainRate[0][2], 2.0);
-    PerturbedStrainMag += 2.0*pow(StrainRate[1][2], 2.0);
+    PerturbedStrainMag += 2.*pow(StrainRate[0][2], 2.);
+    PerturbedStrainMag += 2.*pow(StrainRate[1][2], 2.);
   }
 
-  PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
+  PerturbedStrainMag = sqrt(2.*PerturbedStrainMag);
 
   for (iDim= 0; iDim< nDim; iDim++){
     delete [] StrainRate[iDim];

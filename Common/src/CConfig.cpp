@@ -1401,7 +1401,7 @@ void CConfig::SetConfig_Options() {
                         Kind_WallFunctions, IntInfo_WallFunctions, DoubleInfo_WallFunctions);
   
   /* DESCRIPTION: Restart iteration in the multizone problem. */
-  addUnsignedLongOption("WALL_FUNCTION_STARTITER", WallFunction_Start_Iter, 1);
+  addUnsignedLongOption("WALL_FUNCTION_STARTITER", WallFunction_Start_Iter, 0);
 
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);

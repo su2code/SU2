@@ -676,7 +676,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         
         distance = geometry->node[jPoint]->GetWall_Distance();
         
-        Density_Normal = flowNodes->GetDensity(jPoint);
+        Density_Normal  = flowNodes->GetDensity(jPoint);
         Lam_Visc_Normal = flowNodes->GetLaminarViscosity(jPoint);
       }
       

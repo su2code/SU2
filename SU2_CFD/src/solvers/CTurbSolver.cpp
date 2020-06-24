@@ -276,6 +276,7 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   else
     numerics->SetTurbVar(nodes->GetSolution(iPoint),
                          nodes->GetSolution(jPoint));
+
   numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                nodes->GetGradient(jPoint));
 
@@ -287,8 +288,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                             nodes->GetF2blending(jPoint));
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
                            flowNodes->GetVorticity(jPoint));
-    // numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-    //                           nodes->GetVorticityMag(jPoint));
   }
 
   /*--- Set values for gradient Jacobian ---*/
