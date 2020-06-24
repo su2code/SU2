@@ -325,32 +325,32 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
     }
   }
   
-  // for (iRank = 0; iRank < size; iRank++) {
-  //   nPoint_Flag[iRank]= -1;
-  // }
+  for (iRank = 0; iRank < size; iRank++) {
+    nPoint_Flag[iRank]= -1;
+  }
 
-  // /*--- Loop through all of our SEND_RECEIVE markers and track
-  //  our sends with each rank. ---*/
+  /*--- Loop through all of our SEND_RECEIVE markers and track
+   our sends with each rank. ---*/
 
-  // for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-  //   if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-  //       (config->GetMarker_All_SendRecv(iMarker) < 0)) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) < 0)) {
 
-  //     /*--- Get the destination rank and number of points to send. ---*/
+      /*--- Get the destination rank and number of points to send. ---*/
 
-  //     iRank    = abs(config->GetMarker_All_SendRecv(iMarker))-1;
-  //     nVertexR = geometry->nVertex[iMarker];
+      iRank    = abs(config->GetMarker_All_SendRecv(iMarker))-1;
+      nVertexR = geometry->nVertex[iMarker];
 
-  //     /*--- If we have not visited this element yet, increment our
-  //      number of elements that must be sent to a particular proc. ---*/
+      /*--- If we have not visited this element yet, increment our
+       number of elements that must be sent to a particular proc. ---*/
 
-  //     if ((nPoint_Flag[iRank] != (int)iMarker)) {
-  //       nPoint_Flag[iRank]        = (int)iMarker;
-  //       nPoint_Recv_All[iRank+1] += nVertexR;
-  //     }
+      if ((nPoint_Flag[iRank] != (int)iMarker)) {
+        nPoint_Flag[iRank]        = (int)iMarker;
+        nPoint_Recv_All[iRank+1] += nVertexR;
+      }
 
-  //   }
-  // }
+    }
+  }
 
   delete [] nPoint_Flag;
 
@@ -358,8 +358,8 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-   SU2_MPI::Alltoall(&(nPoint_Send_All[1]), 1, MPI_INT,
-                     &(nPoint_Recv_All[1]), 1, MPI_INT, MPI_COMM_WORLD);
+//  SU2_MPI::Alltoall(&(nPoint_Send_All[1]), 1, MPI_INT,
+//                    &(nPoint_Recv_All[1]), 1, MPI_INT, MPI_COMM_WORLD);
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
