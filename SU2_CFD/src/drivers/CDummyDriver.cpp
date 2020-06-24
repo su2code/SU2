@@ -26,6 +26,7 @@
  */
 
 #include "../../include/drivers/CDummyDriver.hpp"
+#include "../../include/output/COutput.hpp"
 
 CDummyDriver::CDummyDriver(char* confFile,
                          unsigned short val_nZone,

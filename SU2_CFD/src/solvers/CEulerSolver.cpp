@@ -33,6 +33,9 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
+#include "../../include/fluid/CIdealGas.hpp"
+#include "../../include/fluid/CVanDerWaalsGas.hpp"
+#include "../../include/fluid/CPengRobinson.hpp"
 
 void CEulerSolver::AeroCoeffsArray::allocate(int size) {
   _size = size;
