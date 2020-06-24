@@ -7457,9 +7457,9 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
 
     beta(k+1) = -sn(k) * beta(k);
     beta(k) = cs(k) * beta(k);
-    error = abs(beta(k+1)) / b_norm;
-    // if (rank == 0)
-    //   printf("error at iteration %d is %e\n", k, error);
+    error = abs(beta(k+1)) / r_norm;
+    if (rank == 0)
+      printf("error at iteration %d is %e\n", k, error);
     if (error <= 1e-8) {
       if (rank == 0)
         printf("Converged error at iteration %d is %e\n", k, error);
@@ -7859,7 +7859,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
   }
   unsigned long IterLinSol;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, &m_loc[0], &fst_row[0]);
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 5000, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
