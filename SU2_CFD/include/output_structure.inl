@@ -39,7 +39,7 @@
 
 inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
-inline su2double COutput::GetModifiedAdiabaticEfficiency(unsigned short iMarkerTP, unsigned short iSpan) { return ModifiedAdiabaticEfficiency[iMarkerTP][iSpan]; }
+inline su2double COutput::GetModified_AE(unsigned short iMarkerTP, unsigned short iSpan) { return Modified_AE[iMarkerTP][iSpan]; }
 
 inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 

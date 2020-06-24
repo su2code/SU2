@@ -168,7 +168,7 @@ COutput::COutput(CConfig *config) {
     TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
     EnthalpyOutIs                 = new su2double*[nMarkerTurboPerf];
     EntropyGen                    = new su2double*[nMarkerTurboPerf];
-    ModifiedAdiabaticEfficiency   = new su2double*[nMarkerTurboPerf];
+    Modified_AE                   = new su2double*[nMarkerTurboPerf];
     AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf];
     TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf];
     TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf];
@@ -220,7 +220,7 @@ COutput::COutput(CConfig *config) {
       TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
       EnthalpyOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
       EntropyGen              [iMarker] = new su2double [nSpanWiseSections + 1];
-      ModifiedAdiabaticEfficiency  [iMarker] = new su2double [nSpanWiseSections + 1];
+      Modified_AE             [iMarker] = new su2double [nSpanWiseSections + 1];
       AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
       TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
       TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -273,7 +273,7 @@ COutput::COutput(CConfig *config) {
 
         EnthalpyOutIs           [iMarker][iSpan] = 0.0;
         EntropyGen              [iMarker][iSpan] = 0.0;
-        ModifiedAdiabaticEfficiency  [iMarker][iSpan] = 0.0;
+        Modified_AE             [iMarker][iSpan] = 0.0;
         AbsFlowAngleIn          [iMarker][iSpan] = 0.0;
         TotalEnthalpyOut        [iMarker][iSpan] = 0.0;
         TotalEnthalpyOutIs      [iMarker][iSpan] = 0.0;
@@ -357,7 +357,7 @@ COutput::~COutput(void) {
       delete [] PressureOut          [iMarker];
       delete [] EnthalpyOutIs        [iMarker];
       delete [] EntropyGen           [iMarker];
-      delete [] ModifiedAdiabaticEfficiency [iMarker];
+      delete [] Modified_AE          [iMarker];
       delete [] AbsFlowAngleIn       [iMarker];
       delete [] RothalpyIn           [iMarker];
       delete [] RothalpyOut          [iMarker];
@@ -410,7 +410,7 @@ COutput::~COutput(void) {
     delete [] PressureOut;
     delete [] EnthalpyOutIs;
     delete [] EntropyGen;
-    delete [] ModifiedAdiabaticEfficiency;
+    delete [] Modified_AE;
     delete [] AbsFlowAngleIn;
     delete [] RothalpyIn;
     delete [] RothalpyOut;
@@ -4370,7 +4370,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
   char d_thermal_coeff[] = ",\"D(HeatFlux_Total)\",\"D(HeatFlux_Maximum)\"";
   char d_engine[] = ",\"D(NetThrust)\",\"D(Power)\",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
-  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\", \"D(ModifiedAdiabaticEfficiency)\" ";
+  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\", \"D(Modified_AE)\" ";
 
   /*--- Find the markers being monitored and create a header for them ---*/
   
@@ -4399,7 +4399,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
       turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
       turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
-      turbo_coeff += ",\"ModifiedAdiabaticEfficiency" + tag.str() + "\"";
+      turbo_coeff += ",\"Modified_AE" + tag.str() + "\"";
       turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
       turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
       turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
@@ -4748,7 +4748,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
         D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_NetThrust = 0.0, D_Total_Power = 0.0, D_Total_AeroCD = 0.0, D_Total_SolidCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0, D_Total_Custom_ObjFunc = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0,
         D_TotalPressure_Loss = 0.0, D_FlowAngle_Out = 0.0, D_TotalStaticEfficiency = 0.0,
-        D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0, D_ModifiedAdiabaticEfficiency = 0.0;
+        D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0, D_Modified_AE = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4962,7 +4962,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             D_TotalStaticEfficiency = SU2_TYPE::GetDerivative(TotalStaticEfficiency[nTurboPerf-1][nSpanWiseSections]);
             D_TotalTotalEfficiency  = SU2_TYPE::GetDerivative(TotalTotalEfficiency[nTurboPerf-1][nSpanWiseSections]);
             D_EntropyGen            = SU2_TYPE::GetDerivative(EntropyGen[nTurboPerf-1][nSpanWiseSections]);
-            D_ModifiedAdiabaticEfficiency = SU2_TYPE::GetDerivative(ModifiedAdiabaticEfficiency[nTurboPerf-1][nSpanWiseSections]);
+            D_Modified_AE = SU2_TYPE::GetDerivative(Modified_AE[nTurboPerf-1][nSpanWiseSections]);
           }
         }
         
@@ -5230,7 +5230,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                          D_Total_CFz, D_Total_CEff, D_Total_Custom_ObjFunc);
               else
                 SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", D_TotalPressure_Loss, D_FlowAngle_Out,
-                         D_TotalTotalEfficiency, D_TotalStaticEfficiency, D_EntropyGen, D_ModifiedAdiabaticEfficiency);
+                         D_TotalTotalEfficiency, D_TotalStaticEfficiency, D_EntropyGen, D_Modified_AE);
               if (engine || actuator_disk)
               SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
@@ -5299,7 +5299,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", ModifiedAdiabaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
+                SPRINTF(surface_coeff, ", %12.10f", Modified_AE[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
@@ -5968,12 +5968,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 if (nZone < 2) {
                   cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
-                  cout.width(15); cout << ModifiedAdiabaticEfficiency[0][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << Modified_AE[0][nSpanWiseSections]*100.0;
                 }
                 else {
                   cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
-                  cout.width(15); cout << ModifiedAdiabaticEfficiency[nTurboPerf -1][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << Modified_AE[nTurboPerf -1][nSpanWiseSections]*100.0;
                 }
                 
                 cout.unsetf(ios_base::floatfield);
@@ -6064,16 +6064,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   /*--- single zone output ---*/
                   cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
-                  cout.width(15); cout << ModifiedAdiabaticEfficiency[0][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << Modified_AE[0][nSpanWiseSections]*100.0;
                 }
                 else{
                   /*--- multi zone output ---*/
                   cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
-                  cout.width(15); cout << ModifiedAdiabaticEfficiency[nTurboPerf -1][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << Modified_AE[nTurboPerf -1][nSpanWiseSections]*100.0;
                   if (direct_diff){
                     cout.width(15); cout << D_EntropyGen;
-                    cout.width(15); cout << D_ModifiedAdiabaticEfficiency;
+                    cout.width(15); cout << D_Modified_AE;
                   }
                 }
                 cout.unsetf(ios_base::floatfield);
@@ -11594,7 +11594,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
     cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
     cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
     cout.width(25); cout << EntropyGen[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
-    cout.width(25); cout << ModifiedAdiabaticEfficiency[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout.width(25); cout << Modified_AE[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
     cout << endl;
     cout << endl;
     cout << "     Total Inlet Enthalpy" << "     Eulerian Work" << "               Pressure Ratio" <<  endl;
@@ -11708,7 +11708,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
       cout.width(25); cout << TotalTotalEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
       cout.width(25); cout << TotalStaticEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
       cout.width(25); cout << EntropyGen[nBladesRow + iStage][nSpanWiseSections]*100.0;
-      cout.width(25); cout << ModifiedAdiabaticEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout.width(25); cout << Modified_AE[nBladesRow + iStage][nSpanWiseSections]*100.0;
       cout << endl;
       cout << endl;
       cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
@@ -11731,7 +11731,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
     cout.width(25); cout << TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
     cout.width(25); cout << TotalStaticEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
     cout.width(25); cout << EntropyGen[nBladesRow + nStages][nSpanWiseSections]*100.0;
-    cout.width(25); cout << ModifiedAdiabaticEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout.width(25); cout << Modified_AE[nBladesRow + nStages][nSpanWiseSections]*100.0;
     cout << endl;
     cout << endl;
     cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
