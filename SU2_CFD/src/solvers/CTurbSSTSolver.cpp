@@ -1602,11 +1602,10 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   unsigned long iPoint, total_index;
   unsigned short iVar;
   unsigned short iDim;
-  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0;
+  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
   
   const su2double kappa = 0.41;
-  const su2double B = 5.2;
-  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double B = 5.0;
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
   
@@ -1633,27 +1632,36 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
           break;
         }
       }
-      
-      if (!converged) continue;
-      
+
+      VelMod = 0.;
+      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      VelMod = sqrt(VelMod);
+
+      const su2double Up = VelMod/U_Tau;
       const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
       
       /*--- Disable calculation if Y+ is too small or large ---*/
       if (Yp > 500.) continue;
       
-     Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
-      
       Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+     // const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
       const su2double Omega_b1 = Omega_i + Omega_0;
       const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
       const su2double blend = tanh(pow(Yp/10., 4.));
       const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
 
-      // Solution[0] = Omega * Eddy_Visc;
-      Solution[0] = nodes->GetSolution(iPoint, 0);
+
+      const su2double Eddy_Lam_Ratio = kappa * exp(-kappa * Beta) * 
+                                       (exp(-kappa * Up) - 1. - kappa * Up - pow(kappa * Up, 2.) / 2.);
+
+      
+     Eddy_Visc = Lam_Visc_Wall * Eddy_Lam_Ratio;
+
+      Solution[0] = Omega * Eddy_Visc;
+      // Solution[0] = nodes->GetSolution(iPoint, 0);
       Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
