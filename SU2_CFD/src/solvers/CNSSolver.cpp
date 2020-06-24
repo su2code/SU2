@@ -2558,4 +2558,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
   CompleteComms(geometry, config, WALL_FUNCTION);
   WallFunctionComms(geometry, solver, config);
 
+  /*--- Correct values in turbulent solver ---*/
+  solver[TURB_SOL]->ComputeKnoppWallFunction(geometry, solver, config);
+
 }
