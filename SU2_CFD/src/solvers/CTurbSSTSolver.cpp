@@ -533,7 +533,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
       
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+      CrossDiffusionJacobian(geometry, solver_container, config, iPoint);
       
     }
 
@@ -541,10 +541,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
-                                              CSolver **solver_container,
-                                              CConfig *config,
-                                              unsigned long iPoint) {
+void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
+                                            CSolver **solver_container,
+                                            CConfig *config,
+                                            unsigned long iPoint) {
   
   AD_BEGIN_PASSIVE
   
@@ -556,7 +556,6 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
       const su2double r_i      = flowNodes->GetDensity(iPoint);
-      // const su2double r_i      = flowNodes->GetPrimitive(iPoint, nDim+2);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
       
       Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
@@ -570,7 +569,6 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
         const su2double r_j  = flowNodes->GetDensity(jPoint);
-        // const su2double r_j  = flowNodes->GetPrimitive(jPoint, nDim+2);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
 
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -585,30 +583,32 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
                             * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i);
           Jacobian_j[1][1] += sign*(1. - F1_i)*sigma_om2*r_i
                             * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i);
-        }
+        }// iDim
         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      }
+      }// iNeigh
       
       /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
       if (geometry->node[iPoint]->GetPhysicalBoundary()) {
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
         for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-          if (iVertex > -1) {
-            const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-              Jacobian_i[1][0] -= 2.*(1. - F1_i)*sigma_om2
-                                * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
-              Jacobian_i[1][1] -= 2.*(1. - F1_i)*sigma_om2
-                                * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
-            }
-          }
-        }
+          if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+            const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+            if (iVertex > -1) {
+              const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+                Jacobian_i[1][0] -= 2.*(1. - F1_i)*sigma_om2
+                                  * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(om_i);
+                Jacobian_i[1][1] -= 2.*(1. - F1_i)*sigma_om2
+                                  * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(om_i);
+              }// iDim
+            }// iVertex
+          }// if not send recv
+        }// iMarker
         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-      }
-    }
-  }
+      }// if physical boundary
+    }// if wall distance
+  }// GG
   
   AD_END_PASSIVE
 }

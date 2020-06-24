@@ -5113,9 +5113,9 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           for (unsigned short jVar = 0; jVar < nVar; jVar++) {
             Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign;
             Jacobian_j[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*r_i/r_k;
-          }
-        }
-      }
+          }// jVar
+        }// iVar
+      }// iDim
       
       Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -5124,7 +5124,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       }
-    }
+    }// iNode
     
     /*--- Influence of boundary i on R(i,j) ---*/
     if (geometry->node[iPoint]->GetPhysicalBoundary()) {
@@ -5134,24 +5134,26 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         }
       }
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-              for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim];
-              }
-            }
-          }
-        }
-      }
+        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+          const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (iVertex != -1) {
+            const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+                for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+                  Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim];
+                }// jVar
+              }// iVar
+            }// iDim
+          }// iVertex
+        }// if not send recv
+      }// iMarker
       
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       if (jPoint != iPoint) {
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       }
-    }
+    }// if physical boundary
     
     if (jPoint != iPoint) {
       /*--- Influence of j's neighbors on R(i,j) ---*/
@@ -5173,9 +5175,9 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
             for (unsigned short jVar = 0; jVar < nVar; jVar++) {
               Jacobian_i[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign;
               Jacobian_j[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign*r_j/r_k;
-            }
-          }
-        }
+            }// jVar
+          }// iVar
+        }// iDim
         
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
         Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
@@ -5192,24 +5194,26 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           }
         }
         for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
-          if (jVertex != -1) {
-            const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-              for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-                for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                  Jacobian_i[iVar][jVar] -= Jacobian_jc[iDim][iVar][jVar]*Normal[iDim];
-                }
-              }
-            }
-          }
-        }
+          if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+            const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
+            if (jVertex != -1) {
+              const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
+              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+                for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+                  for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+                    Jacobian_i[iVar][jVar] -= Jacobian_jc[iDim][iVar][jVar]*Normal[iDim];
+                  }// jVar
+                }// iVar
+              }// iDim
+            }// jVertex
+          }// if not send recv
+        }// iMarker
         
         Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
         Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-      }
-    }
-  }
+      }// if physical boundary
+    }// jPoint
+  }// GG
   
   AD_END_PASSIVE
   

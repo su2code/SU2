@@ -152,10 +152,10 @@ public:
   * \param[in] solver_container - Container vector with all the solutions.
   * \param[in] config - Definition of the particular problem.
   */
-  void Cross_Diffusion_Jacobian(CGeometry *geometry,
-                                CSolver **solver_container,
-                                CConfig *config,
-                                unsigned long iPoint);
+  void CrossDiffusionJacobian(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config,
+                              unsigned long iPoint);
 
   /*!
    * \brief Source term computation.
