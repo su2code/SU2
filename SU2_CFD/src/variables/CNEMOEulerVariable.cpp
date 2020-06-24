@@ -916,7 +916,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   NRtol    = 1.0E-6;    // Tolerance for the Newton-Raphson method
   Btol     = 1.0E-6;    // Tolerance for the Bisection method
   maxNIter = 18;        // Maximum Newton-Raphson iterations
-  maxBIter = 32;        // Maximum Bisection method iterations
+  maxBIter = 50;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
 
   /*--- Read parameters from config ---*/
