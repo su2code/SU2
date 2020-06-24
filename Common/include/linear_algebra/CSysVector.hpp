@@ -362,16 +362,23 @@ public:
     /*--- "Transpose" and scale input vector. ---*/
     ScalarType vec[N][nVar];
 
-    for (size_t i=0; i<nVar; ++i)
+    for (size_t i=0; i<nVar; ++i) {
+      SU2_OMP_SIMD
       for (size_t k=0; k<N; ++k)
         vec[k][i] = mask[k] * vector[i][k];
+    }
 
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k=0; k<N; ++k) {
       if (mask[k]==0) continue;
       auto dst = &vec_val[iPoint[k]*nVar];
-      if(Overwrite) for (size_t i=0; i<nVar; ++i) dst[i] = vec[k][i];
-      else for (size_t i=0; i<nVar; ++i) dst[i] += vec[k][i];
+      if(Overwrite) {
+        SU2_OMP_SIMD
+        for (size_t i=0; i<nVar; ++i) dst[i] = vec[k][i];
+      } else {
+        SU2_OMP_SIMD
+        for (size_t i=0; i<nVar; ++i) dst[i] += vec[k][i];
+      }
     }
   }
 

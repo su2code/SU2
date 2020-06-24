@@ -576,6 +576,7 @@ public:
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
     for (size_t i=0; i<blkSz; ++i) {
+      SU2_OMP_SIMD
       for (size_t k=0; k<N; ++k) {
         blk_i[k][i] = -1*PassiveAssign(mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
@@ -594,6 +595,7 @@ public:
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
+      SU2_OMP_SIMD
       for (size_t i=0; i<blkSz; ++i) {
         bii[i] -= blk_i[k][i];
         bjj[i] -= blk_j[k][i];
@@ -666,6 +668,7 @@ public:
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
     for (size_t i=0; i<blkSz; ++i) {
+      SU2_OMP_SIMD
       for (size_t k=0; k<N; ++k) {
         blk_i[k][i] = -1*PassiveAssign(mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
@@ -682,6 +685,7 @@ public:
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
+      SU2_OMP_SIMD
       for (size_t i=0; i<blkSz; ++i) {
         bij[i] = blk_j[k][i];
         bji[i] = blk_i[k][i];
