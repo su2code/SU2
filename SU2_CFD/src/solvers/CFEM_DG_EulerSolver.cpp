@@ -7400,8 +7400,8 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
   }
   fst_col[size] = fst_col_long[size];
 
-  // use x as the initial vector
-  Eigen::VectorXd r = b - MatVec(A, Eigen::VectorXd::Zero(b.size()), m_loc);
+  // use 0 as the initial vector
+  Eigen::VectorXd r = b;
   r = M.solve(r); //M\q
   double b_norm = VecNorm(b);
   double r_norm = VecNorm(r);
