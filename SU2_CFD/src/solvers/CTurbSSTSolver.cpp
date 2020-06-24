@@ -533,7 +533,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
       
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      // Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+      Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
       
     }
 
@@ -550,13 +550,13 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
+  const su2double CDkw = nodes->GetCrossDiff(iPoint);
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
+    if ((geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) && (CDkw > 1.0e-20)) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
-      // const su2double r_i      = flowNodes->GetDensity(iPoint);
-      const su2double r_i      = nodes->GetFlowPrimitive(iPoint, nDim+2);
+      const su2double r_i      = flowNodes->GetDensity(iPoint);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
       
       Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
@@ -569,8 +569,7 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-        // const su2double r_j  = flowNodes->GetDensity(jPoint);
-        const su2double r_j  = nodes->GetFlowPrimitive(jPoint, nDim+1);
+        const su2double r_j  = flowNodes->GetDensity(jPoint);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
 
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -681,8 +680,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Lam_Visc_Normal = flowNodes->GetLaminarViscosity(jPoint);
       }
       
-      // Density_Wall = flowNodes->GetDensity(iPoint);
-      Density_Wall = nodes->GetFlowPrimitive(iPoint, nDim+2);
+      Density_Wall = flowNodes->GetDensity(iPoint);
       
       Solution[0] = 0.0;
       Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
@@ -1660,8 +1658,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       /*--- Disable calculation if Y+ is too small or large ---*/
       if (Yp > 500.) continue;
       
-      // Density_Normal  = flowNodes->GetDensity(iPoint);
-      Density_Normal  = nodes->GetFlowPrimitive(iPoint, nDim+2);
+      Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
