@@ -1647,7 +1647,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
-     // const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
       const su2double Omega_b1 = Omega_i + Omega_0;
       const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
       const su2double blend = tanh(pow(Yp/10., 4.));

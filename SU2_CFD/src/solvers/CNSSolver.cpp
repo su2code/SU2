@@ -2483,7 +2483,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               /*--- Spalding's universal form for the BL velocity. ---*/
 
               Y_Plus = U_Plus + (exp(-kappa * B) *
-                       (exp(kappa * U_Plus) - kappa*U_Plus -
+                       (exp(kappa * U_Plus) - 1. - kappa*U_Plus -
                        kappa*kappa*U_Plus*U_Plus/2.0 -
                        kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
 
