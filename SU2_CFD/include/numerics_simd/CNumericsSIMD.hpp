@@ -171,23 +171,24 @@ FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm
 
 template<size_t nDim, class Coord_t>
 FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint, const Coord_t& coords) {
-  VectorDbl<nDim> vector_ij;
-  auto coord_i = coords.innerIter(iPoint);
-  auto coord_j = coords.innerIter(jPoint);
+  using T = VectorDbl<nDim>;
+  auto coord_i = coords.template get<T>(iPoint);
+  auto coord_j = coords.template get<T>(jPoint);
+  T vector_ij;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    vector_ij(iDim) = 0.5 * (*(coord_j++) - *(coord_i++));
+    vector_ij(iDim) = 0.5 * (coord_j(iDim) - coord_i(iDim));
   }
   return vector_ij;
 }
 
 template<size_t nVar, class Field_t>
 FORCEINLINE VectorDbl<nVar> gatherVariables(Int idx, const Field_t& vars) {
-  VectorDbl<nVar> v;
-  auto it = vars.innerIter(idx);
-  for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    v(iVar) = *(it++);
-  }
-  return v;
+  return vars.template get<VectorDbl<nVar> >(idx);
+}
+
+template<size_t nRows, size_t nCols, class Field_t>
+FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int idx, const Field_t& vars) {
+  return vars.template get<MatrixDbl<nRows,nCols> >(idx);
 }
 
 template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
@@ -197,8 +198,9 @@ FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPoint,
                                            const Field_t& field,
                                            const Gradient_t& gradient) {
   auto vars = gatherVariables<nVar>(iPoint, field);
+  auto grad = gatherVariables<nVar,nDim>(iPoint, gradient);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += direction * dot(gradient.innerIter(iPoint,iVar), vector_ij);
+    vars(iVar) += direction * dot(grad[iVar], vector_ij);
   }
   return vars;
 }
@@ -211,9 +213,10 @@ FORCEINLINE VectorDbl<nVar> musclPointLimited(Int iPoint,
                                               const Field_t& limiter,
                                               const Gradient_t& gradient) {
   auto vars = gatherVariables<nVar>(iPoint, field);
-  auto itLim = limiter.innerIter(iPoint);
+  auto lim = gatherVariables<nVar>(iPoint, limiter);
+  auto grad = gatherVariables<nVar,nDim>(iPoint, gradient);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += *(itLim++) * direction * dot(gradient.innerIter(iPoint,iVar), vector_ij);
+    vars(iVar) += lim(iVar) * direction * dot(grad[iVar], vector_ij);
   }
   return vars;
 }
@@ -229,9 +232,12 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
   vars_i = gatherVariables<nVar>(iPoint, field);
   vars_j = gatherVariables<nVar>(jPoint, field);
 
+  auto grad_i = gatherVariables<nVar,nDim>(iPoint, gradient);
+  auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
+
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    auto proj_i = dot(gradient.innerIter(iPoint,iVar), vector_ij);
-    auto proj_j = dot(gradient.innerIter(jPoint,iVar), vector_ij);
+    auto proj_i = dot(grad_i[iVar], vector_ij);
+    auto proj_j = dot(grad_j[iVar], vector_ij);
     auto delta_ij = vars_j(iVar) - vars_i(iVar);
     auto delta_ij_2 = pow(delta_ij,2);
     /// TODO: Customize the limiter function
@@ -264,13 +270,13 @@ struct CCompressiblePrimitives {
   FORCEINLINE const Double* velocity() const { return &velocity(0); }
 };
 
-template<size_t nDim, class Variable_t>
-FORCEINLINE CPair<CCompressiblePrimitives<nDim> > getCompressiblePrimitives(Int iPoint, Int jPoint, bool muscl,
-                                                                            ENUM_LIMITER limiterType,
-                                                                            const VectorDbl<nDim>& vector_ij,
-                                                                            const Variable_t& solution) {
-  CPair<CCompressiblePrimitives<nDim> > V;
-  constexpr size_t nVar = CCompressiblePrimitives<nDim>::nVar;
+template<class PrimitiveType, size_t nDim, class Variable_t>
+FORCEINLINE CPair<PrimitiveType> getReconstructedPrimitives(Int iPoint, Int jPoint, bool muscl,
+                                                            ENUM_LIMITER limiterType,
+                                                            const VectorDbl<nDim>& vector_ij,
+                                                            const Variable_t& solution) {
+  CPair<PrimitiveType> V;
+  constexpr size_t nVar = PrimitiveType::nVar;
 
   const auto& primitives = solution.GetPrimitive();
   const auto& gradients = solution.GetGradient_Reconstruction();
@@ -340,7 +346,7 @@ FORCEINLINE CRoeVariables<nDim> getRoeAveragedVariables(Double gamma,
                                                         const CPair<CCompressiblePrimitives<nDim> >& V,
                                                         const VectorDbl<nDim>& normal) {
   CRoeVariables<nDim> roeAvg;
-  Double R = sqrt(abs(V.j.density() / V.i.density()));
+  Double R = sqrt(V.j.density() / V.i.density());
   roeAvg.density = R * V.i.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) / (R+1);
@@ -390,7 +396,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
     pMat(3,2) = velocity(2)*normal(2);
 
     pMat(4,0) = vel2*normal(0) + density*(velocity(1)*normal(2) - velocity(2)*normal(1));
-    pMat(4,1) = vel2*normal(1) - density*(velocity(0)*normal(2) + velocity(2)*normal(0));
+    pMat(4,1) = vel2*normal(1) - density*(velocity(0)*normal(2) - velocity(2)*normal(0));
     pMat(4,2) = vel2*normal(2) + density*(velocity(0)*normal(1) - velocity(1)*normal(0));
   }
 
@@ -561,16 +567,18 @@ protected:
   const su2double kappa;
   const su2double gamma;
   const su2double entropyFix;
+  const bool finestGrid;
   const bool dynamicGrid;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
    */
   template<class... Ts>
-  CRoeBase(const CConfig& config, Ts&... args) : Base(config, args...),
+  CRoeBase(const CConfig& config, unsigned iMesh, Ts&... args) : Base(config, args...),
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
     entropyFix(config.GetEntropyFix_Coeff()),
+    finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()) {
 
   }
@@ -589,6 +597,8 @@ public:
                    SparseMatrixType& matrix) const final {
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const bool muscl = finestGrid && config.GetMUSCL_Flow();
+    const auto limiter = static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow());
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
@@ -607,9 +617,8 @@ public:
 
     /*--- Reconstructed primitives. ---*/
 
-    auto V = getCompressiblePrimitives(iPoint, jPoint, config.GetMUSCL_Flow(),
-                                       static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow()),
-                                       vector_ij, solution);
+    auto V = getReconstructedPrimitives<CCompressiblePrimitives<nDim> >(
+               iPoint, jPoint, muscl, limiter, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
@@ -631,8 +640,8 @@ public:
     Double projGridVel = 0.0, projVel = roeAvg.projVel;
     if (dynamicGrid) {
       const auto& gridVel = geometry.nodes->GetGridVel();
-      projGridVel = 0.5*(dot(gridVel.innerIter(iPoint), unitNormal)+
-                         dot(gridVel.innerIter(jPoint), unitNormal));
+      projGridVel = 0.5*(dot(gatherVariables<nDim>(iPoint,gridVel), unitNormal)+
+                         dot(gatherVariables<nDim>(jPoint,gridVel), unitNormal));
       projVel -= projGridVel;
     }
 
@@ -655,8 +664,8 @@ public:
 
     /*--- Inviscid fluxes and Jacobians. ---*/
 
-    auto flux_i = inviscidProjFlux(V.i, U.i, unitNormal);
-    auto flux_j = inviscidProjFlux(V.j, U.j, unitNormal);
+    auto flux_i = inviscidProjFlux(V.i, U.i, normal);
+    auto flux_j = inviscidProjFlux(V.j, U.j, normal);
 
     VectorDbl<nVar> flux;
     for (size_t iVar = 0; iVar < nVar; ++iVar) {

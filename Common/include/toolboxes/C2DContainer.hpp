@@ -385,6 +385,7 @@ public:
   using Index = Index_t;
   using Scalar = Scalar_t;
   static constexpr StorageType Storage = Store;
+  static constexpr bool IsVector = (StaticRows==1) || (StaticCols==1);
   static constexpr bool IsRowMajor = (Store==StorageType::RowMajor);
   static constexpr bool IsColumnMajor = (Store==StorageType::ColumnMajor);
   static constexpr size_t StaticSize = StaticRows*StaticCols;
@@ -569,6 +570,36 @@ public:
   {
     return CInnerIterGather<simd::Array<T,N> >(m_data, IsRowMajor? 1 : rows(), IsRowMajor? row*cols() : row);
   }
+
+  template<class StaticContainer>
+  FORCEINLINE StaticContainer get(Index_t row, Index_t start = 0) const noexcept
+  {
+    constexpr size_t Size = StaticContainer::StaticSize;
+    static_assert(Size, "This method requires a static output type.");
+    static_assert(StaticContainer::IsVector,"");
+    assert(Size <= cols()-start);
+    StaticContainer ret;
+    SU2_OMP_SIMD
+    for (size_t i=0; i<Size; ++i)
+      ret(i) = m_data[IsRowMajor? row*cols()+i+start : row+(i+start)*rows()];
+    return ret;
+  }
+
+  template<class StaticContainer, class T, size_t N>
+  FORCEINLINE StaticContainer get(simd::Array<T,N> row, Index_t start = 0) const noexcept
+  {
+    constexpr size_t Size = StaticContainer::StaticSize;
+    static_assert(Size, "This method requires a static output type.");
+    static_assert(StaticContainer::IsVector,"");
+    assert(Size <= cols()-start);
+    StaticContainer ret;
+    for (size_t k=0; k<N; ++k) {
+      SU2_OMP_SIMD
+      for (size_t i=0; i<Size; ++i)
+        ret(i)[k] = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
+    }
+    return ret;
+  }
 };
 
 /*!
@@ -589,6 +620,7 @@ using su2passivematrix = su2matrix<passivedouble>;
  */
 template<class Storage>
 class C3DContainerDecorator {
+  static_assert(Storage::IsVector, "Storage type must be a vector.");
 public:
   using Scalar = typename Storage::Scalar;
   using Index = typename Storage::Index;
@@ -643,6 +675,36 @@ public:
   template<class T, size_t N>
   FORCEINLINE CInnerIterGather<T,N> innerIter(simd::Array<T,N> i, Index j) const noexcept {
     return CInnerIterGather<T,N>(storage.data(), 1, i*M*N + j*N);
+  }
+
+  template<class StaticContainer>
+  FORCEINLINE StaticContainer get(Index i) const noexcept
+  {
+    constexpr size_t MbyN = StaticContainer::StaticSize;
+    static_assert(MbyN, "This method requires a static output type.");
+    static_assert(StaticContainer::IsRowMajor==IsRowMajor, "Incompatible storage.");
+    assert(MbyN == rows()*cols());
+    StaticContainer ret;
+    SU2_OMP_SIMD
+    for (size_t j=0; j<MbyN; ++j)
+      ret.data()[j] = storage(i*MbyN + j);
+    return ret;
+  }
+
+  template<class StaticContainer, class T, size_t N>
+  FORCEINLINE StaticContainer get(simd::Array<T,N> i) const noexcept
+  {
+    constexpr size_t MbyN = StaticContainer::StaticSize;
+    static_assert(MbyN, "This method requires a static output type.");
+    static_assert(StaticContainer::IsRowMajor==IsRowMajor, "Incompatible storage.");
+    assert(MbyN == rows()*cols());
+    StaticContainer ret;
+    for (size_t k=0; k<N; ++k) {
+      SU2_OMP_SIMD
+      for (size_t j=0; j<MbyN; ++j)
+        ret.data()[j][k] = storage(i[k]*MbyN + j);
+    }
+    return ret;
   }
 };
 
