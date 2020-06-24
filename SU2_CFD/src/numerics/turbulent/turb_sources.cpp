@@ -792,7 +792,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
- AD::SetPreaccIn(Vorticity_i, 3);
+  AD::SetPreaccIn(Vorticity_i, 3);
 
   unsigned short iDim, jDim;
   su2double alfa_blended, beta_blended;

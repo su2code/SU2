@@ -515,7 +515,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
       
-      numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
+      // numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
 
       numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
@@ -822,8 +822,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
       
-      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-                                     nodes->GetVorticityMag(iPoint));
+      // visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+      //                                nodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
@@ -942,8 +942,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
       
-      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-                                     nodes->GetVorticityMag(iPoint));
+      // visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+      //                                nodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),

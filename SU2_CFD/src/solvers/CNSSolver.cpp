@@ -274,6 +274,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (wall_functions) {
     /*--- First reset CFL if needed ---*/
     if ((InnerIter == WFStartIter) && (!restart) && (!disc_adjoint)) {
+      if (rank == MASTER_NODE)
+        cout << "Switching to wall function." << endl;
       ResetCFLAdapt();
       const su2double CFL = config->GetCFL(iMesh);
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
