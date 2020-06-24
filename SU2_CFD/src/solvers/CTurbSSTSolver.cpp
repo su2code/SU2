@@ -294,10 +294,20 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
   }
+
+  /*--- Set flow solver primitives to values stored in turb solver ---*/
+    
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
+      flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
+    }
+  }
   
   /*--- Set primitives and gradients since flow primitives have updated ---*/
   
-  Postprocessing(geometry, solver_container, config, iMesh);
+  // Postprocessing(geometry, solver_container, config, iMesh);
     
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
@@ -324,6 +334,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute eddy viscosity ---*/
 
   SetEddyViscosity(geometry, solver_container);
+
+  /*--- Store variables from the mean flow solver ---*/
+
+  SetFlowPrimitive(solver_container);
+  SetFlowGradient(solver_container);
 
 }
 
@@ -472,7 +487,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Gradient of the primitive and conservative variables ---*/
 
-      numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+      // numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+      numerics->SetPrimVarGradient(flowNodes->GetFlowPrimitive(iPoint), nullptr);
 
       /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -539,7 +555,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
     
     if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
       const su2double F1_i     = nodes->GetF1blending(iPoint);
-      const su2double r_i      = flowNodes->GetDensity(iPoint);
+      // const su2double r_i      = flowNodes->GetDensity(iPoint);
+      const su2double r_i      = nodes->GetFlowPrimitive(iPoint, nDim+2);
       const su2double om_i     = nodes->GetPrimitive(iPoint,1);
       
       Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
@@ -552,7 +569,8 @@ void CTurbSSTSolver::Cross_Diffusion_Jacobian(CGeometry *geometry,
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
         const su2double *Normal = geometry->edge[iEdge]->GetNormal();
-        const su2double r_j  = flowNodes->GetDensity(jPoint);
+        // const su2double r_j  = flowNodes->GetDensity(jPoint);
+        const su2double r_j  = nodes->GetFlowPrimitive(jPoint, nDim+1);
         const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
 
         Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -663,7 +681,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Lam_Visc_Normal = flowNodes->GetLaminarViscosity(jPoint);
       }
       
-      Density_Wall = flowNodes->GetDensity(iPoint);
+      // Density_Wall = flowNodes->GetDensity(iPoint);
+      Density_Wall = nodes->GetFlowPrimitive(iPoint, nDim+2);
       
       Solution[0] = 0.0;
       Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
@@ -1641,7 +1660,8 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       /*--- Disable calculation if Y+ is too small or large ---*/
       if (Yp > 500.) continue;
       
-      Density_Normal  = flowNodes->GetDensity(iPoint);
+      // Density_Normal  = flowNodes->GetDensity(iPoint);
+      Density_Normal  = nodes->GetFlowPrimitive(iPoint, nDim+2);
       distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
@@ -1656,7 +1676,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
                                        (exp(-kappa * Up) - 1. - kappa * Up - pow(kappa * Up, 2.) / 2.);
 
       
-     Eddy_Visc = Lam_Visc_Wall * Eddy_Lam_Ratio;
+      Eddy_Visc = Lam_Visc_Wall * Eddy_Lam_Ratio;
 
       Solution[0] = Omega * Eddy_Visc;
       Solution[1] = Density_Normal * Omega;
