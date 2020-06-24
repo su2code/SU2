@@ -403,7 +403,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
                                         Vorticity[1]*Vorticity[1] +
                                         Vorticity[2]*Vorticity[2]);
     
-    nodes->SetVorticityMag(iPoint, VorticityMag);
+    // nodes->SetVorticityMag(iPoint, VorticityMag);
     
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
