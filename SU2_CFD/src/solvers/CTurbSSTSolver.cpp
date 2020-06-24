@@ -517,7 +517,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
       
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
+      // Cross_Diffusion_Jacobian(geometry, solver_container, config, iPoint);
       
     }
 
@@ -1659,7 +1659,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
      Eddy_Visc = Lam_Visc_Wall * Eddy_Lam_Ratio;
 
       Solution[0] = Omega * Eddy_Visc;
-      // Solution[0] = nodes->GetSolution(iPoint, 0);
       Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
