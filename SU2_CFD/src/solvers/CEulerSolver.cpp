@@ -3006,10 +3006,21 @@ void CEulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_con
         else mask[j] = 0;
       }
 #endif
-      auto updateType = static_cast<UpdateType>(ReducerStrategy);
-      numerics->ComputeFlux(iEdge, *config, *geometry, *nodes, updateType, mask, LinSysRes, Jacobian);
+      if (ReducerStrategy) {
+        numerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+      } else {
+        numerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+      }
     }
   }
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      Jacobian.SetDiagonalAsColumnSum();
+    }
+  }
+
   delete numerics;
 }
 
