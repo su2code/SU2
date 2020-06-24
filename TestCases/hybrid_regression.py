@@ -6,8 +6,8 @@
 #  \version 7.0.5 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -29,11 +29,11 @@
 from __future__ import print_function
 
 import sys
-from TestCase import TestCase    
+from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
@@ -50,7 +50,7 @@ def main():
     channel.test_vals = [-2.667326, 2.797439, 0.018717, 0.006906]
     test_list.append(channel)
 
-    # NACA0012 
+    # NACA0012
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
@@ -58,7 +58,7 @@ def main():
     naca0012.test_vals = [-4.023999, -3.515034, 0.339426, 0.022217]
     test_list.append(naca0012)
 
-    # Supersonic wedge 
+    # Supersonic wedge
     wedge           = TestCase('wedge')
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
@@ -82,7 +82,7 @@ def main():
     fixedCL_naca0012.test_vals = [-12.130189, -6.702728, 0.300000, 0.019470]
     test_list.append(fixedCL_naca0012)
 
-    # HYPERSONIC FLOW PAST BLUNT BODY          
+    # HYPERSONIC FLOW PAST BLUNT BODY
     bluntbody           = TestCase('bluntbody')
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
@@ -145,7 +145,7 @@ def main():
     rae2822_sa.test_iter = 20
     rae2822_sa.test_vals = [-2.021218, -5.268447, 0.807465, 0.060897]
     test_list.append(rae2822_sa)
-    
+
     # RAE2822 SST
     rae2822_sst           = TestCase('rae2822_sst')
     rae2822_sst.cfg_dir   = "rans/rae2822"
@@ -185,7 +185,7 @@ def main():
     turb_naca0012_sa.test_iter = 10
     turb_naca0012_sa.test_vals = [-12.076819, -16.049252, 1.064326, 0.019770]
     test_list.append(turb_naca0012_sa)
-    
+
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
@@ -209,11 +209,11 @@ def main():
     propeller.test_iter = 10
     propeller.test_vals = [-3.389576, -8.409529, 0.000048, 0.056329]
     test_list.append(propeller)
-    
+
     #################################
     ## Compressible RANS Restart  ###
     #################################
-    
+
     # NACA0012 SST Multigrid restart
     turb_naca0012_sst_restart_mg           = TestCase('turb_naca0012_sst_restart_mg')
     turb_naca0012_sst_restart_mg.cfg_dir   = "rans/naca0012"
@@ -232,7 +232,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.906563, 1.338083, 6.086180, 2.412997]
+    turb_naca0012_1c.test_vals = [-4.979339, 1.140084, 1.217182, 0.220079]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -240,7 +240,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.230218, 1.262228, 6.086157, 2.412759]
+    turb_naca0012_2c.test_vals = [-5.484195, 0.969780, 1.315926, 0.258346]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -248,7 +248,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.277130, 1.246265, 6.086053, 2.412464]
+    turb_naca0012_3c.test_vals = [-5.586959, 0.932347, 1.540973, 0.345562]
     test_list.append(turb_naca0012_3c)
 
     # NACA0012 p1c1
@@ -256,7 +256,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.012946, 1.309725, 6.086066, 2.412931]
+    turb_naca0012_p1c1.test_vals = [-5.132080, 1.076459, 1.183320, 0.207012]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -264,14 +264,14 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.264019, 1.251314, 6.086451, 2.413070]
+    turb_naca0012_p1c2.test_vals = [-5.556645, 0.945121, 1.246337, 0.231311]
     test_list.append(turb_naca0012_p1c2)
 
-    ######################################                                                                                  
-    ### Harmonic Balance               ###                                                                                  
-    ######################################                                                                                    
+    ######################################
+    ### Harmonic Balance               ###
+    ######################################
 
-    # Description of the regression test 
+    # Description of the regression test
     harmonic_balance           = TestCase('harmonic_balance')
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
@@ -347,11 +347,11 @@ def main():
     ddes_flatplate.test_iter = 10
     ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783]
     ddes_flatplate.unsteady  = True
-    test_list.append(ddes_flatplate)    
+    test_list.append(ddes_flatplate)
 
     ######################################
     ### NICFD                          ###
-    ######################################	
+    ######################################
 
     # Rarefaction shock wave edge_VW
     edge_VW           = TestCase('edge_VW')
@@ -368,10 +368,10 @@ def main():
     edge_PPR.test_iter = 100
     edge_PPR.test_vals = [-5.401640, 0.738165, -0.000035, 0.000000]
     test_list.append(edge_PPR)
-    
+
     ######################################
     ### Turbomachinery                 ###
-    ######################################	
+    ######################################
 
     # Jones APU Turbocharger
     Jones_tc           = TestCase('jones_turbocharger')
@@ -387,7 +387,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625319, -1.569634, 34.014100, 10.187660]
+    Jones_tc_rst.test_vals = [-4.626647, -1.570858, 34.014100, 10.190720]
     Jones_tc_rst.new_output = False
     test_list.append(Jones_tc_rst)
 
@@ -399,7 +399,7 @@ def main():
     axial_stage2D.test_vals = [-1.933199, 5.381560, 73.357900, 1.780500]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
-    
+
     # 2D transonic stator
     transonic_stator           = TestCase('transonic_stator')
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
@@ -408,7 +408,7 @@ def main():
     transonic_stator.test_vals = [-0.563540, 5.823232, 96.736080, 0.062426]
     transonic_stator.new_output = False
     test_list.append(transonic_stator)
-    
+
     # 2D transonic stator restart
     transonic_stator_rst           = TestCase('transonic_stator_restart')
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
@@ -430,7 +430,7 @@ def main():
     uniform_flow.test_vals = [5.000000, 0.000000, -0.188748, -10.631530]
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
-    test_list.append(uniform_flow) 
+    test_list.append(uniform_flow)
 
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
@@ -493,7 +493,7 @@ def main():
 
     ##########################
     ### FEA - FSI          ###
-    ##########################   
+    ##########################
 
     # Static beam, 3d
     statbeam3d           = TestCase('statbeam3d')
@@ -521,7 +521,7 @@ def main():
     fsi2d.multizone= True
     fsi2d.unsteady = True
     test_list.append(fsi2d)
-    
+
     # FSI, Static, 2D, new mesh solver
     stat_fsi           = TestCase('stat_fsi')
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
@@ -561,7 +561,7 @@ def main():
     mms_fvm_ns.test_iter = 20
     mms_fvm_ns.test_vals = [-2.851428, 2.192348, 0.000000, 0.000000]
     test_list.append(mms_fvm_ns)
-    
+
     ######################################
     ### RUN TESTS                      ###
     ######################################

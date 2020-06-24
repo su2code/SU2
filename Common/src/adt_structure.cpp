@@ -332,7 +332,7 @@ void CADTPointsOnlyClass::DetermineNearestNode_impl(vector<unsigned long>& front
                                                     unsigned long   &pointID,
                                                     int             &rankID) const {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
@@ -448,7 +448,7 @@ void CADTPointsOnlyClass::DetermineNearestNode_impl(vector<unsigned long>& front
     if(frontLeaves.size() == 0) break;
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* Recompute the distance to get the correct dependency if we use AD */
   coorTarget = coorPoints.data() + nDimADT*minIndex;
@@ -790,7 +790,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
                                                  unsigned long   &elemID,
                                                  int             &rankID) const {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the distance (squared) to the quaranteed distance ---*/
@@ -953,7 +953,7 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
     }
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */

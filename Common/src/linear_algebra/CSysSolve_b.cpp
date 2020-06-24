@@ -1,5 +1,5 @@
 /*!
- * \file linear_solvers_structure_b.cpp
+ * \file CSysSolve_b.cpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring
  * \version 7.0.5 "Blackbird"
@@ -36,27 +36,27 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
                                       const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n,
                                       codi::DataStore* d) {
 
-  CSysVector<su2double>* LinSysRes_b = NULL;
+  CSysVector<su2double>* LinSysRes_b = nullptr;
   d->getData(LinSysRes_b);
 
-  CSysVector<su2double>* LinSysSol_b = NULL;
+  CSysVector<su2double>* LinSysSol_b = nullptr;
   d->getData(LinSysSol_b);
 
-  CSysMatrix<ScalarType>* Jacobian = NULL;
+  CSysMatrix<ScalarType>* Jacobian = nullptr;
   d->getData(Jacobian);
 
-  CGeometry* geometry  = NULL;
+  CGeometry* geometry = nullptr;
   d->getData(geometry);
 
-  CConfig* config      = NULL;
+  const CConfig* config = nullptr;
   d->getData(config);
 
-  CSysSolve<ScalarType>* solver = NULL;
+  CSysSolve<ScalarType>* solver = nullptr;
   d->getData(solver);
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
-  for (unsigned long i = 0; i < n; i ++) {
+  for (unsigned long i = 0; i < n; i++) {
     (*LinSysRes_b)[i] = y_b[i];
     (*LinSysSol_b)[i] = 0.0;
   }
