@@ -44,10 +44,12 @@ enum class UpdateType {COLORING, REDUCTION};
 /*--- Scalar types (SIMD). ---*/
 using Double = simd::Array<su2double>;
 using Int = simd::Array<unsigned long, Double::Size>;
+constexpr size_t Int_Size = Int::Size;
 #else
 /*--- No SIMD with AD. ---*/
 using Double = su2double;
 using Int = unsigned long;
+constexpr size_t Int_Size = 1;
 #endif
 
 /*--- Static vector types. ---*/

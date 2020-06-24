@@ -538,8 +538,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
-
-  CNumericsSIMD* test = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config);
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -2987,6 +2985,34 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
+void CEulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_container,
+                                       CConfig *config, unsigned short iMesh) {
+
+  CNumericsSIMD* numerics = nullptr;
+  if (nDim == 2) numerics = new CRoeScheme<CNumericsEmptyDecorator<2> >(*config, iMesh);
+  if (nDim == 3) numerics = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config, iMesh);
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring) {
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for(auto k = 0ul; k < color.size; k += Int_Size) {
+      Int iEdge = color.indices[k];
+      Double mask = 1;
+
+#if !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+      for(auto j = 1ul; j < Int_Size; ++j) {
+        if(k+j < color.size) iEdge[j] = color.indices[k+j];
+        else mask[j] = 0;
+      }
+#endif
+      auto updateType = static_cast<UpdateType>(ReducerStrategy);
+      numerics->ComputeFlux(iEdge, *config, *geometry, *nodes, updateType, mask, LinSysRes, Jacobian);
+    }
+  }
+  delete numerics;
+}
+
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
@@ -3004,6 +3030,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
+  /// HACK to call the vectorized numerics!
+  if (config->GetKind_Upwind_Flow() == ROE && !config->GetViscous() &&
+      !low_mach_corr && kind_dissipation == NO_ROELOWDISS) {
+    Convective_Residual(geometry, solver_container, config, iMesh);
+    return;
+  }
+  /// END HACK
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -3016,7 +3050,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
-    /*--- Loop over edge colors. ---*/
+  /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/

@@ -520,6 +520,11 @@ public:
                        CConfig *config,
                        unsigned short iMesh) final;
 
+  void Convective_Residual(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CConfig *config,
+                           unsigned short iMesh);
+
   /*!
    * \brief Compute the viscous contribution for a particular edge.
    * \note The convective residual methods include a call to this for each edge,
