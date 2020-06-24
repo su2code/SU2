@@ -1602,10 +1602,10 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   unsigned long iPoint, total_index;
   unsigned short iVar;
   unsigned short iDim;
-  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
+  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0;
   
   const su2double kappa = 0.41;
-  const su2double B = 5.0;
+  const su2double B = 5.2;
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
@@ -1621,14 +1621,12 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
-      su2double T_Wall = 0.;
       const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
       for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
         const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
-        T_Wall        += donorCoeff*flowNodes->GetWallTemp(iPoint, iNode);
         
         if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
           converged = false;
@@ -1637,47 +1635,26 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       }
       
       if (!converged) continue;
-
-      /*--- Wall function ---*/
-      const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-      const su2double Beta = 0.0; // For adiabatic flows only
-      const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-      const su2double Phi  = asin(-1.0*Beta/Q);
-
-      VelMod = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
-      VelMod = sqrt(VelMod);
-
-      const su2double Up  = VelMod/U_Tau;
-      const su2double Ypw = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*Up - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
       
-      const su2double Yp = Up + Ypw - (exp(-1.0*kappa*B)*
-                           (1.0 + kappa*Up + kappa*kappa*Up*Up/2.0 +
-                           kappa*kappa*kappa*Up*Up*Up/6.0));
+      const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
       
       /*--- Disable calculation if Y+ is too small or large ---*/
-      if (Yp < 5.0 || Yp > 1.0e3) continue;
+      if (Yp > 500.) continue;
       
-      const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*Up - Beta,2.0)/(Q*Q), -0.5);
-
-      Lam_Visc_Normal = flowNodes->GetLaminarViscosity(iPoint);
-      Eddy_Visc = Lam_Visc_Wall*(1.0 + dYpw_dYp - kappa*exp(-1.0*kappa*B)*
-                  (1.0 + kappa*Up + kappa*kappa*Up*Up/2.0)
-                  - Lam_Visc_Normal/Lam_Visc_Wall);
-      
-//      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
+     Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
       
       Density_Normal  = flowNodes->GetDensity(iPoint);
       distance = geometry->node[iPoint]->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
-     const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-      // const su2double Omega_b1 = Omega_i + Omega_0;
-      // const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
-      // const su2double blend = tanh(pow(Yp/10., 4.));
-      // const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
+     // const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      const su2double Omega_b1 = Omega_i + Omega_0;
+      const su2double Omega_b2 = pow(pow(Omega_i, 1.2) + pow(Omega_0, 1.2), 1./1.2);
+      const su2double blend = tanh(pow(Yp/10., 4.));
+      const su2double Omega = blend*Omega_b1 + (1.-blend)*Omega_b2;
 
-      Solution[0] = Omega * Eddy_Visc;
+      // Solution[0] = Omega * Eddy_Visc;
+      Solution[0] = nodes->GetSolution(iPoint, 0);
       Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
