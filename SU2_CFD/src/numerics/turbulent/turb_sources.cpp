@@ -877,7 +877,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
        }
      }
      else if (pw > 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta) {
-       Jacobian_i[1][1] = 20.*beta_star*alfa_blended*Density_i*zeta*Volume;
+       Jacobian_i[1][1] = 20.*beta_star*alfa_blended*zeta*Volume;
        if (TurbVar_i[1] > VorticityMag*F2_i/a1) Jacobian_i[1][1] *= 2.;
      }
    }
