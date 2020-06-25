@@ -3037,6 +3037,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -3205,6 +3208,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         numerics->SetCoord(Coord_i, Coord_j);
       }
     }
+
+    /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
+
+    if (tkeNeeded)
+      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                     solver_container[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0));
 
     /*--- Compute the residual ---*/
 
@@ -6883,6 +6892,12 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint),
                                   nodes->GetSecondary(iPoint));
 
+      /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
+      
+      if (tkeNeeded)
+        numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                       solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+
       /*--- Compute the residual using an upwind scheme. ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
@@ -7227,6 +7242,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
+
+      /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
+      
+      if (tkeNeeded)
+        numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                       Kine_Infty);
 
       /*--- Set various quantities in the numerics class ---*/
 

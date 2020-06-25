@@ -700,8 +700,8 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, ProjFlux_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, ProjFlux_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, ProjFlux_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, ProjFlux_j);
 
     /*--- Compute P, inverse P, and store eigenvalues ---*/
 
