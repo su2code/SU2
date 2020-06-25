@@ -132,6 +132,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   turb_ke_i = 0.0;
   turb_ke_j = 0.0;
+  turb_omega_i = 0.0;
+  turb_omega_j = 0.0;
 
   Vector = new su2double[nDim];
 

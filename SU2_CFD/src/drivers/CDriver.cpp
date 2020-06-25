@@ -739,7 +739,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   unsigned short requestedMGlevels = config->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
-  bool wall_models = config->GetWall_Functions();
+  bool wfun = config->GetWall_Functions();
 
   /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
@@ -808,7 +808,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Not needed when a wall treatment is used, because this has
               already been done. ---*/
 
-  if( !wall_models ) {
+  if( !wfun ) {
     if (config->GetReorientElements()) {
       if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
       geometry[MESH_0]->Check_IntElem_Orientation(config);
@@ -827,7 +827,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
   geometry[MESH_0]->SetCoord_CG();
 
-  if (wall_models){
+  if (wfun){
 
     /*--- If using wall model, update the control volume structures ---*/
 
