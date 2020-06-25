@@ -489,7 +489,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     Pressure= GetFluidModel()->GetPressure();
     Temperature= GetFluidModel()->GetTemperature();
 
-    /*--- Use the values at infinity ---*/
+    /*--- Use the values at the infinity ---*/
 
     if ((Pressure < 0.0) || (Density < 0.0) || (Temperature < 0.0)) {
       Solution[0] = Density_Inf;
@@ -3907,7 +3907,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           Coord = geometry->node[iPoint]->GetCoord();
 
           /*--- Quadratic objective function for the near-field.
-           This uses infinity pressure regardless of Mach number. ---*/
+           This uses the infinity pressure regardless of Mach number. ---*/
 
           NFPressOF += 0.5*(Pressure - Pressure_Inf)*(Pressure - Pressure_Inf)*Normal[nDim-1];
 
@@ -4233,7 +4233,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
           Density   = nodes->GetDensity(iPoint);
 
           /*--- Quadratic objective function for the near-field.
-           This uses infinity pressure regardless of Mach number. ---*/
+           This uses the infinity pressure regardless of Mach number. ---*/
 
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
@@ -7064,7 +7064,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Allocate the value at infinity ---*/
+    /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -7254,11 +7254,15 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       if (viscous) {
 
-        /*--- Set laminar and eddy viscosity at infinity ---*/
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
-
+        su2double StaticEnergy = Energy - 0.5*Velocity2;
+        if (tkeNeeded) StaticEnergy -= Kine_Infty;
+          
+        GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+        V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
+        V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+        
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
@@ -7738,7 +7742,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         V_boundary[nDim+2] = Density_b;
         V_boundary[nDim+3] = Enthalpy_b;
 
-        /*--- Set laminar and eddy viscosity at infinity ---*/
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
 
         V_boundary[nDim+5] = GetFluidModel()->GetLaminarViscosity();
         V_boundary[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -8242,7 +8246,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           V_boundary[nDim+2] = Density_b;
           V_boundary[nDim+3] = Enthalpy_b;
 
-          /*--- Set laminar and eddy viscosity at infinity ---*/
+          /*--- Set laminar and eddy viscosity at the infinity ---*/
 
           V_boundary[nDim+5] = GetFluidModel()->GetLaminarViscosity();
           V_boundary[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -9138,7 +9142,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       if (viscous) {
 
-        /*--- Set laminar and eddy viscosity at infinity ---*/
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
 
         V_boundary[nDim+5] = GetFluidModel()->GetLaminarViscosity();
         V_boundary[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -9494,7 +9498,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       if (viscous) {
 
-        /*--- Set laminar and eddy viscosity at infinity ---*/
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
 
         V_inlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
         V_inlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -9699,7 +9703,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       if (viscous) {
 
-        /*--- Set laminar and eddy viscosity at infinity ---*/
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
 
         Energy = V_outlet[nDim+3] - (V_outlet[nDim+1]/V_outlet[nDim+2]);
         su2double StaticEnergy = Energy - 0.5*Velocity2;
@@ -9875,7 +9879,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 //
 //      if (viscous) {
 //
-//        /*--- Set laminar and eddy viscosity at infinity ---*/
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
 //
 //        V_inlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
 //        V_inlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -9996,7 +10000,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 //
 //      if (viscous) {
 //
-//        /*--- Set laminar and eddy viscosity at infinity ---*/
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
 //
 //        V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
 //        V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -10219,7 +10223,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 //
 //      if (viscous) {
 //
-//        /*--- Set laminar and eddy viscosity at infinity ---*/
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
 //
 //        V_inflow[nDim+5] = nodes->GetLaminarViscosity(iPoint);
 //        V_inflow[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -10474,7 +10478,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 //
 //      if (viscous) {
 //
-//        /*--- Set laminar and eddy viscosity at infinity ---*/
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
 //
 //        V_exhaust[nDim+5] = nodes->GetLaminarViscosity(iPoint);
 //        V_exhaust[nDim+6] = nodes->GetEddyViscosity(iPoint);
@@ -11181,7 +11185,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //
 //      if (viscous) {
 //
-//        /*--- Set laminar and eddy viscosity at infinity ---*/
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
 //
 //        if (val_inlet_surface) {
 //          V_inlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
