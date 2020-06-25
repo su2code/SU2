@@ -6760,6 +6760,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
        viscous  = config->GetViscous();
 
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i,
             *V_reflected,
@@ -9413,7 +9415,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Using pressure, density, & velocity, compute the energy ---*/
 
           Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-//          if (tkeNeeded) Energy += GetTke_Inf();
           if (tkeNeeded) {
             const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
             Kine_Inlet = 3.0/2.0*(Velocity2*Intensity*Intensity);
@@ -9476,7 +9477,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Energy for the fictitious inlet state ---*/
 
           Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-//          if (tkeNeeded) Energy += GetTke_Inf();
           if (tkeNeeded) {
             const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
             Kine_Inlet = 3.0/2.0*(Vel_Mag*Intensity*Intensity);
@@ -9688,7 +9688,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-//        if (tkeNeeded) Energy += GetTke_Inf();
         if (tkeNeeded) {
           Kine_Outlet = solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
           Energy += Kine_Outlet;

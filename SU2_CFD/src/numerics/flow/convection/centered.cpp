@@ -120,7 +120,7 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
   /*--- Jacobians of the inviscid flux, scale = 0.5 because ProjFlux ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
   if (implicit) {
-    const su2double MeanTke = 0.5*(turb_ke_i+turb_ke_j);
+    su2double MeanTke = 0.5*(turb_ke_i+turb_ke_j);
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, &MeanTke, Normal, 0.5, Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)

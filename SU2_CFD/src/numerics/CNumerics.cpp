@@ -373,7 +373,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
                                    su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
   unsigned short iDim, jDim;
-  su2double sqvel, proj_vel, phi, a1, a2, tke;
+  su2double sqvel, proj_vel, phi, a1, a2;
 
   sqvel = 0.0; proj_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -382,7 +382,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
   }
 
   phi = 0.5*Gamma_Minus_One*sqvel;
-  a1 = Gamma*(*val_energy)-phi-Gamma_Minus_One*val_tke;
+  a1 = Gamma*(*val_energy)-phi-Gamma_Minus_One*(*val_tke);
   a2 = Gamma-1.0;
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
