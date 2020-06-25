@@ -4180,6 +4180,7 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
       unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
       if (WallADT && !WallADT->IsEmpty()){
+        cout << "Computing wall distance for zone " << iZone << "." << endl;
         allEmpty = false;
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
