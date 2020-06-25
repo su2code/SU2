@@ -39,14 +39,14 @@ protected:
 
   bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
 
-  su2double MinVolume_Ref,     /*!< \brief Minimum volume in reference and current (deformed) configuration. */
-            MinVolume_Curr;
+  unsigned long ElemCounter;   /*!< \brief Error (negative volume) counter. */
 
-  su2double MaxVolume_Ref,
-            MaxVolume_Curr;
-
-  su2double MinDistance;
-  su2double MaxDistance;
+  /*!
+   * \brief Minimum/Maximum distance and volume (in reference and current (deformed) coords).
+   */
+  su2double MinVolume, MinVolume_Ref, MinVolume_Curr;
+  su2double MaxVolume, MaxVolume_Ref, MaxVolume_Curr;
+  su2double MinDistance, MaxDistance;
 
   vector<CMeshElement> element; /*!< \brief Vector which stores element information for each problem. */
 

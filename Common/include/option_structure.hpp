@@ -138,6 +138,12 @@ const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK
 
 const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
 
+/*--- All temperature polynomial fits for the fluid models currently
+   assume a quartic form (5 coefficients). For example,
+   Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
+   are set to zero and will be properly non-dim. in the solver. ---*/
+constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */;
+
 /*!
  * \brief Boolean answers
  */

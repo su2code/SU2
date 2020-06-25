@@ -98,7 +98,7 @@ private:
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
    * \return                  - A pointer to the allocated turbulent solver
    */
-  static CSolver* createTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
+  static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
   
   /*!
    * \brief Create a heat solver 
@@ -109,7 +109,7 @@ private:
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
    * \return                  - A pointer to the allocated heat solver
    */
-  static CSolver* createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
+  static CSolver* CreateHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
   
   /*!
    * \brief Create a mesh solver 
@@ -120,7 +120,7 @@ private:
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
    * \return                  - A pointer to the allocated mesh solver
    */
-  static CSolver* createMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
+  static CSolver* CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
   
   /*!
    * \brief Create a DG solver 
@@ -130,7 +130,7 @@ private:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated DG solver
    */
-  static CSolver* createDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Create a flow solver 
@@ -163,7 +163,7 @@ private:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated solver
    */
-  static CSolver* createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
 public:
 
@@ -181,7 +181,7 @@ public:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - Pointer to the allocated solver array
    */
-  static CSolver** createSolverContainer(ENUM_MAIN_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
+  static CSolver** CreateSolverContainer(ENUM_MAIN_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
 
 
   /*!

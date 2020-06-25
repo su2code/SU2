@@ -512,7 +512,11 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
 }
 #endif
 #else // HAVE_MPI
+#ifdef _OPENMP
+#include <omp.h>
+#else
 #include <ctime>
+#endif
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
@@ -688,6 +692,10 @@ inline void CBaseMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Da
 }
 
 inline passivedouble CBaseMPIWrapper::Wtime(void) {
+#ifdef _OPENMP
+  return omp_get_wtime();
+#else
   return passivedouble(clock()) / CLOCKS_PER_SEC;
+#endif
 }
 #endif

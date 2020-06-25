@@ -38,8 +38,6 @@
 #endif
 #include <fstream>
 #include <cmath>
-#include <time.h>
-#include <fstream>
 #include <vector>
 
 #include "../../../Common/include/option_structure.hpp"

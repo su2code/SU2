@@ -50,7 +50,7 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   MPI_QUANTITIES kindMpiComm,
                                   PERIODIC_QUANTITIES kindPeriodicComm,
                                   CGeometry& geometry,
-                                  CConfig& config,
+                                  const CConfig& config,
                                   bool weighted,
                                   const FieldType& field,
                                   size_t varBegin,
@@ -170,7 +170,6 @@ void computeGradientsLeastSquares(CSolver* solver,
 
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
-  SU2_OMP_MASTER
   if (solver != nullptr)
   {
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
@@ -179,7 +178,6 @@ void computeGradientsLeastSquares(CSolver* solver,
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
     }
   }
-  SU2_OMP_BARRIER
 
 
   /*--- Second loop over points of the grid to compute final gradient. ---*/
@@ -303,7 +301,6 @@ void computeGradientsLeastSquares(CSolver* solver,
 
   /*--- If no solver was provided we do not communicate ---*/
 
-  SU2_OMP_MASTER
   if (solver != nullptr)
   {
     /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
@@ -311,6 +308,5 @@ void computeGradientsLeastSquares(CSolver* solver,
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
-  SU2_OMP_BARRIER
 
 }

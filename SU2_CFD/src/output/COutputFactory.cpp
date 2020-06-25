@@ -40,7 +40,7 @@
 #include "../../include/output/CHeatOutput.hpp"
 #include "../../include/output/CAdjHeatOutput.hpp"
 
-COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* config, int nDim){
+COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* config, int nDim){
 
   COutput* output = nullptr;
 
@@ -84,14 +84,14 @@ COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
   return output;
 }
 
-COutput* COutputFactory::createMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim){
+COutput* COutputFactory::CreateMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim){
 
   COutput* output = new CMultizoneOutput(driverConfig, config_container, nDim);
 
   return output;
 }
 
-COutputLegacy* COutputFactory::createLegacyOutput(CConfig *config){
+COutputLegacy* COutputFactory::CreateLegacyOutput(CConfig *config){
 
   COutputLegacy* output = new COutputLegacy(config);
 

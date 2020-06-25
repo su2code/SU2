@@ -64,11 +64,9 @@ int main(int argc, char *argv[]) {
   int  buffsize;
   char *buffptr;
 #ifdef HAVE_OMP
+  int required = use_thread_mult? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided;
-  if (use_thread_mult)
-    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-  else
-    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  SU2_MPI::Init_thread(&argc, &argv, required, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif

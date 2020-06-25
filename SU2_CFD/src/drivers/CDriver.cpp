@@ -36,6 +36,8 @@
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 
 #include "../../include/output/COutputFactory.hpp"
+#include "../../include/output/COutput.hpp"
+
 #include "../../include/output/COutputLegacy.hpp"
 
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
@@ -82,6 +84,8 @@
 #include "../../include/numerics/elasticity/nonlinear_models.hpp"
 
 #include "../../include/integration/CIntegrationFactory.hpp"
+
+#include "../../include/iteration/CIterationFactory.hpp"
 
 #include "../../../Common/include/omp_structure.hpp"
 
@@ -819,7 +823,9 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Compute cell center of gravity ---*/
 
   if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-  geometry[MESH_0]->SetCoord_CG();
+  SU2_OMP_PARALLEL {
+    geometry[MESH_0]->SetCoord_CG();
+  }
 
   /*--- Create the control volume structures ---*/
 
@@ -1052,7 +1058,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   solver = new CSolver**[config->GetnMGLevels()+1];
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
-    solver[iMesh] = CSolverFactory::createSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
+    solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
   }
 
   /*--- Count the number of DOFs per solution point. ---*/
@@ -1386,7 +1392,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CInte
 
   ENUM_MAIN_SOLVER kindMainSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
-  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, solver);
+  integration = CIntegrationFactory::CreateIntegrationContainer(kindMainSolver, solver);
 
 }
 
@@ -2474,75 +2480,8 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  /*--- Loop over all zones and instantiate the physics iteration. ---*/
+  iteration = CIterationFactory::CreateIteration(static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver()), config);
 
-  switch (config->GetKind_Solver()) {
-
-    case EULER: case NAVIER_STOKES: case RANS:
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
-      if(config->GetBoolTurbomachinery()){
-        if (rank == MASTER_NODE)
-          cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
-        iteration = new CTurboIteration(config);
-
-      }
-      else{
-        if (rank == MASTER_NODE)
-          cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
-        iteration = new CFluidIteration(config);
-      }
-      break;  
-
-    case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
-      if (rank == MASTER_NODE)
-        cout << "Finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
-      iteration = new CFEMFluidIteration(config);
-      break;
-
-    case HEAT_EQUATION:
-      if (rank == MASTER_NODE)
-        cout << "Heat iteration (finite volume method)." << endl;
-      iteration = new CHeatIteration(config);
-      break;
-
-    case FEM_ELASTICITY:
-      if (rank == MASTER_NODE)
-        cout << "FEM iteration." << endl;
-      iteration = new CFEAIteration(config);
-      break;
-
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CAdjFluidIteration(config);
-      break;
-
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CDiscAdjFluidIteration(config);
-      break;
-
-    case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration = new CDiscAdjFluidIteration(config);
-      break;
-
-    case DISC_ADJ_FEM:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint FEM structural iteration." << endl;
-      iteration = new CDiscAdjFEAIteration(config);
-      break;
-
-    case DISC_ADJ_HEAT:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint heat iteration." << endl;
-      iteration = new CDiscAdjHeatIteration(config);
-      break;
-  }
 }
 
 void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration* iteration,
@@ -2617,7 +2556,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
         /*--- Setup the interpolation. ---*/
 
-        interpolation[donor][target] = CInterpolatorFactory::createInterpolator(geometry, config, donor, target);
+        interpolation[donor][target] = CInterpolatorFactory::CreateInterpolator(geometry, config, donor, target);
 
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 
@@ -2815,7 +2754,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 
     ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config[iZone]->GetKind_Solver());
 
-    output[iZone] = COutputFactory::createOutput(kindSolver, config[iZone], nDim);
+    output[iZone] = COutputFactory::CreateOutput(kindSolver, config[iZone], nDim);
 
     /*--- If dry-run is used, do not open/overwrite history file. ---*/
     output[iZone]->PreprocessHistoryOutput(config[iZone], !dry_run);
@@ -2828,7 +2767,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     if (rank == MASTER_NODE)
       cout << endl <<"------------------- Output Preprocessing ( Multizone ) ------------------" << endl;
 
-    driver_output = COutputFactory::createMultizoneOutput(driver_config, config, nDim);
+    driver_output = COutputFactory::CreateMultizoneOutput(driver_config, config, nDim);
 
     driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
@@ -3260,7 +3199,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
                                              SU2_Comm MPICommunicator):
                                              CFluidDriver(confFile, val_nZone, MPICommunicator) {
 
-  output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
+  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
 
   /*--- LEGACY OUTPUT (going to be removed soon) --- */
 
@@ -3508,7 +3447,7 @@ CHBDriver::CHBDriver(char* confFile,
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
   D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 
-  output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
+  output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
 
   /*--- Open the convergence history file ---*/
   ConvHist_file = nullptr;

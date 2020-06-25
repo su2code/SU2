@@ -249,6 +249,18 @@ namespace AD{
    */
   inline void Push_TapePosition() {}
 
+  /*!
+   * \brief Start a passive region, i.e. stop recording.
+   * \return True is tape was active.
+   */
+  inline bool BeginPassive() { return false; }
+
+  /*!
+   * \brief End a passive region, i.e. start recording if we were recording before.
+   * \param[in] wasActive - Whether we were recording before entering the passive region.
+   */
+  inline void EndPassive(bool wasActive) {}
+
 #else
   using CheckpointHandler = codi::DataStore;
 
@@ -488,27 +500,19 @@ namespace AD{
 
   FORCEINLINE void EndExtFunc() { delete FuncHelper; }
 
+  FORCEINLINE bool BeginPassive() {
+    if(AD::globalTape.isActive()) {
+      StopRecording();
+      return true;
+    }
+    return false;
+  }
+
+  FORCEINLINE void EndPassive(bool wasActive) { if(wasActive) StartRecording(); }
+
 #endif // CODI_REVERSE_TYPE
 
 } // namespace AD
-
-/*--- Macro to begin and end sections with a passive tape ---*/
-
-#ifdef CODI_REVERSE_TYPE
-#define AD_BEGIN_PASSIVE         \
-  if(AD::globalTape.isActive()) {\
-     AD::globalTape.setPassive();\
-     AD::Status = true;          \
-  }
-#define AD_END_PASSIVE           \
-  if(AD::Status) {               \
-     AD::globalTape.setActive(); \
-     AD::Status = false;         \
-  }
-#else
-#define AD_BEGIN_PASSIVE
-#define AD_END_PASSIVE
-#endif
 
 
 /*--- If we compile under OSX we have to overload some of the operators for

@@ -1,5 +1,5 @@
 /*!
- * \file linear_solvers_structure.cpp
+ * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
  * \version 7.0.5 "Blackbird"
@@ -194,7 +194,7 @@ void CSysSolve<ScalarType>::WriteWarning(ScalarType res_calc, ScalarType res_tru
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                   const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                  ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                  ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -334,7 +334,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
 
@@ -488,7 +488,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                        const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                       ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                       ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -653,7 +653,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                         const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                        ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                        ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -824,7 +824,7 @@ void CSysSolve<su2mixedfloat>::HandleTemporariesOut(CSysVector<su2double> & LinS
 
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                           CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
+                                           CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config) {
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
    meaning that they are active in the discrete adjoint. The same assumption is made in SetExternalSolve.
@@ -1007,7 +1007,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
+                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config) {
 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
