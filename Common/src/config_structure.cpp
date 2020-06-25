@@ -7424,17 +7424,17 @@ su2double CConfig::GetFlowAngleIn_BC() {
   su2double alpha_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
     if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
-      alpha_in = atan(Giles_FlowDir[iMarker_BC][1]/Giles_FlowDir[iMarker_BC][0]);
+      alpha_in = atan(Giles_FlowDir[iMarker_BC][2]/Giles_FlowDir[iMarker_BC][0]);
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
   	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
-  		alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
+  		alpha_in = atan(Riemann_FlowDir[iMarker_BC][2]/Riemann_FlowDir[iMarker_BC][0]);
   	}
   }
 
   if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
-  	alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
+  	alpha_in = atan(Inlet_FlowDir[0][2]/Inlet_FlowDir[0][0]);
   }
 
   return alpha_in;

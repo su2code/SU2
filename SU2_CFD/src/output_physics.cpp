@@ -126,7 +126,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       relPressureIn   = FluidModel->GetPressure();
 
       /*--- Compute kinematic relative Inflow quantities ---*/
-      FlowAngleIn[iMarkerTP][iSpan]    = atan(relVel[1]/relVel[0]);
+      FlowAngleIn[iMarkerTP][iSpan]    = atan(relVel[2]/relVel[0]);
       mach          = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
         MachIn[iMarkerTP][iSpan][iDim] = relVel[iDim]/soundSpeed;
@@ -213,7 +213,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
 
       /*--- Compute kinematic relative Outflow quantities ---*/
-      FlowAngleOut[iMarkerTP][iSpan] = atan(relVel[1]/relVel[0]);
+      FlowAngleOut[iMarkerTP][iSpan] = atan(relVel[2]/relVel[0]);
       mach   = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
         MachOut[iMarkerTP][iSpan][iDim] = relVel[iDim]/soundSpeed;
@@ -250,6 +250,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       PressureRatio[iMarkerTP][iSpan]      = TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan];
       EnthalpyOutIs[iMarkerTP][iSpan]      = (pow(TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan], 0.4/1.4) - 1.0)/(TotalTemperatureOut[iMarkerTP][iSpan]/TotalTemperatureIn[iMarkerTP][iSpan] -1.0);
       Modified_AE[iMarkerTP][iSpan]         = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+      Modified_AE[iMarkerTP][iSpan]  = config->GetSurface_Uniformity(0);
     }
   }
 

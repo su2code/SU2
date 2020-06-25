@@ -3332,14 +3332,13 @@ void CDriver::TurbomachineryPreprocessing(){
     solver_container[iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
     solver_container[iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[iZone], geometry_container[iZone][MESH_0]);
     if (rank == MASTER_NODE){
-      flowAngleIn = solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityIn(iZone, config_container[iZone]->GetnSpanWiseSections())[1];
+      flowAngleIn = solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityIn(iZone, config_container[iZone]->GetnSpanWiseSections())[2];
       flowAngleIn /= solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityIn(iZone, config_container[iZone]->GetnSpanWiseSections())[0];
       flowAngleIn = atan(flowAngleIn)*180.0/PI_NUMBER;
       cout << "Inlet flow angle for Row "<< iZone + 1<< ": "<< flowAngleIn <<"°."  <<endl;
-      flowAngleOut = pow(solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[0],2);
-      flowAngleOut += pow(solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[2],2);
-      flowAngleOut = sqrt(flowAngleOut)/solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[1];
-      flowAngleOut = atan(1/flowAngleOut)*180.0/PI_NUMBER;
+      flowAngleOut = solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[2];
+      flowAngleOut /= solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[0];
+      flowAngleOut = atan(flowAngleOut)*180.0/PI_NUMBER;
       cout << "Outlet flow angle for Row "<< iZone + 1<< ": "<< flowAngleOut <<"°."  <<endl;
 
     }
