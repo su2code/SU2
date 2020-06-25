@@ -292,16 +292,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
   }
-
-  /*--- Set flow solver primitives to values stored in turb solver ---*/
-    
-  // CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
-  // for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-  //   for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-  //     flowNodes->SetPrimitive(iPoint,iVar,nodes->GetFlowPrimitive(iPoint,iVar));
-  //   }
-  // }
   
   /*--- Set primitives and gradients since flow primitives have updated ---*/
   
@@ -332,11 +322,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute eddy viscosity ---*/
 
   SetEddyViscosity(geometry, solver_container);
-
-  /*--- Store variables from the mean flow solver ---*/
-
-  // SetFlowPrimitive(solver_container);
-  // SetFlowGradient(solver_container);
 
 }
 
@@ -509,9 +494,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       /*--- Set vorticity and strain rate magnitude ---*/
 
       numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
-      
-      // numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint), 0.0);
-
       numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
       /*--- Cross diffusion ---*/
@@ -549,9 +531,9 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
     if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
-      const su2double F1_i     = nodes->GetF1blending(iPoint);
-      const su2double r_i      = flowNodes->GetDensity(iPoint);
-      const su2double om_i     = nodes->GetPrimitive(iPoint,1);
+      const su2double F1_i = nodes->GetF1blending(iPoint);
+      const su2double r_i  = flowNodes->GetDensity(iPoint);
+      const su2double om_i = nodes->GetPrimitive(iPoint,1);
       
       Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
       Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -615,7 +597,7 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, jPoint, iVertex, total_index;
+  unsigned long iPoint, iVertex, total_index;
   unsigned short iVar, iDim;
   su2double distance, Density_Wall = 0.0, Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
@@ -649,8 +631,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
 
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
-          unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
-          su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
+          const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
+          const su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
           Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
           Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1);
@@ -668,12 +650,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       }
       else {
       
-        jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
-        distance = geometry->node[jPoint]->GetWall_Distance();
+        distance = geometry->node[donorPoint]->GetWall_Distance();
         
-        Density_Normal  = flowNodes->GetDensity(jPoint);
-        Lam_Visc_Normal = flowNodes->GetLaminarViscosity(jPoint);
+        Density_Normal  = flowNodes->GetDensity(donorPoint);
+        Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
       }
       
       Density_Wall = flowNodes->GetDensity(iPoint);
@@ -812,9 +794,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Vorticity ---*/
       visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
-      
-      // visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-      //                                nodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
@@ -932,9 +911,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Vorticity ---*/
       visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
-      
-      // visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-      //                                nodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
@@ -1049,9 +1025,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //      /*--- Vorticity ---*/
 //      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
 //                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
-//
-//      visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
-//                                     nodes->GetVorticityMag(iPoint));
 //
 //      /*--- Set values for gradient Jacobian ---*/
 //      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),

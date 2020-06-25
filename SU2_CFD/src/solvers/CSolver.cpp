@@ -5184,7 +5184,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         
         Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
         Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-      }
+      }// iNode
       
       /*--- Influence of boundary j on R(i,j) ---*/
       if (geometry->node[jPoint]->GetPhysicalBoundary()) {
