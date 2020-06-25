@@ -269,7 +269,7 @@ void computeHessiansGreenGauss(CSolver* solver,
     {
       if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
           (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) &&
-        (config.GetMarker_All_KindBC(iMarker) != SEND_RECEIVE))
+          (config.GetMarker_All_KindBC(iMarker) != SEND_RECEIVE))
       {
         /*--- Work is shared in inner loop as two markers
          *    may try to update the same point. ---*/

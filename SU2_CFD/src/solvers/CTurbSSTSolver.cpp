@@ -155,8 +155,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[7] = 0.31;   //a1
   constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
-//  constants[8] = 5./9.;  //alfa_1
-//  constants[9] = 0.44;  //alfa_2
       
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
@@ -402,9 +400,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
                                         Vorticity[1]*Vorticity[1] +
                                         Vorticity[2]*Vorticity[2]);
-    
-    // nodes->SetVorticityMag(iPoint, VorticityMag);
-    
+        
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
     const su2double F2 = nodes->GetF2blending(iPoint);
