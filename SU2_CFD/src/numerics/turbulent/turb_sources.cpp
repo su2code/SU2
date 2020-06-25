@@ -855,8 +855,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = alfa_blended*Density_i*(factor - 2./3.*zeta*diverg);
        
      /*--- k production Jacobian ---*/
-     // if ((pk > 0.) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-     if (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+     if ((pk > 0.) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = (factor/zeta-2./3.*diverg)*Volume;
        if (TurbVar_i[1] > VorticityMag*F2_i/a1)
          Jacobian_i[0][1] += -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
@@ -867,8 +866,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      }
      
      /*--- omega production Jacobian ---*/
-     // if ((pw > 0.) && (pw <= 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta)) {
-     if (pw <= 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta) {
+     if ((pw > 0.) && (pw <= 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta)) {
        if (TurbVar_i[1] > VorticityMag*F2_i/a1)
          Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
      }
@@ -891,8 +889,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = min(pw, 20.*beta_star*alfa_blended*Density_i*TurbVar_i[1]*zeta);
    }
     
-   // pk = max(pk, 0.0);
-   // pw = max(pw, 0.0);
+   pk = max(pk, 0.0);
+   pw = max(pw, 0.0);
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
