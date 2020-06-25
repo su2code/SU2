@@ -152,7 +152,7 @@ public:
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
                                 CConfig *config,
-                                bool reconstruction = false) final;
+                                bool reconstruction = false);
 
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -163,7 +163,7 @@ public:
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
                                 CConfig *config,
-                                bool reconstruction = false) final;
+                                bool reconstruction = false);
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.

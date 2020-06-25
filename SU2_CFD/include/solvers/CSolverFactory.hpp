@@ -141,7 +141,7 @@ private:
    * \param[in] iMGLevel       - The multigrid level
    * \return                   - A pointer to the allocated flow solver
    */
-  static CSolver* createFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
 
     /*!
    * \brief Create a NEMO flow solver 
@@ -152,7 +152,7 @@ private:
    * \param[in] iMGLevel       - The multigrid level
    * \return                   - A pointer to the allocated flow solver
    */
-  static CSolver* createNEMOSolver(SUB_SOLVER_TYPE kindNEMOSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* CreateNEMOSolver(SUB_SOLVER_TYPE kindNEMOSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Generic routine to create a solver 
