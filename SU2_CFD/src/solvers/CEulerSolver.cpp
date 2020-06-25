@@ -6895,8 +6895,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
       
       if (tkeNeeded)
-        numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                       solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+        conv_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                            solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
 
       /*--- Compute the residual using an upwind scheme. ---*/
 
@@ -7244,10 +7244,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+3] = Energy + Pressure/Density;
 
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
-      
+
       if (tkeNeeded)
-        numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                       Kine_Infty);
+        conv_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                            Kine_Infty);
 
       /*--- Set various quantities in the numerics class ---*/
 
