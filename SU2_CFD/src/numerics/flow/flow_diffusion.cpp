@@ -716,7 +716,7 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_ic[iDim][iVar][jVar] -= weight_i*(Normal[iDim]*val_proj_vector/(val_dS*val_dS) 
-                                         - Edge_Vector[iDim])  * Jacobian_i[iVar][jVar];
+                                         - Edge_Vector[iDim]) * Jacobian_i[iVar][jVar];
           Jacobian_jc[iDim][iVar][jVar] += weight_j*(Normal[iDim]*val_proj_vector/(val_dS*val_dS)
                                          - Edge_Vector[iDim]) * Jacobian_j[iVar][jVar];
         }
@@ -907,7 +907,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- R times partial derivatives of temp. ---*/
 
-  su2double R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
+  su2double R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi + turb_ke_i*phi;
   su2double R_dTdu1 = -phi*V_i[1];
   su2double R_dTdu2 = -phi*V_i[2];
 
@@ -945,7 +945,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- R times partial derivatives of temp. ---*/
 
-  R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
+  R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi + turb_ke_j*phi;
   R_dTdu1 = -phi*V_j[1];
   R_dTdu2 = -phi*V_j[2];
 
