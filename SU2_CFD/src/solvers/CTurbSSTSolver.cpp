@@ -582,6 +582,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         Jacobian_i[1][1] += -(1. - F1_i)*sigma_om2/(r_i*om_i)
                             * gradr*gradk*Vol;
       }
+      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       
       /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
       if (geometry->node[iPoint]->GetPhysicalBoundary()) {
