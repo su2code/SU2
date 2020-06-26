@@ -154,6 +154,10 @@ def main():
             # Save spline matrix
             print('Saving spline matrix')
             scipy.io.savemat( './Spline.mat', mdict={'Spline': MLS.interpolation_matrix})
+            ##
+            #scipy.io.savemat( './GRID.mat', mdict={'GRID': FSIInterface.globalFluidCoordinates})
+            #scipy.io.savemat( './R.mat', mdict={'R': FSIInterface.globalSolidCoordinates})
+            ##
             np.save('./Spline.npy', MLS.interpolation_matrix)
         except TypeError as exception:
             print('ERROR building the MLS Interpolation: ', exception)
