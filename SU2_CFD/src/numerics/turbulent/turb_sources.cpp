@@ -831,7 +831,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    for (iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-   const su2double delta[3][3] = {{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}};
    su2double factor = 0.;
    const su2double zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
 
