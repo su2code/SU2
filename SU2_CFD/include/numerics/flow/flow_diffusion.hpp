@@ -360,7 +360,7 @@ public:
                            const su2double *val_normal);
   
   /*!
-   * \brief Compute the Jacobian of the heat flux vector
+   * \brief Compute the Jacobian of laminar viscosity
    *
    * This Jacobian is projected onto the normal vector, so it is of
    * dimension nVar.
@@ -379,7 +379,7 @@ public:
                                    const CConfig   *config);
   
   /*!
-   * \brief Compute the Jacobian of the heat flux vector
+   * \brief Compute the Jacobian of eddy viscosity
    *
    * This Jacobian is projected onto the normal vector, so it is of
    * dimension nVar.
@@ -396,6 +396,25 @@ public:
                                 const su2double val_eddy_viscosity,
                                 const su2double *val_normal,
                                 const CConfig   *config);
+
+  // !
+  //  * \brief Compute the Jacobian due to conversion from conservative to primitive gradient
+  //  *
+  //  * This Jacobian is projected onto the normal vector, so it is of
+  //  * dimension nVar.
+  //  *
+  //  * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+  //  * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+  //  * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+  //  * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+  //  * \param[in] val_dist_ij - Distance between the points.
+  //  * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   
+  // void SetConservativeJacobian(const su2double *val_Mean_PrimVar,
+  //                              const su2double val_laminar_viscosity,
+  //                              const su2double val_eddy_viscosity,
+  //                              const su2double *val_normal,
+  //                              const CConfig   *config);
 };
 
 /*!
