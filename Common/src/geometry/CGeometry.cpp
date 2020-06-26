@@ -3935,6 +3935,24 @@ const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType t
   return *pattern;
 }
 
+const CCompressedSparsePatternUL& CGeometry::GetBoundarySparsePattern(unsigned long val_marker, unsigned long fillLvl)
+{
+
+  CCompressedSparsePatternUL* pattern = nullptr;
+
+  if (fillLvl == 0)
+    pattern = &finiteElementSurfaceCSRFill0;
+  else
+    pattern = &finiteElementSurfaceCSRFillN;
+
+  if (pattern->empty()) {
+    *pattern = buildBoundaryCSRPattern(this, val_marker, fillLvl);
+    pattern->buildDiagPtr();
+  }
+
+  return *pattern;
+}
+
 const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
 {
   if (edgeToCSRMap.empty()) {

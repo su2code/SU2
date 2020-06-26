@@ -694,3 +694,103 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
 
   return ideal / real;
 }
+
+
+/*!
+ * \brief Build a sparse pattern from geometry information, from a certain boundary and
+ *        for a given fill-level.
+ *        The marker tells us for which boundary from the geometry we do the calculation,
+ *        based on the FEM surface connectivity
+ *        At fill-level N, the immediate neighbors of the
+ *        points in level N-1 are also considered neighbors of the base point.
+ *        The resulting pattern is that of A^{N+1} where A is the sparse matrix
+ *        of immediate neighbors.
+ * \note Algorithm is equivalent to the implementation by F. Palacios,
+ *       A. Bueno, and T. Economon from CSysMatrix.
+ * \param[in] geometry - Definition of the grid.
+ * \param[in] val_marker - which boundary.
+ * \param[in] fillLvl - Target degree of neighborhood (immediate neighbors always added).
+ * \return Compressed-Storage-Row sparse pattern.
+ */
+template<class Geometry_t, typename Index_t>
+CCompressedSparsePattern<Index_t> buildBoundaryCSRPattern(Geometry_t* geometry,
+                                                          unsigned long val_marker,
+                                                          Index_t fillLvl) {
+
+  Index_t nVertex = geometry->nVertex[val_marker];
+
+  std::vector<Index_t> outerPtr(nVertex+1);
+  std::vector<Index_t> innerIdx;
+
+  typename std::vector<Index_t>::iterator it;
+
+  innerIdx.reserve(nVertex); // at least this much space is needed
+
+  std::vector<Index_t> indexNodes;
+  /*--- We need the connection between vertex and node indices ---*/
+  for (Index_t iVertex = 0; iVertex < nVertex; iVertex++) {
+    indexNodes.push_back(geometry->vertex[val_marker][iVertex]->GetNode());
+  }
+
+  for(Index_t iVertex = 0; iVertex < nVertex; ++iVertex)
+  {
+    /*--- Inner indices for iPoint start here. ---*/
+    outerPtr[iVertex] = innerIdx.size();
+
+    /*--- Use a set to avoid duplication and keep ascending order. ---*/
+    std::set<Index_t> neighbors;
+
+    /*--- Insert base point. ---*/
+    neighbors.insert(iVertex);
+
+    /*--- Neighbors added in previous level. ---*/
+    std::set<Index_t> addedNeighbors(neighbors);
+
+    for(Index_t iLevel = 0; ; ++iLevel)
+    {
+      /*--- New points added in this level. ---*/
+      std::set<Index_t> newNeighbors;
+
+      /*--- For each point previously added, add its level 0
+       *    neighbors, not duplicating any existing neighbor. ---*/
+      for(auto jVertex : addedNeighbors)
+      {
+
+        /*--- For FEM on the surface we need the nodes of all surface elements that contain point j. ---*/
+        /*--- Idea: loop over 3D elements since otherwise it is to expensive. but check wether the point isalso in the boundary.  ---*/
+        for(unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnElem(indexNodes[jVertex]); ++iNeigh)
+          {
+            auto elem = geometry->elem[geometry->nodes->GetElem(indexNodes[jVertex], iNeigh)];
+
+            for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
+            {
+              Index_t kNode = elem->GetNode(iNode);
+              if ( geometry->nodes->GetVertex(kNode, val_marker) >= 0) { // is on the surface
+                it = std::find(indexNodes.begin(),indexNodes.end(),kNode);
+                Index_t kVertex = std::distance(indexNodes.begin(), it); // find surface vertex number
+                if (neighbors.count(kVertex) == 0) {// no duplication
+                  newNeighbors.insert(kVertex);
+                }
+              }
+            }
+          }
+
+      }
+
+      neighbors.insert(newNeighbors.begin(), newNeighbors.end());
+
+      if(iLevel >= fillLvl) break;
+
+      /*--- For the next level we get the neighbours of the new points. ---*/
+      addedNeighbors = newNeighbors;
+    }
+
+    /*--- Store final sparse pattern for iPoint. ---*/
+    innerIdx.insert(innerIdx.end(), neighbors.begin(), neighbors.end());
+  }
+  outerPtr.back() = innerIdx.size();
+
+  /*--- Return pattern as CCompressedSparsePattern object. ---*/
+  return CCompressedSparsePattern<Index_t>(outerPtr, innerIdx);
+
+}

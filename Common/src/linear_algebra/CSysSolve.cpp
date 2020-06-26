@@ -1053,7 +1053,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   }
 
   /*--- To keep the behavior of SU2_DOT even though it should not be strictly required. ---*/
-  if (config->GetKind_SU2() == SU2_DOT) RequiresTranspose = true;
+  if (config->GetKind_SU2() == SU2_DOT || config->GetSmoothGradient()) RequiresTranspose = true;
 
   /*--- Set up preconditioner and matrix-vector product ---*/
 
@@ -1072,7 +1072,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   }
 
   /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
-  if (config->GetKind_SU2() == SU2_DOT) precond->Build();
+  if (config->GetKind_SU2() == SU2_DOT || config->GetSmoothGradient()) precond->Build();
 
   auto mat_vec = CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
 

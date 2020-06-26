@@ -371,5 +371,6 @@ public:
 
   // changes for debugging only
   void printVec(std::ofstream& file);
+  void printVec(std::ofstream& file) const;
 
 };

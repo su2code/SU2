@@ -166,43 +166,6 @@ private:
   FORCEINLINE static ScalarType PassiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
 
   /*!
-   * \brief Kept for use in InitOwnConnectivity!
-   * \brief Assigns values to the sparse-matrix structure (used in Initialize).
-   * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
-   * \param[in] val_nVar - Number of nVar x nVar variables in each subblock of the matrix-by-block structure.
-   * \param[in] val_nEq - Number of nEqn x nVar variables in each subblock of the matrix-by-block structure.
-   * \param[in] val_row_ptr - Pointers to the first element in each row.
-   * \param[in] val_col_ind - Column index for each of the elements in val().
-   * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config);
-
-  /*!
-   * \brief Kept for use in InitOwnConnectivity!
-   * \brief Assigns values to the sparse-matrix structure (used in Initialize).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] iPoint - Base point to compute neighbours.
-   * \param[in] deep_level - Deep level for the recursive algorithm.
-   * \param[in] fill_level - ILU fill in level.
-   * \param[in] EdgeConnect - There is (or not) an edge structure).
-   * \param[in] vneighs - Storage the neighbours points to iPoint.
-   */
-  void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
-
-  /*!
-   * \brief Kept for use in InitOwnConnectivity!
-   * \brief Assigns values to the sparse-matrix structure (used in Initialize).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] iVertex - Base point to compute neighbours.
-   * \param[in] deep_level - Deep level for the recursive algorithm.
-   * \param[in] fill_level - ILU fill in level.
-   * \param[in] indexNodes - connection between boundary and global node indices.
-   * \param[in] vneighs - Storage the neighbours points to iPoint.
-   */
-  void SetNeighboursOwnConnectivity(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, unsigned long val_marker, vector<unsigned long> & indexNodes, vector<unsigned long> & vneighs);
-
-  /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
    * \param[in] matrix
    * \param[in] vector
@@ -395,15 +358,17 @@ public:
                   const CConfig *config, bool needTranspPtr = false);
 
   /*!
-   * \brief Initializes sparse matrix system. This uses the connectivity structure of all surface verteces from val_marker. Not the whole volume mesh!
+   * \brief Initializes sparse matrix system.
+   * \note This uses the connectivity structure of all surface verteces from val_marker. Not the whole volume mesh!
+   * \param[in] nvertex - Number of vertices on the boundary.
    * \param[in] nVar - Number of variables.
    * \param[in] nEqn - Number of equations.
+   * \param[in] val_marker - Boundary marker.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void InitOwnConnectivity(unsigned long nPoint, unsigned short nVar, unsigned short nEqn, unsigned long val_marker,
+  void InitOwnConnectivity(unsigned long nvertex, unsigned short nvar, unsigned short neqn, unsigned long val_marker,
                            CGeometry *geometry, CConfig *config);
-
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.

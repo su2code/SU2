@@ -175,6 +175,11 @@ protected:
   finiteElementCSRFill0,                 /*!< \brief 0-fill FEM sparsity. */
   finiteElementCSRFillN;                 /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
 
+  CCompressedSparsePatternUL
+  finiteElementSurfaceCSRFill0,          /*!< \brief 0-fill FEM sparsity of a boundary surface. */
+  finiteElementSurfaceCSRFillN;          /*!< \brief 0-fill FEM sparsity of a boundary surface. */
+
+
   CEdgeToNonZeroMapUL edgeToCSRMap;      /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
 
   /*--- Edge and element colorings. ---*/
@@ -1613,6 +1618,15 @@ public:
    * \return Reference to the sparse pattern.
    */
   const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
+
+  /*!
+   * \brief Get the sparse pattern of a boundary surface with given level of fill.
+   * \note This method builds the pattern if that has not been done yet.
+   * \note Be careful this only works for one boundary per execution.
+   * \param[in] fillLvl - Level of fill of the pattern.
+   * \return Reference to the sparse pattern.
+   */
+  const CCompressedSparsePatternUL& GetBoundarySparsePattern(unsigned long val_marker, unsigned long fillLvl);
 
   /*!
    * \brief Get the edge to sparse pattern map.
