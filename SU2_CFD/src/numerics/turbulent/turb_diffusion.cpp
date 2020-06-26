@@ -317,12 +317,12 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
     /*--- Conservative to primitive correction ---*/
 
-    su2double diff_on_rho2 = 1./pow(Density_i, 2.);
+    su2double one_on_rho2 = 1./pow(Density_i, 2.);
 
     Jacobian_i[0][0] -= diff_kine*one_on_rho2*Proj_Mean_GradRho;
     Jacobian_i[1][1] -= diff_omega*one_on_rho2*Proj_Mean_GradRho;
 
-    diff_on_rho2 = 1./pow(Density_j, 2.);
+    one_on_rho2 = 1./pow(Density_j, 2.);
     Jacobian_j[0][0] -= diff_kine*one_on_rho2*Proj_Mean_GradRho;
     Jacobian_j[1][1] -= diff_omega*one_on_rho2*Proj_Mean_GradRho;
     
