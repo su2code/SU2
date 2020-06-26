@@ -7384,7 +7384,7 @@ template <typename Precond>
 unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M, int n, int restart, unsigned long* m_loc_long, unsigned long* fst_col_long){
   assert(A.cols() == b.size());
   int size = 1, rank = 0;
-  int m = restart;
+  unsigned long m = restart;
 
 #ifdef HAVE_MPI
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -7421,7 +7421,7 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
   Eigen::VectorXd beta = Eigen::VectorXd::Zero(m + 1);
   beta.head(m) = r_norm * e1;
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(m+1, m);
-  int k = 0;
+  unsigned long k = 0;
 
   for (; k < m; ++k) {
 
@@ -7458,8 +7458,8 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
     beta(k+1) = -sn(k) * beta(k);
     beta(k) = cs(k) * beta(k);
     error = abs(beta(k+1)) / r_norm;
-    // if (rank == 0)
-    //   printf("error at iteration %d is %e\n", k, error);
+    if (rank == 0)
+      printf("error at iteration %d is %e\n", k, error);
     if (error <= 1e-8) {
       if (rank == 0)
         printf("Converged error at iteration %d is %e\n", k, error);
@@ -7672,14 +7672,12 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   Eigen::SparseMatrix<double, storage> MassMatrix_global(m_Global, n_Global);
   MassMatrix_global.setFromTriplets(tripletList_massMatrix.begin(),tripletList_massMatrix.end());
 
+  Jacobian_global += MassMatrix_global;
+
   // Save matrix for debugging if necessary
   // std::string Jacobian_name;
-  // Jacobian_name = "Jacobian" + std::to_string(rank) + ".mtx";
+  // Jacobian_name = "Jacobian_" + std::to_string(size) + "_" + std::to_string(rank) + ".mtx";
   // Eigen::saveMarket(Jacobian_global, Jacobian_name);
-  // Jacobian_name = "MassMatrix" + std::to_string(rank) + ".mtx";
-  // Eigen::saveMarket(MassMatrix_global, Jacobian_name);
-
-  Jacobian_global += MassMatrix_global;
 
   /*--- Convert residual into a format that is compatible with the linear solver used. ---*/
   /*  Because of the incompatibility of Eigen library and CodiPack, initialization has to be 
@@ -7725,37 +7723,49 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     if(naca_dim) printf("Getting NACA_DIM = %d from environment\n", naca_dim);
     std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
     std::vector<pair<int, int>> boundary_list;
-    std::vector<pair<int, int>> boundary_list_temp(naca_dim);
+    std::vector<pair<int, int>> boundary_list_temp;
     for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
-      if (boundaries[iMarker].markerTag == "airfoil") {
-        for (int j = 0; j < naca_dim; ++j){
+      if ((boundaries[iMarker].markerTag == "airfoil") || (boundaries[iMarker].markerTag == "symmetry") || (boundaries[iMarker].markerTag == "wall")) {
+        for (int j = 0; j < boundaries[iMarker].surfElem.size(); ++j){
           int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
           int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
-          int Point_min = min(Point1, Point2);
-          int Point_max = max(Point1, Point2);
-          int found = false;
-          for (auto i = boundary_list.begin(); i != boundary_list.end(); ++i) {
-            if (i->second == Point1) {
-              boundary_list.insert(i+1, pair<int, int>(Point1, Point2));
-              found = true;
-              break;
-            }
-            else if (i->first == Point2) {
-              boundary_list.insert(i, pair<int, int>(Point1, Point2));
-              found = true;
-              break;
-            }
-          }
-          if (found == false) {
-            boundary_list.push_back(pair<int, int>(Point1, Point2));
-          }
+          boundary_list_temp.push_back(pair<int, int>(Point1, Point2));
         }
       }
     }
+    assert(boundary_list_temp.size() == naca_dim);
+
+    boundary_list.push_back(boundary_list_temp[0]);
+    boundary_list_temp.erase(boundary_list_temp.begin());
+    while (boundary_list_temp.size()!=0){
+        for (int i = 0; i < boundary_list_temp.size(); ++i){
+          if (boundary_list_temp[i].second == boundary_list[0].first) {
+            boundary_list.insert(boundary_list.begin(), boundary_list_temp[i]);
+            boundary_list_temp.erase(boundary_list_temp.begin() + i);
+          }
+          else if (boundary_list_temp[i].first == boundary_list[0].first) {
+            boundary_list.insert(boundary_list.begin(), pair<int, int>(boundary_list_temp[i].second, boundary_list_temp[i].first));
+            boundary_list_temp.erase(boundary_list_temp.begin() + i);
+          }
+          else if (boundary_list_temp[i].first == boundary_list[boundary_list.size()-1].second) {
+            boundary_list.insert(boundary_list.begin() + boundary_list.size(), boundary_list_temp[i]);
+            boundary_list_temp.erase(boundary_list_temp.begin() + i);
+          }
+          else if (boundary_list_temp[i].second == boundary_list[boundary_list.size()-1].second) {
+            boundary_list.insert(boundary_list.begin() + boundary_list.size(), pair<int, int>(boundary_list_temp[i].second, boundary_list_temp[i].first));
+            boundary_list_temp.erase(boundary_list_temp.begin() + i);
+          }
+        }
+    }
+    boundary_list_temp.resize(boundary_list.size());
     // for (int i = 0; i < boundary_list.size(); ++i){
     //   cout << "(" << boundary_list[i].first << ", " << boundary_list[i].second <<"), ";
     // }
     // cout << endl;
+    for (int i = 0; i < boundary_list.size(); ++i){
+      if (boundary_list[i].first > boundary_list[i].second)
+        boundary_list[i] = pair<int, int>(boundary_list[i].second, boundary_list[i].first);
+    }
     for (int i = 0; i < nVolElemOwned; ++i){
       const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
       const unsigned long nDOFs  = volElem[i].nDOFsSol;
@@ -7788,8 +7798,6 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   }
 
   int flatplate_dim = 0;
-  // Eigen::MatrixXd Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
-  // Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
   if(const char* env_flatplate_dim = std::getenv("FLATPLATE_DIM")) {
     flatplate_dim = std::atoi(env_flatplate_dim);
     if(flatplate_dim) printf("Getting FLATPLATE_DIM = %d from environment\n", flatplate_dim);
@@ -7859,7 +7867,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
   }
   unsigned long IterLinSol;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 5000, &m_loc[0], &fst_row[0]);
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
