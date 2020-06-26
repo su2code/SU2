@@ -1,5 +1,5 @@
 /*!
- * \file CQuasiNewtonDriver.hpp
+ * \file CQuasiNewtonInvLeastSquares.hpp
  * \brief Implements a method to accelerate and stabilize the convergence
  * of fixed point iterations, the history of past iterates is used to compute
  * a least squares approximation of the inverse of the Jacobian, which is then
@@ -46,7 +46,7 @@
  * as the new input of the FP, run the FP, etc.
  */
 template<class Scalar_t>
-class CQuasiNewtonDriver {
+class CQuasiNewtonInvLeastSquares {
 public:
   using Scalar = Scalar_t;
   using Index = typename su2matrix<Scalar>::Index;
@@ -57,7 +57,7 @@ private:
 
   enum: size_t {BLOCK_SIZE = 1024};     /*!< \brief Loop tiling parameter. */
   std::vector<su2matrix<Scalar> > X, R; /*!< \brief Input and residual history of the FP. */
-  su2matrix<Scalar> corr;               /*!< \brief Correction to the natural FP result. */
+  su2matrix<Scalar> work;               /*!< \brief Work matrix (FP result, correction, and approx solution). */
   su2vector<Scalar> mat, rhs, sol;      /*!< \brief Matrix, rhs, and solution of the normal equations. */
   Index iSample = 0;                    /*!< \brief Current sample index. */
   Index nPtDomain = 0;                  /*!< \brief Local size of the history, considered in dot products. */
@@ -73,7 +73,7 @@ private:
 
   void computeNormalEquations() {
     /*--- Size for the dot products. ---*/
-    const auto end = std::min<Index>(nPtDomain,corr.rows())*corr.cols();
+    const auto end = std::min<Index>(nPtDomain,work.rows())*work.cols();
 
     mat = Scalar(0); rhs = Scalar(0);
 
@@ -90,7 +90,7 @@ private:
     }
 
     /*--- MPI reduction of the dot products. ---*/
-    if (nPtDomain < corr.rows()) {
+    if (nPtDomain < work.rows()) {
       const auto type = (sizeof(Scalar) < sizeof(double))? MPI_FLOAT : MPI_DOUBLE;
 
       su2vector<Scalar> tmp(mat.size());
@@ -125,6 +125,7 @@ private:
         for (Index k = 0; k < blkSize; ++k) {
           sum += (ri1[k]-ri0[k]) * (rj1[k]-rj0[k]);
         }
+        /*--- 1D index of (i,j) in lower triangular storage. ---*/
         const auto iCoeff = i*(i+1)/2 + j;
         mat(iCoeff) += sum;
       }
@@ -143,10 +144,10 @@ private:
 
 public:
   /*! \brief Default construction without allocation. */
-  CQuasiNewtonDriver() = default;
+  CQuasiNewtonInvLeastSquares() = default;
 
   /*! \brief Construction with allocation, see "resize". */
-  CQuasiNewtonDriver(Index nsample, Index npt, Index nvar, Index nptdomain = 0) {
+  CQuasiNewtonInvLeastSquares(Index nsample, Index npt, Index nvar, Index nptdomain = 0) {
     resize(nsample, npt, nvar, nptdomain);
   }
 
@@ -162,7 +163,7 @@ public:
       SU2_MPI::Error("Invalid quasi-Newton parameters", CURRENT_FUNCTION);
     iSample = 0;
     nPtDomain = nptdomain? nptdomain : npt;
-    corr.resize(npt,nvar);
+    work.resize(npt,nvar);
     X.clear();
     R.clear();
     for (Index i = 0; i < nsample; ++i) {
@@ -186,10 +187,10 @@ public:
    * \brief Access the current fixed-point result.
    * \note Use these to STORE the result of running the FP.
    */
-  su2matrix<Scalar>& FPresult() { return corr; }
-  const su2matrix<Scalar>& FPresult() const { return corr; }
-  Scalar& FPresult(Index iPt, Index iVar) { return corr(iPt,iVar); }
-  const Scalar& FPresult(Index iPt, Index iVar) const { return corr(iPt,iVar); }
+  su2matrix<Scalar>& FPresult() { return work; }
+  const su2matrix<Scalar>& FPresult() const { return work; }
+  Scalar& FPresult(Index iPt, Index iVar) { return work(iPt,iVar); }
+  const Scalar& FPresult(Index iPt, Index iVar) const { return work(iPt,iVar); }
 
   /*!
    * \brief Access the current solution approximation.
@@ -207,9 +208,9 @@ public:
   const su2matrix<Scalar>& compute() {
     /*--- Compute FP residual, clear correction. ---*/
     SU2_OMP_SIMD
-    for (Index i = 0; i < corr.size(); ++i) {
-      R[iSample].data()[i] = corr.data()[i] - X[iSample].data()[i];
-      corr.data()[i] = Scalar(0);
+    for (Index i = 0; i < work.size(); ++i) {
+      R[iSample].data()[i] = work.data()[i] - X[iSample].data()[i];
+      work.data()[i] = Scalar(0);
     }
 
     if (iSample > 0) {
@@ -229,9 +230,9 @@ public:
         const auto x0 = X[k].data();
         const auto r0 = R[k].data();
         SU2_OMP_SIMD
-        for (Index i = 0; i < corr.size(); ++i) {
+        for (Index i = 0; i < work.size(); ++i) {
           Scalar dy = r1[i]-r0[i] + x1[i]-x0[i];
-          corr.data()[i] += sol(k) * dy;
+          work.data()[i] += sol(k) * dy;
         }
       }
     }
@@ -244,9 +245,9 @@ public:
 
     /*--- Set new solution. ---*/
     SU2_OMP_SIMD
-    for (Index i = 0; i < corr.size(); ++i)
-      corr.data()[i] += R[iSample].data()[i] + X[iSample].data()[i];
-    std::swap(X[++iSample], corr);
+    for (Index i = 0; i < work.size(); ++i)
+      work.data()[i] += R[iSample].data()[i] + X[iSample].data()[i];
+    std::swap(X[++iSample], work);
 
     return solution();
   }

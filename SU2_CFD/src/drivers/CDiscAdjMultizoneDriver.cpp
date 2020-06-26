@@ -31,7 +31,7 @@
 #include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
-#include "../../../Common/include/toolboxes/CQuasiNewtonDriver.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -164,7 +164,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
-  vector<CQuasiNewtonDriver<passivedouble> > QNDriver(nZone);
+  vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector(nZone);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -182,10 +182,10 @@ void CDiscAdjMultizoneDriver::Run() {
     /*--- Prepare quasi-Newton drivers. ---*/
 
     if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
-      QNDriver[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(),
-                             geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
-                             GetTotalNumberOfVariables(iZone, true),
-                             geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
+      fixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(),
+                                   geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
+                                   GetTotalNumberOfVariables(iZone, true),
+                                   geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
     }
   }
 
@@ -264,9 +264,9 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Reset QN driver for new inner iterations. ---*/
 
-      if (QNDriver[iZone].size()) {
-        QNDriver[iZone].reset();
-        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, QNDriver[iZone]);
+      if (fixPtCorrector[iZone].size()) {
+        fixPtCorrector[iZone].reset();
+        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, fixPtCorrector[iZone]);
       }
 
       for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
@@ -299,10 +299,10 @@ void CDiscAdjMultizoneDriver::Run() {
 
         /*--- Use QN driver to improve the solution. ---*/
 
-        if (QNDriver[iZone].size()) {
-          GetAllSolutions(iZone, true, QNDriver[iZone].FPresult());
-          QNDriver[iZone].compute();
-          if(iInnerIter) SetAllSolutions(iZone, true, QNDriver[iZone]);
+        if (fixPtCorrector[iZone].size()) {
+          GetAllSolutions(iZone, true, fixPtCorrector[iZone].FPresult());
+          fixPtCorrector[iZone].compute();
+          if(iInnerIter) SetAllSolutions(iZone, true, fixPtCorrector[iZone]);
         }
 
         /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
