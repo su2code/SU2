@@ -134,8 +134,8 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (correct_gradient) proj_vector_ij = proj_vector_ij/dist_ij_2;
+  else proj_vector_ij = 1.0;
 
   /*--- Mean gradient approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -163,9 +163,6 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
       }
       Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
-    }
-    else {
-      proj_vector_ij = 1.0;
     }
   }
 
