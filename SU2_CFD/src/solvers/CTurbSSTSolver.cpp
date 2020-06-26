@@ -572,9 +572,9 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
         const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
         const su2double gradr  = flowNodes->GetGradient_Primitive(iPoint,nDim+2,iDim);
-        Jacobian_i[1][0] += -(1. - F1_i)*sigma_om2/(r_i*om_i)
+        Jacobian_i[1][0] += -2.*(1. - F1_i)*sigma_om2/(r_i*om_i)
                             * gradr*gradom*Vol;
-        Jacobian_i[1][1] += -(1. - F1_i)*sigma_om2/(r_i*om_i)
+        Jacobian_i[1][1] += -2.*(1. - F1_i)*sigma_om2/(r_i*om_i)
                             * gradr*gradk*Vol;
       }
       
