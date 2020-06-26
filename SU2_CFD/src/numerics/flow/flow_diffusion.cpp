@@ -938,7 +938,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   R_dTdu1 = -phi*V_j[1];
   R_dTdu2 = -phi*V_j[2];
 
-  heat_flux_factor = Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb;
+  heat_flux_factor = Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb;
   conductivity_over_Rd = cpoR*heat_flux_factor*val_area/val_proj_vector;
 
   heat_flux_jac_j[0] = conductivity_over_Rd * R_dTdu0;
