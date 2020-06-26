@@ -129,12 +129,14 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   /*--- Compute vector going from iPoint to jPoint ---*/
 
   dist_ij_2 = 0; proj_vector_ij = 0;
+  su2double Edge_Normal = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+    proj_vector_ij += Normal[iDim]*Normal[iDim];
+    Edge_Normal += Edge_Vector[iDim]*Normal[iDim];
   }
-  if (correct_gradient) proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (correct_gradient) proj_vector_ij = proj_vector_ij/Edge_Normal;
   else proj_vector_ij = 1.0;
 
   /*--- Mean gradient approximation ---*/
@@ -153,14 +155,6 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Proj_Mean_GradTurbVar[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
     
     if (correct_gradient) {
-      su2double NormalEdge = 0.;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        NormalEdge += Normal[iDim]*Edge_Vector[iDim];
-      }
-      proj_vector_ij = 0.;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        proj_vector_ij += Normal[iDim]*Normal[iDim]/NormalEdge;
-      }
       Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
     }
@@ -349,7 +343,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     VorticityMag = sqrt(Vorticity_j[0]*Vorticity_j[0] +
                         Vorticity_j[1]*Vorticity_j[1] +
                         Vorticity_j[2]*Vorticity_j[2]);
-    
+
     if (TurbVar_j[1] > VorticityMag*F2_j/a1) {
       Jacobian_j[0][0] += 0.5*sigma_kine_j/TurbVar_j[1]*Proj_Mean_GradTurbVar[0];
       Jacobian_j[0][1] += -0.5*sigma_kine_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0];
