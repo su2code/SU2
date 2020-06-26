@@ -32,7 +32,7 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
-#include "../../../Common/include/toolboxes/CQuasiNewtonDriver.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -152,14 +152,14 @@ void CDiscAdjSinglezoneDriver::Run() {
 
   const bool steady = !config->GetTime_Domain();
 
-  CQuasiNewtonDriver<passivedouble> QNDriver;
+  CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
-    QNDriver.resize(config->GetnQuasiNewtonSamples(),
-                    geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
-                    GetTotalNumberOfVariables(ZONE_0,true),
-                    geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
+    fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
+                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+                          GetTotalNumberOfVariables(ZONE_0,true),
+                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
 
-    if (TimeIter != 0) GetAllSolutions(ZONE_0, true, QNDriver);
+    if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
   }
 
   for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
@@ -207,9 +207,9 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Correct the solution with the quasi-Newton approach. ---*/
 
-    if (QNDriver.size()) {
-      GetAllSolutions(ZONE_0, true, QNDriver.FPresult());
-      SetAllSolutions(ZONE_0, true, QNDriver.compute());
+    if (fixPtCorrector.size()) {
+      GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
+      SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
     }
 
   }
