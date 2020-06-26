@@ -715,10 +715,10 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_ic[iDim][iVar][jVar] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
-                                         * Jacobian_i[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
-          Jacobian_jc[iDim][iVar][jVar] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*val_proj_vector)
-                                         * Jacobian_j[iVar][jVar]*val_proj_vector/(val_dS*val_dS);
+          Jacobian_ic[iDim][iVar][jVar] -= weight_i*(Normal[iDim]*val_proj_vector/(val_dS*val_dS) 
+                                         - Edge_Vector[iDim])  * Jacobian_i[iVar][jVar];
+          Jacobian_jc[iDim][iVar][jVar] += weight_j*(Normal[iDim]*val_proj_vector/(val_dS*val_dS)
+                                         - Edge_Vector[iDim]) * Jacobian_j[iVar][jVar];
         }
       }
     }
@@ -821,7 +821,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
-  if (correct_gradient && dist_ij_2 != 0.0) {
+  if (correct_gradient) {
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
                     proj_vector_ij, nDim+1);
   }
@@ -1093,7 +1093,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     const su2double VorticityMag_j = sqrt(Vorticity_j[0]*Vorticity_j[0] +
                                           Vorticity_j[1]*Vorticity_j[1] +
                                           Vorticity_j[2]*Vorticity_j[2]);
-    
+
     if (turb_omega_j > VorticityMag_j*F2_j/a1) {
       const su2double factor = turb_ke_j/turb_omega_j;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {

@@ -400,11 +400,11 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
     const su2double weight_j = 0.5 / (Volume_j);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_ic[iDim][0][0] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*Jacobian_i[0][0]/proj_vector_ij;
-      Jacobian_ic[iDim][1][1] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*Jacobian_i[1][1]/proj_vector_ij;
+      Jacobian_ic[iDim][0][0] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[0][0];
+      Jacobian_ic[iDim][1][1] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[1][1];
       
-      Jacobian_jc[iDim][0][0] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*Jacobian_j[0][0]/proj_vector_ij;
-      Jacobian_jc[iDim][1][1] += weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*Jacobian_j[1][1]/proj_vector_ij;
+      Jacobian_jc[iDim][0][0] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[0][0];
+      Jacobian_jc[iDim][1][1] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[1][1];
     }
   }
   
