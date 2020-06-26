@@ -267,6 +267,9 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
                          flowNodes->GetPrimitive(jPoint));
+  
+  numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint),
+                               flowNodes->GetGradient_Primitive(jPoint));
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 

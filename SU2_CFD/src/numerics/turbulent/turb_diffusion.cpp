@@ -166,6 +166,25 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     }
   }
 
+  /*--- Mean density gradient approximation ---*/
+  Proj_Mean_GradRho_Normal = 0.0;
+  Proj_Mean_GradRho_Edge = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    su2double Mean_GradRho = 0.5*(PrimVar_Grad_i[nDim+2][iDim] +
+                                  PrimVar_Grad_j[nDim+2][iDim]);
+
+    Proj_Mean_GradRho_Normal += Mean_GradRho * Normal[iDim];
+
+    if (correct_gradient)
+      Proj_Mean_GradRho_Edge += Mean_GradRho * Edge_Vector[iDim];
+  }
+  Proj_Mean_GradRho = Proj_Mean_GradRho_Normal;
+  
+  if (correct_gradient) {
+    Proj_Mean_GradRho -= Proj_Mean_GradRho_Edge*proj_vector_ij -
+                         (Density_j-Density_i)*proj_vector_ij;
+  }
+
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);
@@ -295,6 +314,17 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_omega*proj_on_rho;
 
     CorrectJacobian(config);
+
+    /*--- Conservative to primitive correction ---*/
+
+    su2double diff_on_rho2 = 1./pow(Density_i, 2.);
+
+    Jacobian_i[0][0] -= diff_kine*one_on_rho2*Proj_Mean_GradRho;
+    Jacobian_i[1][1] -= diff_omega*one_on_rho2*Proj_Mean_GradRho;
+
+    diff_on_rho2 = 1./pow(Density_j, 2.);
+    Jacobian_j[0][0] -= diff_kine*one_on_rho2*Proj_Mean_GradRho;
+    Jacobian_j[1][1] -= diff_omega*one_on_rho2*Proj_Mean_GradRho;
     
     /*--- Jacobian wrt eddy viscosity ---*/
         
@@ -329,6 +359,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     }
     
     /*--- Jacobian wrt laminar viscosity ---*/
+
     const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     const su2double Cv = Cp/Gamma;
     const su2double muref = config->GetMu_RefND();

@@ -51,6 +51,9 @@ protected:
   *Proj_Mean_GradTurbVar_Normal = nullptr,  /*!< \brief Mean_gradTurbVar DOT normal. */
   *Proj_Mean_GradTurbVar_Edge = nullptr,    /*!< \brief Mean_gradTurbVar DOT Edge_Vector. */
   *Proj_Mean_GradTurbVar = nullptr,         /*!< \brief Mean_gradTurbVar DOT normal, corrected if required. */
+  Proj_Mean_GradRho_Normal = 0.0,           /*!< \brief Mean_gradRho DOT normal. */
+  Proj_Mean_GradRho_Edge = 0.0,             /*!< \brief Mean_gradRho DOT Edge_Vector. */
+  Proj_Mean_GradRho = 0.0,                  /*!< \brief Mean_gradRho DOT normal, corrected if required. */
   dist_ij_2 = 0.0,                          /*!< \brief |Edge_Vector|^2 */
   proj_vector_ij = 0.0,                     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */

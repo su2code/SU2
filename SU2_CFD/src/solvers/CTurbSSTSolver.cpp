@@ -697,6 +697,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   su2double Kine_Infty, Omega_Infty;
   unsigned short iVar, iDim;
 
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
   Normal = new su2double[nDim];
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -717,7 +719,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = flowNodes->GetPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
@@ -779,6 +781,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_domain);
+      numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint),
+                                   flowNodes->GetGradient_Primitive(iPoint));
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Primitive_i, Primitive_i);
@@ -794,8 +798,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
                                    nodes->GetF2blending(iPoint));
       
       /*--- Vorticity ---*/
-      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
-                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+      visc_numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
+                                  flowNodes->GetVorticity(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
