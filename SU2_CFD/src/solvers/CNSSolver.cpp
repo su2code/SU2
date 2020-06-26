@@ -222,7 +222,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !van_albada) {
     SetPrimitive_Limiter(geometry, config);
   }
 

@@ -323,6 +323,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_i[1][1] -= diff_omega*one_on_rho2*Proj_Mean_GradRho;
 
     one_on_rho2 = 1./pow(Density_j, 2.);
+
     Jacobian_j[0][0] -= diff_kine*one_on_rho2*Proj_Mean_GradRho;
     Jacobian_j[1][1] -= diff_omega*one_on_rho2*Proj_Mean_GradRho;
     
@@ -333,6 +334,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
                         Vorticity_i[1]*Vorticity_i[1] +
                         Vorticity_i[2]*Vorticity_i[2]);
+
     if (TurbVar_i[1] > VorticityMag*F2_i/a1) {
       Jacobian_i[0][0] += 0.5*sigma_kine_i/TurbVar_i[1]*Proj_Mean_GradTurbVar[0];
       Jacobian_i[0][1] += -0.5*sigma_kine_i*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[0];
@@ -347,6 +349,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     VorticityMag = sqrt(Vorticity_j[0]*Vorticity_j[0] +
                         Vorticity_j[1]*Vorticity_j[1] +
                         Vorticity_j[2]*Vorticity_j[2]);
+    
     if (TurbVar_j[1] > VorticityMag*F2_j/a1) {
       Jacobian_j[0][0] += 0.5*sigma_kine_j/TurbVar_j[1]*Proj_Mean_GradTurbVar[0];
       Jacobian_j[0][1] += -0.5*sigma_kine_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0];
