@@ -2989,8 +2989,13 @@ void CEulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_con
                                        CConfig *config, unsigned short iMesh) {
 
   CNumericsSIMD* numerics = nullptr;
-  if (nDim == 2) numerics = new CRoeScheme<CNumericsEmptyDecorator<2> >(*config, iMesh);
-  if (nDim == 3) numerics = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config, iMesh);
+  if (config->GetViscous()) {
+    if (nDim == 2) numerics = new CRoeScheme<CViscousFluxes<2> >(*config, iMesh);
+    if (nDim == 3) numerics = new CRoeScheme<CViscousFluxes<3> >(*config, iMesh);
+  } else {
+    if (nDim == 2) numerics = new CRoeScheme<CNumericsEmptyDecorator<2> >(*config, iMesh);
+    if (nDim == 3) numerics = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config, iMesh);
+  }
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
@@ -3042,8 +3047,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   /// HACK to call the vectorized numerics!
-  if (config->GetKind_Upwind_Flow() == ROE && !config->GetViscous() &&
-      !low_mach_corr && kind_dissipation == NO_ROELOWDISS) {
+  if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && kind_dissipation == NO_ROELOWDISS) {
     Convective_Residual(geometry, solver_container, config, iMesh);
     return;
   }

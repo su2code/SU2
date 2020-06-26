@@ -125,33 +125,31 @@ protected:
   CNumericsEmptyDecorator(Ts&...) {}
 
   /*!
-   * \brief Empty method.
-   * \note All arguments listed just to illustrate the description above.
+   * \brief Empty method, real decorators should take as arguments whatever
+   * the decorated class can pass them to avoid expensive data accesses.
    */
-  template<size_t nVar>
-  void updateFlux(Int iEdge,
-                  const CConfig& config,
-                  const CGeometry& geometry,
-                  const CVariable& solution,
-                  bool implicit,
-                  VectorDbl<nVar>& flux,
-                  MatrixDbl<nVar>& jac_i,
-                  MatrixDbl<nVar>& jac_j) const {}
+  template<class... Ts>
+  void updateFlux(Ts&...) const {}
 };
 
-template<size_t nDim, class ForwardIterator>
-FORCEINLINE Double dot(ForwardIterator iterator,
-                       const VectorDbl<nDim>& vector) {
+template<size_t nDim, class ForwardIterator, class T>
+FORCEINLINE Double dot(ForwardIterator iterator, const T* ptr) {
   Double sum = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    sum += *(iterator++) * vector(iDim);
+    sum += *(iterator++) * ptr[iDim];
   }
   return sum;
 }
 
+template<size_t nDim, class ForwardIterator>
+FORCEINLINE Double dot(ForwardIterator iterator,
+                       const VectorDbl<nDim>& vector) {
+  return dot<nDim>(iterator, vector.data());
+}
+
 template<size_t nDim>
 FORCEINLINE Double dot(const VectorDbl<nDim>& a, const VectorDbl<nDim>& b) {
-  return dot(a.data(),b);
+  return dot<nDim>(a.data(), b.data());
 }
 
 template<size_t nDim, class ForwardIterator>
@@ -255,9 +253,9 @@ struct CPair {
   T i, j;
 };
 
-template<size_t nDim>
+template<size_t nDim, size_t nVar_= nDim+4>
 struct CCompressiblePrimitives {
-  enum : size_t {nVar = nDim+4};
+  enum : size_t {nVar = nVar_};
   VectorDbl<nVar> all;
   FORCEINLINE Double& temperature() { return all(0); }
   FORCEINLINE Double& pressure() { return all(nDim+1); }
@@ -270,6 +268,13 @@ struct CCompressiblePrimitives {
   FORCEINLINE const Double& enthalpy() const { return all(nDim+3); }
   FORCEINLINE const Double& velocity(size_t iDim) const { return all(iDim+1); }
   FORCEINLINE const Double* velocity() const { return &velocity(0); }
+
+  FORCEINLINE Double& speedSound() { return all(nDim+4); }
+  FORCEINLINE Double& laminarVisc() { return all(nDim+5); }
+  FORCEINLINE Double& eddyVisc() { return all(nDim+6); }
+  FORCEINLINE const Double& speedSound() const { return all(nDim+4); }
+  FORCEINLINE const Double& laminarVisc() const { return all(nDim+5); }
+  FORCEINLINE const Double& eddyVisc() const { return all(nDim+6); }
 };
 
 template<class PrimitiveType, size_t nDim, class Variable_t>
@@ -557,7 +562,7 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
  * Similarly to derived, that method should update the flux and Jacobians, but
  * whereas "finalizeFlux" is passed data prepared by CRoeBase, "updateFlux"
  * takes the same input arguments as "ComputeFlux", i.e. it must fetch the data
- * it needs from CVariable, etc.. Derived is meant to implement small details,
+ * it needs from CVariable. Derived is meant to implement small details,
  * Base is meant to do heavy lifting like computing viscous fluxes.
  */
 template<class Derived, class Base>
@@ -576,7 +581,7 @@ protected:
    * \brief Constructor, store some constants and forward args to base.
    */
   template<class... Ts>
-  CRoeBase(const CConfig& config, unsigned iMesh, Ts&... args) : Base(config, args...),
+  CRoeBase(const CConfig& config, unsigned iMesh, Ts&... args) : Base(config, iMesh, args...),
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
     entropyFix(config.GetEntropyFix_Coeff()),
@@ -701,7 +706,8 @@ public:
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
-    Base::updateFlux(iEdge, config, geometry, solution_, implicit, flux, jac_i, jac_j);
+    Base::updateFlux(iEdge, iPoint, jPoint, config, geometry, solution_,
+                     area, unitNormal, vector_ij, implicit, flux, jac_i, jac_j);
 
     /*--- Update the vector and system matrix. ---*/
 
@@ -783,6 +789,238 @@ public:
           jac_j(iVar,jVar) -= dDdU;
         }
       }
+    }
+  }
+};
+
+template<size_t nVar, size_t nDim, class GradientType>
+FORCEINLINE MatrixDbl<nVar,nDim> getAvgGradient(Int iPoint, Int jPoint, const GradientType& gradient) {
+  auto avgGrad = gatherVariables<nVar,nDim>(iPoint, gradient);
+  auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
+  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      avgGrad(iVar,iDim) *= 0.5;
+      avgGrad(iVar,iDim) += 0.5 * grad_j(iVar,iDim);
+    }
+  }
+  return avgGrad;
+}
+
+template<size_t nVar, size_t nDim, class PrimitiveType>
+FORCEINLINE void correctGradient(const PrimitiveType& V,
+                                 const VectorDbl<nDim>& vector_ij,
+                                 Double dist2_ij,
+                                 MatrixDbl<nVar,nDim>& avgGrad) {
+  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+    Double corr = (dot(avgGrad[iVar],vector_ij) - V.j.all(iVar) + V.i.all(iVar)) / dist2_ij;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      avgGrad(iVar,iDim) -= corr * vector_ij(iDim);
+    }
+  }
+}
+
+template<size_t nVar, size_t nDim, class PrimitiveType>
+FORCEINLINE MatrixDbl<nDim> getStressTensor(const PrimitiveType& V,
+                                            const MatrixDbl<nVar,nDim> grad) {
+  Double viscosity = V.laminarVisc() + V.eddyVisc();
+
+  /*--- Hydrostatic term. ---*/
+  Double velDiv = 0.0;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    velDiv += grad(iDim+1,iDim);
+  }
+  Double pTerm = 2.0/3.0 * viscosity * velDiv;
+
+  MatrixDbl<nDim> tau;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    /*--- Deviatoric term. ---*/
+    for (size_t jDim = 0; jDim < nDim; ++jDim) {
+      tau(iDim,jDim) = viscosity * (grad(jDim+1,iDim) + grad(iDim+1,jDim));
+    }
+    tau(iDim,iDim) -= pTerm;
+  }
+  return tau;
+}
+
+template<size_t nVar, size_t nDim, class PrimitiveType>
+FORCEINLINE VectorDbl<nVar> getViscousFlux(const PrimitiveType& V,
+                                           const MatrixDbl<nDim>& tau,
+                                           const VectorDbl<nDim>& heatFlux,
+                                           const VectorDbl<nDim>& normal) {
+  VectorDbl<nVar> flux;
+  flux(0) = 0.0;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    /*--- Assuming symmetric stress tensor. ---*/
+    flux(iDim+1) = dot(tau[iDim], normal);
+  }
+  flux(nDim+1) = 0.0;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    auto viscWork = dot<nDim>(tau[iDim], V.velocity());
+    flux(nDim+1) += normal(iDim) * (heatFlux(iDim) + viscWork);
+  }
+  return flux;
+}
+
+template<size_t nVar, size_t nDim, class PrimitiveType>
+FORCEINLINE MatrixDbl<nDim,nVar> getStressTensorJacobian(const PrimitiveType& V,
+                                                         const VectorDbl<nDim> normal,
+                                                         Double dist_ij) {
+  Double viscosity = V.laminarVisc() + V.eddyVisc();
+  Double xi = viscosity / (V.density() * dist_ij);
+  MatrixDbl<nDim,nVar> jac;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    /*--- Momentum. ---*/
+    for (size_t jDim = 0; jDim < nDim; ++jDim) {
+      jac(iDim,jDim+1) = xi * normal(iDim) * normal(jDim) / -3.0;
+    }
+    jac(iDim,iDim+1) -= xi;
+    /*--- Density. ---*/
+    jac(iDim,0) = -1 * dot<nDim>(&jac(iDim,1), V.velocity());
+    /*--- Energy. ---*/
+    jac(iDim,nDim+1) = 0.0;
+  }
+  return jac;
+}
+
+template<size_t NDIM>
+class CViscousFluxes : public CNumericsSIMD {
+protected:
+  enum: size_t {nDim = NDIM};
+
+  const su2double gamma;
+  const su2double gasConst;
+  const su2double prandtlLam;
+  const su2double prandtlTurb;
+  const su2double cp;
+  const bool correct;
+
+  template<class... Ts>
+  CViscousFluxes(const CConfig& config, int iMesh, Ts&...) :
+    gamma(config.GetGamma()),
+    gasConst(config.GetGas_ConstantND()),
+    prandtlLam(config.GetPrandtl_Lam()),
+    prandtlTurb(config.GetPrandtl_Turb()),
+    cp(gamma * gasConst / (gamma - 1)),
+    correct(iMesh == MESH_0) {
+  }
+
+  /*!
+   * \brief Add viscous contributions to flux and jacobians.
+   */
+  template<size_t nVar>
+  FORCEINLINE void updateFlux(Int iEdge,
+                              Int iPoint,
+                              Int jPoint,
+                              const CConfig& config,
+                              const CGeometry& geometry,
+                              const CVariable& solution_,
+                              Double area,
+                              const VectorDbl<nDim>& unitNormal,
+                              VectorDbl<nDim> vector_ij,
+                              bool implicit,
+                              VectorDbl<nVar>& flux,
+                              MatrixDbl<nVar>& jac_i,
+                              MatrixDbl<nVar>& jac_j) const {
+
+    constexpr size_t nPrimVar = nDim+7;
+    constexpr size_t nPrimVarGrad = nDim+1;
+
+    const auto& solution = static_cast<const CNSVariable&>(solution_);
+    const auto& primitives = solution.GetPrimitive();
+    const auto& gradient = solution.GetGradient_Primitive();
+
+    /*--- (Re)compute some geometric properties. ---*/
+
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      /*--- Double distance from i to j as it was computed to face. ---*/
+      vector_ij(iDim) *= 2;
+    }
+    auto dist2_ij = squaredNorm(vector_ij);
+    /*--- Handle zero distance without "ifs" by making it huge. ---*/
+    Double mask = dist2_ij < EPS*EPS;
+    dist2_ij += mask / (EPS*EPS);
+
+    /*--- Get primitive variables and average them. ---*/
+
+    CPair<CCompressiblePrimitives<nDim,nPrimVar> > V;
+    V.i.all = gatherVariables<nPrimVar>(iPoint, primitives);
+    V.j.all = gatherVariables<nPrimVar>(jPoint, primitives);
+
+    CCompressiblePrimitives<nDim,nPrimVar> avgV;
+    for (size_t iVar = 0; iVar < nPrimVar; ++iVar) {
+      avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
+    }
+
+    /*--- Compute the corrected mean gradient. ---*/
+
+    auto avgGrad = getAvgGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
+    if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
+
+    /// TODO: Wall shear stress (from wall functions).
+
+    /// TODO: Uncertainty quantification.
+
+    /*--- Stress and heat flux tensors. ---*/
+
+    auto tau = getStressTensor(avgV, avgGrad);
+
+    Double cond = cp * (avgV.laminarVisc()/prandtlLam + avgV.eddyVisc()/prandtlTurb);
+    VectorDbl<nDim> heatFlux;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      heatFlux(iDim) = cond * avgGrad(0,iDim);
+    }
+
+    /*--- Projected flux. ---*/
+
+    auto viscFlux = getViscousFlux<nVar>(avgV, tau, heatFlux, unitNormal);
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      viscFlux(iVar) *= area;
+      flux(iVar) -= viscFlux(iVar);
+    }
+
+    if (!implicit) return;
+
+    /*--- Flux Jacobians. ---*/
+
+    Double dist_ij = sqrt(dist2_ij);
+    auto dtau = getStressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
+    Double contraction = 0.0;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      contraction += dtau(iDim,0) * avgV.velocity(iDim);
+    }
+
+    /*--- Energy flux Jacobian. ---*/
+    VectorDbl<nVar> dEdU;
+    Double vel2 = 0.5 * squaredNorm<nDim>(avgV.velocity());
+    Double phi = (gamma-1) / avgV.density();
+    Double RdTdrho = -1*avgV.pressure() / pow(avgV.density(),2) + phi*vel2;
+    Double condOnRd = (cond * gamma) / ((gamma-1) * dist_ij);
+
+    dEdU(0) = -1*area * (condOnRd * RdTdrho - contraction);
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      dEdU(iDim+1) = -1*area * (condOnRd*phi*avgV.velocity(iDim) + dtau(iDim,0));
+    }
+    dEdU(nDim+1) = -1*area * condOnRd * phi;
+
+    /*--- Update momentum and energy terms ("symmetric" part). ---*/
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      for (size_t iVar = 0; iVar < nVar; ++iVar) {
+        jac_i(iDim+1,iVar) -= area * dtau(iDim,iVar);
+        jac_j(iDim+1,iVar) += area * dtau(iDim,iVar);
+      }
+    }
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      jac_i(nDim+1,iVar) -= dEdU(iVar);
+      jac_j(nDim+1,iVar) += dEdU(iVar);
+    }
+    /*--- "Non-symmetric" energy terms. ---*/
+    Double proj = dot<nDim>(&viscFlux(1), avgV.velocity());
+    Double halfOnRho = 0.5/avgV.density();
+    jac_i(nDim+1,0) += halfOnRho * proj;
+    jac_j(nDim+1,0) += halfOnRho * proj;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      jac_i(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
+      jac_j(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
     }
   }
 };

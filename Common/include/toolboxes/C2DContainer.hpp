@@ -682,12 +682,12 @@ public:
   {
     constexpr size_t MbyN = StaticContainer::StaticSize;
     static_assert(MbyN, "This method requires a static output type.");
-    static_assert(StaticContainer::IsRowMajor==IsRowMajor, "Incompatible storage.");
-    assert(MbyN == rows()*cols());
+    static_assert(StaticContainer::IsRowMajor, "Incompatible storage.");
+    assert(MbyN <= rows()*cols());
     StaticContainer ret;
     SU2_OMP_SIMD
     for (size_t j=0; j<MbyN; ++j)
-      ret.data()[j] = storage(i*MbyN + j);
+      ret.data()[j] = storage(i*rows()*cols() + j);
     return ret;
   }
 
@@ -696,13 +696,13 @@ public:
   {
     constexpr size_t MbyN = StaticContainer::StaticSize;
     static_assert(MbyN, "This method requires a static output type.");
-    static_assert(StaticContainer::IsRowMajor==IsRowMajor, "Incompatible storage.");
-    assert(MbyN == rows()*cols());
+    static_assert(StaticContainer::IsRowMajor, "Incompatible storage.");
+    assert(MbyN <= rows()*cols());
     StaticContainer ret;
     for (size_t k=0; k<N; ++k) {
       SU2_OMP_SIMD
       for (size_t j=0; j<MbyN; ++j)
-        ret.data()[j][k] = storage(i[k]*MbyN + j);
+        ret.data()[j][k] = storage(i[k]*rows()*cols() + j);
     }
     return ret;
   }

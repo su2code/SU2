@@ -152,6 +152,7 @@ public:
    * \return Reference to primitive variable gradient.
    */
   inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive(void) const { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
