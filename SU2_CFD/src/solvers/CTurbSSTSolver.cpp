@@ -526,10 +526,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
+  const su2double CDkw = nodes->GetCrossDiff(iPoint);
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
+    if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10 && CDkw > 1.0e-20) {
       const su2double F1_i = nodes->GetF1blending(iPoint);
       const su2double r_i  = flowNodes->GetDensity(iPoint);
       const su2double om_i = nodes->GetPrimitive(iPoint,1);
