@@ -1149,7 +1149,8 @@ void COutput::SetScreen_Output(CConfig *config) {
           PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::SCIENTIFIC:
-          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
+          // Line commented as it makes MARKER_ANALYZE screen output appear twice on the screen.
+          //PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::PERCENT:
           PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
