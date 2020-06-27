@@ -694,7 +694,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
   const su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
   su2double Vn_Infty = 0., Velocity2 = 0.;
@@ -713,10 +713,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Allocate the value at the infinity ---*/
 
@@ -816,11 +812,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
         
     }
   }
@@ -933,11 +927,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
 
     }
 
@@ -1047,11 +1039,9 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //      /*--- Subtract residual, and update Jacobians ---*/
 //      LinSysRes.SubtractBlock(iPoint, visc_residual);
 //      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-//      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
 //
 //      /*--- Compute Jacobian correction for influence from all neighbors ---*/
 //      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-//      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
 
     }
   }

@@ -7333,11 +7333,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         if (implicit){
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_j);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
           CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
-          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_jc, nullptr);
         }
         
       }
@@ -9571,11 +9569,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_j);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
           CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
-          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_jc, nullptr);
         }
 
       }
@@ -9783,11 +9779,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_j);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
           CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
-          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_jc, nullptr);
         }
 
       }
