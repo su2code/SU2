@@ -71,9 +71,6 @@ public:
 private:
   alignas(Align) Scalar x_[N];
 
-  template<class T>
-  FORCEINLINE void bcast(T x) { FOREACH x_[k] = x; }
-
 public:
   /*--- Constructors ---*/
 
@@ -99,11 +96,9 @@ public:
   FORCEINLINE Array(const Scalar* base_ptr, const T& offsets) { gather(base_ptr,offsets); }
 
   // copy / assign
-  template<class T>
-  FORCEINLINE Array(const Array<T,N>& other) { FOREACH x_[k] = other[k]; }
+  FORCEINLINE Array(const Array& other) { FOREACH x_[k] = other[k]; }
 
-  template<class T>
-  FORCEINLINE Array& operator= (const Array<T,N>& other) { FOREACH x_[k] = other[k]; return *this; }
+  FORCEINLINE Array& operator= (const Array& other) { FOREACH x_[k] = other[k]; return *this; }
 
   /*--- Accessors. ---*/
 
@@ -111,15 +106,14 @@ public:
 
   FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }
 
+  FORCEINLINE void bcast(Scalar x) { FOREACH x_[k] = x; }
+
   FORCEINLINE void load(const Scalar* ptr) { FOREACH x_[k] = ptr[k]; }
 
   FORCEINLINE void store(Scalar* ptr) const { FOREACH ptr[k] = x_[k]; }
 
   template<class T>
   FORCEINLINE void gather(const Scalar* base_ptr, const T& offsets) { FOREACH x_[k] = base_ptr[offsets[k]]; }
-
-  template<class T>
-  FORCEINLINE void scatter(Scalar* base_ptr, const T& offsets) const { FOREACH base_ptr[offsets[k]] = x_[k]; }
 
   /*--- Compound math operators, "this" is not returned because it generates poor assembly. ---*/
 
@@ -136,8 +130,9 @@ public:
 
   FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH s += x_[k]; return s; }
 
-  FORCEINLINE Scalar dot(const Array& other) const { return (*this * other).sum(); }
-
+  FORCEINLINE Scalar dot(const Array& other) const {
+    Scalar s(0); FOREACH s += x_[k] * other[k]; return s;
+  }
 };
 
 /*--- Math, logical, and relational operators, with arrays and scalars. ---*/
@@ -206,6 +201,124 @@ MAKE_BINARY_FUN(min,std::min)
 MAKE_BINARY_FUN(pow,::pow)
 
 #undef MAKE_BINARY_FUN
+
+/*--- AVX specializations. ---*/
+#ifdef __AVX__
+#include "x86intrin.h"
+
+/*!
+ * \brief Specialization for Array of 4 doubles, helps reducing register spills.
+ */
+template<>
+class Array<double,4> {
+public:
+  using Scalar = double;
+  enum : size_t {Size = 4};
+  enum : size_t {N = Size};
+  enum : size_t {Align = 32};
+
+  union {
+    __m256d ymm;
+    Scalar x_[N];
+  };
+
+  /*--- Constructors ---*/
+
+  FORCEINLINE Array() = default;
+
+  // broadcast
+  FORCEINLINE Array(Scalar x) { bcast(x); }
+  FORCEINLINE Array& operator= (Scalar x) { bcast(x); return *this; }
+
+  // initialize with given values
+  FORCEINLINE Array(std::initializer_list<Scalar> vals) {
+    auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }
+  }
+
+  // linearly spaced
+  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }
+
+  // load
+  FORCEINLINE Array(const Scalar* ptr) { load(ptr); }
+
+  // gather
+  template<class T>
+  FORCEINLINE Array(const Scalar* base_ptr, const T& offsets) { gather(base_ptr,offsets); }
+
+  // copy / assign
+  FORCEINLINE Array(__m256d y) { ymm = y; }
+
+  FORCEINLINE Array(const Array& other) { ymm = other.ymm; }
+
+  FORCEINLINE Array& operator= (const Array& other) { ymm = other.ymm; return *this; }
+
+  /*--- Accessors. ---*/
+
+  FORCEINLINE Scalar& operator[] (size_t k) { return x_[k]; }
+
+  FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }
+
+  FORCEINLINE void bcast(Scalar x) { ymm = _mm256_broadcast_sd(&x); }
+
+  FORCEINLINE void load(const Scalar* ptr) { ymm = _mm256_loadu_pd(ptr); }
+
+  FORCEINLINE void store(Scalar* ptr) const { _mm256_storeu_pd(ptr, ymm); }
+
+  template<class T>
+  FORCEINLINE void gather(const Scalar* base_ptr, const T& offsets) { FOREACH x_[k] = base_ptr[offsets[k]]; }
+
+  /*--- Compound math operators, "this" is not returned because it generates poor assembly. ---*/
+
+#define MAKE_COMPOUND(OP,IMPL)\
+  FORCEINLINE void operator OP (Scalar x) { ymm = IMPL(ymm, _mm256_broadcast_sd(&x)); }\
+  FORCEINLINE void operator OP (const Array& other) { ymm = IMPL(ymm, other.ymm); }
+  MAKE_COMPOUND(+=, _mm256_add_pd)
+  MAKE_COMPOUND(-=, _mm256_sub_pd)
+  MAKE_COMPOUND(*=, _mm256_mul_pd)
+  MAKE_COMPOUND(/=, _mm256_div_pd)
+#undef MAKE_COMPOUND
+
+  /*--- Reductions. ---*/
+
+  FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH s += x_[k]; return s; }
+
+  FORCEINLINE Scalar dot(const Array& other) const {
+    Scalar s(0); FOREACH s += x_[k] * other[k]; return s;
+  }
+};
+
+#define MAKE_UNARY_FUN(NAME,IMPL)\
+template<>\
+FORCEINLINE Array<double,4> NAME(const Array<double,4>& x) {return IMPL(x.ymm);}
+
+MAKE_UNARY_FUN(sqrt, _mm256_sqrt_pd)
+
+#undef MAKE_UNARY_FUN
+
+#define MAKE_BINARY_FUN(NAME,IMPL)\
+template<>\
+FORCEINLINE Array<double,4> NAME (const Array<double,4>& a, const Array<double,4>& b) {\
+  return IMPL(a.ymm, b.ymm);\
+}\
+template<>\
+FORCEINLINE Array<double,4> NAME (const Array<double,4>& a, double b) {\
+  return IMPL(a.ymm, _mm256_broadcast_sd(&b));\
+}\
+template<>\
+FORCEINLINE Array<double,4> NAME (double b, const Array<double,4>& a) {\
+  return IMPL(_mm256_broadcast_sd(&b), a.ymm);\
+}
+
+MAKE_BINARY_FUN(operator+, _mm256_add_pd)
+MAKE_BINARY_FUN(operator-, _mm256_sub_pd)
+MAKE_BINARY_FUN(operator*, _mm256_mul_pd)
+MAKE_BINARY_FUN(operator/, _mm256_div_pd)
+MAKE_BINARY_FUN(max, _mm256_max_pd)
+MAKE_BINARY_FUN(min, _mm256_min_pd)
+
+#undef MAKE_BINARY_FUN
+
+#endif // __AVX__
 
 #undef FOREACH
 } // namespace
