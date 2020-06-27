@@ -278,10 +278,10 @@ struct CCompressiblePrimitives {
 };
 
 template<class PrimitiveType, size_t nDim, class Variable_t>
-FORCEINLINE CPair<PrimitiveType> getReconstructedPrimitives(Int iPoint, Int jPoint, bool muscl,
-                                                            ENUM_LIMITER limiterType,
-                                                            const VectorDbl<nDim>& vector_ij,
-                                                            const Variable_t& solution) {
+FORCEINLINE CPair<PrimitiveType> reconstructPrimitives(Int iPoint, Int jPoint, bool muscl,
+                                                       ENUM_LIMITER limiterType,
+                                                       const VectorDbl<nDim>& vector_ij,
+                                                       const Variable_t& solution) {
   CPair<PrimitiveType> V;
   constexpr size_t nVar = PrimitiveType::nVar;
 
@@ -329,7 +329,7 @@ struct CCompressibleConservatives {
 };
 
 template<size_t nDim>
-FORCEINLINE CCompressibleConservatives<nDim> getCompressibleConservatives(const CCompressiblePrimitives<nDim>& V) {
+FORCEINLINE CCompressibleConservatives<nDim> compressibleConservatives(const CCompressiblePrimitives<nDim>& V) {
   CCompressibleConservatives<nDim> U;
   U.density() = V.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -349,16 +349,17 @@ struct CRoeVariables {
 };
 
 template<size_t nDim>
-FORCEINLINE CRoeVariables<nDim> getRoeAveragedVariables(Double gamma,
-                                                        const CPair<CCompressiblePrimitives<nDim> >& V,
-                                                        const VectorDbl<nDim>& normal) {
+FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(Double gamma,
+                                                     const CPair<CCompressiblePrimitives<nDim> >& V,
+                                                     const VectorDbl<nDim>& normal) {
   CRoeVariables<nDim> roeAvg;
   Double R = sqrt(V.j.density() / V.i.density());
+  Double D = 1 / (R+1);
   roeAvg.density = R * V.i.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) / (R+1);
+    roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) * D;
   }
-  roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) / (R+1);
+  roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) * D;
   roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
   roeAvg.projVel = dot(roeAvg.velocity, normal);
   return roeAvg;
@@ -368,9 +369,7 @@ template<size_t nDim>
 FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const VectorDbl<nDim>& velocity,
                                       Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMat;
-
-  Double oneOnC = 1/speedSound;
-  Double vel2 = 0.5*squaredNorm(velocity);
+  const Double vel2 = 0.5*squaredNorm(velocity);
 
   if (nDim == 2) {
     pMat(0,0) = 1.0;
@@ -409,16 +408,18 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
 
   /*--- Last two columns. ---*/
 
-  pMat(0,nDim) = 0.5*density*oneOnC;
-  pMat(0,nDim+1) = 0.5*density*oneOnC;
+  const Double rhoOn2 = 0.5*density;
+  const Double rhoOnTwoC = rhoOn2 / speedSound;
+  pMat(0,nDim) = rhoOnTwoC;
+  pMat(0,nDim+1) = rhoOnTwoC;
 
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    pMat(iDim+1,nDim) = 0.5*density*(velocity(iDim)*oneOnC + normal(iDim));
-    pMat(iDim+1,nDim+1) = 0.5*density*(velocity(iDim)*oneOnC - normal(iDim));
+    pMat(iDim+1,nDim) = rhoOnTwoC * velocity(iDim) + rhoOn2 * normal(iDim);
+    pMat(iDim+1,nDim+1) = rhoOnTwoC * velocity(iDim) - rhoOn2 * normal(iDim);
   }
 
-  pMat(nDim+1,nDim) = 0.5*density*(vel2*oneOnC + projVel + speedSound/(gamma-1));
-  pMat(nDim+1,nDim+1) = 0.5*density*(vel2*oneOnC - projVel + speedSound/(gamma-1));
+  pMat(nDim+1,nDim) = rhoOnTwoC * vel2 + rhoOn2 * (projVel + speedSound/(gamma-1));
+  pMat(nDim+1,nDim+1) = rhoOnTwoC * vel2 - rhoOn2 * (projVel - speedSound/(gamma-1));
 
   return pMat;
 }
@@ -428,8 +429,9 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
                                          Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMatInv;
 
-  Double c2 = pow(speedSound,2);
-  Double vel2 = 0.5*squaredNorm(velocity);
+  const Double c2 = pow(speedSound,2);
+  const Double vel2 = 0.5*squaredNorm(velocity);
+  const Double oneOnRho = 1 / density;
 
   if (nDim == 2) {
     Double tmp = (gamma-1)/c2;
@@ -438,43 +440,43 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
     pMatInv(0,2) = tmp*velocity(1);
     pMatInv(0,3) = -1*tmp;
 
-    pMatInv(1,0) = (normal(0)*velocity(1)-normal(1)*velocity(0))/density;
-    pMatInv(1,1) = normal(1)/density;
-    pMatInv(1,2) = -1*normal(0)/density;
+    pMatInv(1,0) = (normal(0)*velocity(1)-normal(1)*velocity(0))*oneOnRho;
+    pMatInv(1,1) = normal(1)*oneOnRho;
+    pMatInv(1,2) = -1*normal(0)*oneOnRho;
     pMatInv(1,3) = 0.0;
   }
   else {
     Double tmp = (gamma-1)/c2 * normal(0);
-    pMatInv(0,0) = normal(0) - tmp*vel2 - (normal(2)*velocity(1)-normal(1)*velocity(2))/density;
+    pMatInv(0,0) = normal(0) - tmp*vel2 - (normal(2)*velocity(1)-normal(1)*velocity(2))*oneOnRho;
     pMatInv(0,1) = tmp*velocity(0);
-    pMatInv(0,2) = tmp*velocity(1) + normal(2)/density;
-    pMatInv(0,3) = tmp*velocity(2) - normal(1)/density;
+    pMatInv(0,2) = tmp*velocity(1) + normal(2)*oneOnRho;
+    pMatInv(0,3) = tmp*velocity(2) - normal(1)*oneOnRho;
     pMatInv(0,4) = -1*tmp;
 
     tmp = (gamma-1)/c2 * normal(1);
-    pMatInv(1,0) = normal(1) - tmp*vel2 + (normal(2)*velocity(0)-normal(0)*velocity(2))/density;
-    pMatInv(1,1) = tmp*velocity(0) - normal(2)/density;
+    pMatInv(1,0) = normal(1) - tmp*vel2 + (normal(2)*velocity(0)-normal(0)*velocity(2))*oneOnRho;
+    pMatInv(1,1) = tmp*velocity(0) - normal(2)*oneOnRho;
     pMatInv(1,2) = tmp*velocity(1);
-    pMatInv(1,3) = tmp*velocity(2) + normal(0)/density;
+    pMatInv(1,3) = tmp*velocity(2) + normal(0)*oneOnRho;
     pMatInv(1,4) = -1*tmp;
 
     tmp = (gamma-1)/c2 * normal(2);
-    pMatInv(2,0) = normal(2) - tmp*vel2 - (normal(1)*velocity(0)-normal(0)*velocity(1))/density;
-    pMatInv(2,1) = tmp*velocity(0) + normal(1)/density;
-    pMatInv(2,2) = tmp*velocity(1) - normal(0)/density;
+    pMatInv(2,0) = normal(2) - tmp*vel2 - (normal(1)*velocity(0)-normal(0)*velocity(1))*oneOnRho;
+    pMatInv(2,1) = tmp*velocity(0) + normal(1)*oneOnRho;
+    pMatInv(2,2) = tmp*velocity(1) - normal(0)*oneOnRho;
     pMatInv(2,3) = tmp*velocity(2);
     pMatInv(2,4) = -1*tmp;
   }
 
   /*--- Last two rows. ---*/
 
-  Double gamma_minus_1_on_rho_times_c = (gamma-1) / (density*speedSound);
+  const Double gamma_minus_1_on_rho_times_c = (gamma-1) / (density*speedSound);
 
   for (size_t iVar = nDim; iVar < nDim+2; ++iVar) {
     Double sign = (iVar==nDim)? 1 : -1;
-    pMatInv(iVar,0) = -1*sign*projVel/density + gamma_minus_1_on_rho_times_c * vel2;
+    pMatInv(iVar,0) = -1*sign*projVel*oneOnRho + gamma_minus_1_on_rho_times_c * vel2;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      pMatInv(iVar,iDim+1) = sign*normal(iDim)/density - gamma_minus_1_on_rho_times_c * velocity(iDim);
+      pMatInv(iVar,iDim+1) = sign*normal(iDim)*oneOnRho - gamma_minus_1_on_rho_times_c * velocity(iDim);
     }
     pMatInv(iVar,nDim+1) = gamma_minus_1_on_rho_times_c;
   }
@@ -496,8 +498,8 @@ FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDi
   return flux;
 }
 
-template<size_t nDim, class RandomIterator>
-FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomIterator velocity,
+template<size_t nDim, class RandomAccessIterator>
+FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomAccessIterator velocity,
                                               Double energy, const VectorDbl<nDim>& normal,
                                               Double scale) {
   MatrixDbl<nDim+2> jac;
@@ -623,18 +625,18 @@ public:
 
     /*--- Reconstructed primitives. ---*/
 
-    auto V = getReconstructedPrimitives<CCompressiblePrimitives<nDim> >(
+    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim> >(
                iPoint, jPoint, muscl, limiter, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
     CPair<CCompressibleConservatives<nDim> > U;
-    U.i = getCompressibleConservatives(V.i);
-    U.j = getCompressibleConservatives(V.j);
+    U.i = compressibleConservatives(V.i);
+    U.j = compressibleConservatives(V.j);
 
     /*--- Roe averaged variables. ---*/
 
-    auto roeAvg = getRoeAveragedVariables(gamma, V, unitNormal);
+    auto roeAvg = roeAveragedVariables(gamma, V, unitNormal);
 
     /*--- P tensor. ---*/
 
@@ -793,7 +795,8 @@ public:
 };
 
 template<size_t nVar, size_t nDim, class GradientType>
-FORCEINLINE MatrixDbl<nVar,nDim> getAvgGradient(Int iPoint, Int jPoint, const GradientType& gradient) {
+FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(Int iPoint, Int jPoint,
+                                                 const GradientType& gradient) {
   auto avgGrad = gatherVariables<nVar,nDim>(iPoint, gradient);
   auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
@@ -819,8 +822,8 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
 }
 
 template<size_t nVar, size_t nDim, class PrimitiveType>
-FORCEINLINE MatrixDbl<nDim> getStressTensor(const PrimitiveType& V,
-                                            const MatrixDbl<nVar,nDim> grad) {
+FORCEINLINE MatrixDbl<nDim> stressTensor(const PrimitiveType& V,
+                                         const MatrixDbl<nVar,nDim> grad) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
 
   /*--- Hydrostatic term. ---*/
@@ -842,10 +845,10 @@ FORCEINLINE MatrixDbl<nDim> getStressTensor(const PrimitiveType& V,
 }
 
 template<size_t nVar, size_t nDim, class PrimitiveType>
-FORCEINLINE VectorDbl<nVar> getViscousFlux(const PrimitiveType& V,
-                                           const MatrixDbl<nDim>& tau,
-                                           const VectorDbl<nDim>& heatFlux,
-                                           const VectorDbl<nDim>& normal) {
+FORCEINLINE VectorDbl<nVar> viscousFlux(const PrimitiveType& V,
+                                        const MatrixDbl<nDim>& tau,
+                                        const VectorDbl<nDim>& heatFlux,
+                                        const VectorDbl<nDim>& normal) {
   VectorDbl<nVar> flux;
   flux(0) = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -861,16 +864,16 @@ FORCEINLINE VectorDbl<nVar> getViscousFlux(const PrimitiveType& V,
 }
 
 template<size_t nVar, size_t nDim, class PrimitiveType>
-FORCEINLINE MatrixDbl<nDim,nVar> getStressTensorJacobian(const PrimitiveType& V,
-                                                         const VectorDbl<nDim> normal,
-                                                         Double dist_ij) {
+FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
+                                                      const VectorDbl<nDim> normal,
+                                                      Double dist_ij) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);
   MatrixDbl<nDim,nVar> jac;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     /*--- Momentum. ---*/
     for (size_t jDim = 0; jDim < nDim; ++jDim) {
-      jac(iDim,jDim+1) = xi * normal(iDim) * normal(jDim) / -3.0;
+      jac(iDim,jDim+1) = (-1/3.0) * xi * normal(iDim) * normal(jDim);
     }
     jac(iDim,iDim+1) -= xi;
     /*--- Density. ---*/
@@ -881,8 +884,12 @@ FORCEINLINE MatrixDbl<nDim,nVar> getStressTensorJacobian(const PrimitiveType& V,
   return jac;
 }
 
+/*!
+ * \class CCompressibleViscousFlux
+ * \brief Decorator class to add viscous fluxes (compressible ideal gas).
+ */
 template<size_t NDIM>
-class CViscousFluxes : public CNumericsSIMD {
+class CCompressibleViscousFlux : public CNumericsSIMD {
 protected:
   enum: size_t {nDim = NDIM};
 
@@ -894,7 +901,7 @@ protected:
   const bool correct;
 
   template<class... Ts>
-  CViscousFluxes(const CConfig& config, int iMesh, Ts&...) :
+  CCompressibleViscousFlux(const CConfig& config, int iMesh, Ts&...) :
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlLam(config.GetPrandtl_Lam()),
@@ -935,7 +942,7 @@ protected:
       vector_ij(iDim) *= 2;
     }
     auto dist2_ij = squaredNorm(vector_ij);
-    /*--- Handle zero distance without "ifs" by making it huge. ---*/
+    /*--- Handle zero distance without "ifs" by making it large. ---*/
     Double mask = dist2_ij < EPS*EPS;
     dist2_ij += mask / (EPS*EPS);
 
@@ -952,16 +959,18 @@ protected:
 
     /*--- Compute the corrected mean gradient. ---*/
 
-    auto avgGrad = getAvgGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
+    auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
     if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
 
     /// TODO: Wall shear stress (from wall functions).
 
-    /// TODO: Uncertainty quantification.
+    /// TODO: Uncertainty quantification (needs a way to access tke, maybe in ctor).
 
     /*--- Stress and heat flux tensors. ---*/
 
-    auto tau = getStressTensor(avgV, avgGrad);
+    auto tau = stressTensor(avgV, avgGrad);
+
+    /// TODO: SA QCR.
 
     Double cond = cp * (avgV.laminarVisc()/prandtlLam + avgV.eddyVisc()/prandtlTurb);
     VectorDbl<nDim> heatFlux;
@@ -971,7 +980,7 @@ protected:
 
     /*--- Projected flux. ---*/
 
-    auto viscFlux = getViscousFlux<nVar>(avgV, tau, heatFlux, unitNormal);
+    auto viscFlux = viscousFlux<nVar>(avgV, tau, heatFlux, unitNormal);
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
       viscFlux(iVar) *= area;
       flux(iVar) -= viscFlux(iVar);
@@ -982,7 +991,7 @@ protected:
     /*--- Flux Jacobians. ---*/
 
     Double dist_ij = sqrt(dist2_ij);
-    auto dtau = getStressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
+    auto dtau = stressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
     Double contraction = 0.0;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       contraction += dtau(iDim,0) * avgV.velocity(iDim);

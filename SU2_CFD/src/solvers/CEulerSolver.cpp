@@ -2990,8 +2990,8 @@ void CEulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_con
 
   CNumericsSIMD* numerics = nullptr;
   if (config->GetViscous()) {
-    if (nDim == 2) numerics = new CRoeScheme<CViscousFluxes<2> >(*config, iMesh);
-    if (nDim == 3) numerics = new CRoeScheme<CViscousFluxes<3> >(*config, iMesh);
+    if (nDim == 2) numerics = new CRoeScheme<CCompressibleViscousFlux<2> >(*config, iMesh);
+    if (nDim == 3) numerics = new CRoeScheme<CCompressibleViscousFlux<3> >(*config, iMesh);
   } else {
     if (nDim == 2) numerics = new CRoeScheme<CNumericsEmptyDecorator<2> >(*config, iMesh);
     if (nDim == 3) numerics = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config, iMesh);
