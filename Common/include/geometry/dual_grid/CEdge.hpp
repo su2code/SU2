@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../toolboxes/C2DContainer.hpp"
+#include "../../containers/C2DContainer.hpp"
 
 /*!
  * \class CEdge

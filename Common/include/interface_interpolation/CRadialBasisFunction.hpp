@@ -28,7 +28,7 @@
 
 #include "CInterpolator.hpp"
 #include "../option_structure.hpp"
-#include "../toolboxes/C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 
 /*!
  * \brief Radial basis function interpolation.

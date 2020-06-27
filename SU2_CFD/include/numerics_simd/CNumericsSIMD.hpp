@@ -29,7 +29,7 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/parallelization/vectorization.hpp"
-#include "../../../Common/include/toolboxes/C2DContainer.hpp"
+#include "../../../Common/include/containers/C2DContainer.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
@@ -240,7 +240,7 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
     auto proj_j = dot(grad_j[iVar], vector_ij);
     auto delta_ij = vars_j(iVar) - vars_i(iVar);
     auto delta_ij_2 = pow(delta_ij,2);
-    /// TODO: Customize the limiter function
+    /// TODO: Customize the limiter function (template functor).
     auto lim_i = (delta_ij_2 + 2*proj_i*delta_ij) / (4*pow(proj_i,2) + delta_ij_2 + EPS);
     auto lim_j = (delta_ij_2 + 2*proj_j*delta_ij) / (4*pow(proj_j,2) + delta_ij_2 + EPS);
     vars_i(iVar) += lim_i * proj_i;
@@ -588,7 +588,6 @@ protected:
     entropyFix(config.GetEntropyFix_Coeff()),
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()) {
-
   }
 
 public:

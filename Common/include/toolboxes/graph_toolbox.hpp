@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 #include "../omp_structure.hpp"
 
 #include <set>
