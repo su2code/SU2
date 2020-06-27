@@ -544,8 +544,7 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
                                     CSysVector<su2double>& vector,
                                     SparseMatrixType& matrix) {
   if (updateType == UpdateType::COLORING) {
-    vector.AddBlock(iPoint, flux, updateMask);
-    vector.AddBlock(jPoint, flux, -1*updateMask);
+    vector.UpdateBlocks(iPoint, jPoint, flux, updateMask);
     if(implicit) matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j, updateMask);
   }
   else {
@@ -993,14 +992,14 @@ protected:
     VectorDbl<nVar> dEdU;
     Double vel2 = 0.5 * squaredNorm<nDim>(avgV.velocity());
     Double phi = (gamma-1) / avgV.density();
-    Double RdTdrho = -1*avgV.pressure() / pow(avgV.density(),2) + phi*vel2;
-    Double condOnRd = (cond * gamma) / ((gamma-1) * dist_ij);
+    Double RdTdrho = phi*vel2 - avgV.pressure() / pow(avgV.density(),2);
+    Double condOnRd = cond / (gasConst * dist_ij);
 
-    dEdU(0) = -1*area * (condOnRd * RdTdrho - contraction);
+    dEdU(0) = area * (condOnRd * RdTdrho - contraction);
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      dEdU(iDim+1) = -1*area * (condOnRd*phi*avgV.velocity(iDim) + dtau(iDim,0));
+      dEdU(iDim+1) = area * (condOnRd*phi*avgV.velocity(iDim) + dtau(iDim,0));
     }
-    dEdU(nDim+1) = -1*area * condOnRd * phi;
+    dEdU(nDim+1) = area * condOnRd * phi;
 
     /*--- Update momentum and energy terms ("symmetric" part). ---*/
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -1010,8 +1009,8 @@ protected:
       }
     }
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      jac_i(nDim+1,iVar) -= dEdU(iVar);
-      jac_j(nDim+1,iVar) += dEdU(iVar);
+      jac_i(nDim+1,iVar) += dEdU(iVar);
+      jac_j(nDim+1,iVar) -= dEdU(iVar);
     }
     /*--- "Non-symmetric" energy terms. ---*/
     Double proj = dot<nDim>(&viscFlux(1), avgV.velocity());

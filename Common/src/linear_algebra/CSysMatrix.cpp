@@ -514,9 +514,12 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
-  SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto index = 0ul; index < nnz*nVar*nEqn; index++)
-    matrix[index] = 0.0;
+  const auto size = nnz*nVar*nEqn;
+  const auto chunk = roundUpDiv(size,omp_get_max_threads());
+  const auto begin = chunk * omp_get_thread_num();
+  const auto mySize = min(chunk, size-begin) * sizeof(ScalarType);
+  memset(&matrix[begin], 0, mySize);
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>

@@ -3046,12 +3046,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
-//  /// HACK to call the vectorized numerics!
-//  if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && kind_dissipation == NO_ROELOWDISS) {
-//    Convective_Residual(geometry, solver_container, config, iMesh);
-//    return;
-//  }
-//  /// END HACK
+  /// HACK to call the vectorized numerics!
+  if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && kind_dissipation == NO_ROELOWDISS) {
+    Convective_Residual(geometry, solver_container, config, iMesh);
+    return;
+  }
+  /// END HACK
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;

@@ -345,49 +345,72 @@ public:
   }
 
   /*!
+   * \brief Add to iPoint, subtract from jPoint.
+   */
+  template<class VectorType>
+  FORCEINLINE void UpdateBlocks(unsigned long iPoint, unsigned long jPoint,
+                                const VectorType& block, ScalarType alpha = 1) {
+    AddBlock(iPoint, block, alpha);
+    AddBlock(jPoint, block, -1*alpha);
+  }
+
+  /*!
+   * \brief Helper to transpose a SIMD input block.
+   */
+  template<size_t N, size_t nVar, class VecTypeSIMD, class F>
+  FORCEINLINE static void UnpackBlock(const VecTypeSIMD& in, simd::Array<F,N> mask, ScalarType out[][nVar]) {
+    static_assert(VecTypeSIMD::StaticSize, "This method requires static size vectors.");
+    for (size_t i=0; i<nVar; ++i) {
+      SU2_OMP_SIMD
+      for (size_t k=0; k<N; ++k)
+        out[k][i] = mask[k] * in[i][k];
+    }
+  }
+
+  /*!
    * \brief Vectorized version of SetBlock, sets multiple iPoint's.
-   * \param[in] Overwrite - True: write over existing data; False: add to existing data.
    * \param[in] iPoint - SIMD integer, the positions to update.
    * \param[in] vector - Vector of SIMD scalars.
    * \param[in] mask - Optional scale factor (axpy type operation).
    * \note Nothing is updated if the mask is 0.
    */
-  template<size_t N, class T, class VecTypeSIMD, class F = ScalarType, bool Overwrite = true>
+  template<size_t N, class T, class VecTypeSIMD, class F = ScalarType>
   FORCEINLINE void SetBlock(simd::Array<T,N> iPoint, const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
-
-    static_assert(VecTypeSIMD::StaticSize, "This method requires static size vectors.");
+    /*--- "Transpose" and scale input vector. ---*/
     constexpr size_t nVar = VecTypeSIMD::StaticSize;
     assert(nVar == this->nVar);
-
-    /*--- "Transpose" and scale input vector. ---*/
     ScalarType vec[N][nVar];
-
-    for (size_t i=0; i<nVar; ++i) {
-      SU2_OMP_SIMD
-      for (size_t k=0; k<N; ++k)
-        vec[k][i] = mask[k] * vector[i][k];
-    }
+    UnpackBlock(vector, mask, vec);
 
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k=0; k<N; ++k) {
       if (mask[k]==0) continue;
-      auto dst = &vec_val[iPoint[k]*nVar];
-      if(Overwrite) {
-        SU2_OMP_SIMD
-        for (size_t i=0; i<nVar; ++i) dst[i] = vec[k][i];
-      } else {
-        SU2_OMP_SIMD
-        for (size_t i=0; i<nVar; ++i) dst[i] += vec[k][i];
-      }
+      SU2_OMP_SIMD
+      for (size_t i=0; i<nVar; ++i) vec_val[iPoint[k]*nVar + i] = vec[k][i];
     }
   }
 
   /*!
-   * \brief Vectorized version of AddBlock, see SetBlock.
+   * \brief Vectorized version of UpdateBlocks, updates multiple i/jPoint's.
+   * \note See SIMD overload of SetBlock.
    */
   template<size_t N, class T, class VecTypeSIMD, class F = ScalarType>
-  FORCEINLINE void AddBlock(simd::Array<T,N> iPoint, const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
-    SetBlock<N, T, VecTypeSIMD, F, false>(iPoint, vector, mask);
-  }
+  FORCEINLINE void UpdateBlocks(simd::Array<T,N> iPoint, simd::Array<T,N> jPoint,
+                                const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
+    /*--- "Transpose" and scale input vector. ---*/
+    constexpr size_t nVar = VecTypeSIMD::StaticSize;
+    assert(nVar == this->nVar);
+    ScalarType vec[N][nVar];
+    UnpackBlock(vector, mask, vec);
 
+    /*--- Update one by one skipping if mask is 0. ---*/
+    for (size_t k=0; k<N; ++k) {
+      if (mask[k]==0) continue;
+      SU2_OMP_SIMD
+      for (size_t i=0; i<nVar; ++i) {
+        vec_val[iPoint[k]*nVar + i] += vec[k][i];
+        vec_val[jPoint[k]*nVar + i] -= vec[k][i];
+      }
+    }
+  }
 };
