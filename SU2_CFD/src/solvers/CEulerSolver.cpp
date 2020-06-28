@@ -3047,7 +3047,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   /// HACK to call the vectorized numerics!
-  if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && kind_dissipation == NO_ROELOWDISS) {
+  if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && ideal_gas && !config->GetUsing_UQ()) {
     Convective_Residual(geometry, solver_container, config, iMesh);
     return;
   }

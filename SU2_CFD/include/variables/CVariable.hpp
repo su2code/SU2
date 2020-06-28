@@ -1044,6 +1044,7 @@ public:
    * \return Value of the pressure sensor.
    */
   inline su2double GetSensor(unsigned long iPoint) const { return Sensor(iPoint); }
+  inline const VectorType& GetSensor() const { return Sensor; }
 
   /*!
    * \brief Get the pressure sensor.

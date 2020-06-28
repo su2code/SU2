@@ -914,11 +914,11 @@ static const MapType<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
  * \brief Types of Roe Low Dissipation Schemes
  */
 enum ENUM_ROELOWDISS {
-    NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
-    FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
-    NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
-    NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
-    FD_DUCROS     = 4  /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+  NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
+  FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
+  NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
+  NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
+  FD_DUCROS     = 4  /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
 };
 static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
   MakePair("NONE", NO_ROELOWDISS)

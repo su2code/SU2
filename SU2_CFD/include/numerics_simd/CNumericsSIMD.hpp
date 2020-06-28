@@ -277,11 +277,11 @@ struct CCompressiblePrimitives {
   FORCEINLINE const Double& eddyVisc() const { return all(nDim+6); }
 };
 
-template<class PrimitiveType, size_t nDim, class Variable_t>
+template<class PrimitiveType, size_t nDim, class VariableType>
 FORCEINLINE CPair<PrimitiveType> reconstructPrimitives(Int iPoint, Int jPoint, bool muscl,
                                                        ENUM_LIMITER limiterType,
                                                        const VectorDbl<nDim>& vector_ij,
-                                                       const Variable_t& solution) {
+                                                       const VariableType& solution) {
   CPair<PrimitiveType> V;
   constexpr size_t nVar = PrimitiveType::nVar;
 
@@ -533,6 +533,52 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomAccessIterator
   return jac;
 }
 
+template<class VariableType>
+FORCEINLINE Double roeDissipation(Int iPoint,
+                                  Int jPoint,
+                                  ENUM_ROELOWDISS type,
+                                  const VariableType& solution) {
+  if (type == NO_ROELOWDISS) {
+    return 1.0;
+  }
+
+  const auto& sol = static_cast<const CNSVariable&>(solution);
+  const auto& sensor = sol.GetSensor();
+  const auto& dissip = sol.GetRoe_Dissipation();
+
+  const Double avgSensor = 0.5 * (*sensor.innerIter(iPoint) + *sensor.innerIter(jPoint));
+  const Double avgDissip = 0.5 * (*dissip.innerIter(iPoint) + *dissip.innerIter(jPoint));
+
+  /*--- A minimum level of upwinding is used to enhance stability. ---*/
+  constexpr passivedouble minDissip = 0.05;
+
+  switch (type) {
+    case FD:
+    case FD_DUCROS: {
+      Double d = max(minDissip, 1.0 - avgDissip);
+
+      if (type == FD_DUCROS) {
+        /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
+        Double mask = avgSensor > 0.65;
+        Double ducros = 0.05 + 0.95*mask;
+        d = max(d, ducros);
+      }
+      return d;
+    }
+    case NTS:
+      return max(minDissip, avgDissip);
+
+    case NTS_DUCROS:
+      /*--- See Xiao et al. INT J HEAT FLUID FL 51 (2015) pag. 141
+       * https://doi.org/10.1016/j.ijheatfluidflow.2014.10.007 ---*/
+      return max(minDissip, avgSensor+avgDissip - avgSensor*avgDissip);
+
+    default:
+      assert(false);
+      return 1.0;
+  }
+}
+
 template<size_t nVar>
 FORCEINLINE void updateLinearSystem(Int iEdge,
                                     Int iPoint,
@@ -575,6 +621,7 @@ protected:
   const su2double kappa;
   const su2double gamma;
   const su2double entropyFix;
+  const ENUM_ROELOWDISS typeDissip;
   const bool finestGrid;
   const bool dynamicGrid;
 
@@ -586,6 +633,7 @@ protected:
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
     entropyFix(config.GetEntropyFix_Coeff()),
+    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())),
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()) {
   }
@@ -701,8 +749,8 @@ public:
 
     /*--- Finalize in derived class (static polymorphism). ---*/
 
-    Derived::finalizeFlux(flux, jac_i, jac_j, implicit, gamma, kappa,
-                          area, unitNormal, V, U, roeAvg, lambda, pMat);
+    Derived::finalizeFlux(flux, jac_i, jac_j, implicit, gamma, kappa, area, unitNormal,
+                          V, U, roeAvg, lambda, pMat, iPoint, jPoint, typeDissip, solution);
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
@@ -751,6 +799,10 @@ public:
                                        const CRoeVariables<nDim>& roeAvg,
                                        const VectorDbl<nVar>& lambda,
                                        const MatrixDbl<nVar>& pMat,
+                                       Int iPoint,
+                                       Int jPoint,
+                                       ENUM_ROELOWDISS typeDissip,
+                                       const CEulerVariable& solution,
                                        Ts&...) {
     /*--- Inverse P tensor. ---*/
 
@@ -766,8 +818,7 @@ public:
 
     /*--- Dissipation terms. ---*/
 
-    /// TODO: Low dissipation computation would go here.
-    Double dissipation = 1.0;
+    Double dissipation = roeDissipation(iPoint, jPoint, typeDissip, solution);
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
       for (size_t jVar = 0; jVar < nVar; ++jVar) {
@@ -883,6 +934,36 @@ FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
   return jac;
 }
 
+template<class MatrixType, size_t nDim>
+FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
+  /*--- SA-QCR2000 modification of the stress tensor. ---*/
+  constexpr passivedouble c_cr1 = 0.3;
+
+  /*--- Denominator antisymmetric normalized rotation tensor. ---*/
+  Double denom = 0.0;
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    for (size_t jDim = 0; jDim < nDim; ++jDim)
+      denom += grad(iDim+1,jDim) * grad(iDim+1,jDim);
+
+  const Double factor = 1 / sqrt(max(denom,1e-10));
+
+  /*--- Compute the QCR term, and update the stress tensor. ---*/
+  MatrixDbl<nDim> qcr;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    for (size_t jDim = 0; jDim < nDim; ++jDim) {
+      qcr(iDim,jDim) = 0.0;
+      for (size_t kDim = 0; kDim < nDim; ++kDim) {
+        Double O_ik = (grad(iDim+1,kDim) - grad(kDim+1,iDim)) * factor;
+        Double O_jk = (grad(jDim+1,kDim) - grad(kDim+1,jDim)) * factor;
+        qcr(iDim,jDim) += O_ik*tau(jDim,kDim) + O_jk*tau(iDim,kDim);
+      }
+    }
+  }
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    for (size_t jDim = 0; jDim < nDim; ++jDim)
+      tau(iDim,jDim) -= c_cr1 * qcr(iDim,jDim);
+}
+
 /*!
  * \class CCompressibleViscousFlux
  * \brief Decorator class to add viscous fluxes (compressible ideal gas).
@@ -898,6 +979,7 @@ protected:
   const su2double prandtlTurb;
   const su2double cp;
   const bool correct;
+  const bool useSA_QCR;
 
   template<class... Ts>
   CCompressibleViscousFlux(const CConfig& config, int iMesh, Ts&...) :
@@ -906,7 +988,8 @@ protected:
     prandtlLam(config.GetPrandtl_Lam()),
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
-    correct(iMesh == MESH_0) {
+    correct(iMesh == MESH_0),
+    useSA_QCR(config.GetQCR()) {
   }
 
   /*!
@@ -968,8 +1051,7 @@ protected:
     /*--- Stress and heat flux tensors. ---*/
 
     auto tau = stressTensor(avgV, avgGrad);
-
-    /// TODO: SA QCR.
+    if(useSA_QCR) addQCR(avgGrad, tau);
 
     Double cond = cp * (avgV.laminarVisc()/prandtlLam + avgV.eddyVisc()/prandtlTurb);
     VectorDbl<nDim> heatFlux;
