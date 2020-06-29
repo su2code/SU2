@@ -577,10 +577,6 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[3][2] = (tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
     Jacobian_j[3][3] = heat_flux_jac_j[3];
 
-//    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
-//      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-//        Jacobian_j[iVar][jVar] = -Jacobian_i[iVar][jVar];
-
     CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
     const su2double proj_flux_vel_i = val_Proj_Visc_Flux[1]*V_i[1] +
@@ -660,10 +656,6 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[4][2] = (tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
     Jacobian_j[4][3] = (tau_jacobian_j[2][0] + heat_flux_jac_j[3]);
     Jacobian_j[4][4] = heat_flux_jac_j[4];
-
-//    for (unsigned short iVar = 0; iVar < nVar-1; iVar++)
-//      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-//        Jacobian_j[iVar][jVar] = -Jacobian_i[iVar][jVar];
 
     CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
