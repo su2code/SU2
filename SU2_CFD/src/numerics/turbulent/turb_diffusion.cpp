@@ -162,7 +162,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     }
   }
 
-  proj_vector_ij = (correct_gradient) ? (sqrt(dist_ij_2)/Area) : su2double(1.0);
+  proj_vector_ij = (correct_gradient) ? (Area/sqrt(dist_ij_2)) : su2double(1.0);
 
   FinishResidualCalc(config);
 
