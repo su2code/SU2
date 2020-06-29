@@ -28,6 +28,9 @@
 #pragma once
 
 #include "CGridMovement.hpp"
+#include "../linear_algebra/CSysMatrix.hpp"
+#include "../linear_algebra/CSysVector.hpp"
+#include "../linear_algebra/CSysSolve.hpp"
 
 /*! 
  * \class CVolumetricMovement

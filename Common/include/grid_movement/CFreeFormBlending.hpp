@@ -34,7 +34,7 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 class CFreeFormBlending {
 

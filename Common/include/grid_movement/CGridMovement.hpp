@@ -27,21 +27,8 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
-
-#include <iostream>
-#include <cstdlib>
-#include <fstream>
-#include <cmath>
-
 #include "../geometry/CGeometry.hpp"
 #include "../CConfig.hpp"
-#include "../linear_algebra/CSysMatrix.hpp"
-#include "../linear_algebra/CSysVector.hpp"
-#include "../linear_algebra/CSysSolve.hpp"
-#include "../geometry/elements/CElement.hpp"
-
-using namespace std;
 
 /*!
  * \class CGridMovement
