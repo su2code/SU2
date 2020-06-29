@@ -29,8 +29,6 @@
 #include <vector>
 #include "C2DContainer.hpp"
 
-using namespace std;
-
 /*!
  * \brief The matrix is symmetric but full storage is used as that gives much better
  * performance for some BLAS libraries (notably OpenBLAS). The code should be compiled
@@ -45,7 +43,7 @@ private:
   // Not optimized dense matrix factorization and inversion for portability.
   void CalcInv(bool is_spd);
   void CholeskyDecompose();
-  void LUDecompose(su2passivematrix& decomp, vector<int>& perm) const;
+  void LUDecompose(su2passivematrix& decomp, std::vector<int>& perm) const;
   // Matrix inversion using LAPACK routines (LDLT and LLT factorization).
   void CalcInv_sytri();
   void CalcInv_potri();
@@ -58,13 +56,13 @@ public:
 
   inline int Size() const { return mat.rows(); }
 
-  inline passivedouble Get(int i, int j) const { return mat(min(i,j),max(i,j)); }
+  inline passivedouble Get(int i, int j) const { return mat(std::min(i,j),std::max(i,j)); }
 
-  inline void Set(int i, int j, passivedouble val) { mat(min(i,j),max(i,j)) = val; }
+  inline void Set(int i, int j, passivedouble val) { mat(std::min(i,j),std::max(i,j)) = val; }
 
-  inline passivedouble& operator() (int i, int j) { return mat(min(i,j),max(i,j)); }
+  inline passivedouble& operator() (int i, int j) { return mat(std::min(i,j),std::max(i,j)); }
 
-  inline const passivedouble& operator() (int i, int j) const { return mat(min(i,j),max(i,j)); }
+  inline const passivedouble& operator() (int i, int j) const { return mat(std::min(i,j),std::max(i,j)); }
 
   template<class ForwardIt>
   void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const
