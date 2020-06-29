@@ -31,6 +31,8 @@
 #include "../variables/CEulerVariable.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
+class CNumericsSIMD;
+
 /*!
  * \class CSolver
  * \brief Main class for defining the PDE solution, it requires
@@ -279,6 +281,8 @@ protected:
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
+  CNumericsSIMD* edgeNumerics = nullptr; /*!< \brief Object for edge flux computation. */
+
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
    */
@@ -299,7 +303,7 @@ protected:
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SumEdgeFluxes(CGeometry* geometry);
+  void SumEdgeFluxes(const CGeometry* geometry);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -520,10 +524,10 @@ public:
                        CConfig *config,
                        unsigned short iMesh) final;
 
-  void Convective_Residual(CGeometry *geometry,
-                           CSolver **solver_container,
-                           CConfig *config,
-                           unsigned short iMesh);
+  /*!
+   * \brief Method to compute convective and viscous residual numerics.
+   */
+  void EdgeFluxResidual(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.

@@ -531,8 +531,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name (max 8 characters). ---*/
   SolverName = "C.FLOW";
+
+  /*--- Numerics objects. ---*/
+  edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, iMesh);
 
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
@@ -2985,36 +2988,26 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CEulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_container,
-                                       CConfig *config, unsigned short iMesh) {
-
-  CNumericsSIMD* numerics = nullptr;
-  if (config->GetViscous()) {
-    if (nDim == 2) numerics = new CRoeScheme<CCompressibleViscousFlux<2> >(*config, iMesh);
-    if (nDim == 3) numerics = new CRoeScheme<CCompressibleViscousFlux<3> >(*config, iMesh);
-  } else {
-    if (nDim == 2) numerics = new CRoeScheme<CNumericsEmptyDecorator<2> >(*config, iMesh);
-    if (nDim == 3) numerics = new CRoeScheme<CNumericsEmptyDecorator<3> >(*config, iMesh);
-  }
+void CEulerSolver::EdgeFluxResidual(const CGeometry *geometry, const CConfig *config) {
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for(auto k = 0ul; k < color.size; k += Int_Size) {
+    for(auto k = 0ul; k < color.size; k += IntSize) {
       Int iEdge = color.indices[k];
       Double mask = 1;
 
 #if !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
-      for(auto j = 1ul; j < Int_Size; ++j) {
+      for(auto j = 1ul; j < IntSize; ++j) {
         if(k+j < color.size) iEdge[j] = color.indices[k+j];
         else mask[j] = 0;
       }
 #endif
       if (ReducerStrategy) {
-        numerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
       } else {
-        numerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
     }
   }
@@ -3025,8 +3018,6 @@ void CEulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_con
       Jacobian.SetDiagonalAsColumnSum();
     }
   }
-
-  delete numerics;
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -3048,7 +3039,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
   /// HACK to call the vectorized numerics!
   if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && ideal_gas && !config->GetUsing_UQ()) {
-    Convective_Residual(geometry, solver_container, config, iMesh);
+    EdgeFluxResidual(geometry, config);
     return;
   }
   /// END HACK
@@ -3282,7 +3273,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
+void CEulerSolver::SumEdgeFluxes(const CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {

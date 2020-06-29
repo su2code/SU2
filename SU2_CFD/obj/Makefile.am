@@ -100,6 +100,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
   ../src/numerics/elasticity/nonlinear_models.cpp \
+  ../include/numerics_simd/CNumericsSIMD.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
   ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
