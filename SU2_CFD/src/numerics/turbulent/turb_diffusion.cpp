@@ -129,15 +129,14 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   /*--- Compute vector going from iPoint to jPoint ---*/
 
   dist_ij_2 = 0; proj_vector_ij = 0;
-  su2double Edge_Normal = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Normal[iDim]*Normal[iDim];
-    Edge_Normal += Edge_Vector[iDim]*Normal[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  if (correct_gradient) proj_vector_ij = proj_vector_ij/Edge_Normal;
+  if(correct_gradient) proj_vector_ij = proj_vector_ij/dist_ij_2;
   else proj_vector_ij = 1.0;
+  
 
   /*--- Mean gradient approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
