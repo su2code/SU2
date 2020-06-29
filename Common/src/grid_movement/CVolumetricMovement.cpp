@@ -2210,7 +2210,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
 
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord;
+  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord;
   su2double xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
