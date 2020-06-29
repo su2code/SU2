@@ -71,18 +71,6 @@ class CBaseMPIWrapper;
 typedef CBaseMPIWrapper SU2_MPI;
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
-/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
-template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
-
-/*--- In AD we specialize for the passive wrapper. ---*/
-#if defined CODI_REVERSE_TYPE
-class CBaseMPIWrapper;
-template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
-#if defined USE_MIXED_PRECISION
-template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
-#endif
-#endif
-
 /*!
  * \class CMPIWrapper
  * \brief Class for defining the MPI wrapper routines; this class features as a base class for
@@ -326,6 +314,7 @@ public:
 #define MPI_UNSIGNED_LONG 1
 #define MPI_LONG 2
 #define MPI_UNSIGNED_SHORT 3
+#define MPI_FLOAT 4
 #define MPI_DOUBLE 4
 #define MPI_ANY_SOURCE 5
 #define MPI_SUM 6
@@ -453,6 +442,17 @@ public:
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
 
+#endif
+
+/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
+template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
+
+/*--- In AD we specialize for the passive wrapper. ---*/
+#if defined CODI_REVERSE_TYPE
+template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#if defined USE_MIXED_PRECISION
+template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
+#endif
 #endif
 
 /* Depending on the compiler, define the correct macro to get the current function name */
