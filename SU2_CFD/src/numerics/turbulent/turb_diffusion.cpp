@@ -128,17 +128,14 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
-  dist_ij_2 = 0; proj_vector_ij = 0; Area = 0.;
+  dist_ij_2 = 0; proj_vector_ij = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    Area += Normal[iDim]*Normal[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
   if(correct_gradient) proj_vector_ij = proj_vector_ij/dist_ij_2;
   else proj_vector_ij = 1.0;
-
-  Area = sqrt(Area);
   
 
   /*--- Mean gradient approximation ---*/
@@ -161,8 +158,6 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
     }
   }
-
-  proj_vector_ij = (correct_gradient) ? (Area/sqrt(dist_ij_2)) : su2double(1.0);
 
   FinishResidualCalc(config);
 
