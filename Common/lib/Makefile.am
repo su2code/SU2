@@ -57,7 +57,13 @@ lib_sources = \
   ../src/fem/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
-  ../src/grid_movement_structure.cpp \
+  ../src/grid_movement/CGridMovement.cpp \
+  ../src/grid_movement/CFreeFormBlending.cpp \
+  ../src/grid_movement/CBSplineBlending.cpp \
+  ../src/grid_movement/CBezierBlending.cpp \
+  ../src/grid_movement/CFreeFormDefBox.cpp \
+  ../src/grid_movement/CVolumetricMovement.cpp \
+  ../src/grid_movement/CSurfaceMovement.cpp \
   ../src/mpi_structure.cpp \
   ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
