@@ -854,13 +854,13 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    const su2double proj_vector_ij = (correct_gradient) ? (dist_ij_2/pow(Area,2.0)) : su2double(1.0);    
+    const su2double proj_vector_ij = (correct_gradient) ? (dist_ij_2/Area) : su2double(1.0);    
     SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, Area, UnitNormal);
 
     SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
-                        Mean_Eddy_Viscosity, dist_ij, Area, UnitNormal);
+                        Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
 
-    GetViscousProjJacs(Mean_PrimVar, dist_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
+    GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
     SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
     SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
 
