@@ -1,13 +1,12 @@
 /*!
- * \file SU2_DEF.hpp
- * \brief Headers of the main subroutines of the code SU2_DEF.
- *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CFreeFormBlending.cpp
+ * \brief Parent class for FFD Blending functions
+ * \author F. Palacios, T. Economon, S. Padron
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -26,20 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/grid_movement/CFreeFormBlending.hpp"
 
-#pragma once
+CFreeFormBlending::CFreeFormBlending(){}
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
-
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-
-#include "../../SU2_CFD/include/solvers/CSolver.hpp"
-#include "../../SU2_CFD/include/output/CMeshOutput.hpp"
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/CConfig.hpp"
-
-using namespace std;
+CFreeFormBlending::~CFreeFormBlending(){}

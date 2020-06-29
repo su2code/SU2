@@ -227,7 +227,7 @@ inline su2double CFreeFormBlending::GetBasis(short val_i, su2double val_t){retur
 
 inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, short val_order){return 0.0;}
 
-inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints){}
+inline void CFreeFormBlending::SetOrder(short val_order, short n_controlpoints){}
 
 inline su2double CFreeFormBlending::GetOrder() const{return Order;}
 
