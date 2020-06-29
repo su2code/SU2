@@ -325,10 +325,12 @@ static const MapType<string, ENUM_INCOMP_SYSTEM> Incomp_Map = {
  */
 enum ENUM_PBITER {
   SIMPLE = 0,		/*!< \brief SIMPLE algorithm. */
-  PISO = 1,         /*!< \brief PISO algorithm. */
+  SIMPLEC = 1,		/*!< \brief SIMPLE algorithm. */
+  PISO = 2,         /*!< \brief PISO algorithm. */
 };
 static const MapType<string, ENUM_PBITER> PBIter_Map = {
  MakePair("SIMPLE", SIMPLE)
+ MakePair("SIMPLEC", SIMPLEC)
  MakePair("PISO", PISO)
 };
 

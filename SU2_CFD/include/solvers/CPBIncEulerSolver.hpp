@@ -33,6 +33,9 @@
 
 class CPBIncEulerSolver : public CSolver {
 protected:
+  enum : size_t {MAXNDIM = 3};    /*!< \brief Max number of space dimensions, used in some static arrays. */
+  enum : size_t {MAXNVAR = 12};   /*!< \brief Max number of variables, used in some static arrays. */
+  
   su2double
   Density_Inf,  /*!< \brief Density at the infinity. */
   Temperature_Inf,      /*!< \brief Energy at the infinity. */
@@ -214,7 +217,7 @@ protected:
   su2double ResMassFlux;
 
   su2double **FaceVelocity;
-  su2double *FaceVelocityCorrec;
+  su2double **FaceVelocityCorrec;
 
   unsigned long PRef_Point;    /*!< \brief Store the index of reference cell for pressure */
   bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
@@ -609,6 +612,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
+  
+  /*!
+   * \brief Update face velocity based on new solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateFaceVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

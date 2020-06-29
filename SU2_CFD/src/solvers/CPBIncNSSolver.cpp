@@ -54,9 +54,8 @@ CPBIncNSSolver::CPBIncNSSolver(void) : CPBIncEulerSolver() {
 
 CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CPBIncEulerSolver() {
 
-  unsigned long iPoint, iVertex, iEdge;
+  unsigned long iPoint, iVertex, iEdge, jPoint;
   unsigned short iVar, iDim, iMarker, nLineLets;
-  su2double *Normal, Area;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -524,19 +523,6 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   if (PRef_Point > nPoint)
       PRef_Point = min_Point;
 
-
-
-  /*--- Allocate velocities at every face. This is for momentum interpolation. ---*/
-
- FaceVelocity     = new su2double*[geometry->GetnEdge()];
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    FaceVelocity[iEdge] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      FaceVelocity[iEdge][iDim]= Velocity_Inf[iDim];
-     }
-   }
-
-
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
@@ -572,6 +558,23 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /*--- Allocate velocities at every face. This is for momentum interpolation. ---*/
+
+  FaceVelocity        = new su2double*[geometry->GetnEdge()];
+  FaceVelocityCorrec  = new su2double*[geometry->GetnEdge()];
+  su2double Normal[MAXNDIM];
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    geometry->edges->GetNormal(iEdge, Normal);
+    FaceVelocity[iEdge]       = new su2double [nDim];
+    FaceVelocityCorrec[iEdge] = new su2double [nDim];
+    iPoint = geometry->edges->GetNode(iEdge,0); 
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      FaceVelocity[iEdge][iDim]= 0.5*(nodes->GetSolution(iPoint,iDim)+nodes->GetSolution(jPoint,iDim));
+      FaceVelocityCorrec[iEdge][iDim] = 0.0;
+     }
+   }
+  
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
 
@@ -930,7 +933,6 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
     }
     RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
-    //RefProjFlux = sqrt(Mean_BetaInc2*Area*Area);
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
 
     /*--- Adjustment for grid movement ---*/
@@ -989,7 +991,6 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
           Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
       }
       RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
-      //RefProjFlux = sqrt(Mean_BetaInc2*Area*Area);
 
       MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
 

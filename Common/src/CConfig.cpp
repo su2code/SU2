@@ -1708,7 +1708,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Relaxation of the pressure based flow corrections */
   addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.5);
   /* DESCRIPTION: Relaxation of the Rhie Chow interpolation contribution in pressure based flow. */
-  addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 0.5);
+  addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 0.0);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */

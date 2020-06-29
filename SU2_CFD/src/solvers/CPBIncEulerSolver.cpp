@@ -85,6 +85,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(void) : CSolver() {
   Smatrix = NULL; Cvector = NULL;
 
   FaceVelocity = NULL;
+  FaceVelocityCorrec = NULL;
 
   nodes = nullptr;
 
@@ -92,7 +93,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(void) : CSolver() {
 
 CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  unsigned long iPoint, iVertex, iEdge;
+  unsigned long iPoint, iVertex, iEdge, jPoint;
   unsigned short iVar, iDim, iMarker, nLineLets;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
@@ -109,7 +110,6 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   string filename_ = config->GetSolution_FileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
-  su2double *Normal, Area;
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -162,7 +162,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   ForceInviscid = NULL; MomentInviscid = NULL;
   ForceMomentum = NULL;  MomentMomentum = NULL;
   
-  FaceVelocity = NULL;
+  FaceVelocity = NULL; FaceVelocityCorrec = NULL;
 
   /*--- Surface based array initialization ---*/
 
@@ -201,8 +201,6 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   /*--- Fluid model pointer initialization ---*/
 
   FluidModel = NULL;
-
-  FaceVelocity = NULL;
 
   /*--- Set the gamma value ---*/
 
@@ -524,11 +522,18 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
 
   /*--- Allocate velocities at every face. This is for momentum interpolation. ---*/
 
-  FaceVelocity     = new su2double*[geometry->GetnEdge()];
+  FaceVelocity        = new su2double*[geometry->GetnEdge()];
+  FaceVelocityCorrec  = new su2double*[geometry->GetnEdge()];
+  su2double Normal[MAXNDIM];
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    FaceVelocity[iEdge] = new su2double [nDim];
+    geometry->edges->GetNormal(iEdge, Normal);
+    FaceVelocity[iEdge]       = new su2double [nDim];
+    FaceVelocityCorrec[iEdge] = new su2double [nDim];
+    iPoint = geometry->edges->GetNode(iEdge,0); 
+    jPoint = geometry->edges->GetNode(iEdge,1);
     for (iDim = 0; iDim < nDim; iDim++) {
-      FaceVelocity[iEdge][iDim]= Velocity_Inf[iDim];
+      FaceVelocity[iEdge][iDim]= 0.5*(nodes->GetSolution(iPoint,iDim)+nodes->GetSolution(jPoint,iDim));
+      FaceVelocityCorrec[iEdge][iDim] = 0.0;
      }
    }
 
@@ -1428,8 +1433,10 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     }
   }
 
+  /*--- Reset mass flux residual. ---*/
   SetResMassFluxZero();
 
+  /*--- Reset flag for strong BCs. ---*/
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
       nodes->ResetStrongBC(iPoint);
 
@@ -1461,8 +1468,6 @@ unsigned long iPoint, ErrorCounter = 0;
 
 
   /*--- Compute gradients to be used in Rhie Chow interpolation ---*/
-
-    /*--- Gradient computation ---*/
 
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
       SetPrimitive_Gradient_GG(geometry, config);
@@ -1750,16 +1755,12 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_
 
     numerics->SetPrimitive(V_i, V_j);
 
-    /*--- Compute the residual ---*/
-    //numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     /*--- Compute residuals, and Jacobians ---*/
 
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Update residual value ---*/
 
-    /*LinSysRes.AddBlock(iPoint, Res_Conv);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv);*/
     LinSysRes.AddBlock(iPoint, residual);
     LinSysRes.SubtractBlock(jPoint, residual);
 
@@ -1768,10 +1769,6 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_
 
     if (implicit) {
       Jacobian.UpdateBlocks(iEdge,iPoint,jPoint,residual.jacobian_i, residual.jacobian_j);
-      /*Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);*/
     }
   }
 }
@@ -1794,6 +1791,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  int rank = SU2_MPI::GetRank();
 
   /*--- Loop over all the edges ---*/
 
@@ -1864,15 +1862,9 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
     }
     //numerics->SetFaceVel(FaceVelocity[iEdge]);
 
-    /*--- Compute the residual ---*/
-    //numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Update residual value ---*/
-
-    /*LinSysRes.AddBlock(iPoint, Res_Conv);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv);*/
     LinSysRes.AddBlock(iPoint, residual);
     LinSysRes.SubtractBlock(jPoint, residual);
 
@@ -2859,8 +2851,6 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   unsigned short iVar, jVar;
   unsigned long iPoint;
 
-  bool adjoint = config->GetContinuous_Adjoint();
-
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
@@ -2875,18 +2865,29 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
-
-    if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar ++ ) {
-        Res = local_Residual[iVar] + local_Res_TruncError[jVar];
-        nodes->AddSolution(iPoint, iVar, -alfa*Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-      }
+    
+    /*--- Workaround to deal with nodes that are part of multiple boundaries and where
+     *    one face might be strong BC and another weak BC (mostly for farfield boundary
+     *    where the boundary face is strong or weak depending on local flux. ---*/
+    if (nodes->GetStrongBC(iPoint)) {
+        for (iVar = 0; iVar < nVar; iVar++) 
+            LinSysRes.SetBlock_Zero(iPoint, iVar);
     }
 
+    for (iVar = 0; iVar < nVar; iVar ++ ) {
+      Res = local_Residual[iVar] + local_Res_TruncError[jVar];
+      nodes->AddSolution(iPoint, iVar, -alfa*Res*Delta);
+      AddRes_RMS(iVar, Res*Res);
+      AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+    }
   }
   SetIterLinSolver(1);
+  
+  /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
 
   /*--- MPI solution ---*/
 
@@ -2922,11 +2923,11 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
      *    one face might be strong BC and another weak BC (mostly for farfield boundary
      *    where the boundary face is strong or weak depending on local flux. ---*/
     if (nodes->GetStrongBC(iPoint)) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint*nVar+iVar;
-            Jacobian.DeleteValsRowi(total_index);
-            LinSysRes.SetBlock_Zero(iPoint, iVar);
-        }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+        LinSysRes.SetBlock_Zero(iPoint, iVar);
+      }
     }
 
     /*--- Read the volume ---*/
@@ -2934,17 +2935,8 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     Vol = (geometry->nodes->GetVolume(iPoint) +
            geometry->nodes->GetPeriodicVolume(iPoint));
 
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    /*su2double *diag = Jacobian.GetBlock(iPoint, iPoint);
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      diag[(nVar+1)*iVar] = diag[(nVar+1)*iVar]/config->GetRelaxation_Factor_PBFlow();
-
-    Jacobian.SetBlock(iPoint, iPoint, diag);*/
-
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
       Delta = Vol / nodes->GetDelta_Time(iPoint);
-      //Delta = 0.0;
       Jacobian.AddVal2Diag(iPoint, Delta);
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -2993,30 +2985,19 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   /*--- Update solution (system written in terms of increments) ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    //cout<<iPoint<<"\t";
     for (iVar = 0; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint, iVar, config->GetRelaxation_Factor_PBFlow()*LinSysSol[iPoint*nVar+iVar]);
-      //nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
-      //cout<<LinSysSol[iPoint*nVar+iVar]<<"\t"<<config->GetRelaxation_Factor_PBFlow()*LinSysSol[iPoint*nVar+iVar]<<"\t";
     }
-    //cout<<endl;
   }
 
-  /*cout<<"Before periodic implicit"<<endl;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    cout<<iPoint<<"\t"<<nodes->GetSolution(iPoint, 0)<<"\t"<<nodes->GetSolution(iPoint, 0)<<endl;
-  }*/
+  if (config->GetInnerIter() == 0) 
+    UpdateFaceVelocity(geometry, solver_container, config);
 
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
-
-  /*cout<<"After periodic implicit"<<endl;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    cout<<iPoint<<"\t"<<nodes->GetSolution(iPoint, 0)<<"\t"<<nodes->GetSolution(iPoint, 0)<<endl;
-  }*/
 
   /*--- MPI solution ---*/
 
@@ -3039,6 +3020,7 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iPoint, jPoint, iNeigh;
   su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+  bool simplec = (config->GetKind_PBIter() == SIMPLEC);
 
   if (!periodic)  {
 
@@ -3052,10 +3034,13 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Contribution from neighbors. ---*/
       nodes->Set_Mom_Coeff_nbZero(iPoint);
-      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-        jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+
+      if (simplec) {
+        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+          for (iVar = 0; iVar < nVar; iVar++) {
+            nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+          }
         }
       }
 
@@ -3081,6 +3066,7 @@ void CPBIncEulerSolver::SetMomCoeffPer(CGeometry *geometry, CSolver **solver_con
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iPoint, jPoint, iNeigh;
   su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+  bool simplec = (config->GetKind_PBIter() == SIMPLEC);
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -3091,10 +3077,12 @@ void CPBIncEulerSolver::SetMomCoeffPer(CGeometry *geometry, CSolver **solver_con
 
     /*--- Contribution from neighbors. ---*/
     nodes->Set_Mom_Coeff_nbZero(iPoint);
-    for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-      jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+    if (simplec) {
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+        jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+        }
       }
     }
 
@@ -3113,6 +3101,22 @@ void CPBIncEulerSolver::SetMomCoeffPer(CGeometry *geometry, CSolver **solver_con
 
 }
 
+void CPBIncEulerSolver::UpdateFaceVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  unsigned long iEdge, iPoint, jPoint;
+  su2double Normal[MAXNDIM];
+  
+  for (iEdge = 0; iEdge < nEdge; iEdge++) {
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+    geometry->edges->GetNormal(iEdge, Normal);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      FaceVelocity[iEdge][iDim] = 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim));
+    }
+  }
+  
+    
+  
+}
 
 void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
@@ -3175,8 +3179,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
     }
 
-    //RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
-    RefProjFlux = sqrt(Mean_BetaInc2*Area*Area);
+    RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
 
     Lambda = fabs(Mean_ProjVel) + RefProjFlux;
@@ -3222,8 +3225,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
         Mean_ProjVel -= ProjVel;
       }
 
-      //RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
-      RefProjFlux = sqrt(Mean_BetaInc2*Area*Area);
+      RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
       MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
 
       Lambda = fabs(Mean_ProjVel) + RefProjFlux;
@@ -3253,7 +3255,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
     if (Vol != 0.0) {
       Local_Delta_Time  = config->GetCFL(iMesh)*Vol/nodes->GetMax_Lambda_Inv(iPoint);
-      if (!implicit) Local_Delta_Time  = 0.5*Vol/nodes->GetMax_Lambda_Inv(iPoint);
+      if (!implicit) Local_Delta_Time  = 0.5*config->GetCFL(iMesh)*Vol/nodes->GetMax_Lambda_Inv(iPoint);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time    = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
@@ -3361,12 +3363,12 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   su2double *Coord_i, *Coord_j;
   su2double MassFlux_Part, MassFlux_Avg, Mom_Coeff[3], *Vel_i, *Vel_j,*Normal,Vel_Avg, Grad_Avg;
   su2double Area, Vol_i, Vol_j, Density_i, Density_j, MeanDensity, delT_i, delT_j;
-  su2double Mom_Coeff_i[3], Mom_Coeff_j[3], Mom_Coeff_nb[3], VelocityOld[3],VelocityOldFace;
-  su2double GradP_f[3], GradP_in[3], GradP_proj, RhieChowInterp, Coeff_Mom;
+  su2double Mom_Coeff_i[3], Mom_Coeff_j[3], VelocityOld_i[3], VelocityOld_j[3],VelocityOldFace;
+  su2double GradP_f[3], GradP_in[3], GradP_proj, RhieChowInterp, Coeff_Mom, FaceVel[3];
   su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Adj_Mass, beta, Transient_Corr;
   su2double Net_Mass, alfa, Mass_In, Mass_Out, Mass_Free_In, Mass_Free_Out, Mass_Corr, Area_out;
   string Marker_Tag;
-  su2double ProjGridVelFlux, *MeshVel_i, *MeshVel_j, weight, dir;
+  su2double ProjGridVelFlux, *MeshVel_i, *MeshVel_j, weight, dir,x,y;
   unsigned short Kind_Outlet;
   Normal = new su2double [nDim];
   Vel_i = new su2double[nDim];
@@ -3377,100 +3379,93 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       nodes->SetMassFluxZero(iPoint);
 
   Net_Mass = 0.0;
+  
+  for (iEdge = 0; iEdge < nEdge; iEdge++) {
 
-  /*--- Point loop ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+    geometry->edges->GetNormal(iEdge, Normal);
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+    Area = sqrt(Area);
 
-    Vol_i = (geometry->nodes->GetVolume(iPoint));
+    Vol_i = (geometry->nodes->GetVolume(iPoint)); Vol_j = (geometry->nodes->GetVolume(jPoint));
 
-    Density_i = nodes->GetDensity(iPoint);
+    Density_i = nodes->GetDensity(iPoint); Density_j = nodes->GetDensity(jPoint);
+    MeanDensity = 0.5*(Density_i + Density_j);
 
     for (iDim = 0; iDim < nDim; iDim++) {
       Mom_Coeff_i[iDim] = nodes->Get_Mom_Coeff(iPoint,iDim);
+      Mom_Coeff_j[iDim] = nodes->Get_Mom_Coeff(jPoint,iDim);
       Vel_i[iDim] = nodes->GetVelocity(iPoint,iDim);
+      Vel_j[iDim] = nodes->GetVelocity(jPoint,iDim);
+      VelocityOld_i[iDim] = nodes->GetSolution_Old(iPoint,iDim);
+      VelocityOld_j[iDim] = nodes->GetSolution_Old(jPoint,iDim);
     }
 
     Coord_i = geometry->nodes->GetCoord(iPoint);
-
-    MassFlux_Part = 0.0;
-
-    for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-
-      jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-
-      iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
-      geometry->edges->GetNormal(iEdge, Normal);
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
-
-      dir = (iPoint == geometry->edges->GetNode(iEdge,0))? 1.0 : -1.0;
-
-      Vol_j = (geometry->nodes->GetVolume(jPoint));
-
-      beta = Vol_i/(Vol_i + Vol_j);
-
-      /*--- Face average mass flux. ---*/
-      Density_j = nodes->GetDensity(jPoint);
-      MeanDensity = 0.5*(Density_i + Density_j);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mom_Coeff_j[iDim] = nodes->Get_Mom_Coeff(jPoint,iDim);
-        Vel_j[iDim] = nodes->GetVelocity(jPoint,iDim);
-      }
-      MassFlux_Avg = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vel_Avg = 0.5*(Vel_i[iDim]+Vel_j[iDim]);
-        MassFlux_Avg += MeanDensity*Vel_Avg*Normal[iDim];
-        FaceVelocity[iEdge][iDim] = Vel_Avg;
-      }
-
-      /*--- Rhie Chow interpolation ---*/
-      Coord_j = geometry->nodes->GetCoord(jPoint);
-      dist_ij_2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-        dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-      }
-
-      /*--- Interpolate the pressure gradient based on node values ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Grad_Avg = 0.5*(nodes->GetGradient_Primitive(iPoint,0,iDim) + nodes->GetGradient_Primitive(jPoint,0,iDim));
-        GradP_in[iDim] = Grad_Avg;
-      }
-
-      /*--- Compute pressure gradient at the face ---*/
-      /*--- Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
-      GradP_proj = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradP_proj += GradP_in[iDim]*Edge_Vector[iDim];
-      }
-      if (dist_ij_2 != 0.0) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (nodes->GetPressure(jPoint) - nodes->GetPressure(iPoint)))*Edge_Vector[iDim]/ dist_ij_2;
-        }
-      }
-
-      /*--- Correct the massflux by adding the pressure terms.
-       * --- GradP_f is the gradient computed directly at the face and GradP_in is the
-       * --- gradient linearly interpolated based on node values. This effectively adds a third
-       * --- order derivative of pressure to remove odd-even decoupling of pressure and velocities.
-       * --- GradP_f = (p_F^n - p_P^n)/ds , GradP_in = 0.5*(GradP_P^n + GradP_F^n)---*/
-      RhieChowInterp = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Coeff_Mom = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]);
-        //Coeff_Mom = beta*Mom_Coeff_i[iDim] + (1.0 - beta)*Mom_Coeff_j[iDim];
-        RhieChowInterp += Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
-        FaceVelocity[iEdge][iDim] -= Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
-      }
-
-      /*--- Rhie Chow correction for time step must go here ---*/
-      Transient_Corr = 0.0;
-
-      MassFlux_Part += dir*(MassFlux_Avg - RhieChowInterp + Transient_Corr);
+    Coord_j = geometry->nodes->GetCoord(jPoint);
+    dist_ij_2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     }
 
-    nodes->AddMassFlux(iPoint,MassFlux_Part);
+    beta = Vol_i/(Vol_i + Vol_j);
+
+    /*--- Rhie Chow correction for time step must go here ---*/
+    Transient_Corr = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Transient_Corr += (FaceVelocity[iEdge][iDim] - 0.5*(VelocityOld_i[iDim] + VelocityOld_j[iDim]))*Normal[iDim]*MeanDensity;
+      FaceVel[iDim] = (FaceVelocity[iEdge][iDim] - 0.5*(VelocityOld_i[iDim] + VelocityOld_j[iDim]));
+    }
+
+    /*--- Face average mass flux. ---*/
+    MassFlux_Avg = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Vel_Avg = 0.5*(Vel_i[iDim]+Vel_j[iDim]);
+      MassFlux_Avg += MeanDensity*Vel_Avg*Normal[iDim];
+      FaceVel[iDim] += Vel_Avg;
+    }
+
+    /*--- Rhie Chow interpolation ---*/
+    /*--- 1. Interpolate the pressure gradient based on node values ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Grad_Avg = 0.5*(nodes->GetGradient_Primitive(iPoint,0,iDim) + nodes->GetGradient_Primitive(jPoint,0,iDim));
+      GradP_in[iDim] = Grad_Avg;
+    }
+
+    /*--- 2. Compute pressure gradient at the face ---*
+         Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
+    GradP_proj = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      GradP_proj += GradP_in[iDim]*Edge_Vector[iDim];
+    }
+    if (dist_ij_2 != 0.0) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (nodes->GetPressure(jPoint) - nodes->GetPressure(iPoint)))*Edge_Vector[iDim]/ dist_ij_2;
+      }
+    }
+
+    /*--- Correct the massflux by adding the pressure terms.
+     * --- GradP_f is the gradient computed directly at the face and GradP_in is the
+     * --- gradient linearly interpolated based on node values. This effectively adds a third
+     * --- order derivative of pressure to remove odd-even decoupling of pressure and velocities.
+     * --- GradP_f = (p_F^n - p_P^n)/ds , GradP_in = 0.5*(GradP_P^n + GradP_F^n)---*/
+    RhieChowInterp = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Coeff_Mom = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]);
+      RhieChowInterp += Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
+      FaceVel[iDim] -= Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
+    }
+    
+    //MassFlux_Part = MassFlux_Avg - RhieChowInterp + Transient_Corr;
+    MassFlux_Part = MassFlux_Avg - RhieChowInterp;
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      FaceVelocity[iEdge][iDim] = FaceVel[iDim];
+    
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMassFlux(iPoint,MassFlux_Part);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->SubtractMassFlux(jPoint,MassFlux_Part);
   }
 
   /*--- Mass flux correction for outflow ---*/
@@ -3584,16 +3579,6 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
           }
         break;
 
-        /*case PERIODIC_BOUNDARY:
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-              if (geometry->nodes->GetDomain(iPoint)) {
-                cout<<iPoint<<"\t"<<config->GetMarker_All_TagBound(iMarker)<<endl;
-              }
-        }
-        break;*/
-
         default:
         break;
     }
@@ -3670,14 +3655,15 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   unsigned long iEdge, iPoint, jPoint, iMarker, iVertex, Point_Normal, iNeigh, pVar = 0;
   unsigned short iDim, iVar, KindBC, nVar_Poisson = 1;
   su2double **vel_corr, vel_corr_i, vel_corr_j, vel_corr_avg, *alpha_p, dummy;
-  su2double Edge_Vec[3], dist_ij_2, proj_vector_ij, Vol, delT;
-  su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff,**Grad_i,**Grad_j;
-  su2double *Pressure_Correc, Current_Pressure, factor, *Flow_Dir,*Pressure_Correc_2;
+  su2double Edge_Vector[3], dist_ij_2, proj_vector_ij, Vol, delT;
+  su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff, GradP_in[3],GradP_f[3], GradP_proj;
+  su2double *Pressure_Correc, Current_Pressure, factor, *Flow_Dir;
   su2double MassFlux_Part, Poissonval_j, Poissonval_i, Correction, small = 1E-6, ur;
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i, PCorr_Ref, Coeff_Mom;
   string Marker_Tag;
   unsigned short Kind_Outlet;
   bool inflow = false;
+  int rank = SU2_MPI::GetRank();
 
   Normal = new su2double [nDim];
   alpha_p = new su2double [nPointDomain];
@@ -3711,7 +3697,39 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     }
     alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
   }
+  
+  /*--- Correct face velocity. ---*/
+  /*for (iEdge = 0; iEdge < nEdge; iEdge++) {
+    
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+    geometry->edges->GetNormal(iEdge, Normal);
+    dist_ij_2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Edge_Vector[iDim] = (geometry->nodes->GetCoord(jPoint, iDim) - 
+                           geometry->nodes->GetCoord(iPoint, iDim));
+      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    }
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      GradP_in[iDim] = ( solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iDim) + 
+                         solver_container[POISSON_SOL]->GetNodes()->GetGradient(jPoint,0,iDim) );
+    
+    GradP_proj = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      GradP_proj += GradP_in[iDim]*Edge_Vector[iDim];
+    }
+    if (dist_ij_2 != 0.0) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (Pressure_Correc[jPoint] - Pressure_Correc[iPoint]))*Edge_Vector[iDim]/ dist_ij_2;
+      }
+    }
 
+    for (iDim =0; iDim < nDim; iDim++) {
+      Coeff_Mom = 0.5*(nodes->Get_Mom_Coeff(iPoint,iDim) + nodes->Get_Mom_Coeff(jPoint,iDim));
+      FaceVelocity[iEdge][iDim] = FaceVelocity[iEdge][iDim] - Coeff_Mom*(GradP_f[iDim]);          
+    }
+  }*/
+  
   /*--- Reassign strong boundary conditions ---*/
   /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
    *  where different treatment of pressure might be needed. Symmetry and Euler wall are weak BCs. ---*/
@@ -3821,14 +3839,8 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     Current_Pressure = nodes->GetPressure(iPoint);
     Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
     nodes->SetPressure_val(iPoint,Current_Pressure);
-    /*su2double x,y;
-    x=geometry->nodes->GetCoord(iPoint, 0);
-    y=geometry->nodes->GetCoord(iPoint, 1);
-    if (((y >-0.0022)&&(y<-0.0015)) && ((x>0.023)&&(x<0.0245))) {
-      cout<<iPoint<<"\t"<<alpha_p[iPoint]<<"\t"<<vel_corr[iPoint][0]<<"\t"<<vel_corr[iPoint][1]<<endl;
-      cout<<nodes->GetSolution(iPoint,0)<<"\t"<<nodes->GetSolution(iPoint,1)<<endl;
-    }*/
   }
+  
 
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
@@ -3838,7 +3850,6 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
   }
-
 
   /*--- Communicate updated velocities and pressure ---*/
   InitiateComms(geometry, config, SOLUTION);
@@ -4829,11 +4840,6 @@ void CPBIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_contai
    adjacent periodic markers, the repeated points will have their residuals
    accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
-  /*cout<<"Before periodic res"<<endl;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    cout<<iPoint<<"\t"<<LinSysRes(iPoint, 0)<<"\t"<<LinSysRes(iPoint, 1)<<endl;
-    cout<<iPoint<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,0,0)<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,1,1)<<endl;
-  }*/
 
   SetMomCoeffPer(geometry, solver_container, config);
 
@@ -4841,13 +4847,6 @@ void CPBIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_contai
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
-
-  /*cout<<"After periodic res"<<endl;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    cout<<iPoint<<"\t"<<LinSysRes(iPoint, 0)<<"\t"<<LinSysRes(iPoint, 1)<<endl;
-    cout<<iPoint<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,0,0)<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,1,1)<<endl;
-  }*/
-
 }
 
 
