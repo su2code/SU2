@@ -137,8 +137,7 @@ def prepare_source(replace = False, remove = False, revert = False):
                  "SU2_DEF",
                  "SU2_DOT",
                  "SU2_GEO",
-                 "SU2_SOL",
-                 "SU2_MSH"]
+                 "SU2_SOL"]
 
     file_list = ""
 
@@ -480,7 +479,6 @@ def configure(argument_dict,
         print('\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
               '\tSU2_DOT            -> Gradient Projection Code.\n' \
               '\tSU2_DEF            -> Mesh Deformation Code.\n'  \
-              '\tSU2_MSH            -> Mesh Adaption Code.\n' \
               '\tSU2_SOL            -> Solution Export Code.\n' \
               '\tSU2_GEO            -> Geometry Definition Code.\n')
     if modes['SU2_AD']:

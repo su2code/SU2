@@ -27,6 +27,7 @@
 
 
 #include "../../include/grid_movement/CVolumetricMovement.hpp"
+#include "../../include/adt/CADTPointsOnlyClass.hpp"
 
 CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(true) {
 

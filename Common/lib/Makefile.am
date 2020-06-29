@@ -56,7 +56,6 @@ lib_sources = \
   ../src/CMultiGridQueue.cpp \
   ../src/fem/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
-  ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement/CGridMovement.cpp \
   ../src/grid_movement/CFreeFormBlending.cpp \
   ../src/grid_movement/CBSplineBlending.cpp \
@@ -106,7 +105,9 @@ lib_sources = \
   ../src/interface_interpolation/CIsoparametric.cpp \
   ../src/interface_interpolation/CNearestNeighbor.cpp \
   ../src/interface_interpolation/CRadialBasisFunction.cpp \
-  ../src/adt_structure.cpp \
+  ../src/adt/CADTBaseClass.cpp \
+  ../src/adt/CADTPointsOnlyClass.cpp \
+  ../src/adt/CADTElemClass.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \

@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/fem_geometry_structure.hpp"
-#include "../../include/adt_structure.hpp"
+#include "../../include/adt/CADTElemClass.hpp"
 
 std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig *config) const {
 
