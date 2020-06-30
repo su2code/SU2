@@ -1,13 +1,13 @@
 /*!
  * \file CBSplineBlending.hpp
- * \brief Headers of the CBSplineBlending class. 
+ * \brief Headers of the CBSplineBlending class.
  *        Defines blending using uniform BSplines
  * \author T. Albring
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)

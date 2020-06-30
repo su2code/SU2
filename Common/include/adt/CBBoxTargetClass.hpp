@@ -59,7 +59,7 @@ struct CBBoxTargetClass {
    */
   inline CBBoxTargetClass(const unsigned long val_BBoxID,
                           const su2double     val_posDist2,
-                          const su2double     val_guarDist2) 
+                          const su2double     val_guarDist2)
                           : boundingBoxID(val_BBoxID),
                             possibleMinDist2(val_posDist2),
                             guaranteedMinDist2(val_guarDist2) {}

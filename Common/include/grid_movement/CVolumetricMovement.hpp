@@ -1,12 +1,12 @@
 /*!
  * \file CVolumetricMovement.hpp
- * \brief Headers of the CVolumetricMovement class. 
+ * \brief Headers of the CVolumetricMovement class.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -32,7 +32,7 @@
 #include "../linear_algebra/CSysVector.hpp"
 #include "../linear_algebra/CSysSolve.hpp"
 
-/*! 
+/*!
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
@@ -40,13 +40,13 @@
 class CVolumetricMovement : public CGridMovement {
 protected:
 
-  unsigned short nDim;		/*!< \brief Number of dimensions. */
-  unsigned short nVar;		/*!< \brief Number of variables. */
-  
-  unsigned long nPoint;		     /*!< \brief Number of points. */
+  unsigned short nDim;    /*!< \brief Number of dimensions. */
+  unsigned short nVar;    /*!< \brief Number of variables. */
+
+  unsigned long nPoint;        /*!< \brief Number of points. */
   unsigned long nPointDomain;  /*!< \brief Number of points in the domain. */
 
-  unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
+  unsigned long nIterMesh;  /*!< \brief Number of iterations in the mesh update. +*/
 
 #ifndef CODI_FORWARD_TYPE
   CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
@@ -74,28 +74,28 @@ public:
    * \brief Destructor of the class.
    */
   ~CVolumetricMovement(void) override;
-  
+
   /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateGridCoord(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Update the dual grid after the grid movement (edges and control volumes).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateDualGrid(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Update the coarse multigrid levels after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the stiffness matrix for grid deformation using spring analogy.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -103,7 +103,7 @@ public:
    * \return Value of the length of the smallest edge of the grid.
    */
   su2double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -116,7 +116,7 @@ public:
    */
   void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
   unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
-  
+
   /*!
    * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -139,7 +139,7 @@ public:
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
+
   /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -149,7 +149,7 @@ public:
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
+
   /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -159,7 +159,7 @@ public:
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
+
   /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -169,7 +169,7 @@ public:
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
+
   /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -178,7 +178,7 @@ public:
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
+
   /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -187,37 +187,37 @@ public:
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
+
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
   su2double GetHexa_Volume(su2double CoordCorners[8][3]) const;
-  
+
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
   su2double GetTetra_Volume(su2double CoordCorners[8][3]) const;
-  
+
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
   su2double GetPrism_Volume(su2double CoordCorners[8][3]) const;
-  
+
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
   su2double GetPyram_Volume(su2double CoordCorners[8][3]) const;
-  
+
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
    */
   su2double GetTriangle_Area(su2double CoordCorners[8][3]) const;
-  
+
   /*!
    * \brief Compute the shape functions for hexahedron
    * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
@@ -232,7 +232,7 @@ public:
    * \param[in] nNodes - Number of nodes defining the element.
    */
   void AddFEA_StiffMatrix(CGeometry *geometry, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes);
-  
+
   /*!
    * \brief Check for negative volumes (all elements) after performing grid deformation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -260,7 +260,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDomainDisplacements(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Unsteady grid movement using rigid mesh rotation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -278,7 +278,7 @@ public:
    * \param[in] iter - Physical time iteration number.
    */
   void Rigid_Pitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-  
+
   /*!
    * \brief Unsteady plunging grid movement using rigid mesh motion.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -287,7 +287,7 @@ public:
    * \param[in] iter - Physical time iteration number.
    */
   void Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-  
+
   /*!
    * \brief Unsteady translational grid movement using rigid mesh motion.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -296,7 +296,7 @@ public:
    * \param[in] iter - Physical time iteration number.
    */
   void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-  
+
   /*!
    * \brief Scale the volume grid by a multiplicative factor.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -304,7 +304,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    */
   void SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo);
-  
+
   /*!
    * \brief Translate the volume grid by a specified displacement vector.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -312,7 +312,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    */
   void SetVolume_Translation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
-  
+
   /*!
    * \brief Rotate the volume grid around a specified axis and angle.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -320,7 +320,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    */
   void SetVolume_Rotation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
-  
+
   /*!
    * \brief Grid deformation using the spring analogy method.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -368,9 +368,9 @@ public:
    * \result Determinant of the matrix
    */
   inline su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-  	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+    return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
   }
-  
+
 
 
   /*!

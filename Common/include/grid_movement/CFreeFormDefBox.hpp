@@ -1,12 +1,12 @@
 /*!
  * \file CFreeFormDefBox.hpp
- * \brief Headers of the CFreeFormDefBox class. 
+ * \brief Headers of the CFreeFormDefBox class.
  * \author F. Palacios & A. Galdran.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -30,7 +30,7 @@
 #include "CGridMovement.hpp"
 #include "CFreeFormBlending.hpp"
 
-/*! 
+/*!
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
@@ -107,49 +107,49 @@ public:
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline void Set_Fix_JPlane(unsigned short val_plane) { Fix_JPlane.push_back(val_plane); }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline void Set_Fix_KPlane(unsigned short val_plane) { Fix_KPlane.push_back(val_plane); }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline unsigned short Get_Fix_IPlane(unsigned short val_index) { return Fix_IPlane[val_index]; }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline unsigned short Get_Fix_JPlane(unsigned short val_index) { return Fix_JPlane[val_index]; }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline unsigned short Get_Fix_KPlane(unsigned short val_index) { return Fix_KPlane[val_index]; }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline unsigned short Get_nFix_IPlane(void) const { return Fix_IPlane.size(); }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline unsigned short Get_nFix_JPlane(void) const { return Fix_JPlane.size(); }
-  
+
   /*!
    * \brief Define the I planes to to fix in a FFD box.
    * \param[in] val_plane - Index of the plane to fix.
    */
   inline unsigned short Get_nFix_KPlane(void) const { return Fix_KPlane.size(); }
-  
+
   /*!
    * \brief Add to the vector of markers a new marker.
    * \param[in] val_iMarker - New marker inside the FFD box.
@@ -175,7 +175,7 @@ public:
   inline void Set_CartesianCoord(su2double *val_coord) { CartesianCoord[0].push_back(val_coord[0]);
                                                                       CartesianCoord[1].push_back(val_coord[1]);
                                                                       CartesianCoord[2].push_back(val_coord[2]); }
-  
+
 
   /*!
    * \brief Adds to the vector of cartesian coordinates.
@@ -185,7 +185,7 @@ public:
   inline void Set_CartesianCoord(const su2double *val_coord, unsigned long val_iSurfacePoints) { CartesianCoord[0][val_iSurfacePoints] = val_coord[0];
                                                                                                         CartesianCoord[1][val_iSurfacePoints] = val_coord[1];
                                                                                                         CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }
-  
+
 
   /*!
    * \brief Add to the vector of parametric coordinates a new coordinate.
@@ -194,7 +194,7 @@ public:
   inline void Set_ParametricCoord(su2double *val_coord) { ParametricCoord[0].push_back(val_coord[0]);
                                                                        ParametricCoord[1].push_back(val_coord[1]);
                                                                        ParametricCoord[2].push_back(val_coord[2]); }
-  
+
 
   /*!
    * \brief Add to the vector of parent FFDBoxes a new FFD FFDBox.
@@ -216,7 +216,7 @@ public:
   inline void Set_ParametricCoord(const su2double *val_coord, unsigned long val_iSurfacePoints) { ParametricCoord[0][val_iSurfacePoints] = val_coord[0];
                                                                                                          ParametricCoord[1][val_iSurfacePoints] = val_coord[1];
                                                                                                          ParametricCoord[2][val_iSurfacePoints] = val_coord[2]; }
-  
+
 
   /*!
    * \brief Get index of the marker.
@@ -309,7 +309,7 @@ public:
    * \return Number of control points.
    */
   inline unsigned short GetnControlPoints(void) const { return nControlPoints; }
-  
+
   /*!
    * \brief Get the number of control points.
    * \return Number of control points.
@@ -336,7 +336,7 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
   }
-  
+
 
   /*!
    * \overload
@@ -350,7 +350,7 @@ public:
     Coord_Corner_Points[val_icornerpoints][1] = val_ycoord;
     Coord_Corner_Points[val_icornerpoints][2] = val_zcoord;
   }
-  
+
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -364,7 +364,7 @@ public:
       Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
     }
   }
-  
+
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -454,7 +454,7 @@ public:
         for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
           for (unsigned short iDim = 0; iDim < nDim; iDim++)
             Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
-  
+
     lDegree = lDegree_Copy; mDegree = mDegree_Copy; nDegree = nDegree_Copy;
     lOrder = lOrder_Copy; mOrder = mOrder_Copy; nOrder = nOrder_Copy;
     nControlPoints = nControlPoints_Copy;
@@ -486,43 +486,43 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetCyl2Cart_ControlPoints(CConfig *config);
-  
+
   /*!
    * \brief Set Cartesians to Cylindrical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
   void SetCart2Cyl_ControlPoints(CConfig *config);
-  
+
   /*!
    * \brief Set Cylindrical to Cartesians_CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
   void SetCyl2Cart_CornerPoints(CConfig *config);
-  
+
   /*!
    * \brief Set Cartesians to Cylindrical CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
   void SetCart2Cyl_CornerPoints(CConfig *config);
-  
+
   /*!
    * \brief Set Spherical to Cartesians ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
   void SetSphe2Cart_ControlPoints(CConfig *config);
-  
+
   /*!
    * \brief SetCartesians to Spherical ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
   void SetCart2Sphe_ControlPoints(CConfig *config);
-  
+
   /*!
    * \brief Set Spherical to Cartesians_CornerPoints.
    * \param[in] config - Definition of the particular problem.
    */
   void SetSphe2Cart_CornerPoints(CConfig *config);
-  
+
   /*!
    * \brief Set Cartesians to Spherical Corner Points.
    * \param[in] config - Definition of the particular problem.
@@ -592,7 +592,7 @@ public:
    * \return Order in the n direction of the FFD FFDBox.
    */
   inline unsigned short GetnOrder(void) const { return nOrder; }
-  
+
   /*!
    * \brief Get the order in the l direction of the FFD FFDBox.
    * \return Order in the l direction of the FFD FFDBox.
@@ -645,7 +645,7 @@ public:
    * \param[in] val_Hessian - Value of the hessian.
    */
   void GetFFDHessian(su2double *uvw, su2double *xyz, su2double **val_Hessian);
-  
+
   /*!
    * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
    *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
@@ -755,7 +755,7 @@ public:
    * \return Value of the nested level of the the FFDBox.
    */
   inline unsigned short GetLevel() const { return Level; }
-  
+
   /*!
    * \brief Compute the determinant of a 3 by 3 matrix.
    * \param[in] val_matrix 3 by 3 matrix.
