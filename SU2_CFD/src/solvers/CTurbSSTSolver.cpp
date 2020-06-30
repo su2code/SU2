@@ -1506,7 +1506,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
-  su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
+  su2double Mean_Visc, Mean_Density, Mean_CFL, Lambda_1, Lambda_2;
   su2double F1_i, F1_j, sigma_k_i, sigma_k_j, visc_i, visc_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
@@ -1538,6 +1538,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       Mean_ProjVel    = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
       Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
+      Mean_CFL        = 0.5 * (nodes->GetLocalCFL(iPoint) + nodes->GetLocalCFL(jPoint));
 
       /*--- Adjustment for grid movement ---*/
 
@@ -1552,7 +1553,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       /*--- Inviscid contribution ---*/
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+      nodes->AddMax_Lambda_Inv(iPoint, Mean_CFL*Lambda);
 
       /*--- Viscous contribution ---*/
 
@@ -1569,7 +1570,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
       Lambda = (Mean_Visc)*Area*Area/Mean_Density;
-      nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+      nodes->AddMax_Lambda_Visc(iPoint, Mean_CFL*Lambda);
     }
 
   }
@@ -1596,6 +1597,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
         Mean_ProjVel    = flowNodes->GetProjVel(iPoint,Normal);
         Mean_SoundSpeed = flowNodes->GetSoundSpeed(iPoint) * Area;
+        Mean_CFL        = nodes->GetLocalCFL(iPoint);
 
         /*--- Adjustment for grid movement ---*/
 
@@ -1609,7 +1611,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         /*--- Inviscid contribution ---*/
 
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+        nodes->AddMax_Lambda_Inv(iPoint, Mean_CFL*Lambda);
 
         /*--- Viscous contribution ---*/
 
@@ -1621,7 +1623,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         Mean_Density = flowNodes->GetDensity(iPoint);
 
         Lambda = (Mean_Visc)*Area*Area/Mean_Density;
-        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+        nodes->AddMax_Lambda_Visc(iPoint, Mean_CFL*Lambda);
 
       }
     }
@@ -1640,7 +1642,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       if (Vol != 0.0) {
 
         su2double denom  = nodes->GetMax_Lambda_Inv(iPoint) + nodes->GetMax_Lambda_Visc(iPoint)/Vol;
-        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
+        // Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
+        Local_Delta_Time = Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
         maxDt = max(maxDt, Local_Delta_Time);
