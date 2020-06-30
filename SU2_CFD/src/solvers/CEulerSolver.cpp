@@ -2836,9 +2836,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
         if(viscous) {
           // Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
-          Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+          // Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
           // Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
-          Local_Delta_Time += Local_Delta_Time_Visc;
+          Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / (nodes->GetMax_Lambda_Inv(iPoint) + nodes->GetMax_Lambda_Visc(iPoint)/Vol);
         }
 
         minDt = min(minDt, Local_Delta_Time);
