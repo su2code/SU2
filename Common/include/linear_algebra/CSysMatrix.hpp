@@ -555,14 +555,14 @@ public:
   template<class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
                               const MatrixType& block_i, const MatrixType& block_j) {
-    UpdateBlocks(iEdge, iPoint, jPoint, block_i, block_j, -1);
+    UpdateBlocks<MatrixType,ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges and points.
    * \note Nothing is updated if the mask is 0.
    */
-  template<class MatTypeSIMD, class I, size_t N, class F = ScalarType>
+  template<class MatTypeSIMD, size_t N, class I, class F = ScalarType>
   FORCEINLINE void UpdateBlocks(simd::Array<I,N> iEdge, simd::Array<I,N> iPoint, simd::Array<I,N> jPoint,
                                 const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F,N> mask = 1) {
 
@@ -647,15 +647,15 @@ public:
    */
   template<class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
-    UpdateBlocks(iEdge, block_i, block_j, -1);
+    SetBlocks<MatrixType,ScalarType,false>(iEdge, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges.
    * \note Nothing is updated if the mask is 0.
    */
-  template<class MatTypeSIMD, class T, size_t N, class F = ScalarType>
-  FORCEINLINE void SetBlocks(simd::Array<T,N> iEdge, const MatTypeSIMD& block_i,
+  template<class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  FORCEINLINE void SetBlocks(simd::Array<I,N> iEdge, const MatTypeSIMD& block_i,
                              const MatTypeSIMD& block_j, simd::Array<F,N> mask = 1) {
 
     static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
