@@ -3238,6 +3238,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Project_Grad_j -= Vector_ij[iDim]*TurbGrad_j[0][iDim];
         }
         if (limiter) {
+          if (van_albada) {
+            su2double Turb_ij = tke_j - tke_i;
+            Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
+            Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
+          }
           Project_Grad_i *= Limiter_i[0];
           Project_Grad_j *= Limiter_j[0];
         }
