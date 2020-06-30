@@ -2663,7 +2663,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (config->GetTimeIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Value += NonLinRes_Series[iCounter];
+        NonLinRes_Value += fabs(NonLinRes_Series[iCounter]);
     }
 
     /* If the sum is larger than a small fraction of the current nonlinear
