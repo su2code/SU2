@@ -668,8 +668,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       Lam_Visc_Wall = flowNodes->GetLaminarViscosity(iPoint);
       
       Solution[0] = 0.0;
-      Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
-      // Solution[1] = 60.0*Lam_Visc_Wall/(beta_1*distance*distance);
+      // Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
+      Solution[1] = 60.0*Lam_Visc_Wall/(beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
