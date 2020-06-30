@@ -1522,6 +1522,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     auto node_i = geometry->node[iPoint];
 
     /*--- Set maximum eigenvalues to zero. ---*/
+    nodes->SetMax_Lambda_Inv(iPoint,0.0);
     nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
