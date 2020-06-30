@@ -2642,7 +2642,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Store initial RMS residual for all variables. */
 
-    if (config->GetInnerIter() < Res_Count) {
+    if (config->GetInnerIter() < config->GetStartConv_Iter()) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Residual_Ini[iVar] = Residual_RMS[iVar];
       }
