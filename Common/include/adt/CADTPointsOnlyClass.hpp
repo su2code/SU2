@@ -27,7 +27,6 @@
 
 #pragma once
 #include "./CADTBaseClass.hpp"
-#include "../omp_structure.hpp"
 
 /*!
  * \class CADTPointsOnlyClass

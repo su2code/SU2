@@ -41,7 +41,7 @@ class CGridMovement {
 protected:
   int rank,  /*!< \brief MPI Rank. */
   size;      /*!< \brief MPI Size. */
-  
+
 public:
 
   /*!
@@ -53,12 +53,12 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CGridMovement(void);
-  
+
   /*!
    * \brief A pure virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
-  
+
 };

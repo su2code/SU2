@@ -32,7 +32,7 @@
 
 #include "../basic_types/datatype_structure.hpp"
 #include "./CADTNodeClass.hpp"
-
+#include "../omp_structure.hpp"
 
 using namespace std;
 

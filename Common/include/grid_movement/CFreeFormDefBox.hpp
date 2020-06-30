@@ -40,35 +40,35 @@ public:
   unsigned short nDim;                  /*!< \brief Number of dimensions of the problem. */
   unsigned short nCornerPoints,         /*!< \brief Number of corner points of the FFDBox. */
   nControlPoints, nControlPoints_Copy;  /*!< \brief Number of control points of the FFDBox. */
-  su2double **Coord_Corner_Points,		/*!< \brief Coordinates of the corner points. */
-  ****Coord_Control_Points,				/*!< \brief Coordinates of the control points. */
-  ****ParCoord_Control_Points,		    /*!< \brief Coordinates of the control points. */
-  ****Coord_Control_Points_Copy,	    /*!< \brief Coordinates of the control points (copy). */
-  ****Coord_SupportCP;					/*!< \brief Coordinates of the support control points. */
-  unsigned short lOrder, lOrder_Copy,	/*!< \brief Order of the FFDBox in the i direction. */
-  mOrder,	mOrder_Copy, 				/*!< \brief Order of the FFDBox in the j direction. */
-  nOrder, nOrder_Copy;					/*!< \brief Order of the FFDBox in the k direction. */
+  su2double **Coord_Corner_Points,    /*!< \brief Coordinates of the corner points. */
+  ****Coord_Control_Points,       /*!< \brief Coordinates of the control points. */
+  ****ParCoord_Control_Points,        /*!< \brief Coordinates of the control points. */
+  ****Coord_Control_Points_Copy,      /*!< \brief Coordinates of the control points (copy). */
+  ****Coord_SupportCP;          /*!< \brief Coordinates of the support control points. */
+  unsigned short lOrder, lOrder_Copy, /*!< \brief Order of the FFDBox in the i direction. */
+  mOrder, mOrder_Copy,        /*!< \brief Order of the FFDBox in the j direction. */
+  nOrder, nOrder_Copy;          /*!< \brief Order of the FFDBox in the k direction. */
   unsigned short lDegree, lDegree_Copy, /*!< \brief Degree of the FFDBox in the i direction. (lOrder - 1)*/
-  mDegree, mDegree_Copy,				/*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
-  nDegree, nDegree_Copy;				/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
-  su2double *ParamCoord, *ParamCoord_,	/*!< \brief Parametric coordinates of a point. */
-  *cart_coord, *cart_coord_;			/*!< \brief Cartesian coordinates of a point. */
-  su2double ObjFunc;			/*!< \brief Objective function of the point inversion process. */
-  su2double *Gradient;			/*!< \brief Gradient of the point inversion process. */
+  mDegree, mDegree_Copy,        /*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
+  nDegree, nDegree_Copy;        /*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
+  su2double *ParamCoord, *ParamCoord_,  /*!< \brief Parametric coordinates of a point. */
+  *cart_coord, *cart_coord_;      /*!< \brief Cartesian coordinates of a point. */
+  su2double ObjFunc;      /*!< \brief Objective function of the point inversion process. */
+  su2double *Gradient;      /*!< \brief Gradient of the point inversion process. */
   su2double **Hessian;          /*!< \brief Hessian of the point inversion process. */
-  su2double MaxCoord[3];		/*!< \brief Maximum coordinates of the FFDBox. */
-  su2double MinCoord[3];		/*!< \brief Minimum coordinates of the FFDBox. */
-  string Tag;					/*!< \brief Tag to identify the FFDBox. */
-  unsigned short Level;			/*!< \brief Nested level of the FFD box. */
+  su2double MaxCoord[3];    /*!< \brief Maximum coordinates of the FFDBox. */
+  su2double MinCoord[3];    /*!< \brief Minimum coordinates of the FFDBox. */
+  string Tag;         /*!< \brief Tag to identify the FFDBox. */
+  unsigned short Level;     /*!< \brief Nested level of the FFD box. */
 
-  vector<su2double> CartesianCoord[3];	/*!< \brief Vector with all the cartesian coordinates in the FFD FFDBox. */
-  vector<su2double> ParametricCoord[3];	/*!< \brief Vector with all the parametrics coordinates in the FFD FFDBox. */
-  vector<unsigned short> MarkerIndex;	/*!< \brief Vector with all markers in the FFD FFDBox. */
-  vector<unsigned long> VertexIndex;	/*!< \brief Vector with all vertex index in the FFD FFDBox. */
-  vector<unsigned long> PointIndex;		/*!< \brief Vector with all points index in the FFD FFDBox. */
-  unsigned long nSurfacePoint;			/*!< \brief Number of surfaces in the FFD FFDBox. */
-  vector<string> ParentFFDBox;			/*!< \brief Vector with all the parent FFD FFDBox. */
-  vector<string> ChildFFDBox;			/*!< \brief Vector with all the child FFD FFDBox. */
+  vector<su2double> CartesianCoord[3];  /*!< \brief Vector with all the cartesian coordinates in the FFD FFDBox. */
+  vector<su2double> ParametricCoord[3]; /*!< \brief Vector with all the parametrics coordinates in the FFD FFDBox. */
+  vector<unsigned short> MarkerIndex; /*!< \brief Vector with all markers in the FFD FFDBox. */
+  vector<unsigned long> VertexIndex;  /*!< \brief Vector with all vertex index in the FFD FFDBox. */
+  vector<unsigned long> PointIndex;   /*!< \brief Vector with all points index in the FFD FFDBox. */
+  unsigned long nSurfacePoint;      /*!< \brief Number of surfaces in the FFD FFDBox. */
+  vector<string> ParentFFDBox;      /*!< \brief Vector with all the parent FFD FFDBox. */
+  vector<string> ChildFFDBox;     /*!< \brief Vector with all the child FFD FFDBox. */
   vector<unsigned short> Fix_IPlane;  /*!< \brief Fix FFD I plane. */
   vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
@@ -173,8 +173,8 @@ public:
    * \param[in] val_coord - New coordinate inside the FFD box.
    */
   inline void Set_CartesianCoord(su2double *val_coord) { CartesianCoord[0].push_back(val_coord[0]);
-  																																		CartesianCoord[1].push_back(val_coord[1]);
-  																																		CartesianCoord[2].push_back(val_coord[2]); }
+                                                                      CartesianCoord[1].push_back(val_coord[1]);
+                                                                      CartesianCoord[2].push_back(val_coord[2]); }
   
 
   /*!
@@ -183,8 +183,8 @@ public:
    * \param[in] val_iSurfacePoints - Surface points of FFD box.
    */
   inline void Set_CartesianCoord(const su2double *val_coord, unsigned long val_iSurfacePoints) { CartesianCoord[0][val_iSurfacePoints] = val_coord[0];
-  																																																			CartesianCoord[1][val_iSurfacePoints] = val_coord[1];
-  																																																			CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }
+                                                                                                        CartesianCoord[1][val_iSurfacePoints] = val_coord[1];
+                                                                                                        CartesianCoord[2][val_iSurfacePoints] = val_coord[2]; }
   
 
   /*!
@@ -192,8 +192,8 @@ public:
    * \param[in] val_coord - New coordinate inside the FFD box.
    */
   inline void Set_ParametricCoord(su2double *val_coord) { ParametricCoord[0].push_back(val_coord[0]);
-  																																		 ParametricCoord[1].push_back(val_coord[1]);
-  																																		 ParametricCoord[2].push_back(val_coord[2]); }
+                                                                       ParametricCoord[1].push_back(val_coord[1]);
+                                                                       ParametricCoord[2].push_back(val_coord[2]); }
   
 
   /*!
@@ -214,8 +214,8 @@ public:
    * \param[in] val_iSurfacePoints - Surface points of FFD box.
    */
   inline void Set_ParametricCoord(const su2double *val_coord, unsigned long val_iSurfacePoints) { ParametricCoord[0][val_iSurfacePoints] = val_coord[0];
-  																																																			 ParametricCoord[1][val_iSurfacePoints] = val_coord[1];
-  																																																			 ParametricCoord[2][val_iSurfacePoints] = val_coord[2]; }
+                                                                                                         ParametricCoord[1][val_iSurfacePoints] = val_coord[1];
+                                                                                                         ParametricCoord[2][val_iSurfacePoints] = val_coord[2]; }
   
 
   /*!
@@ -241,22 +241,22 @@ public:
    * \param[in] Get_VertexIndex - Surface points of FFD box.
    */
   inline su2double *Get_CartesianCoord(unsigned long val_iSurfacePoints) {
-  																																										cart_coord_[0] = CartesianCoord[0][val_iSurfacePoints];
-  																																										cart_coord_[1] = CartesianCoord[1][val_iSurfacePoints];
-  																																										cart_coord_[2] = CartesianCoord[2][val_iSurfacePoints];
-  																																										return cart_coord_; }
-  
+    cart_coord_[0] = CartesianCoord[0][val_iSurfacePoints];
+    cart_coord_[1] = CartesianCoord[1][val_iSurfacePoints];
+    cart_coord_[2] = CartesianCoord[2][val_iSurfacePoints];
+    return cart_coord_;
+  }
 
   /*!
    * \brief Get parametric coordinates.
    * \param[in] Get_VertexIndex - Surface points of FFD box.
    */
   inline su2double *Get_ParametricCoord(unsigned long val_iSurfacePoints) {
-  																																										ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
-  																																										ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
-  																																										ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
-  																																										return ParamCoord_; }
-  
+    ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
+    ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
+    ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
+    return ParamCoord_;
+  }
 
   /*!
    * \brief Get number of surface points.
@@ -333,8 +333,8 @@ public:
    * \param[in] val_icornerpoints - Index of the corner point.
    */
   inline void SetCoordCornerPoints(const su2double *val_coord, unsigned short val_icornerpoints) {
-  	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-  		Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Coord_Corner_Points[val_icornerpoints][iDim] = val_coord[iDim];
   }
   
 
@@ -346,9 +346,9 @@ public:
    * \param[in] val_icornerpoints - Index of the corner point.
    */
   inline void SetCoordCornerPoints(su2double val_xcoord, su2double val_ycoord, su2double val_zcoord, unsigned short val_icornerpoints) {
-  	Coord_Corner_Points[val_icornerpoints][0] = val_xcoord;
-  	Coord_Corner_Points[val_icornerpoints][1] = val_ycoord;
-  	Coord_Corner_Points[val_icornerpoints][2] = val_zcoord;
+    Coord_Corner_Points[val_icornerpoints][0] = val_xcoord;
+    Coord_Corner_Points[val_icornerpoints][1] = val_ycoord;
+    Coord_Corner_Points[val_icornerpoints][2] = val_zcoord;
   }
   
 
@@ -360,9 +360,9 @@ public:
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
   inline void SetCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-  	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  			Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
-  		}
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+    }
   }
   
 
@@ -374,11 +374,10 @@ public:
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
   inline void SetCoordControlPoints_Copy(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-  	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  			Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
-  		}
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+      }
   }
-  
 
   /*!
    * \brief Set the coordinates of the control points.
@@ -388,10 +387,9 @@ public:
    * \param[in] kDegree - Index of the FFDBox, k direction.
    */
   inline void SetParCoordControlPoints(const su2double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-  	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-  			ParCoord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        ParCoord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
   }
-  
 
   /*!
    * \brief Get the coordinates of the corner points.
@@ -443,26 +441,24 @@ public:
    * \param[in] movement - Movement of the control point.
    */
   inline void SetControlPoints(const unsigned short *val_index, const su2double *movement) {
-  	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-  		Coord_Control_Points[val_index[0]][val_index[1]][val_index[2]][iDim] += movement[iDim];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Coord_Control_Points[val_index[0]][val_index[1]][val_index[2]][iDim] += movement[iDim];
   }
-  
 
   /*!
    * \brief Set the original value of the control points.
    */
   inline void SetOriginalControlPoints() {
-  	for (unsigned short iDegree = 0; iDegree <= lDegree_Copy; iDegree++)
-  		for (unsigned short jDegree = 0; jDegree <= mDegree_Copy; jDegree++)
-  			for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
-  				for (unsigned short iDim = 0; iDim < nDim; iDim++)
-  					Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
+    for (unsigned short iDegree = 0; iDegree <= lDegree_Copy; iDegree++)
+      for (unsigned short jDegree = 0; jDegree <= mDegree_Copy; jDegree++)
+        for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
   
     lDegree = lDegree_Copy; mDegree = mDegree_Copy; nDegree = nDegree_Copy;
     lOrder = lOrder_Copy; mOrder = mOrder_Copy; nOrder = nOrder_Copy;
     nControlPoints = nControlPoints_Copy;
   }
-  
 
   /*!
    * \brief Set the tecplot file of the FFD chuck structure.
@@ -484,7 +480,6 @@ public:
    * \param[in] original - Original box (before deformation).
    */
   void SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool original);
-
 
   /*!
    * \brief Set Cylindrical to Cartesians_ControlPoints.
@@ -767,8 +762,7 @@ public:
    * \result Determinant of the matrix
    */
   inline su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-  	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+    return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
   }
-  
-  
+
 };
