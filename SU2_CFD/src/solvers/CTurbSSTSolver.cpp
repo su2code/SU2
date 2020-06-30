@@ -1501,7 +1501,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   {
     Min_Delta_Time = 1e30;
     Max_Delta_Time = 0.0;
-    Global_Delta_UnstTimeND = 1e30;
   }
   SU2_OMP_BARRIER
 
@@ -1618,7 +1617,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     {
       Min_Delta_Time = min(Min_Delta_Time, minDt);
       Max_Delta_Time = max(Max_Delta_Time, maxDt);
-      Global_Delta_Time = Min_Delta_Time;
     }
     SU2_OMP_BARRIER
   }
@@ -1636,70 +1634,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   }
   SU2_OMP_BARRIER
 
-  /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
-  if (time_stepping) {
-
-    /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
-     *    otherwise it computes the time step based on the unsteady CFL. ---*/
-
-    SU2_OMP_MASTER
-    {
-      if (config->GetUnst_CFL() == 0.0) {
-        Global_Delta_Time = config->GetDelta_UnstTime();
-      }
-      else {
-        Global_Delta_Time = Min_Delta_Time;
-      }
-      Max_Delta_Time = Global_Delta_Time;
-
-      config->SetDelta_UnstTimeND(Global_Delta_Time);
-    }
-    SU2_OMP_BARRIER
-
-    /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
-      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
-    }
-
-  }
-
-  /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0. ---*/
-
-  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-
-    /*--- Thread-local variable for reduction. ---*/
-    su2double glbDtND = 1e30;
-
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
-    }
-    SU2_OMP_CRITICAL
-    Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
-    SU2_OMP_BARRIER
-
-    SU2_OMP_MASTER
-    {
-      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-      Global_Delta_UnstTimeND = glbDtND;
-
-      config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
-    }
-    SU2_OMP_BARRIER
-  }
-
-  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-
-  if (dual_time && !implicit) {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-      nodes->SetDelta_Time(iPoint, Local_Delta_Time);
-    }
-  }
+  /*--- TODO: For exact time solution use the minimum delta time of the whole mesh. ---*/
 
 }
 
