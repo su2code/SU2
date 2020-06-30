@@ -1508,7 +1508,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
-  su2double F1_i, F1_j, sigma_k_i, sigma_k_j, visc_i, visc_j;
+  su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_i, visc_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
@@ -1560,11 +1560,13 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       F1_i = nodes->GetF1blending(iPoint);
       F1_j = nodes->GetF1blending(jPoint);
 
-      sigma_k_i = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
-      sigma_k_j = F1_j*constants[0] + (1.0 - F1_j)*constants[1];
+      sigma_k_i  = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
+      sigma_k_j  = F1_j*constants[0] + (1.0 - F1_j)*constants[1];
+      sigma_om_i = F1_i*constants[2] + (1.0 - F1_i)*constants[3];
+      sigma_om_j = F1_j*constants[2] + (1.0 - F1_j)*constants[3];
 
-      visc_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*flowNodes->GetEddyViscosity(iPoint);
-      visc_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*flowNodes->GetEddyViscosity(jPoint);
+      visc_i = 2.*flowNodes->GetLaminarViscosity(iPoint) + (sigma_k_i+sigma_om_i)*flowNodes->GetEddyViscosity(iPoint);
+      visc_j = 2.*flowNodes->GetLaminarViscosity(jPoint) + (sigma_k_j+sigma_om_j)*flowNodes->GetEddyViscosity(jPoint);
 
       Mean_Visc    = 0.5*(visc_i + visc_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
@@ -1616,9 +1618,10 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
         F1_i = nodes->GetF1blending(iPoint);
 
-        sigma_k_i = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
+        sigma_k_i  = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
+        sigma_om_i = F1_i*constants[2] + (1.0 - F1_i)*constants[3];
 
-        Mean_Visc    = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*flowNodes->GetEddyViscosity(iPoint);
+        Mean_Visc    = 2.*flowNodes->GetLaminarViscosity(iPoint) + (sigma_k_i+sigma_om_i)*flowNodes->GetEddyViscosity(iPoint);
         Mean_Density = flowNodes->GetDensity(iPoint);
 
         Lambda = (Mean_Visc)*Area*Area/Mean_Density;
