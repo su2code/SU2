@@ -2641,7 +2641,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
-    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       New_Func += GetRes_RMS(iVar);
     }
 
