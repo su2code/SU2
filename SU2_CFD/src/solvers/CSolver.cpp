@@ -2641,6 +2641,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
     /* Store initial RMS residual for all variables. */
+
     if (config->GetInnerIter() < Res_Count) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Residual_Ini[iVar] = Residual_RMS[iVar];
@@ -2672,7 +2673,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (config->GetInnerIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Value += fabs(NonLinRes_Series[iCounter]);
+        NonLinRes_Value += NonLinRes_Series[iCounter];
     }
 
     /* If the sum is larger than a small fraction of the current nonlinear
