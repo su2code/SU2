@@ -55,6 +55,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   muT.resize(nPoint) = mut;
 
+  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
   Delta_Time.resize(nPoint) = su2double(0.0);
 }

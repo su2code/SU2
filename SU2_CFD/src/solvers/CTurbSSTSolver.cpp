@@ -1534,6 +1534,14 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       Normal = geometry->edge[iEdge]->GetNormal();
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
+      /*--- Mean Values ---*/
+
+      Mean_ProjVel = sqrt(0.5*(nodes->GetPrimitive(iPoint, 0) + nodes->GetPrimitive(jPoint, 0)))*Area;
+
+      /*--- Inviscid contribution ---*/
+
+      nodes->AddMax_Lambda_Inv(iPoint,Mean_ProjVel);
+
       /*--- Viscous contribution ---*/
 
       F1_i = nodes->GetF1blending(iPoint);
@@ -1572,6 +1580,14 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
+        /*--- Mean Values ---*/
+
+        Mean_ProjVel = sqrt(nodes->GetPrimitive(iPoint, 0))*Area;
+
+        /*--- Inviscid contribution ---*/
+
+        nodes->AddMax_Lambda_Inv(iPoint,Mean_ProjVel);
+
         /*--- Viscous contribution ---*/
 
         F1_i = nodes->GetF1blending(iPoint);
@@ -1600,7 +1616,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       if (Vol != 0.0) {
 
-        su2double denom  = nodes->GetMax_Lambda_Visc(iPoint)/Vol;
+        su2double denom  = nodes->GetMax_Lambda_Inv(iPoint) + nodes->GetMax_Lambda_Visc(iPoint)/Vol;
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
