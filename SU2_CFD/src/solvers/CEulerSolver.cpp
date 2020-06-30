@@ -2699,7 +2699,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
-  su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Mean_CFL, Lambda_1, Lambda_2;
+  su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
@@ -2732,7 +2732,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
       Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-      Mean_CFL = 0.5 * (nodes->GetLocalCFL(iPoint) + nodes->GetLocalCFL(jPoint));
 
       /*--- Adjustment for grid movement ---*/
 
@@ -2747,7 +2746,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       /*--- Inviscid contribution ---*/
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-      nodes->AddMax_Lambda_Inv(iPoint, Mean_CFL*Lambda);
+      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
       /*--- Viscous contribution ---*/
 
@@ -2761,7 +2760,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
       Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
       Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-      nodes->AddMax_Lambda_Visc(iPoint, Mean_CFL*Lambda);
+      nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
   }
@@ -2788,7 +2787,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
         Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
         Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
-        Mean_CFL = nodes->GetLocalCFL(iPoint);
 
         /*--- Adjustment for grid movement ---*/
 
@@ -2802,7 +2800,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         /*--- Inviscid contribution ---*/
 
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        nodes->AddMax_Lambda_Inv(iPoint, Mean_CFL*Lambda);
+        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
         /*--- Viscous contribution ---*/
 
@@ -2815,7 +2813,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
         Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
         Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-        nodes->AddMax_Lambda_Visc(iPoint, Mean_CFL*Lambda);
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
     }
@@ -2835,8 +2833,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
         su2double denom = nodes->GetMax_Lambda_Inv(iPoint);
         if (viscous) denom += nodes->GetMax_Lambda_Visc(iPoint)/Vol;
-        // Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
-        Local_Delta_Time = Vol/denom ;
+        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
         maxDt = max(maxDt, Local_Delta_Time);
