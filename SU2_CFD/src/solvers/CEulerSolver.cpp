@@ -3207,9 +3207,37 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
 
-    if (tkeNeeded)
-      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                     solver_container[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0));
+    if (tkeNeeded) {
+      CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+
+      su2double tke_i = turbNodes->GetPrimitive(iPoint,0);
+      su2double tke_j = turbNodes->GetPrimitive(jPoint,0);
+
+      if (muscl) {
+        /*--- Reconstruct turbulence variables. ---*/
+
+        auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+        auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+
+        if (limiter) {
+          Limiter_i = turbNodes->GetLimiter(iPoint);
+          Limiter_j = turbNodes->GetLimiter(jPoint);
+        }
+
+        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*TurbGrad_j[0][iDim];
+        }
+        if (limiter) {
+          Project_Grad_i *= Limiter_i[0];
+          Project_Grad_j *= Limiter_j[0];
+        }
+        tke_i += Project_Grad_i;
+        tke_j += Project_Grad_j;
+      }
+      numerics->SetTurbKineticEnergy(tke_i, tke_j);
+    }
 
     /*--- Compute the residual ---*/
 
