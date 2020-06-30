@@ -2640,11 +2640,18 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     unsigned short Res_Count = 100;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
+    /* Store initial RMS residual for all variables. */
+    if (config->GetInnerIter() < Res_Count) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        Residual_Ini[iVar] = Residual_RMS[iVar];
+      }
+    }
+
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      New_Func += GetRes_RMS(iVar);
+      New_Func += Residual_RMS[iVar]/Residual_Ini[iVar];
     }
 
     /* Compute the difference in the nonlinear residuals between the
@@ -2677,6 +2684,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       NonLinRes_Counter = 0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        Residual_Ini[iVar] = Residual_RMS[iVar];
     }
 
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
