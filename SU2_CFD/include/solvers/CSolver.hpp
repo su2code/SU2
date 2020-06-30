@@ -87,6 +87,7 @@ protected:
   su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
   su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
   su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
+  *Residual_Ini,            /*!< \brief Vector with initial RMS residuals for each variable. */
   *Residual_Max,            /*!< \brief Vector with the maximal residual for each variable. */
   *Residual,                /*!< \brief Auxiliary nVar vector. */
   *Residual_i,              /*!< \brief Auxiliary nVar vector for storing the residual at point i. */

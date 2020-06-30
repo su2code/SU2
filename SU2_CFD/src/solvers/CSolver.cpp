@@ -62,6 +62,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   OutputHeadingNames = NULL;
   Residual_RMS       = NULL;
+  Residual_Ini       = NULL;
   Residual_Max       = NULL;
   Residual_BGS       = NULL;
   Residual_Max_BGS   = NULL;
@@ -151,6 +152,7 @@ CSolver::~CSolver(void) {
   /*--- Private ---*/
 
   if (Residual_RMS != NULL) delete [] Residual_RMS;
+  if (Residual_Ini != NULL) delete [] Residual_Ini;
   if (Residual_Max != NULL) delete [] Residual_Max;
   if (Residual != NULL) delete [] Residual;
   if (Residual_i != NULL) delete [] Residual_i;
@@ -2660,7 +2662,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      set of all stored iterations. */
 
     NonLinRes_Value = New_Func;
-    if (config->GetTimeIter() >= Res_Count) {
+    if (config->GetInnerIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Value += fabs(NonLinRes_Series[iCounter]);

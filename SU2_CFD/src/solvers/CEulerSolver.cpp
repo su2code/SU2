@@ -171,6 +171,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Residual      = new su2double[nVar]();
   Residual_RMS  = new su2double[nVar]();
+  Residual_Ini  = new su2double[nVar]();
   Residual_Max  = new su2double[nVar]();
   Residual_i    = new su2double[nVar]();
   Residual_j    = new su2double[nVar]();
