@@ -1536,7 +1536,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Viscous contribution ---*/
 
-      F1_i = nodes->GetF1blending(jPoint);
+      F1_i = nodes->GetF1blending(iPoint);
       F1_j = nodes->GetF1blending(jPoint);
 
       sigma_k_i = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
@@ -1574,7 +1574,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
         /*--- Viscous contribution ---*/
 
-        F1_i = nodes->GetF1blending(jPoint);
+        F1_i = nodes->GetF1blending(iPoint);
 
         sigma_k_i = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
 
