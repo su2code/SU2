@@ -2707,7 +2707,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        take the minimum under-relaxation parameter between the mean flow
        and turbulence systems. */
 
-      const su2double underRelaxation = base_nodes->GetUnderRelaxation(iPoint)
+      const su2double underRelaxation = base_nodes->GetUnderRelaxation(iPoint);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
