@@ -1493,6 +1493,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const su2double K_v = 0.25;
 
   /*--- Init thread-shared variables to compute min/max values.
    *    Critical sections are used for this instead of reduction
@@ -1566,8 +1567,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       sigma_om_i = F1_i*constants[2] + (1.0 - F1_i)*constants[3];
       sigma_om_j = F1_j*constants[2] + (1.0 - F1_j)*constants[3];
 
-      visc_i = 2.*flowNodes->GetLaminarViscosity(iPoint) + (sigma_k_i+sigma_om_i)*flowNodes->GetEddyViscosity(iPoint);
-      visc_j = 2.*flowNodes->GetLaminarViscosity(jPoint) + (sigma_k_j+sigma_om_j)*flowNodes->GetEddyViscosity(jPoint);
+      visc_i = flowNodes->GetLaminarViscosity(iPoint) + 0.5*(sigma_k_i+sigma_om_i)*flowNodes->GetEddyViscosity(iPoint);
+      visc_j = flowNodes->GetLaminarViscosity(jPoint) + 0.5*(sigma_k_j+sigma_om_j)*flowNodes->GetEddyViscosity(jPoint);
 
       Mean_Visc    = 0.5*(visc_i + visc_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
@@ -1622,7 +1623,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         sigma_k_i  = F1_i*constants[0] + (1.0 - F1_i)*constants[1];
         sigma_om_i = F1_i*constants[2] + (1.0 - F1_i)*constants[3];
 
-        Mean_Visc    = 2.*flowNodes->GetLaminarViscosity(iPoint) + (sigma_k_i+sigma_om_i)*flowNodes->GetEddyViscosity(iPoint);
+        Mean_Visc    = flowNodes->GetLaminarViscosity(iPoint) + 0.5*(sigma_k_i+sigma_om_i)*flowNodes->GetEddyViscosity(iPoint);
         Mean_Density = flowNodes->GetDensity(iPoint);
 
         Lambda = (Mean_Visc)*Area*Area/Mean_Density;
@@ -1644,7 +1645,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       if (Vol != 0.0) {
 
-        su2double denom  = nodes->GetMax_Lambda_Inv(iPoint) + nodes->GetMax_Lambda_Visc(iPoint)/Vol;
+        su2double denom  = nodes->GetMax_Lambda_Inv(iPoint) + nodes->GetMax_Lambda_Visc(iPoint)/(K_v*Vol);
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);

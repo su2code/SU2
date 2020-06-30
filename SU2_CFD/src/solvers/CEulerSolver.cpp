@@ -2833,7 +2833,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (Vol != 0.0) {
 
         su2double denom = nodes->GetMax_Lambda_Inv(iPoint);
-        if (viscous) denom += nodes->GetMax_Lambda_Visc(iPoint)/Vol;
+        if (viscous) denom += nodes->GetMax_Lambda_Visc(iPoint)/(K_v*Vol);
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
