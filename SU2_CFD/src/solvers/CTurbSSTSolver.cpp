@@ -1536,11 +1536,23 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel = sqrt(0.5*(nodes->GetPrimitive(iPoint, 0) + nodes->GetPrimitive(jPoint, 0)))*Area;
+      Mean_ProjVel    = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
+      Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
+
+      /*--- Adjustment for grid movement ---*/
+
+      if (dynamic_grid) {
+        const su2double *GridVel_i = node_i->GetGridVel();
+        const su2double *GridVel_j = node_j->GetGridVel();
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+      }
 
       /*--- Inviscid contribution ---*/
 
-      nodes->AddMax_Lambda_Inv(iPoint,Mean_ProjVel);
+      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
       /*--- Viscous contribution ---*/
 
@@ -1582,11 +1594,22 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
         /*--- Mean Values ---*/
 
-        Mean_ProjVel = sqrt(nodes->GetPrimitive(iPoint, 0))*Area;
+        Mean_ProjVel    = flowNodes->GetProjVel(iPoint,Normal);
+        Mean_SoundSpeed = flowNodes->GetSoundSpeed(iPoint) * Area;
+
+        /*--- Adjustment for grid movement ---*/
+
+        if (dynamic_grid) {
+          const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
+        }
 
         /*--- Inviscid contribution ---*/
 
-        nodes->AddMax_Lambda_Inv(iPoint,Mean_ProjVel);
+        Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
         /*--- Viscous contribution ---*/
 
