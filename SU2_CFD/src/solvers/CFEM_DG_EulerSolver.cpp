@@ -7473,7 +7473,7 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
   k = min(k, m - 1);
   Eigen::VectorXd y = LUSolve(H.block(0,0,k+1,k+1), beta.head(k+1), k);
   Eigen::VectorXd xxx = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
-  b += RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
+  b = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
 
   delete m_loc;
   delete fst_col;
