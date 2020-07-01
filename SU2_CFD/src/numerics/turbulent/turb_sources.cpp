@@ -854,6 +854,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     //  }
     //  // pk = Eddy_Viscosity_i*factor - 2./3.*Density_i*TurbVar_i[0]*diverg;
     //  // pw = factor - 2./3.*zeta*diverg;
+    su2double factor = StrainMag_i*StrainMag_i;
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2./3.*Density_i*TurbVar_i[0]*diverg;
      pw = factor*StrainMag_i*StrainMag_i - 2./3.*zeta*diverg;
        
