@@ -2727,7 +2727,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if ((underRelaxation < 0.1) || reduceCFL) {
+      if (underRelaxation < 0.1) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
         CFLFactor = 1.0;
@@ -2748,10 +2748,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* If we detect a stalled nonlinear residual, then force the CFL
        for all points to the minimum temporarily to restart the ramp. */
 
-      // if (reduceCFL) {
-      //   CFL       = CFLMin;
-      //   CFLFactor = MGFactor[iMesh];
-      // }
+      if (reduceCFL) {
+        CFL       = CFLMin;
+        CFLFactor = MGFactor[iMesh];
+      }
 
       /* Apply the adjustment to the CFL and store local values. */
 
