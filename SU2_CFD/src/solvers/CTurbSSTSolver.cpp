@@ -1654,7 +1654,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       if (Vol != 0.0) {
 
-        su2double denom  = max(nodes->GetMax_Lambda_Inv(iPoint), nodes->GetMax_Lambda_Visc(iPoint)/(K_v));
+        su2double denom  = nodes->GetMax_Lambda_Inv(iPoint) + nodes->GetMax_Lambda_Visc(iPoint)/(K_v);
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
