@@ -32,6 +32,7 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -149,10 +150,19 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
-  bool steady = !config->GetTime_Domain();
-  unsigned long Adjoint_Iter;
+  const bool steady = !config->GetTime_Domain();
 
-  for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+  CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
+  if (config->GetnQuasiNewtonSamples() > 1) {
+    fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
+                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+                          GetTotalNumberOfVariables(ZONE_0,true),
+                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
+
+    if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
+  }
+
+  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
 
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
      *--- of the previous iteration. The values are passed to the AD tool.
@@ -194,6 +204,13 @@ void CDiscAdjSinglezoneDriver::Run() {
     }
 
     if (StopCalc) break;
+
+    /*--- Correct the solution with the quasi-Newton approach. ---*/
+
+    if (fixPtCorrector.size()) {
+      GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
+      SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
+    }
 
   }
 

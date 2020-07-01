@@ -397,7 +397,6 @@ private:
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
   unsigned long Unst_nIntIter;      /*!< \brief Number of internal iterations (Dual time Method). */
-  unsigned long Dyn_nIntIter;       /*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -412,6 +411,8 @@ private:
   su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
+
+  unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -2953,12 +2954,6 @@ public:
   unsigned long GetUnst_nIntIter(void) const { return Unst_nIntIter; }
 
   /*!
-   * \brief Get the number of internal iterations for the Newton-Raphson Method in nonlinear structural applications.
-   * \return Number of internal iterations.
-   */
-  unsigned long GetDyn_nIntIter(void) const { return Dyn_nIntIter; }
-
-  /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
    * \return Starting direct iteration number for the unsteady adjoint.
    */
@@ -4044,6 +4039,11 @@ public:
    * \return relaxation coefficient of the CHT coupling.
    */
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
+
+  /*!
+   * \brief Get the number of samples used in quasi-Newton methods.
+   */
+  unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
 
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
