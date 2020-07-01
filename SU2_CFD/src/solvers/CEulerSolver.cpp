@@ -4718,12 +4718,6 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
       }
     }
 
-    /* In case of turbulence, take the min of the under-relaxation factor
-     between the mean flow and the turb model. */
-
-    if (config->GetKind_Turb_Model() != NONE)
-      localUnderRelaxation = min(localUnderRelaxation, solver_container[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
-
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
