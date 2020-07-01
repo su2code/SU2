@@ -382,7 +382,8 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
   }
 
   phi = 0.5*Gamma_Minus_One*sqvel;
-  a1 = Gamma*(*val_energy)-phi-Gamma_Minus_One*(*val_tke);
+  // a1 = Gamma*(*val_energy)-phi-Gamma_Minus_One*(*val_tke);
+  a1 = Gamma*(*val_energy)-phi;
   a2 = Gamma-1.0;
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
