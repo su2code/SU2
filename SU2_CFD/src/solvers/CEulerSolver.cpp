@@ -5950,18 +5950,18 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                      * per unit area (Fr and Ft) are equal to zero, while the axial force per unit area (Fa) is evaluated using
                      * a linear interpolation in order to avoid a mathematical singularity. */
                     if (rad_v[0] == 0.0){
-                    	Fa[0] = (((2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                        Fa[0] = (((2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
                                 (AD_J*AD_J*PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
-                    	Ft[0] = 0.0;
-                    	Fr[0] = 0.0;
+                        Ft[0] = 0.0;
+                        Fr[0] = 0.0;
                     }
                     else{
                       Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+                              (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
                       Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
+                              ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
                       Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+                              (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
                     }
 
                     /* Loop over the radial stations. Evaluation of Fa (axial force per unit area), Ft (tangential force per unit area)
@@ -5969,11 +5969,11 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                      * These equations are not valid if the freestream velocity is equal to zero. */
                     for (iEl = 1; iEl < nRow; iEl++){
                       Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                           (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                                (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
                       Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                           ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+                                ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
                       Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                           (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                                (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
                     }
 
                     /* Loop over the marker nodes. */
