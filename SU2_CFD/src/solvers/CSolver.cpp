@@ -2121,7 +2121,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         NonLinRes_Value += NonLinRes_Series[iCounter];
     }
 
-    /* If the sum is larger than a small fraction of the current nonlinear
+    /* If the sum is smaller than a small fraction of the current nonlinear
      residual, then we are not decreasing the nonlinear residual at a high
      rate. In this situation, we force a reduction of the CFL in all cells.
      Reset the array so that we delay the next decrease for some iterations. */
