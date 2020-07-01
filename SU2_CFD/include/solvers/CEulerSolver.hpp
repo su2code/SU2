@@ -155,6 +155,7 @@ protected:
   **ActDisk_Fa = nullptr,        /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
   **ActDisk_Fx = nullptr,        /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
   **ActDisk_Fy = nullptr,        /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  **ActDisk_Fz = nullptr,        /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
   **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
   **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
   **Inlet_Ptotal = nullptr,      /*!< \brief Value of the Total P. */
