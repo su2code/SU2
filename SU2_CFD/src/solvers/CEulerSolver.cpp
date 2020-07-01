@@ -4829,7 +4829,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
 
-    if (localUnderRelaxation < 0.1) localUnderRelaxation = 0.0;
+    if (localUnderRelaxation < 0.01) localUnderRelaxation = 0.0;
 
     /* Store the under-relaxation factor for this point. */
 
