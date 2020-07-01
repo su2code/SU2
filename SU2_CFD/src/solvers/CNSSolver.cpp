@@ -410,7 +410,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      //CorrectJacobian(geometry, solver_container, config, iPoint, jPoint, residual.jacobian_ic, residual.jacobian_jc);
+      CorrectJacobian(geometry, solver_container, config, iPoint, jPoint, residual.jacobian_ic, residual.jacobian_jc);
     }
   }
 
