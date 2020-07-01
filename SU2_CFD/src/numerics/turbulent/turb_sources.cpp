@@ -790,6 +790,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(Vorticity_i, 3);
 
   unsigned short iDim, jDim;
@@ -844,15 +845,17 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = PerturbedStrainMag * PerturbedStrainMag - 2./3.*zeta*diverg;
    }
    else {
-    su2double factor = 0.;
-     for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0; jDim < nDim; jDim++) {
-         factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
-                  - 2./3.*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
-       }
-     }
-     pk = Eddy_Viscosity_i*factor - 2./3.*Density_i*TurbVar_i[0]*diverg;
-     pw = factor - 2./3.*zeta*diverg;
+    // su2double factor = 0.;
+    //  for (iDim = 0; iDim < nDim; iDim++) {
+    //    for (jDim = 0; jDim < nDim; jDim++) {
+    //      factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
+    //               - 2./3.*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
+    //    }
+    //  }
+    //  // pk = Eddy_Viscosity_i*factor - 2./3.*Density_i*TurbVar_i[0]*diverg;
+    //  // pw = factor - 2./3.*zeta*diverg;
+     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2./3.*Density_i*TurbVar_i[0]*diverg;
+     pw = factor*StrainMag_i*StrainMag_i - 2./3.*zeta*diverg;
        
      /*--- k production Jacobian ---*/
      if ((pk > 0.) && (pk <= 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
