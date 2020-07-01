@@ -1572,7 +1572,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
       visc_i = 2.0*flowNodes->GetLaminarViscosity(iPoint) + (sigma_k_i+sigma_om_i+2.0*sigma_om2*(1.0 - F1_i))*nodes->GetmuT(iPoint);
-      visc_j = 2.0*flowNodes->GetLaminarViscosity(jPoint) + (sigma_k_j+sigma_om_j+2.0*sigma_om2*(1.0 - F1_i))*nodes->GetmuT(jPoint);
+      visc_j = 2.0*flowNodes->GetLaminarViscosity(jPoint) + (sigma_k_j+sigma_om_j+2.0*sigma_om2*(1.0 - F1_j))*nodes->GetmuT(jPoint);
 
       Mean_Visc    = 0.5*(visc_i + visc_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
