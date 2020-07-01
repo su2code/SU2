@@ -2626,7 +2626,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     bool reduceCFL = false;
     su2double linRes = GetResLinSolver();
 
-    if (linRes > 0.5) {
+    if (linRes > config->GetLinear_Solver_Error()) {
       reduceCFL = true;
     }
 
