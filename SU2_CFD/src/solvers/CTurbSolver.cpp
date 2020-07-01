@@ -590,7 +590,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     localUnderRelaxation = 1.0;
-    if (sa_model || sst_model) {
+    if (sa_model) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
         /* We impose a limit on the maximum percentage that the
@@ -601,6 +601,21 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
         if (ratio > allowableIncrease) {
           localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
         } else if (ratio < allowableDecrease) {
+          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+        }
+
+      }
+    }
+
+    else if (sst_model) {
+        unsigned short iVar = 0;
+
+        /* We impose a limit on the maximum percentage that the
+         turbulence variables can change over a nonlinear iteration. */
+
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
+        if (ratio < allowableDecrease) {
           localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
         }
 
