@@ -296,7 +296,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Set primitives and gradients since flow primitives have updated ---*/
   
-  Postprocessing(geometry, solver_container, config, iMesh);
+  // Postprocessing(geometry, solver_container, config, iMesh);
     
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
