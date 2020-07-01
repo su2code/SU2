@@ -2074,7 +2074,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     }
 
     su2double maxLinResid = max(linResFlow, linResTurb);
-    if (maxLinResid > 0.5) {
+    if (maxLinResid > config->GetLinear_Solver_Error()) {
       reduceCFL = true;
     }
 
