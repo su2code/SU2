@@ -2760,7 +2760,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
       //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
       Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
-      Lambda = sqrt((Lambda_1 + Lambda_2)/Mean_Density)*Area;
+      Lambda = sqrt(max(Lambda_1, Lambda_2)/Mean_Density)*Area;
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
@@ -2813,7 +2813,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
         Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
-        Lambda = sqrt((Lambda_1 + Lambda_2)/Mean_Density)*Area;
+        Lambda = sqrt(max(Lambda_1, Lambda_2)/Mean_Density)*Area;
         nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
@@ -2833,7 +2833,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (Vol != 0.0) {
 
         su2double denom = nodes->GetMax_Lambda_Inv(iPoint);
-        if (viscous) denom += nodes->GetMax_Lambda_Visc(iPoint)/K_v;
+        if (viscous) denom = max(denom, nodes->GetMax_Lambda_Visc(iPoint)/K_v);
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
