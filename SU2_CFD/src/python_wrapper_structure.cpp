@@ -711,7 +711,7 @@ vector<passivedouble> CDriver::GetAIP(unsigned short iMarker){
   AIP[5] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MASSFLOW"));
   AIP[6] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MACH"));
   AIP[7] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_NORMALVEL"));
-  AIP[8] = 1.0; //TODO, Area....
+  AIP[8] = SU2_TYPE::GetValue(config_container[ZONE_0]->GetRefArea());
   AIP[9] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("MOMENTUM_DISTORTION"));
 
 
