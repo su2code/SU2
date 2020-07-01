@@ -2681,7 +2681,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      rate. In this situation, we force a reduction of the CFL in all cells.
      Reset the array so that we delay the next decrease for some iterations. */
 
-    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+    if (fabs(NonLinRes_Value) > 0.1*New_Func) {
       NonLinRes_Counter = 0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
@@ -2692,7 +2692,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
 
-    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+    if (fabs(NonLinRes_Value) > 0.1*New_Func) {
       reduceCFL = true;
     }
 
