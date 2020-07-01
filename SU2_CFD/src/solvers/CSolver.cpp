@@ -2682,19 +2682,17 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      Reset the array so that we delay the next decrease for some iterations. */
 
     if (fabs(NonLinRes_Value) > 0.1*New_Func) {
+      reduceCFL = true;
       NonLinRes_Counter = 0;
-      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Series[iCounter] = New_Func;
+      New_Func = su2double(nVar);
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
+      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+        NonLinRes_Series[iCounter] = New_Func;
     }
 
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
-
-    if (fabs(NonLinRes_Value) > 0.1*New_Func) {
-      reduceCFL = true;
-    }
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
