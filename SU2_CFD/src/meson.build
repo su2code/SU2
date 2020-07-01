@@ -1,6 +1,5 @@
 su2_cfd_include = include_directories('./')
-su2_cfd_src = files(['iteration_structure.cpp',
-                     'definition_structure.cpp',
+su2_cfd_src = files(['definition_structure.cpp',
                      'python_wrapper_structure.cpp',
                      'CMarkerProfileReaderFVM.cpp'])
 
@@ -145,6 +144,18 @@ su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CMultiGridIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
                       'integration/CFEM_DG_Integration.cpp'])
+
+su2_cfd_src += files(['iteration/CIteration.cpp',
+                      'iteration/CIterationFactory.cpp',
+                      'iteration/CAdjFluidIteration.cpp',
+                      'iteration/CDiscAdjFluidIteration.cpp',
+                      'iteration/CDiscAdjHeatIteration.cpp',
+                      'iteration/CDiscAdjFEAIteration.cpp',
+                      'iteration/CFEAIteration.cpp',
+                      'iteration/CFEMFluidIteration.cpp',
+                      'iteration/CFluidIteration.cpp',
+                      'iteration/CHeatIteration.cpp',
+                      'iteration/CTurboIteration.cpp'])
 
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 
