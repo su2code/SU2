@@ -3053,6 +3053,129 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the actuator disk radius.
+   */
+  inline virtual su2double GetActDisk_R(unsigned short val_marker) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the actuator disk radius.
+   */
+  inline virtual void SetActDisk_R(unsigned short val_marker,
+                                   su2double val_radius) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk center.
+   */
+  inline virtual su2double GetActDisk_C(unsigned short val_marker, unsigned short val_dim) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk center.
+   */
+  inline virtual void SetActDisk_C(unsigned short val_marker,
+                                   unsigned short val_dim,
+                                   su2double val_center) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk axis.
+   */
+  inline virtual su2double GetActDisk_Axis(unsigned short val_marker, unsigned short val_dim) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk axis.
+   */
+  inline virtual void SetActDisk_Axis(unsigned short val_marker,
+                                      unsigned short val_dim,
+                                      su2double val_axis) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the axial force per unit area.
+   */
+  inline virtual su2double GetActDisk_Fa(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the axial force per unit area.
+   */
+  inline virtual void SetActDisk_Fa(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    su2double val_fa) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the x component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual su2double GetActDisk_Fx(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the x component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual void SetActDisk_Fx(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    su2double val_fx) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the y component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual su2double GetActDisk_Fy(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the y component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual void SetActDisk_Fy(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    su2double val_fy) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the z component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual su2double GetActDisk_Fz(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the z component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual void SetActDisk_Fz(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    su2double val_fz) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */

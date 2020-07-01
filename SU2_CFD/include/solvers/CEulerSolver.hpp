@@ -149,6 +149,13 @@ protected:
   unsigned long
   **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
   su2double
+  *ActDisk_R = nullptr,          /*!< \brief Value of the actuator disk Radius. */
+  **ActDisk_C = nullptr,         /*!< \brief Value of the actuator disk Center. */
+  **ActDisk_Axis = nullptr,      /*!< \brief Value of the actuator disk Axis. */
+  **ActDisk_Fa = nullptr,        /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  **ActDisk_Fx = nullptr,        /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  **ActDisk_Fy = nullptr,        /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  **ActDisk_Fz = nullptr,        /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
   **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
   **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
   **Inlet_Ptotal = nullptr,      /*!< \brief Value of the Total P. */
@@ -2056,6 +2063,150 @@ public:
                                   unsigned long val_index) final {
     DonorGlobalIndex[val_marker][val_vertex] = val_index;
   }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the actuator disk radius.
+   */
+  inline su2double GetActDisk_R(unsigned short val_marker) const final {
+    return ActDisk_R[val_marker];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the actuator disk radius.
+   */
+  inline void SetActDisk_R(unsigned short val_marker,
+                           su2double val_radius) final { ActDisk_R[val_marker] = val_radius; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk center.
+   */
+  inline su2double GetActDisk_C(unsigned short val_marker,
+                                unsigned short val_dim) const final {
+    return ActDisk_C[val_marker][val_dim];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk center.
+   */
+  inline void SetActDisk_C(unsigned short val_marker,
+		                   unsigned short val_dim,
+                           su2double val_center) final { ActDisk_C[val_marker][val_dim] = val_center; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk axis.
+   */
+  inline su2double GetActDisk_Axis(unsigned short val_marker,
+                                   unsigned short val_dim) const final {
+    return ActDisk_Axis[val_marker][val_dim];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated.
+   * \return Value of the actuator disk axis.
+   */
+  inline void SetActDisk_Axis(unsigned short val_marker,
+		                      unsigned short val_dim,
+                              su2double val_axis) final { ActDisk_Axis[val_marker][val_dim] = val_axis; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the axial force per unit area.
+   */
+  inline su2double GetActDisk_Fa(unsigned short val_marker,
+                                 unsigned long val_vertex) const final {
+    return ActDisk_Fa[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the axial force per unit area.
+   */
+  inline void SetActDisk_Fa(unsigned short val_marker,
+                            unsigned long val_vertex,
+                            su2double val_fa) final { ActDisk_Fa[val_marker][val_vertex] = val_fa; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the x component of the radial and tangential forces per unit area resultant.
+   */
+  inline su2double GetActDisk_Fx(unsigned short val_marker,
+                                 unsigned long val_vertex) const final {
+    return ActDisk_Fx[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the x component of the radial and tangential forces per unit area resultant.
+   */
+  inline void SetActDisk_Fx(unsigned short val_marker,
+                            unsigned long val_vertex,
+                            su2double val_fx) final { ActDisk_Fx[val_marker][val_vertex] = val_fx; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the y component of the radial and tangential forces per unit area resultant.
+   */
+  inline su2double GetActDisk_Fy(unsigned short val_marker,
+                                 unsigned long val_vertex) const final {
+    return ActDisk_Fy[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the y component of the radial and tangential forces per unit area resultant.
+   */
+  inline void SetActDisk_Fy(unsigned short val_marker,
+                            unsigned long val_vertex,
+                            su2double val_fy) final { ActDisk_Fy[val_marker][val_vertex] = val_fy; }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the z component of the radial and tangential forces per unit area resultant.
+   */
+  inline su2double GetActDisk_Fz(unsigned short val_marker,
+                                 unsigned long val_vertex) const final {
+    return ActDisk_Fz[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the z component of the radial and tangential forces per unit area resultant.
+   */
+  inline void SetActDisk_Fz(unsigned short val_marker,
+                            unsigned long val_vertex,
+                            su2double val_fz) final { ActDisk_Fz[val_marker][val_vertex] = val_fz; }
+
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
