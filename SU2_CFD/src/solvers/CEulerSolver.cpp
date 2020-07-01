@@ -6011,15 +6011,15 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                             Fx_inf = (Ft[iEl-1]+Fr[iEl-1])*(r[0]/(r_*AD_Radius));
                             Fy_inf = (Ft[iEl-1]+Fr[iEl-1])*(r[2]/(r_*AD_Radius));
                             Fz_inf = -(Ft[iEl-1]+Fr[iEl-1])*(r[1]/(r_*AD_Radius));
-                        	Fx_sup = (Ft[iEl]+Fr[iEl])*(r[0]/(r_*AD_Radius));
-                        	Fy_sup = (Ft[iEl]+Fr[iEl])*(r[2]/(r_*AD_Radius));
-                        	Fz_sup = -(Ft[iEl]+Fr[iEl])*(r[1]/(r_*AD_Radius));
+                            Fx_sup = (Ft[iEl]+Fr[iEl])*(r[0]/(r_*AD_Radius));
+                            Fy_sup = (Ft[iEl]+Fr[iEl])*(r[2]/(r_*AD_Radius));
+                            Fz_sup = -(Ft[iEl]+Fr[iEl])*(r[1]/(r_*AD_Radius));
 
-                        	/* Fx, Fy and Fz at the current node are evaluated using a linear interpolation between
-                        	 * the end vaues of the radial element in which the current node is contained. */
-                        	Fx = Fx_inf + (Fx_sup - Fx_inf)*h;
-                        	Fy = Fy_inf + (Fy_sup - Fy_inf)*h;
-                        	Fz = Fz_inf + (Fz_sup - Fz_inf)*h;
+                            /* Fx, Fy and Fz at the current node are evaluated using a linear interpolation between
+                             * the end vaues of the radial element in which the current node is contained. */
+                            Fx = Fx_inf + (Fx_sup - Fx_inf)*h;
+                            Fy = Fy_inf + (Fy_sup - Fy_inf)*h;
+                            Fz = Fz_inf + (Fz_sup - Fz_inf)*h;
                             }
                             /* Set the values of Fa, Fx, Fy and Fz. Fa is evaluated using a linear interpolation. */
                             SetActDisk_Fa(iMarker, iVertex, Fa[iEl-1] + (Fa[iEl]-Fa[iEl-1])*h);
