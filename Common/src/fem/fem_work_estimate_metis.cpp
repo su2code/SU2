@@ -30,26 +30,22 @@
 
 su2double CFEMStandardElement::WorkEstimateMetis(CConfig *config) {
 
-  /* TEMPORARY IMPLEMENTATION. */
-  return nIntegration + 0.1*nDOFs;
+  return 0.0;
 }
 
 su2double CFEMStandardInternalFace::WorkEstimateMetis(CConfig *config) {
 
-  /* TEMPORARY IMPLEMENTATION. */
-  return 2.0*nIntegration + 0.05*(nDOFsFaceSide0 + nDOFsFaceSide1);
+  return 0.0;
 }
 
 su2double CFEMStandardBoundaryFace::WorkEstimateMetis(CConfig *config) {
 
-  /* TEMPORARY IMPLEMENTATION. */
-  return nIntegration + 0.05*nDOFsFace;
+  return 0.0;
 }
 
 su2double CFEMStandardBoundaryFace::WorkEstimateMetisWallFunctions(
                                            CConfig              *config,
                                            const unsigned short nPointsWF) {
 
-  /* TEMPORARY IMPLEMENTATION. */
-  return 0.25*nIntegration*nPointsWF;
+  return 0.0;
 }

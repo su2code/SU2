@@ -48,13 +48,6 @@ protected:
   unsigned short orderExact;   /*!< \brief Polynomial order that must be integrated exactly by the integration rule. */
   unsigned short nIntegration; /*!< \brief Number of points used in the numerical integration. */
 
-  bool constJacobian;          /*!< \brief Whether or not the element has a constant Jacobian. */
-
-  vector<su2double> rIntegration; /*!< \brief r-location of the integration points for this standard element. */
-  vector<su2double> sIntegration; /*!< \brief s-location of the integration points for this standard element, if needed. */
-  vector<su2double> tIntegration; /*!< \brief t-location of the integration points for this standard element, if needed. */
-  vector<su2double> wIntegration; /*!< \brief The weights of the integration points for this standard element. */
-
 public:
   /*!
   * \brief Constructor. Nothing to be done.
@@ -90,12 +83,6 @@ public:
   * \return  The type of the element using the VTK convention.
   */
   inline unsigned short GetVTK_Type(void) const {return VTK_Type;}
-
-  /*!
-  * \brief Function, which makes available the weights in the integration points.
-  * \return  The const pointer to data, which stores the weights in the integration points.
-  */
-  inline const su2double* GetWeightsIntegration(void) const {return wIntegration.data();}
 
   /*!
   * \brief Static function, which makes available the number of DOFs for an element
@@ -792,55 +779,6 @@ private:
   unsigned short VTK_Type1;    /*!< \brief VTK type for elements of type 1 in subConn1ForPlotting. */
   unsigned short VTK_Type2;    /*!< \brief VTK type for elements of type 2 in subConn2ForPlotting. */
 
-  vector<su2double> rDOFs;     /*!< \brief r-location of the DOFs for this standard element. */
-  vector<su2double> sDOFs;     /*!< \brief s-location of the DOFs for this standard element, if needed. */
-  vector<su2double> tDOFs;     /*!< \brief t-location of the DOFs for this standard element, if needed. */
-
-  vector<su2double> lagBasisIntegration;       /*!< \brief Lagrangian basis functions in the integration points. */
-  vector<su2double> lagBasisIntegrationTrans;  /*!< \brief Transpose of lagBasisIntegration. It is stored such that
-                                                           in the ADER-DG predictor step the residual is obtained
-                                                           by one matrix multiplication. */
-  vector<su2double> lagBasisSolDOFs;       /*!< \brief Lagrangian basis functions in the solution DOFs. Only different
-                                                       from 1 if the polynomial degree of the grid and solution differs. */
-
-  vector<su2double> drLagBasisIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the integration points. */
-  vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
-  vector<su2double> dtLagBasisIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the integration points. */
-
-  vector<su2double> matVandermondeInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the DOFs for this standard element.
-                                                      This data is needed for the computation of shock sensing. */
-
-  vector<su2double> matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
-                                                      and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
-  vector<su2double> matDerBasisIntTrans;  /*!< \brief Matrix of the transpose of the derivative part of matBasisIntegration. It is
-                                                      stored such that the volume residual can be computed in one matrix multiplication. */
-  vector<su2double> matDerBasisSolDOFs;   /*!< \brief Matrix of the derivatives of the Lagrangian basis functions in the solution
-                                                      DOFs. Needed to compute the metric terms in the solution DOFs. */
-  vector<su2double> matDerBasisOwnDOFs;   /*!< \brief Matrix of the derivatives of the Lagrangian basis functions in the owned
-                                                      DOFs. This differs from matDerBasisSolDOFs when the grid DOFs and the
-                                                      solution DOFs do not coincide. This data is needed for the computation
-                                                      of the derivatives of the metric terms. */
-  vector<su2double> mat2ndDerBasisInt;    /*!< \brief Matrix which contains all possible second derivatives of the basis functions
-                                                      in the integration points. As such second derivatives can be computed
-                                                      using one call to the BLAS routines. */
-
-  vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
-                                                such that the element is to the left of the face. */
-  vector<unsigned short> connFace1; /*!< \brief Local connectivity of face 1 of the element. The numbering of the DOFs is
-                                                such that the element is to the left of the face. */
-  vector<unsigned short> connFace2; /*!< \brief Local connectivity of face 2 of the element, if present. The numbering
-                                                of the DOFs is such that the element is to the left of the face. */
-  vector<unsigned short> connFace3; /*!< \brief Local connectivity of face 3 of the element, if present. The numbering
-                                                of the DOFs is such that the element is to the left of the face. */
-  vector<unsigned short> connFace4; /*!< \brief Local connectivity of face 4 of the element, if present. The numbering
-                                                of the DOFs is such that the element is to the left of the face. */
-  vector<unsigned short> connFace5; /*!< \brief Local connectivity of face 5 of the element, if present. The numbering
-                                                of the DOFs is such that the element is to the left of the face. */
-
-  vector<unsigned short> subConn1ForPlotting; /*!< \brief Local subconnectivity of element type 1 of the high order element.
-                                                          Used for plotting. */
-  vector<unsigned short> subConn2ForPlotting; /*!< \brief Local subconnectivity of element type 2 of the high order element.
-                                                          Used for plotting. */
 public:
   /*!
   * \brief Alternative constructor.
@@ -905,110 +843,110 @@ public:
   * \brief Function, which makes available the values of the basis functions in the integration points.
   * \return The pointer to data, which stores the basis functions in the integration points.
   */
-  inline su2double* GetBasisFunctionsIntegration(void){return lagBasisIntegration.data();}
+  inline su2double* GetBasisFunctionsIntegration(void){return NULL;}
 
   /*!
   * \brief Function, which makes available the transpose of the basis functions in the integration points.
   * \return The pointer to data, which stores the transpose matrix of the basis functions.
   */
-  inline const su2double* GetBasisFunctionsIntegrationTrans(void) const {return lagBasisIntegrationTrans.data();}
+  inline const su2double* GetBasisFunctionsIntegrationTrans(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the values of the basis functions in the solution DOFs.
   * \return The pointer to data, which stores the basis functions in the solution DOFs.
   */
-  inline const su2double* GetBasisFunctionsSolDOFs(void) const {return lagBasisSolDOFs.data();}
+  inline const su2double* GetBasisFunctionsSolDOFs(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the r-derivatives of the basis functions in the integration points.
   * \return  The pointer to data, which stores the r-derivatives of the basis functions.
   */
-  inline su2double* GetDrBasisFunctionsIntegration(void){return drLagBasisIntegration.data();}
+  inline su2double* GetDrBasisFunctionsIntegration(void){return NULL;}
 
   /*!
   * \brief Function, which makes available the s-derivatives of the basis functions in the integration points.
   * \return  The pointer to data, which stores the s-derivatives of the basis functions.
   */
-  inline su2double* GetDsBasisFunctionsIntegration(void){return dsLagBasisIntegration.data();}
+  inline su2double* GetDsBasisFunctionsIntegration(void){return NULL;}
 
   /*!
   * \brief Function, which makes available the t-derivatives of the basis functions in the integration points.
   * \return  The pointer to data, which stores the t-derivatives of the basis functions.
   */
-  inline su2double* GetDtBasisFunctionsIntegration(void){return dtLagBasisIntegration.data();}
+  inline su2double* GetDtBasisFunctionsIntegration(void){return NULL;}
 
   /*!
   * \brief Function, which makes available the matrix storage of the inverse of Vandermonde matrix of solution DOFs.
   * \return  The pointer to matVandermondeInv.
   */
-  inline const su2double* GetMatVandermondeInv(void) const {return matVandermondeInv.data();}
+  inline const su2double* GetMatVandermondeInv(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the matrix storage of the basis functions in the integration points.
   * \return  The pointer to matBasisIntegration.
   */
-  inline const su2double* GetMatBasisFunctionsIntegration(void) const {return matBasisIntegration.data();}
+  inline const su2double* GetMatBasisFunctionsIntegration(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the transpose matrix of the derivative of the basis functions in the integration points.
   * \return  The pointer to matDerBasisIntTrans;
   */
-  inline const su2double* GetDerMatBasisFunctionsIntTrans(void) const {return matDerBasisIntTrans.data();}
+  inline const su2double* GetDerMatBasisFunctionsIntTrans(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the matrix storage of the derivative of the basis functions in the own DOFs.
   * \return  The pointer to matDerBasisOwnDOFs.
   */
-  inline const su2double *GetMatDerBasisFunctionsOwnDOFs(void) const {return matDerBasisOwnDOFs.data();}
+  inline const su2double *GetMatDerBasisFunctionsOwnDOFs(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the matrix storage of the derivative of the basis functions in the solution DOFs.
   * \return  The pointer to matDerBasisSolDOFs.
   */
-  inline const su2double *GetMatDerBasisFunctionsSolDOFs(void) const {return matDerBasisSolDOFs.data();}
+  inline const su2double *GetMatDerBasisFunctionsSolDOFs(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the matrix storage of the second derivativex of the basis functions
            in the integration points.
   * \return  The pointer to mat2ndDerBasisInt.
   */
-  inline const su2double *GetMat2ndDerBasisFunctionsInt(void) const {return mat2ndDerBasisInt.data();}
+  inline const su2double *GetMat2ndDerBasisFunctionsInt(void) const {return NULL;}
 
   /*!
   * \brief Function, which makes available the connectivity of face 0.
   * \return  The pointer to data, which stores the connectivity of face 0.
   */
-  inline unsigned short *GetConnFace0(void) {return connFace0.data();}
+  inline unsigned short *GetConnFace0(void) {return NULL;}
 
   /*!
   * \brief Function, which makes available the connectivity of face 1.
   * \return  The pointer to data, which stores the connectivity of face 1.
   */
-  inline unsigned short *GetConnFace1(void) {return connFace1.data();}
+  inline unsigned short *GetConnFace1(void) {return NULL;}
 
   /*!
   * \brief Function, which makes available the connectivity of face 2.
   * \return  The pointer to data, which stores the connectivity of face 2.
   */
-  inline unsigned short *GetConnFace2(void) {return connFace2.data();}
+  inline unsigned short *GetConnFace2(void) {return NULL;}
 
   /*!
   * \brief Function, which makes available the connectivity of face 3.
   * \return  The pointer to data, which stores the connectivity of face 3.
   */
-  inline unsigned short *GetConnFace3(void) {return connFace3.data();}
+  inline unsigned short *GetConnFace3(void) {return NULL;}
 
   /*!
   * \brief Function, which makes available the connectivity of face 4.
   * \return  The pointer to data, which stores the connectivity of face 4.
   */
-  inline unsigned short *GetConnFace4(void) {return connFace4.data();}
+  inline unsigned short *GetConnFace4(void) {return NULL;}
 
   /*!
   * \brief Function, which makes available the connectivity of face 5.
   * \return  The pointer to data, which stores the connectivity of face 5.
   */
-  inline unsigned short *GetConnFace5(void) {return connFace5.data();}
+  inline unsigned short *GetConnFace5(void) {return NULL;}
 
   /*!
   * \brief Function, which makes available the number of DOFs for this standard element.
@@ -1032,13 +970,13 @@ public:
    * \brief Function, which makes available the number of sub-elements of type 1 for plotting.
    * \return  The number of sub-elements of type 1 for plotting.
    */
-  inline unsigned short GetNSubElemsType1(void) const {return subConn1ForPlotting.size()/GetNDOFsPerSubElem(GetVTK_Type1());}
+  inline unsigned short GetNSubElemsType1(void) const {return 0;}
 
   /*!
    * \brief Function, which makes available the the connectivity of the linear elements of type 1 as a const pointer.
    * \return  The pointer to the local connectivity of the linear elements of type 1.
    */
-  inline const unsigned short *GetSubConnType1(void) const {return subConn1ForPlotting.data();}
+  inline const unsigned short *GetSubConnType1(void) const {return NULL;}
 
   /*!
    * \brief Function, which makes available the type of the element in subConn2ForPlotting.
@@ -1050,13 +988,13 @@ public:
    * \brief Function, which makes available the number of sub-elements of type 2 for plotting.
    * \return  The number of sub-elements of type 2 for plotting.
    */
-  inline unsigned short GetNSubElemsType2(void) const {return subConn2ForPlotting.size()/GetNDOFsPerSubElem(GetVTK_Type2());}
+  inline unsigned short GetNSubElemsType2(void) const {return 0;}
 
   /*!
    * \brief Function, which makes available the the connectivity of the linear elements of type 2 as a const pointer.
    * \return  The pointer to the local connectivity of the linear elements of type 2.
    */
-  inline const unsigned short *GetSubConnType2(void) const {return subConn2ForPlotting.data();}
+  inline const unsigned short *GetSubConnType2(void) const {return NULL;}
 
   /*!
    * \brief Function, which makes available the number of DOFs of a linear element, used for plotting.
@@ -1069,21 +1007,21 @@ public:
             const pointer to the vector.
    * \return  The address of the vector, which stores the r-location of the DOFs.
    */
-  inline const vector<su2double> *GetRDOFs(void) const {return &rDOFs;}
+  inline const vector<su2double> *GetRDOFs(void) const {return NULL;}
 
   /*!
    * \brief Function, which makes available the s-location of the DOFs as a
             const pointer to the vector.
    * \return  The address of the vector, which stores the s-location of the DOFs.
    */
-  inline const vector<su2double> *GetSDOFs(void) const {return &sDOFs;}
+  inline const vector<su2double> *GetSDOFs(void) const {return NULL;}
 
   /*!
    * \brief Function, which makes available the t-location of the DOFs as a
             const pointer to the vector.
    * \return  The address of the vector, which stores the t-location of the DOFs.
    */
-  inline const vector<su2double> *GetTDOFs(void) const {return &tDOFs;}
+  inline const vector<su2double> *GetTDOFs(void) const {return NULL;}
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.
@@ -1223,75 +1161,7 @@ private:
  * \version 7.0.5 "Blackbird"
  */
 class CFEMStandardInternalFace : public CFEMStandardElementBase {
-private:
-  unsigned short nDOFsFaceSide0;    /*!< \brief Number of DOFs on side 0 of the face. */
-  unsigned short nDOFsFaceSide1;    /*!< \brief Number of DOFs on side 1 of the face. */
 
-  unsigned short nPolyElemSide0;    /*!< \brief Polynomial degree of the element on side 0 of the face. */
-  unsigned short nPolyElemSide1;    /*!< \brief Polynomial degree of the element on side 1 of the face. */
-  unsigned short nDOFsElemSide0;    /*!< \brief Number of DOFs of the element on side 0 of the face. */
-  unsigned short nDOFsElemSide1;    /*!< \brief Number of DOFs of the element on side 1 of the face. */
-  unsigned short VTK_TypeElemSide0; /*!< \brief Type of the element on side 0 of the face using the VTK convention. */
-  unsigned short VTK_TypeElemSide1; /*!< \brief Type of the element on side 1 of the face using the VTK convention. */
-
-  bool swapFaceInElementSide0;      /*!< \brief Whether or not the connectivity of the face must
-                                                be swapped compared to the face of the corresponding
-                                                standard element on side 0 of the face. */
-  bool swapFaceInElementSide1;      /*!< \brief Whether or not the connectivity of the face must
-                                                be swapped compared to the face of the corresponding
-                                                standard element on side 1 of the face. */
-
-  su2double penaltyConstantFace;      /*!< \brief The constant of the penalty parameter of the face,
-                                                  which is used in the viscous discretization. */
-
-  vector<su2double> rDOFsFaceSide0;   /*!< \brief r-location of the DOFs on side 0 of the face. */
-  vector<su2double> rDOFsFaceSide1;   /*!< \brief r-location of the DOFs on side 1 of the face. */
-  vector<su2double> sDOFsFaceSide0;   /*!< \brief s-location of the DOFs on side 0 of the face, if needed. */
-  vector<su2double> sDOFsFaceSide1;   /*!< \brief s-location of the DOFs on side 1 of the face, if needed. */
-
-  vector<su2double> lagBasisFaceIntegrationSide0; /*!< \brief Lagrangian basis functions in the integration points
-                                                              of side0 of the face. */
-  vector<su2double> lagBasisFaceIntegrationSide1; /*!< \brief Lagrangian basis functions in the integration points
-                                                              of side1 of the face. */
-
-  vector<su2double> lagBasisFaceIntegrationTransposeSide0; /*!< \brief Transpose of lagBasisFaceIntegrationSide0. */
-  vector<su2double> lagBasisFaceIntegrationTransposeSide1; /*!< \brief Transpose of lagBasisFaceIntegrationSide1. */
-
-  vector<su2double> drLagBasisFaceIntegrationSide0; /*!< \brief r-derivatives of the face Lagrangian basis functions
-                                                                of side 0 in the integration points. */
-  vector<su2double> drLagBasisFaceIntegrationSide1; /*!< \brief r-derivatives of the face Lagrangian basis functions
-                                                                of side 1 in the integration points. */
-  vector<su2double> dsLagBasisFaceIntegrationSide0; /*!< \brief s-derivatives of the face Lagrangian basis functions
-                                                                of side 0 in the integration points. */
-  vector<su2double> dsLagBasisFaceIntegrationSide1; /*!< \brief s-derivatives of the face Lagrangian basis functions
-                                                                of side 1 in the integration points. */
-
-  vector<su2double> drLagBasisElemIntegrationSide0; /*!< \brief r-derivatives of the element Lagrangian basis functions
-                                                                of side 0 in the integration points. */
-  vector<su2double> drLagBasisElemIntegrationSide1; /*!< \brief r-derivatives of the element Lagrangian basis functions
-                                                                of side 1 in the integration points. */
-  vector<su2double> dsLagBasisElemIntegrationSide0; /*!< \brief s-derivatives of the element Lagrangian basis functions
-                                                                of side 0 in the integration points. */
-  vector<su2double> dsLagBasisElemIntegrationSide1; /*!< \brief s-derivatives of the element Lagrangian basis functions
-                                                                of side 1 in the integration points. */
-  vector<su2double> dtLagBasisElemIntegrationSide0; /*!< \brief t-derivatives of the element Lagrangian basis functions
-                                                                of side 0 in the integration points. */
-  vector<su2double> dtLagBasisElemIntegrationSide1; /*!< \brief t-derivatives of the element Lagrangian basis functions
-                                                                of side 1 in the integration points. */
-
-  vector<su2double> matDerBasisElemIntegrationSide0;       /*!< \brief Matrix of drLagBasisElemIntegrationSide0, dsLagBasisElemIntegrationSide0
-                                                                       and dtLagBasisElemIntegrationSide0 combined for efficiency
-                                                                       when using BLAS routines. */
-  vector<su2double> matDerBasisElemIntegrationSide1;       /*!< \brief Matrix of drLagBasisElemIntegrationSide1, dsLagBasisElemIntegrationSide1
-                                                                       and dtLagBasisElemIntegrationSide1 combined for efficiency
-                                                                       when using BLAS routines. */
-
-  vector<su2double> matDerBasisElemIntegrationTransposeSide0; /*!< \brief Transpose of matDerBasisElemIntegrationSide0, such that
-                                                                          the residuals of the symmetrizing terms can be computed
-                                                                          with a single matrix multiplication. */
-  vector<su2double> matDerBasisElemIntegrationTransposeSide1; /*!< \brief Transpose of matDerBasisElemIntegrationSide1, such that
-                                                                          the residuals of the symmetrizing terms can be computed
-                                                                          with a single matrix multiplication. */
 public:
   /*!
   * \brief Alternative constructor.
@@ -1338,166 +1208,6 @@ public:
   * \return The current object, after the member variables were assigned the correct value.
   */
   CFEMStandardInternalFace& operator=(const CFEMStandardInternalFace &other){Copy(other); return (*this);}
-
-  /*!
-  * \brief Function, which makes available the r-derivatives of the elements
-           basis functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double *GetDrBasisElemIntegrationSide0(void) {return drLagBasisElemIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the r-derivatives of the elements
-           basis functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double *GetDrBasisElemIntegrationSide1(void) {return drLagBasisElemIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the s-derivatives of the elements
-           basis functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double *GetDsBasisElemIntegrationSide0(void) {return dsLagBasisElemIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the s-derivatives of the elements
-           basis functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double *GetDsBasisElemIntegrationSide1(void) {return dsLagBasisElemIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the t-derivatives of the elements
-           basis functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double *GetDtBasisElemIntegrationSide0(void) {return dtLagBasisElemIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the t-derivatives of the elements
-           basis functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double *GetDtBasisElemIntegrationSide1(void) {return dtLagBasisElemIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the matrix with the derivatives of
-           the element basis functions of side 0 in the integration points.
-  * \return  The const pointer to data, which stores this information.
-  */
-  inline const su2double* GetMatDerBasisElemIntegrationSide0(void) const {return matDerBasisElemIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the matrix with the derivatives of
-           the element basis functions of side 1 in the integration points.
-  * \return  The const pointer to data, which stores this information.
-  */
-  inline const su2double* GetMatDerBasisElemIntegrationSide1(void) const {return matDerBasisElemIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the transpose of the matrix with
-           the derivatives of the element basis functions of side 0 in the
-           integration points.
-  * \return  The const pointer to data, which stores this information.
-  */
-  inline const su2double* GetMatDerBasisElemIntegrationTransposeSide0(void) const {return matDerBasisElemIntegrationTransposeSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the transpose of the matrix with
-           the derivatives of the element basis functions of side 1 in the
-           integration points.
-  * \return  The const pointer to data, which stores this information.
-  */
-  inline const su2double* GetMatDerBasisElemIntegrationTransposeSide1(void) const {return matDerBasisElemIntegrationTransposeSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the face basis functions of side 0
-           in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetBasisFaceIntegrationSide0(void) const {return lagBasisFaceIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the face basis functions of side 1
-           in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetBasisFaceIntegrationSide1(void) const {return lagBasisFaceIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available transpose matrix of the face basis
-           functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetBasisFaceIntegrationTransposeSide0(void) const {return lagBasisFaceIntegrationTransposeSide0.data();}
-
-  /*!
-  * \brief Function, which makes available transpose matrix of the face basis
-           functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetBasisFaceIntegrationTransposeSide1(void) const {return lagBasisFaceIntegrationTransposeSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the r-derivatives of the face basis
-           functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double* GetDrBasisFaceIntegrationSide0(void) {return drLagBasisFaceIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the r-derivatives of the face basis
-           functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double* GetDrBasisFaceIntegrationSide1(void) {return drLagBasisFaceIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the s-derivatives of the face basis
-           functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double* GetDsBasisFaceIntegrationSide0(void) {return dsLagBasisFaceIntegrationSide0.data();}
-
-  /*!
-  * \brief Function, which makes available the s-derivatives of the face basis
-           functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline su2double* GetDsBasisFaceIntegrationSide1(void) {return dsLagBasisFaceIntegrationSide1.data();}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs of the element
-           on side 0 of the face.
-  * \return  The number of DOFs of the element on side 0.
-  */
-  inline unsigned short GetNDOFsElemSide0(void) const {return nDOFsElemSide0;}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs of the element
-           on side 1 of the face.
-  * \return  The number of DOFs on side 1.
-  */
-  inline unsigned short GetNDOFsElemSide1(void) const {return nDOFsElemSide1;}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs on side 0 of the face.
-  * \return  The number of DOFs on side 0.
-  */
-  inline unsigned short GetNDOFsFaceSide0(void) const {return nDOFsFaceSide0;}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs on side 1 of the face.
-  * \return  The number of DOFs on side 1.
-  */
-  inline unsigned short GetNDOFsFaceSide1(void) const {return nDOFsFaceSide1;}
-
-  /*!
-  * \brief Function, which makes available the penalty constant for this standard face.
-  * \return  The penalty constant.
-  */
-  inline su2double GetPenaltyConstant(void) const {return penaltyConstantFace;}
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.
@@ -1549,49 +1259,7 @@ private:
  * \version 7.0.5 "Blackbird"
  */
 class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
-private:
-  unsigned short nDOFsFace;    /*!< \brief Number of DOFs of the face. */
 
-  unsigned short nPolyElem;    /*!< \brief Polynomial degree of the element adjacent to the face. */
-  unsigned short nDOFsElem;    /*!< \brief Number of DOFs of the element adjacent element to the face. */
-  unsigned short VTK_TypeElem; /*!< \brief Type of the element adjacent to the face using the VTK convention. */
-
-  bool swapFaceInElement;      /*!< \brief Whether or not the connectivity of the face must be swapped compared
-                                           to the face of the corresponding standard element adjacent to the face. */
-
-  su2double penaltyConstantFace;  /*!< \brief The constant of the penalty parameter of the face,
-                                              which is used in the viscous discretization. */
-
-  vector<su2double> rDOFsFace;   /*!< \brief r-location of the DOFs of the face. */
-  vector<su2double> sDOFsFace;   /*!< \brief s-location of the DOFs of the face, if needed. */
-
-  vector<su2double> lagBasisFaceIntegration;          /*!< \brief Lagrangian basis functions in the integration
-                                                                  points of the face. */
-  vector<su2double> lagBasisFaceIntegrationTranspose; /*!< \brief Transpose of lagBasisFaceIntegration. */
-
-  vector<su2double> drLagBasisFaceIntegration; /*!< \brief r-derivatives of the face Lagrangian basis functions
-                                                           in the integration points. */
-  vector<su2double> dsLagBasisFaceIntegration; /*!< \brief s-derivatives of the face Lagrangian basis functions
-                                                           in the integration points. */
-
-  vector<su2double> drLagBasisElemIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the
-                                                           integration points of the element adjacent to the face. */
-  vector<su2double> dsLagBasisElemIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the
-                                                           integration points of the element adjacent to the face. */
-  vector<su2double> dtLagBasisElemIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the
-                                                           integration points of the element adjacent to the face. */
-
-  vector<su2double> matDerBasisElemIntegration;       /*!< \brief Matrix of drLagBasisElemIntegration, dsLagBasisElemIntegration
-                                                                  and dtLagBasisElemIntegration combined for efficiency
-                                                                  when using BLAS routines. */
-
-  vector<su2double> matDerBasisElemIntegrationTranspose; /*!< \brief Transpose of matDerBasisElemIntegration, such that
-                                                                     the residuals of the symmetrizing terms can be computed
-                                                                     with a single matrix multiplication. */
-
-
-  vector<unsigned short> subConnForPlotting; /*!< \brief Local subconnectivity of the high order element.
-                                                         Used for plotting. */
 public:
   /*!
   * \brief Alternative constructor.
@@ -1627,108 +1295,25 @@ public:
   CFEMStandardBoundaryFace& operator=(const CFEMStandardBoundaryFace &other){Copy(other); return (*this);}
 
   /*!
-  * \brief Function, which makes available the r-derivatives of the element
-           basis functions in the integration points.
-  * \return  The pointer to data, which stores this information.
+  * \brief Function, which makes available the number of DOFs of a linear subface, used
+           for plotting, among others, plotting.
+  * \return  The number of DOFs of a linear subfaces of the face.
   */
-  inline const su2double* GetDrBasisElemIntegration(void) const {return drLagBasisElemIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available the s-derivatives of the element
-           basis functions in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetDsBasisElemIntegration(void) const {return dsLagBasisElemIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available the t-derivatives of the element
-           basis functions in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetDtBasisElemIntegration(void) const {return dtLagBasisElemIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available the matrix with the derivatives of
-           the element basis functions in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetMatDerBasisElemIntegration(void) const {return matDerBasisElemIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available the transpose of the matrix with
-           the derivatives of the element basis functions in the integration
-           points.
-  * \return  The const pointer to data, which stores this information.
-  */
-  inline const su2double* GetMatDerBasisElemIntegrationTranspose(void) const {return matDerBasisElemIntegrationTranspose.data();}
-
-  /*!
-  * \brief Function, which makes available the face basis functions in the
-           integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetBasisFaceIntegration(void) const {return lagBasisFaceIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available transpose matrix of the face basis
-           functions in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetBasisFaceIntegrationTranspose(void) const {return lagBasisFaceIntegrationTranspose.data();}
-
-  /*!
-  * \brief Function, which makes available the r-derivatives of the face basis
-           functions in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetDrBasisFaceIntegration(void) const {return drLagBasisFaceIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available the s-derivatives of the face basis
-           functions in the integration points.
-  * \return  The pointer to data, which stores this information.
-  */
-  inline const su2double* GetDsBasisFaceIntegration(void) const {return dsLagBasisFaceIntegration.data();}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs of the
-           adjacent element.
-  * \return  The number of DOFs of the element.
-  */
-  inline unsigned short GetNDOFsElem(void) const {return nDOFsElem;}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs of the face.
-  * \return  The number of DOFs of the face.
-  */
-  inline unsigned short GetNDOFsFace(void) const {return nDOFsFace;}
+  inline unsigned short GetNDOFsPerSubFace(void) const {return 0;}
 
   /*!
   * \brief Function, which makes available the number of linear subfaces used
            for plotting, among others.
   * \return  The number of linear subfaces of the face.
   */
-  inline unsigned short GetNSubFaces(void) const {return subConnForPlotting.size()/GetNDOFsPerSubFace();}
-
-  /*!
-  * \brief Function, which makes available the number of DOFs of a linear subface, used
-           for plotting, among others, plotting.
-  * \return  The number of DOFs of a linear subfaces of the face.
-  */
-  unsigned short GetNDOFsPerSubFace(void) const;
-
-  /*!
-  * \brief Function, which makes available the penalty constant for this standard face.
-  * \return  The penalty constant.
-  */
-  inline su2double GetPenaltyConstant(void) const {return penaltyConstantFace;}
+  inline unsigned short GetNSubFaces(void) const {return 0;}
 
   /*!
   * \brief Function, which makes available the the connectivity of the linear subfaces
            as a const pointer.
   * \return  The pointer to the local connectivity of the linear subfaces.
   */
-  inline const unsigned short* GetSubFaceConn(void) const {return subConnForPlotting.data();}
+  inline const unsigned short* GetSubFaceConn(void) const {return NULL;}
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.

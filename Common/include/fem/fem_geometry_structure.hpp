@@ -56,136 +56,6 @@ struct CLong3T {
 };
 
 /*!
- * \class CReorderElements
- * \brief Class, used to reorder the owned elements after the partitioning.
- * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
- */
-class CReorderElements {
-private:
-  unsigned long  globalElemID; /*!< \brief Global element ID of the element. */
-  unsigned short timeLevel;    /*!< \brief Time level of the element. Only relevant
-                                           for time accurate local time stepping. */
-  bool           commSolution; /*!< \brief Whether or not the solution must be
-                                           communicated to other ranks. */
-  unsigned short elemType;     /*!< \brief Short hand for the element type, Which
-                                           stored info of the VTK_Type, polynomial
-                                           degree of the solution and whether or
-                                           not the Jacobian is constant. */
-public:
-  /*!
-   * \brief Constructor of the class, set the member variables to the arguments.
-   */
-  CReorderElements(const unsigned long  val_GlobalElemID,
-                   const unsigned short val_TimeLevel,
-                   const bool           val_CommSolution,
-                   const unsigned short val_VTK_Type,
-                   const unsigned short val_nPolySol,
-                   const bool           val_JacConstant);
-
-  /*!
-   * \brief Default constructor of the class. Disabled.
-   */
-  CReorderElements(void) = delete;
-
-  /*!
-   * \brief Less than operator of the class. Needed for the sorting.
-   */
-  bool operator<(const CReorderElements &other) const;
-
-  /*!
-   * \brief Function to make available the variable commSolution.
-   * \return Whether or not the solution of the element must be communicated.
-   */
-  inline bool GetCommSolution(void) const { return commSolution; }
-
-  /*!
-   * \brief Function to make available the element type of the element.
-   * \return The value of elemType, which stores the VTK type, polynomial degree
-             and whether or not the Jacobian is constant.
-   */
-  inline unsigned short GetElemType(void) const { return elemType; }
-
-  /*!
-   * \brief Function to make available the global element ID.
-   * \return The global element ID of the element.
-   */
-  inline unsigned long GetGlobalElemID(void) const { return globalElemID; }
-
-  /*!
-   * \brief Function to make available the time level.
-   * \return The time level of the element.
-   */
-  inline unsigned short GetTimeLevel(void) const { return timeLevel; }
-
-  /*!
-   * \brief Function, which sets the value of commSolution.
-   * \param[in] val_CommSolution  - value to which commSolution must be set.
-   */
-  inline void SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
-
-};
-
-/*!
- * \class CSortFaces
- * \brief Functor, used for a different sorting of the faces than the < operator
- *        of CFaceOfElement.
- * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
- */
-class CVolumeElementFEM;   // Forward declaration to avoid problems.
-class CSortFaces {
-private:
-  unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
-  unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
-
-  const CVolumeElementFEM *volElem; /*!< \brief The locally stored volume elements. */
-
-public:
-  /*!
-   * \brief Constructor of the class. Set the values of the member variables.
-   */
-  CSortFaces(unsigned long            val_nVolElemOwned,
-             unsigned long            val_nVolElemTot,
-             const CVolumeElementFEM *val_volElem) {
-    nVolElemOwned = val_nVolElemOwned;
-    nVolElemTot = val_nVolElemTot;
-    volElem = val_volElem;
-  }
-
-  /*!
-   * \brief Default constructor of the class. Disabled.
-   */
-   CSortFaces(void) = delete;
-
- /*!
-  * \brief Operator used for the comparison.
-  * \param[in] f0 - First face in the comparison.
-  * \param[in] f1 - Second face in the comparison.
-  */
-  bool operator()(const CFaceOfElement &f0,
-                  const CFaceOfElement &f1);
-};
-
-/*!
- * \class CSortBoundaryFaces
- * \brief Functor, used for a different sorting of the faces than the < operator
- *        of CSurfaceElementFEM.
- * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
- */
-struct CSurfaceElementFEM;   // Forward declaration to avoid problems.
-struct CSortBoundaryFaces {
- /*!
-  * \brief Operator used for the comparison.
-  * \param[in] f0 - First boundary face in the comparison.
-  * \param[in] f1 - Second boundary face in the comparison.
-  */
-  bool operator()(const CSurfaceElementFEM &f0,
-                  const CSurfaceElementFEM &f1);
-};
-
-/*!
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
@@ -193,78 +63,19 @@ struct CSortBoundaryFaces {
  */
 class CVolumeElementFEM {
 public:
-  bool elemIsOwned;             /*!< \brief Whether or not this is an owned element. */
-  bool JacIsConsideredConstant; /*!< \brief Whether or not the Jacobian of the transformation
-                                     to the standard element is considered constant. */
-
-  int rankOriginal;            /*!< \brief The rank where the original volume is stored. For
-                                    the owned volumes, this is simply the current rank. */
-
-  short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
-                                    element. Only for halo elements. A -1 indicates no periodic
-                                    transformation. */
 
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short nPolySol;     /*!< \brief Polynomial degree for the solution of the element. */
   unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short nDOFsSol;     /*!< \brief Number of DOFs for the solution of the element. */
-  unsigned short nFaces;       /*!< \brief Number of faces of the element. */
-  unsigned short timeLevel;    /*!< \brief Time level of the element when time accurate local
-                                           time stepping is employed. */
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
 
-  unsigned int factTimeLevel;        /*!< \brief Number of local time steps for this element
-                                                 compared to the largest time step when time
-                                                 accurate local time stepping is employed. */
-
-  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
   unsigned long offsetDOFsSolLocal;  /*!< \brief Local offset of the solution DOFs of this element. */
 
-  unsigned long offsetDOFsSolThisTimeLevel; /*!< \brief Local offset of the solution DOFs of this element
-                                                        in the working vector of the time level of the element.
-                                                        Needed for time accurate local time stepping. */
-  unsigned long offsetDOFsSolPrevTimeLevel; /*!< \brief Local offset of the solution DOFs of this element
-                                                        in the working vector of the previous time level. */
-
-  vector<bool> JacFacesIsConsideredConstant; /*!< \brief Vector with the booleans whether the Jacobian of the
-                                                  transformation to the standard element is constant for the faces. */
-  vector<bool> ElementOwnsFaces;             /*!< \brief Vector with the booleans whether the element is the
-                                                         owner of the faces. */
-
-  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
-
-  su2double lenScale;                /*!< \brief Length scale of the element. */
-
-  su2double shockSensorValue;               /*!< \brief Value for sensing a shock */
-  su2double shockArtificialViscosity;       /*!< \brief Artificial viscosity for a shock */
-
-
-  vector<su2double> metricTerms;            /*!< \brief Vector of the metric terms in the
-                                                        integration points of this element. */
-  vector<su2double> metricTermsSolDOFs;     /*!< \brief Vector of the metric terms in the
-                                                        solution DOFs of this element. */
-  vector<su2double> metricTerms2ndDer;      /*!< \brief Vector of the metric terms needed for the
-                                                        computation of the 2nd derivatives in the
-                                                        integration points. Only determined when
-                                                        needed (ADER-DG with non-aliased predictor
-                                                        for the Navier-Stokes equations). */
-  vector<su2double> gridVelocities;         /*!< \brief Vector of the grid velocities in the
-                                                        integration points of this element. */
-  vector<su2double> gridVelocitiesSolDOFs;  /*!< \brief Vector of the grid velocities in the
-                                                        solution DOFs of this element. */
-  vector<su2double> massMatrix;             /*!< \brief Mass matrix for this element. */
-  vector<su2double> invMassMatrix;          /*!< \brief Inverse mass matrix for this element. */
-  vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
-
-  vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
   vector<su2double> coorSolDOFs;            /*!< \brief The coordinates of the solution DOFs of this element. */
-  vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
-                                                        the integration points of this element. */
-  vector<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
-                                                        the solution DOFs of this element. */
 
   /*!
    * \brief Get all the corner points of all the faces of this element. It must be made sure
@@ -311,41 +122,6 @@ struct CPointFEM {
  * \version 7.0.5 "Blackbird"
  */
 struct CInternalFaceElementFEM {
-  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
-
-  unsigned short indStandardElement; /*!< \brief Index in the vector of standard face elements. */
-
-  unsigned long elemID0;              /*!< \brief Element ID adjacent to side 0 of the face. */
-  unsigned long elemID1;              /*!< \brief Element ID adjacent to side 1 of the face. */
-
-  vector<unsigned long> DOFsGridFaceSide0;   /*!< \brief Vector of the grid DOFs of side 0 of the face. */
-  vector<unsigned long> DOFsGridFaceSide1;   /*!< \brief Vector of the grid DOFs of side 1 of the face. */
-  vector<unsigned long> DOFsSolFaceSide0;    /*!< \brief Vector of the solution DOFs of side 0 of the face. */
-  vector<unsigned long> DOFsSolFaceSide1;    /*!< \brief Vector of the solution DOFs of side 1 of the face. */
-
-  vector<unsigned long> DOFsGridElementSide0;   /*!< \brief Vector of the grid DOFs of the element of side 0. */
-  vector<unsigned long> DOFsGridElementSide1;   /*!< \brief Vector of the grid DOFs of the element of side 1. */
-  vector<unsigned long> DOFsSolElementSide0;    /*!< \brief Vector of the solution DOFs of the element of side 0. */
-  vector<unsigned long> DOFsSolElementSide1;    /*!< \brief Vector of the solution DOFs of the element of side 1. */
-
-  vector<su2double> metricNormalsFace;     /*!< \brief The normals in the integration points of the face.
-                                                       The normals point from side 0 to side 1. */
-  vector<su2double> metricCoorDerivFace0;  /*!< \brief The terms drdx, dsdx, etc. of side 0 in the
-                                                       integration points of the face. */
-  vector<su2double> metricCoorDerivFace1;  /*!< \brief The terms dxdr, dydr, etc. of side 1 in the
-                                                       integration points of the face. */
-
-  vector<su2double> coorIntegrationPoints;  /*!< \brief Coordinates for the integration points of this face. */
-  vector<su2double> gridVelocities;         /*!< \brief Grid velocities in the integration points of this face. */
-  vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
-                                                        the integration points of this face. */
-
-  /*!
-   * \brief Less than operator of the class. Needed for the sorting.
-            The criterion for comparison are the standard element and
-            adjacent volume ID's.
-   */
-  bool operator<(const CInternalFaceElementFEM &other) const;
 
 };
 
@@ -356,51 +132,10 @@ struct CInternalFaceElementFEM {
  * \version 7.0.5 "Blackbird"
  */
 struct CSurfaceElementFEM {
-  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
-  unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
-  unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
 
-  unsigned long volElemID;         /*!< \brief ID of the corresponding volume element. */
-  unsigned long boundElemIDGlobal; /*!< \brief Global ID of this surface element inside
-                                        the boundary to which it belongs. */
-
-  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element.
-                                                 In this vector the original sequence of the grid file
-                                                 is stored. */
-
-  vector<unsigned long> DOFsGridFace;   /*!< \brief Vector of the grid DOFs of the face. In principle
-                                                    the same information as nodeIDsGrid, but the sequence
-                                                    could be different. */
   vector<unsigned long> DOFsSolFace;    /*!< \brief Vector of the solution DOFs of the face. */
-
-  vector<unsigned long> DOFsGridElement;   /*!< \brief Vector of the grid DOFs of the adjacent element. */
-  vector<unsigned long> DOFsSolElement;    /*!< \brief Vector of the solution DOFs of the adjacent element. */
-
-  vector<su2double> metricNormalsFace;     /*!< \brief The normals in the integration points of the face.
-                                                       The normals point out of the adjacent element. */
-  vector<su2double> metricCoorDerivFace;   /*!< \brief The terms drdx, dsdx, etc. in the integration
-                                                       points of the face. */
-  vector<su2double> coorIntegrationPoints; /*!< \brief The coordinates of the integration points of the face. */
-  vector<su2double> gridVelocities;         /*!< \brief Grid velocities in the integration points of this face. */
-  vector<su2double> wallDistance;          /*!< \brief The wall distances of the integration points
-                                                       of the face. */
-
-  vector<unsigned long>  donorsWallFunction;        /*!< \brief Local element IDs of the donors for the wall
-                                                                function treatment. These donors can be halo's. */
-  vector<unsigned short> nIntPerWallFunctionDonor;  /*!< \brief The number of integration points per donor
-                                                                element for the wall function treatment. */
-  vector<unsigned short> intPerWallFunctionDonor;   /*!< \brief The integration points per donor element
-                                                                for the wall function treatment. */
-  vector<vector<su2double> > matWallFunctionDonor;  /*!< \brief Matrices, which store the interpolation coefficients
-                                                                for the donors of the integration points.*/
-
-  /*!
-   * \brief Less than operator of the class. Needed for the sorting.
-            The criterion for comparison is the corresponding (local) volume ID.
-   */
-  bool operator<(const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
 
   /*!
    *  \brief Function, which determines the corner points of this surface element.
@@ -445,30 +180,9 @@ protected:
   unsigned long nVolElemTot{0};    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned{0};  /*!< \brief Number of owned local volume elements. */
 
-  vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
-                                                                  per time level. Cumulative storage. */
-  vector<unsigned long> nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
-                                                                  time level. Internal means that the solution
-                                                                  data does not need to be communicated. */
-  vector<unsigned long> nVolElemHaloPerTimeLevel;    /*!< \brief Number of local halo volume elements
-                                                                 per time level. Cumulative storage. */
-
-  vector<vector<unsigned long> > ownedElemAdjLowTimeLevel; /*!< \brief List of owned elements per time level that are
-                                                                       adjacent to elements of the lower time level. */
-  vector<vector<unsigned long> > haloElemAdjLowTimeLevel; /*!< \brief List of halo elements per time level that are
-                                                                      adjacent to elements of the lower time level. */
-
   vector<CVolumeElementFEM> volElem; /*!< \brief Vector of the local volume elements, including halos. */
 
-  vector<CPointFEM> meshPoints;      /*!< \brief Vector of the points of the FEM mesh. */
-
   vector<CBoundaryFEM> boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
-
-  vector<unsigned short> rotPerMarkers; /*!< \brief Vector, which contains the indices of the rotational
-                                                    periodic markers. */
-  vector<vector<unsigned long> > rotPerHalos; /*!< \brief Vector of vector, which contains the indices of
-                                                          the halo elements for which a rotationally periodic
-                                                          correction must be applied. */
 
   vector<int> ranksRecv;             /*!< \brief Vector of ranks, from which this rank will receive halo
                                                  information. Self communication is included. */
@@ -517,18 +231,6 @@ public:
   inline CBoundaryFEM* GetBoundaries(void) {return boundaries.data();}
 
   /*!
-  * \brief Function, which makes available the mesh points of the local FEM mesh.
-  * \return  Pointer to the mesh points of the local FEM mesh.
-  */
-  inline CPointFEM *GetMeshPoints(void) {return meshPoints.data();}
-
-  /*!
-  * \brief Function, which makes available the number of mesh points of the local FEM mesh.
-  * \return  Number of mesh points of the local FEM mesh.
-  */
-  inline unsigned long GetNMeshPoints(void) {return meshPoints.size();}
-
-  /*!
   * \brief Function, which makes available the number of owned volume elements in the local FEM mesh.
   * \return  Number of owned volume elements of the local FEM mesh.
   */
@@ -545,38 +247,6 @@ public:
   * \return  Pointer to the volume elements of the local FEM mesh.
   */
   inline CVolumeElementFEM* GetVolElem(void) {return volElem.data();}
-
-  /*!
-  * \brief Function, which makes available the number of owned volume elements per time level.
-  * \return  The pointer to the data of nVolElemOwnedPerTimeLevel.
-  */
-  inline unsigned long* GetNVolElemOwnedPerTimeLevel(void) {return nVolElemOwnedPerTimeLevel.data();}
-
-  /*!
-  * \brief Function, which makes available the number of internal volume elements per time level.
-  * \return  The pointer to the data of nVolElemInternalPerTimeLevel.
-  */
-  inline unsigned long* GetNVolElemInternalPerTimeLevel(void) {return nVolElemInternalPerTimeLevel.data();}
-
-  /*!
-  * \brief Function, which makes available the number of halo volume elements per time level.
-  * \return  The pointer to the data of nVolElemHaloPerTimeLevel.
-  */
-  inline unsigned long* GetNVolElemHaloPerTimeLevel(void) {return nVolElemHaloPerTimeLevel.data();}
-
-  /*!
-  * \brief Function, which makes available the vector of vectors containing the owned element
-           IDs adjacent to elements of a lower time level. Note that a copy is made.
-  * \return  Copy of ownedElemAdjLowTimeLevel.
-  */
-  inline vector<vector<unsigned long> > GetOwnedElemAdjLowTimeLevel(void) {return ownedElemAdjLowTimeLevel;}
-
-  /*!
-  * \brief Function, which makes available the vector of vectors containing the halo element
-           IDs adjacent to elements of a lower time level. Note that a copy is made.
-  * \return  Copy of haloElemAdjLowTimeLevel.
-  */
-  inline vector<vector<unsigned long> > GetHaloElemAdjLowTimeLevel(void) {return haloElemAdjLowTimeLevel;}
 
   /*!
   * \brief Function, which makes available the number of standard boundary faces of the solution.
@@ -617,20 +287,6 @@ public:
   * \return  Const reference to the vector of vectors of send entities.
   */
   inline const vector<vector<unsigned long> >& GetEntitiesSend(void) const {return entitiesSend;}
-
-  /*!
-  * \brief Function, which makes available the vector of rotational periodic markers
-           as a const reference.
-  * \return  Const reference to the vector with rotational periodic markers.
-  */
-  inline const vector<unsigned short>& GetRotPerMarkers(void) const {return rotPerMarkers;}
-
-  /*!
-  * \brief Function, which makes available the vector of vectors containing the rotational
-           periodic halos as a const reference.
-  * \return  Const reference to the vector of vectors with rotational periodic halos.
-  */
-  inline const vector<vector<unsigned long> >& GetRotPerHalos(void) const {return rotPerHalos;}
 
   /*!
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
@@ -715,34 +371,6 @@ protected:
  * \version 7.0.5 "Blackbird"
  */
 class CMeshFEM_DG: public CMeshFEM {
-protected:
-  vector<CFEMStandardElement> standardElementsSol;  /*!< \brief Vector that contains the standard volume elements
-                                                                used for the solution of the DG solver. */
-  vector<CFEMStandardElement> standardElementsGrid; /*!< \brief Vector that contains the standard volume elements
-                                                                used for the geometry of the DG solver. */
-
-  vector<CFEMStandardInternalFace> standardMatchingFacesSol;  /*!< \brief Vector that contains the standard matching
-                                                                          internal faces used for the solution of
-                                                                          the DG solver. */
-  vector<CFEMStandardInternalFace> standardMatchingFacesGrid; /*!< \brief Vector that contains the standard matching
-                                                                          internal faces used for the geometry of
-                                                                          the DG solver. */
-
-  vector<su2double> timeCoefADER_DG;                        /*!< \brief The time coefficients in the iteration matrix of
-                                                                        the ADER-DG predictor step. */
-  vector<su2double> timeInterpolDOFToIntegrationADER_DG;    /*!< \brief The interpolation matrix between the time DOFs and
-                                                                        the time integration points for ADER-DG. */
-  vector<su2double> timeInterpolAdjDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs of adjacent
-                                                                        elements of a higher time level and the time integration
-                                                                        points for ADER-DG. */
-
-  vector<unsigned long> nMatchingFacesInternal;          /*!< \brief Number of matching faces between between two owned elements
-                                                                     per time level. Cumulative storage format. */
-  vector<unsigned long> nMatchingFacesWithHaloElem;      /*!< \brief Number of matching faces between an owned element and a halo
-                                                                     element per time level. Cumulative storage format. */
-  vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
-
-  map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local mapping for the DOFs. */
 
 public:
   /*!
@@ -781,48 +409,6 @@ public:
   void CreateStandardVolumeElements(CConfig *config);
 
  /*!
-  * \brief Function, which makes available the time coefficients in the
-           iteration matrix of the ADER-DG predictor step.
-  * \return  The time coefficients in the iteration matrix of ADER-DG.
-  */
-  inline su2double* GetTimeCoefADER_DG(void) {return timeCoefADER_DG.data();}
-
- /*!
-  * \brief Function, which makes available the time interpolation matrix between
-           the time DOFs and time integration points for ADER-DG.
-  * \return  The time interpolation matrix for ADER-DG.
-  */
-  inline su2double* GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
-
- /*!
-  * \brief Function, which makes available the time interpolation matrix between
-           the adjacent time DOFs of the next time level and the time
-           integration points for ADER-DG.
-  * \return  The time interpolation matrix of adjacent time DOFs for ADER-DG.
-  */
-  inline su2double* GetTimeInterpolAdjDOFToIntegrationADER_DG(void) {return timeInterpolAdjDOFToIntegrationADER_DG.data();}
-
- /*!
-  * \brief Function, which makes available the number of matching internal faces
-           between an owned element and a halo element per time level.
-  * \return  The number of matching internal faces between these elements per time level.
-  */
-  inline unsigned long *GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
-
- /*!
-  * \brief Function, which makes available the number of matching internal faces
-           between two owned elements per time level.
-  * \return  The number of matching internal faces per time level.
-  */
-  inline unsigned long *GetNMatchingFacesInternal(void) {return nMatchingFacesInternal.data();}
-
- /*!
-  * \brief Function, which makes available the matching internal faces.
-  * \return  Pointer to the matching internal faces.
-  */
-  inline CInternalFaceElementFEM* GetMatchingFaces(void) {return matchingFaces.data();}
-
- /*!
   * \brief Function to compute the grid velocities for static problems.
   * \param[in] config             - Definition of the particular problem.
   * \param[in] Kind_Grid_Movement - The type of prescribed grid motion.
@@ -833,28 +419,10 @@ public:
                               const unsigned short iZone);
 
  /*!
-  * \brief Function, which makes available the number of standard volume elements of the solution.
-  * \return  Number of standard volume elements of the solution.
-  */
-  inline unsigned short GetNStandardElementsSol(void) {return standardElementsSol.size();}
-
- /*!
   * \brief Function, which makes available the standard volume elements of the solution.
   * \return  Pointer to the standard volume elements of the solution.
   */
-  inline CFEMStandardElement* GetStandardElementsSol(void) {return standardElementsSol.data();}
-
- /*!
-  * \brief Function, which makes available the number of standard internal matching faces of the solution.
-  * \return  Number of standard internal matching faces of the solution.
-  */
-  inline unsigned short GetNStandardMatchingFacesSol(void) {return standardMatchingFacesSol.size();}
-
- /*!
-  * \brief Function, which makes available the standard internal matching faces of the solution.
-  * \return  Pointer to the standard internal matching faces of the solution.
-  */
-  inline CFEMStandardInternalFace* GetStandardMatchingFacesSol(void) {return standardMatchingFacesSol.data();}
+  inline CFEMStandardElement* GetStandardElementsSol(void) {return NULL;}
 
  /*!
   * \brief Function, which computes a length scale of the volume elements.
@@ -886,18 +454,6 @@ public:
    * \brief Set the local index that correspond with the global numbering index.
    */
   void SetGlobal_to_Local_Point() override;
-
-  /*!
-   * \brief Get the local index that correspond with the global numbering index.
-   * \param[in] val_ipoint - Global point.
-   * \return Local index that correspond with the global index, -1 if not found on the current rank.
-   */
-  inline long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override {
-    auto it = Global_to_Local_Point.find(val_ipoint);
-    if (it != Global_to_Local_Point.cend())
-      return it->second;
-    return -1;
-  }
 
   /*!
    * \brief Function, which carries out the preprocessing tasks when wall functions are used.

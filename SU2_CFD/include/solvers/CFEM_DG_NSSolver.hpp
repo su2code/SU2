@@ -38,54 +38,6 @@
  * \version 7.0.5 "Blackbird"
  */
 class CFEM_DG_NSSolver final : public CFEM_DG_EulerSolver {
-private:
-  su2double Viscosity_Inf; /*!< \brief Viscosity at the infinity. */
-  su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
-  su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;            /*!< \brief Turbulent Prandtl number. */
-
-  CSGSModel *SGSModel;     /*!< \brief LES Subgrid Scale model. */
-  bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
-
-  su2double
-  *CL_Visc,                 /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
-  *CD_Visc,                 /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
-  *CSF_Visc,                /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
-  *CMx_Visc,                /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
-  *CMy_Visc,                /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
-  *CMz_Visc,                /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
-  *CFx_Visc,                /*!< \brief Force x coefficient (viscous contribution) for each boundary. */
-  *CFy_Visc,                /*!< \brief Force y coefficient (viscous contribution) for each boundary. */
-  *CFz_Visc,                /*!< \brief Force z coefficient (viscous contribution) for each boundary. */
-  *CEff_Visc,               /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
-  *Surface_CL_Visc,         /*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CD_Visc,         /*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CSF_Visc,        /*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CEff_Visc,       /*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CFx_Visc,        /*!< \brief Force x coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CFy_Visc,        /*!< \brief Force y coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CFz_Visc,        /*!< \brief Force z coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CMx_Visc,        /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CMy_Visc,        /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_CMz_Visc,        /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
-  *Heat_Visc,               /*!< \brief Heat load (viscous contribution) for each boundary. */
-  *MaxHeatFlux_Visc;        /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-
-  su2double
-  AllBound_CD_Visc,         /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CL_Visc,         /*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CSF_Visc,        /*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CMx_Visc,        /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Visc,        /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Visc,        /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Visc,       /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
-  AllBound_CFx_Visc,        /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Visc,        /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Visc,        /*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_HeatFlux_Visc,     /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_MaxHeatFlux_Visc;  /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
-  su2double StrainMag_Max,
-  Omega_Max;                  /*!< \brief Maximum Strain Rate magnitude and Omega. */
 
 public:
 
@@ -382,74 +334,11 @@ public:
                  su2double                *workArray) override;
 
   /*!
-   * \brief Compute the viscosity at the infinity.
-   * \return Value of the viscosity at the infinity.
-   */
-  inline su2double GetViscosity_Inf(void) const override { return Viscosity_Inf; }
-
-  /*!
-   * \brief Get the turbulent kinetic energy at the infinity.
-   * \return Value of the turbulent kinetic energy at the infinity.
-   */
-  inline su2double GetTke_Inf(void) const override { return Tke_Inf; }
-
-  /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Friction_Forces(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Get the non dimensional lift coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetCL_Visc(unsigned short val_marker) const override { return CL_Visc[val_marker]; }
-
-  /*!
-   * \brief Get the non dimensional sideforce coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetCSF_Visc(unsigned short val_marker) const override { return CSF_Visc[val_marker]; }
-
-  /*!
-   * \brief Get the non dimensional drag coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetCD_Visc(unsigned short val_marker) const override { return CD_Visc[val_marker]; }
-
-  /*!
-   * \brief Get the total non dimensional lift coefficient (viscous contribution).
-   * \return Value of the lift coefficient (viscous contribution).
-   */
-  inline su2double GetAllBound_CL_Visc() const override { return AllBound_CL_Visc; }
-
-  /*!
-   * \brief Get the total non dimensional sideforce coefficient (viscous contribution).
-   * \return Value of the lift coefficient (viscous contribution).
-   */
-  inline su2double GetAllBound_CSF_Visc() const override { return AllBound_CSF_Visc; }
-
-  /*!
-   * \brief Get the total non dimensional drag coefficient (viscous contribution).
-   * \return Value of the drag coefficient (viscous contribution).
-   */
-  inline su2double GetAllBound_CD_Visc() const override { return AllBound_CD_Visc; }
-
-  /*!
-   * \brief Get the max Omega.
-   * \return Value of the max Omega.
-   */
-  inline su2double GetOmega_Max(void) const override { return Omega_Max; }
-
-  /*!
-   * \brief Get the max Strain rate magnitude.
-   * \return Value of the max Strain rate magnitude.
-   */
-  inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
 
 private:
 
