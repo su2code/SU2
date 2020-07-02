@@ -150,7 +150,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Normal[iDim] / val_proj_vector;
+                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_proj_vector;
     }
   }
 }
@@ -789,7 +789,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  if(correct_gradient) proj_vector_ij = proj_vector_ij;
+  if(correct_gradient) proj_vector_ij = proj_vector_ij/dist_ij_2;
   else proj_vector_ij = 1.0;
 
   /*--- Laminar and Eddy viscosity ---*/
@@ -817,7 +817,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (correct_gradient) {
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
-                    proj_vector_ij, nDim+1);
+                    dist_ij_2, nDim+1);
   }
 
   /*--- Wall shear stress values (wall functions) ---*/
@@ -850,8 +850,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    // const su2double proj_vector_ij = (correct_gradient) ? sqrt(dist_ij_2) : su2double(1.0);
-    proj_vector_ij = Area*Area/proj_vector_ij;
+    // const su2double proj_vector_ij = (correct_gradient) ? sqrt(dist_ij_2) : su2double(1.0);    
     SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
     SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
                         Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
