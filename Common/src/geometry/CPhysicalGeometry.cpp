@@ -4391,8 +4391,8 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
 
       if (checkTria(iElem,0,1,2)) {
-    	  elem[iElem]->Change_Orientation();
-    	  tria_flip++;
+        elem[iElem]->Change_Orientation();
+        tria_flip++;
       }
     }
 
@@ -4419,8 +4419,8 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
       if (checkTetra(iElem,0,1,2,3) < 0.0) {
-    	  elem[iElem]->Change_Orientation();
-    	  tet_flip++;
+        elem[iElem]->Change_Orientation();
+        tet_flip++;
       }
     }
 
@@ -4466,7 +4466,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
       bool test_4 = checkTetra(iElem,4,7,6,3);
 
       if (test_1 && test_2 && test_3 && test_4) {
-    	  elem[iElem]->Change_Orientation();
+        elem[iElem]->Change_Orientation();
         hexa_flip++;
       }
       else if (test_1 || test_2 || test_3 || test_4) {
