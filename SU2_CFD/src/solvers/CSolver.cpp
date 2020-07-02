@@ -5316,10 +5316,12 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         }// iVar
       }// iDim
       
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      if (geometry->node[iPoint]->GetDomain()) {
+        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      }
       
-      if (jPoint != iPoint) {
+      if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint)) {
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       }
@@ -5348,10 +5350,10 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
         }// if not send recv
       }// iMarker
       
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      if (jPoint != iPoint) {
+      if (geometry->node[iPoint]->GetDomain())
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      }
     }// if physical boundary
     
     if (jPoint != iPoint) {
@@ -5378,11 +5380,15 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           }// iVar
         }// iDim
         
-        Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-        Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
+        if (geometry->node[jPoint]->GetDomain()) {
+          Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+          Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
+        }
         
-        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+        if (geometry->node[iPoint]->GetDomain()) {
+          Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+          Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+        }
       }// iNode
       
       /*--- Influence of boundary j on R(i,j) ---*/
@@ -5408,8 +5414,10 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           }// if not send recv
         }// iMarker
         
-        Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+        if (geometry->node[jPoint]->GetDomain())
+          Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
+        if (geometry->node[iPoint]->GetDomain())
+          Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
       }// if physical boundary
     }// jPoint
   }// GG
