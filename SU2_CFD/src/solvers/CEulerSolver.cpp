@@ -3215,41 +3215,41 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double tke_i = turbNodes->GetPrimitive(iPoint,0);
       su2double tke_j = turbNodes->GetPrimitive(jPoint,0);
 
-      if (muscl) {
-        /*--- Reconstruct turbulence variables. ---*/
+      // if (muscl) {
+      //   /*--- Reconstruct turbulence variables. ---*/
 
-        su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-        }
+      //   su2double Vector_ij[MAXNDIM] = {0.0};
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+      //   }
 
-        auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-        auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+      //   auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+      //   auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
 
-        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      //   su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-        if (limiter) {
-          Limiter_i = turbNodes->GetLimiter(iPoint);
-          Limiter_j = turbNodes->GetLimiter(jPoint);
-        }
+      //   if (limiter) {
+      //     Limiter_i = turbNodes->GetLimiter(iPoint);
+      //     Limiter_j = turbNodes->GetLimiter(jPoint);
+      //   }
 
-        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*TurbGrad_j[0][iDim];
-        }
-        if (limiter) {
-          if (van_albada) {
-            su2double Turb_ij = tke_j - tke_i;
-            Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
-            Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
-          }
-          Project_Grad_i *= Limiter_i[0];
-          Project_Grad_j *= Limiter_j[0];
-        }
-        tke_i += Project_Grad_i;
-        tke_j += Project_Grad_j;
-      }
+      //   su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
+      //     Project_Grad_j -= Vector_ij[iDim]*TurbGrad_j[0][iDim];
+      //   }
+      //   if (limiter) {
+      //     if (van_albada) {
+      //       su2double Turb_ij = tke_j - tke_i;
+      //       Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
+      //       Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
+      //     }
+      //     Project_Grad_i *= Limiter_i[0];
+      //     Project_Grad_j *= Limiter_j[0];
+      //   }
+      //   tke_i += Project_Grad_i;
+      //   tke_j += Project_Grad_j;
+      // }
 
       numerics->SetTurbKineticEnergy(tke_i, tke_j);
     }
