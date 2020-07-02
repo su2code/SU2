@@ -11007,6 +11007,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double *Flow_Dir = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
+
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -11394,24 +11395,29 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
 
+  /*-----------------------------------------------------------------------------------------------------------------------*/
+  /*    Actuator disk model with variable load along disk radius. Force coefficients distribution given in an input file.  */
+  /*    Actuator disk data inizialized in function SetActDisk_BCThrust.                                                    */
+  /*    Entropy, acoustic Riemann invariant R+ and  tangential velocity extrapolated  from upstream flow;                  */
+  /*    acoustic Riemann invariant R- is extrapolated from downstream.                                                     */
+  /*    Hovering condition simulation not available yet: freestream velocity must be different than zero.                  */
+  /*    Author: E. Saetta, L. Russo, R. Tognaccini (GitHub references EttoreSaetta, lorenzorusso07, rtogna).               */
+  /*    Theoretical and Applied Aerodynamics Research Group (TAARG), University of Naples Federico II.                     */
+  /*    First release date : July 1st 2020, SU2 7.0.5 “Blackbird”                                                          */
+  /*    modified on:                                                                                                       */
+  /*-----------------------------------------------------------------------------------------------------------------------*/
+
   unsigned short iDim;
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
-  su2double Pressure, Velocity[3], Target_Press_Jump, Target_Temp_Jump,
-  Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet, Mach_Outlet,
-  Area, UnitNormal[3], *V_outlet, *V_domain, *V_inlet, P_Total, T_Total, H_Total, Temperature,
-  Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd;
-  su2double Factor, P_static, T_static, SoS_outlet, Rho_outlet, Rho_inlet;
-  su2double Vel_normal_inlet[3], Vel_tangent_inlet[3], Vel_inlet[3];
-  su2double Vel_normal_outlet[3], Vel_tangent_outlet[3], Vel_outlet[3];
-  su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
-  su2double Vel_normal_outlet_, Vel_outlet_;
+  su2double Pressure, Velocity[3],
+  Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet,
+  Area, UnitNormal[3], *V_outlet, *V_domain, *V_inlet;
 
-  su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
-  Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
-  Mach_in;
+  su2double Pressure_out, Density_out,
+  Pressure_in, Density_in;
 
   su2double C[3], Prop_Axis[3], R, r[3], r_;
-  su2double Fa, Fr, Ft, Fx, Fy, Fz;
+  su2double Fa, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
   su2double Temperature_out, H_in, H_out;
   su2double FQ, Q_out, Density_Disk;
@@ -11424,7 +11430,6 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
 
   su2double *Normal = new su2double[nDim];
-  su2double *Flow_Dir = new su2double[nDim];
 
   /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
   for (iDim = 0; iDim < nDim; iDim++){
@@ -11627,7 +11632,6 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   /*--- Free locally allocated memory ---*/
 
   delete [] Normal;
-  delete [] Flow_Dir;
 }
 
 void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
