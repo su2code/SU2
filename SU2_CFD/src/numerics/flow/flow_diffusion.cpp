@@ -441,8 +441,8 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       // Jacobian w.r.t. momentum
-      tau_jacobian_i[iDim][jDim+1] = -xi_i*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
-      tau_jacobian_j[iDim][jDim+1] = -xi_j*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
+      tau_jacobian_i[iDim][jDim+1] = -xi_i*(val_normal[iDim]*val_normal[jDim] - delta[iDim][jDim]/3.0);
+      tau_jacobian_j[iDim][jDim+1] = -xi_j*(val_normal[iDim]*val_normal[jDim] - delta[iDim][jDim]/3.0);
     }
     // Jacobian w.r.t. density
     tau_jacobian_i[iDim][0] = 0;
