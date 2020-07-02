@@ -403,7 +403,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_cont
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
-        
+    flowNodes->SetEddyViscosity(iPoint,muT);
   }
 
 }
