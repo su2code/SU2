@@ -222,7 +222,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         bool neg_k_or_omega_j = (solution_j[0] < 0.0) || (solution_j[1] < 0.0);
 
         numerics->SetTurbVar(neg_k_or_omega_i ? Turb_i : solution_i, 
-                             neg_k_or_omeag_j ? Turb_j : solution_j);
+                             neg_k_or_omega_j ? Turb_j : solution_j);
       }
     }
 
