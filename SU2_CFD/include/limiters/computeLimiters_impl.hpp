@@ -55,11 +55,12 @@
  * \param[out] limiter - Reconstruction limiter for the field.
  *
  * Template parameters:
- * \param FieldType - Generic object with operator (iPoint,iVar)
- * \param GradientType - Generic object with operator (iPoint,iVar,iDim)
+ * \param nDim - Number of dimensions.
  * \param LimiterKind - Used to instantiate the right details class.
+ * \param FieldType - Generic object with operator (iPoint,iVar).
+ * \param GradientType - Generic object with operator (iPoint,iVar,iDim).
  */
-template<class FieldType, class GradientType, ENUM_LIMITER LimiterKind>
+template<size_t nDim, ENUM_LIMITER LimiterKind, class FieldType, class GradientType>
 void computeLimiters_impl(CSolver* solver,
                           MPI_QUANTITIES kindMpiComm,
                           PERIODIC_QUANTITIES kindPeriodicComm1,
@@ -74,28 +75,25 @@ void computeLimiters_impl(CSolver* solver,
                           FieldType& fieldMax,
                           FieldType& limiter)
 {
-  constexpr size_t MAXNDIM = 3;
-  constexpr size_t MAXNVAR = 8;
+  constexpr size_t MAXNVAR = 32;
 
   if (varEnd > MAXNVAR)
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
 
-  size_t nPointDomain = geometry.GetnPointDomain();
-  size_t nPoint = geometry.GetnPoint();
-  size_t nDim = geometry.GetnDim();
+  const size_t nPointDomain = geometry.GetnPointDomain();
+  const size_t nPoint = geometry.GetnPoint();
 
   /*--- If we do not have periodicity we can use a
    *    more efficient access pattern to memory. ---*/
 
-  bool periodic = (solver != nullptr) &&
-                  (kindPeriodicComm1 != PERIODIC_NONE) &&
-                  (config.GetnMarker_Periodic() > 0);
+  const bool periodic = (solver != nullptr) &&
+                        (kindPeriodicComm1 != PERIODIC_NONE) &&
+                        (config.GetnMarker_Periodic() > 0);
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
 
-  size_t chunkSize = computeStaticChunkSize(nPointDomain,
-                     omp_get_max_threads(), OMP_MAX_CHUNK);
+  const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
   /*--- If limiters are frozen do not record the computation ---*/
@@ -131,7 +129,7 @@ void computeLimiters_impl(CSolver* solver,
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
     auto nodes = geometry.nodes;
-    const su2double* coord_i = nodes->GetCoord(iPoint);
+    const auto coord_i = nodes->GetCoord(iPoint);
 
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
@@ -168,12 +166,12 @@ void computeLimiters_impl(CSolver* solver,
     {
       size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
 
-      const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
+      const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
       /*--- Distance vector from iPoint to face (middle of the edge). ---*/
 
-      su2double dist_ij[MAXNDIM] = {0.0};
+      su2double dist_ij[nDim] = {0.0};
 
       for(size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);

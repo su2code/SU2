@@ -71,7 +71,7 @@ protected:
   VectorType Delta_Time;         /*!< \brief Time step. */
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
-  CVectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
@@ -759,17 +759,10 @@ public:
   inline su2double GetRmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Rmatrix(iPoint,iDim,jDim); }
 
   /*!
-   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \return Value of the Rmatrix entry.
-   */
-  inline su2double **GetRmatrix(unsigned long iPoint) { return Rmatrix[iPoint]; }
-
-  /*!
    * \brief Get the value Rmatrix for the entire domain.
    * \return Reference to the Rmatrix.
    */
-  inline CVectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
+  inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.

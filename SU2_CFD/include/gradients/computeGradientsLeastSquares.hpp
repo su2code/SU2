@@ -29,185 +29,21 @@
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
+namespace detail {
 
 /*!
- * \brief Compute the gradient of a field using inverse-distance-weighted or
- *        unweighted Least-Squares approximation.
- * \note See notes from computeGradientsGreenGauss.hpp.
- * \param[in] solver - Optional, solver associated with the field (used only for MPI).
- * \param[in] kindMpiComm - Type of MPI communication required.
- * \param[in] kindPeriodicComm - Type of periodic communication required.
- * \param[in] geometry - Geometric grid properties.
- * \param[in] weighted - Use inverse-distance weights.
- * \param[in] config - Configuration of the problem, used to identify types of boundaries.
- * \param[in] field - Generic object implementing operator (iPoint, iVar).
- * \param[in] varBegin - Index of first variable for which to compute the gradient.
- * \param[in] varEnd - Index of last variable for which to compute the gradient.
- * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
- * \param[out] Rmatrix - Generic object implementing operator (iPoint, iDim, iDim).
+ * \brief Solve the least-squares problem for one point.
+ * \note See detail::computeGradientsLeastSquares for the
+ *       purpose of template "nDim" and "periodic".
  */
-template<class FieldType, class GradientType, class RMatrixType>
-void computeGradientsLeastSquares(CSolver* solver,
-                                  MPI_QUANTITIES kindMpiComm,
-                                  PERIODIC_QUANTITIES kindPeriodicComm,
-                                  CGeometry& geometry,
-                                  const CConfig& config,
-                                  bool weighted,
-                                  const FieldType& field,
-                                  size_t varBegin,
-                                  size_t varEnd,
-                                  GradientType& gradient,
-                                  RMatrixType& Rmatrix)
-{
-  constexpr size_t MAXNDIM = 3;
-  const bool periodic = (solver != nullptr) && (config.GetnMarker_Periodic() > 0);
-
-  size_t nPointDomain = geometry.GetnPointDomain();
-  size_t nDim = geometry.GetnDim();
-
-#ifdef HAVE_OMP
-  constexpr size_t OMP_MAX_CHUNK = 512;
-
-  size_t chunkSize = computeStaticChunkSize(nPointDomain,
-                     omp_get_max_threads(), OMP_MAX_CHUNK);
-#endif
-
-  /*--- First loop over non-halo points of the grid. ---*/
-
-  SU2_OMP_FOR_DYN(chunkSize)
-  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
-  {
-    auto nodes = geometry.nodes;
-    const su2double* coord_i = nodes->GetCoord(iPoint);
-
-    AD::StartPreacc();
-    AD::SetPreaccIn(coord_i, nDim);
-
-    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      AD::SetPreaccIn(field(iPoint,iVar));
-
-    /*--- Clear gradient and Rmatrix. ---*/
-
-    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        gradient(iPoint, iVar, iDim) = 0.0;
-
-    for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = 0; jDim < nDim; ++jDim)
-        Rmatrix(iPoint, iDim, jDim) = 0.0;
-
-
-    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
-    {
-      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
-
-      const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
-      AD::SetPreaccIn(coord_j, nDim);
-
-      /*--- Distance vector from iPoint to jPoint ---*/
-
-      su2double dist_ij[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, coord_j, coord_i, dist_ij);
-
-      /*--- Compute inverse weight, default 1 (unweighted). ---*/
-
-      su2double weight = 1.0;
-      if(weighted) weight = GeometryToolbox::SquaredNorm(nDim, dist_ij);
-
-      /*--- Sumations for entries of upper triangular matrix R. ---*/
-
-      if (weight > 0.0)
-      {
-        weight = 1.0 / weight;
-
-        Rmatrix(iPoint,0,0) += dist_ij[0]*dist_ij[0]*weight;
-        Rmatrix(iPoint,0,1) += dist_ij[0]*dist_ij[1]*weight;
-        Rmatrix(iPoint,1,1) += dist_ij[1]*dist_ij[1]*weight;
-
-        if (nDim == 3)
-        {
-          Rmatrix(iPoint,0,2) += dist_ij[0]*dist_ij[2]*weight;
-          Rmatrix(iPoint,1,2) += dist_ij[1]*dist_ij[2]*weight;
-          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
-          Rmatrix(iPoint,2,2) += dist_ij[2]*dist_ij[2]*weight;
-        }
-
-        /*--- Entries of c:= transpose(A)*b ---*/
-
-        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        {
-          AD::SetPreaccIn(field(jPoint,iVar));
-
-          su2double delta_ij = weight * (field(jPoint,iVar) - field(iPoint,iVar));
-
-          for (size_t iDim = 0; iDim < nDim; ++iDim)
-            gradient(iPoint, iVar, iDim) += dist_ij[iDim] * delta_ij;
-        }
-      }
-    }
-
-    if (periodic)
-    {
-      /*--- A second loop is required after periodic comms, checkpoint the preacc. ---*/
-
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        for (size_t jDim = 0; jDim < nDim; ++jDim)
-          AD::SetPreaccOut(Rmatrix(iPoint, iDim, jDim));
-
-      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
-
-      AD::EndPreacc();
-    }
-    else {
-      /*--- Periodic comms are not needed, solve the LS problem for iPoint. ---*/
-
-      solveLeastSquares(iPoint, false, nDim, varBegin, varEnd, Rmatrix, gradient);
-    }
-  }
-
-  /*--- Correct the gradient values across any periodic boundaries. ---*/
-
-  if (periodic)
-  {
-    for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
-    {
-      solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
-      solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
-    }
-
-    /*--- Second loop over points of the grid to compute final gradient. ---*/
-
-    SU2_OMP_FOR_DYN(chunkSize)
-    for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
-      solveLeastSquares(iPoint, true, nDim, varBegin, varEnd, Rmatrix, gradient);
-  }
-
-  /*--- If no solver was provided we do not communicate ---*/
-
-  if (solver != nullptr)
-  {
-    /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
-
-    solver->InitiateComms(&geometry, &config, kindMpiComm);
-    solver->CompleteComms(&geometry, &config, kindMpiComm);
-  }
-
-}
-
-/*!
- * \brief Solve the LS problem prepared above.
- */
-template<class GradientType, class RMatrixType>
+template<size_t nDim, bool periodic, class GradientType, class RMatrixType>
 FORCEINLINE void solveLeastSquares(size_t iPoint,
-                                   bool periodic,
-                                   size_t nDim,
                                    size_t varBegin,
                                    size_t varEnd,
                                    const RMatrixType& Rmatrix,
-                                   GradientType& gradient) {
-  constexpr size_t MAXNDIM = 3;
+                                   GradientType& gradient)
+{
+  constexpr auto eps = std::numeric_limits<passivedouble>::epsilon();
 
   /*--- Entries of upper triangular matrix R. ---*/
 
@@ -216,18 +52,16 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   su2double r22 = Rmatrix(iPoint,1,1);
   su2double r13 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
 
-  if (periodic)
-  {
+  if (periodic) {
     AD::StartPreacc();
     AD::SetPreaccIn(r11);
     AD::SetPreaccIn(r12);
     AD::SetPreaccIn(r22);
   }
 
-  if (r11 >= 0.0) r11 = sqrt(r11);
-  if (r11 >= 0.0) r12 /= r11; else r12 = 0.0;
-  su2double tmp = r22-r12*r12;
-  if (tmp >= 0.0) r22 = sqrt(tmp); else r22 = 0.0;
+  r11 = sqrt(max(r11, eps));
+  r12 /= r11;
+  r22 = sqrt(max(r22 - r12*r12, eps));
 
   if (nDim == 3) {
     r13   = Rmatrix(iPoint,0,2);
@@ -235,39 +69,29 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
     r23_b = Rmatrix(iPoint,2,1);
     r33   = Rmatrix(iPoint,2,2);
 
-    if (periodic)
-    {
+    if (periodic) {
       AD::SetPreaccIn(r13);
       AD::SetPreaccIn(r23_a);
       AD::SetPreaccIn(r23_b);
       AD::SetPreaccIn(r33);
     }
 
-    if (r11 >= 0.0) r13 /= r11; else r13 = 0.0;
-
-    if ((r22 >= 0.0) && (r11*r22 >= 0.0)) {
-      r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-    } else {
-      r23 = 0.0;
-    }
-
-    tmp = r33 - r23*r23 - r13*r13;
-    if (tmp >= 0.0) r33 = sqrt(tmp); else r33 = 0.0;
+    r13 /= r11;
+    r23 = r23_a/r22 - r23_b*r12/(r11*r22);
+    r33 = sqrt(max(r33 - r23*r23 - r13*r13, eps));
   }
 
   /*--- Compute determinant ---*/
 
-  su2double detR2 = (r11*r22)*(r11*r22);
-  if (nDim == 3) detR2 *= r33*r33;
+  const su2double detR2 = pow(r11*r22*r33, 2);
 
   /*--- Detect singular matrix ---*/
 
-  bool singular = (detR2 <= EPS);
-  if(singular) detR2 = 1.0;
+  const bool singular = (detR2 < eps);
 
   /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
-  su2double Smatrix[MAXNDIM][MAXNDIM];
+  su2double Smatrix[nDim][nDim];
 
   if (singular) {
     for (size_t iDim = 0; iDim < nDim; ++iDim)
@@ -301,8 +125,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
     }
   }
 
-  if (periodic)
-  {
+  if (periodic) {
     /*--- Stop preacc here as gradient is in/out. ---*/
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
@@ -314,7 +137,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
   {
-    su2double Cvector[MAXNDIM] = {0.0};
+    su2double Cvector[nDim] = {0.0};
 
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
@@ -324,12 +147,201 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
       gradient(iPoint, iVar, iDim) = Cvector[iDim];
   }
 
-  if (!periodic)
-  {
+  if (!periodic) {
     /*--- Stop preacc here instead as gradient is only out. ---*/
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
     AD::EndPreacc();
+  }
+}
+
+/*!
+ * \brief Compute the gradient of a field using inverse-distance-weighted or
+ *        unweighted Least-Squares approximation.
+ * \note See notes from computeGradientsGreenGauss.hpp.
+ * \param[in] solver - Optional, solver associated with the field (used only for MPI).
+ * \param[in] kindMpiComm - Type of MPI communication required.
+ * \param[in] kindPeriodicComm - Type of periodic communication required.
+ * \param[in] geometry - Geometric grid properties.
+ * \param[in] weighted - Use inverse-distance weights.
+ * \param[in] config - Configuration of the problem, used to identify types of boundaries.
+ * \param[in] field - Generic object implementing operator (iPoint, iVar).
+ * \param[in] varBegin - Index of first variable for which to compute the gradient.
+ * \param[in] varEnd - Index of last variable for which to compute the gradient.
+ * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
+ * \param[out] Rmatrix - Generic object implementing operator (iPoint, iDim, iDim).
+ */
+template<size_t nDim, class FieldType, class GradientType, class RMatrixType>
+void computeGradientsLeastSquares(CSolver* solver,
+                                  MPI_QUANTITIES kindMpiComm,
+                                  PERIODIC_QUANTITIES kindPeriodicComm,
+                                  CGeometry& geometry,
+                                  const CConfig& config,
+                                  bool weighted,
+                                  const FieldType& field,
+                                  size_t varBegin,
+                                  size_t varEnd,
+                                  GradientType& gradient,
+                                  RMatrixType& Rmatrix)
+{
+  const bool periodic = (solver != nullptr) && (config.GetnMarker_Periodic() > 0);
+
+  const size_t nPointDomain = geometry.GetnPointDomain();
+
+#ifdef HAVE_OMP
+  constexpr size_t OMP_MAX_CHUNK = 512;
+
+  size_t chunkSize = computeStaticChunkSize(nPointDomain,
+                     omp_get_max_threads(), OMP_MAX_CHUNK);
+#endif
+
+  /*--- First loop over non-halo points of the grid. ---*/
+
+  SU2_OMP_FOR_DYN(chunkSize)
+  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+  {
+    auto nodes = geometry.nodes;
+    const auto coord_i = nodes->GetCoord(iPoint);
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(coord_i, nDim);
+
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      AD::SetPreaccIn(field(iPoint,iVar));
+
+    /*--- Clear gradient and Rmatrix. ---*/
+
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        gradient(iPoint, iVar, iDim) = 0.0;
+
+    for (size_t iDim = 0; iDim < nDim; ++iDim)
+      for (size_t jDim = 0; jDim < nDim; ++jDim)
+        Rmatrix(iPoint, iDim, jDim) = 0.0;
+
+
+    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
+    {
+      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
+
+      const auto coord_j = geometry.nodes->GetCoord(jPoint);
+      AD::SetPreaccIn(coord_j, nDim);
+
+      /*--- Distance vector from iPoint to jPoint ---*/
+
+      su2double dist_ij[nDim] = {0.0};
+      GeometryToolbox::Distance(nDim, coord_j, coord_i, dist_ij);
+
+      /*--- Compute inverse weight, default 1 (unweighted). ---*/
+
+      su2double weight = 1.0;
+      if(weighted) weight = GeometryToolbox::SquaredNorm(nDim, dist_ij);
+
+      /*--- Sumations for entries of upper triangular matrix R. ---*/
+
+      if (weight > 0.0)
+      {
+        weight = 1.0 / weight;
+
+        for (size_t iDim = 0; iDim < nDim; ++iDim)
+          for (size_t jDim = iDim; jDim < nDim; ++jDim)
+            Rmatrix(iPoint,iDim,jDim) += dist_ij[iDim]*dist_ij[jDim]*weight;
+
+        if (nDim == 3)
+          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
+
+        /*--- Entries of c:= transpose(A)*b ---*/
+
+        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+        {
+          AD::SetPreaccIn(field(jPoint,iVar));
+
+          su2double delta_ij = weight * (field(jPoint,iVar) - field(iPoint,iVar));
+
+          for (size_t iDim = 0; iDim < nDim; ++iDim)
+            gradient(iPoint, iVar, iDim) += dist_ij[iDim] * delta_ij;
+        }
+      }
+    }
+
+    if (periodic)
+    {
+      /*--- A second loop is required after periodic comms, checkpoint the preacc. ---*/
+
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        for (size_t jDim = 0; jDim < nDim; ++jDim)
+          AD::SetPreaccOut(Rmatrix(iPoint, iDim, jDim));
+
+      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+        for (size_t iDim = 0; iDim < nDim; ++iDim)
+          AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
+
+      AD::EndPreacc();
+    }
+    else {
+      /*--- Periodic comms are not needed, solve the LS problem for iPoint. ---*/
+
+      solveLeastSquares<nDim, false>(iPoint, varBegin, varEnd, Rmatrix, gradient);
+    }
+  }
+
+  /*--- Correct the gradient values across any periodic boundaries. ---*/
+
+  if (periodic)
+  {
+    for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
+    {
+      solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+      solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    }
+
+    /*--- Second loop over points of the grid to compute final gradient. ---*/
+
+    SU2_OMP_FOR_DYN(chunkSize)
+    for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+      solveLeastSquares<nDim, true>(iPoint, varBegin, varEnd, Rmatrix, gradient);
+  }
+
+  /*--- If no solver was provided we do not communicate ---*/
+
+  if (solver != nullptr)
+  {
+    /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
+
+    solver->InitiateComms(&geometry, &config, kindMpiComm);
+    solver->CompleteComms(&geometry, &config, kindMpiComm);
+  }
+
+}
+} // end namespace
+
+/*!
+ * \brief Instantiations for 2D and 3D.
+ */
+template<class FieldType, class GradientType, class RMatrixType>
+void computeGradientsLeastSquares(CSolver* solver,
+                                  MPI_QUANTITIES kindMpiComm,
+                                  PERIODIC_QUANTITIES kindPeriodicComm,
+                                  CGeometry& geometry,
+                                  const CConfig& config,
+                                  bool weighted,
+                                  const FieldType& field,
+                                  size_t varBegin,
+                                  size_t varEnd,
+                                  GradientType& gradient,
+                                  RMatrixType& Rmatrix) {
+  switch (geometry.GetnDim()) {
+  case 2:
+    detail::computeGradientsLeastSquares<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config,
+                                            weighted, field, varBegin, varEnd, gradient, Rmatrix);
+    break;
+  case 3:
+    detail::computeGradientsLeastSquares<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config,
+                                            weighted, field, varBegin, varEnd, gradient, Rmatrix);
+    break;
+  default:
+    SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
+    break;
   }
 }
