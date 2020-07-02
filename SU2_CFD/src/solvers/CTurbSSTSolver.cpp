@@ -298,9 +298,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SetValZero();
   }
   
-  /*--- Set primitives and gradients since flow primitives have updated ---*/
-  
-  // Postprocessing(geometry, solver_container, config, iMesh);
+  /*--- Compute gradients ---*/
     
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
@@ -672,7 +670,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
       Solution[0] = 0.0;
       Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
-      // Solution[1] = 60.0*Lam_Visc_Wall/(beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
