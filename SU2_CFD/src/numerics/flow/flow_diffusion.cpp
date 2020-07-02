@@ -581,7 +581,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[3][2] = (tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
     Jacobian_j[3][3] = heat_flux_jac_j[3];
 
-    // CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
+    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
     const su2double proj_flux_vel_i = val_Proj_Visc_Flux[1]*V_i[1] +
                                       val_Proj_Visc_Flux[2]*V_i[2];
@@ -661,7 +661,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[4][3] = (tau_jacobian_j[2][0] + heat_flux_jac_j[3]);
     Jacobian_j[4][4] = heat_flux_jac_j[4];
 
-    // CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
+    CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
     const su2double proj_flux_vel_i = val_Proj_Visc_Flux[1]*V_i[1] +
                                       val_Proj_Visc_Flux[2]*V_i[2] +
@@ -852,7 +852,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Compute the implicit part ---*/
 
-  if (implicit) {
+  if (implicit && dist_ij_2 != 0.0) {
 
     // const su2double proj_vector_ij = (correct_gradient) ? sqrt(dist_ij_2) : su2double(1.0);    
     SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
