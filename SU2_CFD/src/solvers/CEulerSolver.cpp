@@ -11395,17 +11395,20 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
 
-  /*-----------------------------------------------------------------------------------------------------------------------*/
-  /*    Actuator disk model with variable load along disk radius. Force coefficients distribution given in an input file.  */
-  /*    Actuator disk data inizialized in function SetActDisk_BCThrust.                                                    */
-  /*    Entropy, acoustic Riemann invariant R+ and  tangential velocity extrapolated  from upstream flow;                  */
-  /*    acoustic Riemann invariant R- is extrapolated from downstream.                                                     */
-  /*    Hovering condition simulation not available yet: freestream velocity must be different than zero.                  */
-  /*    Author: E. Saetta, L. Russo, R. Tognaccini (GitHub references EttoreSaetta, lorenzorusso07, rtogna).               */
-  /*    Theoretical and Applied Aerodynamics Research Group (TAARG), University of Naples Federico II.                     */
-  /*    First release date : July 1st 2020, SU2 7.0.5 “Blackbird”                                                          */
-  /*    modified on:                                                                                                       */
-  /*-----------------------------------------------------------------------------------------------------------------------*/
+  /*!
+   * \function BC_ActDisk_VariableLoad
+   * \brief Actuator disk model with variable load along disk radius.
+   * \author: E. Saetta, L. Russo, R. Tognaccini (GitHub references EttoreSaetta, lorenzorusso07, rtogna).
+   * Theoretical and Applied Aerodynamics Research Group (TAARG), University of Naples Federico II.
+   * \version 7.0.5 “Blackbird”
+   * First release date : July 1st 2020
+   * modified on:
+   *
+   * Force coefficients distribution given in an input file. Actuator disk data initialized in function SetActDisk_BCThrust.
+   * Entropy, acoustic Riemann invariant R+ and  tangential velocity extrapolated  from upstream flow;
+   * acoustic Riemann invariant R- is extrapolated from downstream.
+   * Hovering condition simulation not available yet: freestream velocity must be different than zero.
+   */
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
