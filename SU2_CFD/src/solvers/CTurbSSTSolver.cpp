@@ -1581,7 +1581,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       Mean_Visc    = 0.5*max(visc_k_i+visc_k_j,visc_om_i+visc_om_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
-      Lambda = (Mean_Visc)/Mean_Density*Area*Area;
+      Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol)
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
@@ -1638,7 +1638,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         Mean_Visc    = max(visc_k_i,visc_om_i);
         Mean_Density = flowNodes->GetDensity(iPoint);
 
-        Lambda = (Mean_Visc)/Mean_Density*Area*Area;
+        Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
         nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
@@ -1657,8 +1657,10 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       if (Vol != 0.0) {
 
-        su2double denom  = max(nodes->GetMax_Lambda_Inv(iPoint),nodes->GetMax_Lambda_Visc(iPoint)/(K_v*Vol));
-        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
+        const su2double Lambda_Inv  = nodes->GetMax_Lambda_Inv(iPoint);
+        const su2double Lambda_Visc = nodes->GetMax_Lambda_Visc(iPoint);
+        Lambda = max(Lambda_Inv,Lambda_Visc);
+        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/Lambda ;
 
         minDt = min(minDt, Local_Delta_Time);
         maxDt = max(maxDt, Local_Delta_Time);
