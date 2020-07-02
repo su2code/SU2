@@ -153,7 +153,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
                            geometry->node[jPoint]->GetGridVel());
 
     if (muscl || musclFlow) {
-      const su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
       const auto Coord_i = geometry->node[iPoint]->GetCoord();
       const auto Coord_j = geometry->node[jPoint]->GetCoord();
