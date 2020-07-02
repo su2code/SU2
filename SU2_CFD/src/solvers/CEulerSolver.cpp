@@ -2834,7 +2834,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (Vol != 0.0) {
 
         Lambda = nodes->GetMax_Lambda_Inv(iPoint);
-        if (viscous) Lambda = max(Lambda,nodes->GetMax_Lambda_Visc(iPoint);
+        if (viscous) Lambda = max(Lambda,nodes->GetMax_Lambda_Visc(iPoint));
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/Lambda;
 
         minDt = min(minDt, Local_Delta_Time);
