@@ -4354,10 +4354,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
   SU2_OMP_PARALLEL_(reduction(+:tria_flip,quad_flip,tet_flip,prism_flip,hexa_flip,pyram_flip)) {
 
   /*--- Lambda to test triangles. Normal should be positive in the z direction (right hand rule). ---*/
-  auto checkTria = [&](unsigned long iElem, int Node_1, int Node_2, int Node_3) {
-    auto Coord_1 = nodes->GetCoord(elem[iElem]->GetNode(Node_1));
-    auto Coord_2 = nodes->GetCoord(elem[iElem]->GetNode(Node_2));
-    auto Coord_3 = nodes->GetCoord(elem[iElem]->GetNode(Node_3));
+  auto checkTria = [this](unsigned long iElem, int Node_1, int Node_2, int Node_3) {
+    const auto Coord_1 = nodes->GetCoord(elem[iElem]->GetNode(Node_1));
+    const auto Coord_2 = nodes->GetCoord(elem[iElem]->GetNode(Node_2));
+    const auto Coord_3 = nodes->GetCoord(elem[iElem]->GetNode(Node_3));
     constexpr int nDim = 2;
     su2double a[nDim]={0.0}, b[nDim]={0.0};
     GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
@@ -4367,11 +4367,11 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
   /*--- Lambda to test tetrahedrons, volume must be positive,
    * the normal of any face must point towards the other point. ---*/
-  auto checkTetra = [&](unsigned long iElem, int Node_1, int Node_2, int Node_3, int Node_4) {
-    auto Coord_1 = nodes->GetCoord(elem[iElem]->GetNode(Node_1));
-    auto Coord_2 = nodes->GetCoord(elem[iElem]->GetNode(Node_2));
-    auto Coord_3 = nodes->GetCoord(elem[iElem]->GetNode(Node_3));
-    auto Coord_4 = nodes->GetCoord(elem[iElem]->GetNode(Node_4));
+  auto checkTetra = [this](unsigned long iElem, int Node_1, int Node_2, int Node_3, int Node_4) {
+    const auto Coord_1 = nodes->GetCoord(elem[iElem]->GetNode(Node_1));
+    const auto Coord_2 = nodes->GetCoord(elem[iElem]->GetNode(Node_2));
+    const auto Coord_3 = nodes->GetCoord(elem[iElem]->GetNode(Node_3));
+    const auto Coord_4 = nodes->GetCoord(elem[iElem]->GetNode(Node_4));
     constexpr int nDim = 3;
     su2double a[nDim]={0.0}, b[nDim]={0.0}, c[nDim]={0.0}, n[nDim]={0.0};
     GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
@@ -4391,16 +4391,16 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
 
       if (checkTria(iElem,0,1,2)) {
-    	  elem[iElem]->Change_Orientation();
-    	  tria_flip++;
+        elem[iElem]->Change_Orientation();
+        tria_flip++;
       }
     }
 
     if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 
       /*--- Two triangles. ---*/
-      auto test_1 = checkTria(iElem,0,1,2);
-      auto test_2 = checkTria(iElem,0,2,3);
+      bool test_1 = checkTria(iElem,0,1,2);
+      bool test_2 = checkTria(iElem,0,2,3);
 
       if (test_1 && test_2) {
         elem[iElem]->Change_Orientation();
@@ -4419,16 +4419,16 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
       if (checkTetra(iElem,0,1,2,3) < 0.0) {
-    	  elem[iElem]->Change_Orientation();
-    	  tet_flip++;
+        elem[iElem]->Change_Orientation();
+        tet_flip++;
       }
     }
 
     if (elem[iElem]->GetVTK_Type() == PYRAMID) {
 
       /*--- Slice across top vertex into 2 tets. ---*/
-      auto test_1 = checkTetra(iElem,0,1,2,4);
-      auto test_2 = checkTetra(iElem,2,3,0,4);
+      bool test_1 = checkTetra(iElem,0,1,2,4);
+      bool test_2 = checkTetra(iElem,2,3,0,4);
 
       if (test_1 && test_2) {
         elem[iElem]->Change_Orientation();
@@ -4443,8 +4443,8 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     if (elem[iElem]->GetVTK_Type() == PRISM) {
 
       /*--- The triangular faces should point at each other. ---*/
-      auto test_1 = checkTetra(iElem,0,2,1,3);
-      auto test_2 = checkTetra(iElem,3,4,5,2);
+      bool test_1 = checkTetra(iElem,0,2,1,3);
+      bool test_2 = checkTetra(iElem,3,4,5,2);
 
       if (test_1 && test_2) {
         elem[iElem]->Change_Orientation();
@@ -4459,14 +4459,14 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
     if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
 
       /*--- The base points at the top. ---*/
-      auto test_1 = checkTetra(iElem,0,1,2,5);
-      auto test_2 = checkTetra(iElem,0,2,3,7);
+      bool test_1 = checkTetra(iElem,0,1,2,5);
+      bool test_2 = checkTetra(iElem,0,2,3,7);
       /*--- The top points at the base. ---*/
-      auto test_3 = checkTetra(iElem,4,6,5,1);
-      auto test_4 = checkTetra(iElem,4,7,6,3);
+      bool test_3 = checkTetra(iElem,4,6,5,1);
+      bool test_4 = checkTetra(iElem,4,7,6,3);
 
       if (test_1 && test_2 && test_3 && test_4) {
-    	  elem[iElem]->Change_Orientation();
+        elem[iElem]->Change_Orientation();
         hexa_flip++;
       }
       else if (test_1 || test_2 || test_3 || test_4) {
@@ -4521,12 +4521,12 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
   SU2_OMP_PARALLEL_(reduction(+:line_flip,tria_flip,quad_flip,quad_error)) {
 
   /*--- Lambda to test tetrahedrons. ---*/
-  auto checkTetra = [&](unsigned long Point_1, unsigned long Point_2,
-                        unsigned long Point_3, unsigned long Point_4) {
-    auto Coord_1 = nodes->GetCoord(Point_1);
-    auto Coord_2 = nodes->GetCoord(Point_2);
-    auto Coord_3 = nodes->GetCoord(Point_3);
-    auto Coord_4 = nodes->GetCoord(Point_4);
+  auto checkTetra = [this](unsigned long Point_1, unsigned long Point_2,
+                           unsigned long Point_3, unsigned long Point_4) {
+    const auto Coord_1 = nodes->GetCoord(Point_1);
+    const auto Coord_2 = nodes->GetCoord(Point_2);
+    const auto Coord_3 = nodes->GetCoord(Point_3);
+    const auto Coord_4 = nodes->GetCoord(Point_4);
     constexpr int nDim = 3;
     su2double a[nDim]={0.0}, b[nDim]={0.0}, c[nDim]={0.0}, n[nDim]={0.0};
     GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
@@ -4563,9 +4563,9 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
         auto Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0);
         auto Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1);
-        auto Coord_1 = nodes->GetCoord(Point_1_Surface);
-        auto Coord_2 = nodes->GetCoord(Point_2_Surface);
-        auto Coord_3 = nodes->GetCoord(Point_Domain);
+        const auto Coord_1 = nodes->GetCoord(Point_1_Surface);
+        const auto Coord_2 = nodes->GetCoord(Point_2_Surface);
+        const auto Coord_3 = nodes->GetCoord(Point_Domain);
 
         /*--- The normal of the triangle formed by the line and domain
          * point should point in the positive z direction. ---*/
