@@ -7484,7 +7484,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       case STATIC_PRESSURE:
 
-        /*--- Retrieve the staic pressure for this boundary. ---*/
+        /*--- Retrieve the static pressure for this boundary. ---*/
         Pressure_e = config->GetRiemann_Var1(Marker_Tag);
         Pressure_e /= config->GetPressure_Ref();
         Density_e = Density_i;
@@ -7963,7 +7963,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           case MIXING_OUT:
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
+            /*--- Retrieve the static pressure for this boundary. ---*/
             Pressure_e = ExtAveragePressure[val_marker][iSpan];
             Density_e = Density_i;
 
@@ -7979,7 +7979,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           case STATIC_PRESSURE:
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
+            /*--- Retrieve the static pressure for this boundary. ---*/
             Pressure_e = config->GetRiemann_Var1(Marker_Tag);
             Pressure_e /= config->GetPressure_Ref();
             Density_e = Density_i;
@@ -7997,7 +7997,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           case RADIAL_EQUILIBRIUM:
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
+            /*--- Retrieve the static pressure for this boundary. ---*/
             Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
             Density_e = Density_i;
 
@@ -12489,7 +12489,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   Radius2    = geometry->GetTurboRadius(iMarker,iSpan);
                   Radius1    = geometry->GetTurboRadius(iMarker,iSpan-1);
                   Vt2        = AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
-                  RadialEquilibriumPressure[iMarker][iSpan -1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
+                  Radius1    = (Radius1 > EPS)? Radius1 : Radius2;
+                  RadialEquilibriumPressure[iMarker][iSpan -1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius1*(Radius2 - Radius1);
                 }
               }
             }
@@ -12506,7 +12507,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   Radius2    = geometry->GetTurboRadius(iMarker,iSpan);
                   Radius1    = geometry->GetTurboRadius(iMarker,iSpan-1);
                   Vt2        = AverageTurboVelocity[iMarker][iSpan -1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
-                  RadialEquilibriumPressure[iMarker][iSpan -1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
+                  Radius1    = (Radius1 > EPS)? Radius1 : Radius2;
+                  RadialEquilibriumPressure[iMarker][iSpan -1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius1*(Radius2 - Radius1);
                 }
               }
             }
