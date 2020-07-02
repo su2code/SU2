@@ -1581,6 +1581,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       Mean_Visc    = 0.5*max(visc_k_i+visc_k_j,visc_om_i+visc_om_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
+      Vol = geometry->node[iPoint]->GetVolume();
+      if (Vol == 0.0) continue;
+
       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
@@ -1637,6 +1640,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
         Mean_Visc    = max(visc_k_i,visc_om_i);
         Mean_Density = flowNodes->GetDensity(iPoint);
+
+        Vol = geometry->node[iPoint]->GetVolume();
+        if (Vol == 0.0) continue;
 
         Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
         nodes->AddMax_Lambda_Visc(iPoint, Lambda);

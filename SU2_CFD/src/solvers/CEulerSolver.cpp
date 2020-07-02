@@ -2757,6 +2757,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       Mean_EddyVisc    = 0.5*(nodes->GetEddyViscosity(iPoint) + nodes->GetEddyViscosity(jPoint));
       Mean_Density     = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
 
+      Vol = geometry->node[iPoint]->GetVolume();
+      if (Vol == 0.0) continue;
+
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
       //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
       Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
@@ -2811,6 +2814,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         Mean_LaminarVisc = nodes->GetLaminarViscosity(iPoint);
         Mean_EddyVisc    = nodes->GetEddyViscosity(iPoint);
         Mean_Density     = nodes->GetDensity(iPoint);
+
+        Vol = geometry->node[iPoint]->GetVolume();
+        if (Vol == 0.0) continue;
 
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
         Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
