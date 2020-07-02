@@ -288,6 +288,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
+  const bool van_albada   = config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE;
   
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -309,7 +310,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       SetPrimitive_Gradient_LS(geometry, config, true);
   }
 
-  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+  if (limiter_turb && !van_albada) SetPrimitive_Limiter(geometry, config);
 
 }
 
