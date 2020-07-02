@@ -815,7 +815,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
         
     }
   }
@@ -930,7 +930,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
 
     }
 
@@ -1042,7 +1042,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 //
 //      /*--- Compute Jacobian correction for influence from all neighbors ---*/
-//      //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+//      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
 
     }
   }

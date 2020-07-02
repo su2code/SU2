@@ -7076,7 +7076,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
+          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
         }
       }//if viscous
     }//if GetDomain
@@ -7380,7 +7380,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
         }
         
       }
@@ -9616,7 +9616,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
+          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
         }
 
       }
@@ -9826,7 +9826,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          //CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
+          CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, residual.jacobian_ic, nullptr);
         }
 
       }
