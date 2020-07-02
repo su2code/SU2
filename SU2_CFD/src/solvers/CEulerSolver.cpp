@@ -11623,8 +11623,11 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
         if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
        }
-  }
+    }
+  /*--- Free locally allocated memory ---*/
 
+  delete [] Normal;
+  delete [] Flow_Dir;
 }
 
 void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
