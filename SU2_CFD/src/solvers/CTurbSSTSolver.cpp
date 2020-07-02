@@ -1573,12 +1573,12 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
       sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
-      visc_k_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-      visc_k_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
+      visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
+      visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
       visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
       visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_om_j*nodes->GetmuT(jPoint);
 
-      Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
+      Mean_Visc    = 0.5*max(visc_k_i+visc_k_j,visc_om_i+visc_om_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
       Lambda = (Mean_Visc)/Mean_Density*Area*Area;
@@ -1632,10 +1632,10 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
         sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
         sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
 
-        visc_k_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
+        visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
         visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
 
-        Mean_Visc    = visc_k_i+visc_om_i;
+        Mean_Visc    = max(visc_k_i,visc_om_i);
         Mean_Density = flowNodes->GetDensity(iPoint);
 
         Lambda = (Mean_Visc)/Mean_Density*Area*Area;
@@ -1657,7 +1657,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       if (Vol != 0.0) {
 
-        su2double denom  = nodes->GetMax_Lambda_Inv(iPoint)+nodes->GetMax_Lambda_Visc(iPoint)/(K_v*Vol);
+        su2double denom  = max(nodes->GetMax_Lambda_Inv(iPoint),nodes->GetMax_Lambda_Visc(iPoint)/(K_v*Vol));
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/denom ;
 
         minDt = min(minDt, Local_Delta_Time);
