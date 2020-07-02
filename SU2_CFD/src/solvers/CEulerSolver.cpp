@@ -3255,6 +3255,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
         tke_i += Project_Grad_i;
         tke_j += Project_Grad_j;
+
+        bool neg_tke_i = (tke_i < 0.0);
+        bool neg_tke_j = (tke_j < 0.0);
+
+        tke_i = (neg_tke_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
+        tke_j = (neg_tke_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
       }
 
       numerics->SetTurbKineticEnergy(tke_i, tke_j);

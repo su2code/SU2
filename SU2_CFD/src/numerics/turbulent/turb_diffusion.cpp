@@ -334,14 +334,12 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     const su2double Sref = config->GetMu_SND();
     
     const su2double T_i = V_i[0];
-    const su2double r_i = V_i[nDim+2];
     const su2double dmudT_i = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.));
-    const su2double factor_i = dmudT_i/(r_i*Cv);
+    const su2double factor_i = dmudT_i/(Density_i*Cv);
     
     const su2double T_j = V_j[0];
-    const su2double r_j = V_j[nDim+2];
     const su2double dmudT_j = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.));
-    const su2double factor_j = dmudT_j/(r_j*Cv);
+    const su2double factor_j = dmudT_j/(Density_j*Cv);
     
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
