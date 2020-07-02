@@ -200,8 +200,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Reconstruct turbulence variables. ---*/
 
-      auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       if (limiter) {
         Limiter_i = nodes->GetLimiter(iPoint);
