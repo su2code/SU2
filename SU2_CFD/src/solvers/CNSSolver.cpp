@@ -304,7 +304,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
-  if (tkeNeeded && solver_container[TURB_SOL] != nullptr) static_cast<CTurbSSTSolver*>(solver[TURB_SOL])->SetPrimitive_Variables(solver_container);
+  if (tkeNeeded && solver_container[TURB_SOL] != nullptr) static_cast<CTurbSSTSolver*>(solver_container[TURB_SOL])->SetPrimitive_Variables(solver_container);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
