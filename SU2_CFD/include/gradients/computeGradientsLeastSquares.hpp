@@ -50,7 +50,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   su2double r11 = Rmatrix(iPoint,0,0);
   su2double r12 = Rmatrix(iPoint,0,1);
   su2double r22 = Rmatrix(iPoint,1,1);
-  su2double r13 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+  su2double r13 = 0.0, r23 = 0.0, r33 = 1.0;
 
   if (periodic) {
     AD::StartPreacc();
@@ -64,10 +64,10 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   r22 = sqrt(max(r22 - r12*r12, eps));
 
   if (nDim == 3) {
-    r13   = Rmatrix(iPoint,0,2);
-    r23_a = Rmatrix(iPoint,1,2);
-    r23_b = Rmatrix(iPoint,2,1);
-    r33   = Rmatrix(iPoint,2,2);
+    r13 = Rmatrix(iPoint,0,2);
+    r33 = Rmatrix(iPoint,2,2);
+    const auto r23_a = Rmatrix(iPoint,1,2);
+    const auto r23_b = Rmatrix(iPoint,2,1);
 
     if (periodic) {
       AD::SetPreaccIn(r13);
@@ -85,20 +85,13 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   const su2double detR2 = pow(r11*r22*r33, 2);
 
-  /*--- Detect singular matrix ---*/
-
-  const bool singular = (detR2 < eps);
-
   /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
-  su2double Smatrix[nDim][nDim];
+  su2double Smatrix[nDim][nDim] = {{0.0}};
 
-  if (singular) {
-    for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = 0; jDim < nDim; ++jDim)
-        Smatrix[iDim][jDim] = 0.0;
-  }
-  else {
+  /*--- Detect singular matrix ---*/
+
+  if (detR2 > eps) {
     if (nDim == 2) {
       Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
       Smatrix[0][1] = -r11*r12/detR2;
