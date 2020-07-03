@@ -5886,9 +5886,9 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
               while (getline (ActDisk_file, text_line)) {
                  /*--- Check if there is the "NAME=" string in the current line. If not keep on reading. ---*/
-                 position = text_line.find ("NAME=");
+                 position = text_line.find ("MARKER_ACTDISK=");
                  if(position == string::npos){continue;}
-                 text_line.erase (0,5);
+                 text_line.erase (0,15);
                  /*--- Read the names of the two faces of the actuator disk and assign them to the name[] array. ---*/
                  istringstream NameID(text_line);
                  for (int i = 0; i < 2; i++){
