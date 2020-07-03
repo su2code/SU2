@@ -309,7 +309,6 @@ private:
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
-  su2double *GlobalRoughness_Height;         /*!< \brief Equivalent sand grain roughness for markers globally including S-R. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
   su2double *Load_Value;                     /*!< \brief Specified force for load boundaries. */
   su2double *Damper_Constant;                /*!< \brief Specified constant for damper boundaries. */
@@ -390,7 +389,6 @@ private:
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
   short *Marker_All_SendRecv;                /*!< \brief Information about if the boundary is sended (+), received (-). */
   short *Marker_All_PerBound;                /*!< \brief Global index for periodic bc using the grid information. */
-  int *GlobalMarkerStorageDispl;             /*!< \brief storage of markers globally. */
 
   unsigned long nExtIter;           /*!< \brief Number of external iterations. */
   unsigned long ExtIter;            /*!< \brief Current external iteration number. */
@@ -5097,28 +5095,7 @@ public:
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
-
-  /*!
-   * \brief Get roughness height of a marker.
-   * \param [in] rankID rank where the marker is located.
-   * \param [in] ID of the marker on rank
-   */
-  su2double GetLocalRoughness(int rankID, unsigned short markerID) const;
-
-  /*!
-   * \brief Set the displacements for each rank in global array.
-   * \param [in] global displacemts in order of rank.
-   * \param [in] total number of ranks
-   */
-  void SetGlobalMarkerArray(int *global_displ, int size) ;
-
-  /*!
-   * \brief Set the roughness for each marker in global array.
-   * \param [in] global list of roughness for every marker.
-   * \param [in] total number of marker including send recieves.
-   */
-  void SetGlobalRoughnessArray(su2double *global_rough, int sizeGlobal) ;
-  
+ 
   /*!
    * \author H. Kline
    * \brief Get the flag indicating whether to comput a combined objective.

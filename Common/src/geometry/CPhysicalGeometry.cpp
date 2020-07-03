@@ -312,6 +312,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   delete [] Elem_ID_BoundTria_Linear;
   delete [] Elem_ID_BoundQuad_Linear;
 
+  delete[] GlobalMarkerStorageDispl;
+  delete[] GlobalRoughness_Height;
+
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
@@ -11365,6 +11368,8 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
+  int rank;
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
   SU2_OMP_PARALLEL
   if (!WallADT->IsEmpty()) {
@@ -11378,11 +11383,13 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       int            rankID;
       su2double      dist;
       su2double      localRoughness;
+      int index;
 
       WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
 
       nodes->SetWall_Distance(iPoint, min(dist,nodes->GetWall_Distance(iPoint)));
-      localRoughness = config->GetLocalRoughness(rankID, markerID);
+      index = GlobalMarkerStorageDispl[rankID]+ markerID;
+      localRoughness = GlobalRoughness_Height[index];
       nodes->SetRoughnessHeight(iPoint, localRoughness);
     }
     
@@ -11399,7 +11406,8 @@ unsigned short iMarker;
   int size = 1;
   unsigned short nMarker_All = config->GetnMarker_All();
   local_displ[0] = 0;
-  config->SetGlobalMarkerArray(local_displ,size);
+  if (GlobalMarkerStorageDispl == nullptr) GlobalMarkerStorageDispl = new int [size];
+  GlobalMarkerStorageDispl[0] = 0;
   
   su2double *localRough = new su2double [nMarker_All];
 
@@ -11410,7 +11418,9 @@ unsigned short iMarker;
     for (iMarker = 0; iMarker < nMarker_All; iMarker++) 
       localRough[iMarker] = 0.0 ;
 
-  config->SetGlobalRoughnessArray(localRough, nMarker_All);
+  if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [nMarker_All];
+  for (int iMarker = 0; iMarker < nMarker_All; iMarker++) 
+    GlobalRoughness_Height[iMarker] = localRough[iMarker];
   
 #else
   int rank, size;
@@ -11419,7 +11429,7 @@ unsigned short iMarker;
   SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 
   int *displs = new int [size];
-  int* recvCounts = new int [size];//, displs(size);
+  int* recvCounts = new int [size];
   int sizeLocal = (int) nMarker_All; // number of local markers
   
   //Communicate size of local marker array and make an array large enough to hold all data
@@ -11431,28 +11441,35 @@ unsigned short iMarker;
   for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
   /*--- Set the global array of displacements, needed to access the correct roughness element. ---*/
-  config->SetGlobalMarkerArray(displs, size);
+  if (GlobalMarkerStorageDispl == nullptr) GlobalMarkerStorageDispl = new int [size];
+  GlobalMarkerStorageDispl[0] = 0;
+  for (int iRank = 1; iRank < size; iRank++) 
+    GlobalMarkerStorageDispl[iRank] = displs[iRank];
   
   //total size
   int sizeGlobal = displs[size-1] + recvCounts[size-1];
 
-  /*--- Allocate local and global arrays to hold roughness.  ---*/
+  /*--- Allocate local and global arrays to hold roughness. ---*/
   su2double *localRough = new su2double [nMarker_All]; // local number of markers
   su2double *globalRough = new su2double[sizeGlobal];  // all markers including send recieve
   
-  if (config->GetnRoughWall() > 0)
+  if (config->GetnRoughWall() > 0) {
     for (iMarker = 0; iMarker < nMarker_All; iMarker++)
-      localRough[iMarker] = config->GetWall_RoughnessHeight(config->GetMarker_All_TagBound(iMarker));   
-  else 
-    for (iMarker = 0; iMarker < nMarker_All; iMarker++) 
+      localRough[iMarker] = config->GetWall_RoughnessHeight(config->GetMarker_All_TagBound(iMarker));
+  }
+  else {
+    for (iMarker = 0; iMarker < nMarker_All; iMarker++)
       localRough[iMarker] = 0.0 ;
+  }
 
   SU2_MPI::Allgatherv( localRough, sizeLocal, MPI_DOUBLE, globalRough ,
                         recvCounts, displs, MPI_DOUBLE,
                         MPI_COMM_WORLD);
 
   /*--- Set the global array of roughness per marker. ---*/
-  config->SetGlobalRoughnessArray(globalRough, sizeGlobal);
+  if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [sizeGlobal];
+  for (int iMarker = 0; iMarker < sizeGlobal; iMarker++) 
+    GlobalRoughness_Height[iMarker] = globalRough[iMarker];
 
 #endif
 }
