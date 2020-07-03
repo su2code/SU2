@@ -5885,7 +5885,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
               string::size_type position;
 
               while (getline (ActDisk_file, text_line)) {
-                 /*--- Check if there is the "NAME=" string in the current line. If not keep on reading. ---*/
+                 /*--- Check if there is the "MARKER_ACTDISK=" string in the current line. If not keep on reading. ---*/
                  position = text_line.find ("MARKER_ACTDISK=");
                  if(position == string::npos){continue;}
                  text_line.erase (0,15);
