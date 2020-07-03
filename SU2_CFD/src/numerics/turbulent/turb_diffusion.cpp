@@ -327,8 +327,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     
     /*--- Jacobian wrt laminar viscosity ---*/
 
-    const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-    const su2double Cv = Cp/Gamma;
+    const su2double Cv = Gas_Constant/Gamma_Minus_One;
     const su2double muref = config->GetMu_RefND();
     const su2double Tref = config->GetMu_Temperature_RefND();
     const su2double Sref = config->GetMu_SND();
