@@ -384,8 +384,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
   /*--- Finding Xi and Eta is a "third order" effect that we do not
    *    differentiate (also because we need to iterate). ---*/
-  const bool tapeActive = AD::TapeActive();
-  AD::StopRecording();
+
+  const bool wasActive = AD::BeginPassive();
 
   for (int iter = 0; iter < NITER; ++iter) {
 
@@ -431,7 +431,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
     if (eps < tol) break;
   }
 
-  if (tapeActive) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
   int outOfBounds = 0;
 

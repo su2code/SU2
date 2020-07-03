@@ -34,7 +34,7 @@
 #include "../../include/interface_interpolation/CSlidingMesh.hpp"
 
 namespace CInterpolatorFactory {
-CInterpolator* createInterpolator(CGeometry ****geometry_container,
+CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
                                   unsigned iZone, unsigned jZone, bool verbose) {
 

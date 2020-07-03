@@ -7,6 +7,7 @@
 su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'Common/geometry/dual_grid/CDualGrid_tests.cpp',
                        'Common/geometry/CGeometry_test.cpp',
+                       'Common/toolboxes/CQuasiNewtonInvLeastSquares_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp'])
 
 # Reverse-mode (algorithmic differentiation) tests:

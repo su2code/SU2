@@ -45,10 +45,5 @@ public:
    */
   CDummyGeometry(CConfig *config);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDummyGeometry() override;
-
 };
 

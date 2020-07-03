@@ -70,7 +70,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
 private:
   const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief config of the problem. */
+  const CConfig *config;                 /*!< \brief config of the problem. */
 
 public:
   /*!
@@ -80,7 +80,7 @@ public:
    * \param[in] config_ref - config of the problem
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType> & matrix_ref,
-                                 CGeometry *geometry_ref, CConfig *config_ref) :
+                                 CGeometry *geometry_ref, const CConfig *config_ref) :
     matrix(matrix_ref),
     geometry(geometry_ref),
     config(config_ref) {}
@@ -110,7 +110,7 @@ class CSysMatrixVectorProductTransposed final : public CMatrixVectorProduct<Scal
 private:
   const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief config of the problem. */
+  const CConfig *config;                 /*!< \brief config of the problem. */
 
 public:
   /*!
@@ -120,7 +120,7 @@ public:
    * \param[in] config_ref - config of the problem
    */
   inline CSysMatrixVectorProductTransposed(const CSysMatrix<ScalarType> & matrix_ref,
-                                           CGeometry *geometry_ref, CConfig *config_ref) :
+                                           CGeometry *geometry_ref, const CConfig *config_ref) :
     matrix(matrix_ref),
     geometry(geometry_ref),
     config(config_ref) {}

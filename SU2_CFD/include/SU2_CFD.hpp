@@ -43,7 +43,6 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/CConfig.hpp"
 #include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
 #include "../include/interfaces/CInterface.hpp"
 
 using namespace std;
