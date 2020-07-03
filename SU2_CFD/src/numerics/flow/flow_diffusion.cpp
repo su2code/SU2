@@ -877,9 +877,9 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
     sqvel += V_i[iDim+1]*V_i[iDim+1];
   }
 
-  su2double Density = V_i[nDim+2];
-  su2double Pressure = V_i[nDim+1];
-  su2double phi = Gamma_Minus_One/Density;
+  Density = V_i[nDim+2];
+  Pressure = V_i[nDim+1];
+  phi = Gamma_Minus_One/Density;
 
   /*--- R times partial derivatives of temp. ---*/
 
