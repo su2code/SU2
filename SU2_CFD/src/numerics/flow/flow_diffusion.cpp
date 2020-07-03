@@ -558,16 +558,24 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                     tau_jacobian_i[1][0]*val_Mean_PrimVar[2];
     
     Jacobian_i[3][0] = (contraction_i - heat_flux_jac_i[0]);
-    Jacobian_i[3][1] = -(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
-    Jacobian_i[3][2] = -(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
+    Jacobian_i[3][1] = tau_jacobian_i[0][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_i[0][2]*val_Mean_PrimVar[2]
+                     - heat_flux_jac_i[1];
+    Jacobian_i[3][2] = tau_jacobian_i[1][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_i[1][2]*val_Mean_PrimVar[2]
+                     - heat_flux_jac_i[2];
     Jacobian_i[3][3] = -heat_flux_jac_i[3];
     
     const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
                                     tau_jacobian_j[1][0]*val_Mean_PrimVar[2];
     
     Jacobian_j[3][0] = (contraction_j - heat_flux_jac_j[0]);
-    Jacobian_j[3][1] = -(tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
-    Jacobian_j[3][2] = -(tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
+    Jacobian_j[3][1] = tau_jacobian_j[0][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_j[0][2]*val_Mean_PrimVar[2]
+                     - heat_flux_jac_j[1];
+    Jacobian_j[3][2] = tau_jacobian_j[1][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_j[1][2]*val_Mean_PrimVar[2]
+                     - heat_flux_jac_j[2];
     Jacobian_j[3][3] = -heat_flux_jac_j[3];
 
     // CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
@@ -625,9 +633,18 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                     tau_jacobian_i[2][0]*val_Mean_PrimVar[3];
 
     Jacobian_i[4][0] = (contraction_i - heat_flux_jac_i[0]);
-    Jacobian_i[4][1] = -(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
-    Jacobian_i[4][2] = -(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
-    Jacobian_i[4][3] = -(tau_jacobian_i[2][0] + heat_flux_jac_i[3]);
+    Jacobian_i[4][1] = tau_jacobian_i[0][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_i[0][2]*val_Mean_PrimVar[2]
+                     + tau_jacobian_i[0][3]*val_Mean_PrimVar[3]
+                     - heat_flux_jac_i[1];
+    Jacobian_i[4][2] = tau_jacobian_i[1][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_i[1][2]*val_Mean_PrimVar[2]
+                     + tau_jacobian_i[1][3]*val_Mean_PrimVar[3]
+                     - heat_flux_jac_i[2];
+    Jacobian_i[4][3] = tau_jacobian_i[2][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_i[2][2]*val_Mean_PrimVar[2]
+                     + tau_jacobian_i[2][3]*val_Mean_PrimVar[3]
+                     - heat_flux_jac_i[3];
     Jacobian_i[4][4] = -heat_flux_jac_i[4];
     
     const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
@@ -635,9 +652,18 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                     tau_jacobian_j[2][0]*val_Mean_PrimVar[3];
     
     Jacobian_j[4][0] = (contraction_j - heat_flux_jac_j[0]);
-    Jacobian_j[4][1] = -(tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
-    Jacobian_j[4][2] = -(tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
-    Jacobian_j[4][3] = -(tau_jacobian_j[2][0] + heat_flux_jac_j[3]);
+    Jacobian_j[4][1] = tau_jacobian_j[0][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_j[0][2]*val_Mean_PrimVar[2]
+                     + tau_jacobian_j[0][3]*val_Mean_PrimVar[3]
+                     - heat_flux_jac_j[1];
+    Jacobian_j[4][2] = tau_jacobian_j[1][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_j[1][2]*val_Mean_PrimVar[2]
+                     + tau_jacobian_j[1][3]*val_Mean_PrimVar[3]
+                     - heat_flux_jac_j[2];
+    Jacobian_j[4][3] = tau_jacobian_j[2][1]*val_Mean_PrimVar[1]
+                     + tau_jacobian_j[2][2]*val_Mean_PrimVar[2]
+                     + tau_jacobian_j[2][3]*val_Mean_PrimVar[3]
+                     - heat_flux_jac_j[3];
     Jacobian_j[4][4] = -heat_flux_jac_j[4];
 
     // CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
