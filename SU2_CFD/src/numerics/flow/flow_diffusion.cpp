@@ -451,7 +451,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
     tau_jacobian_j[iDim][0] = 0;
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
        tau_jacobian_i[iDim][0] -= tau_jacobian_i[iDim][jDim+1]*V_i[jDim+1];
-       tau_jacobian_j[iDim][0] += tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
+       tau_jacobian_j[iDim][0] -= tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
     }
     // Jacobian w.r.t. energy
     tau_jacobian_i[iDim][nDim+1] = 0;
@@ -588,7 +588,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[3][2] += factor_j*val_Proj_Visc_Flux[2];
 
   } else {
-    
+
     Jacobian_i[1][0] = tau_jacobian_i[0][0];
     Jacobian_i[1][1] = tau_jacobian_i[0][1];
     Jacobian_i[1][2] = tau_jacobian_i[0][2];
