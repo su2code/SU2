@@ -429,8 +429,6 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   /*--- BCM: account for wall functions ---*/
   
   const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
-//  const su2double WF_Factor = 1.0;
-  const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double Density_i = V_i[nDim+2];
   const su2double Density_j = V_j[nDim+2];
   const su2double Viscosity_i = Laminar_Viscosity_i + Eddy_Viscosity_i;
@@ -793,8 +791,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  // if(correct_gradient) proj_vector_ij = proj_vector_ij/dist_ij_2;
-  // else proj_vector_ij = 1.0;
 
   /*--- Laminar and Eddy viscosity ---*/
 
@@ -854,7 +850,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit && dist_ij_2 != 0.0) {
 
-    // const su2double proj_vector_ij = (correct_gradient) ? sqrt(dist_ij_2) : su2double(1.0);    
     SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
     SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
                         Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
