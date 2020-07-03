@@ -868,8 +868,11 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                                         const su2double val_proj_vector,
                                         const su2double val_area,
                                         const su2double *val_normal) {
-  su2double sqvel = 0.0;
+  su2double sqvel, Density, Pressure;
+  su2double phi, R_dTdu0, R_dTdu1, R_dTdu2;
+  su2double heat_flux_factor, cpoR, conductivity_over_Rd;
 
+  sqvel = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     sqvel += V_i[iDim+1]*V_i[iDim+1];
   }
@@ -880,13 +883,13 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- R times partial derivatives of temp. ---*/
 
-  su2double R_dTdu0 = -Pressure/(Density*Density) + sqvel*phi;
-  su2double R_dTdu1 = -phi*V_i[1];
-  su2double R_dTdu2 = -phi*V_i[2];
+  R_dTdu0 = -Pressure/(Density*Density) + sqvel*phi;
+  R_dTdu1 = -phi*V_i[1];
+  R_dTdu2 = -phi*V_i[2];
 
-  su2double heat_flux_factor = Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb;
-  su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
-  su2double conductivity_over_Rd = cpoR*heat_flux_factor*val_proj_vector/dist_ij_2;
+  heat_flux_factor = Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb;
+  cpoR = Gamma/Gamma_Minus_One; // cp over R
+  conductivity_over_Rd = cpoR*heat_flux_factor*val_proj_vector/dist_ij_2;
 
   heat_flux_jac_i[0] = conductivity_over_Rd * R_dTdu0;
   heat_flux_jac_i[1] = conductivity_over_Rd * R_dTdu1;
@@ -907,7 +910,6 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   }
   
   sqvel = 0.0;
-
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     sqvel += V_j[iDim+1]*V_j[iDim+1];
   }
