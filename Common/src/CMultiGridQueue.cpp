@@ -186,9 +186,7 @@ void CMultiGridQueue::Update(unsigned long updatePoint, CGeometry *fineGrid) {
 
   RemoveCV(updatePoint);
 
-  for (auto iNode = 0u; iNode < fineGrid->nodes->GetnPoint(updatePoint); ++iNode) {
-    const auto jPoint = fineGrid->nodes->GetPoint(updatePoint,iNode);
+  for (auto jPoint : fineGrid->nodes->GetPoints(updatePoint))
     if (!fineGrid->nodes->GetAgglomerate(jPoint))
       IncrPriorityCV(jPoint);
-  }
 }

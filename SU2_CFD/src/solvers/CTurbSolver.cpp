@@ -297,10 +297,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else

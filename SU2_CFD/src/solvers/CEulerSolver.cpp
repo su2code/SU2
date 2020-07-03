@@ -2999,8 +2999,8 @@ void CEulerSolver::EdgeFluxResidual(const CGeometry *geometry, const CConfig *co
       Double mask = 1;
 
 #if !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
-      for(auto j = 1ul; j < IntSize; ++j) {
-        if(k+j < color.size) iEdge[j] = color.indices[k+j];
+      for (auto j = 1ul; j < IntSize; ++j) {
+        if (k+j < color.size) iEdge[j] = color.indices[k+j];
         else mask[j] = 0;
       }
 #endif
@@ -3280,10 +3280,7 @@ void CEulerSolver::SumEdgeFluxes(const CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-
+    for (auto iEdge : geometry->nodes->GetPoints(iPoint)) {
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
@@ -3683,9 +3680,8 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
     jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
-    {
-      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/

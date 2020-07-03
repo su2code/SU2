@@ -344,7 +344,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   bool weighted = true;
 
   unsigned short iVar, jVar, iDim;
-  unsigned short iNeighbor, nNeighbor = 0;
+  unsigned short nNeighbor       = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   unsigned short ICOUNT          = nVar;
@@ -352,7 +352,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   int iMessage, iSend, nSend;
 
-  unsigned long iPoint, jPoint, msg_offset, buf_offset, iPeriodic, Neighbor_Point;
+  unsigned long iPoint, msg_offset, buf_offset, iPeriodic;
 
   su2double *Diff      = new su2double[nVar];
   su2double *Und_Lapl  = new su2double[nVar];
@@ -482,16 +482,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           case PERIODIC_NEIGHBORS:
 
             nNeighbor = 0;
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              Neighbor_Point = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Check if this neighbor lies on the periodic face so
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(Neighbor_Point))
-              nNeighbor++;
-
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint))
+                nNeighbor++;
             }
 
             /*--- Store the number of neighbors in bufffer. ---*/
@@ -598,8 +596,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               Und_Lapl[iVar] = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -673,8 +670,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              on both sides of the periodic face. ---*/
 
             Sensor_i = 0.0; Sensor_j = 0.0;
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
@@ -825,8 +821,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -974,8 +969,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -1093,8 +1087,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetPrimitive(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
@@ -1144,8 +1137,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               for (iVar = 0; iVar < nVar; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetSolution(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));

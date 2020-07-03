@@ -65,6 +65,22 @@ private:
 public:
   using IndexType = Index_t;
 
+  /*!
+   * \brief Type to allow range for loops over inner indices.
+   */
+  struct CInnerIter {
+    const IndexType* const m_first = nullptr;
+    const IndexType* const m_last = nullptr;
+    CInnerIter(const IndexType* first, const IndexType* last) :
+      m_first(first), m_last(last) {
+    }
+    const IndexType* begin() const { return m_first; }
+    const IndexType* end() const { return m_last; }
+  };
+
+  /*!
+   * \brief Default construction.
+   */
   CCompressedSparsePattern() = default;
 
   /*!
@@ -217,6 +233,15 @@ public:
   inline Index_t& getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) {
     assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
     return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
+  }
+
+  /*!
+   * \param[in] iOuterIdx - Outer index.
+   * \return Iterator to inner dimension to use in range for loops.
+   */
+  inline CInnerIter getInnerIter(Index_t iOuterIdx) const {
+    return CInnerIter(&m_innerIdx(m_outerPtr(iOuterIdx)),
+                      &m_innerIdx(m_outerPtr(iOuterIdx+1)));
   }
 
   /*!
@@ -386,20 +411,16 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
         if(type == ConnectivityType::FiniteVolume)
         {
           /*--- For FVM we know the neighbors of point j directly. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnPoint(jPoint); ++iNeigh)
-          {
-            Index_t kPoint = geometry.nodes->GetPoint(jPoint, iNeigh);
-
+          for(Index_t kPoint : geometry.nodes->GetPoints(jPoint))
             if(neighbors.count(kPoint) == 0) // no duplication
               newNeighbors.insert(kPoint);
-          }
         }
         else // FiniteElement
         {
           /*--- For FEM we need the nodes of all elements that contain point j. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnElem(jPoint); ++iNeigh)
+          for(auto iElem : geometry.nodes->GetElems(jPoint))
           {
-            auto elem = geometry.elem[geometry.nodes->GetElem(jPoint, iNeigh)];
+            auto elem = geometry.elem[iElem];
 
             for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
             {

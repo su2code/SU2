@@ -162,9 +162,7 @@ void computeLimiters_impl(CSolver* solver,
 
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
-    for(size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
-    {
-      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
+    for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
 
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);

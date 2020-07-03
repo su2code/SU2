@@ -214,10 +214,8 @@ void computeGradientsLeastSquares(CSolver* solver,
         Rmatrix(iPoint, iDim, jDim) = 0.0;
 
 
-    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
+    for (auto jPoint : nodes->GetPoints(iPoint))
     {
-      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
-
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
