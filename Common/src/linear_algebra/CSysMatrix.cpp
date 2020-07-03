@@ -112,7 +112,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Type of preconditioner the matrix will be asked to build. ---*/
   auto prec = config->GetKind_Linear_Solver_Prec();
 
-  if (!EdgeConnect && !config->GetStructuralProblem()) {
+  if ((!EdgeConnect && !config->GetStructuralProblem()) ||
+      (config->GetKind_SU2() == SU2_DEF) || (config->GetKind_SU2() == SU2_DOT)) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
   }
@@ -621,12 +622,11 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType *matrix, ScalarType *inver
 template<class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 
-  unsigned long block_i = i/nVar;
-  unsigned long row = i - block_i*nVar;
-  unsigned long index, iVar;
+  const auto block_i = i/nVar;
+  const auto row = i%nVar;
 
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    for (iVar = 0; iVar < nVar; iVar++)
+  for (auto index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
     if (col_ind[index] == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
