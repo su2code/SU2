@@ -442,7 +442,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
       tau_jacobian_i[iDim][jDim+1] = -xi_i*(Edge_Vector[iDim]*Normal[jDim] 
                                           - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
                                           + delta[iDim][jDim]*val_proj_vector);
-      tau_jacobian_j[iDim][jDim+1] = -xi_j*(Edge_Vector[iDim]*Normal[jDim] 
+      tau_jacobian_j[iDim][jDim+1] =  xi_j*(Edge_Vector[iDim]*Normal[jDim] 
                                           - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
                                           + delta[iDim][jDim]*val_proj_vector);
     }
@@ -451,7 +451,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
     tau_jacobian_j[iDim][0] = 0;
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
        tau_jacobian_i[iDim][0] -= tau_jacobian_i[iDim][jDim+1]*V_i[jDim+1];
-       tau_jacobian_j[iDim][0] -= tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
+       tau_jacobian_j[iDim][0] += tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
     }
     // Jacobian w.r.t. energy
     tau_jacobian_i[iDim][nDim+1] = 0;
@@ -554,14 +554,14 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[0][1] = 0.0;
     Jacobian_j[0][2] = 0.0;
     Jacobian_j[0][3] = 0.0;
-    Jacobian_j[1][0] = -tau_jacobian_j[0][0];
-    Jacobian_j[1][1] = -tau_jacobian_j[0][1];
-    Jacobian_j[1][2] = -tau_jacobian_j[0][2];
-    Jacobian_j[1][3] = -tau_jacobian_j[0][3];
-    Jacobian_j[2][0] = -tau_jacobian_j[1][0];
-    Jacobian_j[2][1] = -tau_jacobian_j[1][1];
-    Jacobian_j[2][2] = -tau_jacobian_j[1][2];
-    Jacobian_j[2][3] = -tau_jacobian_j[1][3];
+    Jacobian_j[1][0] = tau_jacobian_j[0][0];
+    Jacobian_j[1][1] = tau_jacobian_j[0][1];
+    Jacobian_j[1][2] = tau_jacobian_j[0][2];
+    Jacobian_j[1][3] = tau_jacobian_j[0][3];
+    Jacobian_j[2][0] = tau_jacobian_j[1][0];
+    Jacobian_j[2][1] = tau_jacobian_j[1][1];
+    Jacobian_j[2][2] = tau_jacobian_j[1][2];
+    Jacobian_j[2][3] = tau_jacobian_j[1][3];
     
     const su2double contraction_i = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
                                     tau_jacobian_i[1][0]*val_Mean_PrimVar[2];
@@ -574,10 +574,10 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
                                     tau_jacobian_j[1][0]*val_Mean_PrimVar[2];
     
-    Jacobian_j[3][0] = -(contraction_j - heat_flux_jac_j[0]);
-    Jacobian_j[3][1] = (tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
-    Jacobian_j[3][2] = (tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
-    Jacobian_j[3][3] = heat_flux_jac_j[3];
+    Jacobian_j[3][0] = (contraction_j - heat_flux_jac_j[0]);
+    Jacobian_j[3][1] = -(tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
+    Jacobian_j[3][2] = -(tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
+    Jacobian_j[3][3] = -heat_flux_jac_j[3];
 
     // CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
@@ -623,21 +623,21 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     Jacobian_j[0][2] = 0.0;
     Jacobian_j[0][3] = 0.0;
     Jacobian_j[0][4] = 0.0;
-    Jacobian_j[1][0] = -tau_jacobian_j[0][0];
-    Jacobian_j[1][1] = -tau_jacobian_j[0][1];
-    Jacobian_j[1][2] = -tau_jacobian_j[0][2];
-    Jacobian_j[1][3] = -tau_jacobian_j[0][3];
-    Jacobian_j[1][4] = -tau_jacobian_j[0][4];
-    Jacobian_j[2][0] = -tau_jacobian_j[1][0];
-    Jacobian_j[2][1] = -tau_jacobian_j[1][1];
-    Jacobian_j[2][2] = -tau_jacobian_j[1][2];
-    Jacobian_j[2][3] = -tau_jacobian_j[1][3];
-    Jacobian_j[2][4] = -tau_jacobian_j[1][4];
-    Jacobian_j[3][0] = -tau_jacobian_j[2][0];
-    Jacobian_j[3][1] = -tau_jacobian_j[2][1];
-    Jacobian_j[3][2] = -tau_jacobian_j[2][2];
-    Jacobian_j[3][3] = -tau_jacobian_j[2][3];
-    Jacobian_j[3][4] = -tau_jacobian_j[2][4];
+    Jacobian_j[1][0] = tau_jacobian_j[0][0];
+    Jacobian_j[1][1] = tau_jacobian_j[0][1];
+    Jacobian_j[1][2] = tau_jacobian_j[0][2];
+    Jacobian_j[1][3] = tau_jacobian_j[0][3];
+    Jacobian_j[1][4] = tau_jacobian_j[0][4];
+    Jacobian_j[2][0] = tau_jacobian_j[1][0];
+    Jacobian_j[2][1] = tau_jacobian_j[1][1];
+    Jacobian_j[2][2] = tau_jacobian_j[1][2];
+    Jacobian_j[2][3] = tau_jacobian_j[1][3];
+    Jacobian_j[2][4] = tau_jacobian_j[1][4];
+    Jacobian_j[3][0] = tau_jacobian_j[2][0];
+    Jacobian_j[3][1] = tau_jacobian_j[2][1];
+    Jacobian_j[3][2] = tau_jacobian_j[2][2];
+    Jacobian_j[3][3] = tau_jacobian_j[2][3];
+    Jacobian_j[3][4] = tau_jacobian_j[2][4];
     
     const su2double contraction_i = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
                                     tau_jacobian_i[1][0]*val_Mean_PrimVar[2] +
@@ -653,11 +653,11 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                     tau_jacobian_j[1][0]*val_Mean_PrimVar[2] +
                                     tau_jacobian_j[2][0]*val_Mean_PrimVar[3];
     
-    Jacobian_j[4][0] = -(contraction_j - heat_flux_jac_j[0]);
-    Jacobian_j[4][1] = (tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
-    Jacobian_j[4][2] = (tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
-    Jacobian_j[4][3] = (tau_jacobian_j[2][0] + heat_flux_jac_j[3]);
-    Jacobian_j[4][4] = heat_flux_jac_j[4];
+    Jacobian_j[4][0] = (contraction_j - heat_flux_jac_j[0]);
+    Jacobian_j[4][1] = -(tau_jacobian_j[0][0] + heat_flux_jac_j[1]);
+    Jacobian_j[4][2] = -(tau_jacobian_j[1][0] + heat_flux_jac_j[2]);
+    Jacobian_j[4][3] = -(tau_jacobian_j[2][0] + heat_flux_jac_j[3]);
+    Jacobian_j[4][4] = -heat_flux_jac_j[4];
 
     // CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, Density, config);
 
@@ -943,21 +943,21 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   heat_flux_factor = Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb;
   conductivity_over_Rd = cpoR*heat_flux_factor*val_proj_vector/dist_ij_2;
 
-  heat_flux_jac_j[0] = conductivity_over_Rd * R_dTdu0;
-  heat_flux_jac_j[1] = conductivity_over_Rd * R_dTdu1;
-  heat_flux_jac_j[2] = conductivity_over_Rd * R_dTdu2;
+  heat_flux_jac_j[0] = -conductivity_over_Rd * R_dTdu0;
+  heat_flux_jac_j[1] = -conductivity_over_Rd * R_dTdu1;
+  heat_flux_jac_j[2] = -conductivity_over_Rd * R_dTdu2;
 
   if (nDim == 2) {
 
     const su2double R_dTdu3 = phi;
-    heat_flux_jac_j[3] = conductivity_over_Rd * R_dTdu3;
+    heat_flux_jac_j[3] = -conductivity_over_Rd * R_dTdu3;
 
   } else {
 
     const su2double R_dTdu3 = -phi*V_j[3];
     const su2double R_dTdu4 = phi;
-    heat_flux_jac_j[3] = conductivity_over_Rd * R_dTdu3;
-    heat_flux_jac_j[4] = conductivity_over_Rd * R_dTdu4;
+    heat_flux_jac_j[3] = -conductivity_over_Rd * R_dTdu3;
+    heat_flux_jac_j[4] = -conductivity_over_Rd * R_dTdu4;
 
   }
 }
