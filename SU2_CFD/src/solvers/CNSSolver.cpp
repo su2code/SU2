@@ -178,7 +178,7 @@ CNSSolver::~CNSSolver(void) {
 
 }
 
-void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -196,7 +196,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
-  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+  CommonPreprocessing(geometry, solver, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
@@ -287,14 +287,14 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
       Avg_CFL_Local = CFL;
     }
     SU2_OMP_MASTER
-    ComputeKnoppWallFunction(geometry, solver_container, config);
+    ComputeKnoppWallFunction(geometry, solver, config);
     SU2_OMP_BARRIER
   }
 
 
 }
 
-unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver, CConfig *config, bool Output) {
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -310,12 +310,12 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 
     su2double eddy_visc = 0.0, turb_ke = 0.0;
 
-    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
-      eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+    if (turb_model != NONE && solver[TURB_SOL] != nullptr) {
+      eddy_visc = solver[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+      if (tkeNeeded) turb_ke = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
-        su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+        su2double DES_LengthScale = solver[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
       }
     }
@@ -334,7 +334,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   return nonPhysicalPoints;
 }
 
-void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver,
                                  CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -342,7 +342,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
                          (config->GetKind_Turb_Model() == SST_SUST);
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -412,7 +412,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       if ((geometry->node[iPoint]->GetDomain()) || (geometry->node[jPoint]->GetDomain()))
-        CorrectJacobian(geometry, solver_container, config, iPoint, jPoint, residual.jacobian_ic, residual.jacobian_jc);
+        CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic, residual.jacobian_jc);
     }
   }
 
@@ -999,7 +999,7 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 }
 
 
-void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, jDim, iVar, jVar;
@@ -1242,7 +1242,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   }
 }
 
-void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, jVar, iDim, jDim;
@@ -1559,7 +1559,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 
 }
 
-void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                            CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, jVar, iDim, jDim;

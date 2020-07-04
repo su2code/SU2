@@ -281,7 +281,7 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 }
 
 
-void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
@@ -297,6 +297,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   }
   
   /*--- Compute gradients ---*/
+
+  Postprocessing(geometry, solver, config, iMesh);
     
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
@@ -311,9 +313,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh) {
   
-  SetPrimitive_Variables(solver_container);
+  SetPrimitive_Variables(solver);
   
   /*--- Compute mean flow and turbulence gradients ---*/
 
@@ -322,13 +324,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute eddy viscosity ---*/
 
-  SetEddyViscosity(geometry, solver_container);
+  SetEddyViscosity(geometry, solver);
 
 }
 
-void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
+void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double rho = flowNodes->GetDensity(iPoint);
@@ -340,9 +342,9 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
 
 }
 
-void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver_container) {
+void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver) {
   
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
@@ -353,9 +355,9 @@ void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver_container) {
   }
 }
 
-void CTurbSSTSolver::SetFlowGradient(CSolver **solver_container) {
+void CTurbSSTSolver::SetFlowGradient(CSolver **solver) {
   
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nDim+1; iVar++) {
@@ -366,9 +368,9 @@ void CTurbSSTSolver::SetFlowGradient(CSolver **solver_container) {
   }
 }
 
-void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver_container) {
+void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
   
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   const su2double a1 = constants[7];
   
@@ -447,10 +449,10 @@ void CTurbSSTSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) 
 }
 //--- End hacky bit
 
-void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -509,7 +511,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
       
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      CrossDiffusionJacobian(geometry, solver_container, config, iPoint);
+      CrossDiffusionJacobian(geometry, solver, config, iPoint);
       
     }
 
@@ -518,13 +520,13 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
-                                            CSolver **solver_container,
+                                            CSolver **solver,
                                             CConfig *config,
                                             unsigned long iPoint) {
   
   AD_BEGIN_PASSIVE
   
-  const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -594,11 +596,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   AD_END_PASSIVE
 }
 
-void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh) {
 }
 
-void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex, total_index;
@@ -608,7 +610,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
   const su2double beta_1 = constants[4];
   
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -650,8 +652,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         for (iDim = 0; iDim < nDim; iDim++) { Vel[iDim] /= Density_Normal; VelMod += Vel[iDim]*Vel[iDim]; }
         Energy_Normal -= Kine_Normal + 0.5*VelMod;
         
-        solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
-        Lam_Visc_Normal = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
+        solver[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
+        Lam_Visc_Normal = solver[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
       }
       else {
       
@@ -682,15 +684,15 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   }
 }
 
-void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                         CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Call the equivalent heat flux wall boundary condition. ---*/
-  BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  BC_HeatFlux_Wall(geometry, solver, conv_numerics, visc_numerics, config, val_marker);
 
 }
 
-void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
@@ -701,7 +703,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   su2double Kine_Infty, Omega_Infty;
   unsigned short iVar, iDim;
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   Normal = new su2double[nDim];
 
@@ -715,7 +717,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Allocate the value at the infinity ---*/
 
-      V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      V_infty = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -813,7 +815,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+      CorrectJacobian(geometry, solver, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
         
     }
   }
@@ -822,7 +824,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
 }
 
-void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iDim;
@@ -850,11 +852,11 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Allocate the value at the inlet ---*/
 
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      V_inlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -913,8 +915,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
                                    nodes->GetF2blending(iPoint));
       
       /*--- Vorticity ---*/
-      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
-                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+      visc_numerics->SetVorticity(solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
+                                  solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
@@ -928,7 +930,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+      CorrectJacobian(geometry, solver, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
 
     }
 
@@ -940,7 +942,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
-void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
@@ -960,11 +962,11 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
       /*--- Allocate the value at the outlet ---*/
 
-      V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      V_outlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -1025,8 +1027,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //                                   nodes->GetF2blending(iPoint));
 //
 //      /*--- Vorticity ---*/
-//      visc_numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
-//                                  solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+//      visc_numerics->SetVorticity(solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
+//                                  solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
 //
 //      /*--- Set values for gradient Jacobian ---*/
 //      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
@@ -1040,7 +1042,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 //
 //      /*--- Compute Jacobian correction for influence from all neighbors ---*/
-//      CorrectJacobian(geometry, solver_container, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
+//      CorrectJacobian(geometry, solver, config, iPoint, iPoint, visc_residual.jacobian_ic, nullptr);
 
     }
   }
@@ -1051,7 +1053,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 }
 
 
-void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
@@ -1066,8 +1068,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
-    extAverageKine = solver_container[FLOW_SOL]->GetExtAverageKine(val_marker, iSpan);
-    extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
+    extAverageKine = solver[FLOW_SOL]->GetExtAverageKine(val_marker, iSpan);
+    extAverageOmega = solver[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
 
 
     /*--- Loop over all the vertices on this boundary marker ---*/
@@ -1089,11 +1091,11 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Allocate the value at the inlet ---*/
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
+      V_inlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -1152,7 +1154,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
 }
 
-void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
@@ -1164,7 +1166,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
   su2double rho, pressure, *Vel, VelMag, muLam, Intensity, viscRatio, kine_b, omega_b, kine;
   CFluidModel *FluidModel;
 
-  FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+  FluidModel = solver[FLOW_SOL]->GetFluidModel();
   Intensity = config->GetTurbulenceIntensity_FreeStream();
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();
 
@@ -1178,11 +1180,11 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the inflow kine and omega using the span wise averge quntities---*/
     for (iDim = 0; iDim < nDim; iDim++)
-      Vel[iDim] = solver_container[FLOW_SOL]->GetAverageTurboVelocity(val_marker, iSpan)[iDim];
+      Vel[iDim] = solver[FLOW_SOL]->GetAverageTurboVelocity(val_marker, iSpan)[iDim];
 
-    rho       = solver_container[FLOW_SOL]->GetAverageDensity(val_marker, iSpan);
-    pressure  = solver_container[FLOW_SOL]->GetAveragePressure(val_marker, iSpan);
-    kine      = solver_container[FLOW_SOL]->GetAverageKine(val_marker, iSpan);
+    rho       = solver[FLOW_SOL]->GetAverageDensity(val_marker, iSpan);
+    pressure  = solver[FLOW_SOL]->GetAveragePressure(val_marker, iSpan);
+    kine      = solver[FLOW_SOL]->GetAverageKine(val_marker, iSpan);
 
     FluidModel->SetTDState_Prho(pressure, rho);
     muLam = FluidModel->GetLaminarViscosity();
@@ -1213,11 +1215,11 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Allocate the value at the inlet ---*/
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
+      V_inlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -1278,13 +1280,13 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                         CNumerics *visc_numerics, CConfig *config){
 
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker;
 
-  unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+  unsigned short nPrimVar = solver[FLOW_SOL]->GetnPrimVar();
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
@@ -1321,13 +1323,13 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,iVar);
-              PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+              PrimVar_i[iVar] = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,iVar);
+              PrimVar_j[iVar] = solver[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
             /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
 
-            weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+            weight = solver[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
             /*--- Set primitive variables ---*/
 
@@ -1485,7 +1487,7 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 }
 
-void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
@@ -1515,7 +1517,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  CVariable *flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
 
