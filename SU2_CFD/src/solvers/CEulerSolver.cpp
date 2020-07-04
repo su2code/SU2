@@ -3280,7 +3280,7 @@ void CEulerSolver::SumEdgeFluxes(const CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (auto iEdge : geometry->nodes->GetPoints(iPoint)) {
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
