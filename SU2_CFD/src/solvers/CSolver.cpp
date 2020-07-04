@@ -2385,7 +2385,7 @@ void CSolver::ResetCFLAdapt() {
 
 
 // void CSolver::AdaptCFLNumber(CGeometry **geometry,
-//                              CSolver   ***solver_container,
+//                              CSolver   ***solver,
 //                              CConfig   *config) {
 
 //   /* Adapt the CFL number on all multigrid levels using an
@@ -2402,8 +2402,8 @@ void CSolver::ResetCFLAdapt() {
 
 //     /* Store the mean flow, and turbulence solvers more clearly. */
 
-//     CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
-//     CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+//     CSolver *solverFlow = solver[iMesh][FLOW_SOL];
+//     CSolver *solverTurb = solver[iMesh][TURB_SOL];
 
 //     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -2596,7 +2596,7 @@ void CSolver::ResetCFLAdapt() {
 // }
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
-                             CSolver   ***solver_container,
+                             CSolver   ***solver,
                              CConfig   *config) {
 
   /* Adapt the CFL number on all multigrid levels using an
@@ -5280,7 +5280,7 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 }
 
 void CSolver::CorrectJacobian(CGeometry      *geometry,
-                              CSolver        **solver_container,
+                              CSolver        **solver,
                               CConfig        *config,
                               unsigned long  iPoint,
                               unsigned long  jPoint,
@@ -5291,7 +5291,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    CVariable *nodesFlo = solver_container[FLOW_SOL]->GetNodes();
+    CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
     
     /*--- Influence of i's neighbors on R(i,j) ---*/
     const su2double r_i = nodesFlo->GetDensity(iPoint);
