@@ -527,7 +527,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 
   if (TurbVar_Grad_i != NULL) {
     const su2double sigma_k1 = 0.85;
-    const su2doubke sigma_k2 = 1.0;
+    const su2double sigma_k2 = 1.0;
 
     const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
     const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
