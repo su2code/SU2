@@ -153,6 +153,17 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                  (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_proj_vector;
     }
   }
+
+  if (TurbVar_Grad_i != NULL) {
+    Proj_Mean_GradTurbVar_Edge = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Proj_Mean_GradTurbVar_Edge += Mean_GradTurbVar[iDim]*val_edge_vector[iDim];
+    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradTurbVar[iDim] -= (Proj_Mean_GradTurbVar_Edge -
+                                 (turb_ke_j-turb_ke_i))*val_edge_vector[iDim] / val_proj_vector;
+    }
+  }
 }
 
 void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
@@ -514,6 +525,23 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     
   }
 
+  if (TurbVar_Grad_i != NULL) {
+    const su2double sigma_k1 = 0.85;
+    const su2doubke sigma_k2 = 1.0;
+
+    const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+    const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+
+    const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
+    const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
+
+    const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Proj_Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
+    }
+  }
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -756,6 +784,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+
+  if (TurbVar_Grad_i != NULL) {
+    AD::SetPreaccIn(TurbVar_Grad_i, 1, nDim); AD::SetPreaccIn(TurbVar_Grad_j, 1, nDim);
+    AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
+  }
   
   unsigned short iVar, jVar, iDim;
   
@@ -817,6 +850,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
     }
   }
+
+  if (TurbVar_Grad_i != NULL) {
+    for (iVar = 0; iVar < nDim+1; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim] + TurbVar_Grad_j[0][iDim]);
+      }
+    }
+  }
   
   
 
@@ -861,8 +902,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
                         Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
     GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j, config);
-    SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
-    SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+    // SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+    // SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
 
   }
 
