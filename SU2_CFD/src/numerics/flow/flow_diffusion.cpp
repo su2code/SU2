@@ -726,15 +726,6 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
                                     const CConfig *config) {
   
   AD_BEGIN_PASSIVE
-  
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_ic[iDim][iVar][jVar] = 0.;
-        Jacobian_jc[iDim][iVar][jVar] = 0.;
-      }
-    }
-  }
 
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
