@@ -538,7 +538,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Proj_Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
+      Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
     }
   }
 
