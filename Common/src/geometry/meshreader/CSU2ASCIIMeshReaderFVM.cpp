@@ -32,7 +32,7 @@
 CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
                                                unsigned short val_iZone,
                                                unsigned short val_nZone)
-: CMeshReaderFVM(val_config, val_iZone, val_nZone) {
+: CMeshReader(val_config, val_iZone, val_nZone) {
   
   actuator_disk  = (((config->GetnMarker_ActDiskInlet() != 0) ||
                      (config->GetnMarker_ActDiskOutlet() != 0)) &&

@@ -28,7 +28,7 @@
 #pragma once
 
 #include "CGeometry.hpp"
-#include "meshreader/CMeshReaderFVM.hpp"
+#include "meshreader/CMeshReader.hpp"
 #include "../toolboxes/C2DContainer.hpp"
 
 /*!
@@ -349,21 +349,21 @@ public:
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedPoints(CConfig *config, CMeshReaderFVM *mesh);
+  void LoadLinearlyPartitionedPoints(CConfig *config, CMeshReader *mesh);
 
   /*!
    * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedVolumeElements(CConfig *config, CMeshReaderFVM *mesh);
+  void LoadLinearlyPartitionedVolumeElements(CConfig *config, CMeshReader *mesh);
 
   /*!
    * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadUnpartitionedSurfaceElements(CConfig *config, CMeshReaderFVM *mesh);
+  void LoadUnpartitionedSurfaceElements(CConfig *config, CMeshReader *mesh);
 
   /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph partitioning in parallel.

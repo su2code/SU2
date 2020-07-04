@@ -1,5 +1,5 @@
 /*!
- * \file CMeshReaderFVM.cpp
+ * \file CMeshReader.cpp
  * \brief Helper class that provides the counts for each rank in a linear
  *        partitioning given the global count as input.
  * \author T. Economon
@@ -26,11 +26,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/geometry/meshreader/CMeshReaderFVM.hpp"
+#include "../../../include/geometry/meshreader/CMeshReader.hpp"
 
-CMeshReaderFVM::CMeshReaderFVM(CConfig        *val_config,
-                               unsigned short val_iZone,
-                               unsigned short val_nZone) {
+CMeshReader::CMeshReader(CConfig        *val_config,
+                         unsigned short val_iZone,
+                         unsigned short val_nZone) {
   
   /*--- Store MPI size ---*/
   
@@ -55,4 +55,4 @@ CMeshReaderFVM::CMeshReaderFVM(CConfig        *val_config,
   
 }
 
-CMeshReaderFVM::~CMeshReaderFVM(void) { }
+CMeshReader::~CMeshReader(void) { }

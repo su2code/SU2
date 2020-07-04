@@ -28,14 +28,14 @@
 
 #pragma once
 
-#include "CMeshReaderFVM.hpp"
+#include "CMeshReader.hpp"
 
 /*!
  * \class CBoxMeshReaderFVM
  * \brief Reads a 3D box grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CBoxMeshReaderFVM: public CMeshReaderFVM {
+class CBoxMeshReaderFVM: public CMeshReader {
   
 private:
   

@@ -28,14 +28,14 @@
 
 #pragma once
 
-#include "CMeshReaderFVM.hpp"
+#include "CMeshReader.hpp"
 
 /*!
  * \class CRectangularMeshReaderFVM
  * \brief Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CRectangularMeshReaderFVM: public CMeshReaderFVM {
+class CRectangularMeshReaderFVM: public CMeshReader {
   
 private:
   

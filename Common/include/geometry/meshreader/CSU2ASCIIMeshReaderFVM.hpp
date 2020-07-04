@@ -28,14 +28,14 @@
 
 #pragma once
 
-#include "CMeshReaderFVM.hpp"
+#include "CMeshReader.hpp"
 
 /*!
  * \class CSU2ASCIIMeshReaderFVM
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CSU2ASCIIMeshReaderFVM: public CMeshReaderFVM {
+class CSU2ASCIIMeshReaderFVM: public CMeshReader {
   
 private:
   

@@ -72,7 +72,7 @@ lib_sources = \
   ../src/geometry/elements/CPYRAM5.cpp \
   ../src/geometry/elements/CPRISM6.cpp \
   ../src/geometry/elements/CHEXA8.cpp \
-  ../src/geometry/meshreader/CMeshReaderFVM.cpp \
+  ../src/geometry/meshreader/CMeshReader.cpp \
   ../src/geometry/meshreader/CSU2ASCIIMeshReaderFVM.cpp \
   ../src/geometry/meshreader/CCGNSMeshReaderFVM.cpp \
   ../src/geometry/meshreader/CRectangularMeshReaderFVM.cpp \

@@ -1,8 +1,8 @@
 
 /*!
- * \file CMeshReaderFVM.hpp
- * \brief Header file for the class CMeshReaderFVM.
- *        The implementations are in the <i>CMeshReaderFVM.cpp</i> file.
+ * \file CMeshReader.hpp
+ * \brief Header file for the class CMeshReader.
+ *        The implementations are in the <i>CMeshReader.cpp</i> file.
  * \author T. Economon
  * \version 7.0.5 "Blackbird"
  *
@@ -35,11 +35,11 @@
 #include "../../CConfig.hpp"
 
 /*!
- * \class CMeshReaderFVM
- * \brief Base class for the mesh zone readers of the finite volume solver (FVM).
+ * \class CMeshReader
+ * \brief Base class for the mesh zone readers.
  * \author: T. Economon
  */
-class CMeshReaderFVM {
+class CMeshReader {
   
 protected:
   
@@ -65,19 +65,19 @@ protected:
 public:
   
   /*!
-   * \brief Constructor of the CMeshReaderFVM class.
+   * \brief Constructor of the CMeshReader class.
    * \param[in] val_config - config object for the current zone.
    * \param[in] val_iZone  - Current zone index.
    * \param[in] val_nZone  - Total number of zones.
    */
-  CMeshReaderFVM(CConfig        *val_config,
-                 unsigned short val_iZone,
-                 unsigned short val_nZone);
+  CMeshReader(CConfig        *val_config,
+              unsigned short val_iZone,
+              unsigned short val_nZone);
   
   /*!
-   * \brief Destructor of the CMeshReaderFVM class.
+   * \brief Destructor of the CMeshReader class.
    */
-  ~CMeshReaderFVM(void);
+  ~CMeshReader(void);
   
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).
