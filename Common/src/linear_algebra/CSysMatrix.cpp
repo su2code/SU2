@@ -631,21 +631,6 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
     if (col_ind[index] == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
   }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
-                                        unsigned long row_i, ScalarType *prod) const {
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod);
-  }
-
 }
 
 template<class ScalarType>
@@ -672,14 +657,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-    auto prod_begin = row_i*nVar; // offset to beginning of block row_i
-    for(auto iVar = 0ul; iVar < nVar; iVar++)
-      prod[prod_begin+iVar] = 0.0;
-    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      auto vec_begin = col_ind[index]*nEqn; // offset to beginning of block col_ind[index]
-      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
-      MatrixVectorProductAdd(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
-    }
+    RowProduct(vec, row_i, &prod[row_i*nVar]);
   }
 
   /*--- MPI Parallelization. ---*/
@@ -1011,9 +989,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+    if ((config->GetSolid_Wall(iMarker) ||
         (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
@@ -1032,9 +1008,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
     iLinelet = 0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+      if ((config->GetSolid_Wall(iMarker) ||
           (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
       {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {

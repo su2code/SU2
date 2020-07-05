@@ -187,30 +187,40 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned
 }
 
 template<class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
+                                                    unsigned long row_i, ScalarType *prod) const {
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    prod[iVar] = 0.0;
+
+  for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+    auto col_j = col_ind[index];
+    MatrixVectorProductAdd(&matrix[index*nVar*nEqn], &vec[col_j*nEqn], prod);
+  }
+}
+
+template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
                                                       unsigned long col_ub, ScalarType *prod) const {
-  unsigned long iVar, index, col_j;
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    prod[iVar] = 0.0;
 
-  for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
-
-  for (index = dia_ptr[row_i]+1; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
+  for (auto index = dia_ptr[row_i]+1; index < row_ptr[row_i+1]; index++) {
+    auto col_j = col_ind[index];
     if (col_j < col_ub)
-      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod);
+      MatrixVectorProductAdd(&matrix[index*nVar*nEqn], &vec[col_j*nEqn], prod);
   }
 }
 
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
                                                       unsigned long col_lb, ScalarType *prod) const {
-  unsigned long iVar, index, col_j;
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    prod[iVar] = 0.0;
 
-  for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
-
-  for (index = row_ptr[row_i]; index < dia_ptr[row_i]; index++) {
-    col_j = col_ind[index];
+  for (auto index = row_ptr[row_i]; index < dia_ptr[row_i]; index++) {
+    auto col_j = col_ind[index];
     if (col_j >= col_lb)
-      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod);
+      MatrixVectorProductAdd(&matrix[index*nVar*nEqn], &vec[col_j*nEqn], prod);
   }
 }
 
@@ -218,5 +228,5 @@ template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType> & vec,
                                                          unsigned long row_i, ScalarType *prod) const {
 
-  MatrixVectorProduct(&matrix[dia_ptr[row_i]*nVar*nVar], &vec[row_i*nVar], prod);
+  MatrixVectorProduct(&matrix[dia_ptr[row_i]*nVar*nEqn], &vec[row_i*nEqn], prod);
 }
