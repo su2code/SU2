@@ -28,22 +28,16 @@
 
 #pragma once
 
-#include "CMeshReader.hpp"
+#include "CSU2ASCIIMeshReaderBase.hpp"
 
 /*!
  * \class CSU2ASCIIMeshReaderFVM
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CSU2ASCIIMeshReaderFVM: public CMeshReader {
+class CSU2ASCIIMeshReaderFVM: public CSU2ASCIIMeshReaderBase {
   
 private:
-  
-  unsigned short myZone; /*!< \brief Current SU2 zone index. */
-  unsigned short nZones; /*!< \brief Total number of zones in the SU2 file. */
-  
-  string meshFilename; /*!< \brief Name of the SU2 ASCII mesh file being read. */
-  ifstream mesh_file;  /*!< \brief File object for the SU2 ASCII mesh file. */
   
   bool actuator_disk; /*!< \brief Boolean for whether we have an actuator disk to split. */
   
@@ -67,11 +61,6 @@ private:
   vector<su2double> CoordZVolumePoint; /*!< \brief Z-coordinates of the volume elements touching the actuator disk. */
   
   /*!
-   * \brief Reads all SU2 ASCII mesh metadata and checks for errors.
-   */
-  void ReadMetadata();
-  
-  /*!
    * \brief Splits a single surface actuator disk boundary into two separate markers (repeated points).
    */
   void SplitActuatorDiskSurface();
@@ -90,11 +79,6 @@ private:
    * \brief Reads the surface (boundary) elements from the SU2 zone.
    */
   void ReadSurfaceElementConnectivity();
-  
-  /*!
-   * \brief Helper function to find the current zone in an SU2 ASCII mesh object.
-   */
-  void FastForwardToMyZone();
   
 public:
   

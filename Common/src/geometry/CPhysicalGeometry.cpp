@@ -31,9 +31,13 @@
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CRectangularMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CBoxMeshReaderFEM.hpp"
 
 #include "../../include/geometry/primal_grid/CPrimalGrid.hpp"
 #include "../../include/geometry/primal_grid/CLine.hpp"
@@ -72,38 +76,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   string val_mesh_filename  = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
 
-  /*--- Determine whether or not a FEM discretization is used ---*/
+  /*--- Read the grid. ---*/
 
-  const bool fem_solver = config->GetFEMSolver();
-
-  /*--- Initialize counters for local/global points & elements ---*/
-
-  if( fem_solver ) {
-    switch (val_format) {
-      case SU2:
-        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-
-      case CGNS_GRID:
-        Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-
-      default:
-        SU2_MPI::Error("Unrecognized mesh format specified for the FEM solver!", CURRENT_FUNCTION);
-        break;
-    }
-  }
-  else {
-
-    switch (val_format) {
-      case SU2: case CGNS_GRID: case RECTANGLE: case BOX:
-        Read_Mesh_FVM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
-        break;
-    }
-  }
+  Read_Mesh(config, val_mesh_filename, val_iZone, val_nZone);
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
 
@@ -3675,10 +3650,14 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   delete [] nElem_Bound_Copy;
 }
 
-void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
-                                      string         val_mesh_filename,
-                                      unsigned short val_iZone,
-                                      unsigned short val_nZone) {
+void CPhysicalGeometry::Read_Mesh(CConfig        *config,
+                                  string         val_mesh_filename,
+                                  unsigned short val_iZone,
+                                  unsigned short val_nZone) {
+
+  /*--- Determine whether or not a FEM discretization is used ---*/
+
+  const bool fem_solver = config->GetFEMSolver();
 
   /*--- Initialize counters for local/global points & elements ---*/
 
@@ -3696,23 +3675,27 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
 
   nZone = val_nZone;
 
-  /*--- Create a mesh reader to read a CGNS grid into linear partitions. ---*/
+  /*--- Create a mesh reader to read a grid into linear partitions. ---*/
 
   unsigned short val_format = config->GetMesh_FileFormat();
 
   CMeshReader *Mesh = nullptr;
   switch (val_format) {
     case SU2:
-      Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
+      if( fem_solver ) Mesh = new CSU2ASCIIMeshReaderFEM(config, val_iZone, val_nZone);
+      else             Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case CGNS_GRID:
-      Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
+      if( fem_solver ) Mesh = new CCGNSMeshReaderFEM(config, val_iZone, val_nZone);
+      else             Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
-      Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
+      if( fem_solver ) Mesh = new CRectangularMeshReaderFEM(config, val_iZone, val_nZone);
+      else             Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case BOX:
-      Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
+      if( fem_solver ) Mesh = new CBoxMeshReaderFEM(config, val_iZone, val_nZone);
+      else             Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     default:
       SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
@@ -3751,6 +3734,12 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig        *config,
   } else if (rank == MASTER_NODE) {
     cout << Global_nElem << " volume elements." << endl;
   }
+
+  /*--- Make a distinction between the FVM solver and FEM solver how to load
+        the grid data in the member variables of CPhysicalGeometry. ---*/
+
+
+
 
   /*--- Load the grid points, volume elements, and surface elements
    from the mesh object into the proper SU2 data structures. ---*/
@@ -3932,7 +3921,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig     *confi
 
 
   /*--- Reduce the global counts of all element types found in
-   the CGNS grid with all ranks. ---*/
+   the grid with all ranks. ---*/
 
   SU2_MPI::Allreduce(&nelem_triangle,&Global_nelem_triangle,  1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);

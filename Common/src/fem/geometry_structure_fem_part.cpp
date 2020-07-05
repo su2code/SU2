@@ -39,22 +39,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
-                                                     string         val_mesh_filename,
-                                                     unsigned short val_iZone,
-                                                     unsigned short val_nZone) {
-
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
-void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
-                                                      string         val_mesh_filename,
-                                                      unsigned short val_iZone,
-                                                      unsigned short val_nZone) {
-
-SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
 }

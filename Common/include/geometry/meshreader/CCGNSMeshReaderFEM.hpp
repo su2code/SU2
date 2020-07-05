@@ -1,8 +1,8 @@
 /*!
- * \file CCGNSMeshReaderFVM.hpp
- * \brief Header file for the class CCGNSMeshReaderFVM.
- *        The implementations are in the <i>CCGNSMeshReaderFVM.cpp</i> file.
- * \author T. Economon
+ * \file CCGNSMeshReaderFEM.hpp
+ * \brief Header file for the class CCGNSMeshReaderFEM.
+ *        The implementations are in the <i>CCGNSMeshReaderFEM.cpp</i> file.
+ * \author T. Economon, E. van der Weide
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -35,15 +35,16 @@
 #include "CCGNSMeshReaderBase.hpp"
 
 /*!
- * \class CCGNSMeshReaderFVM
- * \brief Reads a CGNS zone into linear partitions for the finite volume solver (FVM).
- * \author: T. Economon
+ * \class CCGNSMeshReaderFEM
+ * \brief Reads a CGNS zone into linear partitions for the finite element solver (FEM).
+ * \author: T. Economon, E. van der Weide
  */
-class CCGNSMeshReaderFVM: public CCGNSMeshReaderBase {
+class CCGNSMeshReaderFEM: public CCGNSMeshReaderBase {
   
 private:
   
 #ifdef HAVE_CGNS
+  
   /*!
    * \brief Reads the grid points from a CGNS zone into linear partitions across all ranks.
    */
@@ -73,50 +74,18 @@ private:
   
 #endif
   
-  /*!
-   * \brief Routine to launch non-blocking sends and recvs amongst all processors.
-   * \param[in] bufSend - Buffer of data to be sent.
-   * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage format.
-   * \param[in] sendReq - Array of MPI send requests.
-   * \param[in] bufRecv - Buffer of data to be received.
-   * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative storage format.
-   * \param[in] sendReq - Array of MPI recv requests.
-   * \param[in] countPerElem - Pieces of data per element communicated.
-   */
-  void InitiateCommsAll(void *bufSend,
-                        const int *nElemSend,
-                        SU2_MPI::Request *sendReq,
-                        void *bufRecv,
-                        const int *nElemRecv,
-                        SU2_MPI::Request *recvReq,
-                        unsigned short countPerElem,
-                        unsigned short commType);
-  
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
-   * \param[in] nSends - Number of sends to be completed.
-   * \param[in] sendReq - Array of MPI send requests.
-   * \param[in] nRecvs - Number of receives to be completed.
-   * \param[in] sendReq - Array of MPI recv requests.
-   */
-  void CompleteCommsAll(int nSends,
-                        SU2_MPI::Request *sendReq,
-                        int nRecvs,
-                        SU2_MPI::Request *recvReq);
-  
-  
 public:
   
   /*!
-   * \brief Constructor of the CCGNSMeshReaderFVM class.
+   * \brief Constructor of the CCGNSMeshReaderFEM class.
    */
-  CCGNSMeshReaderFVM(CConfig        *val_config,
+  CCGNSMeshReaderFEM(CConfig        *val_config,
                      unsigned short val_iZone,
                      unsigned short val_nZone);
   
   /*!
-   * \brief Destructor of the CCGNSMeshReaderFVM class.
+   * \brief Destructor of the CCGNSMeshReaderFEM class.
    */
-  ~CCGNSMeshReaderFVM(void);
+  ~CCGNSMeshReaderFEM(void);
   
 };

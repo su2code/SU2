@@ -77,7 +77,7 @@ public:
   /*!
    * \brief Destructor of the CMeshReader class.
    */
-  ~CMeshReader(void);
+  virtual ~CMeshReader(void);
   
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).
