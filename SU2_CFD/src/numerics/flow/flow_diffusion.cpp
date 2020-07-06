@@ -446,25 +446,25 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   const su2double xi_i = WF_Factor*Viscosity/(Density_i*dist_ij_2);
   const su2double xi_j = WF_Factor*Viscosity/(Density_j*dist_ij_2);
 
-  su2double Mean_Visc_k = 0.0;
-  su2double xi_k_i = 0.0, xi_k_j = 0.0;
-
   /*--- BCM: contribution of TKE viscous stress in energy equation ---*/
 
-  if (TurbVar_Grad_i != NULL) {
-    const su2double sigma_k1 = 0.85;
-    const su2double sigma_k2 = 1.0;
+  su2double xi_k_i = 0.0, xi_k_j = 0.0;
 
-    const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-    const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  // if (TurbVar_Grad_i != NULL) {
+  //   const su2double sigma_k1 = 0.85;
+  //   const su2double sigma_k2 = 1.0;
 
-    const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
-    const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
+  //   const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  //   const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
 
-    Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
-    xi_k_i = Mean_Visc_k/(Density_i*dist_ij_2);
-    xi_k_j = Mean_Visc_k/(Density_j*dist_ij_2);
-  }
+  //   const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
+  //   const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
+
+  //   const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
+
+  //   xi_k_i = Mean_Visc_k/(Density_i*dist_ij_2);
+  //   xi_k_j = Mean_Visc_k/(Density_j*dist_ij_2);
+  // }
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
@@ -483,14 +483,12 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
       tau_jacobian_i[iDim][0] -= tau_jacobian_i[iDim][jDim+1]*V_i[jDim+1];
       tau_jacobian_j[iDim][0] -= tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
 
-      
-
-      tau_jacobian_i[iDim][jDim+1] -= xi_k_i*(Edge_Vector[iDim]*Normal[jDim] 
-                                      - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
-                                          + delta[iDim][jDim]*val_proj_vector)*turb_ke_i;
-      tau_jacobian_j[iDim][jDim+1] += xi_k_j*(Edge_Vector[iDim]*Normal[jDim] 
-                                          - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
-                                          + delta[iDim][jDim]*val_proj_vector)*turb_ke_j;
+      // tau_jacobian_i[iDim][jDim+1] -= xi_k_i*(Edge_Vector[iDim]*Normal[jDim] 
+      //                                 - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
+      //                                     + delta[iDim][jDim]*val_proj_vector)*turb_ke_i;
+      // tau_jacobian_j[iDim][jDim+1] += xi_k_j*(Edge_Vector[iDim]*Normal[jDim] 
+      //                                     - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
+      //                                     + delta[iDim][jDim]*val_proj_vector)*turb_ke_j;
     }
     // Jacobian w.r.t. energy
     tau_jacobian_i[iDim][nDim+1] = 0;
@@ -554,22 +552,22 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     
   }
 
-  if (TurbVar_Grad_i != NULL) {
-    const su2double sigma_k1 = 0.85;
-    const su2double sigma_k2 = 1.0;
+  // if (TurbVar_Grad_i != NULL) {
+  //   const su2double sigma_k1 = 0.85;
+  //   const su2double sigma_k2 = 1.0;
 
-    const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-    const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  //   const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  //   const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
 
-    const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
-    const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
+  //   const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
+  //   const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
 
-    const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
+  //   const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
 
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
-    }
-  }
+  //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  //     Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
+  //   }
+  // }
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
