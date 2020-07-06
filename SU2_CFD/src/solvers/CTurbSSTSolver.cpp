@@ -1658,14 +1658,10 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       if (Vol != 0.0) {
 
-        // const su2double Lambda_Inv  = nodes->GetMax_Lambda_Inv(iPoint);
-        // const su2double Lambda_Visc = nodes->GetMax_Lambda_Visc(iPoint);
-        // Lambda = (Lambda_Inv + Lambda_Visc);
-        // Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/Lambda;
-        const su2double Lambda_Inv  = nodes->GetMax_Lambda_Inv(iPoint)/nodes->GetLocalCFL(iPoint);
+        const su2double Lambda_Inv  = nodes->GetMax_Lambda_Inv(iPoint);
         const su2double Lambda_Visc = nodes->GetMax_Lambda_Visc(iPoint);
-        Lambda = max(Lambda_Inv, Lambda_Visc);
-        Local_Delta_Time = Vol/Lambda;
+        Lambda = (Lambda_Inv + Lambda_Visc);
+        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/Lambda;
 
         minDt = min(minDt, Local_Delta_Time);
         maxDt = max(maxDt, Local_Delta_Time);
