@@ -1158,8 +1158,14 @@ void CConfig::SetConfig_Options() {
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
-   /* DESCRIPTION: Specify chemical model for multi-species simulations */
-  addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, N2);
+  /* DESCRIPTION: Specify if Mutation++ library is used */
+  addBoolOption("MUTATIONPP", mutationpp, true);
+  if(mutationpp)
+    /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
+    addStringOption("GAS_MODEL", GasModel, string("N2"));
+  else
+    /* DESCRIPTION: Specify chemical model for multi-species simulations - user defined*/
+    addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, N2);
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */

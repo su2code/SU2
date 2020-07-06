@@ -1180,6 +1180,8 @@ private:
   bool ionization;                          /*!< \brief Flag for determining if free electron gas is in the mixture. */
   bool frozen;                              /*!< \brief Flag for determining if mixture is frozen. */
 
+  bool mutationpp;                          /*!< \brief Flag for determining if Mutation++ library is used. */ 
+  string GasModel;                          /*!< \brief Gas Model. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -3736,10 +3738,21 @@ public:
   unsigned short GetSystemMeasurements(void) const { return SystemMeasurements; }
 
   /*!
+   * \brief Indicates if Mutattion++ library is used.
+   */
+  bool GetMutationpp(void) const { return mutationpp; }
+
+  /*!
    * \brief Gas model that we are using.
    * \return Gas model that we are using.
    */
   unsigned short GetKind_GasModel(void) const { return Kind_GasModel; }
+
+  /*!
+   * \brief Gas model that we are using.
+   * \return Gas model that we are using.
+   */
+  string GetGasModel (void) const {return GasModel;}
 
   /*!
    * \brief Get the transport coefficient model.

@@ -1,0 +1,110 @@
+/*!
+ * \file CNEMOGas.cpp
+ * \brief Source of the nonequilibrium gas model.
+ * \author W. Maier, C. Garbacz
+ * \version 7.0.5 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "../../include/fluid/CNEMOGas.hpp"
+
+CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
+
+  nSpecies            = config->GetnSpecies();
+  MassFrac_Freestream = config->GetMassFrac_FreeStream();
+
+  MolarMass.resize(nSpecies,0.0);
+  MolarFractions.resize(nSpecies,0.0);
+  Cvtrs.resize(nSpecies,0.0);         
+  Cvves.resize(nSpecies,0.0);               
+  eves.resize(nSpecies,0.0);            
+  hs.resize(nSpecies,0.0);            
+  ws.resize(nSpecies,0.0);            
+  DiffusionCoeff.resize(nSpecies,0.0);
+  temperatures.resize(nEnergyEq,0.0);
+  energies.resize(nEnergyEq,0.0);  
+  ThermalConductivities.resize(nEnergyEq,0.0);
+
+  Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
+
+}
+
+CNEMOGas::~CNEMOGas(){}
+
+
+void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve){
+
+  su2double denom;
+
+  MassFrac = val_massfrac;                   
+  Pressure = val_pressure;                   
+  T        = val_temperature;                
+  Tve      = val_temperature_ve;             
+  
+  denom   = 0.0;   
+
+  /*--- Calculate mixture density from supplied primitive quantities ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    denom += MassFrac[iSpecies] * (Ru/MolarMass[iSpecies]) * T;
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+    denom += MassFrac[nSpecies-1] * (Ru/MolarMass[nSpecies-1]) * Tve;
+  Density = Pressure / denom;
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhos[iSpecies] = MassFrac[iSpecies]*Density;
+}
+
+
+su2double CNEMOGas::GetSoundSpeed(su2double val_pressure){
+
+  su2double conc, rhoCvtr;
+
+  Pressure = val_pressure;
+
+  conc    = 0.0;
+  rhoCvtr = 0.0; 
+
+  vector<su2double> Cvtrs = GetSpeciesCvTraRot();
+
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
+    conc += rhos[iSpecies]/MolarMass[iSpecies];
+    rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies]; 
+  }
+  SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
+
+  return(sqrt(SoundSpeed2));
+
+}
+
+su2double CNEMOGas::GetPressure(){
+
+  su2double P = 0.0;
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+    P += rhos[nSpecies-1] * Ru/MolarMass[nSpecies-1] * Tve;
+
+  return P;
+
+}
+
+
