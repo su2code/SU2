@@ -569,22 +569,20 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       
       /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
       if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-            const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-            if (iVertex > -1) {
-              const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-                const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
-                const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker(); iMarker++) {
+          const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (iVertex > -1) {
+            const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
+              const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
 
-                Jacobian_i[1][0] += -2.*(1. - F1_i)*sigma_om2/om_i
-                                  * gradom*Normal[iDim];
-                Jacobian_i[1][1] += -2.*(1. - F1_i)*sigma_om2/om_i
-                                  * gradk*Normal[iDim];
-              }// iDim
-            }// iVertex
-          }// if not send recv
+              Jacobian_i[1][0] += -2.*(1. - F1_i)*sigma_om2/om_i
+                                * gradom*Normal[iDim];
+              Jacobian_i[1][1] += -2.*(1. - F1_i)*sigma_om2/om_i
+                                * gradk*Normal[iDim];
+            }// iDim
+          }// iVertex
         }// iMarker
       }// if physical boundary
 
@@ -1591,8 +1589,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)

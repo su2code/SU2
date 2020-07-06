@@ -5334,20 +5334,18 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           Jacobian_i[iVar][jVar] = 0.;
         }
       }
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-          const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-          if (iVertex != -1) {
-            const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-              for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-                for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                  Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim];
-                }// jVar
-              }// iVar
-            }// iDim
-          }// iVertex
-        }// if not send recv
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker(); iMarker++) {
+        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex != -1) {
+          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+              for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+                Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim];
+              }// jVar
+            }// iVar
+          }// iDim
+        }// iVertex
       }// iMarker
       
       if (geometry->node[iPoint]->GetDomain())
@@ -5398,20 +5396,18 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
             Jacobian_i[iVar][jVar] = 0.;
           }
         }
-        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-            const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
-            if (jVertex != -1) {
-              const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
-              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-                for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-                  for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                    Jacobian_i[iVar][jVar] -= Jacobian_jc[iDim][iVar][jVar]*Normal[iDim];
-                  }// jVar
-                }// iVar
-              }// iDim
-            }// jVertex
-          }// if not send recv
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker(); iMarker++) {
+          const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
+          if (jVertex != -1) {
+            const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+                for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+                  Jacobian_i[iVar][jVar] -= Jacobian_jc[iDim][iVar][jVar]*Normal[iDim];
+                }// jVar
+              }// iVar
+            }// iDim
+          }// jVertex
         }// iMarker
         
         if (geometry->node[jPoint]->GetDomain())
