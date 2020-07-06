@@ -111,28 +111,23 @@ template<size_t nDim>
 FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm(vector)); }
 
 /*!
- * \brief Distance vector, from i to the centroid of the ij edge (i.e. half way).
+ * \brief Gather a single variable from index iPoint of a 1D container.
  */
-template<size_t nDim, class Container>
-FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint,
-                                           const Container& coords) {
-  using T = VectorDbl<nDim>;
-  auto coord_i = coords.template get<T>(iPoint);
-  auto coord_j = coords.template get<T>(jPoint);
-  T vector_ij;
-  for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    vector_ij(iDim) = 0.5 * (coord_j(iDim) - coord_i(iDim));
-  }
-  return vector_ij;
+template<class Container>
+FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars) {
+  auto x = *vars.innerIter(iPoint);
+  AD::SetPreaccIn(x);
+  return x;
 }
 
 /*!
- * \brief Gather a vector of variables (size nVar) from row iPoint of a container.
- * \note For nVar=1 it is better to use the Container::innerIter.
+ * \brief Gather a vector of variables (size nVar) from row iPoint of a 2D container.
  */
 template<size_t nVar, class Container>
 FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
-  return vars.template get<VectorDbl<nVar> >(iPoint);
+  auto x = vars.template get<VectorDbl<nVar> >(iPoint);
+  AD::SetPreaccIn(x, nVar);
+  return x;
 }
 
 /*!
@@ -140,7 +135,24 @@ FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
  */
 template<size_t nRows, size_t nCols, class Container>
 FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& vars) {
-  return vars.template get<MatrixDbl<nRows,nCols> >(iPoint);
+  auto x = vars.template get<MatrixDbl<nRows,nCols> >(iPoint);
+  AD::SetPreaccIn(x, nRows, nCols);
+  return x;
+}
+
+/*!
+ * \brief Distance vector, from i to the centroid of the ij edge (i.e. half way).
+ */
+template<size_t nDim, class Container>
+FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint,
+                                           const Container& coords) {
+  auto coord_i = gatherVariables<nDim>(iPoint, coords);
+  auto coord_j = gatherVariables<nDim>(jPoint, coords);
+  VectorDbl<nDim> vector_ij;
+  for (size_t iDim = 0; iDim < nDim; ++iDim) {
+    vector_ij(iDim) = 0.5 * (coord_j(iDim) - coord_i(iDim));
+  }
+  return vector_ij;
 }
 
 /*!

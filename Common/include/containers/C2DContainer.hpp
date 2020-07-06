@@ -135,7 +135,9 @@ public:
 #define UNIV_ACCESSORS                                                  \
   bool empty() const noexcept {return size()==0;}                       \
   Scalar_t* data() noexcept {return m_data;}                            \
-  const Scalar_t* data() const noexcept {return m_data;}
+  const Scalar_t* data() const noexcept {return m_data;}                \
+  const Scalar_t* begin() const noexcept {return data();}               \
+  const Scalar_t* end() const noexcept {return data()+size();}
 
   /*!
    * Operator (,) gives pointwise access, operator [] returns a pointer to the

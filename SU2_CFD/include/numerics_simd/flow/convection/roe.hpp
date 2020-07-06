@@ -84,6 +84,10 @@ public:
                    CSysVector<su2double>& vector,
                    SparseMatrixType& matrix) const final {
 
+    /*--- Start preaccumulation, inputs are registered
+     *    automatically in "gatherVariables". ---*/
+    AD::StartPreacc();
+
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const bool muscl = finestGrid && config.GetMUSCL_Flow();
     const auto limiter = static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow());
@@ -189,6 +193,11 @@ public:
 
     Base::updateFlux(iEdge, iPoint, jPoint, config, geometry, solution_,
                      area, unitNormal, vector_ij, implicit, flux, jac_i, jac_j);
+
+    /*--- Stop preaccumulation. ---*/
+
+    AD::SetPreaccOut(flux, nVar);
+    AD::EndPreacc();
 
     /*--- Update the vector and system matrix. ---*/
 

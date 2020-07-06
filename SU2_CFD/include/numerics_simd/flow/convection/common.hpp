@@ -337,8 +337,13 @@ FORCEINLINE Double roeDissipation(Int iPoint,
   const auto& sensor = sol.GetSensor();
   const auto& dissip = sol.GetRoe_Dissipation();
 
-  const Double avgSensor = 0.5 * (*sensor.innerIter(iPoint) + *sensor.innerIter(jPoint));
-  const Double avgDissip = 0.5 * (*dissip.innerIter(iPoint) + *dissip.innerIter(jPoint));
+  const Double si = gatherVariables(iPoint, sensor);
+  const Double sj = gatherVariables(jPoint, sensor);
+  const Double avgSensor = 0.5 * (si + sj);
+
+  const Double di = gatherVariables(iPoint, dissip);
+  const Double dj = gatherVariables(jPoint, dissip);
+  const Double avgDissip = 0.5 * (di + dj);
 
   /*--- A minimum level of upwinding is used to enhance stability. ---*/
   constexpr passivedouble minDissip = 0.05;

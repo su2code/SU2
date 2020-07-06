@@ -286,6 +286,11 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   SetObjFunction();
 
+  if (rank == MASTER_NODE && kind_recording != NONE && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+    AD::PrintStatistics();
+    cout << "-------------------------------------------------------------------------\n" << endl;
+  }
+
   AD::StopRecording();
 
 }
