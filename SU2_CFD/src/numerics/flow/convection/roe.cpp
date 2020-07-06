@@ -151,21 +151,21 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
-  // if (RoeSoundSpeed2 <= 0.0) {
-  //   for (iVar = 0; iVar < nVar; iVar++) {
-  //     Flux[iVar] = 0.0;
-  //     if (implicit){
-  //       for (jVar = 0; jVar < nVar; jVar++) {
-  //         Jacobian_i[iVar][jVar] = 0.0;
-  //         Jacobian_j[iVar][jVar] = 0.0;
-  //       }
-  //     }
-  //   }
-  //   AD::SetPreaccOut(Flux, nVar);
-  //   AD::EndPreacc();
+  if (RoeSoundSpeed2 <= 0.0) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Flux[iVar] = 0.0;
+      if (implicit){
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.0;
+          Jacobian_j[iVar][jVar] = 0.0;
+        }
+      }
+    }
+    AD::SetPreaccOut(Flux, nVar);
+    AD::EndPreacc();
 
-  //   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-  // }
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  }
 
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
 
@@ -225,13 +225,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   if (implicit) {
     GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, kappa, Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, kappa, Jacobian_j);
-  }
-
-  if (RoeSoundSpeed2 <= 0.0) {
-    AD::SetPreaccOut(Flux, nVar);
-    AD::EndPreacc();
-
-    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
   }
 
   /*--- Finalize in children class ---*/
