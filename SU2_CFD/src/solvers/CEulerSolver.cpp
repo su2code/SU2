@@ -3099,6 +3099,61 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
+    /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
+
+    su2double tke_i = 0.0, tke_j = 0.0;
+
+    if (tkeNeeded) {
+      CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+
+      tke_i = turbNodes->GetPrimitive(iPoint,0);
+      tke_j = turbNodes->GetPrimitive(jPoint,0);
+
+      if (muscl) {
+        /*--- Reconstruct turbulence variables. ---*/
+
+        su2double Vector_ij[MAXNDIM] = {0.0};
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+        }
+
+        auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+        auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+
+        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+
+        if (limiter) {
+          Limiter_i = turbNodes->GetLimiter(iPoint);
+          Limiter_j = turbNodes->GetLimiter(jPoint);
+        }
+
+        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*TurbGrad_j[0][iDim];
+        }
+        if (limiter) {
+          if (van_albada) {
+            su2double Turb_ij = tke_j - tke_i;
+            Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
+            Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
+          }
+          Project_Grad_i *= Limiter_i[0];
+          Project_Grad_j *= Limiter_j[0];
+        }
+        tke_i += Project_Grad_i;
+        tke_j += Project_Grad_j;
+
+        bool neg_tke_i = (tke_i < 0.0);
+        bool neg_tke_j = (tke_j < 0.0);
+
+        tke_i = (neg_tke_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
+        tke_j = (neg_tke_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
+      }
+
+      numerics->SetTurbKineticEnergy(tke_i, tke_j);
+    }
+
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
@@ -3176,8 +3231,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         sq_vel += pow(RoeVelocity, 2);
       }
       su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+      su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
-      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
@@ -3210,59 +3266,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
         numerics->SetCoord(Coord_i, Coord_j);
       }
-    }
-
-    /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
-
-    if (tkeNeeded) {
-      CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-
-      su2double tke_i = turbNodes->GetPrimitive(iPoint,0);
-      su2double tke_j = turbNodes->GetPrimitive(jPoint,0);
-
-      if (muscl) {
-        /*--- Reconstruct turbulence variables. ---*/
-
-        su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-        }
-
-        auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-        auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
-
-        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-        if (limiter) {
-          Limiter_i = turbNodes->GetLimiter(iPoint);
-          Limiter_j = turbNodes->GetLimiter(jPoint);
-        }
-
-        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*TurbGrad_j[0][iDim];
-        }
-        if (limiter) {
-          if (van_albada) {
-            su2double Turb_ij = tke_j - tke_i;
-            Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
-            Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
-          }
-          Project_Grad_i *= Limiter_i[0];
-          Project_Grad_j *= Limiter_j[0];
-        }
-        tke_i += Project_Grad_i;
-        tke_j += Project_Grad_j;
-
-        bool neg_tke_i = (tke_i < 0.0);
-        bool neg_tke_j = (tke_j < 0.0);
-
-        tke_i = (neg_tke_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
-        tke_j = (neg_tke_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
-      }
-
-      numerics->SetTurbKineticEnergy(tke_i, tke_j);
     }
 
     /*--- Compute the residual ---*/
