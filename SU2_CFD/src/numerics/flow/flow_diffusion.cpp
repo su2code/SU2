@@ -525,22 +525,22 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     
   }
 
-  if (TurbVar_Grad_i != NULL) {
-    const su2double sigma_k1 = 0.85;
-    const su2double sigma_k2 = 1.0;
+  // if (TurbVar_Grad_i != NULL) {
+  //   const su2double sigma_k1 = 0.85;
+  //   const su2double sigma_k2 = 1.0;
 
-    const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-    const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  //   const su2double sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  //   const su2double sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
 
-    const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
-    const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
+  //   const su2double Visc_k_i = Laminar_Viscosity_i + sigma_k_i*Eddy_Viscosity_i;
+  //   const su2double Visc_k_j = Laminar_Viscosity_j + sigma_k_j*Eddy_Viscosity_j;
 
-    const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
+  //   const su2double Mean_Visc_k = 0.5*(Visc_k_i+Visc_k_j);
 
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
-    }
-  }
+  //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  //     Flux_Tensor[nVar-1][iDim] += Mean_Visc_k*Mean_GradTurbVar[iDim];
+  //   }
+  // }
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
