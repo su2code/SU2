@@ -5334,7 +5334,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
           Jacobian_i[iVar][jVar] = 0.;
         }
       }
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker(); iMarker++) {
+      for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -5396,7 +5396,7 @@ void CSolver::CorrectJacobian(CGeometry      *geometry,
             Jacobian_i[iVar][jVar] = 0.;
           }
         }
-        for (unsigned short iMarker = 0; iMarker < config->GetnMarker(); iMarker++) {
+        for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
           const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
           if (jVertex != -1) {
             const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
