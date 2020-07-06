@@ -488,7 +488,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
       tau_jacobian_i[iDim][jDim+1] -= xi_k_i*(Edge_Vector[iDim]*Normal[jDim] 
                                       - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
                                           + delta[iDim][jDim]*val_proj_vector)*turb_ke_i;
-      tau_jacobian_j[iDim][jDim+1] += xi_-Kj*(Edge_Vector[iDim]*Normal[jDim] 
+      tau_jacobian_j[iDim][jDim+1] += xi_k_j*(Edge_Vector[iDim]*Normal[jDim] 
                                           - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
                                           + delta[iDim][jDim]*val_proj_vector)*turb_ke_j;
     }
