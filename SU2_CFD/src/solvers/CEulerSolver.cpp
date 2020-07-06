@@ -79,23 +79,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     nSecVar = 2;
   }
 
+  const auto nZone = geometry->GetnZone();
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
+  const auto direct_diff = config->GetDirectDiff();
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+
+  int Unst_RestartIter = 0;
   unsigned long iPoint, counter_local = 0, counter_global = 0;
   unsigned short iVar, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
-  unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans = (config->GetKind_Turb_Model() != NONE);
-  unsigned short direct_diff = config->GetDirectDiff();
-  int Unst_RestartIter = 0;
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
   dynamic_grid = config->GetDynamic_Grid();
-
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = "flow";
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -122,6 +121,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
+    string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
@@ -521,7 +521,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
-  /* Store the initial CFL number for all grid points. */
+  /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -534,8 +534,31 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Add the solver name (max 8 characters). ---*/
   SolverName = "C.FLOW";
 
-  /*--- Numerics objects. ---*/
-  edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, iMesh);
+  /*--- Vectorized numerics. ---*/
+  if (config->GetUseVectorization()) {
+    const bool uncertain = config->GetUsing_UQ();
+    const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                           (config->GetKind_FluidModel() == IDEAL_GAS);
+    const bool low_mach_corr = config->Low_Mach_Correction();
+
+    if (uncertain || !ideal_gas || low_mach_corr) {
+      SU2_MPI::Error("Some of the requested features are not yet "
+                     "supported with vectorization.", CURRENT_FUNCTION);
+    }
+
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, iMesh);
+
+    if (!edgeNumerics) {
+      SU2_MPI::Error("The numerical scheme in use does not "
+                     "support vectorization.", CURRENT_FUNCTION);
+    }
+#ifndef __AVX__
+    if (rank == MASTER_NODE) {
+      cout << "WARNING: SU2 was not compiled for an AVX-capable "
+              "architecture, performance may be worse." << endl;
+    }
+#endif
+  }
 
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
@@ -2909,6 +2932,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
+  /*--- If possible use the vectorized numerics instead. ---*/
+  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
 
@@ -3023,6 +3049,9 @@ void CEulerSolver::EdgeFluxResidual(const CGeometry *geometry, const CConfig *co
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
+  /*--- If possible use the vectorized numerics instead. ---*/
+  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+
   const auto InnerIter        = config->GetInnerIter();
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -3036,13 +3065,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-
-  /// HACK to call the vectorized numerics!
-  if (config->GetKind_Upwind_Flow() == ROE && !low_mach_corr && ideal_gas && !config->GetUsing_UQ()) {
-    EdgeFluxResidual(geometry, config);
-    return;
-  }
-  /// END HACK
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
