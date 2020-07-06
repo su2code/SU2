@@ -2731,7 +2731,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+      Mean_ProjVel = 0.5 * (fabs(nodes->GetProjVel(iPoint,Normal)) + fabs(nodes->GetProjVel(jPoint,Normal)));
       Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
 
       /*--- Adjustment for grid movement ---*/
@@ -2746,7 +2746,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Inviscid contribution ---*/
 
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      // Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      Lambda = Mean_ProjVel + Mean_SoundSpeed ;
       nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
       /*--- Viscous contribution ---*/

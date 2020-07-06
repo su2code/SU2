@@ -1543,7 +1543,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel    = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
+      Mean_ProjVel    = 0.5 * (fabs(flowNodes->GetProjVel(iPoint,Normal)) + fabs(flowNodes->GetProjVel(jPoint,Normal)));
       Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
 
       /*--- Adjustment for grid movement ---*/
@@ -1558,7 +1558,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       /*--- Inviscid contribution ---*/
 
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      // Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      Lambda = Mean_ProjVel + Mean_SoundSpeed ;
       nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
       /*--- Viscous contribution ---*/
