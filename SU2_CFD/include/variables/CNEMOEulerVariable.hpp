@@ -145,11 +145,6 @@ public:
   }
 
   /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
-
-  /*!
    * \brief Set all the secondary variable for compressible flows .
    */
   void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
@@ -338,10 +333,10 @@ public:
    */
   virtual bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config);
 
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  void SetPrimVar_Gradient(CConfig *config, unsigned long iPoint);
+// /*!
+//  * \brief Set all the primitive variables for compressible flows.
+//  */
+// void SetPrimVar_Gradient(CConfig *config, unsigned long iPoint); //cat: delete
 
  /*!
   * \brief Set all the conserved variables.
@@ -349,16 +344,16 @@ public:
   bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
                    su2double *val_Cvves);
-  /*!
-   * \brief Set Gradient of the primitive variables from
-   */
-  bool GradCons2GradPrimVar(CConfig *config, su2double *U, su2double *V,
-                            su2double **GradU, su2double **GradV);
-
-  /*!
-   * \brief Set all the conserved variables.
-   */
-  void Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) override;
+//  /*!
+//   * \brief Set Gradient of the primitive variables from
+//   */
+//  bool GradCons2GradPrimVar(CConfig *config, su2double *U, su2double *V,
+//                            su2double **GradU, su2double **GradV);
+//
+//  /*!
+//   * \brief Set all the conserved variables.
+//   */
+//  void Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) override; //cat: delete
 
 
   /*---------------------------------------*/

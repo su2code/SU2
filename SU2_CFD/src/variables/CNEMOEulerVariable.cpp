@@ -1152,258 +1152,253 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   return nonPhys;
 }
 
-void CNEMOEulerVariable::Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) {
+//void CNEMOEulerVariable::Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) {
+//
+//  unsigned short iDim, iEl, iSpecies, nEl, nHeavy;
+//  su2double Ru, RuSI, Tve, T, sqvel, rhoE, rhoEve, Ef, Ev, Ee, rhos, rhoCvtr, num, denom;
+//
+//  /*--- Determine the number of heavy species ---*/
+//  ionization = config->GetIonization();
+//  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+//  else            { nHeavy = nSpecies;   nEl = 0; }
+//
+//  /*--- Load variables from the config class --*/
+//  const su2double      *xi        = config->GetRotationModes();      // Rotational modes of energy storage
+//  const su2double      *Ms        = config->GetMolar_Mass();         // Species molar mass
+//  const su2double      *thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+//  const su2double      *Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+//  const su2double      *hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+//  const auto&           thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+//  const auto&           g         = config->GetElDegeneracy();       // Degeneracy of electron states
+//  const unsigned short *nElStates = config->GetnElStates();          // Number of electron states
+//
+//  /*--- Rename & initialize for convenience ---*/
+//  RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)] (SI units)
+//  Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
+//  Tve     = V[TVE_INDEX];                   // Vibrational temperature [K]
+//  T       = V[T_INDEX];                     // Translational-rotational temperature [K]
+//  sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+//  rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+//  rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+//  denom   = 0.0;
+//  rhoCvtr = 0.0;
+//
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    sqvel += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+//
+//  /*--- Set species density ---*/
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    U[iSpecies] = V[RHOS_INDEX+iSpecies];
+//
+//  /*--- Set momentum ---*/
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
+//
+//  /*--- Set the total energy ---*/
+//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//    rhos = U[iSpecies];
+//
+//    // Species formation energy
+//    Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+//
+//    // Species vibrational energy
+//    if (thetav[iSpecies] != 0.0)
+//      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+//    else
+//      Ev = 0.0;
+//
+//    // Species electronic energy
+//    num = 0.0;
+//    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+//    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//    }
+//    Ee = Ru/Ms[iSpecies] * (num/denom);
+//
+//    // Mixture total energy
+//    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+//                    + Ev + Ee + Ef + 0.5*sqvel);
+//
+//    // Mixture vibrational-electronic energy
+//    rhoEve += rhos * (Ev + Ee);
+//  }
+//  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//    // Species formation energy
+//    Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+//
+//    // Electron t-r mode contributes to mixture vib-el energy
+//    rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+//  }
+//
+//  /*--- Set energies ---*/
+//  U[nSpecies+nDim]   = rhoE;
+//  U[nSpecies+nDim+1] = rhoEve;
+//
+//  return;
+//}
 
-  unsigned short iDim, iEl, iSpecies, nEl, nHeavy;
-  su2double Ru, RuSI, Tve, T, sqvel, rhoE, rhoEve, Ef, Ev, Ee, rhos, rhoCvtr, num, denom;
+//bool CNEMOEulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
+//                                              su2double *V, su2double **GradU,
+//                                              su2double **GradV) {
+//
+//  unsigned short iSpecies, iEl, iDim, jDim, iVar, nHeavy;
+//  su2double rho, rhoCvtr, rhoCvve, T, Tve, eve, ef, eref, RuSI, Ru;
+//  su2double Cvvs, Cves, dCvvs, dCves;
+//  su2double thoTve, exptv;
+//  su2double An1, Bd1, Bn1, Bn2, Bn3, Bn4, A, B;
+//  su2double *rhou, *Grhou2;
+//
+//  /*--- Conserved & primitive vector layout ---*/
+//  // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
+//  // V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+//
+//  /*--- Allocate arrays ---*/
+//  Grhou2 = new su2double[nDim];
+//  rhou   = new su2double[nDim];
+//
+//  /*--- Determine number of heavy-particle species ---*/
+//  if (config->GetIonization()) nHeavy = nSpecies-1;
+//  else                         nHeavy = nSpecies;
+//
+//  /*--- Rename for convenience ---*/
+//  RuSI    = UNIVERSAL_GAS_CONSTANT;
+//  Ru      = 1000.0*RuSI;
+//  rho     = V[RHO_INDEX];
+//  rhoCvtr = V[RHOCVTR_INDEX];
+//  rhoCvve = V[RHOCVVE_INDEX];
+//  T       = V[T_INDEX];
+//  Tve     = V[TVE_INDEX];
+//  const su2double      *xi      = config->GetRotationModes();
+//  const su2double      *Ms      = config->GetMolar_Mass();
+//  const su2double      *Tref    = config->GetRefTemperature();
+//  const su2double      *hf      = config->GetEnthalpy_Formation();
+//  const su2double      *thetav  = config->GetCharVibTemp();
+//  const auto&           g       = config->GetElDegeneracy();
+//  const auto&           thetae  = config->GetCharElTemp();
+//  const unsigned short *nElStates = config->GetnElStates();
+//
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//      GradV[iVar][iDim] = 0.0;
+//
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//
+//    Grhou2[iDim] = 0.0;
+//
+//    /*--- Species density ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      GradV[RHOS_INDEX+iSpecies][iDim] = GradU[iSpecies][iDim];
+//      GradV[RHO_INDEX][iDim]          += GradU[iSpecies][iDim];
+//    }
+//
+//    /*--- Velocity ---*/
+//    for (jDim = 0; jDim < nDim; jDim++) {
+//      GradV[VEL_INDEX+jDim][iDim] = (rho*GradU[nSpecies+jDim][iDim] -
+//          rhou[jDim]*GradV[RHO_INDEX][iDim]) / (rho*rho);
+//    }
+//
+//    /*--- Specific Heat (T-R) ---*/
+//    GradV[RHOCVTR_INDEX][iDim] = 0.0;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      GradV[RHOCVTR_INDEX][iDim] += GradU[iSpecies][iDim]*(3.0+xi[iSpecies])/2.0 *Ru/Ms[iSpecies];
+//
+//    /*--- Temperature ---*/
+//    // Calculate the gradient of rho*u^2
+//    for (jDim = 0; jDim < nDim; jDim++) {
+//      Grhou2[iDim] += 2.0/rho*(rhou[jDim]*GradU[nSpecies+jDim][iDim]) -
+//          GradV[RHO_INDEX][iDim]/(rho*rho)*(GradU[nSpecies+jDim][iDim]*
+//          GradU[nSpecies+jDim][iDim]);
+//    }
+//    // Calculate baseline GradT
+//    GradV[T_INDEX][iDim] = 1.0/rhoCvtr*(GradU[nSpecies+nDim][iDim] -
+//        GradU[nSpecies+nDim+1][iDim] -
+//        0.5*Grhou2[iDim] -
+//        T*GradV[RHOCVTR_INDEX][iDim]);
+//    // Subtract formation/reference energies
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//      eref = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * Tref[iSpecies];
+//      ef   = (hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies]);
+//      GradV[T_INDEX][iDim] -= 1.0/rhoCvtr*(GradU[iSpecies][iDim]*(ef+eref));
+//    }
+//
+//    /*--- Vibrational-electronic temperature ---*/
+//    GradV[TVE_INDEX][iDim] = GradU[nSpecies+nDim+1][iDim]/rhoCvve;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      eve = CalcEve(config, V[TVE_INDEX], iSpecies);
+//      GradV[TVE_INDEX][iDim] -= GradU[iSpecies][iDim]*eve;
+//    }
+//
+//    /*--- Pressure ---*/
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//      GradV[P_INDEX][iDim] += GradU[iSpecies][iDim]*Ru/Ms[iSpecies]*T +
+//          U[iSpecies]*Ru/Ms[iSpecies]*GradV[T_INDEX][iDim];
+//    }
+//
+//    /*--- Enthalpy ---*/
+//    GradV[H_INDEX][iDim] = rho*(GradU[nSpecies+nDim][iDim] + GradV[P_INDEX][iDim]) -
+//        (U[nSpecies+nDim]+V[P_INDEX])*GradV[RHO_INDEX][iDim] / (rho*rho);
+//
+//    /*--- Specific Heat (V-E) ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      // Vibrational energy specific heat
+//      if (thetav[iSpecies] != 0) {
+//        Cvvs = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
+//            exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
+//                                       (exp(thetav[iSpecies]/Tve)-1));
+//        dCvvs = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
+//                 2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/
+//                 (Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs;
+//      } else {
+//        Cvvs = 0.0;
+//        dCvvs = 0.0;
+//      }
+//
+//
+//      // Electronic energy specific heat
+//      An1 = 0.0;
+//      Bn1 = 0.0;
+//      Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
+//      Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
+//          (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+//      Bn4 = 0.0;
+//      Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
+//      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//        thoTve = thetae[iSpecies][iEl]/Tve;
+//        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+//
+//        An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
+//        Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
+//        Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
+//        Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
+//        Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
+//        Bd1 += g[iSpecies][iEl]*exptv;
+//      }
+//      A = An1/Bd1;
+//      B = Bn1*Bn2/(Bd1*Bd1);
+//      Cves = Ru/Ms[iSpecies]*(A-B);
+//
+//      dCves = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
+//                               Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
+//
+//      GradV[RHOCVVE_INDEX][iDim] += V[RHOS_INDEX+iSpecies]*(dCvvs+dCves)*GradV[TVE_INDEX][iDim] +
+//          GradV[RHOS_INDEX+iSpecies][iDim]*(Cvvs+Cves);
+//
+//    }
+//  }
+//
+//  delete [] Grhou2;
+//  delete [] rhou;
+//  return false;
+//}//cat: delete
 
-  /*--- Determine the number of heavy species ---*/
-  ionization = config->GetIonization();
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
-
-  /*--- Load variables from the config class --*/
-  const su2double      *xi        = config->GetRotationModes();      // Rotational modes of energy storage
-  const su2double      *Ms        = config->GetMolar_Mass();         // Species molar mass
-  const su2double      *thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-  const su2double      *Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  const su2double      *hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-  const auto&           thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-  const auto&           g         = config->GetElDegeneracy();       // Degeneracy of electron states
-  const unsigned short *nElStates = config->GetnElStates();          // Number of electron states
-
-  /*--- Rename & initialize for convenience ---*/
-  RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)] (SI units)
-  Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
-  Tve     = V[TVE_INDEX];                   // Vibrational temperature [K]
-  T       = V[T_INDEX];                     // Translational-rotational temperature [K]
-  sqvel   = 0.0;                            // Velocity^2 [m2/s2]
-  rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
-  rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
-  denom   = 0.0;
-  rhoCvtr = 0.0;
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    sqvel += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
-
-  /*--- Set species density ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    U[iSpecies] = V[RHOS_INDEX+iSpecies];
-
-  /*--- Set momentum ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
-
-  /*--- Set the total energy ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    rhos = U[iSpecies];
-
-    // Species formation energy
-    Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-    // Species vibrational energy
-    if (thetav[iSpecies] != 0.0)
-      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-    else
-      Ev = 0.0;
-
-    // Species electronic energy
-    num = 0.0;
-    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-    }
-    Ee = Ru/Ms[iSpecies] * (num/denom);
-
-    // Mixture total energy
-    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                    + Ev + Ee + Ef + 0.5*sqvel);
-
-    // Mixture vibrational-electronic energy
-    rhoEve += rhos * (Ev + Ee);
-  }
-  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-    // Species formation energy
-    Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-
-    // Electron t-r mode contributes to mixture vib-el energy
-    rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-  }
-
-  /*--- Set energies ---*/
-  U[nSpecies+nDim]   = rhoE;
-  U[nSpecies+nDim+1] = rhoEve;
-
-  return;
-}
-
-bool CNEMOEulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
-                                              su2double *V, su2double **GradU,
-                                              su2double **GradV) {
-
-  unsigned short iSpecies, iEl, iDim, jDim, iVar, nHeavy;
-  su2double rho, rhoCvtr, rhoCvve, T, Tve, eve, ef, eref, RuSI, Ru;
-  su2double Cvvs, Cves, dCvvs, dCves;
-  su2double thoTve, exptv;
-  su2double An1, Bd1, Bn1, Bn2, Bn3, Bn4, A, B;
-  su2double *rhou, *Grhou2;
-
-  /*--- Conserved & primitive vector layout ---*/
-  // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
-  // V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-
-  /*--- Allocate arrays ---*/
-  Grhou2 = new su2double[nDim];
-  rhou   = new su2double[nDim];
-
-  /*--- Determine number of heavy-particle species ---*/
-  if (config->GetIonization()) nHeavy = nSpecies-1;
-  else                         nHeavy = nSpecies;
-
-  /*--- Rename for convenience ---*/
-  RuSI    = UNIVERSAL_GAS_CONSTANT;
-  Ru      = 1000.0*RuSI;
-  rho     = V[RHO_INDEX];
-  rhoCvtr = V[RHOCVTR_INDEX];
-  rhoCvve = V[RHOCVVE_INDEX];
-  T       = V[T_INDEX];
-  Tve     = V[TVE_INDEX];
-  const su2double      *xi      = config->GetRotationModes();
-  const su2double      *Ms      = config->GetMolar_Mass();
-  const su2double      *Tref    = config->GetRefTemperature();
-  const su2double      *hf      = config->GetEnthalpy_Formation();
-  const su2double      *thetav  = config->GetCharVibTemp();
-  const auto&           g       = config->GetElDegeneracy();
-  const auto&           thetae  = config->GetCharElTemp();
-  const unsigned short *nElStates = config->GetnElStates();
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      GradV[iVar][iDim] = 0.0;
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-
-    Grhou2[iDim] = 0.0;
-
-    /*--- Species density ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      GradV[RHOS_INDEX+iSpecies][iDim] = GradU[iSpecies][iDim];
-      GradV[RHO_INDEX][iDim]          += GradU[iSpecies][iDim];
-    }
-
-    /*--- Velocity ---*/
-    for (jDim = 0; jDim < nDim; jDim++) {
-      GradV[VEL_INDEX+jDim][iDim] = (rho*GradU[nSpecies+jDim][iDim] -
-          rhou[jDim]*GradV[RHO_INDEX][iDim]) / (rho*rho);
-    }
-
-    /*--- Specific Heat (T-R) ---*/
-    GradV[RHOCVTR_INDEX][iDim] = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      GradV[RHOCVTR_INDEX][iDim] += GradU[iSpecies][iDim]*(3.0+xi[iSpecies])/2.0 *Ru/Ms[iSpecies];
-
-    /*--- Temperature ---*/
-    // Calculate the gradient of rho*u^2
-    for (jDim = 0; jDim < nDim; jDim++) {
-      Grhou2[iDim] += 2.0/rho*(rhou[jDim]*GradU[nSpecies+jDim][iDim]) -
-          GradV[RHO_INDEX][iDim]/(rho*rho)*(GradU[nSpecies+jDim][iDim]*
-          GradU[nSpecies+jDim][iDim]);
-    }
-    // Calculate baseline GradT
-    GradV[T_INDEX][iDim] = 1.0/rhoCvtr*(GradU[nSpecies+nDim][iDim] -
-        GradU[nSpecies+nDim+1][iDim] -
-        0.5*Grhou2[iDim] -
-        T*GradV[RHOCVTR_INDEX][iDim]);
-    // Subtract formation/reference energies
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      eref = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * Tref[iSpecies];
-      ef   = (hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies]);
-      GradV[T_INDEX][iDim] -= 1.0/rhoCvtr*(GradU[iSpecies][iDim]*(ef+eref));
-    }
-
-    /*--- Vibrational-electronic temperature ---*/
-    GradV[TVE_INDEX][iDim] = GradU[nSpecies+nDim+1][iDim]/rhoCvve;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      eve = CalcEve(config, V[TVE_INDEX], iSpecies);
-      GradV[TVE_INDEX][iDim] -= GradU[iSpecies][iDim]*eve;
-    }
-
-    /*--- Pressure ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      GradV[P_INDEX][iDim] += GradU[iSpecies][iDim]*Ru/Ms[iSpecies]*T +
-          U[iSpecies]*Ru/Ms[iSpecies]*GradV[T_INDEX][iDim];
-    }
-
-    /*--- Enthalpy ---*/
-    GradV[H_INDEX][iDim] = rho*(GradU[nSpecies+nDim][iDim] + GradV[P_INDEX][iDim]) -
-        (U[nSpecies+nDim]+V[P_INDEX])*GradV[RHO_INDEX][iDim] / (rho*rho);
-
-    /*--- Specific Heat (V-E) ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      // Vibrational energy specific heat
-      if (thetav[iSpecies] != 0) {
-        Cvvs = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
-            exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
-                                       (exp(thetav[iSpecies]/Tve)-1));
-        dCvvs = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
-                 2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/
-                 (Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs;
-      } else {
-        Cvvs = 0.0;
-        dCvvs = 0.0;
-      }
-
-
-      // Electronic energy specific heat
-      An1 = 0.0;
-      Bn1 = 0.0;
-      Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
-      Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
-          (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-      Bn4 = 0.0;
-      Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        thoTve = thetae[iSpecies][iEl]/Tve;
-        exptv = exp(-thetae[iSpecies][iEl]/Tve);
-
-        An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
-        Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
-        Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
-        Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
-        Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
-        Bd1 += g[iSpecies][iEl]*exptv;
-      }
-      A = An1/Bd1;
-      B = Bn1*Bn2/(Bd1*Bd1);
-      Cves = Ru/Ms[iSpecies]*(A-B);
-
-      dCves = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
-                               Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
-
-      GradV[RHOCVVE_INDEX][iDim] += V[RHOS_INDEX+iSpecies]*(dCvvs+dCves)*GradV[TVE_INDEX][iDim] +
-          GradV[RHOS_INDEX+iSpecies][iDim]*(Cvvs+Cves);
-
-    }
-  }
-
-  delete [] Grhou2;
-  delete [] rhou;
-  return false;
-}
-
-void CNEMOEulerVariable::SetPrimVar_Gradient(CConfig *config, unsigned long iPoint) {
-
-  /*--- Use built-in method on NEMO variable global types ---*/
-  GradCons2GradPrimVar(config, Solution[iPoint], Primitive[iPoint],
-                       Gradient[iPoint], Gradient_Primitive[iPoint]);
-
-}
-
-bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
-
- // cout << "NNNNNNNNNNNNNNOOOOOOOOOOOOOOOOOOOO DELETE ME" << endl;
-}
+//void CNEMOEulerVariable::SetPrimVar_Gradient(CConfig *config, unsigned long iPoint) {
+//
+//  /*--- Use built-in method on NEMO variable global types ---*/
+//  GradCons2GradPrimVar(config, Solution[iPoint], Primitive[iPoint],
+//                       Gradient[iPoint], Gradient_Primitive[iPoint]);
+//
+//}//cat: delete
 
 void CNEMOEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
