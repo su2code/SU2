@@ -3737,20 +3737,22 @@ void CPhysicalGeometry::Read_Mesh(CConfig        *config,
 
   /*--- Make a distinction between the FVM solver and FEM solver how to load
         the grid data in the member variables of CPhysicalGeometry. ---*/
+  if( fem_solver ) {
+    SU2_MPI::Error("Loading FEM solver not implemented yet!", CURRENT_FUNCTION);
+  }
+  else {
 
+    /*--- Load the grid points, volume elements, and surface elements
+     from the mesh object into the proper SU2 data structures. ---*/
 
+    LoadLinearlyPartitionedPoints(config,         Mesh);
+    LoadLinearlyPartitionedVolumeElements(config, Mesh);
+    LoadUnpartitionedSurfaceElements(config,      Mesh);
 
+    /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
 
-  /*--- Load the grid points, volume elements, and surface elements
-   from the mesh object into the proper SU2 data structures. ---*/
-
-  LoadLinearlyPartitionedPoints(config,         Mesh);
-  LoadLinearlyPartitionedVolumeElements(config, Mesh);
-  LoadUnpartitionedSurfaceElements(config,      Mesh);
-
-  /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
-
-  PrepareAdjacency(config);
+    PrepareAdjacency(config);
+  }
 
   /*--- Now that we have loaded all information from the mesh,
    delete the mesh reader object. ---*/

@@ -35,7 +35,7 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CRectangularMeshReaderFVM: public CMeshReader {
+class CRectangularMeshReaderFVM final: public CMeshReader {
   
 private:
   

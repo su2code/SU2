@@ -87,14 +87,12 @@ public:
   /*!
   * \brief Static function, which makes available the number of DOFs for an element
            corresponding to the arguments.
-  * \param[in] VTK_Type         - Type of the element using the VTK convention.
-  * \param[in] nPoly            - Polynomial degree of the element.
-  * \param[in] typeErrorMessage - Default argument used to write a good error message.
+  * \param[in] VTK_Type   - Type of the element using the VTK convention.
+  * \param[in] nPoly      - Polynomial degree of the element.
   * \return The number of DOFs
   */
   static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
-                                       unsigned short nPoly,
-                                       unsigned long  typeErrorMessage = 0);
+                                       unsigned short nPoly);
 
   /*!
   * \brief Function, which makes available the number of integration points for this standard element.

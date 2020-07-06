@@ -41,19 +41,23 @@
 
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *config,
                                                       vector<CFaceOfElement> &localFaces) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CPhysicalGeometry::DetermineTimeLevelElements(
@@ -61,6 +65,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                           const vector<CFaceOfElement>         &localFaces,
                           map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CPhysicalGeometry::ComputeFEMGraphWeights(
@@ -71,4 +76,5 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
                     vector<su2double>                    &vwgt,
                     vector<vector<su2double> >           &adjwgt) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

@@ -39,7 +39,7 @@
  * \brief Reads a CGNS zone into linear partitions for the finite element solver (FEM).
  * \author: T. Economon, E. van der Weide
  */
-class CCGNSMeshReaderFEM: public CCGNSMeshReaderBase {
+class CCGNSMeshReaderFEM final: public CCGNSMeshReaderBase {
   
 private:
   

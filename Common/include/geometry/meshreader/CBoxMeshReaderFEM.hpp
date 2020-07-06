@@ -35,7 +35,7 @@
  * \brief Reads a 3D box grid into linear partitions for the finite element solver (FEM).
  * \author: T. Economon, E. van der Weide
  */
-class CBoxMeshReaderFEM: public CMeshReader {
+class CBoxMeshReaderFEM final: public CMeshReader {
   
 private:
   

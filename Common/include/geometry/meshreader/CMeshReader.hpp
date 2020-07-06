@@ -53,6 +53,7 @@ protected:
   unsigned long numberOfLocalPoints;                    /*!< \brief Number of local grid points within the linear partition on this rank. */
   unsigned long numberOfGlobalPoints;                   /*!< \brief Number of global grid points within the mesh file. */
   vector<vector<passivedouble> > localPointCoordinates; /*!< \brief Vector holding the coordinates from the mesh file for the local grid points. First index is dimension, second is point index. */
+  vector<unsigned long> globalPointIDs;                 /*!< \brief Vector holding the global IDs of the local grid points. */
   
   unsigned long numberOfLocalElements;                  /*!< \brief Number of local elements within the linear partition on this rank. */
   unsigned long numberOfGlobalElements;                 /*!< \brief Number of global elements within the mesh file. */
@@ -60,8 +61,20 @@ protected:
   
   unsigned long numberOfMarkers;                             /*!< \brief Total number of markers contained within the mesh file. */
   vector<string> markerNames;                                /*!< \brief String names for all markers in the mesh file. */
-  vector<vector<unsigned long> > surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a per-marker basis. Only the master node reads and stores this connectivity. */
-  
+  vector<unsigned long> numberOfLocalSurfaceElements;        /*!< \brief Vector containing the number of local surface elements. */
+  vector<vector<unsigned long> > surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a per-marker basis. For FVM, only the master node reads and stores this connectivity. */
+
+  /*!
+   * \brief Get all the corner points of all the faces of the given element. It must
+   * \param[in]  elemInfo       - Array, which contains the info of the given element.
+   * \param[out] nFaces         - Number of faces of the element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
+  void GetCornerPointsAllFaces(const unsigned long *elemInfo,
+                               unsigned short      &numFaces,
+                               unsigned short      nPointsPerFace[],
+                               unsigned long       faceConn[6][4]);
 public:
   
   /*!

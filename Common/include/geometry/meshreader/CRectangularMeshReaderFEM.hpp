@@ -35,7 +35,7 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the finite element solver (FEM).
  * \author: T. Economon, E. van der Weide
  */
-class CRectangularMeshReaderFEM: public CMeshReader {
+class CRectangularMeshReaderFEM final: public CMeshReader {
   
 private:
   

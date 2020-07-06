@@ -35,7 +35,7 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CSU2ASCIIMeshReaderFVM: public CSU2ASCIIMeshReaderBase {
+class CSU2ASCIIMeshReaderFVM final: public CSU2ASCIIMeshReaderBase {
   
 private:
   

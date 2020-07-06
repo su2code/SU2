@@ -34,10 +34,9 @@
 /*----------------------------------------------------------------------------------*/
 
 unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
-                                                       unsigned short nPoly,
-                                                       unsigned long  typeErrorMessage) {
+                                                       unsigned short nPoly) {
   unsigned short nDOFsEdge = nPoly + 1;
-  unsigned short nDOFs = 0;    // To avoid a compiler warning.
+  unsigned short nDOFs;
 
   switch(VTK_Type) {
 
@@ -70,10 +69,8 @@ unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
       break;
 
     default:
-      ostringstream message;
-      message << "Unknown FEM element type, " << typeErrorMessage
-              << ", encountered.";
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      nDOFs = 0;  // Indicates an invalid element.
+      break;
   }
 
   return nDOFs;

@@ -35,7 +35,7 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite element solver (FEM).
  * \author: T. Economon, E. van der Weide
  */
-class CSU2ASCIIMeshReaderFEM: public CSU2ASCIIMeshReaderBase {
+class CSU2ASCIIMeshReaderFEM final: public CSU2ASCIIMeshReaderBase {
   
 private:
   

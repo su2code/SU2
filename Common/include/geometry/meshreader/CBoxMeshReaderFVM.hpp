@@ -35,7 +35,7 @@
  * \brief Reads a 3D box grid into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CBoxMeshReaderFVM: public CMeshReader {
+class CBoxMeshReaderFVM final: public CMeshReader {
   
 private:
   

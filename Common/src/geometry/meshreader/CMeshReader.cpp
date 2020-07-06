@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/geometry/meshreader/CMeshReader.hpp"
+#include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 
 CMeshReader::CMeshReader(CConfig        *val_config,
                          unsigned short val_iZone,
@@ -56,3 +57,30 @@ CMeshReader::CMeshReader(CConfig        *val_config,
 }
 
 CMeshReader::~CMeshReader(void) { }
+
+void CMeshReader::GetCornerPointsAllFaces(const unsigned long *elemInfo,
+                                          unsigned short      &numFaces,
+                                          unsigned short      nPointsPerFace[],
+                                          unsigned long       faceConn[6][4]) {
+
+  /*--- Retrieve the element type, polynomial degree of the grid and
+        number of DOFs for this element and set the pointer for the
+        connectivity information. ---*/
+  const unsigned short VTK_Type  = (const unsigned short) elemInfo[0];
+  const unsigned short nPolyGrid = (const unsigned short) elemInfo[1];
+  const unsigned short nDOFsGrid = (const unsigned short) elemInfo[3];
+  const unsigned long  *conn     = elemInfo + 5;
+
+  /*--- Call the static function GetLocalCornerPointsAllFaces of CPrimalGridFEM
+        to determine the local numbering of the corner points of the faces. ---*/
+  CPrimalGridFEM::GetLocalCornerPointsAllFaces(VTK_Type, nPolyGrid, nDOFsGrid,
+                                               numFaces, nPointsPerFace, faceConn);
+
+  /*--- Convert the local values of faceConn to global values. ---*/
+  for(unsigned short i=0; i<numFaces; ++i) {
+    for(unsigned short j=0; j<nPointsPerFace[i]; ++j) {
+      unsigned long nn = faceConn[i][j];
+      faceConn[i][j] = elemInfo[nn];
+    }
+  }
+}

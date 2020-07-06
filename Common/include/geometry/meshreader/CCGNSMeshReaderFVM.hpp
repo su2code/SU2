@@ -39,7 +39,7 @@
  * \brief Reads a CGNS zone into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CCGNSMeshReaderFVM: public CCGNSMeshReaderBase {
+class CCGNSMeshReaderFVM final: public CCGNSMeshReaderBase {
   
 private:
   
