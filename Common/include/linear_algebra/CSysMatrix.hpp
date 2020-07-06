@@ -56,6 +56,20 @@ using namespace std;
 #if defined(__INTEL_COMPILER) && defined(MKL_DIRECT_CALL_SEQ) && !defined(CODI_REVERSE_TYPE)
   #define USE_MKL_LAPACK
 #endif
+template<class T>
+struct mkl_jit_wrapper {
+  using gemm_t = dgemm_jit_kernel_t;
+  template<class... Ts>
+  static void create_gemm(Ts&&... args) { mkl_jit_create_dgemm(args...); }
+  static gemm_t get_gemm(void* jitter) { return mkl_jit_get_dgemm_ptr(jitter); }
+};
+template<>
+struct mkl_jit_wrapper<float> {
+  using gemm_t = sgemm_jit_kernel_t;
+  template<class... Ts>
+  static void create_gemm(Ts&&... args) { mkl_jit_create_sgemm(args...); }
+  static gemm_t get_gemm(void* jitter) { return mkl_jit_get_sgemm_ptr(jitter); }
+};
 #else
   #warning The current version of MKL does not support JIT gemm kernels
 #endif
@@ -116,13 +130,7 @@ private:
   mutable vector<vector<ScalarType> > LineletVector;       /*!< \brief Solution and RHS of the tri-diag system (working memory). */
 
 #ifdef USE_MKL
-#ifndef USE_MIXED_PRECISION
-  /*--- Double precision kernels. ---*/
-  using gemm_t = dgemm_jit_kernel_t;
-#else
-  /*--- Single precision kernels. ---*/
-  using gemm_t = sgemm_jit_kernel_t;
-#endif
+  using gemm_t = typename mkl_jit_wrapper<ScalarType>::gemm_t;
   void * MatrixMatrixProductJitter;              /*!< \brief Jitter handle for MKL JIT based GEMM. */
   gemm_t MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
   void * MatrixVectorProductJitterBetaZero;      /*!< \brief Jitter handle for MKL JIT based GEMV. */

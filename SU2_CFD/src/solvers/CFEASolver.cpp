@@ -1929,7 +1929,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     {
     su2double utol = LinSysSol.norm();
     su2double rtol = LinSysRes.norm();
-    su2double etol = LinSysSol.dot(LinSysRes);
+    su2double etol = fabs(LinSysSol.dot(LinSysRes));
 
     SU2_OMP_MASTER
     {

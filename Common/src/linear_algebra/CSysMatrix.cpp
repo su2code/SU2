@@ -202,34 +202,26 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
-#ifndef USE_MIXED_PRECISION
-  /*--- Double precision kernels. ---*/
-  #define CREATE_GEMM mkl_jit_create_dgemm
-  #define GET_GEMM_PTR mkl_jit_get_dgemm_ptr
-#else
-  /*--- Single precision kernels. ---*/
-  #define CREATE_GEMM mkl_jit_create_sgemm
-  #define GET_GEMM_PTR mkl_jit_get_sgemm_ptr
-#endif
-  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
-  MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
+  using mkl = mkl_jit_wrapper<ScalarType>;
+  mkl::create_gemm(&MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS,
+                   MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
+  MatrixMatrixProductKernel = mkl::get_gemm(MatrixMatrixProductJitter);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
-  MatrixVectorProductKernelBetaZero = GET_GEMM_PTR(MatrixVectorProductJitterBetaZero);
+  mkl::create_gemm(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
+  MatrixVectorProductKernelBetaZero = mkl::get_gemm(MatrixVectorProductJitterBetaZero);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
-  MatrixVectorProductKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductJitterBetaOne);
+  mkl::create_gemm(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelBetaOne = mkl::get_gemm(MatrixVectorProductJitterBetaOne);
 
-  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
-  MatrixVectorProductKernelAlphaMinusOne = GET_GEMM_PTR(MatrixVectorProductJitterAlphaMinusOne);
+  mkl::create_gemm(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelAlphaMinusOne = mkl::get_gemm(MatrixVectorProductJitterAlphaMinusOne);
 
-  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
-  MatrixVectorProductTranspKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductTranspJitterBetaOne);
+  mkl::create_gemm(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
+  MatrixVectorProductTranspKernelBetaOne = mkl::get_gemm(MatrixVectorProductTranspJitterBetaOne);
 #endif
 
 }
@@ -989,7 +981,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetSolid_Wall(iMarker) ||
+    if (config->GetSolid_Wall(iMarker) ||
         (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
@@ -1008,7 +1000,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
     iLinelet = 0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetSolid_Wall(iMarker) ||
+      if (config->GetSolid_Wall(iMarker) ||
           (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
       {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
