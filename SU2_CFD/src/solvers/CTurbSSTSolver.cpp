@@ -736,7 +736,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       /*--- Set primitive state based on flow direction ---*/
       
       Vn_Infty = 0;
-      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim+1]*Normal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
 
       if (Vn_Infty > 0.0) {
         /*--- Outflow conditions ---*/
