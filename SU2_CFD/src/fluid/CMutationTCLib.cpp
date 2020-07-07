@@ -33,6 +33,8 @@ CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
 
   // nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;
 
+	//if frozen send nonchecmttv
+
 }
 
 CMutationTCLib::~CMutationTCLib(){}

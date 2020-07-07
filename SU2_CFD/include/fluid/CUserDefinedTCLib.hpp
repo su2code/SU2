@@ -41,8 +41,9 @@ private:
   bool ionization;                  /*!< \brief Presence of charged species in gas mixture. */
   
   unsigned short nReactions,                      /*!< \brief Number of reactions in chemical model. */
-  Kind_GasModel,                   /*!< \brief Kind gas model. */
   iEl;                              /*!< \brief Common iteration counter for electrons */
+
+  string String_GasModel;             /*!< \brief String gas model. */
 
   vector<unsigned short> nElStates; /*!< \brief Number of electron states. */
 

@@ -303,6 +303,8 @@ void CConfig::addDoubleOption(const string name, su2double & option_field, su2do
 }
 
 void CConfig::addStringOption(const string name, string & option_field, string default_value) {
+
+  if(name=="GAS_MODEL") cout << "cat: GAS_MODEL=" << option_field << endl;
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionString(name, option_field, default_value);
@@ -1160,12 +1162,10 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Specify if Mutation++ library is used */
   addBoolOption("MUTATIONPP", mutationpp, true);
-  if(mutationpp)
-    /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
-    addStringOption("GAS_MODEL", GasModel, string("N2"));
-  else
-    /* DESCRIPTION: Specify chemical model for multi-species simulations - user defined*/
-    addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, N2);
+  /*--- Reading gas model as string or integer depending on TC library used. ---*/
+  /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
+  addStringOption("GAS_MODEL", GasModel, string("N2"));
+  addEnumOption("GAS_MODEL_HARDCODED", Kind_GasModel, GasModel_Map, N2);//cat: temporary stupid fix to be deleted
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
@@ -5564,7 +5564,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (edgeColorGroupSize==0) edgeColorGroupSize = 1<<30;
 
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
-  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
+  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true; 
 
 }
 
@@ -6156,9 +6156,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
+        if(!mutationpp){  
+          if ((GasModel != "N2") && (GasModel != "AIR-5"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+        }
         break;
         case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        if(!mutationpp){  
+          if ((GasModel != "N2") && (GasModel != "AIR5"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+        }
         break;
       case FEM_LES:
         if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
