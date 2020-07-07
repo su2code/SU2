@@ -46,31 +46,19 @@ private:
 #ifdef HAVE_CGNS
   
   /*!
-   * \brief Reads the grid points from a CGNS zone into linear partitions across all ranks.
+   * \brief Reads the grid points from an SU2 zone into linear partitions across all ranks.
    */
   void ReadCGNSPointCoordinates();
-  
+
   /*!
-   * \brief Reads the interior volume elements from one section of a CGNS zone into linear partitions across all ranks.
-   * \param[in] val_section - CGNS section index.
+   * \brief Reads the interior volume elements from one section of an SU2 zone into linear partitions across all ranks.
    */
-  void ReadCGNSVolumeSection(int val_section);
-  
+  void ReadCGNSVolumeElementConnectivity();
+
   /*!
-   * \brief Reads the surface (boundary) elements from the CGNS zone. Only the master rank currently reads and stores the connectivity, which is linearly partitioned later.
-   * \param[in] val_section - CGNS section index.
+   * \brief Reads the surface (boundary) elements from one section the SU2 zone into linear partitions across all ranks.
    */
-  void ReadCGNSSurfaceSection(int val_section);
-  
-  /*!
-   * \brief Reformats the CGNS volume connectivity from file into the standard base class data structures.
-   */
-  void ReformatCGNSVolumeConnectivity();
-  
-  /*!
-   * \brief Reformats the CGNS volume connectivity from file into the standard base class data structures.
-   */
-  void ReformatCGNSSurfaceConnectivity();
+  void ReadCGNSSurfaceElementConnectivity();
   
 #endif
   

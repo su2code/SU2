@@ -47,7 +47,17 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(CConfig        *val_config,
   /*--- Read the basic information about the sections. ---*/
   ReadCGNSSectionMetadata();
 
-  SU2_MPI::Error(string("Not fully implemented yet"), CURRENT_FUNCTION);
+  /*--- Read the volume connectivity and distribute it
+        linearly over the MPI ranks. ---*/
+  ReadCGNSVolumeElementConnectivity();
+
+  /*--- Read the coordinates of the points that are needed
+        on this MPI rank. ---*/
+  ReadCGNSPointCoordinates();
+
+  /*--- Read the surface connectivity and store the surface elements whose
+        corresponding volume element is stored on this MPI rank. ---*/
+  ReadCGNSSurfaceElementConnectivity();
   
   /*--- We have extracted all CGNS data. Close the CGNS file. ---*/
   if (cg_close(cgnsFileID)) cg_error_exit();
@@ -55,5 +65,21 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(CConfig        *val_config,
 #endif
 }
 
+#ifdef HAVE_CGNS
 CCGNSMeshReaderFEM::~CCGNSMeshReaderFEM(void) { }
 
+void CCGNSMeshReaderFEM::ReadCGNSPointCoordinates(void) {
+
+  SU2_MPI::Error("Not implemented yet!", CURRENT_FUNCTION);
+}
+
+void CCGNSMeshReaderFEM::ReadCGNSVolumeElementConnectivity(void) {
+
+  SU2_MPI::Error("Not implemented yet!", CURRENT_FUNCTION);
+}
+
+void CCGNSMeshReaderFEM::ReadCGNSSurfaceElementConnectivity(void) {
+
+  SU2_MPI::Error("Not implemented yet!", CURRENT_FUNCTION);
+}
+#endif

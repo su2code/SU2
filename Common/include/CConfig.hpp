@@ -1085,8 +1085,6 @@ private:
   su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
   su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
-  unsigned short byteAlignmentMatMul;        /*!< \brief Number of bytes in the vectorization direction for the matrix multiplication. Multipe of 64. */
-  unsigned short sizeMatMulPadding;          /*!< \brief The matrix size in the vectorization direction padded to a multiple of 8. Computed from byteAlignmentMatMul. */
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
@@ -8747,13 +8745,6 @@ public:
    * \return The specified factor for the DG discretization.
    */
   su2double GetTheta_Interior_Penalty_DGFEM(void) const { return Theta_Interior_Penalty_DGFEM; }
-
-  /*!
-   * \brief Function to make available the matrix size in vectorization in
-            order to optimize the gemm performance.
-   * \return The matrix size in this direction.
-   */
-  unsigned short GetSizeMatMulPadding(void) const { return sizeMatMulPadding; }
 
   /*!
    * \brief Function to make available whether or not the entropy must be computed.

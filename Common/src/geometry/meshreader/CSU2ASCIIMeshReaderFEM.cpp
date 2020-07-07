@@ -39,9 +39,16 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig        *val_config,
   /* Read the basic metadata and perform some basic error checks. */
   ReadMetadata();
   
-  /* Read and store the interior elements, points, and surface elements. */
+  /*--- Read the volume connectivity and distribute it
+        linearly over the MPI ranks. ---*/
   ReadVolumeElementConnectivity();
+
+  /*--- Read the coordinates of the points that are needed
+        on this MPI rank. ---*/
   ReadPointCoordinates();
+
+  /*--- Read the surface connectivity and store the surface elements whose
+        corresponding volume element is stored on this MPI rank. ---*/
   ReadSurfaceElementConnectivity();
 }
 
