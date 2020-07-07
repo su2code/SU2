@@ -173,15 +173,17 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
       }
 
+      const su2double Kappa = config->GetMUSCL_Kappa();
+
       for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
         su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j -= 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
             Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
             Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
           }
@@ -210,13 +212,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       for (iVar = 0; iVar < nVar; iVar++) {
         su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+        const su2double T_ij = Turb_j[iVar] - Turb_i[iVar];
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j -= 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            su2double T_ij = Turb_j[iVar] - Turb_i[iVar];
             Limiter_i[iVar] = T_ij*( 2.0*Project_Grad_i + T_ij) / (4*pow(Project_Grad_i, 2) + pow(T_ij, 2) + EPS);
             Limiter_j[iVar] = T_ij*(-2.0*Project_Grad_j + T_ij) / (4*pow(Project_Grad_j, 2) + pow(T_ij, 2) + EPS);
           }
