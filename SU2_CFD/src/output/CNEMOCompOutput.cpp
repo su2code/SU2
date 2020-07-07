@@ -321,7 +321,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
     AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
   }
- 
   if (nSpecies == 5){
     AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
     AddVolumeOutput("DENSITY_O2",  "Density_O2",  "SOLUTION", "Density_N");
@@ -329,7 +328,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
     AddVolumeOutput("DENSITY_O",   "Density_O",   "SOLUTION", "Density_O");
   }
-
 
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
   AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
@@ -353,16 +351,15 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   //Auxiliary variables for post-processment
   if (nSpecies == 2){
-    AddVolumeOutput("MASS_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASS_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");  
+    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
+    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");  
   }
-
   if (nSpecies == 5){
-    AddVolumeOutput("MASS_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASS_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
-    AddVolumeOutput("MASS_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
-    AddVolumeOutput("MASS_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
-    AddVolumeOutput("MASS_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
+    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
+    AddVolumeOutput("MASSFRAC_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
+    AddVolumeOutput("MASSFRAC_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
+    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
+    AddVolumeOutput("MASSFRAC_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
   } 
 
   // Grid velocity
@@ -495,8 +492,6 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("DENSITY_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0));
     SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 1));
   }
-  
-
   if (nSpecies == 5){
     SetVolumeOutputValue("DENSITY_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0));
     SetVolumeOutputValue("DENSITY_O2",   iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -505,20 +500,17 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
   }
 
-
   if (nSpecies == 2){
-    SetVolumeOutputValue("MASS_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASS_N",    iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_N",    iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
   }
-  
   if (nSpecies == 5){
-    SetVolumeOutputValue("MASS_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASS_O2",   iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASS_NO",   iPoint, Node_Flow->GetSolution(iPoint, 2)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASS_N",    iPoint, Node_Flow->GetSolution(iPoint, 3)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASS_O",    iPoint, Node_Flow->GetSolution(iPoint, 4)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_O2",   iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_NO",   iPoint, Node_Flow->GetSolution(iPoint, 2)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_N",    iPoint, Node_Flow->GetSolution(iPoint, 3)/Node_Flow->GetDensity(iPoint));
+    SetVolumeOutputValue("MASSFRAC_O",    iPoint, Node_Flow->GetSolution(iPoint, 4)/Node_Flow->GetDensity(iPoint));
   } 
-
 
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, nSpecies));
   SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(iPoint, nSpecies+1));
