@@ -2834,7 +2834,7 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
      * If there is a statement after a cont. char
      * throw an error. ---*/
 
-     if (text_line.front() != '%'){
+     if (text_line.size() && (text_line.front() != '%')){
        while (text_line.back() == '\\' ||
               (PrintingToolbox::split(text_line, '\\').size() > 1)){
          string tmp;
