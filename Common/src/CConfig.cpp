@@ -304,7 +304,6 @@ void CConfig::addDoubleOption(const string name, su2double & option_field, su2do
 
 void CConfig::addStringOption(const string name, string & option_field, string default_value) {
 
-  if(name=="GAS_MODEL") cout << "cat: GAS_MODEL=" << option_field << endl;
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionString(name, option_field, default_value);
