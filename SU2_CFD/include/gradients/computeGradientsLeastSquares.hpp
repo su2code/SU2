@@ -95,7 +95,6 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
     if (nDim == 2) {
       Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
       Smatrix[0][1] = -r11*r12/detR2;
-      Smatrix[1][0] = Smatrix[0][1];
       Smatrix[1][1] = r11*r11/detR2;
     }
     else {
@@ -109,11 +108,8 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
       Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
       Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
       Smatrix[0][2] = (z13*z33)/detR2;
-      Smatrix[1][0] = Smatrix[0][1];
       Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
       Smatrix[1][2] = (z23*z33)/detR2;
-      Smatrix[2][0] = Smatrix[0][2];
-      Smatrix[2][1] = Smatrix[1][2];
       Smatrix[2][2] = (z33*z33)/detR2;
     }
   }
@@ -121,7 +117,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   if (periodic) {
     /*--- Stop preacc here as gradient is in/out. ---*/
     for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = 0; jDim < nDim; ++jDim)
+      for (size_t jDim = iDim; jDim < nDim; ++jDim)
         AD::SetPreaccOut(Smatrix[iDim][jDim]);
     AD::EndPreacc();
   }
@@ -134,7 +130,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
-        Cvector[iDim] += Smatrix[iDim][jDim] * gradient(iPoint, iVar, jDim);
+        Cvector[iDim] += Smatrix[min(iDim,jDim)][max(iDim,jDim)] * gradient(iPoint, iVar, jDim);
 
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       gradient(iPoint, iVar, iDim) = Cvector[iDim];
