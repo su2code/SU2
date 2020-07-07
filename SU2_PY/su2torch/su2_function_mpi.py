@@ -152,8 +152,7 @@ def modify_config(config: SU2.io.Config, new_params: Dict[str, str],
 
 def activate_su2_mpi(remove_temp_files: bool = True, max_procs_per_example: int = 1,
                      non_busy_wait_max_time: float = 0.1) -> None:
-    # XXX Removed assertion for now for easier debugging
-    # assert MPI.COMM_WORLD.Get_size() > 1, 'Need at least 1 master and 1 worker process, run with "mpirun -np ...'
+    assert MPI.COMM_WORLD.Get_size() > 1, 'Need at least 1 master and 1 worker process, run with "mpirun -np ...'
 
     if MPI.COMM_WORLD.Get_rank() != 0:
         global _non_busy_wait_max_time
@@ -202,6 +201,7 @@ def main(remove_temp_files: bool = True) -> None:
         if run_type == RunCode.STOP:
             # remove temporary files
             if local_rank == 0 and remove_temp_files:
+                import sys
                 os.system(f'rm b*_{ppid}_* 2> /dev/null')
             break
 
@@ -235,6 +235,8 @@ def main(remove_temp_files: bool = True) -> None:
                               'MESH_FILENAME': mesh_file}
                 shutil.copy(forward_config, batch_forward_config)
                 modify_config(old_config, new_config, outfile=batch_forward_config)
+            if local_rank == 0:
+                MPI.COMM_WORLD.send(batch_forward_config, dest=0)
             batch_comm.Barrier()
 
             forward_driver = pysu2.CSinglezoneDriver(batch_forward_config, num_zones, dims, batch_comm)

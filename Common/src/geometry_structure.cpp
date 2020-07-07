@@ -4191,7 +4191,6 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
    rank matches the number in the mesh file (in serial). ---*/
 
   if ((size == SINGLE_NODE) && (Point_Map.size() < geometry->GetnPoint())) {
-    cout << ">>>>>> " << geometry->GetnPoint() << " | " << Point_Map.size() << endl;
     SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
                    +string(" listed in mesh file.\n")
                    +string("Please check the mesh file for correctness.\n"),

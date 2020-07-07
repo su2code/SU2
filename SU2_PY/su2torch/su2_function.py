@@ -1,20 +1,22 @@
 import math
+import sys
 from typing import Tuple
 
+import os
 import torch
 from torch.nn.utils.rnn import pad_sequence
 
+import SU2
 from mpi4py import MPI  # Must be imported before pysu2 or else MPI error happens at some point
 import pysu2
 
-from su2torch.su2_function_mpi import RunCode, non_busy_post, non_busy_wait
-
+from su2torch.su2_function_mpi import RunCode, non_busy_post, non_busy_wait, modify_config
 
 _global_max_ppe = -1
 
 
 class SU2Module(torch.nn.Module):
-    def __init__(self, config_file: str, mesh_file: str = None, dims: int = 2, num_zones: int = 1) -> None:
+    def __init__(self, config_file: str, mesh_file: str, dims: int = 2, num_zones: int = 1) -> None:
         """ Initialize the SU2 configurations for the provided config file.
 
         :param config_file: str - The SU2 configuration file name.
@@ -23,7 +25,7 @@ class SU2Module(torch.nn.Module):
             Passing in mesh_file with batch_index parameter in string format (e.g., 'b{batch_index}_mesh.su2')
             causes each element in batch to get assigned to the correct mesh file (0 indexed).
             If running multiple processes in parallel, take care to name each mesh file uniquely to avoid conflicts
-            (e.g., unique = os.getpid(); mesh_file = 'b{batch_index}_{unique}_mesh.su2').
+            (e.g., unique = str(os.getpid()); mesh_file = 'b{batch_index}_' + unique + '_mesh.su2').
         :param dims: int - Number of dimensions for the problem (2D or 3D).
         :param num_zones: int - Number of zones in the simulation (only 1 supported currently).
         """
@@ -81,8 +83,8 @@ class SU2Function(torch.autograd.Function):
         MPI.COMM_WORLD.bcast([num_zones, dims, forward_config, mesh_file, procs_per_example, x], root=0)
 
         # instantiate forward_driver while workers work
-        # TODO Currently not using mesh_file passed in as parameter, which is used in the workers
-        forward_driver = pysu2.CSinglezoneDriver(forward_config, num_zones, dims, MPI.COMM_SELF)
+        worker_forward_config = MPI.COMM_WORLD.recv(source=1)
+        forward_driver = pysu2.CSinglezoneDriver(worker_forward_config, num_zones, dims, MPI.COMM_SELF)
         num_diff_inputs = forward_driver.GetnDiff_Inputs()
         num_diff_outputs = forward_driver.GetnDiff_Outputs()
         assert num_diff_inputs > 0 and num_diff_outputs > 0, \

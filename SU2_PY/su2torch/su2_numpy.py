@@ -7,6 +7,7 @@ import pysu2
 from su2torch.su2_function_mpi import RunCode
 
 
+# TODO Outdated, update to match the Torch version (su2_function.py)
 class SU2Numpy:
     """Class that uses the SU2 in-memory python wrapper
     to provide differentiable physics simulations.
