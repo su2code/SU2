@@ -320,7 +320,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     dist += rough_const*roughness;
 
     su2double Ji   = nu_hat/nu ;
-    if (roughness > EPS)
+    if (roughness > 1.0e-10)
       Ji+= cR1*roughness/(dist+EPS);
 
     su2double Ji_3 = Ji*Ji*Ji;
@@ -464,12 +464,12 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     SU2_OMP_BARRIER
     return;
   }
-
+  
   bool rough_wall = false;
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
-  if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker); 
+  unsigned short WallType; su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == ROUGH ) rough_wall = true;
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the

@@ -11371,6 +11371,9 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   int rank;
   SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
+  /*--- Store marker list and roughness in a global array. ---*/
+  if (config->GetnRoughWall() > 0) SetGlobalMarkerRoughness(config);
+
   SU2_OMP_PARALLEL
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
@@ -11408,12 +11411,10 @@ unsigned short iMarker;
   if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [nMarker_All];
   GlobalMarkerStorageDispl[0] = 0;
 
-  if (config->GetnRoughWall() > 0)
-    for (iMarker = 0; iMarker < nMarker_All; iMarker++)
-      GlobalRoughness_Height[iMarker] = config->GetWall_RoughnessHeight(config->GetMarker_All_TagBound(iMarker));
-  else
-    for (iMarker = 0; iMarker < nMarker_All; iMarker++)
-      GlobalRoughness_Height[iMarker] = 0.0 ;
+  for (iMarker = 0; iMarker < nMarker_All; iMarker++) {
+    wallprop = config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker));
+    GlobalRoughness_Height[iMarker] = wallprop.second;
+  }
   
 #else
   unsigned short nMarker_All = config->GetnMarker_All();
@@ -11442,14 +11443,11 @@ unsigned short iMarker;
   /*--- Allocate local and global arrays to hold roughness. ---*/
   su2double *localRough = new su2double [nMarker_All]; // local number of markers
   su2double *globalRough = new su2double[sizeGlobal];  // all markers including send recieve
-  
-  if (config->GetnRoughWall() > 0) {
-    for (iMarker = 0; iMarker < nMarker_All; iMarker++)
-      localRough[iMarker] = config->GetWall_RoughnessHeight(config->GetMarker_All_TagBound(iMarker));
-  }
-  else {
-    for (iMarker = 0; iMarker < nMarker_All; iMarker++)
-      localRough[iMarker] = 0.0 ;
+  pair<unsigned short, su2double> wallprop;
+
+  for (iMarker = 0; iMarker < nMarker_All; iMarker++) {
+    wallprop = config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker));
+    localRough[iMarker] = wallprop.second;
   }
 
   SU2_MPI::Allgatherv( localRough, sizeLocal, MPI_DOUBLE, globalRough ,

@@ -5017,12 +5017,6 @@ public:
   unsigned short GetKind_ActDisk(void) const { return Kind_ActDisk; }
 
   /*!
-   * \brief Get the kind of wall.
-   * \return Kind of wall - smooth or rough.
-   */
-  unsigned short GetKindWall(string val_marker) const;
-
-  /*!
    * \brief Set the kind of wall - rough or smooth.
    */
   void SetKindWall(string val_marker, unsigned short val_kindwall);
@@ -6784,11 +6778,11 @@ public:
   su2double* GetWallFunction_DoubleInfo(string val_marker);
 
   /*!
-   * \brief Get the wall roughness height on a wall boundary (Heatflux or Isothermal).
+   * \brief Get the type of wall and roughness height on a wall boundary (Heatflux or Isothermal).
    * \param[in] val_index - Index corresponding to the boundary.
-   * \return The wall roughness height.
-   */
-  su2double GetWall_RoughnessHeight(string val_marker) const;
+   * \return The wall type and roughness height.
+   */ 
+  pair<unsigned short, su2double> GetWallRoughnessProperties(string val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.

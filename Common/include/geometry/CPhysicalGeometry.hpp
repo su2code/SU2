@@ -810,6 +810,6 @@ public:
   /*!
    * \brief Set roughness values for markers in a global array.
    */
-  void SetGlobalMarkerRoughness(const CConfig* config) override;
+  void SetGlobalMarkerRoughness(const CConfig* config);
 
 };

@@ -8747,54 +8747,34 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-unsigned short CConfig::GetKindWall(string val_marker) const {
-  unsigned short iMarker;
-  short flag = -1;
-
-  for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
-    if (Marker_HeatFlux[iMarker] == val_marker) {
-      flag = iMarker;
-      return Kind_Wall[flag];
-    }
-
-  for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
-    if (Marker_Isothermal[iMarker] == val_marker) {
-      flag = nMarker_HeatFlux + iMarker;
-      return Kind_Wall[flag];
-    }
-
-  for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
-    if (Marker_CHTInterface[iMarker] == val_marker) {
-      flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
-      return Kind_Wall[flag];
-    }
-
-  return SMOOTH;
-}
-
-su2double CConfig::GetWall_RoughnessHeight(string val_marker) const {
+pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
   unsigned short iMarker = 0;
   short          flag = -1;
+  pair<unsigned short, su2double> WallProp;
 
   if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
     for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
       if (Marker_HeatFlux[iMarker] == val_marker) {
         flag = iMarker;
-        return Roughness_Height[flag];
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
       }
     for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
       if (Marker_Isothermal[iMarker] == val_marker) {
         flag = nMarker_HeatFlux + iMarker;
-        return Roughness_Height[flag];
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
       }
     for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
       if (Marker_CHTInterface[iMarker] == val_marker) {
         flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
-        return Roughness_Height[flag];
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
       }
   }
 
-  return 0.0;
+  WallProp = make_pair(SMOOTH, 0.0);
+  return WallProp;
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {

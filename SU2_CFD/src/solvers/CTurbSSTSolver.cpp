@@ -392,7 +392,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
+  unsigned short WallType; su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == ROUGH ) rough_wall = true;
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -419,7 +421,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double FrictionVel = sqrt(fabs(WallShearStress)/density);
 
         /*--- Compute roughness in wall units. ---*/
-        su2double Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
+        //su2double Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
         su2double kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
 
         su2double S_R= 0.0;
