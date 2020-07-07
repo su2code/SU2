@@ -142,10 +142,6 @@ public:
    * \brief Change the orientation of an element.
    */
   inline void Change_Orientation(void) override {
-    unsigned long Point_0, Point_1;
-    Point_0 = Nodes[0];
-    Point_1 = Nodes[1];
-    Nodes[0] = Point_1;
-    Nodes[1] = Point_0;
+    swap(Nodes[0], Nodes[1]);
   }
 };
