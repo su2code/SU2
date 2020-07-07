@@ -28,7 +28,6 @@
 #include "../../../Common/include/adt_structure.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
-#include "../../include/variables/CMeshBoundVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 using namespace GeometryToolbox;

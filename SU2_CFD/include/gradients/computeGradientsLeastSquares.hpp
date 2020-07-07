@@ -43,7 +43,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
                                    const RMatrixType& Rmatrix,
                                    GradientType& gradient)
 {
-  constexpr auto eps = std::numeric_limits<passivedouble>::epsilon();
+  constexpr auto eps = pow(std::numeric_limits<passivedouble>::epsilon(),2);
 
   /*--- Entries of upper triangular matrix R. ---*/
 
