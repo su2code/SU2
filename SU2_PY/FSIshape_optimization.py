@@ -31,6 +31,7 @@ from SU2_FSI.FSI_tools import SaveSplineMatrix, readConfig, readDVParam
 from SU2_FSI.FSI_project import Project
 from optparse import OptionParser  # use a parser for configuration
 from scipy.optimize import fmin_slsqp
+import scipy.io
 
 # -------------------------------------------------------------------
 #  Main 
@@ -220,7 +221,7 @@ def obj_df(x,project):
     """    
   
     obj_df = project.obj_df(x)    
-    
+    scipy.io.savemat(  './obj_df.mat', mdict={'obj_df': obj_df})
     return obj_df
 
 def con_ceq(x,project):
@@ -254,7 +255,7 @@ def con_cieq(x,project):
     """ 
 
     cons = project.con_cieq(x)  
-         
+    scipy.io.savemat(  './cons.mat', mdict={'cons': cons})     
     return cons
     
     
@@ -268,7 +269,7 @@ def con_dcieq(x,project):
     """
 
     dcons = project.con_dcieq(x)
-    
+    scipy.io.savemat(  './dcons.mat', mdict={'dcons': dcons})         
     return dcons
 
 
