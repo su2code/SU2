@@ -793,10 +793,10 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
 
-  if (TurbVar_Grad_i != NULL) {
-    AD::SetPreaccIn(TurbVar_Grad_i, 1, nDim); AD::SetPreaccIn(TurbVar_Grad_j, 1, nDim);
-    AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
-  }
+  // if (TurbVar_Grad_i != NULL) {
+  //   AD::SetPreaccIn(TurbVar_Grad_i, 1, nDim); AD::SetPreaccIn(TurbVar_Grad_j, 1, nDim);
+  //   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
+  // }
   
   unsigned short iVar, jVar, iDim;
   
@@ -859,13 +859,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
-  if (TurbVar_Grad_i != NULL) {
-    for (iVar = 0; iVar < nDim+1; iVar++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim] + TurbVar_Grad_j[0][iDim]);
-      }
-    }
-  }
+  // if (TurbVar_Grad_i != NULL) {
+  //   for (iDim = 0; iDim < nDim; iDim++) {
+  //     Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim] + TurbVar_Grad_j[0][iDim]);
+  //   }
+  // }
   
   
 
