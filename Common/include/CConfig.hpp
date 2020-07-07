@@ -6791,13 +6791,6 @@ public:
   su2double GetWall_RoughnessHeight(string val_marker) const;
 
   /*!
-   * \brief Set the wall roughness height on a wall boundary (Heatflux or Isothermal).
-   * \param[in] val_index - Index corresponding to the boundary.
-   * \return The wall roughness height.
-   */
-  void SetWall_RoughnessHeight(string val_marker, su2double val_roughness);
-
-  /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \return Target (pressure, massflow, etc) .

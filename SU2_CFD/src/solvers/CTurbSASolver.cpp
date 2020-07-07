@@ -300,7 +300,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5;
+  const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
   const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
 
@@ -317,10 +317,10 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    dist += 0.03*roughness;
+    dist += rough_const*roughness;
 
     su2double Ji   = nu_hat/nu ;
-    if (roughness > 1.0e-10)
+    if (roughness > EPS)
       Ji+= cR1*roughness/(dist+EPS);
 
     su2double Ji_3 = Ji*Ji*Ji;

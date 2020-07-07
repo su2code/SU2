@@ -125,13 +125,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
 
-    /*--- Old values without roughness ---*/
-    /*Ji = TurbVar_i[0]/nu;
-    Ji_2 = Ji*Ji;
-    Ji_3 = Ji_2*Ji;
-    fv1 = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - Ji/(1.0+Ji*fv1);*/
-
     /*--- Modified values for roughness ---*/
     /*--- Ref: Aupoix, B. and Spalart, P. R., "Extensions of the Spalart-Allmaras Turbulence Model to Account for Wall Roughness,"
      * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/

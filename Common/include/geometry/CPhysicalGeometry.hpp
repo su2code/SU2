@@ -810,20 +810,6 @@ public:
   /*!
    * \brief Set roughness values for markers in a global array.
    */
-  void SetGlobalMarkerRoughness(CConfig *config) override;
-  
-  /*!
-   * \brief Set the displacements for each rank in global array.
-   * \param [in] global displacemts in order of rank.
-   * \param [in] total number of ranks
-   */
-  void SetGlobalMarkerArray(int *global_displ, int size) ;
-  
-    /*!
-   * \brief Set the roughness for each marker in global array.
-   * \param [in] global list of roughness for every marker.
-   * \param [in] total number of marker including send recieves.
-   */
-  void SetGlobalRoughnessArray(su2double *global_rough, int sizeGlobal) ;
+  void SetGlobalMarkerRoughness(const CConfig* config) override;
 
 };

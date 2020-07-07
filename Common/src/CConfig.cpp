@@ -4607,13 +4607,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/   
+  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
    if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_CHTInterface > 0)) {
 
-     /*--- The total number of wall markers. ---*/  
+     /*--- The total number of wall markers. ---*/
      unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_CHTInterface;
 
-     /*--- If no roughness is specified all walls are assumed to be smooth. ---*/  
+     /*--- If no roughness is specified all walls are assumed to be smooth. ---*/
      if (nRough_Wall == 0) {
 
        nRough_Wall = nWall;
@@ -4632,15 +4632,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
          Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = SMOOTH;
        }
 
-       /*--- Check name of the marker and assign the corresponding roughness. ---*/ 
+       /*--- Check for mismatch in number of rough walls and solid walls. ---*/
      } else if (nRough_Wall > nWall) {
         SU2_MPI::Error("Mismatch in number of rough walls and solid walls. Number of rough walls cannot be more than solid walls.", CURRENT_FUNCTION);
-     } else { 
-
+       /*--- Check name of the marker and assign the corresponding roughness. ---*/
+     } else {
        /*--- Store roughness heights in a temp array. ---*/
        vector<su2double> temp_rough;
-       for (iMarker = 0; iMarker < nRough_Wall; iMarker++) 
-         temp_rough.push_back(Roughness_Height[iMarker]);  
+       for (iMarker = 0; iMarker < nRough_Wall; iMarker++)
+         temp_rough.push_back(Roughness_Height[iMarker]);
 
        /*--- Reallocate the roughness arrays in case not all walls are rough. ---*/
        delete Roughness_Height;
@@ -4657,13 +4657,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
        /*--- Look through heat flux, isothermal and cht_interface markers and assign proper values. ---*/
        for (iMarker = 0; iMarker < nRough_Wall; iMarker++) {
-         for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++) 
+         for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++)
            if (Marker_HeatFlux[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
              Roughness_Height[jMarker] = temp_rough[iMarker];
              chkRough++;
            }
 
-         for (jMarker = 0; jMarker < nMarker_Isothermal; jMarker++) 
+         for (jMarker = 0; jMarker < nMarker_Isothermal; jMarker++)
            if (Marker_Isothermal[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
              Roughness_Height[nMarker_HeatFlux + jMarker] = temp_rough[iMarker];
              chkRough++;
@@ -4676,11 +4676,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
            }
        }
 
-       /*--- Update kind_wall when a non zero roughness value is specified. Also check if a non solid wall marker was specified as rough. ---*/
+       /*--- Update kind_wall when a non zero roughness value is specified. ---*/
        for (iMarker = 0; iMarker < nWall; iMarker++) 
          if (Roughness_Height[iMarker] != 0.0) 
            Kind_Wall[iMarker] = ROUGH;
 
+       /*--- Check if a non solid wall marker was specified as rough. ---*/
        if (chkRough != nRough_Wall)
          SU2_MPI::Error("Only solid walls can be rough.", CURRENT_FUNCTION);
      }
@@ -8749,62 +8750,51 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
 unsigned short CConfig::GetKindWall(string val_marker) const {
   unsigned short iMarker;
   short flag = -1;
+
   for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
     if (Marker_HeatFlux[iMarker] == val_marker) {
       flag = iMarker;
-      break;
+      return Kind_Wall[flag];
     }
-  if (flag == -1)
-    for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
-      if (Marker_Isothermal[iMarker] == val_marker) {
-      flag = nMarker_HeatFlux + iMarker;
-      break;
-    }
-    if (flag == -1) {
-      for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
-        if (Marker_CHTInterface[iMarker] == val_marker) {
-          flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
-          break;
-        }
-    }
-  if (flag == -1) return 1;
-  else return Kind_Wall[flag];
-}
 
-void CConfig::SetWall_RoughnessHeight(string val_marker, su2double val_roughness) {
-  //Roughness_Height[val_marker] = val_roughness;
+  for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+    if (Marker_Isothermal[iMarker] == val_marker) {
+      flag = nMarker_HeatFlux + iMarker;
+      return Kind_Wall[flag];
+    }
+
+  for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
+    if (Marker_CHTInterface[iMarker] == val_marker) {
+      flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
+      return Kind_Wall[flag];
+    }
+
+  return SMOOTH;
 }
 
 su2double CConfig::GetWall_RoughnessHeight(string val_marker) const {
   unsigned short iMarker = 0;
   short          flag = -1;
 
-  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0) {
+  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
     for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
       if (Marker_HeatFlux[iMarker] == val_marker) {
         flag = iMarker;
-        break;
+        return Roughness_Height[flag];
       }
-    if (flag == -1) {
-      for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
-        if (Marker_Isothermal[iMarker] == val_marker) {
-          flag = nMarker_HeatFlux + iMarker;
-          break;
-        }
-    }
-    if (flag == -1) {
-      for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
-        if (Marker_CHTInterface[iMarker] == val_marker) {
-          flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
-          break;
-        }
-    }
+    for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+      if (Marker_Isothermal[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + iMarker;
+        return Roughness_Height[flag];
+      }
+    for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
+      if (Marker_CHTInterface[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
+        return Roughness_Height[flag];
+      }
   }
 
-  if (flag == -1) 
-    return 0.0; //For cht_wall_interface
-  else
-    return Roughness_Height[flag];
+  return 0.0;
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {

@@ -11382,51 +11382,41 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
-      su2double      localRoughness;
-      int index;
 
       WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
 
       nodes->SetWall_Distance(iPoint, min(dist,nodes->GetWall_Distance(iPoint)));
-      index = GlobalMarkerStorageDispl[rankID]+ markerID;
-      localRoughness = GlobalRoughness_Height[index];
-      nodes->SetRoughnessHeight(iPoint, localRoughness);
+      if (config->GetnRoughWall() > 0) {
+        auto index = GlobalMarkerStorageDispl[rankID]+ markerID;
+        auto localRoughness = GlobalRoughness_Height[index];
+        nodes->SetRoughnessHeight(iPoint, localRoughness);
+	  }
     }
     
   }
   // end SU2_OMP_PARALLEL
 }
 
-void CPhysicalGeometry::SetGlobalMarkerRoughness(CConfig *config) {
+void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
 
 unsigned short iMarker;
 #ifndef HAVE_MPI
   
-  int *local_displ = new int [1];
   int size = 1;
   unsigned short nMarker_All = config->GetnMarker_All();
-  local_displ[0] = 0;
   if (GlobalMarkerStorageDispl == nullptr) GlobalMarkerStorageDispl = new int [size];
+  if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [nMarker_All];
   GlobalMarkerStorageDispl[0] = 0;
-  
-  su2double *localRough = new su2double [nMarker_All];
 
   if (config->GetnRoughWall() > 0)
     for (iMarker = 0; iMarker < nMarker_All; iMarker++)
-      localRough[iMarker] = config->GetWall_RoughnessHeight(config->GetMarker_All_TagBound(iMarker));   
-  else 
-    for (iMarker = 0; iMarker < nMarker_All; iMarker++) 
-      localRough[iMarker] = 0.0 ;
-
-  if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [nMarker_All];
-  for (int iMarker = 0; iMarker < nMarker_All; iMarker++) 
-    GlobalRoughness_Height[iMarker] = localRough[iMarker];
+      GlobalRoughness_Height[iMarker] = config->GetWall_RoughnessHeight(config->GetMarker_All_TagBound(iMarker));
+  else
+    for (iMarker = 0; iMarker < nMarker_All; iMarker++)
+      GlobalRoughness_Height[iMarker] = 0.0 ;
   
 #else
-  int rank, size;
   unsigned short nMarker_All = config->GetnMarker_All();
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 
   int *displs = new int [size];
   int* recvCounts = new int [size];

@@ -859,9 +859,9 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     geometry[MESH_0]->ComputeMeshQualityStatistics(config);
   }
 
-  /*--- Store marker list and roughness in a global array ---*/
+  /*--- Store marker list and roughness in a global array. ---*/
 
-  geometry[MESH_0]->SetGlobalMarkerRoughness(config);
+  if (config->GetnRoughWall() > 0) geometry[MESH_0]->SetGlobalMarkerRoughness(config);
 
   geometry[MESH_0]->SetMGLevel(MESH_0);
   if ((config->GetnMGLevels() != 0) && (rank == MASTER_NODE))

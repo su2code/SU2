@@ -1716,7 +1716,7 @@ public:
   /*!
    * \brief Set roughness values for markers in a global array.
    */
-  inline virtual void SetGlobalMarkerRoughness(CConfig *config) { }
+  inline virtual void SetGlobalMarkerRoughness(const CConfig* config) { }
 
 };
 
