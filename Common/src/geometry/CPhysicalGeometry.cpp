@@ -11410,6 +11410,7 @@ unsigned short iMarker;
   if (GlobalMarkerStorageDispl == nullptr) GlobalMarkerStorageDispl = new int [size];
   if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [nMarker_All];
   GlobalMarkerStorageDispl[0] = 0;
+  pair<unsigned short, su2double> wallprop;
 
   for (iMarker = 0; iMarker < nMarker_All; iMarker++) {
     wallprop = config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker));
