@@ -2,7 +2,7 @@
  * \file CSysSolve.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
- * \author J. Hicken, F. Palacios, T. Economon
+ * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -55,7 +55,6 @@ enum class LinearToleranceType {RELATIVE, ABSOLUTE};
 /*!
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
- * \author J. Hicken.
  *
  * The individual solvers could be stand-alone subroutines, but by
  * creating CSysSolve objects we can more easily assign different
@@ -70,14 +69,15 @@ template<class ScalarType>
 class CSysSolve {
 
 public:
-  /*--- Some typedefs for simplicity ---*/
-  typedef CSysVector<ScalarType> VectorType;
-  typedef CSysMatrix<ScalarType> MatrixType;
-  typedef CMatrixVectorProduct<ScalarType> ProductType;
-  typedef CPreconditioner<ScalarType> PrecondType;
+  /*--- Some aliases for simplicity. ---*/
+  using Scalar = ScalarType;
+  using VectorType = CSysVector<ScalarType>;
+  using MatrixType = CSysMatrix<ScalarType>;
+  using ProductType = CMatrixVectorProduct<ScalarType>;
+  using PrecondType = CPreconditioner<ScalarType>;
 
 private:
-
+  const ScalarType eps;      /*!< \brief Machine epsilon used in this class. */
   bool mesh_deform;          /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
   ScalarType Residual=1e-20; /*!< \brief Residual at the end of a call to Solve or Solve_b. */
   unsigned long Iterations=0;/*!< \brief Iterations done in Solve or Solve_b. */
@@ -209,17 +209,81 @@ private:
   void WriteWarning(ScalarType res_calc, ScalarType res_true, ScalarType tol) const;
 
   /*!
-   * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Same type specialization, temporary variables are not required.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
-  void HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol);
+  template<class OtherType,
+           typename enable_if<is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Set the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = &LinSysRes;
+      LinSysSol_ptr = &LinSysSol;
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*!
-   * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Different type specialization, copy data into temporary solution and residual vectors.
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in,out] LinSysSol - Linear system solution
+   */
+  template<class OtherType,
+           typename enable_if<!is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
+    LinSysRes_tmp.PassiveCopy(LinSysRes);
+    LinSysSol_tmp.PassiveCopy(LinSysSol);
+
+    /*--- Set the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = &LinSysRes_tmp;
+      LinSysSol_ptr = &LinSysSol_tmp;
+    }
+    SU2_OMP_BARRIER
+  }
+
+  /*!
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Same type specialization, temporary variables are not required.
    * \param[out] LinSysSol - Linear system solution
    */
-  void HandleTemporariesOut(CSysVector<su2double> & LinSysSol);
+  template<class OtherType,
+           typename enable_if<is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Reset the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = nullptr;
+      LinSysSol_ptr = nullptr;
+    }
+    SU2_OMP_BARRIER
+  }
+
+  /*!
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Different type specialization, copy data from the temporary solution vector.
+   * \param[out] LinSysSol - Linear system solution
+   */
+  template<class OtherType,
+           typename enable_if<!is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Copy data, only the temporary solution needs to be copied. ---*/
+    LinSysSol.PassiveCopy(LinSysSol_tmp);
+
+    /*--- Reset the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = nullptr;
+      LinSysSol_ptr = nullptr;
+    }
+    SU2_OMP_BARRIER
+  }
 
 public:
 

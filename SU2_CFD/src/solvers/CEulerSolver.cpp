@@ -240,6 +240,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
            << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
     }
+
+    if (config->GetUseVectorization() && (omp_get_max_threads() > 1) &&
+        (config->GetEdgeColoringGroupSize() % IntSize != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (4 or 8).", CURRENT_FUNCTION);
+    }
   }
 
   if (ReducerStrategy)

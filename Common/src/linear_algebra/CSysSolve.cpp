@@ -1,7 +1,7 @@
 /*!
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author J. Hicken, F. Palacios, T. Economon
+ * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -37,20 +37,27 @@
 
 #include <limits>
 
-/*!< \brief machine epsilon */
-#ifndef USE_MIXED_PRECISION
-const passivedouble eps = numeric_limits<passivedouble>::epsilon();
-#else
-const passivedouble eps = 1e-12;
-#endif
+/*!
+ * \brief Epsilon used in CSysSolve depending on datatype to
+ * decide if the linear system is already solved.
+ */
+namespace {
+  template<class T>
+  constexpr T linSolEpsilon() { return numeric_limits<passivedouble>::epsilon(); }
+  template<>
+  constexpr float linSolEpsilon<float>() { return 1e-12; }
+}
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),
-                                                                gmres_ready(false), smooth_ready(false) {
-  mesh_deform = mesh_deform_mode;
-  LinSysRes_ptr = nullptr;
-  LinSysSol_ptr = nullptr;
-  Residual = 0.0;
+CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) :
+  eps(linSolEpsilon<ScalarType>()),
+  mesh_deform(mesh_deform_mode),
+  cg_ready(false),
+  bcg_ready(false),
+  gmres_ready(false),
+  smooth_ready(false),
+  LinSysSol_ptr(nullptr),
+  LinSysRes_ptr(nullptr) {
 }
 
 template<class ScalarType>
@@ -760,67 +767,6 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   residual = norm_r/norm0;
   return i;
 }
-
-template<>
-void CSysSolve<su2double>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is the same the temporaties are not required ---*/
-  /*--- Set the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = &LinSysRes;
-    LinSysSol_ptr = &LinSysSol;
-  }
-  SU2_OMP_BARRIER
-}
-
-template<>
-void CSysSolve<su2double>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is the same the temporaties are not required ---*/
-  /*--- Reset the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = nullptr;
-    LinSysSol_ptr = nullptr;
-  }
-  SU2_OMP_BARRIER
-}
-
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-template<>
-void CSysSolve<su2mixedfloat>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is different we need to copy data to the temporaries ---*/
-  /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
-  LinSysRes_tmp.PassiveCopy(LinSysRes);
-  LinSysSol_tmp.PassiveCopy(LinSysSol);
-
-  /*--- Set the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = &LinSysRes_tmp;
-    LinSysSol_ptr = &LinSysSol_tmp;
-  }
-  SU2_OMP_BARRIER
-}
-
-template<>
-void CSysSolve<su2mixedfloat>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is different we need to copy data from the temporaries ---*/
-  /*--- Copy data, only the solution needs to be copied ---*/
-  LinSysSol.PassiveCopy(LinSysSol_tmp);
-
-  /*--- Reset the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = nullptr;
-    LinSysSol_ptr = nullptr;
-  }
-  SU2_OMP_BARRIER
-}
-#endif
 
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,

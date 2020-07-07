@@ -1891,6 +1891,36 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
+template<class T, class U,
+         typename enable_if<is_same<T,U>::value,bool>::type = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  CSysVector<T> r(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+  SU2_OMP_PARALLEL { A.ComputeResidual(x, b, r); }
+  return r;
+}
+
+template<class T, class U,
+         typename enable_if<!is_same<T,U>::value,bool>::type = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  /*--- Different types of A and x/b, use temporaries to interface with A. ---*/
+  const auto nVar = x.GetNVar();
+  const auto nBlk = x.GetNBlk();
+  const auto nBlkDom = x.GetNBlkDomain();
+  CSysVector<T> r(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> xtmp(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> btmp(nBlk, nBlkDom, nVar, nullptr);
+  SU2_OMP_PARALLEL {
+    xtmp.PassiveCopy(x);
+    btmp.PassiveCopy(b);
+    A.ComputeResidual(xtmp, btmp, r);
+  }
+  return r;
+}
+
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
@@ -1944,34 +1974,16 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
 
-#ifndef CODI_FORWARD_TYPE
-    CSysVector<su2mixedfloat> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#else
-    CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#endif
-
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<su2mixedfloat> sol, res;
-#endif
-
-    SU2_OMP_PARALLEL
-    {
-#if !(defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)) || defined(CODI_FORWARD_TYPE)
-    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-#else
-    sol.PassiveCopy(LinSysSol);
-    res.PassiveCopy(LinSysRes);
-    Jacobian.ComputeResidual(sol, res, LinSysAux);
-#endif
+    const auto ResidualAux = computeLinearResidual(Jacobian, LinSysSol, LinSysRes);
 
     /*--- Set maximum residual to zero. ---*/
 
-    SU2_OMP_MASTER
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
+
+    SU2_OMP_PARALLEL {
 
     /*--- Compute the residual. ---*/
 
@@ -1982,7 +1994,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        su2double Res = fabs(LinSysAux(iPoint, iVar));
+        su2double Res = fabs(ResidualAux(iPoint, iVar));
         resRMS[iVar] += Res*Res;
         if (Res > resMax[iVar]) {
           resMax[iVar] = Res;
