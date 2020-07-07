@@ -429,7 +429,7 @@ public:
    * \brief Get the specie density of the flow.
    * \return Value of the specie density of the flow.
    */
-  inline su2double GetDensity(unsigned long iPoint, unsigned short val_Species) const final { return Primitive(iPoint,RHOS_INDEX+val_Species); }
+  inline su2double GetDensity(unsigned long iPoint, unsigned long val_Species) const final { return Primitive(iPoint,RHOS_INDEX+val_Species); }
 
   /*!
    * \brief Get the energy of the flow.
