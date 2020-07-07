@@ -90,15 +90,6 @@ CPrism::~CPrism() {
 }
 
 void CPrism::Change_Orientation(void) {
-  unsigned long Point_0, Point_1, Point_3, Point_4;
-
-  Point_0 = Nodes[0];
-  Point_1 = Nodes[1];
-  Point_3 = Nodes[3];
-  Point_4 = Nodes[4];
-  Nodes[0] = Point_1;
-  Nodes[1] = Point_0;
-  Nodes[3] = Point_4;
-  Nodes[4] = Point_3;
-
+  swap(Nodes[0], Nodes[1]);
+  swap(Nodes[3], Nodes[4]);
 }

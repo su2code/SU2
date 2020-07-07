@@ -751,13 +751,13 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Check_IntElem_Orientation(CConfig *config) {}
+  inline virtual void Check_IntElem_Orientation(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Check_BoundElem_Orientation(CConfig *config) {}
+  inline virtual void Check_BoundElem_Orientation(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.

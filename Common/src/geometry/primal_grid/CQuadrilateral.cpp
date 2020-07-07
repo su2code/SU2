@@ -88,11 +88,5 @@ CQuadrilateral::~CQuadrilateral() {
 }
 
 void CQuadrilateral::Change_Orientation(void) {
-  unsigned long Point_1, Point_3;
-
-  Point_1 = Nodes[1];
-  Point_3 = Nodes[3];
-  Nodes[1] = Point_3;
-  Nodes[3] = Point_1;
-
+  swap(Nodes[1], Nodes[3]);
 }
