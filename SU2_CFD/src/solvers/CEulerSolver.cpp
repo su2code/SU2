@@ -2760,17 +2760,10 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       Vol = geometry->node[iPoint]->GetVolume();
       if (Vol == 0.0) continue;
 
-      dist = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist += (geometry->node[iPoint]->GetCoord(iDim)-geometry->node[jPoint]->GetCoord(iDim))
-              * (geometry->node[iPoint]->GetCoord(iDim)-geometry->node[jPoint]->GetCoord(iDim));
-      dist = sqrt(dist);
-
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
       //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
       Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
-      // Lambda = (Lambda_1+Lambda_2)*Area*Area/(K_v*Mean_Density*Vol);
-      Lambda = (Lambda_1+Lambda_2)*Area/(K_v*Mean_Density*dist);
+      Lambda = (Lambda_1+Lambda_2)*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
