@@ -1,5 +1,5 @@
 /*!
- * \file CFVMFlowSolverBase.hpp
+ * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
  * \version 7.0.6 "Blackbird"
  *
@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "CFVMFlowSolverBase.inl"
+#include "CFVMFlowSolverBase.hpp"
 #include "../gradients/computeGradientsGreenGauss.hpp"
 #include "../gradients/computeGradientsLeastSquares.hpp"
 #include "../limiters/computeLimiters.hpp"
