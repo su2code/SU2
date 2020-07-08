@@ -144,6 +144,23 @@ public:
                        unsigned short iMesh) override;
 
   /*!
+   * \brief Correction to viscous residual that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Jacobian_ic - Jacobian term obtained from CNumerics for iPoint.
+   * \param[in] Jacobian_jc - Jacobian term obtained from CNumerics for jPoint.
+   */
+  void CorrectJacobian(CGeometry       *geometry,
+                       CSolver         **solver_container,
+                       CConfig         *config,
+                       unsigned long   iPoint,
+                       unsigned long   jPoint,
+                       const su2double *const *const *const Jacobian_ic,
+                       const su2double *const *const *const Jacobian_jc);
+
+  /*!
    * \brief Impose the Symmetry Plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

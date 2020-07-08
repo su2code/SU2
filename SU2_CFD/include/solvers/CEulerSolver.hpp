@@ -592,6 +592,19 @@ public:
                        unsigned short iMesh) final;
 
   /*!
+   * \brief Correction to viscous residual that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   */
+  void CorrectJacobian(CGeometry     *geometry,
+                       CSolver       **solver,
+                       CConfig       *config,
+                       unsigned long iPoint,
+                       unsigned long jPoint);
+
+  /*!
    * \brief Compute primitive variables and their gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

@@ -71,8 +71,6 @@ protected:
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
-  su2double*** Jacobian_ic = nullptr;     /*!< \brief The Jacobian correction w.r.t. point i after computation. */
-  su2double*** Jacobian_jc = nullptr;     /*!< \brief The Jacobian correction w.r.t. point i after computation. */
   
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
   su2double F1_i, F1_j;
@@ -173,25 +171,6 @@ protected:
                           su2double **val_Proj_Jac_Tensor_i,
                           su2double **val_Proj_Jac_Tensor_j,
                           const CConfig *config);
-
-  /*!
-   * \brief Include gradient terms in Jacobian
-   *
-   * The Jacobians of the heat flux vector and the stress tensor must be
-   * calculated before calling this function.
-   *
-   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void CorrectJacobian(const su2double val_proj_vector,
-                       const su2double val_dS,
-                       su2double **val_Proj_Jac_Tensor_i,
-                       su2double **val_Proj_Jac_Tensor_j,
-                       const su2double Density,
-                       const CConfig *config);
 
   /*!
    * \brief Apply a correction to the gradient to reduce the truncation error

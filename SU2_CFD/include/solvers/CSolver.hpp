@@ -308,14 +308,6 @@ public:
    */
   inline virtual void SetDualTime_Mesh(void){ }
   
-  void CorrectJacobian(CGeometry       *geometry,
-                       CSolver         **solver_container,
-                       CConfig         *config,
-                       unsigned long   iPoint,
-                       unsigned long   jPoint,
-                       const su2double *const *const *const Jacobian_ic,
-                       const su2double *const *const *const Jacobian_jc);
-  
   /*!
    * \brief Correct the gradient at symmetry planes.
    */

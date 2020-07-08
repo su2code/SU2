@@ -59,7 +59,7 @@ protected:
   *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node i. */
   **Jacobian_j = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node j. */
-  ***Jacobian_ic = nullptr,                 /*!< \brief Flux Jacobian correction termw.r.t. node i. */
+  ***Jacobian_ic = nullptr,                 /*!< \brief Flux Jacobian correction term w.r.t. node i. */
   ***Jacobian_jc = nullptr;                 /*!< \brief Flux Jacobian correction term w.r.t. node j. */
 
   const bool correct_gradient = false, implicit = false, incompressible = false;
