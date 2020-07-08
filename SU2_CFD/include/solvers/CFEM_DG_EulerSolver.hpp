@@ -29,6 +29,8 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/SparseExtra>
 
 /*!
  * \class CFEM_DG_EulerSolver
@@ -220,6 +222,8 @@ protected:
   vector<passivedouble> SpatialJacobian;    /*!< \brief Vector containing the Spatial Jacobian used for implicit schemes. */
 
   vector<su2double> ResRMSinitial;       /*!< \brief Vector containing the initial RMS residuals used for implicit schemes. */
+
+  Eigen::MatrixXd Coord_ij;      /*!< \brief Eigenmatrix for storage of i,j information of a structured grid. */
 
   int nGlobalColors;              /*!< \brief Number of global colors for the Jacobian computation. */
 
