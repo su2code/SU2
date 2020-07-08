@@ -865,7 +865,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_FlowDir             = nullptr;     Inlet_Temperature           = nullptr;     Inlet_Pressure        = nullptr;
   Inlet_Velocity            = nullptr;     Inflow_Mach                 = nullptr;     Inflow_Pressure       = nullptr;
   Exhaust_Pressure          = nullptr;     Outlet_Pressure             = nullptr;     Isothermal_Temperature= nullptr;
-  
+
   ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
   Load_Dir = nullptr;            Load_Dir_Value = nullptr;          Load_Dir_Multiplier = nullptr;
@@ -4677,8 +4677,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        }
 
        /*--- Update kind_wall when a non zero roughness value is specified. ---*/
-       for (iMarker = 0; iMarker < nWall; iMarker++) 
-         if (Roughness_Height[iMarker] != 0.0) 
+       for (iMarker = 0; iMarker < nWall; iMarker++)
+         if (Roughness_Height[iMarker] != 0.0)
            Kind_Wall[iMarker] = ROUGH;
 
        /*--- Check if a non solid wall marker was specified as rough. ---*/
@@ -5334,7 +5334,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = FLOWLOAD_BOUNDARY;
     iMarker_CfgFile++;
   }
-  
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Monitoring[iMarker_CfgFile] = NO;
     for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
@@ -5460,7 +5460,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PyCustom[iMarker_PyCustom])
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
-  
+
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {

@@ -105,8 +105,9 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_Line_Linear{nullptr};
   unsigned long *Elem_ID_BoundTria_Linear{nullptr};
   unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
-  int *GlobalMarkerStorageDispl{nullptr};
-  su2double *GlobalRoughness_Height{nullptr};
+
+  vector<int> GlobalMarkerStorageDispl;
+  vector<su2double> GlobalRoughness_Height;
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/

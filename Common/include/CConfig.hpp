@@ -5089,7 +5089,7 @@ public:
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
- 
+
   /*!
    * \author H. Kline
    * \brief Get the flag indicating whether to comput a combined objective.
@@ -6781,7 +6781,7 @@ public:
    * \brief Get the type of wall and roughness height on a wall boundary (Heatflux or Isothermal).
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall type and roughness height.
-   */ 
+   */
   pair<unsigned short, su2double> GetWallRoughnessProperties(string val_marker) const;
 
   /*!

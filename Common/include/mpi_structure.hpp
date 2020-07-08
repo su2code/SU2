@@ -417,7 +417,7 @@ public:
                         void *recvbuf, int recvcnt, Datatype recvtype, Comm comm);
 
   static void Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                         void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm);
+                         void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,

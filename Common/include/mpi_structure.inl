@@ -612,7 +612,7 @@ inline void CBaseMPIWrapper::Scatter(void *sendbuf, int sendcnt, Datatype sendty
 }
 
 inline void CBaseMPIWrapper::Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                                   void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm){
+                                   void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm){
   CopyData(sendbuf, recvbuf, sendcnt, sendtype);
 }
 
