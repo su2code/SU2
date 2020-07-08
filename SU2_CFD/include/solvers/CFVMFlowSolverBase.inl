@@ -58,8 +58,8 @@ void CFVMFlowSolverBase<V,R>::AeroCoeffsArray::setZero(int i) {
   CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
 }
 
-template<class V, ENUM_REGIME FlowRegime>
-void CFVMFlowSolverBase<V,FlowRegime>::Allocate(const CConfig& config) {
+template<class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V,R>::Allocate(const CConfig& config) {
 
   unsigned short iVar, iMarker;
   unsigned long iPoint, iVertex;
@@ -228,9 +228,9 @@ void CFVMFlowSolverBase<V,FlowRegime>::Allocate(const CConfig& config) {
 
 }
 
-template<class V, ENUM_REGIME FlowRegime>
-void CFVMFlowSolverBase<V,FlowRegime>::HybridParallelInitialization(const CConfig& config,
-                                                                    CGeometry& geometry) {
+template<class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V,R>::HybridParallelInitialization(const CConfig& config,
+                                                           CGeometry& geometry) {
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
    *    reducer strategy. Where one loop is performed over edges followed by a point loop to
@@ -283,8 +283,8 @@ void CFVMFlowSolverBase<V,FlowRegime>::HybridParallelInitialization(const CConfi
 #endif
 }
 
-template<class V, ENUM_REGIME FlowRegime>
-CFVMFlowSolverBase<V,FlowRegime>::~CFVMFlowSolverBase() {
+template<class V, ENUM_REGIME R>
+CFVMFlowSolverBase<V,R>::~CFVMFlowSolverBase() {
 
   unsigned short iMarker, iVar, iDim;
   unsigned long iVertex;

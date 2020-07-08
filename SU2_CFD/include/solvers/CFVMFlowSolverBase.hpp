@@ -239,6 +239,15 @@ public:
   void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
+   * \brief Compute the undivided laplacian for the solution and the
+   *        dissipation sensor for centered schemes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry,
+                                                              const CConfig *config);
+
+  /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
    */
@@ -1121,6 +1130,88 @@ public:
                                    unsigned short val_state,
                                    unsigned long donor_index) const final {
     return SlidingState[val_marker][val_vertex][val_state][donor_index];
+  }
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   * \param[in] relaxation factor - relaxation factor for the change of the variables
+   * \param[in] val_var           - value of the variable
+   */
+  inline void SetConjugateHeatVariable(unsigned short val_marker,
+                                       unsigned long val_vertex,
+                                       unsigned short pos_var,
+                                       su2double relaxation_factor,
+                                       su2double val_var) final {
+    HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var];
+  }
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   */
+  inline su2double GetConjugateHeatVariable(unsigned short val_marker,
+                                            unsigned long val_vertex,
+                                            unsigned short pos_var) const final {
+    return HeatConjugateVar[val_marker][val_vertex][pos_var];
+  }
+
+  /*!
+   * \brief Get the skin friction coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the skin friction coefficient.
+   */
+    inline su2double GetCSkinFriction(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    unsigned short val_dim) const final {
+    return CSkinFriction[val_marker][val_dim][val_vertex];
+  }
+
+  /*!
+   * \brief Get the skin friction coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the heat transfer coefficient.
+   */
+  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const final {
+    return HeatFlux[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Get the skin friction coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the heat transfer coefficient.
+   */
+  inline su2double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) const final {
+    return HeatFluxTarget[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Set the value of the target Pressure coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline void SetHeatFluxTarget(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                su2double val_heat) final {
+    HeatFluxTarget[val_marker][val_vertex] = val_heat;
+  }
+
+  /*!
+   * \brief Get the y plus.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the y plus.
+   */
+  inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const final {
+    return YPlus[val_marker][val_vertex];
   }
 
 };

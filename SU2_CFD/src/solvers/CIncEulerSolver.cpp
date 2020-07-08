@@ -30,11 +30,6 @@
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
-#include "../../include/solvers/CFVMFlowSolverBase.inl"
-
-/*--- Explicit instantiation of the parent class of CIncEulerSolver,
- *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
 
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :

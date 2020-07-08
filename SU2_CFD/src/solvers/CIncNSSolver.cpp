@@ -30,6 +30,10 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
+/*--- Explicit instantiation of the parent class of CIncEulerSolver,
+ *    to spread the compilation over two cpp files. ---*/
+template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
+
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
 
