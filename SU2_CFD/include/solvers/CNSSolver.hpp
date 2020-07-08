@@ -40,9 +40,8 @@ private:
   su2double
   *Surface_Buffet_Metric = nullptr, /*!< \brief Integrated separation sensor for each monitoring surface. */
   *Buffet_Metric = nullptr,         /*!< \brief Integrated separation sensor for each boundary. */
-  ***HeatConjugateVar = nullptr,    /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
   **Buffet_Sensor = nullptr,        /*!< \brief Separation sensor for each boundary and vertex. */
-  Total_Buffet_Metric;              /*!< \brief Integrated separation sensor for all the boundaries. */
+  Total_Buffet_Metric = 0.0;        /*!< \brief Integrated separation sensor for all the boundaries. */
 
   /*!
    * \brief A virtual member.
@@ -102,7 +101,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNSSolver(void);
+  CNSSolver() = default;
 
   /*!
    * \overload

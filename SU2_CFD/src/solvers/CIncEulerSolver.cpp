@@ -1,5 +1,5 @@
 /*!
- * \file solution_direct_mean_inc.cpp
+ * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
  * \version 7.0.5 "Blackbird"
@@ -25,24 +25,23 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CIncEulerSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../include/gradients/computeGradientsGreenGauss.hpp"
-#include "../../include/gradients/computeGradientsLeastSquares.hpp"
-#include "../../include/limiters/computeLimiters.hpp"
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
+#include "../../include/solvers/CFVMFlowSolverBase.inl"
 
-CIncEulerSolver::CIncEulerSolver(void) :
-  CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() { }
+/*--- Explicit instantiation of the parent class of CIncEulerSolver,
+ *    to spread the compilation over two cpp files. ---*/
+template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
+
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
   CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() {
 
-  unsigned long iPoint, iVertex;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned long iPoint;
+  unsigned short iVar, iMarker, nLineLets;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -53,8 +52,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  bool fsi     = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FileName();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -98,18 +95,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   }
 
-  /*--- Numerical methods array initialization ---*/
-
-  iPoint_UndLapl = nullptr;
-  jPoint_UndLapl = nullptr;
-  Primitive = nullptr; Primitive_i = nullptr; Primitive_j = nullptr;
-  CharacPrimVar = nullptr;
-  Preconditioner = nullptr;
-
-  /*--- Fluid model pointer initialization ---*/
-
-  FluidModel = nullptr;
-
   /*--- Set the gamma value ---*/
 
   Gamma = config->GetGamma();
@@ -151,59 +136,38 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
-  Residual_RMS  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
-  Residual_Max  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
-  Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]     = 0.0;
-  Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]     = 0.0;
-  Res_Sour      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]     = 0.0;
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual = new su2double[nVar] ();
+  Res_Conv = new su2double[nVar] ();
+  Res_Visc = new su2double[nVar] ();
+  Res_Sour = new su2double[nVar] ();
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-  Solution_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-  Solution_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  Solution = new su2double[nVar] ();
+  Solution_i = new su2double[nVar] ();
+  Solution_j = new su2double[nVar] ();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
 
-  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+  Vector = new su2double[nDim] ();
+  Vector_i = new su2double[nDim] ();
+  Vector_j = new su2double[nDim] ();
 
   /*--- Define some auxiliary vectors related to the primitive solution ---*/
 
-  Primitive   = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar]   = 0.0;
-  Primitive_i = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = 0.0;
-  Primitive_j = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = 0.0;
+  Primitive   = new su2double[nPrimVar] ();
+  Primitive_i = new su2double[nPrimVar] ();
+  Primitive_j = new su2double[nPrimVar] ();
 
-  /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double [nPoint];
-    jPoint_UndLapl = new su2double [nPoint];
-  }
+  /*--- Allocate preconditioning matrix. ---*/
 
   Preconditioner = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar ++)
     Preconditioner[iVar] = new su2double[nVar];
 
-  /*--- Initialize the solution and right-hand side vectors for storing
-   the residuals and updating the solution (always needed even for
-   explicit schemes). ---*/
+  /*--- Allocate base class members. ---*/
 
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  Allocate(*config);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -228,65 +192,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   else {
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-
-  CharacPrimVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-      for (iVar = 0; iVar < nPrimVar; iVar++) {
-        CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
-      }
-    }
-  }
-
-  /*--- Force definition and coefficient arrays for all of the markers ---*/
-
-  CPressure = new su2double* [nMarker];
-  CPressureTarget = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CPressure[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    CPressureTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CPressure[iMarker][iVertex] = 0.0;
-      CPressureTarget[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Store the value of the Total Pressure at the inlet BC ---*/
-
-  Inlet_Ttotal = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Total Temperature at the inlet BC ---*/
-
-  Inlet_Ptotal = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Flow direction at the inlet BC ---*/
-
-  Inlet_FlowDir = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
-      }
-    }
   }
 
   /*--- Init total coefficients ---*/
@@ -325,72 +230,16 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
 
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
-
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    SlidingState[iMarker]      = nullptr;
-    SlidingStateNodes[iMarker] = nullptr;
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = nullptr;
-      }
-
-    }
-  }
-
-  /*--- Only initialize when there is a Marker_Fluid_Load defined
-   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if((config->GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)){
-
-    InitVertexTractionContainer(geometry, config);
-
-    if (config->GetDiscrete_Adjoint())
-      InitVertexTractionAdjointContainer(geometry, config);
-
-  }
-
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi || multizone){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
-  }
-
   /*--- Define solver parameters needed for execution of destructor ---*/
 
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
-  else space_centered = false;
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-  else euler_implicit = false;
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-  else least_squares = false;
+  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
@@ -426,8 +275,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 CIncEulerSolver::~CIncEulerSolver(void) {
 
-  unsigned short iMarker, iVar;
-  unsigned long iVertex;
+  unsigned short iVar;
 
   delete [] Primitive;
   delete [] Primitive_i;
@@ -439,99 +287,7 @@ CIncEulerSolver::~CIncEulerSolver(void) {
     delete [] Preconditioner;
   }
 
-  if (CPressure != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] CPressure[iMarker];
-    delete [] CPressure;
-  }
-
-  if (CPressureTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] CPressureTarget[iMarker];
-    delete [] CPressureTarget;
-  }
-
-  if (CharacPrimVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex<nVertex[iMarker]; iVertex++)
-        delete [] CharacPrimVar[iMarker][iVertex];
-      delete [] CharacPrimVar[iMarker];
-    }
-    delete [] CharacPrimVar;
-  }
-
-  if (SlidingState != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != nullptr ) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != nullptr ){
-            for (iVar = 0; iVar < nPrimVar+1; iVar++)
-              delete [] SlidingState[iMarker][iVertex][iVar];
-            delete [] SlidingState[iMarker][iVertex];
-          }
-        delete [] SlidingState[iMarker];
-      }
-    }
-    delete [] SlidingState;
-  }
-
-  if ( SlidingStateNodes != nullptr ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != nullptr)
-            delete [] SlidingStateNodes[iMarker];
-    }
-    delete [] SlidingStateNodes;
-  }
-
-  if (Inlet_Ttotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != nullptr)
-        delete [] Inlet_Ttotal[iMarker];
-    delete [] Inlet_Ttotal;
-  }
-
-  if (Inlet_Ptotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != nullptr)
-        delete [] Inlet_Ptotal[iMarker];
-    delete [] Inlet_Ptotal;
-  }
-
-  if (Inlet_FlowDir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          delete [] Inlet_FlowDir[iMarker][iVertex];
-        delete [] Inlet_FlowDir[iMarker];
-      }
-    }
-    delete [] Inlet_FlowDir;
-  }
-
-  if (HeatFlux != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] HeatFlux[iMarker];
-    }
-    delete [] HeatFlux;
-  }
-
-  if (HeatFluxTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] HeatFluxTarget[iMarker];
-    }
-    delete [] HeatFluxTarget;
-  }
-
-  if (YPlus != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] YPlus[iMarker];
-    }
-    delete [] YPlus;
-  }
-
   delete FluidModel;
-
-  delete nodes;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -2565,47 +2321,6 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, C
 
   }
 
-}
-
-void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
-
-  const auto& primitives = nodes->GetPrimitive();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
-                             *config, primitives, 0, nPrimVarGrad, gradient);
-}
-
-void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
-
-  /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  bool weighted;
-
-  if (reconstruction)
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  const auto& primitives = nodes->GetPrimitive();
-  auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
-
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
-}
-
-void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) {
-
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
-  const auto& primitives = nodes->GetPrimitive();
-  const auto& gradient = nodes->GetGradient_Reconstruction();
-  auto& primMin = nodes->GetSolution_Min();
-  auto& primMax = nodes->GetSolution_Max();
-  auto& limiter = nodes->GetLimiter_Primitive();
-
-  computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2,
-            *geometry, *config, 0, nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
 }
 
 void CIncEulerSolver::SetInletAtVertex(su2double *val_inlet,

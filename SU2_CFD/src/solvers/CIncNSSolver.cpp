@@ -25,17 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CIncNSSolver.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/solvers/CFVMFlowSolverBase.inl"
 
-CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() { }
 
-CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
+CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
 
-  unsigned long iPoint, iVertex;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned long iPoint;
+  unsigned short iVar, iMarker, nLineLets;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -114,10 +113,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
-  /*--- Fluid model intialization. ---*/
-
-  FluidModel = nullptr;
-
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
 
@@ -131,59 +126,40 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   SetVerificationSolution(nDim, nVar, config);
 
-  /*--- Define some auxiliar vector related with the residual ---*/
+  /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-  Residual_RMS  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-  Residual_Max  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
-  Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
-  Res_Sour      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual = new su2double[nVar] ();
+  Res_Conv = new su2double[nVar] ();
+  Res_Visc = new su2double[nVar] ();
+  Res_Sour = new su2double[nVar] ();
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-  Solution_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-  Solution_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  Solution = new su2double[nVar] ();
+  Solution_i = new su2double[nVar] ();
+  Solution_j = new su2double[nVar] ();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
 
-  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+  Vector = new su2double[nDim] ();
+  Vector_i = new su2double[nDim] ();
+  Vector_j = new su2double[nDim] ();
 
   /*--- Define some auxiliary vectors related to the primitive solution ---*/
 
-  Primitive   = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar]   = 0.0;
-  Primitive_i = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = 0.0;
-  Primitive_j = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = 0.0;
+  Primitive   = new su2double[nPrimVar] ();
+  Primitive_i = new su2double[nPrimVar] ();
+  Primitive_j = new su2double[nPrimVar] ();
 
-  /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double [nPoint];
-    jPoint_UndLapl = new su2double [nPoint];
-  }
+  /*--- Allocate preconditioning matrix. ---*/
 
   Preconditioner = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar ++)
     Preconditioner[iVar] = new su2double[nVar];
 
-  /*--- Initialize the solution and right hand side vectors for storing
-   the residuals and updating the solution (always needed even for
-   explicit schemes). ---*/
+  /*--- Allocate base class members. ---*/
 
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  Allocate(*config);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -205,128 +181,10 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
 
   }
-
   else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
   }
-
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-
-  CharacPrimVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-      for (iVar = 0; iVar < nPrimVar; iVar++) {
-        CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
-      }
-    }
-  }
-
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 4;
-
-  HeatConjugateVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar];
-      for (iVar = 1; iVar < nHeatConjugateVar ; iVar++) {
-        HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
-      }
-      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
-
-  /*--- Inviscid force definition and coefficient in all the markers ---*/
-
-  CPressure = new su2double* [nMarker];
-  CPressureTarget = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CPressure[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    CPressureTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CPressure[iMarker][iVertex] = 0.0;
-      CPressureTarget[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Heat flux in all the markers ---*/
-
-  HeatFlux = new su2double* [nMarker];
-  HeatFluxTarget = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    HeatFluxTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      HeatFlux[iMarker][iVertex] = 0.0;
-      HeatFluxTarget[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Y plus in all the markers ---*/
-
-  YPlus = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    YPlus[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      YPlus[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Skin friction in all the markers ---*/
-
-  CSkinFriction = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        CSkinFriction[iMarker][iDim][iVertex] = 0.0;
-      }
-    }
-  }
-
-  /*--- Store the value of the Total Pressure at the inlet BC ---*/
-
-  Inlet_Ttotal = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Total Temperature at the inlet BC ---*/
-
-  Inlet_Ptotal = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Flow direction at the inlet BC ---*/
-
-  Inlet_FlowDir = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
-      }
-    }
-  }
-
-  /*--- Init total coefficients ---*/
-
-  Total_MaxHeat  = 0.0;  Total_Heat         = 0.0;  Total_ComboObj       = 0.0;
-  Total_CpDiff   = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc = 0.0;
 
   /*--- Read farfield conditions from config ---*/
 
@@ -363,73 +221,16 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       break;
   }
 
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
-
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-
-    SlidingState[iMarker]      = nullptr;
-    SlidingStateNodes[iMarker] = nullptr;
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = nullptr;
-      }
-
-    }
-  }
-
-  /*--- Only initialize when there is a Marker_Fluid_Load defined
-   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if((config->GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)){
-
-    InitVertexTractionContainer(geometry, config);
-
-    if (config->GetDiscrete_Adjoint())
-      InitVertexTractionAdjointContainer(geometry, config);
-
-  }
-
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (config->GetMultizone_Residual()){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
-  }
-
   /*--- Define solver parameters needed for execution of destructor ---*/
 
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
-  else space_centered = false;
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-  else euler_implicit = false;
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-  else least_squares = false;
+  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
@@ -460,34 +261,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "INC.FLOW";
-
-}
-
-CIncNSSolver::~CIncNSSolver(void) {
-
-  unsigned short iMarker, iDim;
-
-  unsigned long iVertex;
-
-  if (CSkinFriction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        delete [] CSkinFriction[iMarker][iDim];
-      }
-      delete [] CSkinFriction[iMarker];
-    }
-    delete [] CSkinFriction;
-  }
-
-  if (HeatConjugateVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        delete [] HeatConjugateVar[iMarker][iVertex];
-      }
-      delete [] HeatConjugateVar[iMarker];
-    }
-    delete [] HeatConjugateVar;
-  }
 
 }
 

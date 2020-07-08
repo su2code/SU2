@@ -38,51 +38,19 @@
  */
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
-
   su2double
-  **CPressure,        /*!< \brief Pressure coefficient for each boundary and vertex. */
-  **CPressureTarget,  /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  **HeatFlux,         /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **HeatFluxTarget,   /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **YPlus,            /*!< \brief Yplus for each boundary and vertex. */
-  ***CharacPrimVar,   /*!< \brief Value of the characteristic variables at each boundary. */
-  *ForceInviscid,     /*!< \brief Inviscid force for each boundary. */
-  *MomentInviscid,    /*!< \brief Inviscid moment for each boundary. */
-  *ForceMomentum,     /*!< \brief Inviscid force for each boundary. */
-  *MomentMomentum,    /*!< \brief Inviscid moment for each boundary. */
-  InverseDesign;      /*!< \brief Inverse design functional for each boundary. */
-  su2double
-  **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
-  **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir;  /*!< \brief Value of the Flow Direction. */
+  *Primitive = nullptr,   /*!< \brief Auxiliary nPrimVar vector. */
+  *Primitive_i = nullptr, /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  *Primitive_j = nullptr; /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
-  su2double
-  Total_ComboObj,        /*!< \brief Total 'combo' objective for all monitored boundaries */
-  Total_Heat,            /*!< \brief Total heat load for all the boundaries. */
-  Total_MaxHeat,         /*!< \brief Maximum heat flux on all boundaries. */
-  Total_CpDiff,          /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_HeatFluxDiff,    /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_Custom_ObjFunc,  /*!< \brief Total custom objective function for all the boundaries. */
-  Total_MassFlowRate;    /*!< \brief Total Mass Flow Rate on monitored boundaries. */
-
-  su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
-  *SecondaryVar_j;            /*!< \brief Auxiliary vector for storing the solution at point j. */
-  su2double *PrimVar_i,       /*!< \brief Auxiliary vector for storing the solution at point i. */
-  *PrimVar_j;                 /*!< \brief Auxiliary vector for storing the solution at point j. */
-
-  su2double *Primitive,  /*!< \brief Auxiliary nPrimVar vector. */
-  *Primitive_i,          /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Primitive_j;          /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
-  CFluidModel *FluidModel;    /*!< \brief fluid model used in the solver */
-  su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
+  CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
+  su2double **Preconditioner = nullptr; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    */
-  CIncEulerSolver(void);
+  CIncEulerSolver() = default;
 
   /*!
    * \overload
@@ -228,35 +196,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) final;
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) final;
-
-  /*!
-   * \brief Compute the limiter of the primitive variables.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.

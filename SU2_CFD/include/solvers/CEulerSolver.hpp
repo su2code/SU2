@@ -45,15 +45,9 @@ protected:
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
 
   su2double
-  AllBound_CEquivArea_Inv = 0.0,    /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  *CEquivArea_Inv = nullptr;        /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-
-  su2double
+  AllBound_CEquivArea_Inv = 0.0, /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
   *CEquivArea_Mnt = nullptr,     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  **CPressureTarget = nullptr,   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  **HeatFluxTarget = nullptr,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  ***CharacPrimVar = nullptr,    /*!< \brief Value of the characteristic variables at each boundary. */
-  ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
+  *CEquivArea_Inv = nullptr;     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
 
   su2double
   *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
@@ -72,14 +66,11 @@ protected:
   unsigned long
   **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
   su2double
+  ***DonorPrimVar = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
   **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
-  **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
-  **Inlet_Ptotal = nullptr,      /*!< \brief Value of the Total P. */
-  **Inlet_Ttotal = nullptr,      /*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir = nullptr;    /*!< \brief Value of the Flow Direction. */
+  **ActDisk_DeltaT = nullptr;    /*!< \brief Value of the Delta T. */
 
   su2double
-  Total_ComboObj = 0.0,       /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_SolidCD = 0.0,        /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev = 0.0,        /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
@@ -95,15 +86,11 @@ protected:
   Total_ByPassProp_Eff = 0.0, /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Adiab_Eff = 0.0,      /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Poly_Eff = 0.0,       /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_Custom_ObjFunc = 0.0, /*!< \brief Total custom objective function for all the boundaries. */
   Total_CMx_Prev = 0.0,       /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CMy_Prev = 0.0,       /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CMz_Prev = 0.0,       /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_AeroCD = 0.0,         /*!< \brief Total aero drag coefficient for all the boundaries. */
-  Total_CEquivArea = 0.0,     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_CpDiff = 0.0,         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_HeatFluxDiff = 0.0,   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
+  Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 
   su2double AoA_Prev,  /*!< \brief Old value of the angle of attack (monitored). */
   AoA_inc;
@@ -267,14 +254,11 @@ protected:
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                                CConfig *config, bool Output);
 
-protected:
-
 public:
-
   /*!
    * \brief Constructor of the class.
    */
-  CEulerSolver(void);
+  CEulerSolver() = default;
 
   /*!
    * \overload Main constructor of this class.
@@ -434,35 +418,6 @@ public:
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
                      bool Output) override;
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) final;
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) final;
-
-  /*!
-   * \brief Compute the limiter of the primitive variables.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.

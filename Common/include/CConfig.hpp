@@ -1370,6 +1370,7 @@ public:
    * \return Reference origin (in cartesians coordinates) for moment computation.
    */
   su2double *GetRefOriginMoment(unsigned short val_marker) const {
+    /// TODO: Return std::array by value.
     if(val_marker < nMarker_Monitoring) {
       RefOriginMoment[0] = RefOriginMoment_X[val_marker];
       RefOriginMoment[1] = RefOriginMoment_Y[val_marker];

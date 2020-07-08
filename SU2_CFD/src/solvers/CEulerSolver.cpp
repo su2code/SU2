@@ -25,20 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../include/gradients/computeGradientsGreenGauss.hpp"
-#include "../../include/gradients/computeGradientsLeastSquares.hpp"
-#include "../../include/limiters/computeLimiters.hpp"
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 
-CEulerSolver::CEulerSolver(void) :
-  CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>() { }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -58,7 +52,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   unsigned long iPoint, counter_local = 0, counter_global = 0;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned short iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -150,83 +144,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   SetVerificationSolution(nDim, nVar, config);
 
-  /*--- Define some auxiliar vector related with the residual ---*/
+  /*--- Allocate base class members. ---*/
 
-  Residual_RMS  = new su2double[nVar]();
-  Residual_Max  = new su2double[nVar]();
+  Allocate(*config);
 
-  /*--- Define some structures for locating max residuals ---*/
+  /*--- MPI + OpenMP initialization. ---*/
 
-  Point_Max = new unsigned long[nVar]();
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim]();
-  }
-
-  /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double [nPoint];
-    jPoint_UndLapl = new su2double [nPoint];
-  }
-
-  /*--- Initialize the solution and right hand side vectors for storing
-   the residuals and updating the solution (always needed even for
-   explicit schemes). ---*/
-
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-#ifdef HAVE_OMP
-  /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
-   *    reducer strategy. Where one loop is performed over edges followed by a point loop to
-   *    sum the fluxes for each cell and set the diagonal of the system matrix. ---*/
-
-  su2double parallelEff = 1.0;
-  const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
-
-  /*--- The decision to use the strategy is local to each rank. ---*/
-  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
-
-  /*--- When using the reducer force a single color to reduce the color loop overhead. ---*/
-  if (ReducerStrategy && (coloring.getOuterSize()>1))
-    geometry->SetNaturalEdgeColoring();
-
-  if (!coloring.empty()) {
-    /*--- If the reducer strategy is used we are not constrained by group
-     *    size as we have no other edge loops in the Euler/NS solvers. ---*/
-    auto groupSize = ReducerStrategy? 1ul : geometry->GetEdgeColorGroupSize();
-    auto nColor = coloring.getOuterSize();
-    EdgeColoring.reserve(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor)
-      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
-  }
-
-  /*--- If the reducer strategy is not being forced (by EDGE_COLORING_GROUP_SIZE=0) print some messages. ---*/
-  if (config->GetEdgeColoringGroupSize() != 1<<30) {
-
-    su2double minEff = 1.0;
-    SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-
-    int tmp = ReducerStrategy, numRanksUsingReducer = 0;
-    SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (minEff < COLORING_EFF_THRESH) {
-      cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
-           << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
-           << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
-           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
-    }
-  }
-
-  if (ReducerStrategy)
-    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-
-  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
-#else
-  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
-#endif
+  HybridParallelInitialization(*config, *geometry);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -242,9 +166,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       if (rank == MASTER_NODE)
         cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
-
   }
-
   else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
@@ -269,10 +191,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     }
   };
 
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-
-  Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
-
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
    used for IO with a donor cell ---*/
 
@@ -293,56 +211,30 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Alloc2D(nMarker, nVertex, ActDisk_DeltaT);
 
-  /*--- Store the value of the Total Pressure at the inlet BC ---*/
-
-  Alloc2D(nMarker, nVertex, Inlet_Ttotal);
-
-  /*--- Store the value of the Total Temperature at the inlet BC ---*/
-
-  Alloc2D(nMarker, nVertex, Inlet_Ptotal);
-
-  /*--- Store the value of the Flow direction at the inlet BC ---*/
-
-  Alloc3D(nMarker, nVertex, nDim, Inlet_FlowDir);
-
-  /*--- Force definition and coefficient arrays for all of the markers ---*/
-
-  Alloc2D(nMarker, nVertex, CPressure);
-  Alloc2D(nMarker, nVertex, CPressureTarget);
-
-  /*--- Non dimensional aerodynamic coefficients ---*/
-
-  InvCoeff.allocate(nMarker);
-  MntCoeff.allocate(nMarker);
-  SurfaceInvCoeff.allocate(config->GetnMarker_Monitoring());
-  SurfaceMntCoeff.allocate(config->GetnMarker_Monitoring());
-  SurfaceCoeff.allocate(config->GetnMarker_Monitoring());
-
   /*--- Supersonic coefficients ---*/
 
-  CEquivArea_Inv   = new su2double[nMarker];
-  CNearFieldOF_Inv = new su2double[nMarker];
+  CEquivArea_Inv = new su2double[nMarker];
 
   /*--- Engine simulation ---*/
 
-  Inflow_MassFlow     = new su2double[nMarker];
-  Inflow_Pressure     = new su2double[nMarker];
-  Inflow_Mach         = new su2double[nMarker];
-  Inflow_Area         = new su2double[nMarker];
+  Inflow_MassFlow = new su2double[nMarker];
+  Inflow_Pressure = new su2double[nMarker];
+  Inflow_Mach = new su2double[nMarker];
+  Inflow_Area = new su2double[nMarker];
 
-  Exhaust_MassFlow    = new su2double[nMarker];
-  Exhaust_Pressure    = new su2double[nMarker];
   Exhaust_Temperature = new su2double[nMarker];
-  Exhaust_Area        = new su2double[nMarker];
+  Exhaust_MassFlow = new su2double[nMarker];
+  Exhaust_Pressure = new su2double[nMarker];
+  Exhaust_Area = new su2double[nMarker];
 
   /*--- Read farfield conditions from config ---*/
 
-  Density_Inf     = config->GetDensity_FreeStreamND();
-  Pressure_Inf    = config->GetPressure_FreeStreamND();
-  Velocity_Inf    = config->GetVelocity_FreeStreamND();
-  Energy_Inf      = config->GetEnergy_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
-  Mach_Inf        = config->GetMach();
+  Velocity_Inf = config->GetVelocity_FreeStreamND();
+  Pressure_Inf = config->GetPressure_FreeStreamND();
+  Density_Inf = config->GetDensity_FreeStreamND();
+  Energy_Inf = config->GetEnergy_FreeStreamND();
+  Mach_Inf = config->GetMach();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
 
@@ -380,34 +272,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     Exhaust_Temperature[iMarker] = Temperature_Inf;
     Exhaust_Pressure[iMarker]    = Pressure_Inf;
     Exhaust_Area[iMarker]        = 0.0;
-  }
-
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
-
-  SlidingState       = new su2double*** [nMarker]();
-  SlidingStateNodes  = new int*         [nMarker]();
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)]();
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)]();
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++)
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1]();
-    }
-  }
-
-  /*--- Only initialize when there is a Marker_Fluid_Load defined
-   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if((config->GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)){
-
-    InitVertexTractionContainer(geometry, config);
-
-    if (config->GetDiscrete_Adjoint())
-      InitVertexTractionAdjointContainer(geometry, config);
-
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -462,20 +326,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Warning. The original solution contains " << counter_global << " points that are not physical." << endl;
   }
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (config->GetMultizone_Residual()){
-    Residual_BGS     = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar] = 1.0;
-    Residual_Max_BGS = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar] = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
-  }
-
   /*--- Define solver parameters needed for execution of destructor ---*/
 
   space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -520,14 +370,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
 CEulerSolver::~CEulerSolver(void) {
 
-  unsigned short iVar, iMarker, iSpan;
-
+  unsigned short iMarker, iSpan;
   unsigned long iVertex;
 
   /*--- Array deallocation ---*/
 
   delete [] CEquivArea_Inv;
-  delete [] CNearFieldOF_Inv;
 
   delete [] Inflow_MassFlow;
   delete [] Exhaust_MassFlow;
@@ -538,50 +386,6 @@ CEulerSolver::~CEulerSolver(void) {
 
   delete [] Exhaust_Pressure;
   delete [] Exhaust_Temperature;
-
-  if (CPressure != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] CPressure[iMarker];
-    delete [] CPressure;
-  }
-
-  if (CPressureTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] CPressureTarget[iMarker];
-    delete [] CPressureTarget;
-  }
-
-  if (CharacPrimVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] CharacPrimVar[iMarker][iVertex];
-      delete [] CharacPrimVar[iMarker];
-    }
-    delete [] CharacPrimVar;
-  }
-
-  if (SlidingState != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != nullptr ) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != nullptr ){
-            for (iVar = 0; iVar < nPrimVar+1; iVar++)
-              delete [] SlidingState[iMarker][iVertex][iVar];
-            delete [] SlidingState[iMarker][iVertex];
-          }
-        delete [] SlidingState[iMarker];
-      }
-    }
-    delete [] SlidingState;
-  }
-
-  if ( SlidingStateNodes != nullptr ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != nullptr)
-            delete [] SlidingStateNodes[iMarker];
-    }
-    delete [] SlidingStateNodes;
-  }
 
   if (DonorPrimVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -608,52 +412,6 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ActDisk_DeltaT[iMarker];
     delete [] ActDisk_DeltaT;
-  }
-
-  if (Inlet_Ttotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != nullptr)
-        delete [] Inlet_Ttotal[iMarker];
-    delete [] Inlet_Ttotal;
-  }
-
-  if (Inlet_Ptotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != nullptr)
-        delete [] Inlet_Ptotal[iMarker];
-    delete [] Inlet_Ptotal;
-  }
-
-  if (Inlet_FlowDir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          delete [] Inlet_FlowDir[iMarker][iVertex];
-        delete [] Inlet_FlowDir[iMarker];
-      }
-    }
-    delete [] Inlet_FlowDir;
-  }
-
-  if (HeatFlux != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] HeatFlux[iMarker];
-    }
-    delete [] HeatFlux;
-  }
-
-  if (HeatFluxTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] HeatFluxTarget[iMarker];
-    }
-    delete [] HeatFluxTarget;
-  }
-
-  if (YPlus != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] YPlus[iMarker];
-    }
-    delete [] YPlus;
   }
 
   for(auto& model : FluidModel) delete model;
@@ -897,7 +655,6 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CkOutflow2;
   }
 
-  delete nodes;
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
@@ -4050,47 +3807,6 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
 
   }
 
-}
-
-void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
-
-  const auto& primitives = nodes->GetPrimitive();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
-                             *config, primitives, 0, nPrimVarGrad, gradient);
-}
-
-void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
-
-  /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  bool weighted;
-
-  if (reconstruction)
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  const auto& primitives = nodes->GetPrimitive();
-  auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
-
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
-}
-
-void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) {
-
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
-  const auto& primitives = nodes->GetPrimitive();
-  const auto& gradient = nodes->GetGradient_Reconstruction();
-  auto& primMin = nodes->GetSolution_Min();
-  auto& primMax = nodes->GetSolution_Max();
-  auto& limiter = nodes->GetLimiter_Primitive();
-
-  computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2,
-            *geometry, *config, 0, nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
 }
 
 void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,

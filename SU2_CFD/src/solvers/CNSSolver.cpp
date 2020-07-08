@@ -29,30 +29,17 @@
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CFVMFlowSolverBase.inl"
 
+/*--- Explicit instantiation of the parent class of CEulerSolver,
+ *    to spread the compilation over two cpp files. ---*/
+template class CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>;
 
-CNSSolver::CNSSolver(void) : CEulerSolver() { }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
            CEulerSolver(geometry, config, iMesh, true) {
 
   /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
-
-  unsigned short iMarker, iDim;
-  unsigned long iVertex;
-
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 4;
-
-  HeatConjugateVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double* [nVertex[iMarker]];
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar]();
-      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
 
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
@@ -62,41 +49,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       X[i] = new su2double [N[i]] ();
   };
 
-  /*--- Heat flux in all the markers ---*/
-
-  Alloc2D(nMarker, nVertex, HeatFlux);
-  Alloc2D(nMarker, nVertex, HeatFluxTarget);
-
-  /*--- Y plus in all the markers ---*/
-
-  Alloc2D(nMarker, nVertex, YPlus);
-
-  /*--- Skin friction in all the markers ---*/
-
-  CSkinFriction = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[nVertex[iMarker]] ();
-    }
-  }
-
-  /*--- Non dimensional aerodynamic coefficients ---*/
-
-  ViscCoeff.allocate(nMarker);
-  SurfaceViscCoeff.allocate(config->GetnMarker_Monitoring());
-
-  /*--- Heat flux and buffet coefficients ---*/
-
-  HF_Visc = new su2double[nMarker];
-  MaxHF_Visc = new su2double[nMarker];
-
-  Surface_HF_Visc = new su2double[config->GetnMarker_Monitoring()];
-  Surface_MaxHF_Visc = new su2double[config->GetnMarker_Monitoring()];
-
   /*--- Buffet sensor in all the markers and coefficients ---*/
 
-  if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+  if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
 
     Alloc2D(nMarker, nVertex, Buffet_Sensor);
     Buffet_Metric = new su2double[nMarker];
@@ -126,37 +81,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 CNSSolver::~CNSSolver(void) {
 
-  unsigned short iMarker, iDim;
-
-  unsigned long iVertex;
+  unsigned short iMarker;
 
   delete [] Buffet_Metric;
-  delete [] HF_Visc;
-  delete [] MaxHF_Visc;
-
-  delete [] Surface_HF_Visc;
-  delete [] Surface_MaxHF_Visc;
   delete [] Surface_Buffet_Metric;
-
-  if (CSkinFriction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        delete [] CSkinFriction[iMarker][iDim];
-      }
-      delete [] CSkinFriction[iMarker];
-    }
-    delete [] CSkinFriction;
-  }
-
-  if (HeatConjugateVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        delete [] HeatConjugateVar[iMarker][iVertex];
-      }
-      delete [] HeatConjugateVar[iMarker];
-    }
-    delete [] HeatConjugateVar;
-  }
 
   if (Buffet_Sensor != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++){

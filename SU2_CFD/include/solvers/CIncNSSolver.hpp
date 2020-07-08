@@ -36,16 +36,11 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
-private:
-  su2double
-  ***HeatConjugateVar, /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
-  ***CSkinFriction;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
-
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CIncNSSolver(void);
+  CIncNSSolver() = default;
 
   /*!
    * \overload
@@ -53,11 +48,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CIncNSSolver(void) override;
 
   /*!
    * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
