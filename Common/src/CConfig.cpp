@@ -910,7 +910,6 @@ void CConfig::SetPointersNull(void) {
 
   Aeroelastic_plunge  = nullptr;
   Aeroelastic_pitch   = nullptr;
-  MassFrac_FreeStream = nullptr;
   Velocity_FreeStream = nullptr;
   Inc_Velocity_Init   = nullptr;
 
@@ -1159,8 +1158,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
-  /* DESCRIPTION: Specify if Mutation++ library is used */
-  addBoolOption("MUTATIONPP", mutationpp, true);
+  ///* DESCRIPTION: Specify if Mutation++ library is used */
+  //addBoolOption("MUTATIONPP", mutationpp, true);//Cat:delete
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
   /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
   addStringOption("GAS_MODEL", GasModel, string("N2"));
@@ -4353,7 +4352,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Ref_Temperature    = new su2double[nSpecies];
       nElStates          = new unsigned short[nSpecies];
 
-      MassFrac_FreeStream = new su2double[nSpecies];
       MassFrac_FreeStream[0] = 1.0;
 
       /*--- Assign gas properties ---*/
@@ -4425,7 +4423,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Omega00.resize(nSpecies,nSpecies,4,0.0);
       Omega11.resize(nSpecies,nSpecies,4,0.0);
 
-      MassFrac_FreeStream = new su2double[nSpecies];
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
 
@@ -4613,7 +4610,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Wall_Catalycity[4] = 0.05;
 
       // Free stream mass fractions
-      MassFrac_FreeStream = new su2double[nSpecies];
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
 
@@ -6155,14 +6151,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(!mutationpp){  
+        if(Kind_FluidModel == USER_DEFINED){  
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }
         break;
         case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(!mutationpp){  
+        if(Kind_FluidModel == USER_DEFINED){  
           if ((GasModel != "N2") && (GasModel != "AIR5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }

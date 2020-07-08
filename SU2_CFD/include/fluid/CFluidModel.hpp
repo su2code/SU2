@@ -297,4 +297,18 @@ class CFluidModel {
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
+  /*!
+   * \brief Get gas constant.
+   */
+  virtual su2double GetGasConstant(const su2double *val_massfrac){}
+
+  /*!
+   * \brief Set mixture thermodynamic state.
+   * \param[in] P    - Pressure.
+   * \param[in] T    - Translational/Rotational temperature.
+   * \param[in] Tve  - Vibrational/Electronic temperature.
+   */
+  virtual void SetTDStatePTTv(su2double val_pressure, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve){}
+
 };

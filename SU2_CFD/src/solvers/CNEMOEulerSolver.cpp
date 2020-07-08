@@ -30,6 +30,9 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
+#include "../../include/fluid/CMutationTCLib.hpp"
+#include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../include/fluid/CNEMOGas.hpp" //cat: delete
 
 CNEMOEulerSolver::CNEMOEulerSolver(void) : CSolver() {
 
@@ -450,13 +453,13 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Total_IDR       = 0.0;    Total_IDC          = 0.0;
 
   /*--- Read farfield conditions from the config file ---*/
-  Density_Inf        = config->GetDensity_FreeStreamND();
-  Pressure_Inf       = config->GetPressure_FreeStreamND();
-  Velocity_Inf       = config->GetVelocity_FreeStreamND();
-  Temperature_Inf    = config->GetTemperature_FreeStreamND();
-  Mach_Inf           = config->GetMach();
-  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
-  MassFrac_Inf       = config->GetMassFrac_FreeStream();
+  Density_Inf         = config->GetDensity_FreeStreamND();
+  Pressure_Inf        = config->GetPressure_FreeStreamND();
+  Velocity_Inf        = config->GetVelocity_FreeStreamND();
+  Temperature_Inf     = config->GetTemperature_FreeStreamND();
+  Mach_Inf            = config->GetMach();
+  Temperature_ve_Inf  = config->GetTemperature_ve_FreeStream();
+  MassFrac_Inf        = config->GetMassFrac_FreeStream();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(direct_diff) {
@@ -851,49 +854,42 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
 }
-/*
-void CNEMOEulerSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
 
-  const auto& solution = nodes->GetSolution();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
-
-  computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nVar, gradient);
-}
-
-void CNEMOEulerSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
-
-  /*--- Set a flag for unweighted or weighted least-squares. ---*/
-/*  bool weighted;
-
-  if (reconstruction)
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  const auto& solution = nodes->GetSolution();
-  auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
-
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
-
-  computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, solution, 0, nVar, gradient, rmatrix);
-}
-
-void CNEMOEulerSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
-
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
-  const auto& solution = nodes->GetSolution();
-  const auto& gradient = nodes->GetGradient_Reconstruction();
-  auto& solMin  = nodes->GetSolution_Min();
-  auto& solMax  = nodes->GetSolution_Max();
-  auto& limiter = nodes->GetLimiter();
-
-  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
-                  *geometry, *config, 0, nVar, solution, gradient, solMin, solMax, limiter);
-}*/
-
+//cat: new CNEMOEulerSolver::Preprocessing
+//void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container,
+//                                     CConfig *config, unsigned short iMesh,
+//                                     unsigned short iRKStep,
+//                                     unsigned short RunTime_EqSystem, bool Output) {
+//  
+//  bool muscl            = config->GetMUSCL_Flow();
+//  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+//  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+//  
+//  /*--- Common preprocessing steps. ---*/
+//
+//  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+//
+//  /*--- Upwind second order reconstruction ---*/
+//
+//  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+//
+//    /*--- Gradient computation for MUSCL reconstruction. ---*/
+//
+//    switch (config->GetKind_Gradient_Method_Recon()) {
+//      case GREEN_GAUSS:
+//        SetSolution_Gradient_GG(geometry, config, true); break;
+//      case LEAST_SQUARES:
+//      case WEIGHTED_LEAST_SQUARES:
+//        SetSolution_Gradient_LS(geometry, config, true); break;
+//      default: break;
+//    }
+//
+//    /*--- Limiter computation ---*/
+//
+//    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
+//      SetSolution_Limiter(geometry, config);
+//  }
+//}
 
 void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
@@ -2520,173 +2516,14 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
   SetResidual_RMS(geometry, config);
 }
 
-//void CNEMOEulerSolver::SetSolution_Limiter(CGeometry *geometry,
-//                                           CConfig *config) {
-//  
-//  unsigned long iEdge, iPoint, jPoint;
-//  unsigned short iVar, iDim;
-//  double dave, LimK, eps2, dm, dp, du, limiter;
-//  double *Solution_i, *Solution_j;
-//  double *Coord_i, *Coord_j;
-//  double **Gradient_i, **Gradient_j;
-//  
-//  
-//  /*--- Initialize solution max and solution min in the entire domain --*/
-//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      nodes->SetSolution_Max(iPoint, iVar, -EPS);
-//      nodes->SetSolution_Min(iPoint, iVar, EPS);
-//      nodes->SetLimiter(iPoint, iVar, 2.0);
-//    }
-//  }
-//  
-//  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-//  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-//    
-//    /*--- Point identification, Normal vector and area ---*/
-//    iPoint = geometry->edges->GetNode(0);
-//    jPoint = geometry->edges->GetNode(1);
-//    
-//    /*--- Get the conserved variables ---*/
-//    Solution_i = nodes->GetSolution(iPoint);
-//    Solution_j = nodes->GetSolution(jPoint);
-//    
-//    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      du = (Solution_j[iVar] - Solution_i[iVar]);
-//      nodes->SetSolution_Min(iPoint,iVar, min(nodes->GetSolution_Min(iPoint,iVar), du));
-//      nodes->SetSolution_Max(iPoint,iVar, max(nodes->GetSolution_Max(iPoint,iVar), du));
-//      nodes->SetSolution_Min(jPoint,iVar, min(nodes->GetSolution_Min(jPoint,iVar), -du));
-//      nodes->SetSolution_Max(jPoint,iVar, max(nodes->GetSolution_Max(jPoint,iVar), -du));
-//    }
-//  }
-//  
-//
-//  switch (config->GetKind_SlopeLimit()) {
-//      
-//      /*--- Minmod (Roe 1984) limiter ---*/
-//    //case MINMOD:
-//    //  
-//    //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-//    //    
-//    //    iPoint     = geometry->edges->GetNode(0);
-//    //    jPoint     = geometry->edges->GetNode(1);
-//    //    Coord_i    = geometry->nodes->GetCoord();
-//    //    Coord_j    = geometry->node[jPoint]->GetCoord();
-//    //    Solution_i = nodes->GetSolution();
-//    //    Solution_j = node[jPoint]->GetSolution();
-//    //    Gradient_i = nodes->GetGradient();
-//    //    Gradient_j = node[jPoint]->GetGradient();
-////
-//    //    
-//    //    for (iVar = 0; iVar < nVar; iVar++) {
-//    //      
-//    //      /*--- Calculate the interface left gradient, delta- (dm) ---*/
-//    //      dm = 0.0;
-//    //      for (iDim = 0; iDim < nDim; iDim++)
-//    //        dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-//    //      
-//    //      /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-//    //      if ( dm > 0.0 ) dp = nodes->GetSolution_Max(iVar);
-//    //      else            dp = nodes->GetSolution_Min(iVar);
-//    //      
-//    //      limiter = max(0.0, min(1.0,dp/dm));
-//    //      
-//    //      if (limiter < nodes->GetLimiter(iVar))
-//    //        if (geometry->nodes->GetDomain())
-//    //          nodes->SetLimiter(iVar, limiter);
-//    //      
-//    //      /*-- Repeat for point j on the edge ---*/
-//    //      dm = 0.0;
-//    //      for (iDim = 0; iDim < nDim; iDim++)
-//    //        dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-//    //      
-//    //      if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
-//    //      else dp = node[jPoint]->GetSolution_Min(iVar);
-//    //      
-//    //      limiter = max(0.0, min(1.0,dp/dm));
-//    //      
-//    //      if (limiter < node[jPoint]->GetLimiter(iVar))
-//    //        if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter(iVar, limiter);
-//    //    }
-//    //  }
-//    //  break;
-//      
-//      /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
-//    case VENKATAKRISHNAN:
-//      
-//      /*-- Get limiter parameters from the configuration file ---*/
-//      dave = config->GetRefElemLength();
-//      LimK = config->GetVenkat_LimiterCoeff();
-//      eps2 = pow((LimK*dave), 3.0);
-//      
-//      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-//        
-//        iPoint     = geometry->edges->GetNode(0);
-//        jPoint     = geometry->edges->GetNode(1);
-//        Coord_i    = geometry->nodes->GetCoord();
-//        Coord_j    = geometry->node[jPoint]->GetCoord();
-//        Solution_i = nodes->GetSolution(iPoint);
-//        Solution_j = nodes->GetSolution(jPoint);
-//        Gradient_i = nodes->GetGradient(iPoint);
-//        Gradient_j = nodes->GetGradient(jPoint);
-//        
-//        for (iVar = 0; iVar < nVar; iVar++) {
-//          
-//          /*--- Calculate the interface left gradient, delta- (dm) ---*/
-//          dm = 0.0;
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-//          
-//          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-//          if ( dm > 0.0 ) dp = nodes->GetSolution_Max(iPoint,iVar);
-//          else dp = nodes->GetSolution_Min(iPoint,iVar);
-//          
-//          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-//          
-//          if (limiter < nodes->GetLimiter(iPoint,iVar)){
-//            //if (geometry->nodes->GetDomain()) {
-//              nodes->SetLimiter(iPoint, iVar, limiter);}
-//              
-//              //              if (iEdge == 0) {
-//              //                cout << "iEdge: " << iEdge << endl;
-//              //                cout << "iPoint: " << iPoint << endl;
-//              //                cout << "Limiter: " << limiter << endl;
-//              //                cin.get();
-//              //              }
-//            //}
-//          
-//          /*-- Repeat for point j on the edge ---*/
-//          dm = 0.0;
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-//          
-//          if ( dm > 0.0 ) dp = nodes->GetSolution_Max(jPoint,iVar);
-//          else dp = nodes->GetSolution_Min(jPoint,iVar);
-//          
-//          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-//          
-//          if (limiter < nodes->GetLimiter(jPoint,iVar)){
-//            //if (geometry->node[jPoint]->GetDomain()) {
-//              nodes->SetLimiter(jPoint, iVar, limiter);
-//            }
-//        }
-//      }
-//      break;
-//      
-//  }
-//  
-//  /*--- Limiter MPI ---*/
-//  //Set_MPI_Solution_Limiter(geometry, config);
-//}
-
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
 
   unsigned short iSpecies, iEl;
-  su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
-      Energy_FreeStream      = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
-      Omega_FreeStream       = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
-      Density_FreeStream     = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0;
+  su2double Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0,
+      ModVel_FreeStream = 0.0, Energy_FreeStream      = 0.0, ModVel_FreeStreamND = 0.0,
+      Velocity_Reynolds = 0.0, Omega_FreeStream       = 0.0, Omega_FreeStreamND = 0.0,
+      Viscosity_FreeStream = 0.0, Density_FreeStream     = 0.0, Pressure_FreeStream = 0.0,
+      Tke_FreeStream = 0.0;
 
   su2double Length_Ref       = 0.0, Density_Ref   = 0.0, Pressure_Ref     = 0.0, Velocity_Ref = 0.0,
       Temperature_Ref  = 0.0, Time_Ref      = 0.0, Omega_Ref        = 0.0, Force_Ref    = 0.0,
@@ -2698,7 +2535,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       Total_UnstTimeND         = 0.0, Delta_UnstTimeND     = 0.0,
       Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
-  su2double Mass    = 0.0, soundspeed = 0.0, GasConstant_Inf = 0.0, Froude = 0.0,
+  su2double Mass = 0.0, soundspeed = 0.0, GasConstant_Inf = 0.0, Froude = 0.0,
       rhoCvtr = 0.0, rhoE       = 0.0, sqvel           = 0.0,
       denom   = 0.0, num        = 0.0, conc            = 0.0;
 
@@ -2741,25 +2578,36 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
 
+
+ 
+  /*--- Instatiate the correct fluid model ---*/
+  switch (config->GetKind_FluidModel()) {
+  case MUTATIONPP:
+   //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
+   cout << "Delete Me, Calling Mutation" << endl;
+   break;
+  case USER_DEFINED:
+   FluidModel = new CUserDefinedTCLib(config, nDim, viscous);
+   break;
+  }
+
+  //exit(0);
+
+
   /*--- Compressible non dimensionalization ---*/
 
   /*--- Compute Gas Constant ---*/
-  // This needs work for Ionization and such
-  MassFrac_Inf  = config->GetMassFrac_FreeStream();
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    Mass += MassFrac_Inf[iSpecies] * Ms[iSpecies];
-  GasConstant_Inf = Ru / Mass; config->SetGas_Constant(GasConstant_Inf);
+  GasConstant_Inf = FluidModel->GetGasConstant(MassFrac_Inf);
+  config->SetGas_Constant(GasConstant_Inf);
 
   /*--- Compute the Free Stream Pressure, Temperatrue, and Density ---*/
-  Pressure_FreeStream     = config->GetPressure_FreeStream();
-  Temperature_FreeStream  = T;
+  Pressure_FreeStream        = config->GetPressure_FreeStream();
+  Temperature_FreeStream     = config->GetTemperature_FreeStream();
+  Temperature_ve_FreeStream  = config->GetTemperature_ve_FreeStream();
 
   /*--- Compute the density using mixtures ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
-  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-    denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
-  Density_FreeStream = Pressure_FreeStream / denom;
+  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_Inf);
+  Density_FreeStream = FluidModel->GetDensity();
 
   /*--- Calculate sound speed and extract velocities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -5025,12 +4873,12 @@ void CNEMOEulerSolver::SetVolume_Output(CConfig *config, CGeometry *geometry, su
 #endif
 }
 
-void CNEMOEulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+void CNEMOEulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *MassFrac_Inf, su2double *mvec_inf, su2double temperature_inf,
                                         su2double temperature_ve_inf, CConfig *config){
   su2double check_infty;
   delete node_infty;
 
-  node_infty = new CNEMOEulerVariable(pressure_inf, massfrac_inf, mvec_inf, temperature_inf,
+  node_infty = new CNEMOEulerVariable(pressure_inf, MassFrac_Inf, mvec_inf, temperature_inf,
                                       temperature_ve_inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config);
 

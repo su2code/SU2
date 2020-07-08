@@ -857,9 +857,9 @@ private:
   Pressure_FreeStream,        /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
-  Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  *MassFrac_FreeStream,       /*!< \brief Mixture mass fractions of the fluid. */
-  Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  vector<su2double> MassFrac_FreeStream;       /*!< \brief Mixture mass fractions of the fluid. */
+  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
   Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
@@ -1181,7 +1181,7 @@ private:
   bool ionization;                          /*!< \brief Flag for determining if free electron gas is in the mixture. */
   bool frozen;                              /*!< \brief Flag for determining if mixture is frozen. */
 
-  bool mutationpp;                          /*!< \brief Flag for determining if Mutation++ library is used. */ 
+//  bool mutationpp;     //cat: delete                     /*!< \brief Flag for determining if Mutation++ library is used. */ 
   string GasModel;                          /*!< \brief Gas Model. */
 
   /*!
@@ -1714,7 +1714,7 @@ public:
    * \brief Get the vector of free stream mass fraction values.
    * \return Ratio of species mass to mixture mass.
    */
-  const su2double* GetMassFrac_FreeStream(void) const { return MassFrac_FreeStream; }
+  const vector<su2double>& GetMassFrac_FreeStream(void) const { return MassFrac_FreeStream; }
 
   /*!
    * \brief Get the value of the solid density.
@@ -3735,7 +3735,7 @@ public:
   /*!
    * \brief Indicates if Mutattion++ library is used.
    */
-  bool GetMutationpp(void) const { return mutationpp; }
+  //bool GetMutationpp(void) const { return mutationpp; } //cat: delete
 
   /*!
    * \brief Gas model that we are using.

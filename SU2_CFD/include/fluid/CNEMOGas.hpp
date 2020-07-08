@@ -60,8 +60,9 @@ protected:
   su2double ThermalCond_ve{0.0};         /*!< \brief V-E thermal conductivity of the gas mixture. */
   su2double RuSI{UNIVERSAL_GAS_CONSTANT};/*!< \brief Universal gas constant [J/(mol*K)] */
   su2double Ru{1000.0*RuSI};             /*!< \brief Universal gas constant [J/(kmol*K)] */
+  su2double GasConstant{0.0};             /*!< \brief Universal gas constant [J/(kmol*K)] */
 
-  const su2double *MassFrac_Freestream;  /*!< \brief Freestream species mass fractions. */
+  vector<su2double> MassFrac_Freestream;  /*!< \brief Freestream species mass fractions. */
 
   vector<su2double> MolarMass,           /*!< \brief Species molar mass */
   MassFrac,                                    /*!< \brief Species mass fractions */
@@ -206,5 +207,9 @@ public:
    */
   inline void SetEves(vector<su2double> val_eves) { eves = val_eves; }
 
+  /*!
+   * \brief Get gas constant.
+   */
+  su2double GetGasConstant(const su2double *val_massfrac);
 
 };

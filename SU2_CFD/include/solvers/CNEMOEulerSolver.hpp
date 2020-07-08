@@ -41,22 +41,22 @@ class CNEMOEulerSolver : public CSolver {
 protected:
 
   unsigned short
-  nSpecies;	           /*!< \brief Number of species in the gas mixture. */
-
-  su2double
-  Gamma,               /*!< \brief Mixture Cp/Cv. */
-  Gamma_Minus_One;     /*!< \brief Mixture Cp/Cv - 1. */
-
-  su2double
-  Mach_Inf,            /*!< \brief Free stream Mach number. */
-  *Density,            /*!< \brief Free stream species density. */
-  Density_Inf,         /*!< \brief Free stream sdensity. */
-  Energy_ve_Inf,       /*!< \brief Vib.-el. free stream energy. */
-  Pressure_Inf,	       /*!< \brief Free stream pressure. */
-  *Velocity_Inf,	   /*!< \brief Free stream flow velocity. */
-  Temperature_Inf,     /*!< \brief Trans.-rot. free stream temperature. */
-  Temperature_ve_Inf;  /*!< \brief Vib.-el. free stream temperature. */
-  const su2double *MassFrac_Inf;      /*!< \brief Free stream species mass fraction. */
+  nSpecies;	                             /*!< \brief Number of species in the gas mixture. */
+                  
+  su2double                  
+  Gamma,                                 /*!< \brief Mixture Cp/Cv. */
+  Gamma_Minus_One;                       /*!< \brief Mixture Cp/Cv - 1. */
+                  
+  su2double                  
+  Mach_Inf,                              /*!< \brief Free stream Mach number. */
+  *Density,                              /*!< \brief Free stream species density. */
+  Density_Inf,                           /*!< \brief Free stream sdensity. */
+  Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
+  Pressure_Inf,	                         /*!< \brief Free stream pressure. */
+  *Velocity_Inf,	                       /*!< \brief Free stream flow velocity. */
+  Temperature_Inf,                       /*!< \brief Trans.-rot. free stream temperature. */
+  Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
+  vector<su2double> MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
   
 
   su2double
@@ -338,6 +338,7 @@ protected:
 
   CNEMOEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
   CNEMOEulerVariable* node_infty;
+
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */

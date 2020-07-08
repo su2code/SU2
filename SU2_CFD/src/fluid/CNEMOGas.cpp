@@ -107,4 +107,14 @@ su2double CNEMOGas::GetPressure(){
 
 }
 
+su2double CNEMOGas::GetGasConstant(const su2double *val_massfrac){
+
+  su2double Mass = 0.0;
+
+  // This needs work for Ionization and such
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    Mass += val_massfrac[iSpecies] * MolarMass[iSpecies];
+  GasConstant = Ru / Mass;
+}
+
 
