@@ -30,61 +30,61 @@
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-
-template<class VariableType, ENUM_REGIME FlowRegime>
+template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
-protected:
-  enum : size_t {MAXNDIM = 3};    /*!< \brief Max number of space dimensions, used in some static arrays. */
+ protected:
+  enum : size_t { MAXNDIM = 3 }; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
-  enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
-  enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */
+  enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
+  enum : size_t { OMP_MIN_SIZE = 32 };  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
-  unsigned long omp_chunk_size;  /*!< \brief Chunk size used in light point loops. */
+  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double
-  Mach_Inf = 0.0,            /*!< \brief Mach number at the infinity. */
-  Density_Inf = 0.0,         /*!< \brief Density at the infinity. */
-  Energy_Inf = 0.0,          /*!< \brief Energy at the infinity. */
-  Temperature_Inf = 0.0,     /*!< \brief Energy at the infinity. */
-  Pressure_Inf = 0.0,        /*!< \brief Pressure at the infinity. */
-  *Velocity_Inf = nullptr;   /*!< \brief Flow Velocity vector at the infinity. */
+  su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
+  su2double Density_Inf = 0.0;       /*!< \brief Density at the infinity. */
+  su2double Energy_Inf = 0.0;        /*!< \brief Energy at the infinity. */
+  su2double Temperature_Inf = 0.0;   /*!< \brief Energy at the infinity. */
+  su2double Pressure_Inf = 0.0;      /*!< \brief Pressure at the infinity. */
+  su2double *Velocity_Inf = nullptr; /*!< \brief Flow Velocity vector at the infinity. */
 
-  su2double Viscosity_Inf;   /*!< \brief Viscosity at the infinity. */
-  su2double Tke_Inf;         /*!< \brief Turbulent kinetic energy at the infinity. */
+  su2double Viscosity_Inf; /*!< \brief Viscosity at the infinity. */
+  su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
 
-  su2double StrainMag_Max;   /*!< \brief Maximum Strain Rate magnitude. */
-  su2double Omega_Max;       /*!< \brief Maximum Omega. */
+  su2double StrainMag_Max; /*!< \brief Maximum Strain Rate magnitude. */
+  su2double Omega_Max;     /*!< \brief Maximum Omega. */
 
   /*!
    * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
    */
   struct AeroCoeffsArray {
-    su2double* CD = nullptr;      /*!< \brief Drag coefficient. */
-    su2double* CL = nullptr;      /*!< \brief Lift coefficient. */
-    su2double* CSF = nullptr;     /*!< \brief Sideforce coefficient. */
-    su2double* CEff = nullptr;    /*!< \brief Efficiency (Cl/Cd). */
-    su2double* CFx = nullptr;     /*!< \brief x Force coefficient. */
-    su2double* CFy = nullptr;     /*!< \brief y Force coefficient. */
-    su2double* CFz = nullptr;     /*!< \brief z Force coefficient. */
-    su2double* CMx = nullptr;     /*!< \brief x Moment coefficient. */
-    su2double* CMy = nullptr;     /*!< \brief y Moment coefficient. */
-    su2double* CMz = nullptr;     /*!< \brief z Moment coefficient. */
-    su2double* CoPx = nullptr;    /*!< \brief x Moment coefficient. */
-    su2double* CoPy = nullptr;    /*!< \brief y Moment coefficient. */
-    su2double* CoPz = nullptr;    /*!< \brief z Moment coefficient. */
-    su2double* CT = nullptr;      /*!< \brief Thrust coefficient. */
-    su2double* CQ = nullptr;      /*!< \brief Torque coefficient. */
-    su2double* CMerit = nullptr;  /*!< \brief Rotor Figure of Merit. */
-    int _size = 0;                /*!< \brief Array size. */
+    su2double* CD = nullptr;     /*!< \brief Drag coefficient. */
+    su2double* CL = nullptr;     /*!< \brief Lift coefficient. */
+    su2double* CSF = nullptr;    /*!< \brief Sideforce coefficient. */
+    su2double* CEff = nullptr;   /*!< \brief Efficiency (Cl/Cd). */
+    su2double* CFx = nullptr;    /*!< \brief x Force coefficient. */
+    su2double* CFy = nullptr;    /*!< \brief y Force coefficient. */
+    su2double* CFz = nullptr;    /*!< \brief z Force coefficient. */
+    su2double* CMx = nullptr;    /*!< \brief x Moment coefficient. */
+    su2double* CMy = nullptr;    /*!< \brief y Moment coefficient. */
+    su2double* CMz = nullptr;    /*!< \brief z Moment coefficient. */
+    su2double* CoPx = nullptr;   /*!< \brief x Moment coefficient. */
+    su2double* CoPy = nullptr;   /*!< \brief y Moment coefficient. */
+    su2double* CoPz = nullptr;   /*!< \brief z Moment coefficient. */
+    su2double* CT = nullptr;     /*!< \brief Thrust coefficient. */
+    su2double* CQ = nullptr;     /*!< \brief Torque coefficient. */
+    su2double* CMerit = nullptr; /*!< \brief Rotor Figure of Merit. */
+    int _size = 0;               /*!< \brief Array size. */
 
-    void allocate(int size);      /*!< \brief Allocates arrays. */
+    void allocate(int size); /*!< \brief Allocates arrays. */
 
-    void setZero(int i);          /*!< \brief Sets all values to zero at a particular index. */
-    void setZero() {              /*!< \brief Sets all values to zero for all indices. */
-      for(int i=0; i<_size; ++i) setZero(i);
+    void setZero(int i); /*!< \brief Sets all values to zero at a particular index. */
+    void setZero() {     /*!< \brief Sets all values to zero for all indices. */
+      for (int i = 0; i < _size; ++i) setZero(i);
     }
 
-    AeroCoeffsArray(int size = 0) : _size(size) { if(size) allocate(size); }
+    AeroCoeffsArray(int size = 0) : _size(size) {
+      if (size) allocate(size);
+    }
 
     ~AeroCoeffsArray();
   };
@@ -93,80 +93,87 @@ protected:
    * \brief Scalar version of the coefficients type.
    */
   struct AeroCoeffs {
-    su2double CD,CL,CSF,CEff,CFx,CFy,CFz,CMx,CMy,CMz,CoPx,CoPy,CoPz,CT,CQ,CMerit;
+    su2double CD, CL, CSF, CEff, CFx, CFy, CFz, CMx, CMy, CMz, CoPx, CoPy, CoPz, CT, CQ, CMerit;
 
     void setZero() {
-      CD=CL=CSF=CEff=CFx=CFy=CFz=CMx=CMy=CMz=CoPx=CoPy=CoPz=CT=CQ=CMerit=0.0;
+      CD = CL = CSF = CEff = CFx = CFy = CFz = CMx = CMy = CMz = CoPx = CoPy = CoPz = CT = CQ = CMerit = 0.0;
     }
 
     AeroCoeffs() { setZero(); }
   };
 
-  AeroCoeffsArray InvCoeff;          /*!< \brief Inviscid pressure contributions for each boundary. */
-  AeroCoeffsArray SurfaceInvCoeff;   /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
-  AeroCoeffs AllBoundInvCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
+  AeroCoeffsArray InvCoeff;        /*!< \brief Inviscid pressure contributions for each boundary. */
+  AeroCoeffsArray SurfaceInvCoeff; /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
+  AeroCoeffs AllBoundInvCoeff;     /*!< \brief Total pressure contribution for all the boundaries. */
 
-  AeroCoeffsArray MntCoeff;          /*!< \brief Inviscid momentum contributions for each boundary. */
-  AeroCoeffsArray SurfaceMntCoeff;   /*!< \brief Inviscid momentum contributions for each monitoring boundary. */
-  AeroCoeffs AllBoundMntCoeff;       /*!< \brief Total momentum contribution for all the boundaries. */
+  AeroCoeffsArray MntCoeff;        /*!< \brief Inviscid momentum contributions for each boundary. */
+  AeroCoeffsArray SurfaceMntCoeff; /*!< \brief Inviscid momentum contributions for each monitoring boundary. */
+  AeroCoeffs AllBoundMntCoeff;     /*!< \brief Total momentum contribution for all the boundaries. */
 
-  AeroCoeffsArray ViscCoeff;         /*!< \brief Viscous contributions for each boundary. */
-  AeroCoeffsArray SurfaceViscCoeff;  /*!< \brief Viscous contributions for each monitoring boundary. */
-  AeroCoeffs AllBoundViscCoeff;      /*!< \brief Total pressure contribution for all the boundaries. */
+  AeroCoeffsArray ViscCoeff;        /*!< \brief Viscous contributions for each boundary. */
+  AeroCoeffsArray SurfaceViscCoeff; /*!< \brief Viscous contributions for each monitoring boundary. */
+  AeroCoeffs AllBoundViscCoeff;     /*!< \brief Total pressure contribution for all the boundaries. */
 
-  AeroCoeffsArray SurfaceCoeff;      /*!< \brief Totals for each monitoring surface. */
-  AeroCoeffs TotalCoeff;             /*!< \brief Totals for all boundaries. */
+  AeroCoeffsArray SurfaceCoeff; /*!< \brief Totals for each monitoring surface. */
+  AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
-  su2double
-  InverseDesign = 0.0,              /*!< \brief Inverse design functional for each boundary. */
-  Total_ComboObj = 0.0,             /*!< \brief Total 'combo' objective for all monitored boundaries */
-  Total_Custom_ObjFunc = 0.0,       /*!< \brief Total custom objective function for all the boundaries. */
-  Total_CpDiff = 0.0,               /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_HeatFluxDiff = 0.0,         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_MassFlowRate = 0.0,         /*!< \brief Total Mass Flow Rate on monitored boundaries. */
-  Total_CNearFieldOF = 0.0,         /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_Heat = 0.0,                 /*!< \brief Total heat load for all the boundaries. */
-  Total_MaxHeat = 0.0,              /*!< \brief Maximum heat flux on all boundaries. */
-  AllBound_CNearFieldOF_Inv = 0.0,  /*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
-  *CNearFieldOF_Inv = nullptr,      /*!< \brief Near field pressure (inviscid contribution) for each boundary. */
-  *Surface_HF_Visc = nullptr,       /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  *Surface_MaxHF_Visc = nullptr,    /*!< \brief Maximum heat flux for each monitored surface. */
-  *HF_Visc = nullptr,               /*!< \brief Heat load (viscous contribution) for each boundary. */
-  *MaxHF_Visc = nullptr,            /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  AllBound_HF_Visc = 0.0,           /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_MaxHF_Visc = 0.0;        /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
+  su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
+  su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
+  su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
+  su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+  su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
+  su2double Total_MaxHeat = 0.0;        /*!< \brief Maximum heat flux on all boundaries. */
+  su2double AllBound_CNearFieldOF_Inv=0.0; /*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
+  su2double *CNearFieldOF_Inv = nullptr;   /*!< \brief Near field pressure (inviscid contribution) for each boundary. */
+  su2double *Surface_HF_Visc = nullptr;    /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  su2double *Surface_MaxHF_Visc = nullptr; /*!< \brief Maximum heat flux for each monitored surface. */
+  su2double *HF_Visc = nullptr;            /*!< \brief Heat load (viscous contribution) for each boundary. */
+  su2double *MaxHF_Visc = nullptr;         /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  su2double AllBound_HF_Visc = 0.0;        /*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  su2double AllBound_MaxHF_Visc = 0.0;     /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
 
-  su2double
-  **Inlet_Ptotal = nullptr,      /*!< \brief Value of the Total P. */
-  **Inlet_Ttotal = nullptr,      /*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir = nullptr,    /*!< \brief Value of the Flow Direction. */
-  **HeatFlux = nullptr,          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **HeatFluxTarget = nullptr,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  ***CharacPrimVar = nullptr,    /*!< \brief Value of the characteristic variables at each boundary. */
-  ***CSkinFriction = nullptr,    /*!< \brief Skin friction coefficient for each boundary and vertex. */
-  ***HeatConjugateVar = nullptr, /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
-  **CPressure = nullptr,         /*!< \brief Pressure coefficient for each boundary and vertex. */
-  **CPressureTarget = nullptr,   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  **YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
+  su2double **Inlet_Ptotal = nullptr;             /*!< \brief Value of the Total P. */
+  su2double **Inlet_Ttotal = nullptr;                   /*!< \brief Value of the Total T. */
+  su2double ***Inlet_FlowDir = nullptr;             /*!< \brief Value of the Flow Direction. */
+           su2double   **HeatFlux = nullptr;               /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+                su2double  **HeatFluxTarget = nullptr;     /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+                     su2double ***CharacPrimVar = nullptr; /*!< \brief Value of the characteristic variables at each boundary. */
+                        su2double  ***CSkinFriction =
+                              nullptr; /*!< \brief Skin friction coefficient for each boundary and vertex. */
+                           su2double   ***HeatConjugateVar =
+                                  nullptr; /*!< \brief Conjugate heat transfer variables for each boundary and vertex.
+                                            */
+                                   su2double            **CPressure =
+                                                   nullptr; /*!< \brief Pressure coefficient for each boundary and
+                                                               vertex. */
+                                            su2double                    **CPressureTarget =
+                                                                    nullptr; /*!< \brief Target Pressure coefficient for
+                                                                                each boundary and vertex. */
+                                                     su2double                            **YPlus =
+                                                                                     nullptr; /*!< \brief Yplus for each
+                                                                                                 boundary and vertex. */
 
-  bool space_centered,       /*!< \brief True if space centered scheeme used. */
-  euler_implicit,            /*!< \brief True if euler implicit scheme used. */
-  least_squares;             /*!< \brief True if computing gradients by least squares. */
+  bool space_centered;       /*!< \brief True if space centered scheeme used. */
+  bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
+  bool least_squares;        /*!< \brief True if computing gradients by least squares. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
   /*--- Sliding meshes variables ---*/
 
-  su2double ****SlidingState = nullptr;
-  int **SlidingStateNodes = nullptr;
+  su2double**** SlidingState = nullptr;
+  int** SlidingStateNodes = nullptr;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP
-  vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
-  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
+  vector<GridColor<> > EdgeColoring; /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;      /*!< \brief If the reducer strategy is in use. */
 #else
-  array<DummyGridColor<>,1> EdgeColoring;
+  array<DummyGridColor<>, 1> EdgeColoring;
   /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
   static constexpr bool ReducerStrategy = false;
 #endif
@@ -179,8 +186,7 @@ protected:
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
-
-  VariableType* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  VariableType* nodes = nullptr; /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -190,7 +196,7 @@ protected:
   /*!
    * \brief Default constructor, this class is not directly instantiable.
    */
-  CFVMFlowSolverBase() = default;
+  CFVMFlowSolverBase() : CSolver() {}
 
   /*!
    * \brief Allocate member variables.
@@ -200,15 +206,14 @@ protected:
   /*!
    * \brief Initialize thread parallel variables.
    */
-  void HybridParallelInitialization(const CConfig& config,
-                                    CGeometry& geometry);
+  void HybridParallelInitialization(const CConfig& config, CGeometry& geometry);
 
   /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();
 
-public:
+ public:
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -216,9 +221,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) final;
+  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
 
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -227,16 +230,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) final;
+  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
 
   /*!
    * \brief Compute the limiter of the primitive variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
+  void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution and the
@@ -244,8 +245,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry,
-                                                              const CConfig *config);
+  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Compute the density at the infinity.
@@ -265,7 +265,7 @@ public:
    */
   inline su2double GetPressure_Inf(void) const final { return Pressure_Inf; }
 
-    /*!
+  /*!
    * \brief Get the temperature value at infinity.
    * \return Value of the temperature at infinity.
    */
@@ -276,7 +276,9 @@ public:
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the density multiply by the velocity at the infinity.
    */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final { return Density_Inf*Velocity_Inf[val_dim]; }
+  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final {
+    return Density_Inf * Velocity_Inf[val_dim];
+  }
 
   /*!
    * \brief Get the velocity at the infinity.
@@ -289,7 +291,7 @@ public:
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) final { return Velocity_Inf; }
+  inline su2double* GetVelocity_Inf(void) final { return Velocity_Inf; }
 
   /*!
    * \brief Set the velocity at infinity.
@@ -304,7 +306,7 @@ public:
    * \brief Compute the density multiply by energy at the infinity.
    * \return Value of the density multiply by  energy at the infinity.
    */
-  inline su2double GetDensity_Energy_Inf(void) const final { return Density_Inf*Energy_Inf; }
+  inline su2double GetDensity_Energy_Inf(void) const final { return Density_Inf * Energy_Inf; }
 
   /*!
    * \brief Set the freestream pressure.
@@ -458,7 +460,9 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CEff_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CEff[val_marker]; }
+  inline su2double GetSurface_CEff_Inv(unsigned short val_marker) const final {
+    return SurfaceInvCoeff.CEff[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional x force coefficient.
@@ -528,7 +532,9 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CEff_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CEff[val_marker]; }
+  inline su2double GetSurface_CEff_Mnt(unsigned short val_marker) const final {
+    return SurfaceMntCoeff.CEff[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional x force coefficient.
@@ -881,56 +887,72 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CSF_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CSF[val_marker]; }
+  inline su2double GetSurface_CSF_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CSF[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CEff_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CEff[val_marker]; }
+  inline su2double GetSurface_CEff_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CEff[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional x force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CFx_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CFx[val_marker]; }
+  inline su2double GetSurface_CFx_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CFx[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional y force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CFy_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CFy[val_marker]; }
+  inline su2double GetSurface_CFy_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CFy[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional z force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CFz_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CFz[val_marker]; }
+  inline su2double GetSurface_CFz_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CFz[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional x moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CMx_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CMx[val_marker]; }
+  inline su2double GetSurface_CMx_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CMx[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional y moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CMy_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CMy[val_marker]; }
+  inline su2double GetSurface_CMy_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CMy[val_marker];
+  }
 
   /*!
    * \brief Provide the non dimensional z moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CMz_Visc(unsigned short val_marker) const final { return SurfaceViscCoeff.CMz[val_marker]; }
+  inline su2double GetSurface_CMz_Visc(unsigned short val_marker) const final {
+    return SurfaceViscCoeff.CMz[val_marker];
+  }
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -1043,7 +1065,9 @@ public:
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_MaxHF_Visc(unsigned short val_marker) const final { return Surface_MaxHF_Visc[val_marker]; }
+  inline su2double GetSurface_MaxHF_Visc(unsigned short val_marker) const final {
+    return Surface_MaxHF_Visc[val_marker];
+  }
 
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
@@ -1067,18 +1091,17 @@ public:
   void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
-   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
-   * \param[in] val_marker   - marker index
-   * \param[in] val_vertex   - vertex index
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is
+   * stored in SlidingStateNodes[val_marker][val_vertex]. \param[in] val_marker   - marker index \param[in] val_vertex
+   * - vertex index
    */
   inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
-    for (int iVar = 0; iVar < nPrimVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
-        delete [] SlidingState[val_marker][val_vertex][iVar];
+    for (int iVar = 0; iVar < nPrimVar + 1; iVar++) {
+      if (SlidingState[val_marker][val_vertex][iVar] != nullptr) delete[] SlidingState[val_marker][val_vertex][iVar];
     }
 
-    for (int iVar = 0; iVar < nPrimVar+1; iVar++)
-      SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+    for (int iVar = 0; iVar < nPrimVar + 1; iVar++)
+      SlidingState[val_marker][val_vertex][iVar] = new su2double[GetnSlidingStates(val_marker, val_vertex)];
   }
 
   /*!
@@ -1089,11 +1112,8 @@ public:
    * \param[in] donor_index  - index of the donor node to set
    * \param[in] component    - set value
    */
-  inline void SetSlidingState(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              unsigned short val_state,
-                              unsigned long donor_index,
-                              su2double component) final {
+  inline void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state,
+                              unsigned long donor_index, su2double component) final {
     SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
   }
 
@@ -1103,9 +1123,7 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value - number of outer states
    */
-  inline void SetnSlidingStates(unsigned short val_marker,
-                                unsigned long val_vertex,
-                                int value) final {
+  inline void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value) final {
     SlidingStateNodes[val_marker][val_vertex] = value;
   }
 
@@ -1114,7 +1132,7 @@ public:
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final{
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
     return SlidingStateNodes[val_marker][val_vertex];
   }
 
@@ -1125,9 +1143,7 @@ public:
    * \param[in] val_state  - requested state component
    * \param[in] donor_index- index of the donor node to get
    */
-  inline su2double GetSlidingState(unsigned short val_marker,
-                                   unsigned long val_vertex,
-                                   unsigned short val_state,
+  inline su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state,
                                    unsigned long donor_index) const final {
     return SlidingState[val_marker][val_vertex][val_state][donor_index];
   }
@@ -1140,12 +1156,10 @@ public:
    * \param[in] relaxation factor - relaxation factor for the change of the variables
    * \param[in] val_var           - value of the variable
    */
-  inline void SetConjugateHeatVariable(unsigned short val_marker,
-                                       unsigned long val_vertex,
-                                       unsigned short pos_var,
-                                       su2double relaxation_factor,
-                                       su2double val_var) final {
-    HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var];
+  inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var,
+                                       su2double relaxation_factor, su2double val_var) final {
+    HeatConjugateVar[val_marker][val_vertex][pos_var] =
+        relaxation_factor * val_var + (1.0 - relaxation_factor) * HeatConjugateVar[val_marker][val_vertex][pos_var];
   }
 
   /*!
@@ -1154,8 +1168,7 @@ public:
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
    */
-  inline su2double GetConjugateHeatVariable(unsigned short val_marker,
-                                            unsigned long val_vertex,
+  inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex,
                                             unsigned short pos_var) const final {
     return HeatConjugateVar[val_marker][val_vertex][pos_var];
   }
@@ -1166,8 +1179,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the skin friction coefficient.
    */
-    inline su2double GetCSkinFriction(unsigned short val_marker,
-                                    unsigned long val_vertex,
+  inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
     return CSkinFriction[val_marker][val_dim][val_vertex];
   }
@@ -1198,9 +1210,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetHeatFluxTarget(unsigned short val_marker,
-                                unsigned long val_vertex,
-                                su2double val_heat) final {
+  inline void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat) final {
     HeatFluxTarget[val_marker][val_vertex] = val_heat;
   }
 
@@ -1213,5 +1223,4 @@ public:
   inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const final {
     return YPlus[val_marker][val_vertex];
   }
-
 };

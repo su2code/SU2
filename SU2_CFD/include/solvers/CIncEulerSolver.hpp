@@ -50,7 +50,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CIncEulerSolver() = default;
+  CIncEulerSolver() : CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() {}
 
   /*!
    * \overload

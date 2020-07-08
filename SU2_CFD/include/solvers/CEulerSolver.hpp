@@ -258,7 +258,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CEulerSolver() = default;
+  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>() {}
 
   /*!
    * \overload Main constructor of this class.

@@ -40,7 +40,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CIncNSSolver() = default;
+  CIncNSSolver() : CIncEulerSolver() {}
 
   /*!
    * \overload

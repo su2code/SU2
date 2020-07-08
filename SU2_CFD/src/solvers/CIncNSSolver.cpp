@@ -35,7 +35,7 @@
 template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
 
 
-CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
 
   unsigned long iPoint;
   unsigned short iVar, iMarker, nLineLets;
