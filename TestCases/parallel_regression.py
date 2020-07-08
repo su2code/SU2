@@ -286,8 +286,8 @@ def main():
     propeller_var_load           = TestCase('propeller_variable_load')
     propeller_var_load.cfg_dir   = "rans/actuatordisk_variable_load"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
-    propeller_var_load.test_iter = 10
-    propeller_var_load.test_vals = [-1.535982, -4.565925, 0.000294, 0.334161] #last 4 columns
+    propeller_var_load.test_iter = 20
+    propeller_var_load.test_vals = [-1.826392, -4.535254, 0.000003, 0.170298] #last 4 columns
     propeller_var_load.su2_exec  = "parallel_computation.py -f"
     propeller_var_load.timeout   = 3200
     propeller_var_load.tol       = 0.00001
