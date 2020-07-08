@@ -728,7 +728,6 @@ private:
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,         /*!< \brief Reference coefficient for detecting sharp edges. */
   RefLength,             /*!< \brief Reference length for moment computation. */
-  *RefOriginMoment,      /*!< \brief Origin for moment computation. */
   *RefOriginMoment_X,    /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,    /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,    /*!< \brief Z Origin for moment computation. */
@@ -1369,8 +1368,8 @@ public:
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin (in cartesians coordinates) for moment computation.
    */
-  su2double *GetRefOriginMoment(unsigned short val_marker) const {
-    /// TODO: Return std::array by value.
+  std::array<su2double,3> GetRefOriginMoment(unsigned short val_marker) const {
+    std::array<su2double,3> RefOriginMoment{{0.0}};
     if(val_marker < nMarker_Monitoring) {
       RefOriginMoment[0] = RefOriginMoment_X[val_marker];
       RefOriginMoment[1] = RefOriginMoment_Y[val_marker];
@@ -8361,14 +8360,14 @@ public:
    * \brief Start the timer for profiling subroutines.
    * \param[in] val_start_time - the value of the start time.
    */
-  void GEMM_Tick(double *val_start_time);
+  void GEMM_Tick(double *val_start_time) const;
 
   /*!
    * \brief Stop the timer for the GEMM profiling and store results.
    * \param[in] val_start_time - The value of the start time.
    * \param[in] M, N, K        - Matrix size of the GEMM call.
    */
-  void GEMM_Tock(double val_start_time, int M, int N, int K);
+  void GEMM_Tock(double val_start_time, int M, int N, int K) const;
 
   /*!
    * \brief Write a CSV file containing the results of the profiling.

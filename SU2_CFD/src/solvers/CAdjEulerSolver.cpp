@@ -1036,7 +1036,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLength  = config->GetRefLength();
-  su2double *RefOriginMoment = config->GetRefOriginMoment(0);
+  const auto RefOriginMoment = config->GetRefOriginMoment(0);
   su2double dCD_dCL          = config->GetdCD_dCL();
   su2double dCMx_dCL         = config->GetdCMx_dCL();
   su2double dCMy_dCL         = config->GetdCMy_dCL();

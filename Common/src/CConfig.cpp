@@ -911,7 +911,6 @@ void CConfig::SetPointersNull(void) {
   Velocity_FreeStream = nullptr;
   Inc_Velocity_Init   = nullptr;
 
-  RefOriginMoment     = nullptr;
   CFL_AdaptParam      = nullptr;
   CFL                 = nullptr;
   HTP_Axis = nullptr;
@@ -3852,10 +3851,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }*/
 
-
-  /*--- Initialize the RefOriginMoment Pointer ---*/
-
-  RefOriginMoment = new su2double[3]();
 
   /*--- In case the moment origin coordinates have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
@@ -7286,7 +7281,6 @@ CConfig::~CConfig(void) {
 
   /*--- reference origin for moments ---*/
 
-  delete [] RefOriginMoment;
   delete [] RefOriginMoment_X;
   delete [] RefOriginMoment_Y;
   delete [] RefOriginMoment_Z;
@@ -9253,7 +9247,7 @@ void CConfig::SetProfilingCSV(void) {
 
 }
 
-void CConfig::GEMM_Tick(double *val_start_time) {
+void CConfig::GEMM_Tick(double *val_start_time) const {
 
 #ifdef PROFILE
 
@@ -9267,7 +9261,7 @@ void CConfig::GEMM_Tick(double *val_start_time) {
 
 }
 
-void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
+void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) const {
 
 #ifdef PROFILE
 

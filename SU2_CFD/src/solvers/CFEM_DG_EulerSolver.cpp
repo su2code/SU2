@@ -6733,7 +6733,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConf
   const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin      = config->GetRefOriginMoment(0);
+  auto Origin                  = config->GetRefOriginMoment(0);
   const bool grid_movement     = config->GetGrid_Movement();
 
   /*--- Evaluate reference values for non-dimensionalization.

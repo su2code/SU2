@@ -468,10 +468,7 @@ void CFVMFlowSolverBase<V,FlowRegime>::Pressure_Forces(const CGeometry* geometry
   su2double RefArea = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
   su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin = nullptr;
-  if (config->GetnMarker_Monitoring() != 0){
-    Origin = config->GetRefOriginMoment(0);
-  }
+  auto Origin = config->GetRefOriginMoment(0);
   bool axisymmetric = config->GetAxisymmetric();
 
   /// TODO: Move these ifs to specialized functions.
@@ -838,10 +835,7 @@ void CFVMFlowSolverBase<V,FlowRegime>::Momentum_Forces(const CGeometry* geometry
   su2double RefArea = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
   su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin = nullptr;
-  if (config->GetnMarker_Monitoring() != 0){
-    Origin = config->GetRefOriginMoment(0);
-  }
+  auto Origin = config->GetRefOriginMoment(0);
   bool axisymmetric = config->GetAxisymmetric();
 
   /// TODO: Move these ifs to specialized functions.
@@ -1187,9 +1181,7 @@ void CFVMFlowSolverBase<V,FlowRegime>::Friction_Forces(const CGeometry* geometry
   su2double RefLength = config->GetRefLength();
   su2double RefHeatFlux = config->GetHeat_Flux_Ref();
   su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin = nullptr;
-
-  if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
+  auto Origin = config->GetRefOriginMoment(0);
 
   su2double Prandtl_Lam = config->GetPrandtl_Lam();
   bool energy = config->GetEnergy_Equation();
