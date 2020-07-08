@@ -215,7 +215,7 @@ def main():
     propeller_var_load.cfg_dir   = "rans/actuatordisk_variable_load"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.826392, -4.535254, 0.000003, 0.170298]
+    propeller_var_load.test_vals = [-1.810684, -4.535582, 0.000252, 0.170455]
     test_list.append(propeller_var_load)
 
     #################################
