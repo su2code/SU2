@@ -3624,11 +3624,12 @@ void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver, CNumer
 
 }
 
-void CEulerSolver::CorrectJacobian(CGeometry      *geometry,
-                                   CSolver        **solver,
-                                   CConfig        *config,
-                                   unsigned long  iPoint,
-                                   unsigned long  jPoint) {
+void CEulerSolver::CorrectJacobian(CGeometry            *geometry,
+                                   CSolver              **solver,
+                                   CConfig              *config,
+                                   const unsigned long  iPoint,
+                                   const unsigned long  jPoint,
+                                   counst su2double     sign) {
   
   AD_BEGIN_PASSIVE
   

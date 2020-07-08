@@ -149,16 +149,16 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] sign - Sign based on direction of edge.
    * \param[in] Jacobian_ic - Jacobian term obtained from CNumerics for iPoint.
-   * \param[in] Jacobian_jc - Jacobian term obtained from CNumerics for jPoint.
    */
-  void CorrectJacobian(CGeometry       *geometry,
-                       CSolver         **solver_container,
-                       CConfig         *config,
-                       unsigned long   iPoint,
-                       unsigned long   jPoint,
-                       const su2double *const *const *const Jacobian_ic,
-                       const su2double *const *const *const Jacobian_jc);
+  void CorrectJacobian(CGeometry           *geometry,
+                       CSolver             **solver,
+                       CConfig             *config,
+                       const unsigned long iPoint,
+                       const unsigned long jPoint,
+                       const su2double     sign,
+                       const su2double     *const *const *const Jacobian_ic);
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.

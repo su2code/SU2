@@ -331,8 +331,10 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   }
   
   /*--- Compute Jacobian correction for influence from all neighbors ---*/
-  if ((geometry->node[iPoint]->GetDomain()) || (geometry->node[jPoint]->GetDomain()))
-    CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic, residual.jacobian_jc);
+  if (geometry->node[iPoint]->GetDomain())
+    CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
+  if (geometry->node[jPoint]->GetDomain())
+    CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
   
 }
 
@@ -356,13 +358,13 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::CorrectJacobian(CGeometry      *geometry,
-                                  CSolver        **solver,
-                                  CConfig        *config,
-                                  unsigned long  iPoint,
-                                  unsigned long  jPoint,
-                                  const su2double *const *const *const Jacobian_ic,
-                                  const su2double *const *const *const Jacobian_jc) {
+void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
+                                  CSolver             **solver,
+                                  CConfig             *config,
+                                  const unsigned long iPoint,
+                                  const unsigned long jPoint,
+                                  const su2double     sign,
+                                  const su2double     *const *const *const Jacobian_ic) {
   
   AD_BEGIN_PASSIVE
   
@@ -371,13 +373,13 @@ void CTurbSolver::CorrectJacobian(CGeometry      *geometry,
     CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
     
     /*--- Influence of i's neighbors on R(i,j) ---*/
-    const su2double r_i = nodesFlo->GetDensity(iPoint);
+    const su2double ri = nodesFlo->GetDensity(iPoint);
     for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
       const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
       const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-      const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-      const su2double sign = (iPoint < kPoint) ? 1.0 : -1.0;
-      const su2double r_k = nodesFlo->GetDensity(kPoint);
+      const su2double* Normal = geometry->edge[kEdge]->GetNormal();
+      const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
+      const su2double rk = nodesFlo->GetDensity(kPoint);
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] = 0.;
@@ -387,16 +389,14 @@ void CTurbSolver::CorrectJacobian(CGeometry      *geometry,
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign;
-            Jacobian_j[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*r_i/r_k;
+            Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*signk;
+            Jacobian_j[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*signk*ri/rk;
           }// jVar
         }// iVar
       }// iDim
       
-      if (geometry->node[iPoint]->GetDomain()) {
-        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
+      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
       if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint)) {
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
@@ -418,81 +418,17 @@ void CTurbSolver::CorrectJacobian(CGeometry      *geometry,
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             for (unsigned short iVar = 0; iVar < nVar; iVar++) {
               for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim];
+                Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim]*sign;
               }// jVar
             }// iVar
           }// iDim
         }// iVertex
       }// iMarker
       
-      if (geometry->node[iPoint]->GetDomain())
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
     }// if physical boundary
-    
-    if (jPoint != iPoint) {
-      /*--- Influence of j's neighbors on R(i,j) ---*/
-      const su2double r_j = nodesFlo->GetDensity(jPoint);
-      for (unsigned short iNode = 0; iNode < geometry->node[jPoint]->GetnPoint(); iNode++) {
-        const unsigned long kPoint = geometry->node[jPoint]->GetPoint(iNode);
-        const unsigned long kEdge = geometry->FindEdge(jPoint,kPoint);
-        const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-        const su2double sign = (jPoint < kPoint) ? 1.0 : -1.0;
-        const su2double r_k = nodesFlo->GetDensity(kPoint);
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] = 0.;
-            Jacobian_j[iVar][jVar] = 0.;
-          }
-        }
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-            for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-              Jacobian_i[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign;
-              Jacobian_j[iVar][jVar] += 0.5*Jacobian_jc[iDim][iVar][jVar]*Normalk[iDim]*sign*r_j/r_k;
-            }// jVar
-          }// iVar
-        }// iDim
-        
-        if (geometry->node[jPoint]->GetDomain()) {
-          Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-          Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
-        }
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-          Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-        }
-      }// iNode
-      
-      /*--- Influence of boundary j on R(i,j) ---*/
-      if (geometry->node[jPoint]->GetPhysicalBoundary()) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] = 0.;
-          }
-        }
-        for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-          const long jVertex = geometry->node[jPoint]->GetVertex(iMarker);
-          if (jVertex != -1) {
-            const su2double *Normal = geometry->vertex[iMarker][jVertex]->GetNormal();
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-              for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-                for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                  Jacobian_i[iVar][jVar] -= Jacobian_jc[iDim][iVar][jVar]*Normal[iDim];
-                }// jVar
-              }// iVar
-            }// iDim
-          }// jVertex
-        }// iMarker
-        
-        if (geometry->node[jPoint]->GetDomain())
-          Jacobian.AddBlock(jPoint, jPoint, Jacobian_i);
-        if (geometry->node[iPoint]->GetDomain())
-          Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-      }// if physical boundary
-    }// jPoint
   }// GG
   
   AD_END_PASSIVE

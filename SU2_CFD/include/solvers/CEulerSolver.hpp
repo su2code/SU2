@@ -597,12 +597,14 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] sign - Sign based on direction of edge.
    */
-  void CorrectJacobian(CGeometry     *geometry,
-                       CSolver       **solver,
-                       CConfig       *config,
-                       unsigned long iPoint,
-                       unsigned long jPoint);
+  void CorrectJacobian(CGeometry           *geometry,
+                       CSolver             **solver,
+                       CConfig             *config,
+                       const unsigned long iPoint,
+                       const unsigned long jPoint,
+                       const su2double     sign);
 
   /*!
    * \brief Compute primitive variables and their gradients.
