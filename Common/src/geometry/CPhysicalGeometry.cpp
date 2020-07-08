@@ -11276,30 +11276,15 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 
 void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
 
-unsigned short iMarker;
-#ifndef HAVE_MPI
-  
-  int size = 1;
-  unsigned short nMarker_All = config->GetnMarker_All();
-  if (GlobalMarkerStorageDispl == nullptr) GlobalMarkerStorageDispl = new int [size];
-  if (GlobalRoughness_Height == nullptr) GlobalRoughness_Height = new su2double [nMarker_All];
-  GlobalMarkerStorageDispl[0] = 0;
-  pair<unsigned short, su2double> wallprop;
-
-  for (iMarker = 0; iMarker < nMarker_All; iMarker++) {
-    wallprop = config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker));
-    GlobalRoughness_Height[iMarker] = wallprop.second;
-  }
-  
-#else
+  unsigned short iMarker;
   unsigned short nMarker_All = config->GetnMarker_All();
 
-  int *displs = new int [size];
-  int* recvCounts = new int [size];
+  vector<int> displs(size);
+  vector<int> recvCounts(size);
   int sizeLocal = (int) nMarker_All; // number of local markers
   
   //Communicate size of local marker array and make an array large enough to hold all data
-  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts, 1,
+  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
                        MPI_INT, MPI_COMM_WORLD);
   
   // displacements based on size on each rank
@@ -11316,8 +11301,8 @@ unsigned short iMarker;
   int sizeGlobal = displs[size-1] + recvCounts[size-1];
 
   /*--- Allocate local and global arrays to hold roughness. ---*/
-  su2double *localRough = new su2double [nMarker_All]; // local number of markers
-  su2double *globalRough = new su2double[sizeGlobal];  // all markers including send recieve
+  vector<su2double> localRough(nMarker_All);   // local number of markers
+  vector<su2double> globalRough(sizeGlobal);   // all markers including send recieve
   pair<unsigned short, su2double> wallprop;
 
   for (iMarker = 0; iMarker < nMarker_All; iMarker++) {
@@ -11325,8 +11310,8 @@ unsigned short iMarker;
     localRough[iMarker] = wallprop.second;
   }
 
-  SU2_MPI::Allgatherv( localRough, sizeLocal, MPI_DOUBLE, globalRough ,
-                        recvCounts, displs, MPI_DOUBLE,
+  SU2_MPI::Allgatherv( localRough.data(), sizeLocal, MPI_DOUBLE, globalRough.data() ,
+                        recvCounts.data(), displs.data(), MPI_DOUBLE,
                         MPI_COMM_WORLD);
 
   /*--- Set the global array of roughness per marker. ---*/
@@ -11334,5 +11319,4 @@ unsigned short iMarker;
   for (int iMarker = 0; iMarker < sizeGlobal; iMarker++) 
     GlobalRoughness_Height[iMarker] = globalRough[iMarker];
 
-#endif
 }
