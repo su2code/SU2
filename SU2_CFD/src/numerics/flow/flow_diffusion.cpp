@@ -902,7 +902,12 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Compute the implicit part ---*/
 
-  if (implicit && dist_ij_2 != 0.0) {
+  if (implicit) {
+
+    if (!correct_gradient || dist_ij_2 == 0.0) {
+      proj_vector_ij = Area;
+      dist_ij_2 = 1.0;
+    }
 
     SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
     SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
