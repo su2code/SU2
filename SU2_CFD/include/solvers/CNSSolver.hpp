@@ -37,29 +37,12 @@
  */
 class CNSSolver final : public CEulerSolver {
 private:
-  su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
-  su2double Tke_Inf;        /*!< \brief Turbulent kinetic energy at the infinity. */
-
-  AeroCoeffsArray ViscCoeff;          /*!< \brief Viscous contributions for each boundary. */
-  AeroCoeffsArray SurfaceViscCoeff;   /*!< \brief Viscous contributions for each monitoring boundary. */
-  AeroCoeffs AllBoundViscCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
-
   su2double
   *Surface_Buffet_Metric = nullptr, /*!< \brief Integrated separation sensor for each monitoring surface. */
   *Buffet_Metric = nullptr,         /*!< \brief Integrated separation sensor for each boundary. */
-  *HF_Visc = nullptr,               /*!< \brief Heat load (viscous contribution) for each boundary. */
-  *MaxHF_Visc = nullptr,            /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   ***HeatConjugateVar = nullptr,    /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
-  ***CSkinFriction = nullptr,       /*!< \brief Skin friction coefficient for each boundary and vertex. */
   **Buffet_Sensor = nullptr,        /*!< \brief Separation sensor for each boundary and vertex. */
   Total_Buffet_Metric;              /*!< \brief Integrated separation sensor for all the boundaries. */
-
-  su2double
-  AllBound_HF_Visc,      /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_MaxHF_Visc;   /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
-  su2double
-  StrainMag_Max,
-  Omega_Max;             /*!< \brief Maximum Strain Rate magnitude and Omega. */
 
   /*!
    * \brief A virtual member.
@@ -134,76 +117,6 @@ public:
   ~CNSSolver(void) override;
 
   /*!
-   * \brief Provide the non dimensional lift coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CL_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CL[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional drag coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CD_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CD[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CSF_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CSF[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CEff_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CEff[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFx_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CFx[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFy_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CFy[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFz_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CFz[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMx_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CMx[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMy_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CMy[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMz_Visc(unsigned short val_marker) const override { return SurfaceViscCoeff.CMz[val_marker]; }
-
-  /*!
    * \brief Provide the buffet metric.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the buffet metric on the surface <i>val_marker</i>.
@@ -211,100 +124,10 @@ public:
   inline su2double GetSurface_Buffet_Metric(unsigned short val_marker) const override { return Surface_Buffet_Metric[val_marker]; }
 
   /*!
-   * \brief Get the inviscid contribution to the lift coefficient.
-   * \return Value of the lift coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CL_Visc() const override { return AllBoundViscCoeff.CL; }
-
-  /*!
-   * \brief Get the inviscid contribution to the drag coefficient.
-   * \return Value of the drag coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CD_Visc() const override { return AllBoundViscCoeff.CD; }
-
-  /*!
-   * \brief Get the inviscid contribution to the sideforce coefficient.
-   * \return Value of the sideforce coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CSF_Visc() const override { return AllBoundViscCoeff.CSF; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CEff_Visc() const override { return AllBoundViscCoeff.CEff; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CMx_Visc() const override { return AllBoundViscCoeff.CMx; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CMy_Visc() const override { return AllBoundViscCoeff.CMy; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CMz_Visc() const override { return AllBoundViscCoeff.CMz; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CoPx_Visc() const override { return AllBoundViscCoeff.CoPx; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CoPy_Visc() const override { return AllBoundViscCoeff.CoPy; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CoPz_Visc() const override { return AllBoundViscCoeff.CoPz; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CFx_Visc() const override { return AllBoundViscCoeff.CFx; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CFy_Visc() const override { return AllBoundViscCoeff.CFy; }
-
-  /*!
-   * \brief Get the inviscid contribution to the efficiency coefficient.
-   * \return Value of the efficiency coefficient (inviscid contribution).
-   */
-  inline su2double GetAllBound_CFz_Visc() const override { return AllBoundViscCoeff.CFz; }
-
-  /*!
    * \brief Get the buffet metric.
    * \return Value of the buffet metric.
    */
   inline su2double GetTotal_Buffet_Metric() const override { return Total_Buffet_Metric; }
-
-  /*!
-   * \brief Compute the viscosity at the infinity.
-   * \return Value of the viscosity at the infinity.
-   */
-  inline su2double GetViscosity_Inf(void) const override { return Viscosity_Inf; }
-
-  /*!
-   * \brief Get the turbulent kinetic energy at the infinity.
-   * \return Value of the turbulent kinetic energy at the infinity.
-   */
-  inline su2double GetTke_Inf(void) const override { return Tke_Inf; }
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -405,53 +228,11 @@ public:
   }
 
   /*!
-   * \brief Compute the viscous forces and all the addimensional coefficients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Friction_Forces(CGeometry *geometry, CConfig *config) override;
-
-  /*!
    * \brief Compute the buffet sensor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Buffet_Monitoring(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Get the total heat flux.
-   * \param[in] val_marker - Surface marker where the heat flux is computed.
-   * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_HF_Visc(unsigned short val_marker) const override { return Surface_HF_Visc[val_marker]; }
-
-  /*!
-   * \brief Get the maximum (per surface) heat flux.
-   * \param[in] val_marker - Surface marker where the heat flux is computed.
-   * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_MaxHF_Visc(unsigned short val_marker) const override { return Surface_MaxHF_Visc[val_marker]; }
-
-  /*!
-   * \brief Get the non dimensional lift coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetCL_Visc(unsigned short val_marker) const override { return ViscCoeff.CL[val_marker]; }
-
-  /*!
-   * \brief Get the non dimensional sideforce coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetCSF_Visc(unsigned short val_marker) const override { return ViscCoeff.CSF[val_marker]; }
-
-  /*!
-   * \brief Get the non dimensional drag coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  inline su2double GetCD_Visc(unsigned short val_marker) const override { return ViscCoeff.CD[val_marker]; }
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.
@@ -525,18 +306,6 @@ public:
   inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const override {
     return YPlus[val_marker][val_vertex];
   }
-
-  /*!
-   * \brief Get the max Omega.
-   * \return Value of the max Omega.
-   */
-  inline su2double GetOmega_Max(void) const override { return Omega_Max; }
-
-  /*!
-   * \brief Get the max Strain rate magnitude.
-   * \return Value of the max Strain rate magnitude.
-   */
-  inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
 
   /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.

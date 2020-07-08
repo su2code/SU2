@@ -1617,21 +1617,21 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Pressure_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Pressure_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Momentum_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Momentum_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Friction_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Friction_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.

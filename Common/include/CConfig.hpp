@@ -1369,7 +1369,7 @@ public:
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin (in cartesians coordinates) for moment computation.
    */
-  su2double *GetRefOriginMoment(unsigned short val_marker) {
+  su2double *GetRefOriginMoment(unsigned short val_marker) const {
     if(val_marker < nMarker_Monitoring) {
       RefOriginMoment[0] = RefOriginMoment_X[val_marker];
       RefOriginMoment[1] = RefOriginMoment_Y[val_marker];

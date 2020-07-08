@@ -180,7 +180,7 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   delete SGSModel;
 }
 
-void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig* config) {
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */

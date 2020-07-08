@@ -926,7 +926,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Pressure_Forces(CGeometry *geometry, CConfig *config) final;
+  void Pressure_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
    * \brief Load a solution from a restart file.
