@@ -26,10 +26,10 @@
 
 #pragma once
 
+#include "CFVMFlowSolverBase.hpp"
 #include "../gradients/computeGradientsGreenGauss.hpp"
 #include "../gradients/computeGradientsLeastSquares.hpp"
 #include "../limiters/computeLimiters.hpp"
-#include "CFVMFlowSolverBase.hpp"
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {

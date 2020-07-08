@@ -45,7 +45,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Energy_Inf = 0.0;        /*!< \brief Energy at the infinity. */
   su2double Temperature_Inf = 0.0;   /*!< \brief Energy at the infinity. */
   su2double Pressure_Inf = 0.0;      /*!< \brief Pressure at the infinity. */
-  su2double *Velocity_Inf = nullptr; /*!< \brief Flow Velocity vector at the infinity. */
+  su2double* Velocity_Inf = nullptr; /*!< \brief Flow Velocity vector at the infinity. */
 
   su2double Viscosity_Inf; /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
@@ -126,35 +126,26 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
   su2double Total_MaxHeat = 0.0;        /*!< \brief Maximum heat flux on all boundaries. */
-  su2double AllBound_CNearFieldOF_Inv=0.0; /*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
-  su2double *CNearFieldOF_Inv = nullptr;   /*!< \brief Near field pressure (inviscid contribution) for each boundary. */
-  su2double *Surface_HF_Visc = nullptr;    /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  su2double *Surface_MaxHF_Visc = nullptr; /*!< \brief Maximum heat flux for each monitored surface. */
-  su2double *HF_Visc = nullptr;            /*!< \brief Heat load (viscous contribution) for each boundary. */
-  su2double *MaxHF_Visc = nullptr;         /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  su2double AllBound_HF_Visc = 0.0;        /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  su2double AllBound_MaxHF_Visc = 0.0;     /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  su2double AllBound_CNearFieldOF_Inv = 0.0; /*!< \brief Near-Field press coeff (inviscid) for all the boundaries. */
+  su2double* CNearFieldOF_Inv = nullptr;     /*!< \brief Near field pressure (inviscid) for each boundary. */
+  su2double* Surface_HF_Visc = nullptr;      /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  su2double* Surface_MaxHF_Visc = nullptr;   /*!< \brief Maximum heat flux for each monitored surface. */
+  su2double* HF_Visc = nullptr;              /*!< \brief Heat load (viscous contribution) for each boundary. */
+  su2double* MaxHF_Visc = nullptr;           /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  su2double AllBound_HF_Visc = 0.0;          /*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  su2double AllBound_MaxHF_Visc = 0.0;       /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
 
-  su2double **Inlet_Ptotal = nullptr;             /*!< \brief Value of the Total P. */
-  su2double **Inlet_Ttotal = nullptr;                   /*!< \brief Value of the Total T. */
-  su2double ***Inlet_FlowDir = nullptr;             /*!< \brief Value of the Flow Direction. */
-           su2double   **HeatFlux = nullptr;               /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-                su2double  **HeatFluxTarget = nullptr;     /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-                     su2double ***CharacPrimVar = nullptr; /*!< \brief Value of the characteristic variables at each boundary. */
-                        su2double  ***CSkinFriction =
-                              nullptr; /*!< \brief Skin friction coefficient for each boundary and vertex. */
-                           su2double   ***HeatConjugateVar =
-                                  nullptr; /*!< \brief Conjugate heat transfer variables for each boundary and vertex.
-                                            */
-                                   su2double            **CPressure =
-                                                   nullptr; /*!< \brief Pressure coefficient for each boundary and
-                                                               vertex. */
-                                            su2double                    **CPressureTarget =
-                                                                    nullptr; /*!< \brief Target Pressure coefficient for
-                                                                                each boundary and vertex. */
-                                                     su2double                            **YPlus =
-                                                                                     nullptr; /*!< \brief Yplus for each
-                                                                                                 boundary and vertex. */
+  su2double** Inlet_Ptotal = nullptr;      /*!< \brief Value of the Total P. */
+  su2double** Inlet_Ttotal = nullptr;      /*!< \brief Value of the Total T. */
+  su2double*** Inlet_FlowDir = nullptr;    /*!< \brief Value of the Flow Direction. */
+  su2double** HeatFlux = nullptr;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  su2double** HeatFluxTarget = nullptr;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  su2double*** CharacPrimVar = nullptr;    /*!< \brief Value of the characteristic variables at each boundary. */
+  su2double*** CSkinFriction = nullptr;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  su2double*** HeatConjugateVar = nullptr; /*!< \brief CHT variables for each boundary and vertex. */
+  su2double** CPressure = nullptr;         /*!< \brief Pressure coefficient for each boundary and vertex. */
+  su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
+  su2double** YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
 
   bool space_centered;       /*!< \brief True if space centered scheeme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
@@ -1091,9 +1082,10 @@ class CFVMFlowSolverBase : public CSolver {
   void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
-   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is
-   * stored in SlidingStateNodes[val_marker][val_vertex]. \param[in] val_marker   - marker index \param[in] val_vertex
-   * - vertex index
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it.
+   * That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
    */
   inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
     for (int iVar = 0; iVar < nPrimVar + 1; iVar++) {
