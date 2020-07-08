@@ -32,7 +32,7 @@
 import copy
 import numpy as np
 from math import pow, factorial
-import time
+import time, os
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
 from SU2_FSI import FSI_design
 from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion, WriteSolution
@@ -56,7 +56,7 @@ class Project:
         self.config = config  # FSI optimization config object
         
         folder = self.config['FOLDER']  # root folder where optimization is done
-        folder = folder.rstrip('/')
+        #folder = folder.rstrip('/')
         self.folder  = folder  
         self.design_folder = ''
         self.deform_folder = ''
@@ -301,9 +301,9 @@ class Project:
         command = 'cp ' + config_deform + ' ' + self.deform_folder + '/'
         run_command(command, 'Pulling deformation config', False)
         
-        # pull mesh file       
+        # creating a symbolic link to original meshfile      
         mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
-        command = 'cp ' + mesh_filename + ' ' + self.deform_folder + '/'
+        command = 'ln -s ' + str(os.getcwd()) + '/' + mesh_filename + ' ' + self.deform_folder + '/' + mesh_filename
         run_command(command, 'Pulling mesh config for deformation', False)
         
         # Performing mesh deformation
@@ -413,13 +413,13 @@ class Project:
        if self._design[self.design_iter].deformation == False:
           # In case deformation hasn't occurred (first iteration) we need the original mesh file
           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_FILENAME')
-          command = 'cp ' + mesh_filename + ' ' + destination_folder + '/'
+          command = 'ln -s ' + str(os.getcwd()) + '/' + mesh_filename + ' ' + destination_folder + '/' + mesh_filename
           run_command(command, 'Pulling mesh config for deformation', False)
           
        else:
-          # in case deform has occurred mesh file is named as output of SU2_DEF and needs to be pulled from the dedicated folder
+          # in case deformation has occurred mesh file is named as output of SU2_DEF and needs to be pulled from the dedicated folder
           mesh_filename = readConfig(self.config['CONFIG_DEF'], 'MESH_OUT_FILENAME')
-          command = 'cp ' + self.deform_folder + '/' + mesh_filename + ' ' + destination_folder + '/'
+          command = 'ln -s ' + self.deform_folder + '/' + mesh_filename + ' ' + destination_folder + '/' + mesh_filename
           run_command(command, 'Pulling mesh config for deformation', False)
           
            

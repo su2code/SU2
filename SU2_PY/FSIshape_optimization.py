@@ -67,7 +67,7 @@ def FSIshape_optimization( filename                           ,
 
 
     config['NUMBER_PART'] = partitions
-    config['FOLDER'] = '.'
+    config['FOLDER'] = str(os.getcwd()) 
 
     its               = int ( config['OPT_ITERATIONS'] )                      # number of opt iterations
     bound_upper       = float ( config['OPT_BOUND_UPPER'] )                   # variable bound to be scaled by the line search
