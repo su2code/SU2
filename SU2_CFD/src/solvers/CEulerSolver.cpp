@@ -3640,7 +3640,7 @@ void CEulerSolver::CorrectJacobian(CGeometry           *geometry,
       EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
 
     StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
-    HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, EdgVec, sign);
+    HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
   }// GG
   
   AD_END_PASSIVE
