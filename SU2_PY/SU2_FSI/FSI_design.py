@@ -173,8 +173,12 @@ class Design:
         Fuction that returns the numpy list of c_eq
         """
         self.c_eq = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '=', self.design_nbr)
-
-        return self.c_eq
+       
+        # scaling obj_function with gradient factor
+        global_factor = float(self.config['OPT_GRADIENT_FACTOR']) 
+        
+        
+        return self.c_eq, global_factor
     
     def pull_c_deq(self, geo_folder):
         """ 
@@ -204,7 +208,10 @@ class Design:
         self.c_ieq_minus = ReadGeoConstraints(geo_folder, self.config['OPT_CONSTRAINT'], '<', self.design_nbr)     
 
 
-        return np.concatenate((self.c_ieq_plus, - self.c_ieq_minus), axis=0) 
+        # scaling obj_function with gradient factor
+        global_factor = float(self.config['OPT_GRADIENT_FACTOR']) 
+
+        return np.concatenate((self.c_ieq_plus, - self.c_ieq_minus), axis=0), global_factor 
     
     def pull_c_dieq(self, geo_folder):
         """ 
@@ -275,7 +282,7 @@ class Design:
         Fuction that returns the numpy list of obj_func multiplied by the scale term
         """           
         
-        # check which is the objective function (and scale)
+        # check which is the objective function (and scale) (currently not used: to implement in config_opt)
         ConfigFileName =  self.folder + '/' + self.configFSIPrimal['SU2_CONFIG']
         obj_scale = readConfig(ConfigFileName, 'OBJECTIVE_FUNCTION')
         if obj_scale.find('*') != -1:

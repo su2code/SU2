@@ -351,9 +351,9 @@ def ReadGeoConstraintGradients( geo_folder,ConsList,n_dv, sign ):
                 for j in range(len(constr)): 
                     if constr[j] == ConsList[i][0]:   
                         a = value_matr[:,j]
-                        # if there is scale factor it is multiplied
-                        if ConsList[i][3] != None:
-                           a = a * ConsList[i][3]
+                        # if there is scale factor it is multiplied (currently not performed)
+                        #if ConsList[i][3] != None:
+                        #   a = a * ConsList[i][3]
                         gradient_array.append(a)
     
     gradient = np.array(gradient_array)

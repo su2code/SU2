@@ -157,10 +157,10 @@ class Project:
         self.CheckGeo()
         
         # pulls constraint equality
-        c_eq = self._design[self.design_iter].pull_c_eq(self.geo_folder)
+        c_eq, global_factor = self._design[self.design_iter].pull_c_eq(self.geo_folder)
         
         # return ceq        
-        return c_eq
+        return c_eq* global_factor
     
     def con_dceq(self,dvs):
         print('Project con_dceq')
@@ -189,10 +189,10 @@ class Project:
         self.CheckGeo()
         
         # pull constraint inequality
-        c_ieq = self._design[self.design_iter].pull_c_ieq(self.geo_folder)
+        c_ieq, global_factor = self._design[self.design_iter].pull_c_ieq(self.geo_folder)
         
         # return cieq
-        return c_ieq
+        return c_ieq* global_factor
     
     def con_dcieq(self,dvs):
         print('con_diceq')
