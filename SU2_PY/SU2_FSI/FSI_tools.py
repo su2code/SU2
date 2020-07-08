@@ -373,8 +373,9 @@ def PullingPrimalAdjointFiles(configOpt, folder, configFSI, pyBeamMesh, pyBeamPr
        config = configOpt['FOLDER'] + '/' + configFSI['MLS_CONFIG_FILE_NAME']
        command.append('cp ' + config + ' ' + folder + '/')
        # 4
+       # creating a symbolic link to numpy spline matric which doesn't change
        spline = configOpt['FOLDER'] + '/' + 'Spline.npy'
-       command.append('cp ' + spline + ' ' + folder + '/')      
+       command.append('ln -s ' + spline + ' ' + folder + '/' + 'Spline.npy')      
        for i in range(len(command)):
           run_command(command[i], 'Pulling primal config file ' + str(i) , False) 
           
