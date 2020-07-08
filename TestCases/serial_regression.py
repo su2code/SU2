@@ -328,7 +328,7 @@ def main():
     propeller_var_load.cfg_dir    = "rans/actuatordisk_variable_load"
     propeller_var_load.cfg_file   = "propeller_variable_load.cfg"
     propeller_var_load.test_iter  = 10
-    propeller_var_load.test_vals  = [-1.535982, 1.550262, 0.796873, 3.904732] #last 4 columns
+    propeller_var_load.test_vals  = [-1.536168, 1.550551, 0.809250, 3.902940] #last 4 columns
     propeller_var_load.su2_exec   = "SU2_CFD"
     propeller_var_load.new_output = True
     propeller_var_load.timeout    = 3200
