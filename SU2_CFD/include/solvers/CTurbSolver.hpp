@@ -144,7 +144,7 @@ public:
                        unsigned short iMesh) override;
 
   /*!
-   * \brief Correction to viscous residual that accounts for GG Jacobian.
+   * \brief Correction to viscous Jacobian that accounts for GG Jacobian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] iPoint - Index of first point in residual calculation.

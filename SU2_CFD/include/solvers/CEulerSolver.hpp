@@ -592,7 +592,7 @@ public:
                        unsigned short iMesh) final;
 
   /*!
-   * \brief Correction to viscous residual that accounts for GG Jacobian.
+   * \brief Correction to viscous Jacobian that accounts for GG Jacobian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] iPoint - Index of first point in residual calculation.
@@ -604,7 +604,46 @@ public:
                        CConfig             *config,
                        const unsigned long iPoint,
                        const unsigned long jPoint,
+                       const su2double     *Normal,
                        const su2double     sign);
+
+  /*!
+   * \brief Correction to stress tensor Jacobian that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Normal - Normal vector of edge.
+   * \param[in] EdgVec - Vector of edge.
+   * \param[in] sign - Sign based on direction of edge.
+   */
+  void StressTensorJacobian(CGeometry           *geometry,
+                            CSolver             **solver,
+                            CConfig             *config,
+                            const unsigned long iPoint,
+                            const unsigned long jPoint,
+                            const su2double     *Normal,
+                            const su2double     *EdgVec,
+                            const su2double     sign);
+
+  /*!
+   * \brief Correction to heat flux Jacobian that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Normal - Normal vector of edge.
+   * \param[in] EdgVec - Vector of edge.
+   * \param[in] sign - Sign based on direction of edge.
+   */
+  void HeatFluxJacobian(CGeometry           *geometry,
+                        CSolver             **solver,
+                        CConfig             *config,
+                        const unsigned long iPoint,
+                        const unsigned long jPoint,
+                        const su2double     *Normal,
+                        const su2double     *EdgVec,
+                        const su2double     sign);
 
   /*!
    * \brief Compute primitive variables and their gradients.

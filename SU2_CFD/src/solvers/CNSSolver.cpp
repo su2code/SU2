@@ -412,9 +412,9 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
       if (geometry->node[iPoint]->GetDomain())
-        CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0);
+        CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal(), 1.0);
       if (geometry->node[jPoint]->GetDomain())
-        CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0);
+        CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal(), -1.0);
     }
   }
 

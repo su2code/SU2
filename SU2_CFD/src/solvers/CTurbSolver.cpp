@@ -371,19 +371,22 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
     CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
     
     /*--- Influence of i's neighbors on R(i,j) ---*/
     const su2double ri = nodesFlo->GetDensity(iPoint);
     for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
       const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
       const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-      const su2double* Normal = geometry->edge[kEdge]->GetNormal();
+      const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
       const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
       const su2double rk = nodesFlo->GetDensity(kPoint);
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] = 0.;
-          Jacobian_j[iVar][jVar] = 0.;
         }
       }
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -396,21 +399,14 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       }// iDim
       
       Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
-      if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint)) {
+      if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      }
+      
     }// iNode
     
     /*--- Influence of boundary i on R(i,j) ---*/
     if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_i[iVar][jVar] = 0.;
-        }
-      }
       for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
@@ -424,11 +420,12 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           }// iDim
         }// iVertex
       }// iMarker
-      
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
-        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
     }// if physical boundary
+
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+
   }// GG
   
   AD_END_PASSIVE
