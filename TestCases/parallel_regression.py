@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -232,7 +232,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.372346, -6.579371, 0.229867, 0.147637] #last 4 columns
+    turb_oneram6.test_vals = [-2.412448, -6.702975, 0.229867, 0.147637] #last 4 columns
     turb_oneram6.su2_exec  = "parallel_computation.py -f"
     turb_oneram6.timeout   = 3200
     turb_oneram6.tol       = 0.00001

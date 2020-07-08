@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -175,7 +175,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.372346, -6.579370, 0.229866, 0.147638]
+    turb_oneram6.test_vals = [-2.412446, -6.702976, 0.229866, 0.147638]
     test_list.append(turb_oneram6)
 
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)

@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2835,7 +2835,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
      * If there is a statement after a cont. char
      * throw an error. ---*/
 
-     if (text_line.front() != '%'){
+     if (text_line.size() && (text_line.front() != '%')){
        while (text_line.back() == '\\' ||
               (PrintingToolbox::split(text_line, '\\').size() > 1)){
          string tmp;
@@ -3031,7 +3031,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;

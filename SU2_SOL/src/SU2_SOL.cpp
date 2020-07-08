@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

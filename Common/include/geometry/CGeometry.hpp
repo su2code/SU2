@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -751,13 +751,13 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Check_IntElem_Orientation(CConfig *config) {}
+  inline virtual void Check_IntElem_Orientation(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Check_BoundElem_Orientation(CConfig *config) {}
+  inline virtual void Check_BoundElem_Orientation(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
