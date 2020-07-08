@@ -3635,6 +3635,10 @@ void CEulerSolver::CorrectJacobian(CGeometry           *geometry,
   AD_BEGIN_PASSIVE
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    su2double EdgVec[MAXNDIM] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
+
     StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
     HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, EdgVec, sign);
   }// GG
@@ -3716,8 +3720,8 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
 
   //     /*--- Momentum Jacobian ---*/
   //     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-  //       Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodeFlo->GetVelocity(iPoint,jDim);
-  //       Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodeFlo->GetVelocity(kPoint,jDim);
+  //       Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
+  //       Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
   //     }// jDim
 
   //     /*--- Energy Jacobian ---*/
@@ -3745,7 +3749,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
 
   //         /*--- Momentum Jacobian ---*/
   //         for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-  //           Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodeFlo->GetVelocity(iPoint,jDim);
+  //           Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
   //         }// jDim
 
   //         /*--- Energy Jacobian ---*/
@@ -3779,6 +3783,7 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
     ProjVec += Normal[iDim]*EdgVec[iDim];
     Dist2 += EdgVec[iDim]*EdgVec[iDim];
   }
+  if (iPoint == jPoint) Dist2 = 1.0;
 
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
@@ -3834,8 +3839,8 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
       /*--- Momentum Jacobian ---*/
       for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodeFlo->GetVelocity(iPoint,jDim);
-        Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodeFlo->GetVelocity(kPoint,jDim);
+        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
+        Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
       }// jDim
 
       /*--- Energy Jacobian ---*/
@@ -3863,7 +3868,7 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
           /*--- Momentum Jacobian ---*/
           for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodeFlo->GetVelocity(iPoint,jDim);
+            Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
           }// jDim
 
           /*--- Energy Jacobian ---*/
