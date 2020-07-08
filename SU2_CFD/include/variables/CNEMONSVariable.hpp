@@ -83,7 +83,7 @@ public:
    * \param[in] val_nPrimVargrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMONSVariable(su2double val_density, const su2double *val_massfrac, su2double *val_velocity,
+  CNEMONSVariable(su2double val_density, const vector<su2double> &val_massfrac, su2double *val_velocity,
                   su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
                   unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
                   unsigned long val_nPrimVarGrad, CConfig *config);

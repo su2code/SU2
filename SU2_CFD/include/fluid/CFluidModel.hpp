@@ -301,7 +301,7 @@ class CFluidModel {
   /*!
    * \brief Get gas constant.
    */
-  virtual su2double GetGasConstant(const su2double *val_massfrac){}
+  virtual su2double GetGasConstant(){}
 
   /*!
    * \brief Set mixture thermodynamic state.
@@ -311,4 +311,6 @@ class CFluidModel {
    */
   virtual void SetTDStatePTTv(su2double val_pressure, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve){}
 
+
+  virtual vector<su2double> GetMixtureEnergies(){}
 };

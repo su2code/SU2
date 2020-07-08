@@ -33,7 +33,9 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
   MassFrac_Freestream = config->GetMassFrac_FreeStream();
 
   MolarMass.resize(nSpecies,0.0);
+  MassFrac.resize(nSpecies,0.0);
   MolarFractions.resize(nSpecies,0.0);
+  rhos.resize(nSpecies,0.0);
   Cvtrs.resize(nSpecies,0.0);         
   Cvves.resize(nSpecies,0.0);               
   eves.resize(nSpecies,0.0);            
@@ -69,16 +71,16 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_mass
     denom += MassFrac[nSpecies-1] * (Ru/MolarMass[nSpecies-1]) * Tve;
   Density = Pressure / denom;
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhos[iSpecies] = MassFrac[iSpecies]*Density;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    rhos[iSpecies]     = MassFrac[iSpecies]*Density;
+    MassFrac[iSpecies] = rhos[iSpecies]/Density;
+  }  
 }
 
 
-su2double CNEMOGas::GetSoundSpeed(su2double val_pressure){
+su2double CNEMOGas::GetSoundSpeed(){
 
   su2double conc, rhoCvtr;
-
-  Pressure = val_pressure;
 
   conc    = 0.0;
   rhoCvtr = 0.0; 
@@ -107,14 +109,16 @@ su2double CNEMOGas::GetPressure(){
 
 }
 
-su2double CNEMOGas::GetGasConstant(const su2double *val_massfrac){
+su2double CNEMOGas::GetGasConstant(){
 
   su2double Mass = 0.0;
 
   // This needs work for Ionization and such
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    Mass += val_massfrac[iSpecies] * MolarMass[iSpecies];
+    Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
+ 
+  return GasConstant;
 }
 
 

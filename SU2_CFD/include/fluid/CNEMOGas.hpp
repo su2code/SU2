@@ -125,7 +125,7 @@ public:
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
    */
-  virtual vector<su2double> GetMixtureEnergies(){}
+  //virtual vector<su2double> GetMixtureEnergies(){}
   
   /*!
    * \brief Get species net production rates.
@@ -170,7 +170,7 @@ public:
   /*!
    * \brief Get speed of sound.
    */
-  su2double GetSoundSpeed(su2double val_pressure);
+  su2double GetSoundSpeed();
 
   /*!
    * \brief Get pressure.
@@ -210,6 +210,6 @@ public:
   /*!
    * \brief Get gas constant.
    */
-  su2double GetGasConstant(const su2double *val_massfrac);
+  su2double GetGasConstant();
 
 };

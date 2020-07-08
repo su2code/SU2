@@ -211,6 +211,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
     specified reference values. ---*/
   SetNondimensionalization(config, iMesh);
 
+  exit(0);
+
   /*--- Define some auxiliary vectors related to the residual ---*/
   Residual     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
   Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
@@ -2578,6 +2580,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
 
+  vector<su2double> energies;
+
 
  
   /*--- Instatiate the correct fluid model ---*/
@@ -2591,13 +2595,12 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    break;
   }
 
-  //exit(0);
-
 
   /*--- Compressible non dimensionalization ---*/
+  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_Inf);
 
   /*--- Compute Gas Constant ---*/
-  GasConstant_Inf = FluidModel->GetGasConstant(MassFrac_Inf);
+  GasConstant_Inf = FluidModel->GetGasConstant();
   config->SetGas_Constant(GasConstant_Inf);
 
   /*--- Compute the Free Stream Pressure, Temperatrue, and Density ---*/
@@ -2605,16 +2608,9 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Temperature_FreeStream     = config->GetTemperature_FreeStream();
   Temperature_ve_FreeStream  = config->GetTemperature_ve_FreeStream();
 
-  /*--- Compute the density using mixtures ---*/
-  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_Inf);
+  /*--- Compute the density, soundspeed and velocities ---*/
   Density_FreeStream = FluidModel->GetDensity();
-
-  /*--- Calculate sound speed and extract velocities ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    conc += MassFrac_Inf[iSpecies]*Density_FreeStream/Ms[iSpecies];
-    rhoCvtr += Density_FreeStream*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-  }
-  soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_FreeStream/Density_FreeStream);
+  soundspeed = FluidModel->GetSoundSpeed();
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
   if (nDim == 2) {
@@ -2634,33 +2630,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   sqvel = ModVel_FreeStream;
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
-  /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    // Species density
-    rhos = MassFrac_Inf[iSpecies]*Density_FreeStream;
-
-    // Species formation energy
-    Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-    // Species vibrational energy
-    if (thetav[iSpecies] != 0.0)
-      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-    else
-      Ev = 0.0;
-
-    // Species electronic energy
-    num = 0.0;
-    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-    }
-    Ee = Ru/Ms[iSpecies] * (num/denom);
-
-    // Mixture total energy
-    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                    + Ev + Ee + Ef + 0.5*sqvel);
-  }
+  /*--- Calculate energy (RRHO) ---*/
+  energies = FluidModel->GetMixtureEnergies();
 
   /*--- Viscous initialization ---*/
   if (viscous) {
@@ -2713,7 +2684,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
-    Energy_FreeStream    = rhoE/Density_FreeStream;
+    Energy_FreeStream    = (energies[0] + Density_FreeStream*0.5*sqvel)/Density_FreeStream;
   }
 
   config->SetDensity_FreeStream(Density_FreeStream);
@@ -4873,7 +4844,7 @@ void CNEMOEulerSolver::SetVolume_Output(CConfig *config, CGeometry *geometry, su
 #endif
 }
 
-void CNEMOEulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *MassFrac_Inf, su2double *mvec_inf, su2double temperature_inf,
+void CNEMOEulerSolver::ResetNodeInfty(su2double pressure_inf, vector<su2double> &MassFrac_Inf, su2double *mvec_inf, su2double temperature_inf,
                                         su2double temperature_ve_inf, CConfig *config){
   su2double check_infty;
   delete node_infty;

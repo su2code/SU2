@@ -39,7 +39,7 @@
 #include <math.h>
 
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
-                                 const su2double *val_massfrac,
+                                 const vector<su2double> &val_massfrac,
                                  su2double *val_mach, 
                                  su2double val_temperature,
                                  su2double val_temperature_ve,

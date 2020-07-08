@@ -441,7 +441,7 @@ public:
   /*!
    * \brief Reset Node Infty for discrete adjoint
    */
-  void ResetNodeInfty(su2double pressure_inf, su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+  void ResetNodeInfty(su2double pressure_inf, vector<su2double> &massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
                       su2double temperature_ve_inf, CConfig *config);
 
   /*!

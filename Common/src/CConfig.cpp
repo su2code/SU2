@@ -3178,6 +3178,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
+  bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
+                    (Kind_FluidModel == USER_DEFINED));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
 
   if (nZone > 1){
@@ -3541,14 +3543,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
+  cout << "cat: ideal_gas=" << ideal_gas << endl;
+  cout << "cat: noneq_gas=" << noneq_gas << endl;
+
   /*--- Check for Convective scheme available for NICFD ---*/
-
-  if (!ideal_gas) {
-    if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
-    }
-
-  }
+    if ((!ideal_gas) && (!noneq_gas)) {
+      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
+        SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
+      }
+    }  
 
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];
@@ -3563,7 +3566,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Check for Boundary condition available for NICFD ---*/
 
-  if (!ideal_gas) {
+  if ((!ideal_gas) && (!noneq_gas)) {
     if (nMarker_Inlet != 0) {
       SU2_MPI::Error("Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
@@ -4352,6 +4355,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Ref_Temperature    = new su2double[nSpecies];
       nElStates          = new unsigned short[nSpecies];
 
+      MassFrac_FreeStream.resize(nSpecies,0.0);
+
       MassFrac_FreeStream[0] = 1.0;
 
       /*--- Assign gas properties ---*/
@@ -4417,6 +4422,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Tcb_a                = new su2double[nReactions];
       Tcb_b                = new su2double[nReactions];
       nElStates            = new unsigned short[nSpecies];
+
+      MassFrac_FreeStream.resize(nSpecies,0.0);
     
       Reactions.resize(nReactions,2,6,0.0);
       Blottner.resize(nSpecies,3) = su2double(0.0);
@@ -4596,6 +4603,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Tcb_a                = new su2double[nReactions];
       Tcb_b                = new su2double[nReactions];
       nElStates            = new unsigned short[nSpecies];
+
+      MassFrac_FreeStream.resize(nSpecies,0.0);
       
       Reactions.resize(nReactions,2,6,0.0);
       Blottner.resize(nSpecies,3) = su2double(0.0);
