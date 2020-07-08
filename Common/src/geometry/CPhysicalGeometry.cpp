@@ -11279,12 +11279,12 @@ void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
   unsigned short iMarker;
   unsigned short nMarker_All = config->GetnMarker_All();
 
-  vector<int> displs(size);
-  vector<int> recvCounts(size);
+  int *displs = new int [size];
+  int* recvCounts = new int [size];
   int sizeLocal = (int) nMarker_All; // number of local markers
   
   //Communicate size of local marker array and make an array large enough to hold all data
-  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
+  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts, 1,
                        MPI_INT, MPI_COMM_WORLD);
   
   // displacements based on size on each rank
@@ -11301,8 +11301,8 @@ void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
   int sizeGlobal = displs[size-1] + recvCounts[size-1];
 
   /*--- Allocate local and global arrays to hold roughness. ---*/
-  vector<su2double> localRough(nMarker_All);   // local number of markers
-  vector<su2double> globalRough(sizeGlobal);   // all markers including send recieve
+  su2double *localRough = new su2double [nMarker_All]; // local number of markers
+  su2double *globalRough = new su2double[sizeGlobal];  // all markers including send recieve
   pair<unsigned short, su2double> wallprop;
 
   for (iMarker = 0; iMarker < nMarker_All; iMarker++) {
@@ -11310,8 +11310,8 @@ void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
     localRough[iMarker] = wallprop.second;
   }
 
-  SU2_MPI::Allgatherv( localRough.data(), sizeLocal, MPI_DOUBLE, globalRough.data() ,
-                        recvCounts.data(), displs.data(), MPI_DOUBLE,
+  SU2_MPI::Allgatherv( localRough, sizeLocal, MPI_DOUBLE, globalRough ,
+                        recvCounts, displs, MPI_DOUBLE,
                         MPI_COMM_WORLD);
 
   /*--- Set the global array of roughness per marker. ---*/
@@ -11319,4 +11319,9 @@ void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
   for (int iMarker = 0; iMarker < sizeGlobal; iMarker++) 
     GlobalRoughness_Height[iMarker] = globalRough[iMarker];
 
+  /*--- Deallocate local variables. ---*/
+  delete [] displs;
+  delete [] recvCounts;
+  delete [] localRough;
+  delete [] globalRough;
 }
