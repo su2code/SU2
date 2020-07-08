@@ -7337,11 +7337,42 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
         V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+
+        if (tkeNeeded) Omega_Infty = V_infty[nDim+2]*Kine_Infty/V_infty[nDim+6];
         
+        // /*--- Set the normal vector and the coordinates ---*/
+
+        // visc_numerics->SetNormal(Normal);
+        // visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+        //                         geometry->node[iPoint]->GetCoord());
+
+        // /*--- Primitive variables, and gradient ---*/
+
+        // visc_numerics->SetPrimitive(V_domain, V_domain);
+        // visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+        //                                   nodes->GetGradient_Primitive(iPoint));
+
+        // /*--- Turbulent kinetic energy ---*/
+
+        // if (tkeNeeded) {
+        //   visc_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+        //                                       solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+        //   visc_numerics->SetTurbSpecificDissipation(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
+        //                                             solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
+        //   visc_numerics->SetTurbVarGradient(solver[TURB_SOL]->GetNodes()->GetGradient(iPoint),
+        //                                     solver[TURB_SOL]->GetNodes()->GetGradient(iPoint));
+        //   visc_numerics->SetF1blending(solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
+        //                                solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
+        //   visc_numerics->SetF2blending(solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
+        //                                solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
+        //   visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
+        //                               nodes->GetVorticity(iPoint));
+        // }
+
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+        visc_numerics->SetCoord(geometry->node[Point_Normal]->GetCoord(),
                                 geometry->node[iPoint]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
@@ -7354,9 +7385,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
         if (tkeNeeded) {
           visc_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+                                              Kine_Infty);
           visc_numerics->SetTurbSpecificDissipation(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
-                                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
+                                                    Omega_Infty);
           visc_numerics->SetTurbVarGradient(solver[TURB_SOL]->GetNodes()->GetGradient(iPoint),
                                             solver[TURB_SOL]->GetNodes()->GetGradient(iPoint));
           visc_numerics->SetF1blending(solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
