@@ -211,6 +211,15 @@ class CFVMFlowSolverBase : public CSolver {
   void HybridParallelInitialization(const CConfig& config, CGeometry& geometry);
 
   /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter,
+                              bool restart, bool rans,
+                              CSolver*** solver_container,
+                              CGeometry** geometry,
+                              CConfig* config);
+
+  /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();
@@ -247,7 +256,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
-
 
   /*!
    * \brief Set a uniform inlet profile

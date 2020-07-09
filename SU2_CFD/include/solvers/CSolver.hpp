@@ -3642,7 +3642,7 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_ASCII(CGeometry *geometry,
-                              CConfig *config,
+                              const CConfig *config,
                               string val_filename);
 
   /*!
@@ -3652,7 +3652,7 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_Binary(CGeometry *geometry,
-                               CConfig *config,
+                               const CConfig *config,
                                string val_filename);
 
   /*!

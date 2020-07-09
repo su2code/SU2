@@ -5375,19 +5375,13 @@ public:
   string GetVolume_FileName(void) const { return Volume_FileName; }
 
   /*!
-   * \brief Get the name of the restart file for the heat variables.
-   * \return Name of the restart file for the flow variables.
-   */
-  string GetRestart_HeatFileName(void);
-
-  /*!
    * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
    * \param[in] config - Definition of the particular problem.
    * \param[in] filename - the base filename.
    * \param[in] ext - the extension to be added.
    * \return The new filename
    */
-  string GetFilename(string filename, string ext, unsigned long Iter);
+  string GetFilename(string filename, string ext, unsigned long Iter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5405,13 +5399,13 @@ public:
    * \brief Append the instance index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext);
+  string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst);
+  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const;
 
   /*!
    * \brief Get the name of the restart file for the flow variables.
@@ -5480,7 +5474,7 @@ public:
    * \param[in] val_filename - String value of the base filename.
    * \return Name of the file with the appropriate objective function extension.
    */
-  string GetObjFunc_Extension(string val_filename);
+  string GetObjFunc_Extension(string val_filename) const;
 
   /*!
    * \brief Get the criteria for structural residual (relative/absolute).

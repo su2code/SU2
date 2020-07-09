@@ -2149,38 +2149,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
 
   if (dual_time && ((TimeIter == 0) || (restart && (TimeIter == config->GetRestart_Iter()))) ) {
-
-    /*--- Push back the initial condition to previous solution containers
-     for a 1st-order restart or when simply intitializing to freestream. ---*/
-
-    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-      solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
-      if (rans) {
-        solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-        solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
-      }
-    }
-
-    if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == DT_STEPPING_2ND)) {
-
-      /*--- Load an additional restart file for a 2nd-order restart ---*/
-
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
-
-      /*--- Load an additional restart file for the turbulence model ---*/
-      if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
-
-      /*--- Push back this new solution to time level N. ---*/
-
-      for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-        if (rans) {
-          solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-        }
-      }
-    }
+    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
   }
 
   } // end SU2_OMP_PARALLEL

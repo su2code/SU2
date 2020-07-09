@@ -783,6 +783,48 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
 
 }
 
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter,
+                                                      bool restart, bool rans,
+                                                      CSolver*** solver_container,
+                                                      CGeometry** geometry,
+                                                      CConfig* config) {
+
+
+
+  /*--- Push back the initial condition to previous solution containers
+   for a 1st-order restart or when simply intitializing to freestream. ---*/
+
+  for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+    solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
+    if (rans) {
+      solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
+    }
+  }
+
+  if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == DT_STEPPING_2ND)) {
+
+    /*--- Load an additional restart file for a 2nd-order restart ---*/
+
+    solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
+
+    /*--- Load an additional restart file for the turbulence model ---*/
+    if (rans)
+      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
+
+    /*--- Push back this new solution to time level N. ---*/
+
+    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+      if (rans) {
+        solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+      }
+    }
+  }
+}
+
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
   unsigned long iVertex, iPoint;
@@ -1468,6 +1510,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometry, const CConfig* config) {
   /// TODO: Major cleanup needed.
+
+  if (!config->GetViscous()) return;
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;

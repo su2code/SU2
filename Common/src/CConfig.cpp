@@ -7651,7 +7651,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
+string CConfig::GetFilename(string filename, string ext, unsigned long Iter) const {
 
   /*--- Remove any extension --- */
 
@@ -7739,33 +7739,33 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
-    multizone_filename += ext;
-    return multizone_filename;
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
+  multizone_filename += ext;
+  return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
 
-    return multizone_filename;
+  return multizone_filename;
 }
 
-string CConfig::GetObjFunc_Extension(string val_filename) {
+string CConfig::GetObjFunc_Extension(string val_filename) const {
 
   string AdjExt, Filename = val_filename;
 
