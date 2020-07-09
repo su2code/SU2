@@ -2,7 +2,7 @@
  * \file CAdjNSSolver.hpp
  * \brief Headers of the CAdjNSSolver class
  * \author F. Palacios
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

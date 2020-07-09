@@ -2,7 +2,7 @@
  * \file common.hpp
  * \brief Helper functions for viscous methods.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -158,7 +158,7 @@ FORCEINLINE VectorDbl<nVar> viscousFlux(const PrimitiveType& V,
   VectorDbl<nVar> flux;
   flux(0) = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    /*--- Assuming symmetric stress tensor. ---*/
+    /*--- Using the symmetry of the tensor. ---*/
     flux(iDim+1) = dot(tau[iDim], normal);
   }
   flux(nDim+1) = 0.0;

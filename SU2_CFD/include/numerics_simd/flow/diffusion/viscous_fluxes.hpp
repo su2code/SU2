@@ -2,7 +2,7 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -139,8 +139,6 @@ protected:
 
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
     if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
-
-    /// TODO: Wall shear stress (from wall functions).
 
     /// TODO: Uncertainty quantification (needs a way to access tke, maybe in ctor).
 
