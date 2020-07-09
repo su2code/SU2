@@ -3211,10 +3211,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
-      // if (!ideal_gas || low_mach_corr) {
+      if (!ideal_gas || low_mach_corr) {
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
-      // }
+      }
 
       /*--- Low-Mach number correction. ---*/
 

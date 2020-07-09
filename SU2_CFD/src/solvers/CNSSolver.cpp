@@ -341,6 +341,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
                          (config->GetKind_Turb_Model() == SST_SUST);
 
+  const auto InnerIter  = config->GetInnerIter();
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
@@ -348,6 +349,12 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
+
+  unsigned short iDim, iVar;
+
+  /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+  su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -502,19 +509,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
     }
 
-    /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
-
-    if (!ideal_gas || low_mach_corr) {
-      ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
-      ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
-    }
-
-    /*--- Low-Mach number correction. ---*/
-
-    if (low_mach_corr) {
-      LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
-    }
-
     /*--- Check for non-physical solutions after reconstruction. If found, use the
      cell-average value of the solution. This is a locally 1st order approximation,
      which is typically only active during the start-up of a calculation. ---*/
@@ -535,15 +529,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
     bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
     bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-
-    nodes->SetNon_Physical(iPoint, bad_i);
-    nodes->SetNon_Physical(jPoint, bad_j);
-
-    /*--- Get updated state, in case the point recovered after the set. ---*/
-    bad_i = nodes->GetNon_Physical(iPoint);
-    bad_j = nodes->GetNon_Physical(jPoint);
-
-    counter_local += bad_i+bad_j;
 
     numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
     numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
