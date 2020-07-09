@@ -248,6 +248,44 @@ class CFVMFlowSolverBase : public CSolver {
    */
   void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
 
+
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(const CConfig* config, unsigned short iMarker) final;
+
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(const su2double *val_inlet,
+                        unsigned short iMarker,
+                        unsigned long iVertex) final;
+
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             string val_marker,
+                             const CGeometry *geometry,
+                             const CConfig *config) const final;
+
   /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.

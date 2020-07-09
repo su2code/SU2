@@ -6552,7 +6552,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  su2double* GetInlet_FlowDir(string val_index);
+  const su2double* GetInlet_FlowDir(string val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

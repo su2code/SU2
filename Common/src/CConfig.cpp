@@ -8343,7 +8343,7 @@ void CConfig::SetInlet_Ptotal(su2double val_pressure, string val_marker) {
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
 }
 
-su2double* CConfig::GetInlet_FlowDir(string val_marker) {
+const su2double* CConfig::GetInlet_FlowDir(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;

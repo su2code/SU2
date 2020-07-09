@@ -3162,7 +3162,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  inline virtual void SetUniformInlet(CConfig* config, unsigned short iMarker) {};
+  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {};
 
   /*!
    * \brief A virtual member
@@ -3170,7 +3170,7 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  inline virtual void SetInletAtVertex(su2double *val_inlet,
+  inline virtual void SetInletAtVertex(const su2double *val_inlet,
                                        unsigned short iMarker,
                                        unsigned long iVertex) { };
 
@@ -3187,8 +3187,8 @@ public:
                                             unsigned long val_inlet_point,
                                             unsigned short val_kind_marker,
                                             string val_marker,
-                                            CGeometry *geometry,
-                                            CConfig *config) const { return 0; }
+                                            const CGeometry *geometry,
+                                            const CConfig *config) const { return 0; }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
