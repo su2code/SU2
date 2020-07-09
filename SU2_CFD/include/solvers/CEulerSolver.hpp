@@ -559,11 +559,15 @@ public:
    * \param[in] nDim - Number of physical dimensions.
    * \param[in,out] primitive_i - Primitive variables at point i.
    * \param[in,out] primitive_j - Primitive variables at point j.
+   * \param[in] tke_i - Turbulent kinetic energy at point i.
+   * \param[in] tke_j - Turbulent kinetic energy at point j.
    */
   static void LowMachPrimitiveCorrection(CFluidModel *fluidModel,
                                          unsigned short nDim,
                                          su2double *primitive_i,
-                                         su2double *primitive_j);
+                                         su2double *primitive_j,
+                                         su2double tke_i,
+                                         su2double tke_j);
 
   /*!
    * \brief Source term integration.

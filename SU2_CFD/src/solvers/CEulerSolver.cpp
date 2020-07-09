@@ -3366,7 +3366,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   fluidModel->SetTDState_Prho(pressure, density);
 
   primitive[0] = fluidModel->GetTemperature();
-  primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2;
+  primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2 + tke;
   primitive[nDim+4] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
   secondary[1] = fluidModel->GetdPde_rho();
@@ -3374,7 +3374,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
 }
 
 void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
-                                              su2double *primitive_i, su2double *primitive_j) {
+                                              su2double *primitive_i, su2double *primitive_j, su2double tke_i, su2double tke_j) {
   unsigned short iDim;
 
   su2double velocity2_i = 0.0;
@@ -3404,10 +3404,10 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
   }
 
   fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
-  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
+  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i + tke_i;
 
   fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
-  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
+  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j + tke_j;
 
 }
 
