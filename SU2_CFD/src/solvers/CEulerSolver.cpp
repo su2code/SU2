@@ -3867,8 +3867,8 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
      Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
 
     /*--- Density Jacobian ---*/
-    Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/Density_i*Density_i+0.5*Vel2_i);
-    Jacobian_j[nVar-1][0] += Weight*(-Pressure_k/Density_k*Density_k+0.5*Vel2_k);
+    Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
+    Jacobian_j[nVar-1][0] += Weight*(-Pressure_k/(Density_k*Density_k)+0.5*Vel2_k);
 
     /*--- Momentum Jacobian ---*/
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
@@ -3898,9 +3898,9 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
           Weight += Normalk[iDim]*Vec[iDim];
 
         Weight *= -1.0*HalfOnVol*ConductivityOnR*sign;
-        
+
         /*--- Density Jacobian ---*/
-        Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/Density_i*Density_i+0.5*Vel2_i);
+        Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
 
         /*--- Momentum Jacobian ---*/
         for (unsigned short jDim = 0; jDim < nDim; jDim++) {
