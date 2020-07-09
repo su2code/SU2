@@ -5985,9 +5985,11 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
                      P = geometry->nodes->GetCoord(iPoint);
 
+                     /*--- Computation of the radius coordinates for the current node. ---*/
+                     GeometryToolbox::Distance(nDim, P, AD_Center, r);
+
                      /*--- Computation of the non-dimensional radius for the current node. ---*/
-                     r_ = GeometryToolbox::Distance(nDim, P, AD_Center);
-                     r_ = r_/AD_Radius;
+                     r_ = GeometryToolbox::Distance(nDim, P, AD_Center) / AD_Radius;
 
                      /*--- Loop over the actuator disk radial stations. ---*/
                      for (iEl = 0; iEl < nRow; iEl++){
@@ -11407,7 +11409,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
   su2double Pressure, Velocity[MAXNDIM],
   Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet,
-  Area, UnitNormal[MAXNDIM], *V_outlet, *V_domain, *V_inlet;
+  Area, UnitNormal[MAXNDIM] = {0.0}, *V_outlet, *V_domain, *V_inlet;
 
   su2double Pressure_out, Density_out,
   Pressure_in, Density_in;
@@ -11455,11 +11457,9 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+      Area = GeometryToolbox::Norm(nDim, Normal);
+      for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node. ---*/
 
