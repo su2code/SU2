@@ -35,7 +35,6 @@
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
   CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() {
 
-  unsigned long iPoint;
   unsigned short iVar, iMarker, nLineLets;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
@@ -2215,50 +2214,6 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   /*--- For verification cases, compute the global error metrics. ---*/
 
   ComputeVerificationError(geometry, config);
-
-}
-
-void CIncEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
-
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-
-  su2double localUnderRelaxation = 1.0;
-  const su2double allowableRatio = 0.2;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    localUnderRelaxation = 1.0;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-      /* We impose a limit on the maximum percentage that the
-       temperature can change over a nonlinear iteration. */
-
-      if ((config->GetEnergy_Equation() && (iVar == nVar-1))) {
-        const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
-        if (ratio > allowableRatio) {
-          localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
-        }
-      }
-    }
-
-    /* In case of turbulence, take the min of the under-relaxation factor
-     between the mean flow and the turb model. */
-
-    if (config->GetKind_Turb_Model() != NONE)
-      localUnderRelaxation = min(localUnderRelaxation, solver_container[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
-  }
 
 }
 

@@ -865,13 +865,6 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
-
-  /*!
    * \brief Provide the mass flow rate.
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.

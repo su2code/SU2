@@ -1531,7 +1531,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) { }
+  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) { }
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters

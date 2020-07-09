@@ -381,13 +381,6 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
-
-  /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

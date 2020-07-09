@@ -242,12 +242,11 @@ class CFVMFlowSolverBase : public CSolver {
   void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
 
   /*!
-   * \brief Compute the undivided laplacian for the solution and the
-   *        dissipation sensor for centered schemes.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry* geometry, const CConfig* config);
+  void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
 
   /*!
    * \brief Compute the density at the infinity.
