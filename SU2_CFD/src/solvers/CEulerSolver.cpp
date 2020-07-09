@@ -3219,7 +3219,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Low-Mach number correction. ---*/
 
       if (low_mach_corr) {
-        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
+        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j, tke_i, tke_j);
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
