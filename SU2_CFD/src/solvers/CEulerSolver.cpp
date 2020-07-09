@@ -3715,7 +3715,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      ProjVec += Vec[iDim]*Normalk[iDim]/Dist2;
+      ProjVec += Vec[iDim]*Normalk[iDim];
 
     const su2double Weight = 0.5*HalfOnVol*sign*signk;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -3760,7 +3760,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
         /*--- Get new projection vector to be multiplied by divergence terms ---*/
         ProjVec = 0.0;
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          ProjVec += Vec[iDim]*Normalk[iDim]/Dist2;
+          ProjVec += Vec[iDim]*Normalk[iDim];
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           /*--- Momentum flux Jacobian wrt momentum ---*/
