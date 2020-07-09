@@ -3682,15 +3682,15 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
   const su2double Mean_EddyVisc = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
   const su2double Mean_Viscosity = Mean_LaminarVisc + Mean_EddyVisc;
 
+  /*--- TODO: Correction with wall function ---*/
+  const su2double WF_Factor = 1.0;
+
   const su2double Density_i = nodes->GetDensity(iPoint);
   const su2double Xi_i = WF_Factor*MeanViscosity/Density_i;
 
-  su2double Mean_Veocity[MAXNDIM] = {0.0};
+  su2double Mean_Velocity[MAXNDIM] = {0.0};
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Mean_Velocity[iDim] = 0.5*(nodesFlo->GetVelocity(iPoint,iDim)+nodesFlo->GetVelocity(jPoint,iDim));
-  
-  /*--- TODO: Correction with wall function ---*/
-  const su2double WFFactor = 1.0;
 
   /*--- Reset Jacobian matrix ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -3770,16 +3770,18 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
   }// if physical boundary
 
   /*--- Now get density and energy Jacobians for iPoint ---*/
-  for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-    /*--- Momentum flux Jacobian wrt density ---*/
-    Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(iPoint,jDim);
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      /*--- Momentum flux Jacobian wrt density ---*/
+      Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(iPoint,jDim);
 
-    /*--- Energy Jacobian wrt momentum ---*/
-    Jacobian_i[nVar-1][iDim+1] += Jacobian_i[iDim+1][jDim+1]*Mean_Velocity[iDim];
+      /*--- Energy Jacobian wrt momentum ---*/
+      Jacobian_i[nVar-1][iDim+1] += Jacobian_i[iDim+1][jDim+1]*Mean_Velocity[iDim];
+    }
+
+    /*--- Energy Jacobian wrt density ---*/
+    Jacobian_i[nVar-1][0] += Jacobian_i[iDim+1][0]*Mean_Velocity[iDim];
   }
-
-  /*--- Energy Jacobian wrt density ---*/
-  Jacobian_i[nVar-1][0] += Jacobian_i[iDim+1][0]*Mean_Velocity[iDim];
 
   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
   if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
