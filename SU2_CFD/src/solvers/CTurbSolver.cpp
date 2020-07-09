@@ -389,7 +389,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       const su2double rk = nodesFlo->GetDensity(kPoint);
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_i[iVar][jVar] = 0.;
+          Jacobian_j[iVar][jVar] = 0.;
         }
       }
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
