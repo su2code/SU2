@@ -3145,21 +3145,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         tke_i += Project_Grad_i;
         tke_j += Project_Grad_j;
-
-        bool neg_tke_i = (tke_i < 0.0);
-        bool neg_tke_j = (tke_j < 0.0);
-
-        tke_i = (neg_tke_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
-        tke_j = (neg_tke_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
       }
-
-      numerics->SetTurbKineticEnergy(tke_i, tke_j);
     }
 
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
+      if (tkeNeeded)
+        numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
     }
     else {
@@ -3243,6 +3237,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
 
+      if (tkeNeeded) {
+        bool neg_tke_i = (tke_i < 0.0);
+        bool neg_tke_j = (tke_j < 0.0);
+
+        bad_i = bad_i || neg_tke_i;
+        bad_j = bad_j || neg_tke_j;
+      }
+
       nodes->SetNon_Physical(iPoint, bad_i);
       nodes->SetNon_Physical(jPoint, bad_j);
 
@@ -3254,6 +3256,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
       numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
+
+      if (tkeNeeded) {
+        tke_i = (neg_tke_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
+        tke_j = (neg_tke_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
+        numerics->SetTurbKineticEnergy(tke_i, tke_j);
+      }
 
     }
 

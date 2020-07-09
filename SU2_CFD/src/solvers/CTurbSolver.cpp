@@ -197,9 +197,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
       bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
 
-      numerics->SetPrimitive(neg_pres_or_rho_i ? V_i : flowPrimVar_i, 
-                             neg_pres_or_rho_j ? V_j : flowPrimVar_j);
-
       /*--- Reconstruct turbulence variables. ---*/
 
       Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -210,6 +207,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter(jPoint);
       }
 
+      bool neg_turb_i = false, neg_turb_j = false;
       for (iVar = 0; iVar < nVar; iVar++) {
         su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
         const su2double T_ij = Turb_j[iVar] - Turb_i[iVar];
@@ -227,13 +225,18 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
         solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
+
+        neg_turb_i = neg_turb_i || (solution_i[iVar] < 0.0);
+        neg_turb_j = neg_turb_j || (solution_j[iVar] < 0.0);
       }
 
-      bool neg_k_or_omega_i = (solution_i[0] < 0.0) || (solution_i[1] < 0.0);
-      bool neg_k_or_omega_j = (solution_j[0] < 0.0) || (solution_j[1] < 0.0);
+      bool bad_i = neg_pres_or_rho_i || neg_turb_i;
+      bool bad_j = neg_pres_or_rho_j || neg_turb_j;
 
-      numerics->SetTurbVar(neg_k_or_omega_i ? Turb_i : solution_i, 
-                           neg_k_or_omega_j ? Turb_j : solution_j);
+      numerics->SetPrimitive(bad_i ? V_i : flowPrimVar_i, 
+                             bad_j ? V_j : flowPrimVar_j);
+      numerics->SetTurbVar(bad_i ? Turb_i : solution_i, 
+                           bad_j ? Turb_j : solution_j);
     }
 
     /*--- Update convective residual value ---*/
@@ -402,7 +405,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       
       if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-      
+
     }// iNode
     
     /*--- Influence of boundary i on R(i,j) ---*/
