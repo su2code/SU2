@@ -3735,7 +3735,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
         Jacobian_j[iDim+1][0] -= Jacobian_j[iDim+1][jDim+1]*nodesFlo->GetVelocity(kPoint,jDim);
 
         /*--- Energy Jacobian wrt momentum ---*/
-        Jacobian_j[nVar-1][iDim+1] += Jacobian_j[iDim+1][jDim+1]*Mean_Velocity[iDim];
+        Jacobian_j[nVar-1][iDim+1] += Jacobian_j[iDim+1][jDim+1]*Mean_Velocity[jDim];
       }
 
       /*--- Energy Jacobian wrt density ---*/
@@ -3761,7 +3761,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
         ProjVec = 0.0;
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           ProjVec += Vec[iDim]*Normalk[iDim]/Dist2;
-        
+
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           /*--- Momentum flux Jacobian wrt momentum ---*/
           for (unsigned short jDim = 0; jDim < nDim; jDim++) {
@@ -3781,7 +3781,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
       Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(iPoint,jDim);
 
       /*--- Energy Jacobian wrt momentum ---*/
-      Jacobian_i[nVar-1][iDim+1] += Jacobian_i[iDim+1][jDim+1]*Mean_Velocity[iDim];
+      Jacobian_i[nVar-1][iDim+1] += Jacobian_i[iDim+1][jDim+1]*Mean_Velocity[jDim];
     }
 
     /*--- Energy Jacobian wrt density ---*/
