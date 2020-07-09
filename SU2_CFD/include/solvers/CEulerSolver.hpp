@@ -542,11 +542,13 @@ public:
    * \param[in] nDim - Number of physical dimensions.
    * \param[in,out] primitive - Primitive variables.
    * \param[out] secondary - Secondary variables.
+   * \param[in] tke - Turbulent kinetic energy.
    */
   static void ComputeConsistentExtrapolation(CFluidModel *fluidModel,
                                              unsigned short nDim,
                                              su2double *primitive,
-                                             su2double *secondary);
+                                             su2double *secondary,
+                                             su2double tke);
 
   /*!
    * \brief Apply low Mach number correction to the primitives at two points,

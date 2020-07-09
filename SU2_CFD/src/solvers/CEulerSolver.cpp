@@ -3211,10 +3211,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
-      if (!ideal_gas || low_mach_corr) {
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
-      }
+      // if (!ideal_gas || low_mach_corr) {
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
+      // }
 
       /*--- Low-Mach number correction. ---*/
 
@@ -3354,7 +3354,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
-                                                  su2double *primitive, su2double *secondary) {
+                                                  su2double *primitive, su2double *secondary, su2double tke) {
 
   su2double density = primitive[nDim+2];
   su2double pressure = primitive[nDim+1];
