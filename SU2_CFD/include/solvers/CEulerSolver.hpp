@@ -38,8 +38,6 @@
  */
 class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
 protected:
-  enum : size_t {MAXNVAR = 12};   /*!< \brief Max number of variables, used in some static arrays. */
-
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
@@ -459,20 +457,6 @@ public:
                     CConfig *config,
                     unsigned short val_marker) final;
 
- /*!
-  * \brief Impose the interface state across sliding meshes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] conv_numerics - Description of the numerical method.
-  * \param[in] visc_numerics - Description of the numerical method.
-  * \param[in] config - Definition of the particular problem.
-  */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) final;
-
   /*!
    * \brief Impose the engine inflow boundary condition.
     * \param[in] geometry - Geometrical definition of the problem.
@@ -547,18 +531,6 @@ public:
                              CNumerics *numerics,
                              CConfig *config,
                              unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Periodic(CGeometry *geometry,
-                   CSolver **solver_container,
-                   CNumerics *numerics,
-                   CConfig *config) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -671,22 +643,6 @@ public:
                             CNumerics *visc_numerics,
                             CConfig *config,
                             unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose a custom or verification boundary condition.
-   * \param[in] geometry         - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics    - Description of the convective numerical method.
-   * \param[in] visc_numerics    - Description of the viscous numerical method.
-   * \param[in] config           - Definition of the particular problem.
-   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
-   */
-  void BC_Custom(CGeometry *geometry,
-                 CSolver **solver_container,
-                 CNumerics *conv_numerics,
-                 CNumerics *visc_numerics,
-                 CConfig *config,
-                 unsigned short val_marker) final;
 
   /*!
    * \brief Impose the outlet boundary condition.

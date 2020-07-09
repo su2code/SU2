@@ -30,10 +30,22 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
 
+namespace detail {
+template <class VariableType>
+constexpr size_t flowSolMaxnVar() {
+  return 12;
+}
+// template<>
+// constexpr size_t flowSolMaxnVar<"your variable type">() { return "your size"; }
+}  // namespace detail
+
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 }; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  enum : size_t {
+    MAXNVAR = detail::flowSolMaxnVar<VariableType>()
+  }; /*!< \brief Max number of variables, used in some static arrays. */
 
   enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
   enum : size_t { OMP_MIN_SIZE = 32 };  /*!< \brief Min chunk size for edge loops (max is color group size). */
@@ -312,6 +324,38 @@ class CFVMFlowSolverBase : public CSolver {
    */
   void BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                     CConfig* config, unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
+
+  /*!
+   * \brief Impose the interface state across sliding meshes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                          CNumerics* visc_numerics, CConfig* config) final;
+
+  /*!
+   * \brief Impose a custom or verification boundary condition.
+   * \param[in] geometry         - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics    - Description of the convective numerical method.
+   * \param[in] visc_numerics    - Description of the viscous numerical method.
+   * \param[in] config           - Definition of the particular problem.
+   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
+   */
+  void BC_Custom(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
+                 CConfig* config, unsigned short val_marker) final;
 
   /*!
    * \brief Compute the density at the infinity.
