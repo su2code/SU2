@@ -6208,11 +6208,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case TIME_STEPPING:
       cout << "Unsteady simulation using a time stepping strategy."<< endl;
       if (Unst_CFL != 0.0) {
-                          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-                          if (Delta_UnstTime != 0.0) {
-                            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
-                          }
-                        }
+        cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        if (Delta_UnstTime != 0.0) {
+          cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        }
+      }
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
       break;
       case DT_STEPPING_1ST: case DT_STEPPING_2ND:
@@ -6220,16 +6220,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
       if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+      cout << "Total number of internal Dual Time iterations: "<< InnerIter <<"." << endl;
       break;
     }
   }
   else {
     if (Time_Domain) {
-            cout << "Dynamic structural analysis."<< endl;
-            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-     } else {
-            cout << "Static structural analysis." << endl;
+      cout << "Dynamic structural analysis."<< endl;
+      cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+    } else {
+      cout << "Static structural analysis." << endl;
     }
   }
 

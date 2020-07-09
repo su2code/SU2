@@ -4408,105 +4408,44 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
 }
 
-void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
-                                               CConfig   *config) {
+void CIncEulerSolver::PrintVerificationError(const CConfig *config) const {
 
-  /*--- The errors only need to be computed on the finest grid. ---*/
-  if(MGLevel != MESH_0) return;
+  if ((rank != MASTER_NODE) || (MGLevel != MESH_0)) return;
 
-  /*--- If this is a verification case, we can compute the global
-   error metrics by using the difference between the local error
-   and the known solution at each DOF. This is then collected into
-   RMS (L2) and maximum (Linf) global error norms. From these
-   global measures, one can compute the order of accuracy. ---*/
+  if (config && !config->GetDiscrete_Adjoint()) {
 
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
-                       && (config->GetInnerIter()!= 0))
-                      || (config->GetInnerIter() == 1));
-  if( !write_heads ) return;
+    cout.precision(6);
+    cout.setf(ios::scientific, ios::floatfield);
 
-  /*--- Check if there actually is an exact solution for this
-        verification case, if computed at all. ---*/
-  if (VerificationSolution) {
-    if (VerificationSolution->ExactSolutionKnown()) {
+    cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
 
-      /*--- Get the physical time if necessary. ---*/
-      su2double time = 0.0;
-      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+    cout << setw(20) << "RMS Error [P]: " << setw(12) << VerificationSolution->GetError_RMS(0) << "     | ";
+    cout << setw(20) << "Max Error [P]: " << setw(12) << VerificationSolution->GetError_Max(0);
+    cout << endl;
 
-      /*--- Reset the global error measures to zero. ---*/
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        VerificationSolution->SetError_RMS(iVar, 0.0);
-        VerificationSolution->SetError_Max(iVar, 0.0, 0);
-      }
+    cout << setw(20) << "RMS Error [U]: " << setw(12) << VerificationSolution->GetError_RMS(1) << "     | ";
+    cout << setw(20) << "Max Error [U]: " << setw(12) << VerificationSolution->GetError_Max(1);
+    cout << endl;
 
-      /*--- Loop over all owned points. ---*/
-      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    cout << setw(20) << "RMS Error [V]: " << setw(12) << VerificationSolution->GetError_RMS(2) << "     | ";
+    cout << setw(20) << "Max Error [V]: " << setw(12) << VerificationSolution->GetError_Max(2);
+    cout << endl;
 
-        /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry->nodes->GetCoord(iPoint);
-        su2double *solDOF     = nodes->GetSolution(iPoint);
-
-        /* Get local error from the verification solution class. */
-        vector<su2double> error(nVar,0.0);
-        VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
-
-        /* Increment the global error measures */
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
-          VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
-                                             geometry->nodes->GetGlobalIndex(iPoint),
-                                             geometry->nodes->GetCoord(iPoint));
-        }
-      }
-
-      /* Finalize the calculation of the global error measures. */
-      VerificationSolution->SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
-
-      /*--- Screen output of the error metrics. This can be improved
-       once the new output classes are in place. ---*/
-
-      if ((rank == MASTER_NODE) && (geometry->GetMGLevel() == MESH_0)) {
-
-        cout.precision(6);
-        cout.setf(ios::scientific, ios::floatfield);
-
-        if (!config->GetDiscrete_Adjoint()) {
-
-          cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
-
-          cout << setw(20) << "RMS Error [P]: " << setw(12) << VerificationSolution->GetError_RMS(0) << "     | ";
-          cout << setw(20) << "Max Error [P]: " << setw(12) << VerificationSolution->GetError_Max(0);
-          cout << endl;
-
-          cout << setw(20) << "RMS Error [U]: " << setw(12) << VerificationSolution->GetError_RMS(1) << "     | ";
-          cout << setw(20) << "Max Error [U]: " << setw(12) << VerificationSolution->GetError_Max(1);
-          cout << endl;
-
-          cout << setw(20) << "RMS Error [V]: " << setw(12) << VerificationSolution->GetError_RMS(2) << "     | ";
-          cout << setw(20) << "Max Error [V]: " << setw(12) << VerificationSolution->GetError_Max(2);
-          cout << endl;
-
-          if (nDim == 3) {
-            cout << setw(20) << "RMS Error [W]: " << setw(12) << VerificationSolution->GetError_RMS(3) << "     | ";
-            cout << setw(20) << "Max Error [W]: " << setw(12) << VerificationSolution->GetError_Max(3);
-            cout << endl;
-          }
-
-          if (config->GetEnergy_Equation()) {
-            cout << setw(20) << "RMS Error [T]: " << setw(12) << VerificationSolution->GetError_RMS(nDim+1) << "     | ";
-            cout << setw(20) << "Max Error [T]: " << setw(12) << VerificationSolution->GetError_Max(nDim+1);
-            cout << endl;
-          }
-
-          cout << "-------------------------------------------------------------------------" << endl << endl;
-          cout.unsetf(ios_base::floatfield);
-        }
-      }
+    if (nDim == 3) {
+      cout << setw(20) << "RMS Error [W]: " << setw(12) << VerificationSolution->GetError_RMS(3) << "     | ";
+      cout << setw(20) << "Max Error [W]: " << setw(12) << VerificationSolution->GetError_Max(3);
+      cout << endl;
     }
 
-  }
+    if (config->GetEnergy_Equation()) {
+      cout << setw(20) << "RMS Error [T]: " << setw(12) << VerificationSolution->GetError_RMS(nDim+1) << "     | ";
+      cout << setw(20) << "Max Error [T]: " << setw(12) << VerificationSolution->GetError_Max(nDim+1);
+      cout << endl;
+    }
 
+    cout << "-------------------------------------------------------------------------" << endl << endl;
+    cout.unsetf(ios_base::floatfield);
+  }
 }
 
 void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {

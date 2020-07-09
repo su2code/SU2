@@ -912,18 +912,6 @@ public:
   inline su2double GetTotal_AeroCD() const final { return Total_AeroCD; }
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
-  inline su2double GetTotal_CpDiff() const final { return Total_CpDiff; }
-
-  /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
-  inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Near-Field pressure coefficient.
    * \return Value of the NearField pressure coefficient (inviscid + viscous contribution).
    */
@@ -947,38 +935,6 @@ public:
    * \param[in] val_cequivarea - Value of the aero drag.
    */
   inline void SetTotal_AeroCD(su2double val_aerocd) final { Total_AeroCD = val_aerocd; }
-
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  inline void SetTotal_CpDiff(su2double val_pressure) final { Total_CpDiff = val_pressure; }
-
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  inline void SetTotal_HeatFluxDiff(su2double val_heat) final { Total_HeatFluxDiff = val_heat; }
-
-  /*!
-   * \brief Set the value of the Near-Field pressure oefficient.
-   * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
-   */
-  inline void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) final { Total_CNearFieldOF = val_cnearfieldpress; }
-
-  /*!
-   * \author H. Kline
-   * \brief Set the total "combo" objective (weighted sum of other values).
-   * \param[in] ComboObj - Value of the combined objective.
-   */
-  inline void SetTotal_ComboObj(su2double ComboObj) final {Total_ComboObj = ComboObj; }
-
-  /*!
-   * \author H. Kline
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   * \return Value of the "combo" objective values.
-   */
-  inline su2double GetTotal_ComboObj() const final { return Total_ComboObj; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1059,36 +1015,6 @@ public:
   inline su2double GetTotal_DC60() const final { return Total_DC60; }
 
   /*!
-   * \brief Provide the total custom objective function.
-   * \return Value of the custom objective function.
-   */
-  inline su2double GetTotal_Custom_ObjFunc() const final { return Total_Custom_ObjFunc; }
-
-  /*!
-   * \brief Provide the total heat load.
-   * \return Value of the heat load (viscous contribution).
-   */
-  inline su2double GetTotal_HeatFlux(void) const final { return Total_Heat; }
-
-  /*!
-   * \brief Provide the total heat load.
-   * \return Value of the heat load (viscous contribution).
-   */
-  inline su2double GetTotal_MaxHeatFlux() const final { return Total_MaxHeat; }
-
-  /*!
-   * \brief Store the total heat load.
-   * \param[in] val_Total_Heat - Value of the heat load.
-   */
-  inline void SetTotal_HeatFlux(su2double val_Total_Heat) final { Total_Heat = val_Total_Heat; }
-
-  /*!
-   * \brief Store the total heat load.
-   * \param[in] val_Total_Heat - Value of the heat load.
-   */
-  inline void SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) final { Total_MaxHeat = val_Total_MaxHeat; }
-
-  /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
@@ -1165,79 +1091,6 @@ public:
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   inline void SetTotal_DC60(su2double val_Total_DC60) final { Total_DC60 = val_Total_DC60; }
-
-  /*!
-   * \brief Set the value of the custom objective function.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc = val_total_custom_objfunc*val_weight;
-  }
-
-  /*!
-   * \brief Add the value of the custom objective function.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc += val_total_custom_objfunc*val_weight;
-  }
-
-  /*!
-   * \brief Provide the Pressure coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline su2double GetCPressure(unsigned short val_marker, unsigned long val_vertex) const final {
-    return CPressure[val_marker][val_vertex];
-  }
-
-  /*!
-   * \brief Provide the Target Pressure coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline su2double GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex) const final {
-    return CPressureTarget[val_marker][val_vertex];
-  }
-
-  /*!
-   * \brief Set the value of the target Pressure coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline void SetCPressureTarget(unsigned short val_marker,
-                                 unsigned long val_vertex,
-                                 su2double val_pressure) final {
-    CPressureTarget[val_marker][val_vertex] = val_pressure;
-  }
-
-  /*!
-   * \brief Value of the characteristic variables at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) const final {
-    return CharacPrimVar[val_marker][val_vertex];
-  }
-
-  /*!
-   * \brief Value of the characteristic variables at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline void SetCharacPrimVar(unsigned short val_marker,
-                               unsigned long val_vertex,
-                               unsigned short val_var,
-                               su2double val_value) final {
-    CharacPrimVar[val_marker][val_vertex][val_var] = val_value;
-  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -1339,103 +1192,6 @@ public:
                                 su2double val_deltat) final {
     ActDisk_DeltaT[val_marker][val_vertex] = val_deltat;
   }
-
-  /*!
-   * \brief Value of the total temperature at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
-   * \return Value of the total temperature
-   */
-  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ttotal[val_marker][val_vertex]; }
-
-  /*!
-   * \brief Value of the total pressure at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
-   * \return Value of the total pressure
-   */
-  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ptotal[val_marker][val_vertex]; }
-
-  /*!
-   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is evaluated
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
-   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
-   * \return Component of a unit vector representing the flow direction.
-   */
-  inline su2double GetInlet_FlowDir(unsigned short val_marker,
-                                    unsigned long val_vertex,
-                                    unsigned short val_dim) const final {
-    return Inlet_FlowDir[val_marker][val_vertex][val_dim];
-  }
-
-  /*!
-   * \brief Set the value of the total temperature at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the total temperature is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
-   * \param[in] val_ttotal - Value of the total temperature
-   */
-  inline void SetInlet_Ttotal(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              su2double val_ttotal) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_marker >= nMarker)
-      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ttotal == nullptr || Inlet_Ttotal[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
-    else if (val_vertex >= nVertex[val_marker])
-      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
-    else
-      Inlet_Ttotal[val_marker][val_vertex] = val_ttotal;
-  }
-
-
-  /*!
-   * \brief Set the value of the total pressure at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the total pressure is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
-   * \param[in] val_ptotal - Value of the total pressure
-   */
-  inline void SetInlet_Ptotal(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              su2double val_ptotal) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_marker >= nMarker)
-      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ptotal == nullptr || Inlet_Ptotal[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
-    else if (val_vertex >= nVertex[val_marker])
-      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
-    else
-      Inlet_Ptotal[val_marker][val_vertex] = val_ptotal;
-  }
-
-
-  /*!
-   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
-   * \param[in] val_dim - The component of the flow direction unit vector to be set
-   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
-   */
-  inline void SetInlet_FlowDir(unsigned short val_marker,
-                               unsigned long val_vertex,
-                               unsigned short val_dim,
-                               su2double val_flowdir) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_marker >= nMarker)
-      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
-        SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
-    else if (val_vertex >= nVertex[val_marker])
-      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
-    else
-      Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
-  }
-
 
   /*!
    * \brief Set a uniform inlet profile
@@ -2047,11 +1803,10 @@ public:
   }
 
   /*!
-   * \brief Compute the global error measures (L2, Linf) for verification cases.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
+   * \brief Print verification error to screen.
+   * \param[in] config - Definition of the particular problem.
    */
-  void ComputeVerificationError(CGeometry *geometry, CConfig *config) final;
+  virtual void PrintVerificationError(const CConfig* config) const final;
 
   /*!
    * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).

@@ -395,7 +395,6 @@ private:
   unsigned long OuterIter;          /*!< \brief Current Outer iterations for multizone problems. */
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
-  unsigned long Unst_nIntIter;      /*!< \brief Number of internal iterations (Dual time Method). */
   long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -2935,12 +2934,6 @@ public:
    * \param[in] val_nmarker - Number of markers of the problem.
    */
   void SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
-
-  /*!
-   * \brief Get the number of internal iterations.
-   * \return Number of internal iterations.
-   */
-  unsigned long GetUnst_nIntIter(void) const { return Unst_nIntIter; }
 
   /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
