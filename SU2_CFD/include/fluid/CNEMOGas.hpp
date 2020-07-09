@@ -125,7 +125,7 @@ public:
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
    */
-  //virtual vector<su2double> GetMixtureEnergies(){}
+  virtual vector<su2double> GetMixtureEnergies(){}
   
   /*!
    * \brief Get species net production rates.

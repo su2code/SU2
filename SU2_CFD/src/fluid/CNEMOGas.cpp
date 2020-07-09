@@ -60,7 +60,7 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_mass
   MassFrac = val_massfrac;                   
   Pressure = val_pressure;                   
   T        = val_temperature;                
-  Tve      = val_temperature_ve;             
+  Tve      = val_temperature_ve; 
   
   denom   = 0.0;   
 
@@ -74,7 +74,7 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_mass
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     rhos[iSpecies]     = MassFrac[iSpecies]*Density;
     MassFrac[iSpecies] = rhos[iSpecies]/Density;
-  }  
+  } 
 }
 
 

@@ -649,7 +649,7 @@ vector<su2double> CUserDefinedTCLib::GetMixtureEnergies(){
     
     // Species formation energy
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
-    
+
     // Species vibrational energy
     if (CharVibTemp[iSpecies] != 0.0)
       Ev = Ru/MolarMass[iSpecies] * CharVibTemp[iSpecies] / (exp(CharVibTemp[iSpecies]/Tve)-1.0);
@@ -670,7 +670,8 @@ vector<su2double> CUserDefinedTCLib::GetMixtureEnergies(){
 
     // Mixture vibrational-electronic energy
     rhoEve += rhos[iSpecies] * (Ev + Ee);
-    }
+
+  }
 
   for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
     
@@ -856,8 +857,6 @@ void CUserDefinedTCLib::GetKeqConstants(vector<su2double> A, unsigned short val_
 }
 
 su2double CUserDefinedTCLib::GetEveSourceTerm(){
-
-//cat: add chem part
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented

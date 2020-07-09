@@ -858,7 +858,7 @@ private:
   Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  vector<su2double> MassFrac_FreeStream;       /*!< \brief Mixture mass fractions of the fluid. */
+  vector<su2double> MassFrac_FreeStream;       /*!< \brief Mixture mass fractions of the fluid. */ //cat:delete
   su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
   Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */

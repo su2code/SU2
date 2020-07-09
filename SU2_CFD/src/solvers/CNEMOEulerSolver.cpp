@@ -32,7 +32,7 @@
 #include "../../include/limiters/computeLimiters.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
-#include "../../include/fluid/CNEMOGas.hpp" //cat: delete
+ 
 
 CNEMOEulerSolver::CNEMOEulerSolver(void) : CSolver() {
 
@@ -206,6 +206,11 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
+
+  MassFrac_Inf.resize(nSpecies, 0.0);
+
+  for( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    MassFrac_Inf[iSpecies] = config->GetInitial_Gas_Composition(iSpecies);
 
   /*--- Perform the non-dimensionalization for the flow equations using the
     specified reference values. ---*/
@@ -2595,21 +2600,24 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    break;
   }
 
-
-  /*--- Compressible non dimensionalization ---*/
-  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_Inf);
-
-  /*--- Compute Gas Constant ---*/
-  GasConstant_Inf = FluidModel->GetGasConstant();
-  config->SetGas_Constant(GasConstant_Inf);
-
   /*--- Compute the Free Stream Pressure, Temperatrue, and Density ---*/
   Pressure_FreeStream        = config->GetPressure_FreeStream();
   Temperature_FreeStream     = config->GetTemperature_FreeStream();
   Temperature_ve_FreeStream  = config->GetTemperature_ve_FreeStream();
 
+
+  /*--- Compressible non dimensionalization ---*/
+  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_FreeStream);
+
+  /*--- Compute Gas Constant ---*/
+  GasConstant_Inf = FluidModel->GetGasConstant();
+  config->SetGas_Constant(GasConstant_Inf);
+
+  
+
   /*--- Compute the density, soundspeed and velocities ---*/
   Density_FreeStream = FluidModel->GetDensity();
+
   soundspeed = FluidModel->GetSoundSpeed();
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
@@ -2684,7 +2692,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
-    Energy_FreeStream    = (energies[0] + Density_FreeStream*0.5*sqvel)/Density_FreeStream;
+    Energy_FreeStream    = energies[0] + 0.5*sqvel;
   }
 
   config->SetDensity_FreeStream(Density_FreeStream);

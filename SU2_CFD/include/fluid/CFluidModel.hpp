@@ -298,19 +298,4 @@ class CFluidModel {
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
 
-  /*!
-   * \brief Get gas constant.
-   */
-  virtual su2double GetGasConstant(){}
-
-  /*!
-   * \brief Set mixture thermodynamic state.
-   * \param[in] P    - Pressure.
-   * \param[in] T    - Translational/Rotational temperature.
-   * \param[in] Tve  - Vibrational/Electronic temperature.
-   */
-  virtual void SetTDStatePTTv(su2double val_pressure, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve){}
-
-
-  virtual vector<su2double> GetMixtureEnergies(){}
 };

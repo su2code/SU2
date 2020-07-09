@@ -29,6 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CNEMOEulerVariable.hpp"
+#include "../include/fluid/CNEMOGas.hpp"
 
 /*!
  * \class CNEMOEulerSolver
@@ -288,7 +289,7 @@ protected:
   unsigned short nSpanMax;          /*!< \brief Max number of maximum span-wise sections for all zones */
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
 
-  CFluidModel  *FluidModel;         /*!< \brief fluid model used in the solver */
+  CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
 
   
 
