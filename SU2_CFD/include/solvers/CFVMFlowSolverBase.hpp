@@ -26,9 +26,9 @@
 
 #pragma once
 
-#include "CSolver.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "CSolver.hpp"
 
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
@@ -202,8 +202,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Communicate the initial solver state.
    */
-  void CommunicateInitialState(CGeometry* geometry,
-                               const CConfig* config);
+  void CommunicateInitialState(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Initialize thread parallel variables.
@@ -213,11 +212,8 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Move solution to previous time levels (for restarts).
    */
-  void PushSolutionBackInTime(unsigned long TimeIter,
-                              bool restart, bool rans,
-                              CSolver*** solver_container,
-                              CGeometry** geometry,
-                              CConfig* config);
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans, CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
 
   /*!
    * \brief Destructor.
@@ -251,11 +247,11 @@ class CFVMFlowSolverBase : public CSolver {
   void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
 
   /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
+   * iteration for stability. \param[in] solver - Container vector with all the solutions. \param[in] config -
+   * Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
+  void ComputeUnderRelaxationFactor(CSolver** solver, const CConfig* config) final;
 
   /*!
    * \brief Set a uniform inlet profile
@@ -274,9 +270,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(const su2double *val_inlet,
-                        unsigned short iMarker,
-                        unsigned long iVertex) final;
+  void SetInletAtVertex(const su2double* val_inlet, unsigned short iMarker, unsigned long iVertex) final;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -287,12 +281,37 @@ class CFVMFlowSolverBase : public CSolver {
    * \param config - Definition of the particular problem.
    * \return Value of the face area at the vertex.
    */
-  su2double GetInletAtVertex(su2double *val_inlet,
-                             unsigned long val_inlet_point,
-                             unsigned short val_kind_marker,
-                             string val_marker,
-                             const CGeometry *geometry,
-                             const CConfig *config) const final;
+  su2double GetInletAtVertex(su2double* val_inlet, unsigned long val_inlet_point, unsigned short val_kind_marker,
+                             string val_marker, const CGeometry* geometry, const CConfig* config) const final;
+
+  /*!
+   * \author T. Kattmann
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline void BC_Euler_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final {
+    /*--- Call the equivalent symmetry plane boundary condition. ---*/
+    BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  }
+
+  /*!
+   * \author T. Kattmann
+   * \brief Impose the symmetry boundary condition using the residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
+                    CConfig* config, unsigned short val_marker) final;
 
   /*!
    * \brief Compute the density at the infinity.
@@ -1139,7 +1158,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Set the total "combo" objective (weighted sum of other values).
    * \param[in] ComboObj - Value of the combined objective.
    */
-  inline void SetTotal_ComboObj(su2double ComboObj) final {Total_ComboObj = ComboObj; }
+  inline void SetTotal_ComboObj(su2double ComboObj) final { Total_ComboObj = ComboObj; }
 
   /*!
    * \author H. Kline
@@ -1147,7 +1166,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the "combo" objective values.
    */
   inline su2double GetTotal_ComboObj() const final { return Total_ComboObj; }
-
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
@@ -1161,14 +1179,13 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
 
-
   /*!
    * \brief Set the value of the custom objective function.
    * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
    * \param[in] val_weight - Value of the weight for the custom objective function.
    */
   inline void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc = val_total_custom_objfunc*val_weight;
+    Total_Custom_ObjFunc = val_total_custom_objfunc * val_weight;
   }
 
   /*!
@@ -1177,7 +1194,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_weight - Value of the weight for the custom objective function.
    */
   inline void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc += val_total_custom_objfunc*val_weight;
+    Total_Custom_ObjFunc += val_total_custom_objfunc * val_weight;
   }
 
   /*!
@@ -1236,19 +1253,17 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetCPressureTarget(unsigned short val_marker,
-                                 unsigned long val_vertex,
-                                 su2double val_pressure) final {
+  inline void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) final {
     CPressureTarget[val_marker][val_vertex] = val_pressure;
   }
 
-    /*!
+  /*!
    * \brief Value of the characteristic variables at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double* GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) const final {
     return CharacPrimVar[val_marker][val_vertex];
   }
 
@@ -1258,9 +1273,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetCharacPrimVar(unsigned short val_marker,
-                               unsigned long val_vertex,
-                               unsigned short val_var,
+  inline void SetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var,
                                su2double val_value) final {
     CharacPrimVar[val_marker][val_vertex][val_var] = val_value;
   }
@@ -1271,7 +1284,9 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
    * \return Value of the total temperature
    */
-  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ttotal[val_marker][val_vertex]; }
+  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final {
+    return Inlet_Ttotal[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the total pressure at an inlet boundary.
@@ -1279,7 +1294,9 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
    * \return Value of the total pressure
    */
-  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ptotal[val_marker][val_vertex]; }
+  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final {
+    return Inlet_Ptotal[val_marker][val_vertex];
+  }
 
   /*!
    * \brief A component of the unit vector representing the flow direction at an inlet boundary.
@@ -1288,12 +1305,10 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
    * \return Component of a unit vector representing the flow direction.
    */
-  inline su2double GetInlet_FlowDir(unsigned short val_marker,
-                                    unsigned long val_vertex,
+  inline su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
     return Inlet_FlowDir[val_marker][val_vertex][val_dim];
   }
-
 
   /*!
    * \brief Set the value of the total temperature at an inlet boundary.
@@ -1301,9 +1316,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
    * \param[in] val_ttotal - Value of the total temperature
    */
-  inline void SetInlet_Ttotal(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              su2double val_ttotal) final {
+  inline void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -1322,9 +1335,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
    * \param[in] val_ptotal - Value of the total pressure
    */
-  inline void SetInlet_Ptotal(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              su2double val_ptotal) final {
+  inline void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -1344,16 +1355,14 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_dim - The component of the flow direction unit vector to be set
    * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
-  inline void SetInlet_FlowDir(unsigned short val_marker,
-                               unsigned long val_vertex,
-                               unsigned short val_dim,
+  inline void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
                                su2double val_flowdir) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
     else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
-        SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
@@ -1365,7 +1374,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVerificationError(CGeometry *geometry, CConfig *config) final;
+  void ComputeVerificationError(CGeometry* geometry, CConfig* config) final;
 
   /*!
    * \brief Print verification error to screen, derived solvers must define this.
