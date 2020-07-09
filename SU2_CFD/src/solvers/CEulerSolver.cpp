@@ -5951,30 +5951,30 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                           per unit area (Fr and Ft) are equal to zero, while the axial force per unit area (Fa) is computed using
                           a linear interpolation in order to avoid a mathematical singularity at actuator disk center. ---*/
                     if (rad_v[0] == 0.0){
-                        Fa[0] = (((2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                (AD_J*AD_J*PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
+                        Fa[0] = (((2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                                (pow(AD_J,2)*PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
                         Ft[0] = 0.0;
                         Fr[0] = 0.0;
                     }
                     else{
-                      Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                              (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
-                      Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                      Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                              (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+                      Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
                               ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
-                      Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                              (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+                      Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                              (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
                     }
 
                     /*--- Loop over the radial stations. Computation of Fa (axial force per unit area), Ft (tangential force per unit area)
                           and Fr (radial force per unit area).
                           These equations are not valid if the freestream velocity is equal to zero (hovering condition not enabled yet). ---*/
                     for (iEl = 1; iEl < nRow; iEl++){
-                      Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
-                      Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                      Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                                (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                      Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
                                 ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
-                      Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                      Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                                (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
                     }
 
                     /*--- Loop over the marker nodes. ---*/
@@ -11412,19 +11412,19 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
-  su2double Pressure, Velocity[3],
+  su2double Pressure, Velocity[MAXNDIM],
   Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet,
-  Area, UnitNormal[3], *V_outlet, *V_domain, *V_inlet;
+  Area, UnitNormal[MAXNDIM], *V_outlet, *V_domain, *V_inlet;
 
   su2double Pressure_out, Density_out,
   Pressure_in, Density_in;
 
-  su2double C[3], Prop_Axis[3], R, r[3], r_;
+  su2double C[MAXNDIM], Prop_Axis[MAXNDIM], R, r[MAXNDIM], r_;
   su2double Fa, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
   su2double Temperature_out, H_in, H_out;
   su2double FQ, Q_out, Density_Disk;
-  su2double SoSextr, Vnextr[3], Vnextr_, RiemannExtr, QdMnorm[3], QdMnorm2, appo2, SoS_out;
+  su2double SoSextr, Vnextr[MAXNDIM], Vnextr_, RiemannExtr, QdMnorm[MAXNDIM], QdMnorm2, appo2, SoS_out;
   const su2double *P = nullptr;
 
   bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -11432,7 +11432,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   bool tkeNeeded          = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
 
-  su2double *Normal = new su2double[nDim];
+  su2double *Normal = new su2double[MAXNDIM];
 
   /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
   for (iDim = 0; iDim < nDim; iDim++){
@@ -11510,7 +11510,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
       FQ = Q_out/Density_Disk;
 
       /*--- Computation of the momentum jumps due to the tnagential and radial forces per unit area. ---*/
-      if (FQ < 1e-15){
+      if (FQ < EPS){
         uJ = 0.0;
         vJ = 0.0;
         wJ = 0.0;}
@@ -11588,8 +11588,8 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
           for (iDim = 0; iDim < nDim; iDim++) QdMnorm2 += QdMnorm[iDim]*QdMnorm[iDim];
 
           /*--- Resolving the second grade equation for the density. ---*/
-          appo2 = -((2*sqrt(max(0.0,QdMnorm2))*RiemannExtr)+((4*Gamma*Pressure_out)/(Gamma_Minus_One*Gamma_Minus_One)));
-          Density_out = (-appo2+sqrt(max(0.0,appo2*appo2-4*QdMnorm2*RiemannExtr*RiemannExtr)))/(2*RiemannExtr*RiemannExtr);
+          appo2 = -((2*sqrt(max(0.0,QdMnorm2))*RiemannExtr)+((4*Gamma*Pressure_out)/(pow(Gamma_Minus_One,2))));
+          Density_out = (-appo2+sqrt(max(0.0,pow(appo2,2)-4*QdMnorm2*pow(RiemannExtr,2))))/(2*pow(RiemannExtr,2));
 
           Velocity2 = 0;
           for (iDim = 0; iDim < nDim; iDim++) Velocity2 += (Velocity[iDim]*Velocity[iDim]);
@@ -11598,7 +11598,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
           H_out = H_in/Density_in + Fa/Density_out;
           Energy = H_out - Pressure_out/Density_out;
           if (tkeNeeded) Energy += GetTke_Inf();
-          Temperature_out = (Energy-0.5*Velocity2/(Density_out*Density_out))*(Gamma_Minus_One/Gas_Constant);
+          Temperature_out = (Energy-0.5*Velocity2/(pow(Density_out,2)))*(Gamma_Minus_One/Gas_Constant);
 
           SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
 
