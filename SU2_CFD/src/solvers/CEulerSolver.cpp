@@ -3011,7 +3011,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver, CNum
     /*--- Viscous contribution. ---*/
 
     Viscous_Residual(iEdge, geometry, solver,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config, iMesh);
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
 
@@ -3303,7 +3303,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Viscous contribution. ---*/
 
     Viscous_Residual(iEdge, geometry, solver,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config, iMesh);
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
 

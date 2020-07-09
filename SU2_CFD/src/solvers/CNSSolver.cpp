@@ -335,26 +335,14 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver, CConfig *confi
 }
 
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver,
-                                 CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+                                 CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
                          (config->GetKind_Turb_Model() == SST_SUST);
 
-  const auto InnerIter  = config->GetInnerIter();
-  const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                          (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
-
-  unsigned short iDim, iVar;
-
-  /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
-  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
-  su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -366,177 +354,34 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-  // /*--- Primitive and secondary variables. ---*/
+  /*--- Primitive and secondary variables. ---*/
 
-  // numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-  //                        nodes->GetPrimitive(jPoint));
+  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                         nodes->GetPrimitive(jPoint));
 
-  // numerics->SetSecondary(nodes->GetSecondary(iPoint),
-  //                        nodes->GetSecondary(jPoint));
+  numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                         nodes->GetSecondary(jPoint));
 
-  // /*--- Gradients. ---*/
+  /*--- Gradients. ---*/
 
-  // numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-  //                              nodes->GetGradient_Primitive(jPoint));
+  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                               nodes->GetGradient_Primitive(jPoint));
 
-  // /*--- Turbulent kinetic energy. ---*/
-
-  // if (tkeNeeded) {
-  //   numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
-  //                                  turbNodes->GetPrimitive(jPoint,0));
-  //   numerics->SetTurbSpecificDissipation(turbNodes->GetPrimitive(iPoint,1),
-  //                                        turbNodes->GetPrimitive(jPoint,1));
-  //   numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
-  //                                turbNodes->GetGradient(jPoint));
-  //   numerics->SetF1blending(turbNodes->GetF1blending(iPoint),
-  //                           turbNodes->GetF1blending(jPoint));
-  //   numerics->SetF2blending(turbNodes->GetF2blending(iPoint),
-  //                           turbNodes->GetF2blending(jPoint));
-  //   numerics->SetVorticity(nodes->GetVorticity(iPoint),
-  //                          nodes->GetVorticity(jPoint));
-  // }
-
-  /*--- Get primitive and secondary variables ---*/
-
-  auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
-  auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
-
-  su2double tke_i = 0.0, tke_j = 0.0;
+  /*--- Turbulent kinetic energy. ---*/
 
   if (tkeNeeded) {
-    CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-
-    tke_i = turbNodes->GetPrimitive(iPoint,0);
-    tke_j = turbNodes->GetPrimitive(jPoint,0);
-
-    if (muscl) {
-      /*--- Reconstruct turbulence variables. ---*/
-
-      auto Coord_i = geometry->node[iPoint]->GetCoord();
-      auto Coord_j = geometry->node[jPoint]->GetCoord();
-      su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
-
-      auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-      auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
-
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-      if (limiter) {
-        Limiter_i = turbNodes->GetLimiter(iPoint);
-        Limiter_j = turbNodes->GetLimiter(jPoint);
-      }
-
-      const su2double Kappa = config->GetMUSCL_Kappa();
-
-      su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-      const su2double Turb_ij = tke_j - tke_i;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Project_Grad_i += 0.5*Kappa*Turb_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-        Project_Grad_j -= 0.5*Kappa*Turb_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
-      }
-      if (limiter) {
-        if (van_albada) {
-          Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
-          Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
-        }
-        Project_Grad_i *= Limiter_i[0];
-        Project_Grad_j *= Limiter_j[0];
-      }
-      tke_i += Project_Grad_i;
-      tke_j += Project_Grad_j;
-
-      bool neg_tke_i = (tke_i < 0.0);
-      bool neg_tke_j = (tke_j < 0.0);
-
-      tke_i = (neg_tke_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
-      tke_j = (neg_tke_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
-    }
-
-    numerics->SetTurbKineticEnergy(tke_i, tke_j);
-  }
-
-  if (!muscl) {
-
-    numerics->SetPrimitive(V_i, V_j);
-    numerics->SetSecondary(S_i, S_j);
-
-  }
-  else {
-    /*--- Reconstruction ---*/
-
-    auto Coord_i = geometry->node[iPoint]->GetCoord();
-    auto Coord_j = geometry->node[jPoint]->GetCoord();
-    su2double Vector_ij[MAXNDIM] = {0.0};
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-    }
-
-    auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-    auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
-
-    su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-    if (limiter) {
-      Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-      Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-    }
-
-    const su2double Kappa = config->GetMUSCL_Kappa();
-
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-
-      su2double Project_Grad_i = 0.0;
-      su2double Project_Grad_j = 0.0;
-
-      const su2double V_ij = V_j[iVar] - V_i[iVar];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-        Project_Grad_j -= 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
-      }
-
-      if (limiter) {
-        if (van_albada) {
-          Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-          Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
-        }
-        Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-      }
-      else {
-        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
-      }
-
-    }
-
-    /*--- Check for non-physical solutions after reconstruction. If found, use the
-     cell-average value of the solution. This is a locally 1st order approximation,
-     which is typically only active during the start-up of a calculation. ---*/
-
-    bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
-    bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
-
-    su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
-    su2double sq_vel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
-      sq_vel += pow(RoeVelocity, 2);
-    }
-    su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
-    su2double RoeTke = (R*tke_j+tke_i)/(R+1);
-
-    bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
-
-    bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-    bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-
-    numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
-    numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
-
+    numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                   turbNodes->GetPrimitive(jPoint,0));
+    numerics->SetTurbSpecificDissipation(turbNodes->GetPrimitive(iPoint,1),
+                                         turbNodes->GetPrimitive(jPoint,1));
+    numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
+                                 turbNodes->GetGradient(jPoint));
+    numerics->SetF1blending(turbNodes->GetF1blending(iPoint),
+                            turbNodes->GetF1blending(jPoint));
+    numerics->SetF2blending(turbNodes->GetF2blending(iPoint),
+                            turbNodes->GetF2blending(jPoint));
+    numerics->SetVorticity(nodes->GetVorticity(iPoint),
+                           nodes->GetVorticity(jPoint));
   }
 
   /*--- Gradients. ---*/

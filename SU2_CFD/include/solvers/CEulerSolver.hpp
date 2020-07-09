@@ -531,7 +531,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
+                                       CNumerics *numerics, CConfig *config) { }
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
