@@ -428,7 +428,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *numerics, CConfig *config) override;
+                        CNumerics *numerics, CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Get the skin friction coefficient.
