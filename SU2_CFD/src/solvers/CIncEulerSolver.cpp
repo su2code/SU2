@@ -211,8 +211,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
-  if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
-    SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
+  if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
+    SU2_MPI::Error("Oops! The CIncEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
