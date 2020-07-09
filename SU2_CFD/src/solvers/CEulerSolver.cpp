@@ -3752,7 +3752,8 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
 
   /*--- Influence of boundary nodes ---*/
   if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-    const su2double Weight = -1.0*HalfOnVol*sign;
+    const su2double signk = -1.0;
+    const su2double Weight = HalfOnVol*sign*signk;
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
@@ -3889,6 +3890,7 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   /*--- Influence of boundary nodes ---*/
   if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+    const su2double signk = -1.0;
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
@@ -3897,7 +3899,7 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           Weight += Normalk[iDim]*Vec[iDim];
 
-        Weight *= -1.0*HalfOnVol*ConductivityOnR*sign;
+        Weight *= HalfOnVol*ConductivityOnR*sign*signk;
 
         /*--- Density Jacobian ---*/
         Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
