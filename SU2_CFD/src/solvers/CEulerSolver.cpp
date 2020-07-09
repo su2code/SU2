@@ -3860,22 +3860,25 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Pressure_k = nodes->GetPressure(kPoint);
     const su2double Phi_k = Gamma_Minus_One/Density_k;
 
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      const su2double Weight = 0.5*HalfOnVol*ConductivityOnR*sign*signk*Normalk[iDim]*Vec[iDim];
-      /*--- Density Jacobian ---*/
-      Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/Density_i*Density_i+0.5*Vel2_i);
-      Jacobian_j[nVar-1][0] += Weight*(-Pressure_k/Density_k*Density_k+0.5*Vel2_k);
+    su2double Weight = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Weight += Normalk[iDim]*Vec[iDim];
 
-      /*--- Momentum Jacobian ---*/
-      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
-        Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
-      }// jDim
+     Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
 
-      /*--- Energy Jacobian ---*/
-      Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
-      Jacobian_j[nVar-1][nVar-1] += Weight*Phi_k;
-    }// iDim
+    /*--- Density Jacobian ---*/
+    Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/Density_i*Density_i+0.5*Vel2_i);
+    Jacobian_j[nVar-1][0] += Weight*(-Pressure_k/Density_k*Density_k+0.5*Vel2_k);
+
+    /*--- Momentum Jacobian ---*/
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
+      Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
+    }// jDim
+
+    /*--- Energy Jacobian ---*/
+    Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
+    Jacobian_j[nVar-1][nVar-1] += Weight*Phi_k;
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
     
@@ -3890,19 +3893,22 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
         const su2double *Normalk = geometry->vertex[iMarker][iVertex]->GetNormal();
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          const su2double Weight = -1.0*HalfOnVol*ConductivityOnR*sign*Normalk[iDim]*Vec[iDim];
-          /*--- Density Jacobian ---*/
-          Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/Density_i*Density_i+0.5*Vel2_i);
+        su2double Weight = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Weight += Normalk[iDim]*Vec[iDim];
 
-          /*--- Momentum Jacobian ---*/
-          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
-          }// jDim
+        Weight *= -1.0*HalfOnVol*ConductivityOnR*sign;
+        
+        /*--- Density Jacobian ---*/
+        Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/Density_i*Density_i+0.5*Vel2_i);
 
-          /*--- Energy Jacobian ---*/
-          Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
-        }// iDim
+        /*--- Momentum Jacobian ---*/
+        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
+        }// jDim
+
+        /*--- Energy Jacobian ---*/
+        Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
       }// iVertex
     }// iMarker
   }// if physical boundary
