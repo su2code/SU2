@@ -1684,7 +1684,7 @@ public:
    * \brief Print verification error to screen.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void PrintVerificationError(const CConfig* config) const final;
+  void PrintVerificationError(const CConfig* config) const final;
 
   /*!
    * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).

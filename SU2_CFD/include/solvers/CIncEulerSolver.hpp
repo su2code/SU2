@@ -383,6 +383,6 @@ public:
    * \brief Print verification error to screen.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void PrintVerificationError(const CConfig* config) const final;
+  void PrintVerificationError(const CConfig* config) const final;
 
 };
