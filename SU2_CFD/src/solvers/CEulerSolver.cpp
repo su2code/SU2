@@ -3237,10 +3237,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
 
-      bool neg_tke_i = false, neg_tke_j = false;
       if (tkeNeeded) {
-        neg_tke_i = (tke_i < 0.0);
-        neg_tke_j = (tke_j < 0.0);
+        bool neg_tke_i = (tke_i < 0.0);
+        bool neg_tke_j = (tke_j < 0.0);
 
         bad_i = bad_i || neg_tke_i;
         bad_j = bad_j || neg_tke_j;
