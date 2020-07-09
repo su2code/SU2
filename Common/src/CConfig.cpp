@@ -1163,8 +1163,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUTATIONPP", mutationpp, true);
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
   /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
-  addStringOption("GAS_MODEL", GasModel, string("N2"));
-  addEnumOption("GAS_MODEL_HARDCODED", Kind_GasModel, GasModel_Map, N2);//cat: temporary stupid fix to be deleted
+  addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, N2);//cat: temporary stupid fix to be deleted
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
