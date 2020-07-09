@@ -3647,7 +3647,7 @@ void CEulerSolver::CorrectJacobian(CGeometry           *geometry,
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     su2double EdgVec[MAXNDIM] = {0.0};
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
+      EdgVec[iDim] = sign*(geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim));
 
     StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
     HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
