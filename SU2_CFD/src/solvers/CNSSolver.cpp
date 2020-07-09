@@ -344,7 +344,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   const auto InnerIter  = config->GetInnerIter();
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                                (InnerIter <= config->GetLimiterIter());
+                          (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   CVariable* turbNodes = nullptr;
@@ -412,6 +412,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
     if (muscl) {
       /*--- Reconstruct turbulence variables. ---*/
 
+      auto Coord_i = geometry->node[iPoint]->GetCoord();
+      auto Coord_j = geometry->node[jPoint]->GetCoord();
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
@@ -465,6 +467,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   else {
     /*--- Reconstruction ---*/
 
+    auto Coord_i = geometry->node[iPoint]->GetCoord();
+    auto Coord_j = geometry->node[jPoint]->GetCoord();
     su2double Vector_ij[MAXNDIM] = {0.0};
     for (iDim = 0; iDim < nDim; iDim++) {
       Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
