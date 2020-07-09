@@ -326,38 +326,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Warning. The original solution contains " << counter_global << " points that are not physical." << endl;
   }
 
-  /*--- Define solver parameters needed for execution of destructor ---*/
+  /*--- Initial comms. ---*/
 
-  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  /*--- Communicate and store volume and the number of neighbors for
-   any dual CVs that lie on on periodic markers. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-  }
-  SetImplicitPeriodic(euler_implicit);
-  if (iMesh == MESH_0) SetRotatePeriodic(true);
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /* Store the initial CFL number for all grid points. */
-
-  const su2double CFL = config->GetCFL(MGLevel);
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    nodes->SetLocalCFL(iPoint, CFL);
-  }
-  Min_CFL_Local = CFL;
-  Max_CFL_Local = CFL;
-  Avg_CFL_Local = CFL;
+  CommunicateInitialState(geometry, config);
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";

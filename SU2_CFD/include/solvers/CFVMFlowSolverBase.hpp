@@ -195,6 +195,17 @@ class CFVMFlowSolverBase : public CSolver {
   void Allocate(const CConfig& config);
 
   /*!
+   * \brief Allocate small member variables that ideally should not be used.
+   */
+  void AllocateTerribleLegacyTemporaryVariables();
+
+  /*!
+   * \brief Communicate the initial solver state.
+   */
+  void CommunicateInitialState(CGeometry* geometry,
+                               const CConfig* config);
+
+  /*!
    * \brief Initialize thread parallel variables.
    */
   void HybridParallelInitialization(const CConfig& config, CGeometry& geometry);

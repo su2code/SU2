@@ -247,6 +247,78 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::AllocateTerribleLegacyTemporaryVariables() {
+
+  /*--- Define some auxiliary vectors related to the residual ---*/
+
+  Residual = new su2double[nVar] ();
+  Res_Conv = new su2double[nVar] ();
+  Res_Visc = new su2double[nVar] ();
+  Res_Sour = new su2double[nVar] ();
+
+  /*--- Define some auxiliary vectors related to the solution ---*/
+
+  Solution = new su2double[nVar] ();
+  Solution_i = new su2double[nVar] ();
+  Solution_j = new su2double[nVar] ();
+
+  /*--- Define some auxiliary vectors related to the geometry ---*/
+
+  Vector = new su2double[nDim] ();
+  Vector_i = new su2double[nDim] ();
+  Vector_j = new su2double[nDim] ();
+
+  /*--- Jacobian temporaries. ---*/
+
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
+
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry,
+                                                       const CConfig* config) {
+
+  /*--- Define solver parameters needed for execution of destructor ---*/
+
+  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  SetImplicitPeriodic(euler_implicit);
+  if (MGLevel == MESH_0) SetRotatePeriodic(true);
+
+  /*--- Perform the MPI communication of the solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  /* Store the initial CFL number for all grid points. */
+
+  const auto CFL = config->GetCFL(MGLevel);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& config, CGeometry& geometry) {
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the

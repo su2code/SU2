@@ -129,24 +129,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   SetVerificationSolution(nDim, nVar, config);
 
-  /*--- Define some auxiliary vectors related to the residual ---*/
+  /// TODO: This type of variables will be replaced.
 
-  Residual = new su2double[nVar] ();
-  Res_Conv = new su2double[nVar] ();
-  Res_Visc = new su2double[nVar] ();
-  Res_Sour = new su2double[nVar] ();
-
-  /*--- Define some auxiliary vectors related to the solution ---*/
-
-  Solution = new su2double[nVar] ();
-  Solution_i = new su2double[nVar] ();
-  Solution_j = new su2double[nVar] ();
-
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-
-  Vector = new su2double[nDim] ();
-  Vector_i = new su2double[nDim] ();
-  Vector_j = new su2double[nDim] ();
+  AllocateTerribleLegacyTemporaryVariables();
 
   /*--- Define some auxiliary vectors related to the primitive solution ---*/
 
@@ -168,13 +153,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
-
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
@@ -188,11 +166,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   else {
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
   }
-
-  /*--- Init total coefficients ---*/
-
-  Total_MaxHeat  = 0.0;    Total_Heat         = 0.0;    Total_ComboObj       = 0.0;
-  Total_CpDiff   = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc = 0.0;
 
   /*--- Read farfield conditions ---*/
 
@@ -230,38 +203,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  /*--- Define solver parameters needed for execution of destructor ---*/
+  /*--- Initial comms. ---*/
 
-  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  /*--- Communicate and store volume and the number of neighbors for
-   any dual CVs that lie on on periodic markers. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-  }
-  SetImplicitPeriodic(euler_implicit);
-  if (iMesh == MESH_0) SetRotatePeriodic(true);
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /* Store the initial CFL number for all grid points. */
-
-  const su2double CFL = config->GetCFL(MGLevel);
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    nodes->SetLocalCFL(iPoint, CFL);
-  }
-  Min_CFL_Local = CFL;
-  Max_CFL_Local = CFL;
-  Avg_CFL_Local = CFL;
+  CommunicateInitialState(geometry, config);
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "INC.FLOW";
