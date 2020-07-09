@@ -3686,7 +3686,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
   const su2double WF_Factor = 1.0;
 
   const su2double Density_i = nodes->GetDensity(iPoint);
-  const su2double Xi_i = WF_Factor*MeanViscosity/Density_i;
+  const su2double Xi_i = WF_Factor*Mean_Viscosity/Density_i;
 
   su2double Mean_Velocity[MAXNDIM] = {0.0};
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -3710,7 +3710,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
     const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
 
     const su2double Density_k = nodes->GetDensity(kPoint);
-    const su2double Xi_k = WF_Factor*MeanViscosity/Density_k;
+    const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
