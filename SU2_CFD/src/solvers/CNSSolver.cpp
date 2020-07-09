@@ -335,7 +335,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver, CConfig *confi
 }
 
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver,
-                                 CNumerics *numerics, CConfig *config, unsigned short iMesh,) {
+                                 CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
