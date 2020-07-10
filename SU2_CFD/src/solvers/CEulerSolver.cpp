@@ -2881,11 +2881,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         if (!bad_j) {
           for (unsigned short iDim = 0; iDim < nDim; iDim++)
             ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+
+          SoundSpeed_j = Primitive_j[nDim+4];
         }
         else {
           ProjVel_j = nodes->GetProjVel(jPoint,Normal);
-
-          SoundSpeed_j = Primitive_j[nDim+4];
         }
 
         Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
