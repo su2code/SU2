@@ -106,7 +106,7 @@ void computeGradientsGreenGauss(CSolver* solver,
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         denom += dir*geometry.edge[iEdge]->GetNormal()[iDim]
                * (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim))
-               / pow(normR, 3.0/2.0);
+               / pow(normR, 2.0);
 
     }
     su2double halfOnVol = 1.0/denom;
@@ -128,7 +128,7 @@ void computeGradientsGreenGauss(CSolver* solver,
       normR = sqrt(normR);
 
       su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
-      su2double weight = dir * halfOnVol / pow(normR, 3.0/2.0);
+      su2double weight = dir * halfOnVol / pow(normR, 2.0);
 
       const su2double* area = geometry.edge[iEdge]->GetNormal();
       AD::SetPreaccIn(area, nDim);
