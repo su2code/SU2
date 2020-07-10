@@ -2686,6 +2686,14 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
   const su2double K_v = 0.25;
 
+  const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                                (InnerIter <= config->GetLimiterIter());
+  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+
   /*--- Init thread-shared variables to compute min/max values.
    *    Critical sections are used for this instead of reduction
    *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
@@ -2703,6 +2711,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, dist;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
+
+  /*--- BCM: vars for reconstruction ---*/
+  su2double tke_i = 0.0, tke_j = 0.0;
+  su2double Vector_ij[MAXNDIM] = {0.0};
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
   /*--- Loop domain points. ---*/
 
@@ -2731,8 +2744,143 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-      Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+      if (muscl) {
+
+        if (tkeNeeded) {
+          CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+
+          tke_i = turbNodes->GetPrimitive(iPoint,0);
+          tke_j = turbNodes->GetPrimitive(jPoint,0);
+
+          /*--- Reconstruct turbulence variables. ---*/
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+          }
+
+          auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+          auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+
+          su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+
+          if (limiter) {
+            Limiter_i = turbNodes->GetLimiter(iPoint);
+            Limiter_j = turbNodes->GetLimiter(jPoint);
+          }
+
+          const su2double Kappa = config->GetMUSCL_Kappa();
+
+          su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+          const su2double Turb_ij = tke_j - tke_i;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += 0.5*Kappa*Turb_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
+            Project_Grad_j -= 0.5*Kappa*Turb_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+          }
+          if (limiter) {
+            if (van_albada) {
+              Limiter_i[0] = Turb_ij*( 2.0*Project_Grad_i + Turb_ij) / (4*pow(Project_Grad_i, 2) + pow(Turb_ij, 2) + EPS);
+              Limiter_j[0] = Turb_ij*(-2.0*Project_Grad_j + Turb_ij) / (4*pow(Project_Grad_j, 2) + pow(Turb_ij, 2) + EPS);
+            }
+            Project_Grad_i *= Limiter_i[0];
+            Project_Grad_j *= Limiter_j[0];
+          }
+          tke_i += Project_Grad_i;
+          tke_j += Project_Grad_j;
+
+          /*--- Reconstruct primitive variables. ---*/
+
+          auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+          auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
+          if (limiter) {
+            Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+            Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+          }
+
+          for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+
+            su2double Project_Grad_i = 0.0;
+            su2double Project_Grad_j = 0.0;
+
+            const su2double V_ij = V_j[iVar] - V_i[iVar];
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+              Project_Grad_j -= 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+            }
+
+            if (limiter) {
+              if (van_albada) {
+                Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
+                Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
+              }
+              Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+              Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+            }
+            else {
+              Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+              Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+            }
+
+          }
+
+          /*--- Check for non-physical solutions after reconstruction. If found, use the
+           cell-average value of the solution. This is a locally 1st order approximation,
+           which is typically only active during the start-up of a calculation. ---*/
+
+          bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
+          bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
+
+          su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+          su2double sq_vel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
+            sq_vel += pow(RoeVelocity, 2);
+          }
+          su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+          su2double RoeTke = (R*tke_j+tke_i)/(R+1);
+
+          bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+
+          bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
+          bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
+
+          if (tkeNeeded) {
+            bool neg_tke_i = (tke_i < 0.0);
+            bool neg_tke_j = (tke_j < 0.0);
+
+            bad_i = bad_i || neg_tke_i;
+            bad_j = bad_j || neg_tke_j;
+          }
+        }
+
+        /*--- Get average projected velocity ---*/
+        su2double ProjVel_i = 0.0, ProjVel_j = 0.0;
+        if (!bad_i) {
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+        }
+        else {
+          ProjVel_i = nodes->GetProjVel(iPoint,Normal);
+        }
+        if (!bad_j) {
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+        }
+        else {
+          ProjVel_j = nodes->GetProjVel(jPoint,Normal);
+        }
+
+        Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+
+        /*--- Get average soundspeed ---*/
+        if (!neg_sound_speed) Mean_SoundSpeed = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+        else Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+      }// if muscl
+      else {
+        Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+      }
 
       /*--- Adjustment for grid movement ---*/
 
