@@ -316,12 +316,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   ActDisk_Axis.resize(nMarker, MAXNDIM);
 
   /*--- Actuator Disk Fa, Fx, Fy and Fz allocations ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    ActDisk_Fa.resize(nMarker, nVertex[iMarker]);
-    ActDisk_Fx.resize(nMarker, nVertex[iMarker]);
-    ActDisk_Fy.resize(nMarker, nVertex[iMarker]);
-    ActDisk_Fz.resize(nMarker, nVertex[iMarker]);
-  }
+  Alloc2D(nMarker, nVertex, ActDisk_Fa);
+  Alloc2D(nMarker, nVertex, ActDisk_Fx);
+  Alloc2D(nMarker, nVertex, ActDisk_Fy);
+  Alloc2D(nMarker, nVertex, ActDisk_Fz);
 
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
@@ -6203,10 +6201,10 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, iPoint;
   string Marker_Tag;
   int iRow, nRow, iEl;
-  su2double *rad_v = nullptr, *dCt_v = nullptr, *dCp_v = nullptr, *dCr_v = nullptr;
+  std::vector<su2double> rad_v, dCt_v, dCp_v, dCr_v;
   su2double r_ = 0.0, r[MAXNDIM] = {0.0},
   AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
-  su2double *Fa = nullptr, *Ft = nullptr, *Fr = nullptr;
+  std::vector<su2double> Fa, Ft, Fr;
   su2double Fx = 0.0, Fy = 0.0, Fz = 0.0,
   Fx_inf = 0.0, Fy_inf = 0.0, Fz_inf = 0.0, Fx_sup = 0.0, Fy_sup = 0.0, Fz_sup = 0.0, h = 0.0;
   const su2double *P = nullptr;
@@ -6281,18 +6279,19 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
              row_value >> nRow;
 
              /*--- Assign the vectors dimension. ---*/
-             rad_v = new su2double [nRow];
-             dCt_v = new su2double [nRow];
-             dCp_v = new su2double [nRow];
-             dCr_v = new su2double [nRow];
-             Fa    = new su2double [nRow];
-             Ft    = new su2double [nRow];
-             Fr    = new su2double [nRow];
+             rad_v.resize(nRow);
+             dCt_v.resize(nRow);
+             dCp_v.resize(nRow);
+             dCr_v.resize(nRow);
+
+             Fa.resize(nRow);
+             Ft.resize(nRow);
+             Fr.resize(nRow);
 
              /*--- Read and assign the values of the non-dimensional radius, thrust coefficient, power coefficient
                    and radial force coefficient. ---*/
              getline (ActDisk_file, text_line_appo);
-             for (iRow=0; iRow < nRow; iRow++){
+             for (iRow = 0; iRow < nRow; iRow++){
                getline (ActDisk_file, text_line_appo);
                istringstream row_val_value(text_line_appo);
                row_val_value >> rad_v[iRow] >> dCt_v[iRow] >> dCp_v[iRow] >> dCr_v[iRow];
@@ -6378,10 +6377,10 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
                      Fz = Fz_inf + (Fz_sup - Fz_inf)*h;
                    }
                    /*--- Set the values of Fa, Fx, Fy and Fz. Fa is evaluated using a linear interpolation. ---*/
-                   ActDisk_Fa(iMarker, iVertex) = Fa[iEl-1] + (Fa[iEl]-Fa[iEl-1])*h;
-                   ActDisk_Fx(iMarker, iVertex) = Fx;
-                   ActDisk_Fy(iMarker, iVertex) = Fy;
-                   ActDisk_Fz(iMarker, iVertex) = Fz;
+                   SetActDisk_Fa(iMarker, iVertex, Fa[iEl-1] + (Fa[iEl]-Fa[iEl-1])*h);
+                   SetActDisk_Fx(iMarker, iVertex, Fx);
+                   SetActDisk_Fy(iMarker, iVertex, Fy);
+                   SetActDisk_Fz(iMarker, iVertex, Fz);
 
                    break;
                  }
@@ -6392,14 +6391,6 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
        ActDisk_file.close();
      }
    }
-  /*--- Free locally allocated memory ---*/
-  delete[] rad_v;
-  delete[] dCt_v;
-  delete[] dCp_v;
-  delete[] dCr_v;
-  delete[] Fa;
-  delete[] Ft;
-  delete[] Fr;
 }
 
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
@@ -11423,10 +11414,10 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 
       /*--- Get the values of Fa (axial force per unit area), Fx, Fy and Fz (x, y and z components of the tangential and
             radial forces per unit area resultant). ---*/
-      Fa = ActDisk_Fa(val_marker, iVertex);
-      Fx = ActDisk_Fx(val_marker, iVertex);
-      Fy = ActDisk_Fy(val_marker, iVertex);
-      Fz = ActDisk_Fz(val_marker, iVertex);
+      Fa = GetActDisk_Fa(val_marker, iVertex);
+      Fx = GetActDisk_Fx(val_marker, iVertex);
+      Fy = GetActDisk_Fy(val_marker, iVertex);
+      Fz = GetActDisk_Fz(val_marker, iVertex);
 
       /*--- Get the primitive variables and the extrapolated variables. ---*/
       if (val_inlet_surface){
