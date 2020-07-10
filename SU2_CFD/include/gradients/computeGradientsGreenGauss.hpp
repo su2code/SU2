@@ -96,9 +96,8 @@ void computeGradientsGreenGauss(CSolver* solver,
     for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh) {
       size_t iEdge = node->GetEdge(iNeigh);
       size_t jPoint = node->GetPoint(iNeigh);
-      su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
       for (size_t iDim = 0; iDim < nDim; ++iDim) {
-        denom += dir*geometry.edge[iEdge]->GetNormal()[iDim]*
+        denom += geometry.edge[iEdge]->GetNormal()[iDim]*
                  (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
       }
     }
