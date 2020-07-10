@@ -140,7 +140,7 @@ FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
     }
     jac(iDim,iDim+1) -= xi;
     /*--- Density. ---*/
-    jac(iDim,0) = -1 * dot<nDim>(&jac(iDim,1), V.velocity());
+    jac(iDim,0) = -dot<nDim>(&jac(iDim,1), V.velocity());
     /*--- Energy. ---*/
     jac(iDim,nDim+1) = 0.0;
   }

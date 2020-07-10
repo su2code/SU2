@@ -27,13 +27,15 @@
 
 #pragma once
 
-#include "../basic_types/datatype_structure.hpp"
+#include "../linear_algebra/vector_expressions.hpp"
 #include "../omp_structure.hpp"
 #include <initializer_list>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 namespace simd {
+
+using namespace VecExpr;
 
 /*--- Detect preferred SIMD size (bytes). ---*/
 #if defined(__AVX512F__)
@@ -56,11 +58,14 @@ constexpr size_t simdLen<su2double>() { return SIMD_SIZE / sizeof(passivedouble)
 
 /*!
  * \class Array
- * \brief A simple SIMD type relying mostly on implicit vectorization, i.e. done by
- * the compiler, as opposed to explicit (done via intrinsics or inline assembly).
+ * \brief A simple SIMD type relying on implicit vectorization, i.e. done by
+ * the compiler, explicitly vectorized specializations are defined after.
+ * \note This class gets its math operator overloads from CVecExpr, the
+ * specializations do not use expression templates, IF YOU NEED A NEW FUNCTION,
+ * define it both in vector_expressions.hpp and in special_vectorization.hpp.
  */
 template<class Scalar_t, size_t N = simdLen<Scalar_t>()>
-class Array {
+class Array : public CVecExpr<Array<Scalar_t,N>, Scalar_t> {
 #define FOREACH SU2_OMP_SIMD for(size_t k=0; k<N; ++k)
   static_assert(N > 0, "Invalid SIMD size");
 public:
@@ -72,253 +77,145 @@ private:
   alignas(Align) Scalar x_[N];
 
 public:
-  /*--- Constructors ---*/
-
-  FORCEINLINE Array() = default;
-
-  // broadcast
-  FORCEINLINE Array(Scalar x) { bcast(x); }
-  FORCEINLINE Array& operator= (Scalar x) { bcast(x); return *this; }
-
-  // initialize with given values
-  FORCEINLINE Array(std::initializer_list<Scalar> vals) {
-    auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }
+#define ARRAY_BOILERPLATE                                                     \
+  /*!--- Access elements ---*/                                                \
+  FORCEINLINE Scalar& operator[] (size_t k) { return x_[k]; }                 \
+  FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }     \
+  /*!--- Constructors ---*/                                                   \
+  FORCEINLINE Array() = default;                                              \
+  FORCEINLINE Array(Scalar x) { bcast(x); }                                   \
+  FORCEINLINE Array& operator= (Scalar x) { bcast(x); return *this; }         \
+  FORCEINLINE Array(std::initializer_list<Scalar> vals) {                     \
+    auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }                    \
+  }                                                                           \
+  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }      \
+  FORCEINLINE Array(const Scalar* ptr) { load(ptr); }                         \
+  template<class T>                                                           \
+  FORCEINLINE Array(const Scalar* beg, const T& off) { gather(beg,off); }     \
+  /*!--- Reduction operations ---*/                                           \
+  FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH s+=x_[k]; return s; } \
+  FORCEINLINE Scalar dot(const Array& other) const {                          \
+    Scalar s(0); FOREACH s += x_[k] * other[k]; return s;                     \
   }
 
-  // linearly spaced
-  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }
+  ARRAY_BOILERPLATE
 
-  // load
-  FORCEINLINE Array(const Scalar* ptr) { load(ptr); }
+  /*! copy construct from expression. */
+  template<class T, class U>
+  FORCEINLINE Array(const CVecExpr<T,U>& expr) { FOREACH x_[k] = expr[k]; }
 
-  // gather
-  template<class T>
-  FORCEINLINE Array(const Scalar* base_ptr, const T& offsets) { gather(base_ptr,offsets); }
+  /*! assign from expression. */
+  template<class T, class U>
+  FORCEINLINE Array& operator= (const CVecExpr<T,U>& expr) { FOREACH x_[k] = expr[k]; return *this; }
 
-  // copy / assign
-  FORCEINLINE Array(const Array& other) { FOREACH x_[k] = other[k]; }
-
-  FORCEINLINE Array& operator= (const Array& other) { FOREACH x_[k] = other[k]; return *this; }
-
-  /*--- Accessors. ---*/
-
-  FORCEINLINE Scalar& operator[] (size_t k) { return x_[k]; }
-
-  FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }
+  /*--- Implementation of the construction primitives. ---*/
 
   FORCEINLINE void bcast(Scalar x) { FOREACH x_[k] = x; }
-
   FORCEINLINE void load(const Scalar* ptr) { FOREACH x_[k] = ptr[k]; }
-
+  FORCEINLINE void loada(const Scalar* ptr) { load(ptr); }
   FORCEINLINE void store(Scalar* ptr) const { FOREACH ptr[k] = x_[k]; }
-
+  FORCEINLINE void storea(Scalar* ptr) const { store(ptr); }
+  FORCEINLINE void stream(Scalar* ptr) const { store(ptr); }
   template<class T>
-  FORCEINLINE void gather(const Scalar* base_ptr, const T& offsets) { FOREACH x_[k] = base_ptr[offsets[k]]; }
+  FORCEINLINE void gather(const Scalar* begin, const T& offsets) { FOREACH x_[k] = begin[offsets[k]]; }
 
   /*--- Compound math operators, "this" is not returned because it generates poor assembly. ---*/
 
 #define MAKE_COMPOUND(OP)\
   FORCEINLINE void operator OP (Scalar x) { FOREACH x_[k] OP x; }\
-  FORCEINLINE void operator OP (const Array& other) { FOREACH x_[k] OP other.x_[k]; }
+  template<class T, class U>\
+  FORCEINLINE void operator OP (const CVecExpr<T,U>& expr) { FOREACH x_[k] OP expr[k]; }
   MAKE_COMPOUND(+=)
   MAKE_COMPOUND(-=)
   MAKE_COMPOUND(*=)
   MAKE_COMPOUND(/=)
 #undef MAKE_COMPOUND
 
-  /*--- Reductions. ---*/
-
-  FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH s += x_[k]; return s; }
-
-  FORCEINLINE Scalar dot(const Array& other) const {
-    Scalar s(0); FOREACH s += x_[k] * other[k]; return s;
-  }
+#undef FOREACH
 };
 
-/*--- Math, logical, and relational operators, with arrays and scalars. ---*/
+/*--- Explicit vectorization specializations. ---*/
 
-#define MAKE_OPERATOR(OP)\
-template<class T, size_t N>\
-FORCEINLINE Array<T,N> operator OP (const Array<T,N>& a, const Array<T,N>& b) {\
-  Array<T,N> res; FOREACH res[k] = a[k] OP b[k]; return res;\
-}\
-template<class T, size_t N, class U>\
-FORCEINLINE Array<T,N> operator OP (const Array<T,N>& a, U b) {\
-  Array<T,N> res; FOREACH res[k] = a[k] OP b; return res;\
-}\
-template<class T, size_t N, class U>\
-FORCEINLINE Array<T,N> operator OP (U b, const Array<T,N>& a) {\
-  Array<T,N> res; FOREACH res[k] = b OP a[k]; return res;\
-}
-
-MAKE_OPERATOR(+)
-MAKE_OPERATOR(-)
-MAKE_OPERATOR(*)
-MAKE_OPERATOR(/)
-MAKE_OPERATOR(==)
-MAKE_OPERATOR(!=)
-MAKE_OPERATOR(>)
-MAKE_OPERATOR(<=)
-MAKE_OPERATOR(<)
-MAKE_OPERATOR(>=)
-MAKE_OPERATOR(&)
-MAKE_OPERATOR(|)
-
-#undef MAKE_OPERATOR
-
-/*--- Functions of one argument, first macro param is the name of
- * the created function, IMPL is the scalar implementation. ---*/
-
-#define MAKE_UNARY_FUN(NAME,IMPL)\
-template<class T, size_t N>\
-FORCEINLINE Array<T,N> NAME(const Array<T,N>& x) {\
-  Array<T,N> res; FOREACH res[k] = IMPL(x[k]); return res;\
-}
-
-MAKE_UNARY_FUN(sqrt,::sqrt)
-MAKE_UNARY_FUN(abs,std::abs)
-
-#undef MAKE_UNARY_FUN
-
-/*--- Functions of two arguments, with arrays and scalars. ---*/
-
-#define MAKE_BINARY_FUN(NAME,IMPL)\
-template<class T, size_t N>\
-FORCEINLINE Array<T,N> NAME(const Array<T,N>& a, const Array<T,N>& b) {\
-  Array<T,N> res; FOREACH res[k] = IMPL(a[k], b[k]); return res;\
-}\
-template<class T, size_t N, class U>\
-FORCEINLINE Array<T,N> NAME(const Array<T,N>& a, U b) {\
-  Array<T,N> res; FOREACH res[k] = IMPL(a[k], b); return res;\
-}\
-template<class T, size_t N, class U>\
-FORCEINLINE Array<T,N> NAME(U b, const Array<T,N>& a) {\
-  Array<T,N> res; FOREACH res[k] = IMPL(b, a[k]); return res;\
-}
-
-MAKE_BINARY_FUN(max,std::max)
-MAKE_BINARY_FUN(min,std::min)
-MAKE_BINARY_FUN(pow,::pow)
-
-#undef MAKE_BINARY_FUN
-
-/*--- AVX specializations. ---*/
 #ifdef __AVX__
 #include "x86intrin.h"
 
-/*!
- * \brief Specialization for Array of 4 doubles, helps reducing register spills.
- */
-template<>
-class Array<double,4> {
-public:
-  using Scalar = double;
-  enum : size_t {Size = 4};
-  enum : size_t {N = Size};
-  enum : size_t {Align = 32};
-
-  union {
-    __m256d ymm;
-    Scalar x_[N];
-  };
-
-  /*--- Constructors ---*/
-
-  FORCEINLINE Array() = default;
-
-  // broadcast
-  FORCEINLINE Array(Scalar x) { bcast(x); }
-  FORCEINLINE Array& operator= (Scalar x) { bcast(x); return *this; }
-
-  // initialize with given values
-  FORCEINLINE Array(std::initializer_list<Scalar> vals) {
-    auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }
-  }
-
-  // linearly spaced
-  FORCEINLINE Array(Scalar x0, Scalar dx) { FOREACH x_[k] = x0 + k*dx; }
-
-  // load
-  FORCEINLINE Array(const Scalar* ptr) { load(ptr); }
-
-  // gather
-  template<class T>
-  FORCEINLINE Array(const Scalar* base_ptr, const T& offsets) { gather(base_ptr,offsets); }
-
-  // copy / assign
-  FORCEINLINE Array(__m256d y) { ymm = y; }
-
-  FORCEINLINE Array(const Array& other) { ymm = other.ymm; }
-
-  FORCEINLINE Array& operator= (const Array& other) { ymm = other.ymm; return *this; }
-
-  /*--- Accessors. ---*/
-
-  FORCEINLINE Scalar& operator[] (size_t k) { return x_[k]; }
-
-  FORCEINLINE const Scalar& operator[] (size_t k) const { return x_[k]; }
-
-  FORCEINLINE void bcast(Scalar x) { ymm = _mm256_broadcast_sd(&x); }
-
-  FORCEINLINE void load(const Scalar* ptr) { ymm = _mm256_loadu_pd(ptr); }
-
-  FORCEINLINE void store(Scalar* ptr) const { _mm256_storeu_pd(ptr, ymm); }
-
-  template<class T>
-  FORCEINLINE void gather(const Scalar* base_ptr, const T& offsets) { FOREACH x_[k] = base_ptr[offsets[k]]; }
-
-  /*--- Compound math operators, "this" is not returned because it generates poor assembly. ---*/
-
-#define MAKE_COMPOUND(OP,IMPL)\
-  FORCEINLINE void operator OP (Scalar x) { ymm = IMPL(ymm, _mm256_broadcast_sd(&x)); }\
-  FORCEINLINE void operator OP (const Array& other) { ymm = IMPL(ymm, other.ymm); }
-  MAKE_COMPOUND(+=, _mm256_add_pd)
-  MAKE_COMPOUND(-=, _mm256_sub_pd)
-  MAKE_COMPOUND(*=, _mm256_mul_pd)
-  MAKE_COMPOUND(/=, _mm256_div_pd)
-#undef MAKE_COMPOUND
-
-  /*--- Reductions. ---*/
-
-  FORCEINLINE Scalar sum() const { Scalar s(0); FOREACH s += x_[k]; return s; }
-
-  FORCEINLINE Scalar dot(const Array& other) const {
-    Scalar s(0); FOREACH s += x_[k] * other[k]; return s;
-  }
-};
-
-#define MAKE_UNARY_FUN(NAME,IMPL)\
-template<>\
-FORCEINLINE Array<double,4> NAME(const Array<double,4>& x) {return IMPL(x.ymm);}
-
-MAKE_UNARY_FUN(sqrt, _mm256_sqrt_pd)
-
-#undef MAKE_UNARY_FUN
-
-#define MAKE_BINARY_FUN(NAME,IMPL)\
-template<>\
-FORCEINLINE Array<double,4> NAME (const Array<double,4>& a, const Array<double,4>& b) {\
-  return IMPL(a.ymm, b.ymm);\
-}\
-template<>\
-FORCEINLINE Array<double,4> NAME (const Array<double,4>& a, double b) {\
-  return IMPL(a.ymm, _mm256_broadcast_sd(&b));\
-}\
-template<>\
-FORCEINLINE Array<double,4> NAME (double b, const Array<double,4>& a) {\
-  return IMPL(_mm256_broadcast_sd(&b), a.ymm);\
+/*--- Size tags for overload resolution of some wrapper functions. ---*/
+namespace SizeTag {
+  struct FOUR {};
+  struct EIGHT {};
+  struct SIXTEEN {};
 }
 
-MAKE_BINARY_FUN(operator+, _mm256_add_pd)
-MAKE_BINARY_FUN(operator-, _mm256_sub_pd)
-MAKE_BINARY_FUN(operator*, _mm256_mul_pd)
-MAKE_BINARY_FUN(operator/, _mm256_div_pd)
-MAKE_BINARY_FUN(max, _mm256_max_pd)
-MAKE_BINARY_FUN(min, _mm256_min_pd)
+/*!
+ * Create specialization for array of 4 doubles.
+ */
+#define ARRAY_T Array<double,4>
+#define SCALAR_T double
+#define REGISTER_T __m256d
+#define SIZE_TAG SizeTag::FOUR()
 
-#undef MAKE_BINARY_FUN
+/*--- abs forces the sign bit to 0 (& 0b0111...). ---*/
+static const __m256d abs_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FFFFFFFFFFFFFFFL));
+/*--- negation flips the sign bit (^ 0b1000...). ---*/
+static const __m256d neg_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(0x8000000000000000L));
+
+FORCEINLINE __m256d set1_p(SizeTag::FOUR, double p) { return _mm256_set1_pd(p); }
+FORCEINLINE __m256d load_p(SizeTag::FOUR, const double* p) { return _mm256_load_pd(p); }
+FORCEINLINE __m256d loadu_p(SizeTag::FOUR, const double* p) { return _mm256_loadu_pd(p); }
+FORCEINLINE void store_p(double* p, __m256d x) { _mm256_store_pd(p,x); }
+FORCEINLINE void storeu_p(double* p, __m256d x) { _mm256_storeu_pd(p,x); }
+FORCEINLINE void stream_p(double* p, __m256d x) { _mm256_stream_pd(p,x); }
+
+FORCEINLINE __m256d add_p(__m256d a, __m256d b) { return _mm256_add_pd(a,b); }
+FORCEINLINE __m256d sub_p(__m256d a, __m256d b) { return _mm256_sub_pd(a,b); }
+FORCEINLINE __m256d mul_p(__m256d a, __m256d b) { return _mm256_mul_pd(a,b); }
+FORCEINLINE __m256d div_p(__m256d a, __m256d b) { return _mm256_div_pd(a,b); }
+FORCEINLINE __m256d max_p(__m256d a, __m256d b) { return _mm256_max_pd(a,b); }
+FORCEINLINE __m256d min_p(__m256d a, __m256d b) { return _mm256_min_pd(a,b); }
+
+FORCEINLINE __m256d sqrt_p(__m256d x) { return _mm256_sqrt_pd(x); }
+FORCEINLINE __m256d abs_p(__m256d x) { return _mm256_and_pd(x, abs_mask_4d); }
+FORCEINLINE __m256d neg_p(__m256d x) { return _mm256_xor_pd(x, neg_mask_4d); }
+
+#include "special_vectorization.hpp"
 
 #endif // __AVX__
 
-#undef FOREACH
+#ifdef __AVX512F__
+
+/*!
+ * Create specialization for array of 8 doubles.
+ */
+#define ARRAY_T Array<double,8>
+#define SCALAR_T double
+#define REGISTER_T __m512d
+#define SIZE_TAG SizeTag::EIGHT()
+
+static const __m512d abs_mask_8d = _mm512_castsi512_pd(_mm512_set1_epi64(0x7FFFFFFFFFFFFFFFL));
+static const __m512d neg_mask_8d = _mm512_castsi512_pd(_mm512_set1_epi64(0x8000000000000000L));
+
+FORCEINLINE __m512d set1_p(SizeTag::EIGHT, double p) { return _mm512_set1_pd(p); }
+FORCEINLINE __m512d load_p(SizeTag::EIGHT, const double* p) { return _mm512_load_pd(p); }
+FORCEINLINE __m512d loadu_p(SizeTag::EIGHT, const double* p) { return _mm512_loadu_pd(p); }
+FORCEINLINE void store_p(double* p, __m512d x) { _mm512_store_pd(p,x); }
+FORCEINLINE void storeu_p(double* p, __m512d x) { _mm512_storeu_pd(p,x); }
+FORCEINLINE void stream_p(double* p, __m512d x) { _mm512_stream_pd(p,x); }
+
+FORCEINLINE __m512d add_p(__m512d a, __m512d b) { return _mm512_add_pd(a,b); }
+FORCEINLINE __m512d sub_p(__m512d a, __m512d b) { return _mm512_sub_pd(a,b); }
+FORCEINLINE __m512d mul_p(__m512d a, __m512d b) { return _mm512_mul_pd(a,b); }
+FORCEINLINE __m512d div_p(__m512d a, __m512d b) { return _mm512_div_pd(a,b); }
+FORCEINLINE __m512d max_p(__m512d a, __m512d b) { return _mm512_max_pd(a,b); }
+FORCEINLINE __m512d min_p(__m512d a, __m512d b) { return _mm512_min_pd(a,b); }
+
+FORCEINLINE __m512d sqrt_p(__m512d x) { return _mm512_sqrt_pd(x); }
+FORCEINLINE __m512d abs_p(__m512d x) { return _mm512_and_pd(x, abs_mask_8d); }
+FORCEINLINE __m512d neg_p(__m512d x) { return _mm512_xor_pd(x, neg_mask_8d); }
+
+#include "special_vectorization.hpp"
+
+#endif // __AVX512F__
+
+#undef ARRAY_BOILERPLATE
+
 } // namespace
