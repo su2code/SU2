@@ -10,25 +10,26 @@ import numpy as np
 from scipy import optimize
 from .. import eval as su2eval
 from .project import Project
-import cvxopt
+from .reducedSQP_handmade import SQPhandimplementation
 
 global glob_project
 
 def reduced_sqp(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_ieqcons, fdotdot, project, iter, acc, xb ):
     "This is the implementation of the reduced SQP optimizer for smoothed derivatives"
 
-    SCIPY=False
-    HANDMADE=True
+    SCIPY = False
+    HANDMADE = True
+    SIMPLIFIED = False
 
     # use the SciPy optimizer
     if SCIPY:
 
         # preprocessing before the optimization run
-        opt = { 'maxiter' : iter, 'verbose' : 3 }
+        opt = {'maxiter': iter, 'verbose': 3}
 
-        #pack the constaints in form for trust-constr
-        equal   = optimize.NonlinearConstraint( feq, 0.0 , 0.0)
-        inequal = optimize.NonlinearConstraint( fieq, 0.0 , np.inf)
+        # pack the constaints in form for trust-constr
+        equal = optimize.NonlinearConstraint(feq, 0.0, 0.0)
+        inequal = optimize.NonlinearConstraint(fieq, 0.0, np.inf)
 
         # some global function voodoo
         global glob_project
@@ -45,99 +46,26 @@ def reduced_sqp(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_ieq
                                      tol          = acc               ,
                                      options      = opt               )
 
-
     # use the self implemented SQP optimizer
     elif HANDMADE:
 
-        sys.stdout.write('Using the hand implemented version. Setting up the environment...' + '\n')
+        sys.stdout.write('Using implemented SQP version.' + '\n')
 
-        # evaluate the functions
-        p = x0
-        F = func(p, project)
-        E = f_eqcons(p, project)
-        C = f_ieqcons(p,project)
-        D_F = fprime(p, project)
-        D_E = fprime_eqcons(p, project)
-        D_C = fprime_ieqcons(p,project)
-        H_F = fdotdot(p, project)
+        outputs = SQPhandimplementation(x0, func,
+                                       f_eqcons, f_ieqcons,
+                                       fprime, fprime_eqcons, fprime_ieqcons,
+                                       fdotdot, project, iter, acc, None)
 
-        # set the inout parameters
-        nu1 = [1.0]*len(E)
-        nu2 = [1.0]*len(C)
-        err = np.linalg.norm(D_F,2)
-        step = 1
+    elif SIMPLIFIED:
 
-        # main loop
-        while ( err > acc and step <= iter ):
+        sys.stdout.write('Using simplified SQP iterations' + '\n')
 
-            sys.stdout.write('Optimizer iteration: ' + str(step) + ' current err: ' + str(err) + '\n')
+        outputs = SQPhandimplementation(x0, func,
+                                       f_eqcons, f_ieqcons,
+                                       fprime, fprime_eqcons, fprime_ieqcons,
+                                       unit_hessian, project, iter, acc, None)
 
-            if step>1:
-                # reevaluate the functions
-                F = func(p, project)
-                E = f_eqcons(p, project)
-                C = f_ieqcons(p,project)
-                D_F = fprime(p, project)
-                D_E = fprime_eqcons(p, project)
-                D_C = fprime_ieqcons(p,project)
-                H_F = fdotdot(p, project)
-
-            sys.stdout.write('   objective function: ' + str(F) + ' , equality constrain: ' + str(E) + ' , inequality constrain: ' + str(C) + '\n')
-
-            # assemble NLES
-            #Jac = np.block([ [H_F, np.transpose(D_E)], [D_E, 0] ])
-            #Rhs = np.block([ -D_F, -E ])
-
-            #expand inequality constraints by bounds
-            ub       = float ( project.config.OPT_BOUND_UPPER )
-            lb       = float ( project.config.OPT_BOUND_LOWER )
-            Id = np.identity(len(p))
-            if len(C)>0:
-                G = cvxopt.matrix(np.block([ [-D_C], [Id], [-Id]]))
-                h = cvxopt.matrix(np.append( C, np.append([ub]*len(p), [lb]*len(p))))
-            else:
-                G = np.block([ [Id], [-Id]])
-                h = np.append([ub]*len(p), [lb]*len(p))
-
-            # for debugging
-            P = cvxopt.matrix(H_F)
-            q = cvxopt.matrix(D_F)
-
-
-            # solve the interior quadratic problem
-            sol = cvxopt.solvers.qp(P,
-                                    q,
-                                    G,
-                                    h)
-
-            #update the design
-            delta_p = np.transpose(np.array(sol['x']))
-            p += delta_p
-            p = p[0]
-            err = np.linalg.norm(delta_p,2)
-            step += 1
-
-            sys.stdout.write('   current design: ' + str(p) + ' , Lagrange multiplier: ' + str(0) + '\n')
-
-        return 0
-
-    elif DESCEND:
-
-        sys.stdout.write('Using gradient descend \n')
-        # evaluate the functions
-        p = x0
-        F = func(p, project)
-        E = f_eqcons(p, project)
-        C = f_ieqcons(p,project)
-        D_F = fprime(p, project)
-        D_E = fprime_eqcons(p, project)
-        D_C = fprime_ieqcons(p,project)
-        H_F = fdotdot(p, project)
-
-
-
-
-    #return the results
+    # return the results
     return outputs
 
 #
@@ -145,42 +73,9 @@ def reduced_sqp(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_ieq
 #
 
 
-def lagrangian_interface(x, project):
-    """ This function evaluates the Lagrangian of the problem
-        This takes the form of func + multiplier*f_eqcons
-        We assume the flow solver to be converged
-    """
-    p = x[0:len(x)-1]
-    nu = x[len(x)-1]
-    F = func(p, project)
-    E = f_eqcons(p,project)
-    return F + nu*E
-
-
-def hessian_interface(x, project):
-    """ This function assembles the Jacobian for the Newton step in the reduced SQP method.
-        input: objective function Hessian approximation, equality constrain gradient.
-        output: the LHS matrix for the Newton step
-    """
-    p = x[0:len(x)-1]
-    H_F = fdotdot(p, project)
-    D_E = fprime_eqcons(p. project)
-    Jac = np.block([ [H_F, np.transpose(D_E)], [D_E, 0] ])
-    return Jac
-
-
-def jacobian_interface(x, project):
-    """ This function assembles the right hand side for the Newton step in the reduced SQP method.
-        input: objective function gradient, equality constrain.
-        output: the RHS vector for the Newton step
-    """
-    p = x[0:len(x)-1]
-    D_F = fprime(p, project)
-    E = f_eqcons(p, project)
-    Rhs = np.block([ -D_F, -E ])
-    return Rhs
-
-
+# we need a unit matrix to have a dummy for optimization tests.
+def unit_hessian(x, project):
+    return np.identity(np.size(x))
 
 
 # this is a stupid idea
@@ -192,6 +87,7 @@ def f(x):
         obj = obj+this_obj
 
     return obj
+
 
 def df(x):
     global glob_project
@@ -206,6 +102,7 @@ def df(x):
     dobj = np.array( dobj )
 
     return dobj
+
 
 def ddf(x):
     global glob_project
@@ -231,15 +128,18 @@ def feq(x):
 
     return cons
 
-def fieq(x):
 
+def fieq(x):
     global glob_project
     cons = glob_project.con_cieq(x)
 
-    if cons: cons = np.array(cons)
-    else:    cons = np.zeros([0])
+    if cons:
+        cons = np.array(cons)
+    else:
+        cons = np.zeros([0])
 
     return -cons
+
 
 """
 left over code snippets

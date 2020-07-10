@@ -6,3 +6,4 @@ from .scipy_tools import scipy_cg as CG
 from .scipy_tools import scipy_bfgs as BFGS
 from .scipy_tools import scipy_powell as POWELL
 from .scipy_tools import scipy_redsqp as REDUCEDSQP
+from .reducedSQP_handmade import SQPhandimplementation

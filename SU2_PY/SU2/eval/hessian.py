@@ -238,6 +238,12 @@ def adjoint_hessian( func_name, config, state=None ):
             # local copy
             konfig = copy.deepcopy(config)
 
+            # setup problem
+            if konfig.get('GRADIENT_METHOD', 'CONTINUOUS_ADJOINT') == 'DISCRETE_ADJOINT':
+                konfig['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
+            else:
+                sys.stdout.write('Hessian approximation does not support Continuous adjoint')
+
             konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_hessian'
 
             # Run Solution
