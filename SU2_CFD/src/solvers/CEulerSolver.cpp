@@ -6416,7 +6416,7 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
                GeometryToolbox::Distance(nDim, P, AD_Center, r);
 
                /*--- Computation of the non-dimensional radius for the current node. ---*/
-               r_ = GeometryToolbox::Distance(nDim, P, AD_Center) / AD_Radius;
+               r_ = GeometryToolbox::Norm(nDim, r) / AD_Radius;
 
                /*--- Loop over the actuator disk radial stations. ---*/
                for (iEl = 0; iEl < nRow; iEl++){
