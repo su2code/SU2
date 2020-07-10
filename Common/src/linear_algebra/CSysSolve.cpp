@@ -140,14 +140,14 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & 
   for (int k = 0; k < i+1; k++) {
     ScalarType prod = w[i+1].dot(w[k]);
     Hsbg[k][i] = prod;
-    w[i+1].Plus_AX(-prod, w[k]);
+    w[i+1] -= prod * w[k];
 
     /*--- Check if reorthogonalization is necessary ---*/
 
     if (prod*prod > thr) {
       prod = w[i+1].dot(w[k]);
       Hsbg[k][i] += prod;
-      w[i+1].Plus_AX(-prod, w[k]);
+      w[i+1] -= prod * w[k];
     }
 
     /*--- Update the norm and check its size ---*/
@@ -284,8 +284,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Update solution and residual: ---*/
 
-    x.Plus_AX(alpha, p);
-    r.Plus_AX(-alpha, A_x);
+    x += alpha * p;
+    r -= alpha * A_x;
 
     /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -311,7 +311,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
 
-    p.Equals_AX_Plus_BY(beta, p, 1.0, z);
+    p = beta*p + z;
 
   }
 
@@ -466,7 +466,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   SolveReduced(i, H, g, y);
   for (unsigned long k = 0; k < i; k++) {
-    x.Plus_AX(y[k], Z[k]);
+    x += y[k] * Z[k];
   }
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
@@ -581,11 +581,9 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     beta = (rho / rho_prime) * (alpha /omega);
 
-    /*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
+    /*--- Update p ---*/
 
-    ScalarType beta_omega = -beta*omega;
-    p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
-    p += r;
+    p = beta * (p - omega*v) + r;
 
     /*--- Preconditioning step ---*/
 
@@ -597,12 +595,10 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     ScalarType r_0_v = r_0.dot(v);
     alpha = rho / r_0_v;
 
-    /*--- Update solution and residual: ---*/
+    /*--- Update solution and residual ---*/
 
-    /*--- x_{i-1/2} = x_{i-1} + alpha * z ---*/
-    x.Plus_AX(alpha, z);
-    /*--- r_{i-1/2} = r_{i-1} - alpha * v_{i} ---*/
-    r.Plus_AX(-alpha, v);
+    x += alpha * z;
+    r -= alpha * v;
 
     /*--- Preconditioning step ---*/
 
@@ -615,12 +611,10 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     if (omega == ScalarType(0)) break;
     omega = A_x.dot(r) / omega;
 
-    /*--- Update solution and residual: ---*/
+    /*--- Update solution and residual ---*/
 
-    /*--- x_{i} = x_{i-1/2} + omega * z ---*/
-    x.Plus_AX(omega, z);
-    /*--- r_{i} = r_{i-1/2} - omega * A * z ---*/
-    r.Plus_AX(-omega, A_x);
+    x += omega * z;
+    r -= omega * A_x;
 
     /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -746,8 +740,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
      M^{-1}(b-A*x) which converges if ||I-w*M^{-1}*A|| < 1. Combining this method
      with a Gauss-Seidel preconditioner and w>1 is NOT equivalent to SOR. ---*/
 
-    x.Plus_AX(omega, z);
-    r.Plus_AX(-omega, A_x);
+    x += omega * z;
+    r -= omega * A_x;
 
     /*--- Only compute the residuals in full communication mode. ---*/
     /*--- Check if solution has converged, else output the relative residual if necessary. ---*/

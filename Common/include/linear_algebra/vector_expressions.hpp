@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "../basic_types/datatype_structure.hpp"
 #include <type_traits>
 #include <algorithm>
@@ -122,7 +124,7 @@ FORCEINLINE NAME3<U,T> FUN(decay_t<T> v, const CVecExpr<U,T>& u) {            \
 /*--- Naming convention: v - vector (expression); s - scalar. ---*/
 
 /*--- sts::plus and co. were tried, the code was horrendous
- * (due to the forced conversion between different types) ---*/
+ * (due to the forced conversion between different types). ---*/
 
 #define add_ss(a,b) a+b
 #define sub_ss(a,b) a-b
