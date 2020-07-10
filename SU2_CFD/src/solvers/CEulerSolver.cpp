@@ -3669,18 +3669,22 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
 
   /*--- Get norm of projection and distance vectors ---*/
 
-  su2double ProjVec = 0.0, Dist2 = 0.0;
+  su2double Area2 = 0.0, ProjVec = 0.0, Dist2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     ProjVec += Normal[iDim]*EdgVec[iDim];
     Dist2 += EdgVec[iDim]*EdgVec[iDim];
+    Area2 += Normal[iDim]*Normal[iDim];
   }
-  if (iPoint == jPoint) Dist2 = 1.0;
+  // if (iPoint == jPoint) Dist2 = 1.0;
+  if (iPoint == jPoint) ProjVec = 1.0;
 
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
+  // for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*Area2/ProjVec;
 
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
@@ -3817,19 +3821,22 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   /*--- Get norm of projection and distance vectors ---*/
 
-  su2double ProjVec = 0.0, Dist2 = 0.0;
+  su2double Area2 = 0.0, ProjVec = 0.0, Dist2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     ProjVec += Normal[iDim]*EdgVec[iDim];
     Dist2 += EdgVec[iDim]*EdgVec[iDim];
+    Area2 += Normal[iDim]*Normal[iDim];
   }
-  if (iPoint == jPoint) Dist2 = 1.0;
+  // if (iPoint == jPoint) Dist2 = 1.0;
+  if (iPoint == jPoint) ProjVec = 1.0;
 
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
-  }
+  // for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*Area2/ProjVec;
 
   /*--- Common factors for all Jacobian terms --*/
   const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
