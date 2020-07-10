@@ -100,6 +100,10 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
+  
+  #ifdef HAVE_LIBROM
+    u_basis_generator  = NULL;
+  #endif
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -263,6 +267,10 @@ CSolver::~CSolver(void) {
   if (Restart_Data != NULL) {delete [] Restart_Data; Restart_Data = NULL;}
 
   if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
+  
+  #ifdef HAVE_LIBROM
+    if (u_basis_generator != NULL) u_basis_generator = nullptr;
+  #endif
 
 }
 
@@ -4776,6 +4784,114 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
   SetResidual_BGS(geometry, config);
 
 }
+
+
+#ifdef HAVE_LIBROM
+void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
+  
+  bool unsteady = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                  (config->GetTime_Marching() == DT_STEPPING_2ND) ||
+                  (config->GetTime_Marching() == TIME_STEPPING));
+  unsigned long iPoint, total_index;
+  unsigned short iVar;
+  
+  string filename = config->GetlibROMbase_FileName();
+  unsigned short pod_basis = config->GetKind_PODBasis(); //TODO: POD BASIS KIND
+  unsigned long TimeIter = config->GetTimeIter();
+  unsigned long nTimeIter = config->GetnTime_Iter();
+  bool StopCalc = ((TimeIter+1) == nTimeIter);
+
+  /*--- Get solver nodes ---*/
+  CVariable* nodes = GetNodes();
+ 
+  su2double* Coord;
+  if (!u_basis_generator) {
+    if (pod_basis == STATIC_POD) {
+        std::cout << "Creating static basis generator." << std::endl;
+        u_basis_generator.reset(new CAROM::StaticSVDBasisGenerator(
+          int(nPointDomain * nVar),
+          5000,
+          filename));
+    }
+    else {
+        std::cout << "Creating incremental basis generator." << std::endl;
+        u_basis_generator.reset(new CAROM::IncrementalSVDBasisGenerator(
+          int(nPointDomain * nVar),
+          1.0e-2,
+          true,
+          true,
+          500, // max basis size
+          config->GetDelta_UnstTimeND(),
+          5000,
+          1.0e-2,
+          config->GetDelta_UnstTimeND(),
+          filename));
+    }
+    // Print nodes for each rank for now
+    std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
+    
+    // Save mesh ordering
+    std::ofstream f;
+    f.open(filename + to_string(rank) + ".csv");
+        for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
+          Coord = geometry->node[iPoint]->GetCoord();
+          f << Coord[0] << ", " << Coord[1] << "\n";
+        }
+    f.close();
+  }
+
+   if (unsteady) {
+      double* u = new double[nPointDomain*nVar];
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+         for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar + iVar;
+            u[total_index] = nodes->GetSolution(iPoint,iVar);
+         }
+      }
+      
+      // give solution and time steps to libROM:
+      double dt = config->GetDelta_UnstTimeND();
+      double t =  config->GetCurrent_UnstTime();
+      std::cout << "Taking sample" << std::endl;
+      u_basis_generator->takeSample(u, t, dt);
+      // not implemented yet: u_basis_generator->computeNextSampleTime(u, rhs, t);
+      // bool u_samples = u_basis_generator->isNextSample(t);
+      delete[] u;
+   }
+   
+  /*--- End collection of data and save POD ---*/
+  
+   if (converged or StopCalc) {
+
+      if (!unsteady) {
+         double* u = new double[nPointDomain*nVar];
+         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+               total_index = iPoint*nVar + iVar;
+               u[total_index] = nodes->GetSolution(iPoint, iVar);
+            }
+         }
+         
+         // dt is different for each node, so just use a placeholder dt for now
+         double dt = base_nodes->GetDelta_Time(0);
+         double t = dt*TimeIter;
+         std::cout << "Taking sample" << std::endl;
+         u_basis_generator->takeSample(u, t, dt);
+
+         delete[] u;
+      }
+      
+      if (pod_basis == STATIC_POD) {
+         u_basis_generator->writeSnapshot();
+      }
+      std::cout << "Computing SVD" << std::endl;
+      int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+      std::cout << "Basis dimension: " << rom_dim << std::endl;
+      u_basis_generator->endSamples();
+      std::cout << "ROM Sampling ended" << std::endl;
+   }
+}
+#endif
 
 
 void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar,

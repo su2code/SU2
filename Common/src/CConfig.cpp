@@ -1932,6 +1932,12 @@ void CConfig::SetConfig_Options() {
   addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("init_snapshot.csv"));
   /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
   addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
+  /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM (Reduced order modelling)  \ingroup Config*/
+  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
+  /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
+  addBoolOption("SAVE_LIBROM", libROM, false);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: Flag for saving data with libROM. */
+  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, STATIC_POD);
   
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/

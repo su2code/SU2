@@ -723,6 +723,8 @@ private:
   unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
+  unsigned short POD_Basis_Gen;       /*!< \brief Type of POD basis generation (static or incremental). */
+  bool libROM;           /*!< \brief Toggle saving to libROM. */
   bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -754,6 +756,7 @@ private:
   Rom_FileName,                  /*!< \brief POD modes input file for reduced order model computation. */
   Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
   Ref_Snapshot_FileName,         /*!< \brief Reference snapshot filename for reduced order model computation. */
+  libROMbase_FileName,           /*!< \brief Base filename for libROM file saving. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Residual_FileName,             /*!< \brief Residual variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
@@ -5355,6 +5358,24 @@ public:
    */
   string GetInit_Snapshot_FileName(void) const { return Init_Snapshot_FileName; }
 
+  /*!
+   * \brief Static or incremental toggle for POD basis generation type.
+   * \return Type of POD generation type
+   */
+  unsigned short GetKind_PODBasis(void) const { return POD_Basis_Gen; }
+  
+  /*!
+   * \brief Get the name of the file for libROM to save.
+   * \return Name of filename for libROM to save to.
+   */
+  string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
+  
+  /*!
+   * \brief Get whether or not to save to libROM.
+   * \return True if specified in config file.
+   */
+  bool GetSave_libROM(void) const {return libROM; }
+  
   /*!
    * \brief Get the name of the file with the residual of the problem.
    * \return Name of the file with the residual of the problem.
