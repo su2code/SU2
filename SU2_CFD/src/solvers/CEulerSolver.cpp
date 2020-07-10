@@ -2885,7 +2885,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
 
         /*--- Get average soundspeed ---*/
-        if (!neg_sound_speed) Mean_SoundSpeed = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+        if (!neg_sound_speed) Mean_SoundSpeed = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) * Area;
         else Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
       }// if muscl
       else {
