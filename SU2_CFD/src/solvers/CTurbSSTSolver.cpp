@@ -1528,6 +1528,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
     nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
+    Vol = geometry->node[iPoint]->GetVolume();
+    if (Vol == 0.0) continue;
+
     /*--- Loop over the neighbors of point i. ---*/
 
     for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
@@ -1577,9 +1580,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
       Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
-      Vol = geometry->node[iPoint]->GetVolume();
-      if (Vol == 0.0) continue;
-
       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
@@ -1600,6 +1600,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         if (!geometry->node[iPoint]->GetDomain()) continue;
+
+        Vol = geometry->node[iPoint]->GetVolume();
+        if (Vol == 0.0) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
@@ -1635,9 +1638,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
         Mean_Visc    = (visc_k_i + visc_om_i);
         Mean_Density = flowNodes->GetDensity(iPoint);
-
-        Vol = geometry->node[iPoint]->GetVolume();
-        if (Vol == 0.0) continue;
 
         Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
         nodes->AddMax_Lambda_Visc(iPoint, Lambda);

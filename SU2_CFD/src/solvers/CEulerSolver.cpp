@@ -2732,10 +2732,14 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     if (viscous)
       nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
+    Vol = geometry->node[iPoint]->GetVolume();
+    if (Vol == 0.0) continue;
+
     /*--- Loop over the neighbors of point i. ---*/
 
     for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
+
       jPoint = node_i->GetPoint(iNeigh);
       auto node_j = geometry->node[jPoint];
 
@@ -2893,9 +2897,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       Mean_EddyVisc    = 0.5*(nodes->GetEddyViscosity(iPoint) + nodes->GetEddyViscosity(jPoint));
       Mean_Density     = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
 
-      Vol = geometry->node[iPoint]->GetVolume();
-      if (Vol == 0.0) continue;
-
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
       //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
       Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
@@ -2919,6 +2920,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         if (!geometry->node[iPoint]->GetDomain()) continue;
+
+        Vol = geometry->node[iPoint]->GetVolume();
+        if (Vol == 0.0) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
@@ -2949,9 +2953,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         Mean_LaminarVisc = nodes->GetLaminarViscosity(iPoint);
         Mean_EddyVisc    = nodes->GetEddyViscosity(iPoint);
         Mean_Density     = nodes->GetDensity(iPoint);
-
-        Vol = geometry->node[iPoint]->GetVolume();
-        if (Vol == 0.0) continue;
 
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
         Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
