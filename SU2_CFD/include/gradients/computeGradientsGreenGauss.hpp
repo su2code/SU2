@@ -91,7 +91,18 @@ void computeGradientsGreenGauss(CSolver* solver,
 
     /*--- Handle averaging and division by volume in one constant. ---*/
 
-    su2double halfOnVol = 0.5 / (node->GetVolume()+node->GetPeriodicVolume());
+    // su2double halfOnVol = 0.5 / (node->GetVolume()+node->GetPeriodicVolume());
+    su2double denom = 0.0;
+    for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh) {
+      size_t iEdge = node->GetEdge(iNeigh);
+      size_t jPoint = node->GetPoint(iNeigh);
+      su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
+      for (size_t iDim = 0; iDimm < nDim; ++iDim) {
+        denom += dir*geometry.edge[iEdge]->GetNormal()[iDim]*
+                 (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
+      }
+    }
+    su2double halfOnVol = 1.0/denom;
 
     /*--- Add a contribution due to each neighbor. ---*/
 
@@ -130,38 +141,38 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- Add boundary fluxes. ---*/
 
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
-  {
-    if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
-    {
-      /*--- Work is shared in inner loop as two markers
-       *    may try to update the same point. ---*/
+  // for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+  // {
+  //   if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+  //       (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+  //   {
+  //     /*--- Work is shared in inner loop as two markers
+  //      *    may try to update the same point. ---*/
 
-      SU2_OMP_FOR_STAT(32)
-      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
-      {
-        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-        auto node = geometry.node[iPoint];
+  //     SU2_OMP_FOR_STAT(32)
+  //     for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
+  //     {
+  //       size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+  //       auto node = geometry.node[iPoint];
 
-        /*--- Halo points do not need to be considered. ---*/
+  //       /*--- Halo points do not need to be considered. ---*/
 
-        if (!node->GetDomain()) continue;
+  //       if (!node->GetDomain()) continue;
 
-        su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+  //       su2double volume = node->GetVolume() + node->GetPeriodicVolume();
 
-        const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+  //       const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-        {
-          su2double flux = field(iPoint,iVar) / volume;
+  //       for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+  //       {
+  //         su2double flux = field(iPoint,iVar) / volume;
 
-          for (size_t iDim = 0; iDim < nDim; iDim++)
-            gradient(iPoint, iVar, iDim) -= flux * area[iDim];
-        }
-      }
-    }
-  }
+  //         for (size_t iDim = 0; iDim < nDim; iDim++)
+  //           gradient(iPoint, iVar, iDim) -= flux * area[iDim];
+  //       }
+  //     }
+  //   }
+  // }
 
   /*--- If no solver was provided we do not communicate ---*/
 
