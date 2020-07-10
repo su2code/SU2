@@ -125,7 +125,7 @@ void computeGradientsGreenGauss(CSolver* solver,
         AD::SetPreaccIn(field(jPoint,iVar));
 
         // su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
-        su2double flux = weight * (field(iPoint,iVar) - field(jPoint,iVar));
+        su2double flux = weight * (field(jPoint,iVar) - field(iPoint,iVar));
 
         for (size_t iDim = 0; iDim < nDim; ++iDim)
           gradient(iPoint, iVar, iDim) += flux * area[iDim];
