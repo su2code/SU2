@@ -141,38 +141,39 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- Add boundary fluxes. ---*/
 
-  // for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
-  // {
-  //   if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-  //       (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
-  //   {
-  //     /*--- Work is shared in inner loop as two markers
-  //      *    may try to update the same point. ---*/
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+  {
+    if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+    {
+      /*--- Work is shared in inner loop as two markers
+       *    may try to update the same point. ---*/
 
-  //     SU2_OMP_FOR_STAT(32)
-  //     for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
-  //     {
-  //       size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-  //       auto node = geometry.node[iPoint];
+      SU2_OMP_FOR_STAT(32)
+      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
+      {
+        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+        auto node = geometry.node[iPoint];
 
-  //       /*--- Halo points do not need to be considered. ---*/
+        /*--- Halo points do not need to be considered. ---*/
 
-  //       if (!node->GetDomain()) continue;
+        if (!node->GetDomain()) continue;
 
-  //       su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+        // su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+        su2double volume = 1.0/denom;
 
-  //       const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+        const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-  //       for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-  //       {
-  //         su2double flux = field(iPoint,iVar) / volume;
+        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+        {
+          su2double flux = field(iPoint,iVar) / volume;
 
-  //         for (size_t iDim = 0; iDim < nDim; iDim++)
-  //           gradient(iPoint, iVar, iDim) -= flux * area[iDim];
-  //       }
-  //     }
-  //   }
-  // }
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            gradient(iPoint, iVar, iDim) -= flux * area[iDim];
+        }
+      }
+    }
+  }
 
   /*--- If no solver was provided we do not communicate ---*/
 
