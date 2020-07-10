@@ -2686,6 +2686,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
   const su2double K_v = 0.25;
 
+  const auto InnerIter        = config->GetInnerIter();
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
@@ -2792,6 +2793,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
         auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
         auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
+        auto V_i = nodes->GetPrimitive(iPoint);
+        auto V_j = nodes->GetPrimitive(jPoint);
+
+        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
         if (limiter) {
           Limiter_i = nodes->GetLimiter_Primitive(iPoint);
