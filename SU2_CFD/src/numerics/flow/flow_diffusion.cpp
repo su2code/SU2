@@ -123,16 +123,16 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_edge_vector,
                                     const su2double val_proj_vector,
                                     const unsigned short val_nPrimVar) {
-  for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
-    }
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_proj_vector;
-    }
-  }
+  // for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
+  //   Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+  //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  //     Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
+  //   }
+  //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  //     GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+  //                                (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_proj_vector;
+  //   }
+  // }
 
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
@@ -885,6 +885,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
+  // const su2double conductivity_over_Rd = cpoR*heat_flux_factor*val_proj_vector/dist_ij_2;
   const su2double conductivity_over_Rd = cpoR*heat_flux_factor*Area*Area/val_proj_vector;
 
   sqvel = 0.0;
