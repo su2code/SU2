@@ -2843,19 +2843,21 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
         bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-        su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
-        su2double sq_vel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
-          sq_vel += pow(RoeVelocity, 2);
+        su2double SoundSpeed_i = Primitive_i[nDim+4], SoundSpeed_j = Primitive_j[nDim+4];
+        if (!neg_pres_or_rho_j) {
+          GetFluidModel()->SetTDState_Prho(Primitive_i[nDim+1], Primitive_i[nDim+2]);
+          Primitive_i[nDim+4] = GetFluidModel()->GetSoundSpeed();
         }
-        su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
-        su2double RoeTke = (R*tke_j+tke_i)/(R+1);
+        if (!neg_pres_or_rho_j) {
+          GetFluidModel()->SetTDState_Prho(Primitive_j[nDim+1], Primitive_j[nDim+2]);
+          Primitive_j[nDim+4] = GetFluidModel()->GetSoundSpeed();
+        }
 
-        bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+        bool neg_sound_speed_i = (Primitive_i[nDim+4] < 0.0);
+        bool neg_sound_speed_j = (Primitive_j[nDim+4] < 0.0);
 
-        bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-        bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
+        bool bad_i = neg_sound_speed_i || neg_pres_or_rho_i;
+        bool bad_j = neg_sound_speed_j || neg_pres_or_rho_j;
 
         if (tkeNeeded) {
           bool neg_tke_i = (tke_i < 0.0);
@@ -2870,6 +2872,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         if (!bad_i) {
           for (unsigned short iDim = 0; iDim < nDim; iDim++)
             ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+
+          SoundSpeed_i = Primitive_i[nDim+4];
         }
         else {
           ProjVel_i = nodes->GetProjVel(iPoint,Normal);
@@ -2880,13 +2884,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         }
         else {
           ProjVel_j = nodes->GetProjVel(jPoint,Normal);
+
+          SoundSpeed_j = Primitive_j[nDim+4];
         }
 
         Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
-
-        /*--- Get average soundspeed ---*/
-        if (bad_i || bad_j) Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-        else Mean_SoundSpeed = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) * Area;
+        Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
       }// if muscl
       else {
         Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
