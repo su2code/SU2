@@ -634,6 +634,30 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] DonorGlobalIndex;
   }
 
+  if (ActDisk_Fa != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fa[iMarker];
+    delete [] ActDisk_Fa;
+  }
+
+  if (ActDisk_Fx != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fx[iMarker];
+    delete [] ActDisk_Fx;
+  }
+
+  if (ActDisk_Fy != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fy[iMarker];
+    delete [] ActDisk_Fy;
+  }
+
+  if (ActDisk_Fz != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fz[iMarker];
+    delete [] ActDisk_Fz;
+  }
+
   if (ActDisk_DeltaP != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] ActDisk_DeltaP[iMarker];
