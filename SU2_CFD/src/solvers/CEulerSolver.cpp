@@ -2755,8 +2755,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         auto Coord_j = geometry->node[jPoint]->GetCoord();
 
         for (iDim = 0; iDim < nDim; iDim++) {
-            Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-          }
+          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+        }
 
         if (tkeNeeded) {
           CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
