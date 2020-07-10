@@ -2747,6 +2747,13 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       if (muscl) {
 
+        auto Coord_i = geometry->node[iPoint]->GetCoord();
+        auto Coord_j = geometry->node[jPoint]->GetCoord();
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+            Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+          }
+
         if (tkeNeeded) {
           CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
 
@@ -2754,10 +2761,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
           tke_j = turbNodes->GetPrimitive(jPoint,0);
 
           /*--- Reconstruct turbulence variables. ---*/
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-          }
 
           auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
           auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
@@ -2803,6 +2806,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
           Limiter_i = nodes->GetLimiter_Primitive(iPoint);
           Limiter_j = nodes->GetLimiter_Primitive(jPoint);
         }
+
+        const su2double Kappa = config->GetMUSCL_Kappa();
 
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
