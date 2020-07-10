@@ -306,48 +306,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]]();
   }
 
-  /*--- Store the value of the Radius of the Actuator Disk ---*/
+  /*--- Actuator Disk Radius allocation ---*/
+  ActDisk_R.resize(nMarker);
 
-  ActDisk_R = new su2double [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      ActDisk_R[iMarker] = 0;
-    }
+  /*--- Actuator Disk Center allocation ---*/
+  ActDisk_C.resize(nMarker, MAXNDIM);
 
-  /*--- Store the value of the Center of the Actuator Disk ---*/
+  /*--- Actuator Disk Axis allocation ---*/
+  ActDisk_Axis.resize(nMarker, MAXNDIM);
 
-  ActDisk_C = new su2double* [nMarker];
+  /*--- Actuator Disk Fa, Fx, Fy and Fz allocations ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    ActDisk_C[iMarker] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      ActDisk_C[iMarker][iDim] = 0;
-    }
+    ActDisk_Fa.resize(nMarker, nVertex[iMarker]);
+    ActDisk_Fx.resize(nMarker, nVertex[iMarker]);
+    ActDisk_Fy.resize(nMarker, nVertex[iMarker]);
+    ActDisk_Fz.resize(nMarker, nVertex[iMarker]);
   }
-
-  /*--- Store the value of the Axis of the Actuator Disk ---*/
-
-  ActDisk_Axis = new su2double* [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      ActDisk_Axis[iMarker] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ActDisk_Axis[iMarker][iDim] = 0;
-      }
-    }
-
-  /*--- Store the value of the Axial Force per Unit Area at the Actuator Disk ---*/
-
-  Alloc2D(nMarker, nVertex, ActDisk_Fa);
-
-  /*--- Store the value of the X component of the Radial and Tangential Forces per Unit Area Resultant ---*/
-
-  Alloc2D(nMarker, nVertex, ActDisk_Fx);
-
-  /*--- Store the value of the Y component of the Radial and Tangential Forces per Unit Area Resultant ---*/
-
-  Alloc2D(nMarker, nVertex, ActDisk_Fy);
-
-  /*--- Store the value of the Z component of the Radial and Tangential Forces per Unit Area Resultant ---*/
-
-  Alloc2D(nMarker, nVertex, ActDisk_Fz);
 
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
@@ -660,52 +634,6 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] DonorGlobalIndex[iMarker];
     delete [] DonorGlobalIndex;
-  }
-
-  if (ActDisk_R != nullptr) {
-    delete [] ActDisk_R;
-  }
-
-  if (ActDisk_C != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (ActDisk_C[iMarker] != NULL) {
-        delete [] ActDisk_C[iMarker];
-      }
-    }
-    delete [] ActDisk_C;
-  }
-
-  if (ActDisk_Axis != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (ActDisk_Axis[iMarker] != NULL) {
-        delete [] ActDisk_Axis[iMarker];
-      }
-    }
-    delete [] ActDisk_Axis;
-  }
-
-  if (ActDisk_Fa != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fa[iMarker];
-    delete [] ActDisk_Fa;
-  }
-
-  if (ActDisk_Fx != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fx[iMarker];
-    delete [] ActDisk_Fx;
-  }
-
-  if (ActDisk_Fy != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fy[iMarker];
-    delete [] ActDisk_Fy;
-  }
-
-  if (ActDisk_Fz != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fz[iMarker];
-    delete [] ActDisk_Fz;
   }
 
   if (ActDisk_DeltaP != nullptr) {
@@ -6292,6 +6220,7 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
         (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+
       /*--- Get the marker tag of the current BC marker. ---*/
       Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       ifstream ActDisk_file;
@@ -6370,10 +6299,10 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
              }
 
              /*--- Set the actuator disk radius value, center coordiantes values and axis coordinates values. ---*/
-             SetActDisk_R(iMarker, AD_Radius);
+             ActDisk_R(iMarker) = AD_Radius;
              for (iDim = 0; iDim < nDim; iDim++){
-               SetActDisk_C(iMarker, iDim, AD_Center[iDim]);
-               SetActDisk_Axis(iMarker, iDim, AD_Axis[iDim]);
+               ActDisk_C(iMarker, iDim) = AD_Center[iDim];
+               ActDisk_Axis(iMarker, iDim) = AD_Axis[iDim];
              }
 
              /*--- If the first radial station corresponds to the actuator disk center, the radial and tangential forces
@@ -6449,10 +6378,10 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
                      Fz = Fz_inf + (Fz_sup - Fz_inf)*h;
                    }
                    /*--- Set the values of Fa, Fx, Fy and Fz. Fa is evaluated using a linear interpolation. ---*/
-                   SetActDisk_Fa(iMarker, iVertex, Fa[iEl-1] + (Fa[iEl]-Fa[iEl-1])*h);
-                   SetActDisk_Fx(iMarker, iVertex, Fx);
-                   SetActDisk_Fy(iMarker, iVertex, Fy);
-                   SetActDisk_Fz(iMarker, iVertex, Fz);
+                   ActDisk_Fa(iMarker, iVertex) = Fa[iEl-1] + (Fa[iEl]-Fa[iEl-1])*h;
+                   ActDisk_Fx(iMarker, iVertex) = Fx;
+                   ActDisk_Fy(iMarker, iVertex) = Fy;
+                   ActDisk_Fz(iMarker, iVertex) = Fz;
 
                    break;
                  }
@@ -11458,12 +11387,12 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 
   /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
   for (iDim = 0; iDim < nDim; iDim++){
-    C[iDim] = GetActDisk_C(val_marker, iDim);
-    Prop_Axis[iDim] = GetActDisk_Axis(val_marker, iDim);
+    C[iDim] = ActDisk_C(val_marker, iDim);
+    Prop_Axis[iDim] = ActDisk_Axis(val_marker, iDim);
   }
 
   /*--- Get the actuator disk radius for the current marker. ---*/
-  R = GetActDisk_R(val_marker);
+  R = ActDisk_R(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -11494,10 +11423,10 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 
       /*--- Get the values of Fa (axial force per unit area), Fx, Fy and Fz (x, y and z components of the tangential and
             radial forces per unit area resultant). ---*/
-      Fa = GetActDisk_Fa(val_marker, iVertex);
-      Fx = GetActDisk_Fx(val_marker, iVertex);
-      Fy = GetActDisk_Fy(val_marker, iVertex);
-      Fz = GetActDisk_Fz(val_marker, iVertex);
+      Fa = ActDisk_Fa(val_marker, iVertex);
+      Fx = ActDisk_Fx(val_marker, iVertex);
+      Fy = ActDisk_Fy(val_marker, iVertex);
+      Fz = ActDisk_Fz(val_marker, iVertex);
 
       /*--- Get the primitive variables and the extrapolated variables. ---*/
       if (val_inlet_surface){
