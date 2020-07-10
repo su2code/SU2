@@ -97,16 +97,10 @@ void computeGradientsGreenGauss(CSolver* solver,
       size_t iEdge = node->GetEdge(iNeigh);
       size_t jPoint = node->GetPoint(iNeigh);
       su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
-      su2double normR = 0.0;
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        normR += (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim))
-               * (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
-      normR = sqrt(normR);
 
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         denom += dir*geometry.edge[iEdge]->GetNormal()[iDim]
-               * (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim))
-               / pow(normR, 2.0);
+               * (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
 
     }
     su2double halfOnVol = 1.0/denom;
@@ -121,14 +115,8 @@ void computeGradientsGreenGauss(CSolver* solver,
       /*--- Determine if edge points inwards or outwards of iPoint.
        *    If inwards we need to flip the area vector. ---*/
 
-      su2double normR = 0.0;
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        normR += (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim))
-               * (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
-      normR = sqrt(normR);
-
       su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
-      su2double weight = dir * halfOnVol / pow(normR, 2.0);
+      su2double weight = dir * halfOnVol;
 
       const su2double* area = geometry.edge[iEdge]->GetNormal();
       AD::SetPreaccIn(area, nDim);
@@ -155,49 +143,49 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- Add boundary fluxes. ---*/
 
-  // for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
-  // {
-  //   if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-  //       (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
-  //   {
-  //     /*--- Work is shared in inner loop as two markers
-  //      *    may try to update the same point. ---*/
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+  {
+    if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+    {
+      /*--- Work is shared in inner loop as two markers
+       *    may try to update the same point. ---*/
 
-  //     SU2_OMP_FOR_STAT(32)
-  //     for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
-  //     {
-  //       size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-  //       auto node = geometry.node[iPoint];
+      SU2_OMP_FOR_STAT(32)
+      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
+      {
+        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+        auto node = geometry.node[iPoint];
 
-  //       /*--- Halo points do not need to be considered. ---*/
+        /*--- Halo points do not need to be considered. ---*/
 
-  //       if (!node->GetDomain()) continue;
+        if (!node->GetDomain()) continue;
 
-  //       // su2double volume = node->GetVolume() + node->GetPeriodicVolume();
-  //       su2double denom = 0.0;
-  //       for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh) {
-  //         size_t iEdge = node->GetEdge(iNeigh);
-  //         size_t jPoint = node->GetPoint(iNeigh);
-  //         su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
-  //         for (size_t iDim = 0; iDim < nDim; ++iDim) {
-  //           denom += dir*geometry.edge[iEdge]->GetNormal()[iDim]*
-  //                    (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
-  //         }
-  //       }
-  //       su2double volume = 1.0/denom;
+        // su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+        su2double denom = 0.0;
+        for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh) {
+          size_t iEdge = node->GetEdge(iNeigh);
+          size_t jPoint = node->GetPoint(iNeigh);
+          su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
+          for (size_t iDim = 0; iDim < nDim; ++iDim) {
+            denom += dir*geometry.edge[iEdge]->GetNormal()[iDim]*
+                     (geometry.node[jPoint]->GetCoord(iDim) - geometry.node[iPoint]->GetCoord(iDim));
+          }
+        }
+        su2double volume = 1.0/denom;
 
-  //       const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+        const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-  //       for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-  //       {
-  //         su2double flux = field(iPoint,iVar) / volume;
+        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+        {
+          su2double flux = field(iPoint,iVar) / volume;
 
-  //         for (size_t iDim = 0; iDim < nDim; iDim++)
-  //           gradient(iPoint, iVar, iDim) -= flux * area[iDim];
-  //       }
-  //     }
-  //   }
-  // }
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            gradient(iPoint, iVar, iDim) -= flux * area[iDim];
+        }
+      }
+    }
+  }
 
   /*--- If no solver was provided we do not communicate ---*/
 
