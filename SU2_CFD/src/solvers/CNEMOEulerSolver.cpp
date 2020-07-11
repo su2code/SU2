@@ -517,8 +517,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                  nPrimVar, nPrimVarGrad, config, FluidModel);
   SetBaseClassPointerToNodes();
 
-  exit(0);
-
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   su2double Density_Inf, Soundspeed_Inf, sqvel;

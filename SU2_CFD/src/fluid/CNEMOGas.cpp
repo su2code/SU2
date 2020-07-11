@@ -57,11 +57,6 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_mass
 
   su2double denom;
 
-  cout << "cat: SetTDStatePTTv" << endl;
-  cout << "cat: Pressure_Inf=" << val_pressure << endl;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    cout << "cat: MassFrac_Inf=" << val_massfrac[iSpecies] << endl; 
-
   MassFrac = val_massfrac;                   
   Pressure = val_pressure;                   
   T        = val_temperature;                
@@ -109,6 +104,8 @@ su2double CNEMOGas::GetPressure(){
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     P += rhos[nSpecies-1] * Ru/MolarMass[nSpecies-1] * Tve;
+
+  Pressure = P;
 
   return P;
 
