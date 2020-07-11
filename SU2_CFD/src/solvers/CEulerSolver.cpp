@@ -4735,8 +4735,8 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   }
   /*--- Delta P and delta T are inputs ---*/
 
-  else {
-    if (Kind_ActDisk == VARIABLES_JUMP) {
+  else if (Kind_ActDisk == VARIABLES_JUMP) {
+
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
       if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
@@ -4772,7 +4772,6 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           ActDisk_DeltaP[iMarker][iVertex] = DeltaP;
           ActDisk_DeltaT[iMarker][iVertex] = DeltaT;
         }
-
       }
     }
   }
@@ -4997,7 +4996,6 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           }
         }
       }
-
     }
 
     /*--- Evaluate the pressure jump at each node using the total thrust ---*/
@@ -5113,16 +5111,13 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                 ActDisk_DeltaT[iMarker][iVertex] = 1.0;
                 ActDisk_DeltaP[iMarker][iVertex] = 1.0;
               }
-
             }
-
           }
         }
-
       }
     }
   }
-}
+
   /*--- Broadcast some information to the master node ---*/
 
   ActDisk_Info = false;
