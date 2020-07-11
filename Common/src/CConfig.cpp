@@ -1403,6 +1403,9 @@ void CConfig::SetConfig_Options() {
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
 
+  /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
+  addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
+
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
@@ -6893,6 +6896,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_ActDiskOutlet != 0) {
+    if (GetKind_ActDisk() == VARIABLE_LOAD) {
+      cout << endl << "Actuator disk with variable load." << endl;
+      cout << "Actuator disk data read from file: " << GetActDisk_FileName() << endl;
+    }
   }
 
 }
