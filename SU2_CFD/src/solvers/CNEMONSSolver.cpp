@@ -603,7 +603,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   node_infty = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
                                    Mvec_Inf, Temperature_Inf,
                                    Temperature_ve_Inf, 1, nDim, nVar,
-                                   nPrimVar, nPrimVarGrad, config);
+                                   nPrimVar, nPrimVarGrad, config, FluidModel);
 
 
   check_infty = node_infty->SetPrimVar_Compressible(0, config); 
@@ -613,7 +613,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   nodes = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
                                        Mvec_Inf, Temperature_Inf,
                                        Temperature_ve_Inf, nPoint, nDim, nVar,
-                                       nPrimVar, nPrimVarGrad, config); 
+                                       nPrimVar, nPrimVarGrad, config, FluidModel); 
 
   SetBaseClassPointerToNodes();
 

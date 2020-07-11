@@ -84,7 +84,8 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        unsigned long nvar,
                                        unsigned long nvarprim,
                                        unsigned long nvarprimgrad,
-                                       CConfig *config) : CVariable(npoint,
+                                       CConfig *config,
+                                       CNEMOGas *fluidmodel) : CVariable(npoint,
                                                                     ndim,
                                                                     nvar,
                                                                     config   ),
@@ -187,6 +188,8 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   const auto&           g         = config->GetElDegeneracy();       // Degeneracy of electron states
   const unsigned short *nElStates = config->GetnElStates();          // Number of electron states
 
+  vector<su2double> energies;
+
   /*--- Rename & initialize for convenience ---*/
   RuSI      = UNIVERSAL_GAS_CONSTANT;          // Universal gas constant [J/(mol*K)]
   Ru        = 1000.0*RuSI;                     // Universal gas constant [J/(kmol*K)]
@@ -197,73 +200,83 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
 
     /*--- Reset values to zero ---*/
-    sqvel     = 0.0;                             // Velocity^2 [m2/s2]
-    rhoE      = 0.0;                             // Mixture total energy per mass [J/kg]
-    rhoEve    = 0.0;                             // Mixture vib-el energy per mass [J/kg]
-    rhoCvtr   = 0.0;                             // Mixture Cv (trans-rot) per mass
-    denom     = 0.0;
-    conc      = 0.0;
+      sqvel     = 0.0;                             // Velocity^2 [m2/s2]
+//    rhoE      = 0.0;                             // Mixture total energy per mass [J/kg]
+//    rhoEve    = 0.0;                             // Mixture vib-el energy per mass [J/kg]
+//    rhoCvtr   = 0.0;                             // Mixture Cv (trans-rot) per mass
+//    denom     = 0.0;
+//    conc      = 0.0;
+//
+//    /*--- Calculate mixture density from supplied primitive quantities ---*/
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+//      denom += val_massfrac[iSpecies] * (Ru/Ms[iSpecies]) * T;
+//
+//    for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+//      denom += val_massfrac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+//
+//    rho = val_pressure / denom;
+//
+//    /*--- Calculate sound speed and extract velocities ---*/
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//      conc += val_massfrac[iSpecies]*rho/Ms[iSpecies];
+//      rhoCvtr += rho*val_massfrac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+//    }
+//
+//    soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * val_pressure/rho);
+//
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
+//
+//    /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//      // Species density
+//      rhos = val_massfrac[iSpecies]*rho;
+//
+//      // Species formation energy
+//      Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+//
+//      // Species vibrational energy
+//      if (thetav[iSpecies] != 0.0)
+//        Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+//      else
+//        Ev = 0.0;
+//
+//      // Species electronic energy
+//      num = 0.0;
+//      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+//
+//      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//      }
+//
+//      Ee = Ru/Ms[iSpecies] * (num/denom);
+//
+//      // Mixture total energy
+//      rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+//                      + Ev + Ee + Ef + 0.5*sqvel);
+//
+//      // Mixture vibrational-electronic energy
+//      rhoEve += rhos * (Ev + Ee);
+//    }
+//
+//    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//      // Species formation energy
+//      Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+//
+//      // Electron t-r mode contributes to mixture vib-el energy
+//      rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+//    }
 
-    /*--- Calculate mixture density from supplied primitive quantities ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-      denom += val_massfrac[iSpecies] * (Ru/Ms[iSpecies]) * T;
+      fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
+      rho    = fluidmodel->GetDensity();
+      soundspeed = fluidmodel->GetSoundSpeed();
 
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-      denom += val_massfrac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
-
-    rho = val_pressure / denom;
-
-    /*--- Calculate sound speed and extract velocities ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      conc += val_massfrac[iSpecies]*rho/Ms[iSpecies];
-      rhoCvtr += rho*val_massfrac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-    }
-
-    soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * val_pressure/rho);
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
-
-    /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      // Species density
-      rhos = val_massfrac[iSpecies]*rho;
-
-      // Species formation energy
-      Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-      // Species vibrational energy
-      if (thetav[iSpecies] != 0.0)
-        Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-      else
-        Ev = 0.0;
-
-      // Species electronic energy
-      num = 0.0;
-      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      for (iDim = 0; iDim < nDim; iDim++){
+        sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
       }
-
-      Ee = Ru/Ms[iSpecies] * (num/denom);
-
-      // Mixture total energy
-      rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                      + Ev + Ee + Ef + 0.5*sqvel);
-
-      // Mixture vibrational-electronic energy
-      rhoEve += rhos * (Ev + Ee);
-    }
-
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      // Species formation energy
-      Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-
-      // Electron t-r mode contributes to mixture vib-el energy
-      rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-    }
+      
+      energies = fluidmodel->GetMixtureEnergies();      
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {

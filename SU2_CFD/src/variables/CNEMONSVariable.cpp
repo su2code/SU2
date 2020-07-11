@@ -48,7 +48,8 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                  unsigned long val_nvar,
                                  unsigned long val_nvarprim,
                                  unsigned long val_nvarprimgrad,
-                                 CConfig *config) : CNEMOEulerVariable(val_pressure,
+                                 CConfig *config,
+                                 CNEMOGas *fluidmodel) : CNEMOEulerVariable(val_pressure,
                                                                        val_massfrac,
                                                                        val_mach,
                                                                        val_temperature,
@@ -58,7 +59,8 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                                                        val_nvar,
                                                                        val_nvarprim,
                                                                        val_nvarprimgrad,
-                                                                       config) {
+                                                                       config,
+                                                                       fluidmodel) {
                                
 
 
