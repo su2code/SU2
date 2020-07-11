@@ -170,6 +170,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         break;
+      case SMOLUCHOWSKI_MAXWELL:
+        solver_container[MainSolver]->BC_Smoluchowski_Maxwell(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        break;
     }
 
   /*--- Complete residuals for periodic boundary conditions. We loop over

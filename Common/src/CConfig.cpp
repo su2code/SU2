@@ -817,7 +817,7 @@ void CConfig::SetPointersNull(void) {
   Marker_PerDonor             = nullptr;    Marker_NearFieldBound   = nullptr;
   Marker_Deform_Mesh          = nullptr;    Marker_Fluid_Load       = nullptr;
   Marker_Inlet                = nullptr;    Marker_Outlet           = nullptr;
-  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;
+  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;    Marker_Smoluchowski_Maxwell   = nullptr;
   Marker_Isothermal           = nullptr;    Marker_HeatFlux         = nullptr;    Marker_EngineInflow   = nullptr;
   Marker_IsothermalCatalytic  = nullptr;    Marker_IsothermalNonCatalytic = nullptr;
   Marker_HeatFluxNonCatalytic = nullptr;    Marker_HeatFluxCatalytic      = nullptr;
@@ -1520,6 +1520,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief Smluchowski/Maxwell wall boundary marker(s)  \n DESCRIPTION: Slip velocity and temperature jump wall boundary marker(s)
+   Format: ( Heat flux marker,  wall temperature (static), momentum accomodation coefficient, thermal accomodation coefficient ... ) \ingroup Config*/
+  addStringDoubleListOption("MARKER_SMOLUCHOWSKI_MAXWELL", nMarker_Smoluchowski_Maxwell, Marker_Smoluchowski_Maxwell, Isothermal_Temperature); //Missing TMAC and TAC
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
   addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
@@ -5572,6 +5575,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
+  iMarker_Smoluchowski_Maxwell,
   iMarker_Isothermal, iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic,
   iMarker_HeatFlux, iMarker_HeatFluxCatalytic, iMarker_HeatFluxNoncatalytic,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
@@ -5594,7 +5598,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann +
+  nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic + nMarker_IsothermalNonCatalytic +
   nMarker_HeatFlux + nMarker_HeatFluxCatalytic + nMarker_HeatFluxNonCatalytic +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
@@ -5871,6 +5875,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
  
+  for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = SMOLUCHOWSKI_MAXWELL;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL_CATALYTIC;
@@ -6087,7 +6097,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
-  iMarker_Deform_Mesh, iMarker_Fluid_Load,
+  iMarker_Deform_Mesh, iMarker_Fluid_Load, iMarker_Smoluchowski_Maxwell,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_HeatFluxCatalytic, iMarker_HeatFluxNonCatalytic,
   iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic,
@@ -7511,6 +7521,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_Smoluchowski_Maxwell != 0) {
+    BoundaryTable << "Smoluchowski/Maxwell jump wall";
+    for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
+      BoundaryTable << Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
+      if (iMarker_Smoluchowski_Maxwell< nMarker_Smoluchowski_Maxwell-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_IsothermalCatalytic != 0) {
     BoundaryTable << "Catalytic Isothermal wall";
     for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
@@ -7949,6 +7968,7 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == HEAT_FLUX_NONCATALYTIC  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL_NONCATALYTIC ||
           Marker_All_KindBC[iMarker] == HEAT_FLUX_CATALYTIC  ||
@@ -7961,6 +7981,7 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == HEAT_FLUX_NONCATALYTIC  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL_NONCATALYTIC ||
           Marker_All_KindBC[iMarker] == HEAT_FLUX_CATALYTIC  ||
@@ -8367,6 +8388,7 @@ CConfig::~CConfig(void) {
     delete[] Marker_Supersonic_Outlet;
               delete[] Marker_Outlet;
           delete[] Marker_Isothermal;
+  delete[] Marker_Smoluchowski_Maxwell;
   delete[] Marker_IsothermalCatalytic;
   delete[] Marker_IsothermalNonCatalytic;
        delete[] Marker_EngineInflow;

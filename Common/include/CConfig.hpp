@@ -207,6 +207,7 @@ private:
   nMarker_Supersonic_Inlet,       /*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,      /*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,                 /*!< \brief Number of outlet flow markers. */
+  nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_IsothermalCatalytic,    /*!< \brief Number of isothermal catalytic wall boundaries. */
   nMarker_IsothermalNonCatalytic, /*!< \brief Number of isothermal non-catalytic wall boundaries. */
@@ -256,6 +257,7 @@ private:
   *Marker_Supersonic_Inlet,       /*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,      /*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
+  *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_IsothermalCatalytic,    /*!< \brief Isothermal Catalytic wall markers. */
   *Marker_IsothermalNonCatalytic, /*!< \brief Isothermal NonCatalytic wall markers. */

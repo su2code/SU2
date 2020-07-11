@@ -1240,7 +1240,8 @@ void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
         (Boundary == ISOTHERMAL             ) ||
         (Boundary == ISOTHERMAL_CATALYTIC   ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC)) {
+        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+        (Boundary == SMOLUCHOWSKI_MAXWELL)) {
 
       /*--- Forces initialization at each Marker ---*/
       CD_Visc[iMarker]   = 0.0; CL_Visc[iMarker]    = 0.0; CSF_Visc[iMarker]    = 0.0;
@@ -2316,4 +2317,195 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
     delete [] dVdU[iVar];
   delete [] dVdU;
   delete [] Cvtr;
+}
+
+void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
+                                CSolver **solution_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker) {
+
+
+  unsigned short iDim, jDim, iVar, jVar, iSpecies;
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned long iVertex, iPoint, jPoint;
+  su2double ktr, kve;
+  su2double Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
+  su2double Twall, Tslip, dij, theta;
+  su2double Pi;
+  su2double Area, *Normal, UnitNormal[3];
+  su2double *Coord_i, *Coord_j;
+  su2double C;
+
+  su2double TMAC, TAC;
+  su2double Prandtl, Gamma, Viscosity, Lambda;
+  su2double Density, GasConstant, Ru;
+
+  su2double **Grad_PrimVar;
+  su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
+  su2double dTn, dTven;
+
+  su2double TauElem[3], TauTangent[3];
+  su2double Tau[3][3];
+  su2double TauNormal;
+  su2double div_vel=0, Delta;
+  
+  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool ionization = config->GetIonization();
+
+  if (ionization) {
+    cout << "BC_SMOLUCHOWSKI_MAXWELL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
+    exit(1);
+  }
+
+  /*--- Define 'proportional control' constant ---*/
+  C = 5;
+
+  /*--- Identify the boundary ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Retrieve the specified wall temperature and accomodation coefficients---*/
+  Twall = config->GetIsothermal_Temperature(Marker_Tag);
+  TMAC  = 1.0;
+  TAC   = 1.0;
+
+  unsigned short VEL_INDEX;
+
+  /*--- Extract necessary indices ---*/
+  RHOS_INDEX    = nodes->GetRhosIndex();
+  T_INDEX       = nodes->GetTIndex();
+  VEL_INDEX     = nodes->GetVelIndex();
+  TVE_INDEX     = nodes->GetTveIndex();
+  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
+
+  /*--- Loop over boundary points to calculate energy flux ---*/
+  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+
+      /*--- Compute dual-grid area and boundary normal ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+
+      /*--- Compute closest normal neighbor ---*/
+      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      /*--- Compute distance between wall & normal neighbor ---*/
+      Coord_i = geometry->nodes->GetCoord(iPoint);
+      Coord_j = geometry->nodes->GetCoord(jPoint);
+
+      dij = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        dij += (Coord_j[iDim] - Coord_i[iDim])*(Coord_j[iDim] - Coord_i[iDim]);
+      dij = sqrt(dij);
+
+      /*--- Calculate geometrical parameters ---*/
+      /*theta = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        theta += UnitNormal[iDim]*UnitNormal[iDim];
+      }*/
+
+      /*--- Calculate Pressure ---*/
+      Pi   = nodes->GetPressure(iPoint);
+
+      /*--- Calculate the gradient of temperature ---*/
+      Ti   = nodes->GetTemperature(iPoint);
+      Tj   = nodes->GetTemperature(jPoint);
+      Tvei = nodes->GetTemperature_ve(iPoint);
+      Tvej = nodes->GetTemperature_ve(jPoint);
+
+      /*--- Rename variables for convenience ---*/
+      ktr  = nodes->GetThermalConductivity(iPoint);
+      kve  = nodes->GetThermalConductivity_ve(iPoint);
+
+      /*--- Retrieve Flow Data ---*/
+      Prandtl = config->GetPrandtl_Lam(); //
+      Gamma   = config->GetGamma(); // 
+      Viscosity = nodes->GetLaminarViscosity(iPoint);
+      Density = nodes->GetDensity(iPoint);
+      Ru=UNIVERSAL_GAS_CONSTANT*1000.0;
+
+      /*--- Calculate specific gas constant --- */
+      GasConstant=0;
+      for(iSpecies=0;iSpecies<nSpecies;iSpecies++)
+        GasConstant+=Ru/config->GetMolar_Mass(iSpecies)*nodes->GetMassFraction(iPoint,iSpecies);
+      
+      /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
+      dTn   = - (Ti-Tj)/dij;
+      dTven = - (Tvei-Tvej)/dij;
+
+      /*--- Calculate molecular mean free path ---*/
+      Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2*GasConstant*Ti));
+
+      /*--- Calculate Temperature Slip ---*/
+      Tslip = ((2-TAC)/TAC)*2*Gamma/(Gamma+1)/Prandtl*Lambda*dTn+Twall;
+
+      /*--- Retrieve Primitive Gradients ---*/
+      Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+
+      /*--- Calculate temperature gradients tangent to surface ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_Tangent_dT[iDim]   = Grad_PrimVar[T_INDEX][iDim] - dTn * UnitNormal[iDim];
+        Vector_Tangent_dTve[iDim] = Grad_PrimVar[TVE_INDEX][iDim] - dTven * UnitNormal[iDim];
+      }
+
+      /*--- Calculate Heatflux tangent to surface ---*/
+      for (iDim = 0; iDim < nDim; iDim++) 
+        Vector_Tangent_HF[iDim] = ktr*Vector_Tangent_dT[iDim]+kve*Vector_Tangent_dTve[iDim];
+      
+      /*--- Initialize viscous residual to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar ++)
+        Res_Visc[iVar] = 0.0;
+
+      div_vel = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0 ; jDim < nDim; jDim++) {
+          Delta = 0.0; if (iDim == jDim) Delta = 1.0;
+          Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[VEL_INDEX+jDim][iDim] +
+              Grad_PrimVar[VEL_INDEX+iDim][jDim]  )
+              - TWO3*Viscosity*div_vel*Delta;
+        }
+        TauElem[iDim] = 0.0;
+        for (jDim = 0; jDim < nDim; jDim++)
+          TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+      }
+
+      /*--- Compute wall shear stress (using the stress tensor) ---*/
+      TauNormal = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        TauNormal += TauElem[iDim] * UnitNormal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      }
+
+      /*--- Store the Slip Velocity at the wall */
+      for (iDim = 0; iDim < nDim; iDim++)
+        Vector[iDim] = - Lambda/Viscosity*(2-TMAC)/TMAC*(TauTangent[iDim])-3/4*(Gamma-1)/Gamma*Prandtl/Pi*Vector_Tangent_HF[iDim];
+
+      nodes->SetVelocity_Old(iPoint,Vector);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+      }
+
+      /*--- Apply to the linear system ---*/
+      Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+                                   (ktr*(Tslip-Ti) + kve*(Tslip-Tvei))*C)*Area/dij;
+      Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Tslip-Tvei)*C)*Area/dij;
+
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+    }
+  } 
 }
