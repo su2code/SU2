@@ -313,6 +313,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]]();
   }
 
+  /*--- Actuator Disk Radius allocation ---*/
+  ActDisk_R.resize(nMarker);
+
+  /*--- Actuator Disk Center allocation ---*/
+  ActDisk_C.resize(nMarker, MAXNDIM);
+
+  /*--- Actuator Disk Axis allocation ---*/
+  ActDisk_Axis.resize(nMarker, MAXNDIM);
+
+  /*--- Actuator Disk Fa, Fx, Fy and Fz allocations ---*/
+  Alloc2D(nMarker, nVertex, ActDisk_Fa);
+  Alloc2D(nMarker, nVertex, ActDisk_Fx);
+  Alloc2D(nMarker, nVertex, ActDisk_Fy);
+  Alloc2D(nMarker, nVertex, ActDisk_Fz);
+
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
   Alloc2D(nMarker, nVertex, ActDisk_DeltaP);
@@ -650,6 +665,30 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] DonorGlobalIndex[iMarker];
     delete [] DonorGlobalIndex;
+  }
+
+  if (ActDisk_Fa != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fa[iMarker];
+    delete [] ActDisk_Fa;
+  }
+
+  if (ActDisk_Fx != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fx[iMarker];
+    delete [] ActDisk_Fx;
+  }
+
+  if (ActDisk_Fy != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fy[iMarker];
+    delete [] ActDisk_Fy;
+  }
+
+  if (ActDisk_Fz != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fz[iMarker];
+    delete [] ActDisk_Fz;
   }
 
   if (ActDisk_DeltaP != nullptr) {
@@ -5831,9 +5870,16 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Factor = (0.5*RefDensity*RefArea*RefVel2);
   Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
 
+  /*--- Variable load distribution is in input file. ---*/
+  if (Kind_ActDisk == VARIABLE_LOAD) {
+    if(InnerIter == 0) {
+      ReadActDisk_InputFile(geometry, solver_container, config, iMesh, Output);
+    }
+  }
   /*--- Delta P and delta T are inputs ---*/
 
-  if (Kind_ActDisk == VARIABLES_JUMP) {
+  else {
+    if (Kind_ActDisk == VARIABLES_JUMP) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
       if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
@@ -6219,7 +6265,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
       }
     }
   }
-
+}
   /*--- Broadcast some information to the master node ---*/
 
   ActDisk_Info = false;
@@ -6235,6 +6281,207 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   SU2_MPI::Allreduce(&MyBCThrust, &BCThrust, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   config->SetInitial_BCThrust(BCThrust);
 
+}
+
+void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_container,
+                                       CConfig *config, unsigned short iMesh, bool Output) {
+  /*--- Input file provides force coefficients distributions along disk radius. Initialization
+        necessary only at initial iteration. ---*/
+
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  string Marker_Tag;
+  int iRow, nRow, iEl;
+  std::vector<su2double> rad_v, dCt_v, dCp_v, dCr_v;
+  su2double r_ = 0.0, r[MAXNDIM] = {0.0},
+  AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
+  std::vector<su2double> Fa, Ft, Fr;
+  su2double Fx = 0.0, Fy = 0.0, Fz = 0.0,
+  Fx_inf = 0.0, Fy_inf = 0.0, Fz_inf = 0.0, Fx_sup = 0.0, Fy_sup = 0.0, Fz_sup = 0.0, h = 0.0;
+  const su2double *P = nullptr;
+
+  su2double Dens_FreeStream = config->GetDensity_FreeStream();
+  const su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
+
+  /*--- Get the file name that contains the propeller data. ---*/
+  string ActDisk_filename = config->GetActDisk_FileName();
+  /*--- Loop over the markers. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+        (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+
+      /*--- Get the marker tag of the current BC marker. ---*/
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      ifstream ActDisk_file;
+      /*--- Open the file that contains the propeller data. ---*/
+      ActDisk_file.open(ActDisk_filename.data(), ios::in);
+
+      /*--- Error message if the propeller data input file fails to open. ---*/
+      if (ActDisk_file.fail()) SU2_MPI::Error("Unable to open Actuator Disk Input File", CURRENT_FUNCTION);
+
+        string text_line, text_line_appo, name[2];
+        string::size_type position;
+
+        while (getline (ActDisk_file, text_line)) {
+          /*--- Check if there is the "MARKER_ACTDISK=" string in the current line. If not keep on reading. ---*/
+          position = text_line.find ("MARKER_ACTDISK=");
+          if(position == string::npos){continue;}
+          text_line.erase (0,15);
+          /*--- Read the names of the two faces of the actuator disk and assign them to the name[] array. ---*/
+          istringstream NameID(text_line);
+          for (int i = 0; i < 2; i++){
+            NameID >> name[i];
+          }
+
+          /*--- Check if the propeller data correspond to the actual BC marker. ---*/
+          if (Marker_Tag == name[0] || Marker_Tag == name[1]){
+            /*--- Read and assign the coordinates of the actuator disk center. ---*/
+            getline (ActDisk_file, text_line_appo);
+            text_line_appo.erase (0,7);
+            istringstream C_value(text_line_appo);
+            for (iDim = 0; iDim < nDim; iDim++){
+              C_value >> AD_Center[iDim];
+            }
+
+            /*--- Read and assign the components of the actuator disk axis versor pointing backward. ---*/
+            getline (ActDisk_file, text_line_appo);
+            text_line_appo.erase (0,5);
+            istringstream axis_value(text_line_appo);
+            for (iDim = 0; iDim < nDim; iDim++){
+              axis_value >> AD_Axis[iDim];
+            }
+
+            /*--- Read and assign the value of the actuator disk radius. ---*/
+            getline (ActDisk_file, text_line_appo);
+            text_line_appo.erase (0,7);
+            istringstream R_value(text_line_appo);
+             R_value >> AD_Radius;
+
+             /*--- Read and assign the value of the actuator disk advance ratio. ---*/
+             getline (ActDisk_file, text_line_appo);
+             text_line_appo.erase (0,10);
+             istringstream J_value(text_line_appo);
+             J_value >> AD_J;
+
+             /*--- Read and assign the number of radial stations contained in the propeller data file. ---*/
+             getline (ActDisk_file, text_line_appo);
+             text_line_appo.erase (0,5);
+             istringstream row_value(text_line_appo);
+             row_value >> nRow;
+
+             /*--- Assign the vectors dimension. ---*/
+             rad_v.resize(nRow);
+             dCt_v.resize(nRow);
+             dCp_v.resize(nRow);
+             dCr_v.resize(nRow);
+
+             Fa.resize(nRow);
+             Ft.resize(nRow);
+             Fr.resize(nRow);
+
+             /*--- Read and assign the values of the non-dimensional radius, thrust coefficient, power coefficient
+                   and radial force coefficient. ---*/
+             getline (ActDisk_file, text_line_appo);
+             for (iRow = 0; iRow < nRow; iRow++){
+               getline (ActDisk_file, text_line_appo);
+               istringstream row_val_value(text_line_appo);
+               row_val_value >> rad_v[iRow] >> dCt_v[iRow] >> dCp_v[iRow] >> dCr_v[iRow];
+             }
+
+             /*--- Set the actuator disk radius value, center coordiantes values and axis coordinates values. ---*/
+             ActDisk_R(iMarker) = AD_Radius;
+             for (iDim = 0; iDim < nDim; iDim++){
+               ActDisk_C(iMarker, iDim) = AD_Center[iDim];
+               ActDisk_Axis(iMarker, iDim) = AD_Axis[iDim];
+             }
+
+             /*--- If the first radial station corresponds to the actuator disk center, the radial and tangential forces
+                   per unit area (Fr and Ft) are equal to zero, while the axial force per unit area (Fa) is computed using
+                   a linear interpolation in order to avoid a mathematical singularity at actuator disk center. ---*/
+             if (rad_v[0] == 0.0){
+               Fa[0] = (((2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                       (pow(AD_J,2)*PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
+               Ft[0] = 0.0;
+               Fr[0] = 0.0;
+             }
+             else {
+               Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                       (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+               Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                       ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
+               Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                       (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+             }
+
+             /*--- Loop over the radial stations. Computation of Fa (axial force per unit area), Ft (tangential force per unit area)
+                   and Fr (radial force per unit area).
+                   These equations are not valid if the freestream velocity is equal to zero (hovering condition not enabled yet). ---*/
+             for (iEl = 1; iEl < nRow; iEl++){
+               Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                         (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+               Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                         ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+               Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                         (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+             }
+
+             /*--- Loop over the marker nodes. ---*/
+             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+               /*--- Get the coordinates of the current node. ---*/
+               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+               P = geometry->nodes->GetCoord(iPoint);
+
+               /*--- Computation of the radius coordinates for the current node. ---*/
+               GeometryToolbox::Distance(nDim, P, AD_Center, r);
+
+               /*--- Computation of the non-dimensional radius for the current node. ---*/
+               r_ = GeometryToolbox::Norm(nDim, r) / AD_Radius;
+
+               /*--- Loop over the actuator disk radial stations. ---*/
+               for (iEl = 0; iEl < nRow; iEl++){
+                 /*--- Check if the current node is located between rad_v[iEl] and rad_v[iEl-1]. ---*/
+                 if (r_ <= rad_v[iEl]){
+                   /*--- h is the dinstance of the current node from the previous radial element (iEl-1)
+                         divided by the length of the radial element in which the node is contained. ---*/
+                   h = (r_-rad_v[iEl-1])/(rad_v[iEl]-rad_v[iEl-1]);
+                   /*--- Fx, Fy and Fz are the x, y and z components of the tangential and radial forces
+                         per unit area resultant. ---*/
+                   if(r_ == 0.0){
+                     Fx = 0.0;
+                     Fy = 0.0;
+                     Fz = 0.0;
+                   }
+                   /*--- _inf is the value of the previous radial element. _sup is the value of the
+                         following radial element. ---*/
+                   else{
+                     Fx_inf = (Ft[iEl-1]+Fr[iEl-1])*(r[0]/(r_*AD_Radius));
+                     Fy_inf = (Ft[iEl-1]+Fr[iEl-1])*(r[2]/(r_*AD_Radius));
+                     Fz_inf = -(Ft[iEl-1]+Fr[iEl-1])*(r[1]/(r_*AD_Radius));
+                     Fx_sup = (Ft[iEl]+Fr[iEl])*(r[0]/(r_*AD_Radius));
+                     Fy_sup = (Ft[iEl]+Fr[iEl])*(r[2]/(r_*AD_Radius));
+                     Fz_sup = -(Ft[iEl]+Fr[iEl])*(r[1]/(r_*AD_Radius));
+
+                     /*--- Fx, Fy and Fz at the current node are evaluated using a linear interpolation between
+                           the end vaues of the radial element in which the current node is contained. ---*/
+                     Fx = Fx_inf + (Fx_sup - Fx_inf)*h;
+                     Fy = Fy_inf + (Fy_sup - Fy_inf)*h;
+                     Fz = Fz_inf + (Fz_sup - Fz_inf)*h;
+                   }
+                   /*--- Set the values of Fa, Fx, Fy and Fz. Fa is evaluated using a linear interpolation. ---*/
+                   SetActDisk_Fa(iMarker, iVertex, Fa[iEl-1] + (Fa[iEl]-Fa[iEl-1])*h);
+                   SetActDisk_Fx(iMarker, iVertex, Fx);
+                   SetActDisk_Fy(iMarker, iVertex, Fy);
+                   SetActDisk_Fz(iMarker, iVertex, Fz);
+
+                   break;
+                 }
+               }
+             }
+           }
+         }
+       ActDisk_file.close();
+     }
+   }
 }
 
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
@@ -10739,14 +10986,28 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
 void CEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
 
-  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true);
+  unsigned short Kind_ActDisk = config->GetKind_ActDisk();
+
+  if(Kind_ActDisk == VARIABLE_LOAD){
+    BC_ActDisk_VariableLoad(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true);
+  }
+  else{
+    BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true);
+  }
 
 }
 
 void CEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                      CConfig *config, unsigned short val_marker) {
 
-  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);
+  unsigned short Kind_ActDisk = config->GetKind_ActDisk();
+
+  if(Kind_ActDisk == VARIABLE_LOAD){
+    BC_ActDisk_VariableLoad(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);
+  }
+  else{
+    BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);
+  }
 
 }
 
@@ -11162,6 +11423,246 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   delete [] Normal;
   delete [] Flow_Dir;
 
+}
+
+void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                              CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+
+  /*!
+   * \function BC_ActDisk_VariableLoad
+   * \brief Actuator disk model with variable load along disk radius.
+   * \author: E. Saetta, L. Russo, R. Tognaccini (GitHub references EttoreSaetta, lorenzorusso07, rtogna).
+   * Theoretical and Applied Aerodynamics Research Group (TAARG), University of Naples Federico II.
+   * \version 7.0.5 “Blackbird”
+   * First release date : July 1st 2020
+   * modified on:
+   *
+   * Force coefficients distribution given in an input file. Actuator disk data initialized in function SetActDisk_BCThrust.
+   * Entropy, acoustic Riemann invariant R+ and  tangential velocity extrapolated  from upstream flow;
+   * acoustic Riemann invariant R- is extrapolated from downstream.
+   * Hovering condition simulation not available yet: freestream velocity must be different than zero.
+   */
+
+  unsigned short iDim;
+  unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
+  su2double Pressure, Velocity[MAXNDIM],
+  Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet,
+  Area, UnitNormal[MAXNDIM] = {0.0}, *V_outlet, *V_domain, *V_inlet;
+
+  su2double Pressure_out, Density_out,
+  Pressure_in, Density_in;
+
+  su2double C[MAXNDIM], Prop_Axis[MAXNDIM], R, r[MAXNDIM], r_;
+  su2double Fa, Fx, Fy, Fz;
+  su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
+  su2double Temperature_out, H_in, H_out;
+  su2double FQ, Q_out, Density_Disk;
+  su2double SoSextr, Vnextr[MAXNDIM], Vnextr_, RiemannExtr, QdMnorm[MAXNDIM], QdMnorm2, appo2, SoS_out;
+  const su2double *P = nullptr;
+
+  bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  su2double Gas_Constant  = config->GetGas_ConstantND();
+  bool tkeNeeded          = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool ratio              = (config->GetActDisk_Jump() == RATIO);
+
+  su2double Normal[MAXNDIM];
+
+  /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
+  for (iDim = 0; iDim < nDim; iDim++){
+    C[iDim] = ActDisk_C(val_marker, iDim);
+    Prop_Axis[iDim] = ActDisk_Axis(val_marker, iDim);
+  }
+
+  /*--- Get the actuator disk radius for the current marker. ---*/
+  R = ActDisk_R(val_marker);
+
+  /*--- Loop over all the vertices on this boundary marker. ---*/
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
+    GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+
+    if ((geometry->nodes->GetDomain(iPoint)) &&
+       (GlobalIndex != GlobalIndex_donor)) {
+
+      /*--- Normal vector for this vertex (negative for outward convention) ---*/
+
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      Area = GeometryToolbox::Norm(nDim, Normal);
+      for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = Normal[iDim]/Area;
+
+      /*--- Current solution at this boundary node. ---*/
+
+      V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Get the values of Fa (axial force per unit area), Fx, Fy and Fz (x, y and z components of the tangential and
+            radial forces per unit area resultant). ---*/
+      Fa = GetActDisk_Fa(val_marker, iVertex);
+      Fx = GetActDisk_Fx(val_marker, iVertex);
+      Fy = GetActDisk_Fy(val_marker, iVertex);
+      Fz = GetActDisk_Fz(val_marker, iVertex);
+
+      /*--- Get the primitive variables and the extrapolated variables. ---*/
+      if (val_inlet_surface){
+        V_inlet = nodes->GetPrimitive(iPoint);
+        V_outlet = GetDonorPrimVar(val_marker, iVertex);}
+      else{
+        V_outlet =  nodes->GetPrimitive(iPoint);
+        V_inlet = GetDonorPrimVar(val_marker, iVertex);}
+
+      /*--- u, v and w are the three momentum components. ---*/
+      Pressure_out    = V_outlet[nDim+1];
+      Density_out     = V_outlet[nDim+2];
+      u_out = V_outlet[1]*V_outlet[nDim+2];
+      v_out = V_outlet[2]*V_outlet[nDim+2];
+      w_out = V_outlet[3]*V_outlet[nDim+2];
+
+      Pressure_in    = V_inlet[nDim+1];
+      Density_in     = V_inlet[nDim+2];
+      u_in = V_inlet[1]*Density_in;
+      v_in = V_inlet[2]*Density_in;
+      w_in = V_inlet[3]*Density_in;
+      H_in = V_inlet[nDim+3]*Density_in;
+
+      /*--- Density on the disk is computed as an everage value between the inlet and outlet values. ---*/
+      Density_Disk = 0.5*(Density_in + Density_out);
+
+      /*--- Computation of the normal momentum flowing through the disk. ---*/
+      Q_out = 0.5*((u_in + u_out)*Prop_Axis[0] + (v_in + v_out)*Prop_Axis[1] + (w_in + w_out)*Prop_Axis[2]);
+
+      FQ = Q_out/Density_Disk;
+
+      /*--- Computation of the momentum jumps due to the tnagential and radial forces per unit area. ---*/
+      if (FQ < EPS){
+        uJ = 0.0;
+        vJ = 0.0;
+        wJ = 0.0;}
+      else{
+        uJ = Fx/FQ;
+        vJ = Fy/FQ;
+        wJ = Fz/FQ;}
+
+      if (val_inlet_surface) {
+        /*--- Build the fictitious intlet state based on characteristics.
+              Retrieve the specified back pressure for this inlet ---*/
+
+        Density = V_domain[nDim+2];
+        Velocity2 = 0.0; Vn = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = V_domain[iDim+1];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+          Vn += Velocity[iDim]*UnitNormal[iDim];
+        }
+        Pressure   = V_domain[nDim+1];
+        SoundSpeed = sqrt(Gamma*Pressure/Density);
+
+        Entropy = Pressure*pow(1.0/Density, Gamma);
+        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+
+        /*--- Compute the new fictious state at the outlet ---*/
+
+        Pressure   = Pressure_out - Fa;
+        Density    = pow(Pressure/Entropy,1.0/Gamma);
+        SoundSpeed = sqrt(Gamma*Pressure/Density);
+        Vn_Inlet    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+
+        Velocity2  = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = Velocity[iDim] + (Vn_Inlet-Vn)*UnitNormal[iDim];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
+        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        if (tkeNeeded) Energy += GetTke_Inf();
+
+        /*--- Conservative variables, using the derived quantities ---*/
+
+        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Velocity[iDim];
+          V_inlet[nDim+1] = Pressure;
+          V_inlet[nDim+2] = Density;
+          V_inlet[nDim+3] = Energy + Pressure/Density;
+          V_inlet[nDim+4] = SoundSpeed;
+          conv_numerics->SetPrimitive(V_domain, V_inlet);
+        }else{
+          /*--- Acoustic Riemann invariant extrapolation form the interior domain. ---*/
+          SoSextr = V_domain[nDim+4];
+
+          Vnextr_ = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            Vnextr[iDim] = V_domain[iDim+1]*Prop_Axis[iDim];
+            Vnextr_ += Vnextr[iDim]*Vnextr[iDim];
+          }
+          Vnextr_ = sqrt(max(0.0,Vnextr_));
+          RiemannExtr = Vnextr_ - ((2*SoSextr)/(Gamma_Minus_One));
+
+          /*--- Assigning the momentum in tangential direction jump and the pressure jump. ---*/
+          Velocity[0] = u_in + uJ;
+          Velocity[1] = v_in + vJ;
+          Velocity[2] = w_in + wJ;
+          Pressure_out = Pressure_in + Fa;
+
+          /*--- Computation of the momentum normal to the disk plane. ---*/
+          QdMnorm[0] = u_in*Prop_Axis[0];
+          QdMnorm[1] = v_in*Prop_Axis[1];
+          QdMnorm[2] = w_in*Prop_Axis[2];
+
+          QdMnorm2 = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) QdMnorm2 += QdMnorm[iDim]*QdMnorm[iDim];
+
+          /*--- Resolving the second grade equation for the density. ---*/
+          appo2 = -((2*sqrt(QdMnorm2)*RiemannExtr)+((4*Gamma*Pressure_out)/(pow(Gamma_Minus_One,2))));
+          Density_out = (-appo2+sqrt(max(0.0,pow(appo2,2)-4*QdMnorm2*pow(RiemannExtr,2))))/(2*pow(RiemannExtr,2));
+
+          Velocity2 = 0;
+          for (iDim = 0; iDim < nDim; iDim++) Velocity2 += (Velocity[iDim]*Velocity[iDim]);
+
+          /*--- Computation of the enthalpy, total energy, temperature and speed of sound. ---*/
+          H_out = H_in/Density_in + Fa/Density_out;
+          Energy = H_out - Pressure_out/Density_out;
+          if (tkeNeeded) Energy += GetTke_Inf();
+          Temperature_out = (Energy-0.5*Velocity2/(pow(Density_out,2)))*(Gamma_Minus_One/Gas_Constant);
+
+          SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
+
+          /*--- Set the primitive variables. ---*/
+          V_outlet[0] = Temperature_out;
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_outlet[iDim+1] = Velocity[iDim]/Density_out;
+          V_outlet[nDim+1] = Pressure_out;
+          V_outlet[nDim+2] = Density_out;
+          V_outlet[nDim+3] = H_out;
+          V_outlet[nDim+4] = SoS_out;
+          conv_numerics->SetPrimitive(V_domain, V_outlet);
+         }
+
+        /*--- Grid Movement (NOT TESTED!)---*/
+
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+        /*--- Compute the residual using an upwind scheme ---*/
+
+        auto residual = conv_numerics->ComputeResidual(config);
+
+        /*--- Update residual value ---*/
+
+        LinSysRes.AddBlock(iPoint, residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+
+        if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+       }
+    }
 }
 
 void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
