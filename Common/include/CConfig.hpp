@@ -3712,6 +3712,18 @@ public:
     }
   }
 
+   /*!
+   * \brief Return true if an AUSM method is in use.
+   */
+  bool GetAUSMMethod(void) const {
+    switch (Kind_Upwind_Flow) {
+      case AUSM : case AUSMPLUSUP: case AUSMPLUSUP2: case AUSMPWPLUS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   /*!
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.

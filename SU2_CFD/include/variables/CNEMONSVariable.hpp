@@ -57,6 +57,8 @@ private:
   VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
   VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
+  vector<su2double> thermalconductivities;
+  vector<su2double> Ds;
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
@@ -126,7 +128,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config) override;
+  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) override;
 
   /*!
    * \brief Set the laminar viscosity.

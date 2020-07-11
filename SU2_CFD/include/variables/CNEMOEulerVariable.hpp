@@ -38,6 +38,7 @@
 #pragma once
 
 #include "CVariable.hpp"
+#include "../fluid/CNEMOGas.hpp"
 
 /*!
  * \class CNEMOEulerVariable
@@ -112,7 +113,7 @@ public:
                      su2double val_temperature_ve, unsigned long npoint,
                      unsigned long ndim,
                      unsigned long nvar, unsigned long nvalprim,
-                     unsigned long nvarprimgrad, CConfig *config);
+                     unsigned long nvarprimgrad, CConfig *config, CNEMOGas *fluidmodel);
 
   /*!
    * \brief Destructor of the class.
@@ -331,7 +332,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  virtual bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config);
+  virtual bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel);
 
 // /*!
 //  * \brief Set all the primitive variables for compressible flows.
@@ -343,7 +344,7 @@ public:
   */
   bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                   su2double *val_Cvves);
+                   su2double *val_Cvves, CNEMOGas *fluidmodel);
 //  /*!
 //   * \brief Set Gradient of the primitive variables from
 //   */

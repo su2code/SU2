@@ -3179,7 +3179,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
-                    (Kind_FluidModel == USER_DEFINED));
+                    (Kind_FluidModel == USER_DEFINED_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
 
   if (nZone > 1){
@@ -3541,6 +3541,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (SystemMeasurements == US && !standard_air) {
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
+  }
+
+  if (((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES)) && !noneq_gas ) {
+    SU2_MPI::Error("Only MUTATIONPP or USER_DEFINED_NONEQ fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
   }
 
   cout << "cat: ideal_gas=" << ideal_gas << endl;
@@ -6160,15 +6164,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED){  
+        if(Kind_FluidModel == USER_DEFINED_NONEQ){  
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }
         break;
-        case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
+      case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED){  
-          if ((GasModel != "N2") && (GasModel != "AIR5"))
+        if(Kind_FluidModel == USER_DEFINED_NONEQ){  
+          if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }
         break;

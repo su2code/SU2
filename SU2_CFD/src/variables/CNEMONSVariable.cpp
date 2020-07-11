@@ -68,8 +68,8 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   Viscosity_Ref   = config->GetViscosity_Ref();
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Prandtl_Lam     = config->GetPrandtl_Lam();
-  DiffusionCoeff.resize(nPoint,nSpecies)  = su2double(0.0);
-  Dij.resize(nPoint, nSpecies, nSpecies, 0.0);
+  DiffusionCoeff.resize(nPoint, nSpecies)  = su2double(0.0);
+  //Dij.resize(nPoint, nSpecies, nSpecies, 0.0);
   LaminarViscosity.resize(nPoint)  = su2double(0.0);
   ThermalCond.resize(nPoint)  = su2double(0.0);  
   ThermalCond_ve.resize(nPoint)  = su2double(0.0);
@@ -463,31 +463,43 @@ bool CNEMONSVariable::SetVorticity(void) {
   return false;
 }
 
-bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *config) {
+bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) {
 
   bool nonPhys, bkup;
-  unsigned short iVar;
+  unsigned short iVar, iSpecies;
 
-  nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+  nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
 
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-    bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+    bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
   }
 
   SetVelocity2(iPoint);
 
-  switch (config->GetKind_TransCoeffModel()) {
-  case WILKE:
-    SetTransportCoefficients_WBE(config, iPoint);
-    break;
-  case GUPTAYOS:
-    SetDiffusionCoeff_GuptaYos(config, iPoint);
-    SetLaminarViscosity_GuptaYos(config, iPoint);              // Requires temperature computation.
-    SetThermalConductivity_GuptaYos(config, iPoint);
-    break;
-  }
+  //switch (config->GetKind_TransCoeffModel()) {
+  //case WILKE:
+  //  SetTransportCoefficients_WBE(config, iPoint);
+  //  break;
+  //case GUPTAYOS:
+  //  SetDiffusionCoeff_GuptaYos(config, iPoint);
+  //  SetLaminarViscosity_GuptaYos(config, iPoint);              // Requires temperature computation.
+  //  SetThermalConductivity_GuptaYos(config, iPoint);
+  //  break;
+  //}
+
+
+
+  Ds                       = fluidmodel->GetDiffusionCoeff();
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+    DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
+  
+  LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
+
+  thermalconductivities    = fluidmodel->GetThermalConductivities();
+  ThermalCond(iPoint)      = thermalconductivities[0];
+  ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
 
   return nonPhys;

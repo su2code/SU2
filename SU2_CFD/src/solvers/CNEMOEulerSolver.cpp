@@ -218,8 +218,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
     specified reference values. ---*/
   SetNondimensionalization(config, iMesh);
 
-  exit(0);
-
   /*--- Define some auxiliary vectors related to the residual ---*/
   Residual     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
   Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
@@ -511,7 +509,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   node_infty = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
                                       Temperature_ve_Inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config, FluidModel);
-  check_infty = node_infty->SetPrimVar_Compressible(0,config);
+  check_infty = node_infty->SetPrimVar_Compressible(0,config, FluidModel);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   nodes = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
@@ -528,7 +526,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
+    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel);
 
     if (nonPhys) {
 
@@ -641,6 +639,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
+
 }
 
 CNEMOEulerSolver::~CNEMOEulerSolver(void) {
@@ -724,9 +723,6 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
     delete [] HeatFlux;
   }
   if (nVertex != nullptr) delete [] nVertex;
-
-  if (FluidModel != nullptr) delete [] FluidModel;
-
 }
 
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
@@ -802,7 +798,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
-    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
+    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel);
     if (nonPhys) ErrorCounter++;
 
     /*--- Initialize the convective residual vector ---*/
@@ -1398,9 +1394,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       
       
       chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
-                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
+                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i, FluidModel);
       chk_err_j = nodes->Cons2PrimVar(config, Conserved_j, Primitive_j,
-                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
+                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j, FluidModel);
       
       
        /*--- Check for physical solutions in the reconstructed values ---*/
@@ -2583,7 +2579,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
    cout << "Delete Me, Calling Mutation" << endl;
    break;
-  case USER_DEFINED:
+  case USER_DEFINED_NONEQ:
    FluidModel = new CUserDefinedTCLib(config, nDim, viscous);
    break;
   }
@@ -2592,11 +2588,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Pressure_FreeStream        = config->GetPressure_FreeStream();
   Temperature_FreeStream     = config->GetTemperature_FreeStream();
   Temperature_ve_FreeStream  = config->GetTemperature_ve_FreeStream();
-
-  cout << "cat: SetNondimensionalization" << endl;
-  cout << "cat: Pressure_Inf=" << Pressure_Inf << endl;
-  for (int iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    cout << "cat: MassFrac_Inf=" << MassFrac_Inf[iSpecies] << endl;  
 
   /*--- Compressible non dimensionalization ---*/
   FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_FreeStream);
@@ -4853,5 +4844,5 @@ void CNEMOEulerSolver::ResetNodeInfty(su2double pressure_inf, vector<su2double> 
                                       temperature_ve_inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config, FluidModel);
 
-  check_infty = node_infty->SetPrimVar_Compressible(0,config);
+  check_infty = node_infty->SetPrimVar_Compressible(0,config, FluidModel);
 }

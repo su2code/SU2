@@ -606,7 +606,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
                                    nPrimVar, nPrimVarGrad, config, FluidModel);
 
 
-  check_infty = node_infty->SetPrimVar_Compressible(0, config); 
+  check_infty = node_infty->SetPrimVar_Compressible(0, config, FluidModel); 
 
  
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -617,119 +617,143 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
 
   SetBaseClassPointerToNodes();
 
+  su2double Density_Inf, Soundspeed_Inf, sqvel;
+  vector<su2double> Energies_Inf;
+
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    check = nodes->SetPrimVar_Compressible(iPoint, config); 
+    check = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel); 
 
     if (check) {
 
-      bool ionization;
-      unsigned short iEl, nHeavy, nEl;
-      const unsigned short *nElStates;
-      su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
-      su2double rho, rhos, Ef, Ev, Ee, soundspeed;
-      const su2double *xi, *Ms, *thetav, *Tref, *hf;
+//      bool ionization;
+//      unsigned short iEl, nHeavy, nEl;
+//      const unsigned short *nElStates;
+//      su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
+//      su2double rho, rhos, Ef, Ev, Ee, soundspeed;
+//      const su2double *xi, *Ms, *thetav, *Tref, *hf;
+//
+//      /*--- Determine the number of heavy species ---*/
+//      ionization = config->GetIonization();
+//      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+//      else            { nHeavy = nSpecies;   nEl = 0; }
+//
+//      /*--- Load variables from the config class --*/
+//      xi        = config->GetRotationModes();      // Rotational modes of energy storage
+//      Ms        = config->GetMolar_Mass();         // Species molar mass
+//      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+//      const auto& thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+//      const auto& g         = config->GetElDegeneracy();       // Degeneracy of electron states
+//      nElStates = config->GetnElStates();          // Number of electron states
+//      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+//      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+//
+//      /*--- Rename & initialize for convenience ---*/
+//      RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)]
+//      Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
+//      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
+//      T       = Temperature_Inf;                // Translational-rotational temperature [K]
+//      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+//      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+//      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+//      denom   = 0.0;
+//      conc    = 0.0;
+//      rhoCvtr = 0.0;
+//
+//      /*--- Calculate mixture density from supplied primitive quantities ---*/
+//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+//        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
+//      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+//        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+//      rho = Pressure_Inf / denom;
+//
+//      /*--- Calculate sound speed and extract velocities ---*/
+//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
+//        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+//      }
+//      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
+//      for (iDim = 0; iDim < nDim; iDim++){
+//        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
+//      }
+//      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
+//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//        // Species density
+//        rhos = MassFrac_Inf[iSpecies]*rho;
+//
+//        // Species formation energy
+//        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+//
+//        // Species vibrational energy
+//        if (thetav[iSpecies] != 0.0)
+//          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+//        else
+//          Ev = 0.0;
+//
+//        // Species electronic energy
+//        num = 0.0;
+//        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+//        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//        }
+//        Ee = Ru/Ms[iSpecies] * (num/denom);
+//
+//        // Mixture total energy
+//        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+//                        + Ev + Ee + Ef + 0.5*sqvel);
+//
+//        // Mixture vibrational-electronic energy
+//        rhoEve += rhos * (Ev + Ee);
+//      }
+//      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//        // Species formation energy
+//        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+//
+//        // Electron t-r mode contributes to mixture vib-el energy
+//        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+//      }
+//
+//      /*--- Initialize Solution & Solution_Old vectors ---*/
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        Solution[iSpecies]      = rho*MassFrac_Inf[iSpecies];
+//      }
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Solution[nSpecies+iDim] = rho*Mvec_Inf[iDim]*soundspeed;
+//      }
+//      Solution[nSpecies+nDim]     = rhoE;
+//      Solution[nSpecies+nDim+1]   = rhoEve;
+//
+//      nodes->SetSolution(iPoint,Solution);
+//      nodes->SetSolution_Old(iPoint,Solution);
 
-      /*--- Determine the number of heavy species ---*/
-      ionization = config->GetIonization();
-      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-      else            { nHeavy = nSpecies;   nEl = 0; }
-
-      /*--- Load variables from the config class --*/
-      xi        = config->GetRotationModes();      // Rotational modes of energy storage
-      Ms        = config->GetMolar_Mass();         // Species molar mass
-      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-      const auto& thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-      const auto& g         = config->GetElDegeneracy();       // Degeneracy of electron states
-      nElStates = config->GetnElStates();          // Number of electron states
-      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-
-      /*--- Rename & initialize for convenience ---*/
-      RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)]
-      Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
-      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
-      T       = Temperature_Inf;                // Translational-rotational temperature [K]
-      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
-      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
-      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
-      denom   = 0.0;
-      conc    = 0.0;
-      rhoCvtr = 0.0;
-
-      /*--- Calculate mixture density from supplied primitive quantities ---*/
-      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
-      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
-      rho = Pressure_Inf / denom;
-
-      /*--- Calculate sound speed and extract velocities ---*/
-      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
-        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-      }
-      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
+      sqvel = 0.0;
+        
+      FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
+      Density_Inf    = FluidModel->GetDensity();
+      Soundspeed_Inf = FluidModel->GetSoundSpeed();
       for (iDim = 0; iDim < nDim; iDim++){
-        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
+        sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
       }
-      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
-      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-        // Species density
-        rhos = MassFrac_Inf[iSpecies]*rho;
-
-        // Species formation energy
-        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-        // Species vibrational energy
-        if (thetav[iSpecies] != 0.0)
-          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-        else
-          Ev = 0.0;
-
-        // Species electronic energy
-        num = 0.0;
-        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-        }
-        Ee = Ru/Ms[iSpecies] * (num/denom);
-
-        // Mixture total energy
-        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                        + Ev + Ee + Ef + 0.5*sqvel);
-
-        // Mixture vibrational-electronic energy
-        rhoEve += rhos * (Ev + Ee);
-      }
-      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-        // Species formation energy
-        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-
-        // Electron t-r mode contributes to mixture vib-el energy
-        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-      }
-
+      
+      Energies_Inf = FluidModel->GetMixtureEnergies();
       /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Solution[iSpecies]      = rho*MassFrac_Inf[iSpecies];
+        Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
       }
       for (iDim = 0; iDim < nDim; iDim++) {
-        Solution[nSpecies+iDim] = rho*Mvec_Inf[iDim]*soundspeed;
+        Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
       }
-      Solution[nSpecies+nDim]     = rhoE;
-      Solution[nSpecies+nDim+1]   = rhoEve;
-
+      Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
+      Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
       nodes->SetSolution(iPoint,Solution);
       nodes->SetSolution_Old(iPoint,Solution);
 
       counter_local++;
     }
   }
-
   
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
@@ -876,7 +900,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     /*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
           and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
     
-    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
+    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel);
     if (nonPhys) {
       ErrorCounter++;
     }
@@ -884,6 +908,9 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     /*--- Initialize the convective, source and viscous residual vector ---*/
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
   }
+
+    cout<<"cat: end of ns SetPrimVar_Compressible"<<endl;
+  exit(0);
 
   /*--- Allowing for Primitive Variables to be passed ---*/
   //InitiateComms(geometry, config, PRIMITIVE);

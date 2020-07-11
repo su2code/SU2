@@ -48,9 +48,7 @@ private:
   su2double a_j, P_j, h_j, ProjVel_j;
   su2double sq_vel, Proj_ModJac_Tensor_ij;
   unsigned short nPrimVar, nPrimVarGrad;
-  CNEMOEulerVariable *variable;
-  
-
+ 
 public:
 
   /*!

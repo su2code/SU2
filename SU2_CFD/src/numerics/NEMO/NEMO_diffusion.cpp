@@ -66,7 +66,6 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {

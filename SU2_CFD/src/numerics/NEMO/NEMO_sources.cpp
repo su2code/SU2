@@ -544,6 +544,7 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
 
       /*--- Rename ---*/
       rhos = V_i[RHOS_INDEX+iSpecies];
+      //cat: settve first
       Cvvsst[iSpecies] = variable->CalcCvve(T, config, iSpecies);
 
       for (iVar = 0; iVar < nVar; iVar++) {

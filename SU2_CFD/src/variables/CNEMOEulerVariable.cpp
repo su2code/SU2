@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon, S.R. Copeland, W. Maier
@@ -1423,5 +1423,3 @@ void CNEMOEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *Flui
 }
 
 void CNEMOEulerVariable::SetSolution_New() { Solution_New = Solution; }
-
-

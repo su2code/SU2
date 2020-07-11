@@ -140,7 +140,7 @@ public:
   /*!
    * \brief Get vector of species V-E energy.
    */
-  virtual vector<su2double> GetSpeciesEve(){}
+  virtual vector<su2double> GetSpeciesEve(su2double val_T){}
   
   /*!
    * \brief Get species enthalpies.
@@ -165,7 +165,7 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double> GetTemperatures(su2double *rhos, su2double rhoEmix, su2double rhoEve){}
+  virtual vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve){}
   
   /*!
    * \brief Get speed of sound.
@@ -180,7 +180,7 @@ public:
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  virtual void GetdPdU(su2double *V, su2double *val_eves, su2double *val_dPdU){}
+  virtual void GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU){}
   
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
@@ -190,7 +190,7 @@ public:
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  virtual void GetdTvedU(su2double *V, su2double *val_eves, su2double *val_dTvedU){}
+  virtual void GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU){}
 
   /*!
    * \brief Set the translational temperature.

@@ -57,7 +57,6 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {

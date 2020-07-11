@@ -34,7 +34,9 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../variables/CNEMOEulerVariable.hpp"
+#include "../fluid/CNEMOGas.hpp"
+#include "../../include/fluid/CMutationTCLib.hpp"
+#include "../../include/fluid/CUserDefinedTCLib.hpp"
 
 using namespace std;
 
@@ -241,6 +243,8 @@ protected:
   *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+
+  CNEMOGas *fluidmodel;
   
 
 public:

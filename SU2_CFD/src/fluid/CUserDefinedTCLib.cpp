@@ -29,6 +29,8 @@
 
 CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous): CNEMOGas(config){
 
+  nDim = val_nDim;
+
   bool init_err;
   unsigned short maxEl = 0;
   su2double mf;
@@ -1298,13 +1300,17 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetTemperatures(su2double *rhos, su2double rhoEmix, su2double rhoEve){
+vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos, su2double rhoEmix, su2double rhoEve){
 
   vector<su2double> val_eves;
   su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax;
   bool Bconvg;
   unsigned short iIter, maxBIter;
 
+  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  //  rhos[iSpecies] = val_rhos[iSpecies];
+
+  rhos = val_rhos;
 
   /*----------Translational temperature----------*/
 
@@ -1359,7 +1365,7 @@ vector<su2double> CUserDefinedTCLib::GetTemperatures(su2double *rhos, su2double 
   
 }
 
-void CUserDefinedTCLib::GetdPdU(su2double *V, su2double *val_eves, su2double *val_dPdU){
+void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU){
 
   // Note: Electron energy not included properly.
 
@@ -1474,7 +1480,7 @@ void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
 }    
 
 
-void CUserDefinedTCLib::GetdTvedU(su2double *V, su2double *val_eves, su2double *val_dTvedU){
+void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU){
 
   su2double rhoCvve;
 

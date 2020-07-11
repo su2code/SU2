@@ -75,7 +75,6 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
   dPdU_i  = new su2double [nVar];
   dPdU_j  = new su2double [nVar];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwAUSMPWplus_NEMO::~CUpwAUSMPWplus_NEMO(void) {

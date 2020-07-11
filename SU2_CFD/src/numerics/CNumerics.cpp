@@ -166,7 +166,20 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     A_INDEX       = nSpecies+nDim+5;
     RHOCVTR_INDEX = nSpecies+nDim+6;
     RHOCVVE_INDEX = nSpecies+nDim+7;
-    
+
+    if(!config->GetAUSMMethod()){
+
+      /*--- Instatiate the correct fluid model ---*/
+      switch (config->GetKind_FluidModel()) {
+        case MUTATIONPP:
+        //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
+        cout << "Delete Me, Calling Mutation" << endl;
+        break;
+        case USER_DEFINED_NONEQ:
+        fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+        break;
+      }
+    } 
   }
 
   /* --- Initializing variables for the UQ methodology --- */
