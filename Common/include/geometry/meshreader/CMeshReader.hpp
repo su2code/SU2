@@ -4,7 +4,7 @@
  * \brief Header file for the class CMeshReader.
  *        The implementations are in the <i>CMeshReader.cpp</i> file.
  * \author T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
