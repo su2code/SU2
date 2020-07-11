@@ -273,6 +273,12 @@ protected:
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                                CConfig *config, bool Output);
 
+  /*!
+   * \brief Set gradients of coefficients for fixed CL mode
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCoefficient_Gradients(CConfig *config) const;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -453,7 +459,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
 
   /*!
    * \author H. Kline
@@ -798,12 +804,6 @@ public:
    * \return value of CL Driver control command (AoA_inc)
    */
   inline su2double GetAoA_inc(void) const final { return AoA_inc; }
-
-  /*!
-   * \brief Set gradients of coefficients for fixed CL mode
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCoefficient_Gradients(CConfig *config) const;
 
   /*!
    * \brief Update the solution using the explicit Euler scheme.

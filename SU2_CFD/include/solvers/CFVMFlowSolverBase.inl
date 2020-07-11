@@ -2441,3 +2441,110 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     SurfaceCoeff.CMz[iMarker_Monitoring] += SurfaceViscCoeff.CMz[iMarker_Monitoring];
   }
 }
+
+template<class V, ENUM_REGIME R>
+su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) const {
+
+  su2double objFun = 0.0;
+
+  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+
+  for (auto iMarker = 0u; iMarker < config.GetnMarker_Monitoring(); iMarker++) {
+
+    const auto weight = config.GetWeight_ObjFunc(iMarker);
+
+    switch (config.GetKind_ObjFunc(iMarker)) {
+      case DRAG_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CD[iMarker];
+        break;
+      case LIFT_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CL[iMarker];
+        break;
+      case SIDEFORCE_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CSF[iMarker];
+        break;
+      case EFFICIENCY:
+        objFun += weight * SurfaceCoeff.CEff[iMarker];
+        break;
+      case MOMENT_X_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CMx[iMarker];
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CMy[iMarker];
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CMz[iMarker];
+        break;
+      case FORCE_X_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CFx[iMarker];
+        break;
+      case FORCE_Y_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CFy[iMarker];
+        break;
+      case FORCE_Z_COEFFICIENT:
+        objFun += weight * SurfaceCoeff.CFz[iMarker];
+        break;
+      case TOTAL_HEATFLUX:
+        objFun += weight * Surface_HF_Visc[iMarker];
+        break;
+      case MAXIMUM_HEATFLUX:
+        objFun += weight * Surface_MaxHF_Visc[iMarker];
+        break;
+      default:
+        break;
+    }
+  }
+
+  /*--- The following are not per-surface, and so to avoid that they are
+   double-counted when multiple surfaces are specified, they have been
+   placed outside of the loop above. In addition, multi-objective mode is
+   also disabled for these objective functions (error thrown at start). ---*/
+
+  const auto weight = config.GetWeight_ObjFunc(0);
+
+  switch (config.GetKind_ObjFunc(0)) {
+    case INVERSE_DESIGN_PRESSURE:
+      objFun += weight * Total_CpDiff;
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      objFun += weight * Total_HeatFluxDiff;
+      break;
+    case THRUST_COEFFICIENT:
+      objFun += weight * TotalCoeff.CT;
+      break;
+    case TORQUE_COEFFICIENT:
+      objFun += weight * TotalCoeff.CQ;
+      break;
+    case FIGURE_OF_MERIT:
+      objFun += weight * TotalCoeff.CMerit;
+      break;
+    case SURFACE_TOTAL_PRESSURE:
+      objFun += weight * config.GetSurface_TotalPressure(0);
+      break;
+    case SURFACE_STATIC_PRESSURE:
+      objFun += weight * config.GetSurface_Pressure(0);
+      break;
+    case SURFACE_MASSFLOW:
+      objFun += weight * config.GetSurface_MassFlow(0);
+      break;
+    case SURFACE_UNIFORMITY:
+      objFun += weight * config.GetSurface_Uniformity(0);
+      break;
+    case SURFACE_SECONDARY:
+      objFun += weight * config.GetSurface_SecondaryStrength(0);
+      break;
+    case SURFACE_MOM_DISTORTION:
+      objFun += weight * config.GetSurface_MomentumDistortion(0);
+      break;
+    case SURFACE_SECOND_OVER_UNIFORM:
+      objFun += weight * config.GetSurface_SecondOverUniform(0);
+      break;
+    case CUSTOM_OBJFUNC:
+      objFun += weight * Total_Custom_ObjFunc;
+      break;
+    default:
+      break;
+  }
+
+  return objFun;
+}

@@ -117,7 +117,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Parallelization of Undivided Laplacian.

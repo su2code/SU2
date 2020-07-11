@@ -30,28 +30,30 @@
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
+#include "../../include/variables/CIncNSVariable.hpp"
 
 
-CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
+CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
+                                 const bool navier_stokes) :
   CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() {
+
+  /*--- Based on the navier_stokes boolean, determine if this constructor is
+   *    being called by itself, or by its derived class CIncNSSolver. ---*/
+  const string description = navier_stokes? "Navier-Stokes" : "Euler";
 
   unsigned short iVar, iMarker, nLineLets;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
-  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  string filename = config->GetSolution_FileName();
+  bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = config->GetSolution_FileName();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-
-  unsigned short direct_diff = config->GetDirectDiff();
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -62,6 +64,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    auto filename_ = config->GetSolution_FileName();
 
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
@@ -152,18 +156,19 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE)
+      cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
+
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
-
   }
-
   else {
-    if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE)
+      cout << "Explicit scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
   }
 
   /*--- Read farfield conditions ---*/
@@ -175,7 +180,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
 
-  switch(direct_diff){
+  switch (config->GetDirectDiff()) {
     case NO_DERIVATIVE:
       /*--- Default ---*/
       break;
@@ -199,7 +204,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+  if (navier_stokes) {
+    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+  } else {
+    nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+  }
   SetBaseClassPointerToNodes();
 
   /*--- Initial comms. ---*/
@@ -212,7 +221,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
-    SU2_MPI::Error("Oops! The CIncEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
+    SU2_MPI::Error("Oops! The CIncEulerSolver static array sizes are not large enough.", CURRENT_FUNCTION);
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
@@ -2190,116 +2199,23 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
-  unsigned short iMarker_Monitoring, Kind_ObjFunc;
-  su2double Weight_ObjFunc;
-
-  Total_ComboObj = 0.0;
-
-  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
-
-    switch(Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CD[iMarker_Monitoring]);
-        break;
-      case LIFT_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case SIDEFORCE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CSF[iMarker_Monitoring]);
-        break;
-      case EFFICIENCY:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CEff[iMarker_Monitoring]);
-        break;
-      case MOMENT_X_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CMx[iMarker_Monitoring]);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CMy[iMarker_Monitoring]);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(SurfaceCoeff.CMz[iMarker_Monitoring]);
-        break;
-      case FORCE_X_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*SurfaceCoeff.CFx[iMarker_Monitoring];
-        break;
-      case FORCE_Y_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*SurfaceCoeff.CFy[iMarker_Monitoring];
-        break;
-      case FORCE_Z_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*SurfaceCoeff.CFz[iMarker_Monitoring];
-        break;
-      case TOTAL_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Surface_HF_Visc[iMarker_Monitoring];
-        break;
-      case MAXIMUM_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
-        break;
-      default:
-        break;
-
-    }
-  }
+  Total_ComboObj = EvaluateCommonObjFunc(*config);
 
   /*--- The following are not per-surface, and so to avoid that they are
    double-counted when multiple surfaces are specified, they have been
    placed outside of the loop above. In addition, multi-objective mode is
    also disabled for these objective functions (error thrown at start). ---*/
 
-  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
+  const auto Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+  const auto Kind_ObjFunc = config->GetKind_ObjFunc(0);
 
   switch(Kind_ObjFunc) {
-    case INVERSE_DESIGN_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-      break;
-    case INVERSE_DESIGN_HEATFLUX:
-      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-      break;
-    case THRUST_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*TotalCoeff.CT;
-      break;
-    case TORQUE_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*TotalCoeff.CQ;
-      break;
-    case FIGURE_OF_MERIT:
-      Total_ComboObj+=Weight_ObjFunc*TotalCoeff.CMerit;
-      break;
-    case SURFACE_TOTAL_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-      break;
-    case SURFACE_STATIC_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-      break;
-    case SURFACE_MASSFLOW:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-      break;
-    case SURFACE_UNIFORMITY:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-      break;
-    case SURFACE_SECONDARY:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-      break;
-    case SURFACE_MOM_DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-      break;
-    case SURFACE_SECOND_OVER_UNIFORM:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-      break;
     case SURFACE_PRESSURE_DROP:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
-      break;
-    case CUSTOM_OBJFUNC:
-      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
     default:
       break;
   }
-
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,

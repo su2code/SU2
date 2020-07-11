@@ -35,189 +35,23 @@
 template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
 
 
-CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
-
-  unsigned short iVar, iMarker, nLineLets;
-  ifstream restart_file;
-  unsigned short nZone = geometry->GetnZone();
-  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  int Unst_RestartIter;
-  unsigned short iZone = config->GetiZone();
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = config->GetSolution_FileName();
-
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = config->GetDynamic_Grid();
-
-  unsigned short direct_diff = config->GetDirectDiff();
-
-  /*--- Store the multigrid level. ---*/
-  MGLevel = iMesh;
-
-  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
-   before computing all the non-dimesional quantities. ---*/
-
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
-
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
-    }
-
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
-    }
-
-    /*--- Read and store the restart metadata. ---*/
-
-//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
-
-  }
-
-  /*--- Set the gamma value ---*/
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  /*--- Define geometry constants in the solver structure
-   * Incompressible flow, primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) --- */
-
-  nDim = geometry->GetnDim();
-
-  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-
-  /*--- Initialize nVarGrad for deallocation ---*/
-
-  nVarGrad = nPrimVarGrad;
-
-  nMarker      = config->GetnMarker_All();
-  nPoint       = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-
-  /*--- Store the number of vertices on each marker for deallocation later ---*/
-
-  nVertex = new unsigned long[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    nVertex[iMarker] = geometry->nVertex[iMarker];
-
-  /*--- Perform the non-dimensionalization for the flow equations using the
-   specified reference values. ---*/
-
-  SetNondimensionalization(config, iMesh);
-
-  /*--- Check if we are executing a verification case. If so, the
-   VerificationSolution object will be instantiated for a particular
-   option from the available library of verification solutions. Note
-   that this is done after SetNondim(), as problem-specific initial
-   parameters are needed by the solution constructors. ---*/
-
-  SetVerificationSolution(nDim, nVar, config);
-
-  /// TODO: This type of variables will be replaced.
-
-  AllocateTerribleLegacyTemporaryVariables();
-
-  /*--- Define some auxiliary vectors related to the primitive solution ---*/
-
-  Primitive   = new su2double[nPrimVar] ();
-  Primitive_i = new su2double[nPrimVar] ();
-  Primitive_j = new su2double[nPrimVar] ();
-
-  /*--- Allocate preconditioning matrix. ---*/
-
-  Preconditioner = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar ++)
-    Preconditioner[iVar] = new su2double[nVar];
-
-  /*--- Allocate base class members. ---*/
-
-  Allocate(*config);
-
-  /*--- Jacobians and vector structures for implicit computations ---*/
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
-  }
-  else {
-    if (rank == MASTER_NODE)
-      cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-  }
+CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
+  CIncEulerSolver(geometry, config, iMesh, true) {
 
   /*--- Read farfield conditions from config ---*/
 
-  Density_Inf     = config->GetDensity_FreeStreamND();
-  Pressure_Inf    = config->GetPressure_FreeStreamND();
-  Temperature_Inf = config->GetTemperature_FreeStreamND();
-  Velocity_Inf    = config->GetVelocity_FreeStreamND();
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
 
-  switch(direct_diff){
-    case NO_DERIVATIVE:
-      break;
-    case D_DENSITY:
-      SU2_TYPE::SetDerivative(Density_Inf, 1.0);
-      break;
-    case D_PRESSURE:
-      SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
-      break;
-    case D_TEMPERATURE:
-      SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
-      break;
+  switch (config->GetDirectDiff()) {
     case D_VISCOSITY:
       SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);
-      break;
-    case D_MACH: case D_AOA:
-    case D_SIDESLIP: case D_REYNOLDS:
-    case D_TURB2LAM: case D_DESIGN:
-      /*--- Already done in postprocessing of config ---*/
       break;
     default:
       break;
   }
-
-  /*--- Initialize the solution to the far-field state everywhere. ---*/
-
-  nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
-  SetBaseClassPointerToNodes();
-
-  /*--- Initial comms. ---*/
-
-  CommunicateInitialState(geometry, config);
-
-  /*--- Add the solver name (max 8 characters) ---*/
-  SolverName = "INC.FLOW";
-
-  /*--- Finally, check that the static arrays will be large enough (keep this
-   *    check at the bottom to make sure we consider the "final" values). ---*/
-  if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
-    SU2_MPI::Error("Oops! The CIncNSSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {

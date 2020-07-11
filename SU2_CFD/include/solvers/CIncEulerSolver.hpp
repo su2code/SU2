@@ -56,8 +56,10 @@ public:
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Grid level.
+   * \param[in] navier_stokes - True when the constructor is called by the derived class CIncNSSolver.
    */
-  CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, const bool navier_stokes = false);
 
   /*!
    * \brief Destructor of the class.

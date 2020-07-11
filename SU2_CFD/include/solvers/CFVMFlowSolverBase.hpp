@@ -228,6 +228,11 @@ class CFVMFlowSolverBase : public CSolver {
                               CGeometry** geometry, CConfig* config);
 
   /*!
+   * \brief Evaluate common part of objective function to all solvers.
+   */
+  su2double EvaluateCommonObjFunc(const CConfig& config) const;
+
+  /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();
