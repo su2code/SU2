@@ -58,6 +58,49 @@ CMeshReader::CMeshReader(CConfig        *val_config,
 
 CMeshReader::~CMeshReader(void) { }
 
+void CMeshReader::DetermineFacesVolumeElements(vector<CFaceOfElement> &localFaces) {
+
+  /*--- Loop over the locally stored volume elements. ---*/
+  unsigned long ind = 0;
+  for(unsigned long k=0; k<numberOfLocalElements; ++k) {
+
+    /*--- Set the pointer where the information of this element
+          is stored and determine the number of faces as well
+          as the corner points of these faces. Note that 6 faces
+          is the maximum for the elements considered. ---*/
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    const unsigned long *elemInfo = localVolumeElementConnectivity.data() + ind;
+
+    GetCornerPointsAllFaces(elemInfo, nFaces, nPointsPerFace, faceConn);
+
+    /*--- Loop over the faces and add them to localFaces. ---*/
+    for(unsigned short i=0; i<nFaces; ++i) {
+      CFaceOfElement thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0 = elemInfo[4];
+
+      thisFace.CreateUniqueNumbering();
+      localFaces.push_back(thisFace);
+    }
+
+    /*--- Update the index for the next element. ---*/
+    const unsigned long nDOFsGrid = localVolumeElementConnectivity[ind+3];
+    ind += nDOFsGrid+5;
+  }
+
+  /*--- Sort localFaces in increasing order and remove the double entities,
+        such that the binary search later on is a bit more efficient. ---*/
+  sort(localFaces.begin(), localFaces.end());
+  vector<CFaceOfElement>::iterator lastFace;
+  lastFace = unique(localFaces.begin(), localFaces.end());
+  localFaces.erase(lastFace, localFaces.end());
+}
+
 void CMeshReader::GetCornerPointsAllFaces(const unsigned long *elemInfo,
                                           unsigned short      &numFaces,
                                           unsigned short      nPointsPerFace[],

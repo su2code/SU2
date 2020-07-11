@@ -33,6 +33,7 @@
 
 #include "../../mpi_structure.hpp"
 #include "../../CConfig.hpp"
+#include "../../../include/toolboxes/CFaceOfElement.hpp"
 
 /*!
  * \class CMeshReader
@@ -63,6 +64,12 @@ protected:
   vector<string> markerNames;                                /*!< \brief String names for all markers in the mesh file. */
   vector<unsigned long> numberOfLocalSurfaceElements;        /*!< \brief Vector containing the number of local surface elements. */
   vector<vector<unsigned long> > surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a per-marker basis. For FVM, only the master node reads and stores this connectivity. */
+
+  /*!
+   * \brief Function, which determines the faces of the local volume elements.
+   * \param[out] localFaces - The faces of the locally stored volume elements.
+   */
+  void DetermineFacesVolumeElements(vector<CFaceOfElement> &localFaces);
 
   /*!
    * \brief Get all the corner points of all the faces of the given element. It must

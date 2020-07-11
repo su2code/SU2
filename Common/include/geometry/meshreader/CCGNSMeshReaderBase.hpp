@@ -67,7 +67,12 @@ protected:
    * \brief Reads all CGNS database metadata and checks for errors.
    */
   void ReadCGNSDatabaseMetadata();
-  
+
+  /*!
+   * \brief Reads the grid points from a CGNS zone into linear partitions across all ranks.
+   */
+  void ReadCGNSPointCoordinates();
+
   /*!
    * \brief Reads all CGNS zone metadata and checks for errors.
    */

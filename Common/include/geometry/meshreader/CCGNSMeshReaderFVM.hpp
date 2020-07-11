@@ -45,11 +45,6 @@ private:
   
 #ifdef HAVE_CGNS
   /*!
-   * \brief Reads the grid points from a CGNS zone into linear partitions across all ranks.
-   */
-  void ReadCGNSPointCoordinates();
-  
-  /*!
    * \brief Reads the interior volume elements from one section of a CGNS zone into linear partitions across all ranks.
    * \param[in] val_section - CGNS section index.
    */

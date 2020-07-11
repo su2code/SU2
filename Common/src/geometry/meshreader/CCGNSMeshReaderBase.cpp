@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderBase.hpp"
+#include "../../../include/toolboxes/CLinearPartitioner.hpp"
 
 CCGNSMeshReaderBase::CCGNSMeshReaderBase(CConfig        *val_config,
                                          unsigned short val_iZone,
@@ -49,6 +50,10 @@ CCGNSMeshReaderBase::~CCGNSMeshReaderBase(void) { }
 #ifdef HAVE_CGNS
 void CCGNSMeshReaderBase::OpenCGNSFile(string val_filename) {
   
+  /*--- For proper support of the high order elements, at least version 3.3
+        of CGNS must be used. Check this. ---*/
+#if CGNS_VERSION >= 3300
+
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   
   int file_type;
@@ -70,7 +75,13 @@ void CCGNSMeshReaderBase::OpenCGNSFile(string val_filename) {
     cout << "Reading the CGNS file: ";
     cout << val_filename.c_str() << "." << endl;
   }
-  
+
+#else
+
+  SU2_MPI::Error("CGNS version 3.3 or higher is necessary",
+                 CURRENT_FUNCTION);
+
+#endif
 }
 
 void CCGNSMeshReaderBase::ReadCGNSDatabaseMetadata() {
@@ -267,11 +278,28 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
     
     /* Check for 1D elements in 2D problems, or for 2D elements in
      3D problems. If found, mark the section as a boundary section. */
-    
-    if ((dimension == 2) &&
-        (elemType == BAR_2 || elemType == BAR_3))  isInterior[s] = false;
-    if ((dimension == 3) &&
-        (elemType == TRI_3 || elemType == QUAD_4)) isInterior[s] = false;
+
+    if(dimension == 2) {
+      switch( elemType ) {
+        case BAR_2: case BAR_3: case BAR_4: case BAR_5:
+          isInterior[s] = false;
+          break;
+        default:  // To avoid a compiler warning.
+          break;
+      }
+    }
+    else {
+      switch( elemType ) {
+        case TRI_3:  case TRI_6:   case TRI_9:   case TRI_10:
+        case TRI_12: case TRI_15:
+        case QUAD_4:  case QUAD_8:     case QUAD_9:  case QUAD_12:
+        case QUAD_16: case QUAD_P4_16: case QUAD_25:
+          isInterior[s] = false;
+          break;
+        default:  // To avoid a compiler warning.
+          break;
+      }
+    }  
 
     /*--- Increment the global element offset for each section
      based on whether or not this is a surface or volume section.
@@ -289,6 +317,76 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
       cout << " of type " << elem_name << "." <<endl;
     }
     
+  }
+  
+}
+
+void CCGNSMeshReaderBase::ReadCGNSPointCoordinates() {
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
+  
+  /*--- Store the local number of nodes for this rank. ---*/
+  
+  numberOfLocalPoints = pointPartitioner.GetSizeOnRank(rank);
+  
+  /*--- Create buffer to hold the grid coordinates for our rank. ---*/
+  
+  localPointCoordinates.resize(dimension);
+  for (int k = 0; k < dimension; k++)
+    localPointCoordinates[k].resize(numberOfLocalPoints, 0.0);
+  
+  /*--- Set the value of range_max to the total number of nodes in
+   the unstructured mesh. Also allocate memory for the temporary array
+   that will hold the grid coordinates as they are extracted. Note the
+   +1 for CGNS convention. ---*/
+  
+  cgsize_t range_min = (cgsize_t)pointPartitioner.GetFirstIndexOnRank(rank)+1;
+  cgsize_t range_max = (cgsize_t)pointPartitioner.GetLastIndexOnRank(rank);
+  
+  /*--- Loop over each set of coordinates. ---*/
+  
+  for (int k = 0; k < dimension; k++) {
+    
+    /*--- Read the coordinate info. This will retrieve the
+     data type (either RealSingle or RealDouble) as
+     well as the coordname which will specify the
+     type of data that it is based in the SIDS convention.
+     This might be "CoordinateX," for instance. ---*/
+    
+    char coordname[CGNS_STRING_SIZE];
+    DataType_t datatype;
+    if (cg_coord_info(cgnsFileID, cgnsBase, cgnsZone, k+1,
+                      &datatype, coordname)) cg_error_exit();
+    if (rank == MASTER_NODE) {
+      cout << "Loading " << coordname;
+      if (size > SINGLE_NODE) {
+        cout << " values into linear partitions." << endl;
+      } else {
+        cout << " values." << endl;
+      }
+    }
+    
+    /*--- Check the coordinate name to decide the index for storage. ---*/
+    
+    unsigned short indC = 0;
+    if      (string(coordname) == "CoordinateX") indC = 0;
+    else if (string(coordname) == "CoordinateY") indC = 1;
+    else if (string(coordname) == "CoordinateZ") indC = 2;
+    else
+      SU2_MPI::Error(string("Unknown coordinate name, ") + coordname +
+                     string(", in the CGNS file."), CURRENT_FUNCTION);
+    
+    /*--- Now read our rank's chunk of coordinates from the file.
+     Ask for datatype RealDouble and let CGNS library do the translation
+     when RealSingle is found. ---*/
+    
+    if (cg_coord_read(cgnsFileID, cgnsBase, cgnsZone, coordname, RealDouble,
+                      &range_min, &range_max, localPointCoordinates[indC].data()))
+      cg_error_exit();
   }
   
 }

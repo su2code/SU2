@@ -50,7 +50,7 @@ private:
   void ReadVolumeElementConnectivity();
   
   /*!
-   * \brief Reads the surface (boundary) elements from one section the SU2 zone into linear partitions across all ranks.
+   * \brief Reads the surface (boundary) elements from one section of an SU2 zone into linear partitions across all ranks.
    */
   void ReadSurfaceElementConnectivity();
   

@@ -30,9 +30,6 @@
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
-#ifdef HAVE_CGNS
-#include "../../include/fem/fem_cgns_elements.hpp"
-#endif
 #include "../../include/adt_structure.hpp"
 #include "../../include/blas_structure.hpp"
 #include <iomanip>
