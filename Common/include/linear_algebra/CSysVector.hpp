@@ -28,10 +28,10 @@
 
 #pragma once
 
-#include "vector_expressions.hpp"
-#include "../omp_structure.hpp"
 #include "../mpi_structure.hpp"
+#include "../omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
+#include "vector_expressions.hpp"
 
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
@@ -57,19 +57,18 @@
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> {
+ private:
+  enum { OMP_MAX_SIZE = 4096 }; /*!< \brief Maximum chunk size used in parallel for loops. */
 
-private:
-  enum { OMP_MAX_SIZE = 4096 };   /*!< \brief Maximum chunk size used in parallel for loops. */
-
-  unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loop, determined at initialization. */
-  ScalarType* vec_val = nullptr;    /*!< \brief Storage for the element values, 64 byte aligned (do not use normal new/delete). */
-  unsigned long nElm = 0;           /*!< \brief Total number of elements (or number elements on this processor). */
-  unsigned long nElmDomain = 0;     /*!< \brief Total number of elements (or number elements on this processor without Ghost cells). */
-  unsigned long nVar = 0;           /*!< \brief Number of elements in a block. */
-  mutable ScalarType dotRes = 0.0;  /*!< \brief Result of dot product. to perform a reduction with OpenMP the
-                                                variable needs to be declared outside the parallel region. */
+  unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loops. */
+  ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
+  unsigned long nElm = 0;          /*!< \brief Total number of elements (or number elements on this processor). */
+  unsigned long nElmDomain = 0;    /*!< \brief Total number of elements without Ghost cells. */
+  unsigned long nVar = 0;          /*!< \brief Number of elements in a block. */
+  mutable ScalarType dotRes = 0.0; /*!< \brief Result of dot product. to perform a reduction with OpenMP the
+                                               variable needs to be declared outside the parallel region. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -79,28 +78,28 @@ private:
    * \param[in] numVar - Number of variables in each block.
    * \param[in] val - Default value for elements.
    * \param[in] valIsArray - If true val is treated as array.
+   * \param[in] errorIfParallel - Throw error if within parallel region (all ctors do this).
    */
-  void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
-                  const ScalarType* val, bool valIsArray);
+  void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* val,
+                  bool valIsArray, bool errorIfParallel = true);
 
   /*!
    * \brief Helper to unpack (transpose) a SIMD input block.
    */
-  template<size_t N, size_t nVar, class VecTypeSIMD, class F>
-  FORCEINLINE static void UnpackBlock(const VecTypeSIMD& in, simd::Array<F,N> mask, ScalarType out[][nVar]) {
+  template <size_t N, size_t nVar, class VecTypeSIMD, class F>
+  FORCEINLINE static void UnpackBlock(const VecTypeSIMD& in, simd::Array<F, N> mask, ScalarType out[][nVar]) {
     static_assert(VecTypeSIMD::StaticSize, "This method requires static size vectors.");
-    for (size_t i=0; i<nVar; ++i) {
+    for (size_t i = 0; i < nVar; ++i) {
       SU2_OMP_SIMD
-      for (size_t k=0; k<N; ++k)
-        out[k][i] = mask[k] * in[i][k];
+      for (size_t k = 0; k < N; ++k) out[k][i] = mask[k] * in[i][k];
     }
   }
 
-public:
+ public:
   /*!
    * \brief Default constructor of the class.
    */
-  CSysVector() = default;
+  CSysVector();
 
   /*!
    * \brief Destructor
@@ -112,9 +111,7 @@ public:
    * \param[in] size - Number of elements locally.
    * \param[in] val - Default value for elements.
    */
-  CSysVector(unsigned long size, ScalarType val = 0.0) {
-    Initialize(size, size, 1, &val, false);
-  }
+  CSysVector(unsigned long size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
 
   /*!
    * \brief Construct from size and value (block version).
@@ -132,9 +129,7 @@ public:
    * \param[in] size - Number of elements locally.
    * \param[in] u_array - Vector stored as array being copied.
    */
-  explicit CSysVector(unsigned long size, const ScalarType* u_array) {
-    Initialize(size, size, 1, u_array, true);
-  }
+  explicit CSysVector(unsigned long size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
 
   /*!
    * \brief Constructor from array (block version).
@@ -143,7 +138,8 @@ public:
    * \param[in] numVar - number of variables in each block
    * \param[in] u_array - vector stored as array being copied
    */
-  explicit CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* u_array) {
+  explicit CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
+                      const ScalarType* u_array) {
     Initialize(numBlk, numBlkDomain, numVar, u_array, true);
   }
 
@@ -152,16 +148,7 @@ public:
    * \note Not defined for expressions because we do not know their sizes.
    * \param[in] u - Vector being copied.
    */
-  CSysVector(const CSysVector& u) {
-    Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true);
-  }
-
-  /*!
-   * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
-   * \param[in] other - source CSysVector
-   */
-  template<class T>
-  void PassiveCopy(const CSysVector<T>& other);
+  CSysVector(const CSysVector& u) { Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true); }
 
   /*!
    * \brief Initialize the class with a scalar.
@@ -171,7 +158,7 @@ public:
    * \param[in] val - default value for elements
    */
   void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, ScalarType val = 0.0) {
-    Initialize(numBlk, numBlkDomain, numVar, &val, false);
+    Initialize(numBlk, numBlkDomain, numVar, &val, false, false);
   }
 
   /*!
@@ -183,7 +170,27 @@ public:
    * \param[in] ptr - pointer to data with which to initialize the vector
    */
   void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* ptr) {
-    Initialize(numBlk, numBlkDomain, numVar, ptr, true);
+    Initialize(numBlk, numBlkDomain, numVar, ptr, true, false);
+  }
+
+  /*!
+   * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
+   * \param[in] other - source CSysVector
+   */
+  template <class T>
+  void PassiveCopy(const CSysVector<T>& other) {
+    /*--- This is a method and not the overload of an operator to make sure who
+     * calls it knows the consequence to the derivative information (lost) ---*/
+
+    /*--- check if self-assignment, otherwise perform deep copy ---*/
+    if ((const void*)this == (const void*)&other) return;
+
+    SU2_OMP_MASTER
+    Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);
+    SU2_OMP_BARRIER
+
+    CSYSVEC_PARFOR
+    for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
   }
 
   /*!
@@ -204,26 +211,26 @@ public:
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  inline unsigned long GetNBlk() const { return nElm/nVar; }
+  inline unsigned long GetNBlk() const { return nElm / nVar; }
 
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  inline unsigned long GetNBlkDomain() const { return nElmDomain/nVar; }
+  inline unsigned long GetNBlkDomain() const { return nElmDomain / nVar; }
 
   /*!
    * \brief Access operator with assignment permitted.
    * \param[in] i - Local index to access.
    * \return Value at position i.
    */
-  inline ScalarType& operator[] (unsigned long i) { return vec_val[i]; }
-  inline const ScalarType& operator[] (unsigned long i) const { return vec_val[i]; }
+  inline ScalarType& operator[](unsigned long i) { return vec_val[i]; }
+  inline const ScalarType& operator[](unsigned long i) const { return vec_val[i]; }
 
   /*!
    * \brief Iterators for range for loops.
    */
   inline const ScalarType* begin() const { return vec_val; }
-  inline const ScalarType* end() const { return vec_val+nElm; }
+  inline const ScalarType* end() const { return vec_val + nElm; }
 
   /*!
    * \brief Access operator with assignment permitted block version.
@@ -231,21 +238,31 @@ public:
    * \param[in] iVar - Index of variable.
    * \return Value at position (i,j).
    */
-  inline ScalarType& operator() (unsigned long iPoint, unsigned long iVar) {
-    return vec_val[iPoint*nVar+iVar];
-  }
-  inline const ScalarType& operator() (unsigned long iPoint, unsigned long iVar) const {
-    return vec_val[iPoint*nVar+iVar];
+  inline ScalarType& operator()(unsigned long iPoint, unsigned long iVar) { return vec_val[iPoint * nVar + iVar]; }
+  inline const ScalarType& operator()(unsigned long iPoint, unsigned long iVar) const {
+    return vec_val[iPoint * nVar + iVar];
   }
 
   /*!
-   * \brief Assignment operator with deep copy, does not resize.
+   * \brief Assignment operator from another vector.
+   * \note Does not resize as it is meant for use in parallel.
+   * \param[in] other - Another vector.
+   */
+  CSysVector& operator=(const CSysVector& other) {
+    CSYSVEC_PARFOR
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
+    return *this;
+  }
+
+  /*!
+   * \brief Assignment operator taking an expression.
+   * \note Does not resize, because expressions do not have size info.
    * \param[in] expr - Expression being evaluated.
    */
-  template<class T>
-  CSysVector& operator= (const VecExpr::CVecExpr<T,ScalarType>& expr) {
+  template <class T>
+  CSysVector& operator=(const VecExpr::CVecExpr<T, ScalarType>& expr) {
     CSYSVEC_PARFOR
-    for(auto i=0ul; i<nElm; ++i) vec_val[i] = expr[i];
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] = expr[i];
     return *this;
   }
 
@@ -253,9 +270,9 @@ public:
    * \brief Scalar broadcast assignment operator
    * \param[in] val - Value assigned to every element.
    */
-  CSysVector& operator= (ScalarType val) {
+  CSysVector& operator=(ScalarType val) {
     CSYSVEC_PARFOR
-    for(auto i=0ul; i<nElm; ++i) vec_val[i] = val;
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] = val;
     return *this;
   }
 
@@ -269,15 +286,15 @@ public:
    * returned because the expression templates do not cover these operations.
    * \param[in] val/expr - Scalar value or expression.
    */
-#define MAKE_COMPOUND(OP)                                           \
-  void operator OP (ScalarType val) {                               \
-    CSYSVEC_PARFOR                                                    \
-    for(auto i=0ul; i<nElm; ++i) vec_val[i] OP val;                 \
-  }                                                                 \
-  template<class T>                                                 \
-  void operator OP (const VecExpr::CVecExpr<T,ScalarType>& expr) {  \
-    CSYSVEC_PARFOR                                                    \
-    for(auto i=0ul; i<nElm; ++i) vec_val[i] OP expr[i];             \
+#define MAKE_COMPOUND(OP)                                          \
+  void operator OP(ScalarType val) {                               \
+    CSYSVEC_PARFOR                                                 \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;           \
+  }                                                                \
+  template <class T>                                               \
+  void operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
+    CSYSVEC_PARFOR                                                 \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr[i];       \
   }
   MAKE_COMPOUND(+=)
   MAKE_COMPOUND(-=)
@@ -290,9 +307,8 @@ public:
    * \param[in] expr - Expression.
    * \return Result of dot product
    */
-  template<class T>
-  ScalarType dot(const VecExpr::CVecExpr<T,ScalarType>& expr) const {
-
+  template <class T>
+  ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
     /*--- All threads get the same "view" of the vectors and shared variable. ---*/
     SU2_OMP_BARRIER
     dotRes = 0.0;
@@ -302,7 +318,7 @@ public:
     ScalarType sum = 0.0;
 
     CSYSVEC_PARFOR
-    for(auto i=0ul; i<nElmDomain; ++i) {
+    for (auto i = 0ul; i < nElmDomain; ++i) {
       sum += vec_val[i] * expr[i];
     }
 
@@ -310,12 +326,13 @@ public:
     atomicAdd(sum, dotRes);
 
 #ifdef HAVE_MPI
+    /*--- Reduce across all mpi ranks, only master thread communicates.
+     * The nElm condition is to allow vectors to also be used locally. ---*/
     if (nElm != nElmDomain) {
-      /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
       SU2_OMP_BARRIER
       SU2_OMP_MASTER {
         sum = dotRes;
-        const auto mpi_type = (sizeof(ScalarType) < sizeof(double))? MPI_FLOAT : MPI_DOUBLE;
+        const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
         SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, MPI_COMM_WORLD);
       }
     }
@@ -327,32 +344,31 @@ public:
   }
 
   /*!
-   * \brief squared L2 norm of the vector (via dot with self)
-   * \return squared L2 norm
+   * \brief Squared L2 norm of the vector (via dot with self).
+   * \return Squared L2 norm.
    */
   inline ScalarType squaredNorm() const { return dot(*this); }
 
   /*!
-   * \brief L2 norm of the vector
-   * \return L2 norm
+   * \brief L2 norm of the vector.
+   * \return L2 norm.
    */
   inline ScalarType norm() const { return sqrt(squaredNorm()); }
 
   /*!
-   * \brief Get the value of the residual.
-   * \param[in] iPoint - index of the point where set the residual.
-   * \return Pointer to the residual.
+   * \brief Get pointer to a block.
+   * \param[in] iPoint - Index of block.
+   * \return Pointer to start of block.
    */
-  inline ScalarType* GetBlock(unsigned long iPoint) { return &vec_val[iPoint*nVar]; }
-  inline const ScalarType* GetBlock(unsigned long iPoint) const { return &vec_val[iPoint*nVar]; }
+  inline ScalarType* GetBlock(unsigned long iPoint) { return &vec_val[iPoint * nVar]; }
+  inline const ScalarType* GetBlock(unsigned long iPoint) const { return &vec_val[iPoint * nVar]; }
 
   /*!
    * \brief Set the values to zero for one block.
    * \param[in] iPoint - Index of the block being set to zero.
    */
   inline void SetBlock_Zero(unsigned long iPoint) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      vec_val[iPoint*nVar+iVar] = 0.0;
+    for (auto iVar = 0ul; iVar < nVar; iVar++) vec_val[iPoint * nVar + iVar] = 0.0;
   }
 
   /*!
@@ -362,27 +378,27 @@ public:
    * \param[in] block - Value to set to the residual.
    * \param[in] alpha - Scale factor (axpy-type operation).
    */
-  template<class VectorType, bool Overwrite = true>
+  template <class VectorType, bool Overwrite = true>
   FORCEINLINE void SetBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
-    if(Overwrite) {
-      for(auto i=0ul; i<nVar; ++i) vec_val[iPoint*nVar+i] = alpha*block[i];
+    if (Overwrite) {
+      for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint * nVar + i] = alpha * block[i];
     } else {
-      for(auto i=0ul; i<nVar; ++i) vec_val[iPoint*nVar+i] += alpha*block[i];
+      for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint * nVar + i] += alpha * block[i];
     }
   }
 
   /*!
    * \brief Add "block" to the vector, see SetBlock.
    */
-  template<class VectorType>
+  template <class VectorType>
   FORCEINLINE void AddBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
-    SetBlock<VectorType,false>(iPoint, block, alpha);
+    SetBlock<VectorType, false>(iPoint, block, alpha);
   }
 
   /*!
    * \brief Subtract "block" from the vector, see AddBlock.
    */
-  template<class VectorType>
+  template <class VectorType>
   FORCEINLINE void SubtractBlock(unsigned long iPoint, const VectorType& block) {
     AddBlock(iPoint, block, -1);
   }
@@ -390,9 +406,9 @@ public:
   /*!
    * \brief Add to iPoint, subtract from jPoint.
    */
-  template<class VectorType>
-  FORCEINLINE void UpdateBlocks(unsigned long iPoint, unsigned long jPoint,
-                                const VectorType& block, ScalarType alpha = 1) {
+  template <class VectorType>
+  FORCEINLINE void UpdateBlocks(unsigned long iPoint, unsigned long jPoint, const VectorType& block,
+                                ScalarType alpha = 1) {
     AddBlock(iPoint, block, alpha);
     AddBlock(jPoint, block, -alpha);
   }
@@ -404,8 +420,8 @@ public:
    * \param[in] mask - Optional scale factor (axpy type operation).
    * \note Nothing is updated if the mask is 0.
    */
-  template<size_t N, class T, class VecTypeSIMD, class F = ScalarType>
-  FORCEINLINE void SetBlock(simd::Array<T,N> iPoint, const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
+  template <size_t N, class T, class VecTypeSIMD, class F = ScalarType>
+  FORCEINLINE void SetBlock(simd::Array<T, N> iPoint, const VecTypeSIMD& vector, simd::Array<F, N> mask = 1) {
     /*--- "Transpose" and scale input vector. ---*/
     constexpr size_t nVar = VecTypeSIMD::StaticSize;
     assert(nVar == this->nVar);
@@ -413,10 +429,10 @@ public:
     UnpackBlock(vector, mask, vec);
 
     /*--- Update one by one skipping if mask is 0. ---*/
-    for (size_t k=0; k<N; ++k) {
-      if (mask[k]==0) continue;
+    for (size_t k = 0; k < N; ++k) {
+      if (mask[k] == 0) continue;
       SU2_OMP_SIMD
-      for (size_t i=0; i<nVar; ++i) vec_val[iPoint[k]*nVar + i] = vec[k][i];
+      for (size_t i = 0; i < nVar; ++i) vec_val[iPoint[k] * nVar + i] = vec[k][i];
     }
   }
 
@@ -424,9 +440,9 @@ public:
    * \brief Vectorized version of UpdateBlocks, updates multiple i/jPoint's.
    * \note See SIMD overload of SetBlock.
    */
-  template<size_t N, class T, class VecTypeSIMD, class F = ScalarType>
-  FORCEINLINE void UpdateBlocks(simd::Array<T,N> iPoint, simd::Array<T,N> jPoint,
-                                const VecTypeSIMD& vector, simd::Array<F,N> mask = 1) {
+  template <size_t N, class T, class VecTypeSIMD, class F = ScalarType>
+  FORCEINLINE void UpdateBlocks(simd::Array<T, N> iPoint, simd::Array<T, N> jPoint, const VecTypeSIMD& vector,
+                                simd::Array<F, N> mask = 1) {
     /*--- "Transpose" and scale input vector. ---*/
     constexpr size_t nVar = VecTypeSIMD::StaticSize;
     assert(nVar == this->nVar);
@@ -434,13 +450,15 @@ public:
     UnpackBlock(vector, mask, vec);
 
     /*--- Update one by one skipping if mask is 0. ---*/
-    for (size_t k=0; k<N; ++k) {
-      if (mask[k]==0) continue;
+    for (size_t k = 0; k < N; ++k) {
+      if (mask[k] == 0) continue;
       SU2_OMP_SIMD
-      for (size_t i=0; i<nVar; ++i) {
-        vec_val[iPoint[k]*nVar + i] += vec[k][i];
-        vec_val[jPoint[k]*nVar + i] -= vec[k][i];
+      for (size_t i = 0; i < nVar; ++i) {
+        vec_val[iPoint[k] * nVar + i] += vec[k][i];
+        vec_val[jPoint[k] * nVar + i] -= vec[k][i];
       }
     }
   }
 };
+
+#undef CSYSVEC_PARFOR

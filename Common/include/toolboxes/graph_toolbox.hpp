@@ -240,8 +240,8 @@ public:
    * \return Iterator to inner dimension to use in range for loops.
    */
   inline CInnerIter getInnerIter(Index_t iOuterIdx) const {
-    return CInnerIter(&m_innerIdx(m_outerPtr(iOuterIdx)),
-                      &m_innerIdx(m_outerPtr(iOuterIdx+1)));
+    return CInnerIter(m_innerIdx.data()+m_outerPtr(iOuterIdx),
+                      m_innerIdx.data()+m_outerPtr(iOuterIdx+1));
   }
 
   /*!

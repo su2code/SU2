@@ -219,8 +219,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
   if (!cg_ready) {
     SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_MASTER {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -238,7 +237,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 
   mat_vec(x, A_x);
-  r = b; r -= A_x;
+  r = b - A_x;
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -258,17 +257,16 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Output header information including initial residual ---*/
 
-    if ((monitoring) && (master)) {
+    if (monitoring && master) {
       WriteHeader("CG", tol, norm_r);
       WriteHistory(i, norm_r/norm0);
     }
 
   }
 
-  ScalarType alpha, beta, r_dot_z, r_dot_z_old;
   precond(r, z);
   p = z;
-  r_dot_z = r.dot(z);
+  ScalarType r_dot_z = r.dot(z);
 
   /*---  Loop over all search directions ---*/
 
@@ -280,7 +278,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Calculate step-length alpha ---*/
 
-    alpha = r_dot_z / A_x.dot(p);
+    ScalarType alpha = r_dot_z / A_x.dot(p);
 
     /*--- Update solution and residual: ---*/
 
@@ -302,14 +300,13 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     precond(r, z);
 
-    /*--- Calculate Gram-Schmidt coefficient beta,
-     beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
+    /*--- Calculate Gram-Schmidt coefficient, beta = (r_{i+1}, z_{i+1}) / (r_{i}, z_{i}) ---*/
 
-    r_dot_z_old = r_dot_z;
+    ScalarType beta = r_dot_z;
     r_dot_z = r.dot(z);
-    beta = r_dot_z / r_dot_z_old;
+    beta = r_dot_z / beta;
 
-    /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
+    /*--- Gram-Schmidt orthogonalization. ---*/
 
     p = beta*p + z;
 
@@ -322,7 +319,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     if (master) WriteFinalResidual("CG", i, norm_r/norm0);
 
     mat_vec(x, A_x);
-    r = b; r -= A_x;
+    r = b - A_x;
     ScalarType true_res = r.norm();
 
     if (fabs(true_res - norm_r) > tol*10.0) {
@@ -533,7 +530,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 
   mat_vec(x, A_x);
-  r = b; r -= A_x;
+  r = b - A_x;
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -562,7 +559,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   /*--- Initialization ---*/
 
-  ScalarType alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
   p = ScalarType(0.0); v = ScalarType(0.0); r_0 = r;
 
   /*--- Loop over all search directions ---*/
@@ -579,7 +576,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Compute beta ---*/
 
-    beta = (rho / rho_prime) * (alpha /omega);
+    ScalarType beta = (rho / rho_prime) * (alpha /omega);
 
     /*--- Update p ---*/
 
@@ -638,7 +635,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     if (master) WriteFinalResidual("BCGSTAB", i, norm_r/norm0);
 
     mat_vec(x, A_x);
-    r = b; r -= A_x;
+    r = b - A_x;
     ScalarType true_res = r.norm();
 
     if ((fabs(true_res - norm_r) > tol*10.0) && (master)) {
@@ -661,7 +658,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   unsigned long i = 0;
 
   /*--- Relaxation factor, see comments inside the loop over the smoothing iterations. ---*/
-  ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
+  const ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
 
   if (m < 1) {
     SU2_OMP_MASTER
@@ -691,7 +688,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   /*--- Compute the initial residual and check if the system is already solved (if in COMM_FULL mode). ---*/
 
   mat_vec(x, A_x);
-  r = b; r -= A_x;
+  r = b - A_x;
 
   /*--- Only compute the residuals in full communication mode. ---*/
 

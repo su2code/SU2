@@ -63,12 +63,12 @@
 /*!
  * \brief Maximum number of threads available.
  */
-inline constexpr int omp_get_max_threads(void) {return 1;}
+inline constexpr int omp_get_max_threads() {return 1;}
 
 /*!
  * \brief Number of threads in current team.
  */
-inline constexpr int omp_get_num_threads(void) {return 1;}
+inline constexpr int omp_get_num_threads() {return 1;}
 
 /*!
  * \brief Set the maximum number of threads.
@@ -78,7 +78,12 @@ inline void omp_set_num_threads(int) { }
 /*!
  * \brief Index of current thread, akin to MPI rank.
  */
-inline constexpr int omp_get_thread_num(void) {return 0;}
+inline constexpr int omp_get_thread_num() {return 0;}
+
+/*!
+ * \brief Returns true if inside a parallel section.
+ */
+inline constexpr bool omp_in_parallel() {return false;}
 
 /*!
  * \brief Dummy lock type and associated functions.

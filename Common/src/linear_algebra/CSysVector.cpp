@@ -28,59 +28,48 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
-template<class ScalarType>
-void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain,
-                                        unsigned long numVar, const ScalarType* val, bool valIsArray) {
+inline void ErrorIfParallel() {
+  if (omp_in_parallel())
+    SU2_MPI::Error("If this class were constructed in parallel its operations would be incorrect.", CURRENT_FUNCTION);
+}
 
-  /*--- Assert that this method is only called by one thread. ---*/
-  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the vector.");
+template <class ScalarType>
+CSysVector<ScalarType>::CSysVector() {
+  ErrorIfParallel();
+}
 
-  if ((nElm != numBlk*numVar) && (vec_val != nullptr)) {
+template <class ScalarType>
+void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
+                                        const ScalarType* val, bool valIsArray, bool errorIfParallel) {
+  if (errorIfParallel) ErrorIfParallel();
+
+  if (omp_get_thread_num())
+    SU2_MPI::Error("Only the master thread is allowed to initialize the vector.", CURRENT_FUNCTION);
+
+  if (nElm != numBlk * numVar) {
     MemoryAllocation::aligned_free(vec_val);
     vec_val = nullptr;
   }
 
-  nElm = numBlk*numVar;
-  nElmDomain = numBlkDomain*numVar;
+  nElm = numBlk * numVar;
+  nElmDomain = numBlkDomain * numVar;
   nVar = numVar;
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
-  if (vec_val == nullptr)
-    vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
+  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm * sizeof(ScalarType));
 
-  if(val != nullptr) {
-    if(!valIsArray) {
-      for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
-    }
-    else {
-      for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
+  if (val != nullptr) {
+    if (!valIsArray) {
+      for (auto i = 0ul; i < nElm; i++) vec_val[i] = *val;
+    } else {
+      for (auto i = 0ul; i < nElm; i++) vec_val[i] = val[i];
     }
   }
 }
 
-template<class ScalarType>
-template<class T>
-void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
-
-  /*--- This is a method and not the overload of an operator to make sure who
-   * calls it knows the consequence to the derivative information (lost) ---*/
-
-  /*--- check if self-assignment, otherwise perform deep copy ---*/
-  if ((const void*)this == (const void*)&other) return;
-
-  SU2_OMP_MASTER
-  Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true);
-  SU2_OMP_BARRIER
-
-  CSYSVEC_PARFOR
-  for(auto i=0ul; i<nElm; i++)
-    vec_val[i] = SU2_TYPE::GetValue(other[i]);
-}
-
-template<class ScalarType>
+template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
-
   MemoryAllocation::aligned_free(vec_val);
 }
 
@@ -88,9 +77,6 @@ CSysVector<ScalarType>::~CSysVector() {
 /*--- We allways need su2double (regardless if it is passive or active). ---*/
 template class CSysVector<su2double>;
 #if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-/*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors,
- *    and copy operations between them and active (or double) vectors, respectively. ---*/
+/*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors. ---*/
 template class CSysVector<su2mixedfloat>;
-template void CSysVector<su2mixedfloat>::PassiveCopy(const CSysVector<su2double>&);
-template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2mixedfloat>&);
 #endif
