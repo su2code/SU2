@@ -65,11 +65,12 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   Vst_j    = new su2double [nPrimVar];
   Ust_i    = new su2double [nVar];
   Ust_j    = new su2double [nVar];
-  Evest_i  = new su2double [nSpecies];
-  Evest_j  = new su2double [nSpecies];
   dPdUst_i = new su2double [nVar];
   dPdUst_j = new su2double [nVar];
 
+  eves_st_i.resize(nSpecies,0.0);
+  eves_st_j.resize(nSpecies,0.0);
+  
   P_Tensor		= new su2double* [nVar];
   invP_Tensor	= new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -77,7 +78,6 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
     invP_Tensor[iVar] = new su2double [nVar];
   }
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
@@ -100,8 +100,6 @@ CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
   delete [] Vst_i;
   delete [] Ust_j;
   delete [] Vst_j;
-  delete [] Evest_i;
-  delete [] Evest_j;
   delete [] dPdUst_i;
   delete [] dPdUst_j;
 
@@ -191,12 +189,11 @@ void CUpwMSW_NEMO::ComputeResidual(su2double *val_residual,
   ProjVelst_i = onemw*ProjVel_i + w*ProjVel_j;
   ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Evest_i[iSpecies] = variable->CalcEve(config, Vst_i[TVE_INDEX], iSpecies);
-    Evest_j[iSpecies] = variable->CalcEve(config, Vst_j[TVE_INDEX], iSpecies);
-  }
-  variable->CalcdPdU(Vst_i, Evest_i, config, dPdUst_i);
-  variable->CalcdPdU(Vst_j, Evest_j, config, dPdUst_j);
+  vector<su2double> eves_st_i = fluidmodel->GetSpeciesEve(Vst_i[TVE_INDEX]);
+  vector<su2double> eves_st_j = fluidmodel->GetSpeciesEve(Vst_j[TVE_INDEX]);
+
+  fluidmodel->GetdPdU(Vst_i, eves_st_i, dPdUst_i);
+  fluidmodel->GetdPdU(Vst_j, eves_st_j, dPdUst_j);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)

@@ -934,17 +934,15 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetSpeciesEnthalpy(){
+vector<su2double> CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
 
   su2double ef;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){  
-
+    eves[iSpecies] = val_eves[iSpecies];
     /*--- Calculate formation energy ---*/
-    ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
-  
-    hs[iSpecies] = Ru/MolarMass[iSpecies]*T + Cvtrs[iSpecies]*T + Enthalpy_Formation[iSpecies] + eves[iSpecies];
-
+    ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];  
+    hs[iSpecies] = Ru/MolarMass[iSpecies]*val_T + Cvtrs[iSpecies]*val_T + Enthalpy_Formation[iSpecies] + eves[iSpecies];
   }    
 
   return hs;

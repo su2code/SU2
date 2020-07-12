@@ -234,7 +234,8 @@ protected:
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
 
-  su2double *hs, *Cvtr;
+  vector<su2double> hs;
+  su2double *Cvtr;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
   su2double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
   su2double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;

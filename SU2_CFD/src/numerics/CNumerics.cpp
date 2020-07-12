@@ -111,7 +111,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
     nSpecies = nVar - nDim - 2;
 
-    hs     = new su2double[nSpecies];
+    hs.resize(nSpecies,0.0);
     Cvtr   = new su2double[nSpecies];
     eve_i  = new su2double[nSpecies];  eve_j  = new su2double[nSpecies];
     Cvve_i = new su2double[nSpecies];  Cvve_j = new su2double[nSpecies];
@@ -156,7 +156,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
     unsigned long nPoint = 1;
 
-    RHOS_INDEX    = 0;
+    RHOS_INDEX    = 0; //cat: meter isto no config.cpp
     T_INDEX       = nSpecies;
     TVE_INDEX     = nSpecies+1;
     VEL_INDEX     = nSpecies+2;
@@ -165,21 +165,19 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     H_INDEX       = nSpecies+nDim+4;
     A_INDEX       = nSpecies+nDim+5;
     RHOCVTR_INDEX = nSpecies+nDim+6;
-    RHOCVVE_INDEX = nSpecies+nDim+7;
+    RHOCVVE_INDEX = nSpecies+nDim+7;   
 
-    if(!config->GetAUSMMethod()){
-
-      /*--- Instatiate the correct fluid model ---*/
-      switch (config->GetKind_FluidModel()) {
-        case MUTATIONPP:
-        //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-        cout << "Delete Me, Calling Mutation" << endl;
-        break;
-        case USER_DEFINED_NONEQ:
-        fluidmodel = new CUserDefinedTCLib(config, nDim, false);
-        break;
-      }
-    } 
+    /*--- Instatiate the correct fluid model ---*/
+    switch (config->GetKind_FluidModel()) {
+      case MUTATIONPP:
+      //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
+      cout << "Delete Me, Calling Mutation" << endl;
+      break;
+      case USER_DEFINED_NONEQ:
+      fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+      break;
+    }
+  
   }
 
   /* --- Initializing variables for the UQ methodology --- */

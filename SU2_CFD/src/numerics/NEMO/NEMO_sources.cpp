@@ -63,11 +63,9 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
   A      = new su2double[5];
   X      = new su2double[nSpecies];
   Y      = new su2double[nSpecies];
-  estar  = new su2double[nSpecies];
   evib   = new su2double[nSpecies];
   Cvvs   = new su2double[nSpecies];
   Cves   = new su2double[nSpecies];
-  Cvvsst = new su2double[nSpecies];
   tauP   = new su2double[nSpecies];
   tauMW  = new su2double[nSpecies];
   taus   = new su2double[nSpecies];
@@ -76,12 +74,13 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
   dRfok  = new su2double[nVar];
   dRbok  = new su2double[nVar];
 
+  Cvvsst.resize(nSpecies,0.0);
+  //estar.resize(nSpecies,0.0);
+
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
   }
-
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CSource_NEMO::~CSource_NEMO(void) {
@@ -104,11 +103,9 @@ CSource_NEMO::~CSource_NEMO(void) {
   delete [] A;
   delete [] X;
   delete [] Y;
-  delete [] estar;
   delete [] evib;
   delete [] Cvvs;
   delete [] Cves;
-  delete [] Cvvsst;
   delete [] tauP;
   delete [] tauMW;
   delete [] taus;
@@ -484,6 +481,9 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
 
+  /*--- Get species vibrational energy --*/
+  estar = fluidmodel->GetSpeciesEve(T);
+
   /*--- Loop over species to calculate source term --*/
   Qtv      = 0.0;
   taunum   = 0.0;
@@ -517,7 +517,7 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
     taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
 
     /*--- Calculate vib.-el. energies ---*/
-    estar[iSpecies] = variable->CalcEve(config, T, iSpecies);
+    //estar[iSpecies] = variable->CalcEve(config, T, iSpecies);
 
     /*--- Add species contribution to residual ---*/
     val_residual[nEv] += rhos * (estar[iSpecies] -
@@ -540,13 +540,15 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
     val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
 
   if (implicit) {
+
+    fluidmodel->SetTve(T);
+    Cvvsst = fluidmodel->GetSpeciesCvVibEle();
+
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
       /*--- Rename ---*/
       rhos = V_i[RHOS_INDEX+iSpecies];
-      //cat: settve first
-      Cvvsst[iSpecies] = variable->CalcCvve(T, config, iSpecies);
-
+      
       for (iVar = 0; iVar < nVar; iVar++) {
         val_Jacobian_i[nEv][iVar] += rhos/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
                                                           Cvve_i[iSpecies]*dTvedU_i[iVar])*Volume;

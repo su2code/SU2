@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../CNumerics.hpp"
-#include "../../variables/CNEMONSVariable.hpp"
+#include "../../variables/CNEMOEulerVariable.hpp"
 
 /*!
  * \class CAvgGrad_NEMO

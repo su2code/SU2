@@ -225,9 +225,9 @@ void CAvgGrad_NEMO::GetViscousProjFlux(su2double *val_primvar,
   Ru  = 1000.0*RuSI;
   V   = val_primvar;
   GV  = val_gradprimvar;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    hs[iSpecies]= variable->CalcHs(config, T, val_eve[iSpecies], iSpecies);
 
+  hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
+  
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
@@ -370,11 +370,12 @@ void CAvgGrad_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
   Ru  = 1000.0*RuSI;
   Ms  = config->GetMolar_Mass();
   xi  = config->GetRotationModes();
+
+  hs = fluidmodel->GetSpeciesEnthalpy(T, val_Mean_Eve);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
     Ys_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX];
-    hs[iSpecies]   = variable->CalcHs(config, T, val_Mean_Eve[iSpecies], iSpecies);
     Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++)
@@ -623,7 +624,7 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
   Proj_Mean_GradPrimVar_Edge = new su2double[nPrimVarGrad];
   Edge_Vector = new su2double[3];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config); //cat: meter isto no config.pp
 
   RHOS_INDEX    = variable->GetRhosIndex()    ;
   RHO_INDEX     = variable->GetRhoIndex()     ;
@@ -702,9 +703,9 @@ void CAvgGradCorrected_NEMO::GetViscousProjFlux(su2double *val_primvar,
   Ru  = 1000.0*RuSI;
   V   = val_primvar;
   GV  = val_gradprimvar;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    hs[iSpecies]  = variable->CalcHs(config, T, val_eve[iSpecies], iSpecies);
 
+  hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
+  
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
@@ -848,11 +849,12 @@ void CAvgGradCorrected_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
   Ru  = 1000.0*RuSI;
   Ms  = config->GetMolar_Mass();
   xi  = config->GetRotationModes();
+
+  hs = fluidmodel->GetSpeciesEnthalpy(T, val_Mean_Eve);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
     Ys_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX];
-    hs[iSpecies]   = variable->CalcHs(config, T, val_Mean_Eve[iSpecies], iSpecies);
     Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++)

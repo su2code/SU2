@@ -28,7 +28,6 @@
 #pragma once
 
 #include "../../CNumerics.hpp"
-#include "../../../variables/CNEMOEulerVariable.hpp"
 
 /*!
  * \class CCentLax_NEMO
@@ -41,7 +40,8 @@ class CCentLax_NEMO : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
-  su2double *MeanU, *MeanV, *MeanEve;
+  su2double *MeanU, *MeanV;
+  vector<su2double> mean_eves;
   su2double *MeandPdU;
   su2double *ProjFlux;  /*!< \brief Projected inviscid flux tensor. */
   su2double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */
@@ -53,8 +53,6 @@ private:
   bool ionization;  /*!< \brief Charged species with the mixture. */
   bool stretching;
   unsigned short nPrimVar, nPrimVarGrad;
-  CNEMOEulerVariable *variable;
-
 
 public:
 

@@ -55,7 +55,7 @@ vector<su2double> CMutationTCLib::GetNetProductionRates(){}
 
 su2double CMutationTCLib::GetEveSourceTerm(){}
 
-vector<su2double> CMutationTCLib::GetSpeciesEnthalpy(){}
+vector<su2double> CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
 
 vector<su2double> CMutationTCLib::GetDiffusionCoeff(){}
 
