@@ -746,6 +746,7 @@ private:
   short *Mesh_Box_Size;          /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   su2double* Mesh_Box_Length;    /*!< \brief Array containing the length in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   su2double* Mesh_Box_Offset;    /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  unsigned short Mesh_Box_PSolFEM; /*!< \brief FEM polynomial degree of the solution for the RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
@@ -9183,6 +9184,12 @@ public:
    * \return Offset from 0.0 the analytic RECTANGLE or BOX grid in the specified coordinate direction.
    */
   su2double GetMeshBoxOffset(unsigned short val_iDim) const { return Mesh_Box_Offset[val_iDim]; }
+
+  /*!
+   * \brief Get the polynomial degree of the FEM solution for the analytic RECTANGLE or BOX.
+   * \return The polynomial degree of the FEM solution.
+   */
+  unsigned short GetMeshBoxPSolFEM(void) const { return Mesh_Box_PSolFEM; }
 
   /*!
    * \brief Get the number of screen output variables requested (maximum 6)

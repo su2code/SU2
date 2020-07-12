@@ -166,7 +166,7 @@ void CBoxMeshReaderFVM::ComputeBoxVolumeConnectivity() {
 
 void CBoxMeshReaderFVM::ComputeBoxSurfaceConnectivity() {
   
-  /* The rectangle alays has 4 markers. */
+  /* The box always has 6 markers. */
   numberOfMarkers = 6;
   surfaceElementConnectivity.resize(numberOfMarkers);
   markerNames.resize(numberOfMarkers);
