@@ -360,10 +360,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   if (!gmres_ready) {
     SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
-      W.resize(m+1, x);
-      Z.resize(m+1, x);
+    SU2_OMP_MASTER {
+      W.resize(m+1);
+      Z.resize(m+1);
+      for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+      for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       gmres_ready = true;
     }
     SU2_OMP_BARRIER
@@ -509,8 +510,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   if (!bcg_ready) {
     SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_MASTER {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -670,8 +670,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
   if (!smooth_ready) {
     SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_MASTER {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();

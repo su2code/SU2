@@ -78,7 +78,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - Number of variables in each block.
    * \param[in] val - Default value for elements.
    * \param[in] valIsArray - If true val is treated as array.
-   * \param[in] errorIfParallel - Throw error if within parallel region (all ctors do this).
+   * \param[in] errorIfParallel - Throw error if within parallel region (all ctors except the default one do this).
    */
   void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* val,
                   bool valIsArray, bool errorIfParallel = true);
@@ -99,7 +99,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Default constructor of the class.
    */
-  CSysVector();
+  CSysVector() = default;
 
   /*!
    * \brief Destructor

@@ -28,20 +28,13 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
-inline void ErrorIfParallel() {
-  if (omp_in_parallel())
-    SU2_MPI::Error("If this class were constructed in parallel its operations would be incorrect.", CURRENT_FUNCTION);
-}
-
-template <class ScalarType>
-CSysVector<ScalarType>::CSysVector() {
-  ErrorIfParallel();
-}
-
 template <class ScalarType>
 void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
                                         const ScalarType* val, bool valIsArray, bool errorIfParallel) {
-  if (errorIfParallel) ErrorIfParallel();
+  if (errorIfParallel && omp_in_parallel()) {
+    assert(false);
+    SU2_MPI::Error("If this class were constructed in parallel its operations would be incorrect.", CURRENT_FUNCTION);
+  }
 
   if (omp_get_thread_num())
     SU2_MPI::Error("Only the master thread is allowed to initialize the vector.", CURRENT_FUNCTION);
