@@ -50,6 +50,8 @@ private:
   
   unsigned short KindElem;  /*!< \brief VTK identifier of the interior elements. */
   unsigned short KindBound; /*!< \brief VTK identifier of the surface elements. */
+
+  unsigned short nPolySol; /*!< \brief Polynomial degree of the solution. */
   
   /*!
    * \brief Computes and stores the grid points based on an analytic definition of a rectangular grid.

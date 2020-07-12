@@ -41,7 +41,7 @@ CBoxMeshReaderFEM::CBoxMeshReaderFEM(CConfig        *val_config,
   KindElem  = HEXAHEDRON;
   KindBound = QUADRILATERAL;
   
-  /* The number of nodes in the i and j directions. */
+  /* The number of grid nodes in the i, j and k directions. */
   nNode = config->GetMeshBoxSize(0);
   mNode = config->GetMeshBoxSize(1);
   pNode = config->GetMeshBoxSize(2);
@@ -51,7 +51,7 @@ CBoxMeshReaderFEM::CBoxMeshReaderFEM(CConfig        *val_config,
   Ly = config->GetMeshBoxLength(1);
   Lz = config->GetMeshBoxLength(2);
   
-  /* Offsets in x and y directions from 0.0. */
+  /* Offsets in x, y and z directions from 0.0. */
   Ox = config->GetMeshBoxOffset(0);
   Oy = config->GetMeshBoxOffset(1);
   Oz = config->GetMeshBoxOffset(2);
@@ -69,6 +69,9 @@ CBoxMeshReaderFEM::CBoxMeshReaderFEM(CConfig        *val_config,
 CBoxMeshReaderFEM::~CBoxMeshReaderFEM(void) { }
 
 void CBoxMeshReaderFEM::ComputeBoxPointCoordinates() {
+
+  /*--- Set the global count of points based on the grid dimensions. ---*/
+  numberOfGlobalPoints = nNode*mNode*pNode;
 
   /*--- Determine the step size in the three directions. ---*/
   const passivedouble dx = Lx/((passivedouble)(nNode-1));
