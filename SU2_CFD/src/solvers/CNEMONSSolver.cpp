@@ -2339,7 +2339,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double C;
 
   su2double TMAC, TAC;
-  su2double Prandtl, Gamma, Viscosity, Lambda;
+  su2double Viscosity, Lambda;
   su2double Density, GasConstant, Ru;
 
   su2double **Grad_PrimVar;
@@ -2373,12 +2373,9 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   unsigned short VEL_INDEX;
 
   /*--- Extract necessary indices ---*/
-  RHOS_INDEX    = nodes->GetRhosIndex();
   T_INDEX       = nodes->GetTIndex();
   VEL_INDEX     = nodes->GetVelIndex();
   TVE_INDEX     = nodes->GetTveIndex();
-  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2427,16 +2424,13 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       kve  = nodes->GetThermalConductivity_ve(iPoint);
 
       /*--- Retrieve Flow Data ---*/
-      Prandtl = config->GetPrandtl_Lam(); //
-      Gamma   = config->GetGamma(); // 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Density = nodes->GetDensity(iPoint);
-      Ru=UNIVERSAL_GAS_CONSTANT*1000.0;
 
       /*--- Calculate specific gas constant --- */
       GasConstant=0;
       for(iSpecies=0;iSpecies<nSpecies;iSpecies++)
-        GasConstant+=Ru/config->GetMolar_Mass(iSpecies)*nodes->GetMassFraction(iPoint,iSpecies);
+        GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/config->GetMolar_Mass(iSpecies)*nodes->GetMassFraction(iPoint,iSpecies);
       
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn   = - (Ti-Tj)/dij;
@@ -2446,7 +2440,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2*GasConstant*Ti));
 
       /*--- Calculate Temperature Slip ---*/
-      Tslip = ((2-TAC)/TAC)*2*Gamma/(Gamma+1)/Prandtl*Lambda*dTn+Twall;
+      Tslip = ((2-TAC)/TAC)*2*Gamma/(Gamma+1)/Prandtl_Lam*Lambda*dTn+Twall;
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
@@ -2491,7 +2485,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Store the Slip Velocity at the wall */
       for (iDim = 0; iDim < nDim; iDim++)
-        Vector[iDim] = - Lambda/Viscosity*(2-TMAC)/TMAC*(TauTangent[iDim])-3/4*(Gamma-1)/Gamma*Prandtl/Pi*Vector_Tangent_HF[iDim];
+        Vector[iDim] = - Lambda/Viscosity*(2-TMAC)/TMAC*(TauTangent[iDim])-3/4*(Gamma-1)/Gamma*Prandtl_Lam/Pi*Vector_Tangent_HF[iDim];
 
       nodes->SetVelocity_Old(iPoint,Vector);
 
