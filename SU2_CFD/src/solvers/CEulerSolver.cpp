@@ -3155,7 +3155,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*Turb_ij
                             + (pow(Turb_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
                             / (pow(2.0*Project_Grad_i,2.0) + pow(Turb_ij,2.0) + pow(EPS,2.0)), 0.0);
-            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*Turb_ij
+            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*Turb_ij
                             + (pow(Turb_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
                             / (pow(2.0*Project_Grad_j,2.0) + pow(Turb_ij,2.0) + pow(EPS,2.0)), 0.0);
           }
@@ -3217,7 +3217,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*V_ij
                             + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
                             / (pow(2.0*Project_Grad_i,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)), 0.0);
-            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*V_ij
+            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*V_ij
                             + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
                             / (pow(2.0*Project_Grad_j,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)), 0.0);
           }
