@@ -2483,7 +2483,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         NonLinRes_Series[iCounter] = New_Func;
     }
 
-    }  End SU2_OMP_MASTER, now all threads update the CFL number. 
+    }  /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
 
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
