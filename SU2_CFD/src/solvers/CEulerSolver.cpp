@@ -3341,7 +3341,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             // const su2double R_j = fabs((Project_Grad_i)/(Project_Grad_j+EPS));
             // Limiter_i[iVar] = 2.0*R_i/(pow(R_i,2.0)+1.0);
             // Limiter_j[iVar] = 2.0*R_j/(pow(R_j,2.0)+1.0);
-            const su2double f = V_ij/(Project_Grad_j-Projec_Grad_i+EPS);
+            const su2double f = V_ij/(Project_Grad_j-Project_Grad_i+EPS);
             Limiter_i[iVar] = 2.0*f*(1.0-f)/(pow(f,2.0)+pow(1.0-f,2.0));
             Limiter_j[iVar] = 2.0*f*(1.0-f)/(pow(f,2.0)+pow(1.0-f,2.0));
           }
