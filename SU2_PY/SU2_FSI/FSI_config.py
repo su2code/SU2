@@ -136,6 +136,8 @@ class OptConfig:
         
         # Case of no constraints (default)
         self._ConfigContent["OPT_CONSTRAINT"] = None
+        # Case of no root FFD_DV constraints
+        self._ConfigContent["FFD_CONSTRAINT"] = None
         
         input_file = open(self.ConfigFileName)
         while 1:
@@ -169,6 +171,7 @@ class OptConfig:
                     break
 
                 # string values
+                if case("FFD_CONSTRAINT"): pass
                 if case("CONFIG_PRIMAL"): pass
                 if case("CONFIG_ADJOINT"): pass
                 if case("CONFIG_GEO"): pass

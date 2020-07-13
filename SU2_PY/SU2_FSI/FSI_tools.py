@@ -599,3 +599,18 @@ def SharpEdge(adj_folder,configAdj):
     os.rename(ConfigFileName + '_temp', ConfigFileName) 
     
     return
+
+def Fix_FFD_CP(ffd_degree):
+    
+    ffd_fixed_arr = []
+        
+    for i in range(ffd_degree[2]+1):
+       a = (ffd_degree[0]+1)*(ffd_degree[1]+1)*i
+       b = (ffd_degree[0]+1)*(ffd_degree[1]+1)*i + (ffd_degree[0]+1)
+       ffd_fixed_arr.append(list(range(a , b ))) 
+       
+    ffd_fixed = np.array(ffd_fixed_arr)
+    r, c = ffd_fixed.shape
+    ffd_fixed = np.reshape(ffd_fixed, r*c)
+    
+    return ffd_fixed

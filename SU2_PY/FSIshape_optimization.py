@@ -122,8 +122,6 @@ def slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     fprime         = obj_df
         
     # constraints handling
-    
-
     if project.config['OPT_CONSTRAINT'] == None:
        f_eqcons       = None
        f_ieqcons      = None 

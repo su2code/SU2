@@ -35,7 +35,7 @@ from math import pow, factorial
 import time, os
 from SU2_FSI.FSI_config import FSIConfig as FSIConfig
 from SU2_FSI import FSI_design
-from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion, WriteSolution
+from SU2_FSI.FSI_tools import run_command, readConfig, PullingPrimalAdjointFiles, readDVParam, ReadPointInversion, WriteSolution, Fix_FFD_CP
 from SU2_FSI.FSI_design import Design
 from SU2_FSI.FSI_tools import  readConfig
 # -------------------------------------------------------------------
@@ -91,6 +91,11 @@ class Project:
         self.FFD_indexes = readDVParam(self.config['CONFIG_DEF'])
         self.n_dv = 0 # number of design variables
 
+        # check if to fix the CP  on the root of the wing
+        if self.config['FFD_CONSTRAINT'] == 'ROOT':
+           self.ffd_fixed = Fix_FFD_CP(self.ffd_degree)
+        else:
+           self.ffd_fixed = None 
         
         # clean previous designs
         self.clean_previous_designs()
@@ -143,6 +148,10 @@ class Project:
         # return the function
         obj_df, global_factor = self._design[self.design_iter].pull_obj_df(self.adjoint_folder,self.FFD_indexes, self.PointInv,self.ffd_degree)
                 
+        # check if the root has to be fixed
+        if self.ffd_fixed != None:
+           obj_df = self.Fix_FFD_CP_grads(obj_df,'OF')
+                
         return obj_df*global_factor
 
     def con_ceq(self,dvs):
@@ -175,6 +184,10 @@ class Project:
         # pull gradient of constraint equality
         dc_eq, global_factor = self._design[self.design_iter].pull_c_deq( self.geo_folder)
         
+        # check if the root has to be fixed
+        if self.ffd_fixed != None:
+           dc_eq = self.Fix_FFD_CP_grads(dc_eq,'CONSTR')        
+        
         # return dceq
         return dc_eq*global_factor
     
@@ -206,6 +219,10 @@ class Project:
         
         # pull gradient of constraint inequality
         c_dieq, global_factor = self._design[self.design_iter].pull_c_dieq(self.geo_folder)
+
+        # check if the root has to be fixed
+        if self.ffd_fixed != None:
+           c_dieq = self.Fix_FFD_CP_grads(c_dieq,'CONSTR')         
        
         # return dcieq    
         return c_dieq*global_factor
@@ -423,3 +440,17 @@ class Project:
           run_command(command, 'Pulling mesh config for deformation', False)
           
            
+           
+    def Fix_FFD_CP_grads(self,gradient,gradient_type):
+        
+        if gradient_type == 'OF':            
+            for i in range(self.ffd_fixed):
+                gradient[self.ffd_fixed[i]] = 0.0
+        
+        elif gradient_type == 'CONSTR':
+            for i in range(self.ffd_fixed):
+                gradient[:,self.ffd_fixed[i]] = 0.0
+            
+            
+        return gradient
+        
