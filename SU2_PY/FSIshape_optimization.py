@@ -219,7 +219,7 @@ def obj_df(x,project):
     """    
   
     obj_df = project.obj_df(x)    
-    scipy.io.savemat(  './obj_df.mat', mdict={'obj_df': obj_df})
+    #scipy.io.savemat(  './obj_df.mat', mdict={'obj_df': obj_df})
     return obj_df
 
 def con_ceq(x,project):
@@ -253,7 +253,7 @@ def con_cieq(x,project):
     """ 
 
     cons = project.con_cieq(x)  
-    scipy.io.savemat(  './cons.mat', mdict={'cons': cons})     
+  
     return cons
     
     
@@ -267,7 +267,7 @@ def con_dcieq(x,project):
     """
 
     dcons = project.con_dcieq(x)
-    scipy.io.savemat(  './dcons.mat', mdict={'dcons': dcons})         
+    #scipy.io.savemat(  './dcons.mat', mdict={'dcons': dcons})         
     return dcons
 
 
