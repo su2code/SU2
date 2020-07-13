@@ -3152,12 +3152,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[0] = fabs(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*T_ij
-                            + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
-                            / (pow(2.0*Project_Grad_i,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)));
-            Limiter_j[0] = fabs(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*T_ij
-                            + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
-                            / (pow(2.0*Project_Grad_j,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)));
+            su2double a = 2.0*Project_Grad_i - T_ij;
+            su2double b = T_ij;
+            Limiter_i[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
+            a = 2.0*Project_Grad_j - T_ij;
+            Limiter_j[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
           }
           Project_Grad_i *= Limiter_i[0];
           Project_Grad_j *= Limiter_j[0];
@@ -3209,12 +3212,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         if (limiter) {
           if (van_albada) {
-            Limiter_i[iVar] = fabs(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*V_ij
-                            + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
-                            / (pow(2.0*Project_Grad_i,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)));
-            Limiter_j[iVar] = fabs(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*V_ij
-                            + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
-                            / (pow(2.0*Project_Grad_j,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)));
+            su2double a = 2.0*Project_Grad_i - V_ij;
+            su2double b = V_ij;
+            Limiter_i[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
+            a = 2.0*Project_Grad_j - V_ij;
+            Limiter_j[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
           }
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
