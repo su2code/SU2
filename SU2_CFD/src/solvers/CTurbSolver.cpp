@@ -184,12 +184,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*V_ij
+            Limiter_i[iVar] = fabs(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*V_ij
                             + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
-                            / (pow(2.0*Project_Grad_i,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)), 0.0);
-            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*V_ij
+                            / (pow(2.0*Project_Grad_i,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)));
+            Limiter_j[iVar] = fabs(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*V_ij
                             + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
-                            / (pow(2.0*Project_Grad_j,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)), 0.0);
+                            / (pow(2.0*Project_Grad_j,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)));
           }
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
@@ -221,12 +221,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*T_ij
+            Limiter_i[iVar] = fabs(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*T_ij
                             + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
-                            / (pow(2.0*Project_Grad_i,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)), 0.0);
-            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*T_ij
+                            / (pow(2.0*Project_Grad_i,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)));
+            Limiter_j[iVar] = fabs(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*T_ij
                             + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
-                            / (pow(2.0*Project_Grad_j,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)), 0.0);
+                            / (pow(2.0*Project_Grad_j,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)));
           }
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
