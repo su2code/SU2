@@ -186,16 +186,18 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           if (van_albada) {
             su2double a = 2.0*Project_Grad_i - V_ij;
             su2double b = V_ij;
-            Limiter_i[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+            Project_Grad_i = 0.5*fabs(((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
             a = 2.0*Project_Grad_j - V_ij;
-            Limiter_j[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+            Project_Grad_j = 0.5*fabs(((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
           }
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          else {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
         }
         flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
         flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
@@ -226,16 +228,18 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           if (van_albada) {
             su2double a = 2.0*Project_Grad_i - T_ij;
             su2double b = T_ij;
-            Limiter_i[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+            Project_Grad_i = 0.5*fabs(((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
             a = 2.0*Project_Grad_j - T_ij;
-            Limiter_j[iVar] = fabs(((pow(a,2.0)+pow(EPS,2.0))*b
+            Project_Grad_j = 0.5*fabs(((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
           }
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          else {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
         }
         solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
         solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;
