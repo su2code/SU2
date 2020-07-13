@@ -3304,6 +3304,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       for (iDim = 0; iDim < nDim; iDim++) {
         Dist_ij += Vector_ij[iDim]*Vector_ij[iDim];
       }
+      Dist_ij = sqrt(Dist_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
