@@ -3,7 +3,7 @@
  * \brief Header of the multigrid queue class for the FVM solver.
  *        The subroutines and functions are in the <i>CMultiGridQueue.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,10 +41,11 @@ using namespace std;
  */
 class CMultiGridQueue {
 private:
-  vector<CFastFindAndEraseQueue<> > QueueCV; /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
-  vector<short> Priority;                    /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
-  vector<char> RightCV;                      /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them. */
-  const unsigned long nPoint = 0;            /*!< \brief Total number of points. */
+  using QueueType = CFastFindAndEraseQueue<>;
+  vector<QueueType> QueueCV;        /*!< \brief Queue structure to choose the next control volume in the agglomeration process. */
+  vector<short> Priority;           /*!< \brief The priority is based on the number of pre-agglomerated neighbors. */
+  vector<char> RightCV;             /*!< \brief In the lowest priority there are some CV that can not be agglomerated, this is the way to identify them. */
+  const unsigned long nPoint = 0;   /*!< \brief Total number of points. */
 
   /*!
    * \brief Throw error with error message that the point is not in the priority list.

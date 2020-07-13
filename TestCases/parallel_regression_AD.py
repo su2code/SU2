@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.4 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -230,7 +230,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.236430, -1.654332, -0.007426, 0.000013] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.225570, -1.643131, -0.007597, 0.000013] #last 4 columns
     discadj_pitchingNACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -322,6 +322,7 @@ def main():
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)		
+	  
 
     ######################################
     ### RUN TESTS                      ###
@@ -363,7 +364,7 @@ def main():
     test_list.append(unsteady_naca0012)
     
     ####################################################################################
-    ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint ###
+    ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint 		 ###
     ####################################################################################
 
     # NACA0012 Airfoil (Test depends on results of "unsteady_NACA0012_restart_adjoint")
@@ -379,7 +380,22 @@ def main():
     pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
 
-	
+    ####################################################################
+    ###  Unsteady Disc. adj. compressible RANS restart optimization  ###
+    ####################################################################
+
+    # test shape_optimization.py
+    naca_restart_shape_opt      = TestCase('restart_shape_optimization')
+    naca_restart_shape_opt.cfg_dir    = "optimization_rans/naca0012"
+    naca_restart_shape_opt.cfg_file   = "naca0012.cfg"
+    naca_restart_shape_opt.test_iter  = 1
+    naca_restart_shape_opt.test_vals = [1.000000, 1.000000, 0.007046, 0.196883] #last 4 columns
+    naca_restart_shape_opt.su2_exec   = "shape_optimization.py -f"
+    naca_restart_shape_opt.timeout    = 1600
+    naca_restart_shape_opt.tol       = 0.00001
+    pass_list.append(naca_restart_shape_opt.run_opt())
+    test_list.append(naca_restart_shape_opt)
+
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')

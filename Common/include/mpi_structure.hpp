@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 #include <map>
 #endif
 
-#include "./datatype_structure.hpp"
+#include "basic_types/datatype_structure.hpp"
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -65,15 +65,6 @@ extern MediTypes* mediTypes;
 class CBaseMPIWrapper;
 typedef CBaseMPIWrapper SU2_MPI;
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
-
-/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
-template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
-
-/*--- In AD we specialize for the passive wrapper. ---*/
-#if defined CODI_REVERSE_TYPE
-class CBaseMPIWrapper;
-template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
-#endif
 
 /*!
  * \class CMPIWrapper
@@ -318,6 +309,7 @@ public:
 #define MPI_UNSIGNED_LONG 1
 #define MPI_LONG 2
 #define MPI_UNSIGNED_SHORT 3
+#define MPI_FLOAT 4
 #define MPI_DOUBLE 4
 #define MPI_ANY_SOURCE 5
 #define MPI_SUM 6
@@ -445,6 +437,17 @@ public:
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
 
+#endif
+
+/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
+template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
+
+/*--- In AD we specialize for the passive wrapper. ---*/
+#if defined CODI_REVERSE_TYPE
+template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#if defined USE_MIXED_PRECISION
+template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
+#endif
 #endif
 
 /* Depending on the compiler, define the correct macro to get the current function name */

@@ -2,7 +2,7 @@
  * \file output_flow_comp.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -369,12 +369,14 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Limiter values
+  AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
+  AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
+  if (nDim == 3) {
+    AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
+  }
+  AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
   AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
-  AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
-  AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER", "Limiter value of the y-momentum");
-  if (nDim == 3)
-    AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
-  AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
+  AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -420,18 +422,18 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb = NULL;
+  CVariable* Node_Turb = nullptr;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
 
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -458,10 +460,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetGrid_Movement()){
-    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel()[0]);
-    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel()[1]);
+    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
+    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
-      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
+      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
@@ -510,15 +512,14 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  SetVolumeOutputValue("LIMITER_DENSITY",    iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
-  SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
-  SetVolumeOutputValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
+  SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
+  SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
   if (nDim == 3){
-    SetVolumeOutputValue("LIMITER_MOMENTUM-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-    SetVolumeOutputValue("LIMITER_ENERGY",     iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 4));
-  } else {
-    SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
+    SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
   }
+  SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+1));
+  SetVolumeOutputValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+2));
+  SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+3));
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -535,7 +536,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
-    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance());
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){

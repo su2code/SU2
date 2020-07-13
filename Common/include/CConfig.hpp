@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,7 +44,6 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
-#include "./datatype_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -228,6 +227,7 @@ private:
   bool Inlet_From_File;         /*!< \brief True if the inlet profile is to be loaded from a file. */
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
+  string ActDisk_FileName;      /*!< \brief Filename specifying an actuator disk. */
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
@@ -397,7 +397,6 @@ private:
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
   unsigned long Unst_nIntIter;      /*!< \brief Number of internal iterations (Dual time Method). */
-  unsigned long Dyn_nIntIter;       /*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -412,6 +411,8 @@ private:
   su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
+
+  unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -784,8 +785,6 @@ private:
   unsigned short
   Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;         /*!< \brief Particular average for the marker analyze. */
-  unsigned short
-  nPolyCoeffs;          /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,         /*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
@@ -819,14 +818,14 @@ private:
   Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
   Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
-  Mu_SND,                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  *CpPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
-  *MuPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
-  *KtPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
-  *CpPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
-  *MuPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
-  *KtPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
-  Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
+  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  su2double* CpPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
+  su2double* MuPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
+  su2double* KtPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
+  array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
+  array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
+  array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  su2double Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
   Density_Solid,                   /*!< \brief Total density in solids. */
@@ -1019,9 +1018,9 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  su2double *default_cp_polycoeffs;     /*!< \brief Array for specific heat polynomial coefficients. */
-  su2double *default_mu_polycoeffs;     /*!< \brief Array for viscosity polynomial coefficients. */
-  su2double *default_kt_polycoeffs;     /*!< \brief Array for thermal conductivity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_cp_polycoeffs{{0.0}};  /*!< \brief Array for specific heat polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   su2double *ExtraRelFacGiles;          /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
@@ -1282,7 +1281,7 @@ public:
    * \brief Constructor of the class which takes an istream buffer containing the config options.
    */
   CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
-  
+
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
@@ -1302,7 +1301,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
   /*!
   * \brief Initialize common fields of the config structure.
   */
@@ -1322,13 +1321,13 @@ public:
   * \brief Print the header to screen
   * \param val_software - Kind of software component
   */
-  void SetHeader(unsigned short val_software);
+  void SetHeader(unsigned short val_software) const;
 
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
-  SU2_MPI::Comm GetMPICommunicator();
+  SU2_MPI::Comm GetMPICommunicator() const;
 
   /*!
    * \brief Set the MPI communicator for SU2.
@@ -2945,12 +2944,6 @@ public:
   unsigned long GetUnst_nIntIter(void) const { return Unst_nIntIter; }
 
   /*!
-   * \brief Get the number of internal iterations for the Newton-Raphson Method in nonlinear structural applications.
-   * \return Number of internal iterations.
-   */
-  unsigned long GetDyn_nIntIter(void) const { return Dyn_nIntIter; }
-
-  /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
    * \return Starting direct iteration number for the unsteady adjoint.
    */
@@ -3819,7 +3812,7 @@ public:
    * \brief Get the number of coefficients in the temperature polynomial models.
    * \return The the number of coefficients in the temperature polynomial models.
    */
-  unsigned short GetnPolyCoeffs(void) const { return nPolyCoeffs; }
+  unsigned short GetnPolyCoeffs(void) const { return N_POLY_COEFFS; }
 
   /*!
    * \brief Get the temperature polynomial coefficient for specific heat Cp.
@@ -3853,7 +3846,7 @@ public:
    * \brief Get the temperature polynomial coefficients for viscosity.
    * \return Non-dimensional temperature polynomial coefficients for viscosity.
    */
-  su2double* GetMu_PolyCoeffND(void) { return MuPolyCoefficientsND; }
+  const su2double* GetMu_PolyCoeffND(void) const { return MuPolyCoefficientsND.data(); }
 
   /*!
    * \brief Get the temperature polynomial coefficient for thermal conductivity.
@@ -3873,7 +3866,7 @@ public:
    * \brief Get the temperature polynomial coefficients for thermal conductivity.
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
-  su2double* GetKt_PolyCoeffND(void) { return KtPolyCoefficientsND; }
+  const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
 
   /*!
    * \brief Set the value of the non-dimensional constant viscosity.
@@ -3937,7 +3930,7 @@ public:
    * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
    * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
    */
-  bool GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+  bool GetReconstructionGradientRequired(void) const { return ReconstructionGradientRequired; }
 
   /*!
    * \brief Get flag for whether a least-squares gradient method is being applied.
@@ -4028,6 +4021,11 @@ public:
    * \return relaxation coefficient of the CHT coupling.
    */
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
+
+  /*!
+   * \brief Get the number of samples used in quasi-Newton methods.
+   */
+  unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
 
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
@@ -4711,6 +4709,12 @@ public:
    * \return Name of the input file for the specified inlet profile.
    */
   string GetInlet_FileName(void) const { return Inlet_Filename; }
+
+  /*!
+   * \brief Get name of the input file for the specified actuator disk.
+   * \return Name of the input file for the specified actuator disk.
+   */
+  string GetActDisk_FileName(void) const { return ActDisk_FileName; }
 
   /*!
    * \brief Get the tolerance used for matching two points on a specified inlet
@@ -5403,13 +5407,13 @@ public:
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_FileName(string val_filename, int val_iZone, string ext);
+  string GetMultizone_FileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext);
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
@@ -5483,7 +5487,7 @@ public:
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
-  string GetUnsteady_FileName(string val_filename, int val_iter, string ext);
+  string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
 
   /*!
    * \brief Append the input filename string with the appropriate objective function extension.
@@ -5688,7 +5692,7 @@ public:
    * \param[in] val - new value of the origin
    * \return The mesh motion origin.
    */
-  void SetMotion_Origin(su2double* val) { for (int iDim = 0; iDim < 3; iDim++) Motion_Origin[iDim] = val[iDim]; }
+  void SetMotion_Origin(const su2double* val) { for (int iDim = 0; iDim < 3; iDim++) Motion_Origin[iDim] = val[iDim]; }
 
   /*!
    * \brief Get the mesh motion origin.
@@ -5703,7 +5707,7 @@ public:
    * \param[in] val - new value of the origin
    * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    */
-  void SetMarkerMotion_Origin(su2double* val, unsigned short iMarkerMoving) {
+  void SetMarkerMotion_Origin(const su2double* val, unsigned short iMarkerMoving) {
     for (int iDim = 0; iDim < 3; iDim++) MarkerMotion_Origin[3*iMarkerMoving + iDim] = val[iDim];
   }
 
@@ -6340,17 +6344,17 @@ public:
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotCenter(string val_marker);
+  const su2double *GetPeriodicRotCenter(string val_marker) const;
 
   /*!
    * \brief Angles of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotAngles(string val_marker);
+  const su2double *GetPeriodicRotAngles(string val_marker) const;
 
   /*!
    * \brief Translation vector for a rotational periodic boundary.
    */
-  su2double *GetPeriodicTranslation(string val_marker);
+  const su2double *GetPeriodicTranslation(string val_marker) const;
 
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
@@ -8009,8 +8013,8 @@ public:
   /*!
    * \brief Set the config file parsing.
    */
-  void SetConfig_Parsing(istream &config_buffer);  
-  
+  void SetConfig_Parsing(istream &config_buffer);
+
   /*!
    * \brief Set the config file parsing.
    */
@@ -8338,27 +8342,7 @@ public:
    * \brief Get the current number of non-physical reconstructions for 2nd-order upwinding.
    * \return Current number of non-physical reconstructions for 2nd-order upwinding.
    */
-  unsigned long GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
-
-  /*!
-   * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
-   x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
-   function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
-   the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
-   ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
-   condition for a natural spline, with zero second derivative on that boundary.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   */
-  void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
-
-  /*!
-   * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
-   and given the array y2a[1..n], which is the output from spline above, and given a value of
-   x, this routine returns a cubic-spline interpolated value y.
-   Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
-   * \return The interpolated value of for x.
-   */
-  su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
+  unsigned long GetNonphysical_Reconstr(void) const { return Nonphys_Reconstr; }
 
   /*!
    * \brief Start the timer for profiling subroutines.
@@ -8401,7 +8385,7 @@ public:
    *
    * \brief Set freestream turbonormal for initializing solution.
    */
-  void SetFreeStreamTurboNormal(su2double* turboNormal);
+  void SetFreeStreamTurboNormal(const su2double* turboNormal);
 
   /*!
    *

@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,10 @@
 #include "../../include/output/tools/CWindowingTools.hpp"
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutputLegacy.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIterationFactory.hpp"
+#include "../../include/iteration/CTurboIteration.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -70,11 +74,11 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
       direct_iteration = new CTurboIteration(config);
-      output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
+      output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
-    else       direct_iteration = new CFluidIteration(config);
-    if (compressible) direct_output = COutputFactory::createOutput(EULER, config, nDim);
-    else direct_output =  COutputFactory::createOutput(INC_EULER, config, nDim);
+    else       direct_iteration = CIterationFactory::CreateIteration(EULER, config);
+    if (compressible) direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
+    else direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
@@ -83,8 +87,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    direct_iteration = new CFEMFluidIteration(config);
-    direct_output = COutputFactory::createOutput(FEM_EULER, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(FEM_EULER, config);
+    direct_output = COutputFactory::CreateOutput(FEM_EULER, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -92,8 +96,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_FEM:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
-    direct_iteration = new CFEAIteration(config);
-    direct_output = COutputFactory::createOutput(FEM_ELASTICITY, config, nDim);
+    direct_iteration =  CIterationFactory::CreateIteration(FEM_ELASTICITY, config);
+    direct_output = COutputFactory::CreateOutput(FEM_ELASTICITY, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -101,8 +105,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_HEAT:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
-    direct_iteration = new CHeatIteration(config);
-    direct_output = COutputFactory::createOutput(HEAT_EQUATION, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(HEAT_EQUATION, config);
+    direct_output = COutputFactory::CreateOutput(HEAT_EQUATION, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -146,10 +150,19 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
-  bool steady = !config->GetTime_Domain();
-  unsigned long Adjoint_Iter;
+  const bool steady = !config->GetTime_Domain();
 
-  for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
+  CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
+  if (config->GetnQuasiNewtonSamples() > 1) {
+    fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
+                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+                          GetTotalNumberOfVariables(ZONE_0,true),
+                          geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
+
+    if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
+  }
+
+  for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
 
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
      *--- of the previous iteration. The values are passed to the AD tool.
@@ -191,6 +204,13 @@ void CDiscAdjSinglezoneDriver::Run() {
     }
 
     if (StopCalc) break;
+
+    /*--- Correct the solution with the quasi-Newton approach. ---*/
+
+    if (fixPtCorrector.size()) {
+      GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
+      SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
+    }
 
   }
 

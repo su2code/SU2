@@ -2,7 +2,7 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -108,7 +108,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
       for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
         Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-        if (donor_geometry->node[Point_Donor]->GetDomain())
+        if (donor_geometry->nodes->GetDomain(Point_Donor))
           nLocalVertexDonorOwned++;
       }
     }
@@ -139,11 +139,11 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
     /*--- Buffers to send and receive the variables in the donor mesh ---*/
     su2double *Buffer_Send_DonorVariables = new su2double[nBuffer_DonorVariables];
-    su2double *Buffer_Recv_DonorVariables = NULL;
+    su2double *Buffer_Recv_DonorVariables = nullptr;
 
     /*--- Buffers to send and receive the indices in the donor mesh ---*/
     long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
-    long *Buffer_Recv_DonorIndices = NULL;
+    long *Buffer_Recv_DonorIndices = nullptr;
 
     /*--- Buffers to broadcast the variables and the indices ---*/
     su2double *Buffer_Bcast_Variables = new su2double[nBuffer_BcastVariables];
@@ -168,14 +168,14 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
       /*--- If this processor owns the node ---*/
 
-      if (donor_geometry->node[Point_Donor]->GetDomain()) {
+      if (donor_geometry->nodes->GetDomain(Point_Donor)) {
 
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
 
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
 
-        Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
+        Point_Donor_Global = donor_geometry->nodes->GetGlobalIndex(Point_Donor);
         Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
       }
 
@@ -235,7 +235,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
         Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
 
         /*--- If this processor owns the node ---*/
-        if (target_geometry->node[Point_Target]->GetDomain()) {
+        if (target_geometry->nodes->GetDomain(Point_Target)) {
           TotalVertexDonor++;
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
 
@@ -427,12 +427,12 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
   unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
   unsigned short iSpan, nSpanDonor, nSpanTarget;
   int Marker_Donor = -1, Marker_Target = -1;
-  su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,
-      *avgTangVelDonor = NULL, *avg3DVelDonor = NULL, *avgNuDonor = NULL,
-      *avgOmegaDonor = NULL, *avgKineDonor = NULL;
-  su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL,
-      *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL,
-      *avgOmegaTarget = NULL, *avgKineTarget = NULL;
+  su2double *avgPressureDonor = nullptr, *avgDensityDonor = nullptr, *avgNormalVelDonor = nullptr,
+      *avgTangVelDonor = nullptr, *avg3DVelDonor = nullptr, *avgNuDonor = nullptr,
+      *avgOmegaDonor = nullptr, *avgKineDonor = nullptr;
+  su2double *avgPressureTarget = nullptr, *avgDensityTarget = nullptr, *avgNormalVelTarget = nullptr,
+      *avg3DVelTarget = nullptr, *avgTangVelTarget = nullptr, *avgNuTarget = nullptr,
+      *avgOmegaTarget = nullptr, *avgKineTarget = nullptr;
 
 #ifdef HAVE_MPI
   int iSize;

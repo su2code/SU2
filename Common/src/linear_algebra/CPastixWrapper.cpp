@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,8 @@
 
 #include<numeric>
 
-void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
+template<class ScalarType>
+void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *config) {
 
   using namespace PaStiX;
 
@@ -221,9 +222,9 @@ void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
   isinitialized = true;
 }
 
-
-void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
-                               unsigned short kind_fact, bool transposed) {
+template<class ScalarType>
+void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, const CConfig *config,
+                                           unsigned short kind_fact, bool transposed) {
   using namespace PaStiX;
 
   /*--- Detect a possible change of settings between direct and adjoint that requires a reset ---*/
@@ -277,12 +278,13 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
     cout << " +--------------------------------------------------------------------+" << endl;
   }
 
-  unsigned long i, j, iRow, begin, target, source,
+  unsigned long i, j, k, iRow, begin, target, source,
                 szBlk = matrix.nVar*matrix.nVar, nNonZero = values.size();
 
   /*--- Copy matrix values and swap blocks as required ---*/
 
-  memcpy(values.data(), matrix.values, nNonZero*sizeof(passivedouble));
+  for (i = 0; i < nNonZero; ++i)
+    values[i] = SU2_TYPE::GetValue(matrix.values[i]);
 
   for (i = 0; i < sort_rows.size(); ++i)
   {
@@ -294,7 +296,8 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
       target = (begin+j)*szBlk;
       source = sort_order[i][j]*szBlk;
 
-      memcpy(values.data()+target, matrix.values+source, szBlk*sizeof(passivedouble));
+      for (k = 0; k < szBlk; ++k)
+        values[target+k] = SU2_TYPE::GetValue(matrix.values[source+k]);
     }
   }
 
@@ -325,4 +328,10 @@ void CPastixWrapper::Factorize(CGeometry *geometry, CConfig *config,
 
   isfactorized = true;
 }
+
+#ifdef CODI_FORWARD_TYPE
+template class CPastixWrapper<su2double>;
+#else
+template class CPastixWrapper<su2mixedfloat>;
+#endif
 #endif

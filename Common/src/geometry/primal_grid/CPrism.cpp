@@ -2,7 +2,7 @@
  * \file CPrism.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -84,21 +84,12 @@ CPrism::~CPrism() {
   unsigned short iFaces;
 
   for (iFaces = 0; iFaces < nFaces; iFaces++)
-    if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
-  if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
+    if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
+  delete[] Coord_FaceElems_CG;
 
 }
 
 void CPrism::Change_Orientation(void) {
-  unsigned long Point_0, Point_1, Point_3, Point_4;
-
-  Point_0 = Nodes[0];
-  Point_1 = Nodes[1];
-  Point_3 = Nodes[3];
-  Point_4 = Nodes[4];
-  Nodes[0] = Point_1;
-  Nodes[1] = Point_0;
-  Nodes[3] = Point_4;
-  Nodes[4] = Point_3;
-
+  swap(Nodes[0], Nodes[1]);
+  swap(Nodes[3], Nodes[4]);
 }

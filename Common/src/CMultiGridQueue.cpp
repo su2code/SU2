@@ -2,7 +2,7 @@
  * \file CMultiGridQueue.cpp
  * \brief Implementation of the multigrid queue class for the FVM solver.
  * \author F. Palacios
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -144,7 +144,9 @@ void CMultiGridQueue::VisualizeQueue(void) const {
   unsigned short iQ = 0;
   for (const auto& Q : QueueCV) {
     cout << "Number of neighbors " << iQ << ": ";
-    for (auto iPoint : Q) cout << iPoint << " ";
+    for (auto iPoint : Q)
+      if (iPoint != QueueType::ErasedValue)
+        cout << iPoint << " ";
     cout << endl;
     iQ++;
   }
@@ -164,7 +166,8 @@ bool CMultiGridQueue::EmptyQueue(void) const {
 
   if (QueueCV.size() == 1) {
     for (auto iPoint : QueueCV[0])
-      if (RightCV[iPoint]) return false;
+      if ((iPoint != QueueType::ErasedValue) && RightCV[iPoint])
+        return false;
   }
   else {
     for (size_t iQ = 1; iQ < QueueCV.size(); ++iQ)
@@ -183,9 +186,9 @@ void CMultiGridQueue::Update(unsigned long updatePoint, CGeometry *fineGrid) {
 
   RemoveCV(updatePoint);
 
-  for (auto iNode = 0u; iNode < fineGrid->node[updatePoint]->GetnPoint(); ++iNode) {
-    const auto jPoint = fineGrid->node[updatePoint]->GetPoint(iNode);
-    if (!fineGrid->node[jPoint]->GetAgglomerate())
+  for (auto iNode = 0u; iNode < fineGrid->nodes->GetnPoint(updatePoint); ++iNode) {
+    const auto jPoint = fineGrid->nodes->GetPoint(updatePoint,iNode);
+    if (!fineGrid->nodes->GetAgglomerate(jPoint))
       IncrPriorityCV(jPoint);
   }
 }

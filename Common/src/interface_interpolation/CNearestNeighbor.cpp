@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -116,10 +116,10 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
       const auto Point_Target = target_vertex->GetNode();
 
-      if (!target_geometry->node[Point_Target]->GetDomain()) continue;
+      if (!target_geometry->nodes->GetDomain(Point_Target)) continue;
 
       /*--- Coordinates of the target point. ---*/
-      const su2double* Coord_i = target_geometry->node[Point_Target]->GetCoord();
+      const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);
 
       /*--- Compute all distances. ---*/
       for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {

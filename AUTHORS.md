@@ -43,6 +43,7 @@ Copyright holders might be the individual person or their respective employer. I
 ```
 Akshay.K.R
 Alejandro
+Aman uz zaman Baig
 Amit Sachdeva
 Ana Lourenco
 Andrew Burkett
@@ -59,6 +60,7 @@ Daumantas Kavolis
 Dave Taflin
 Eduardo Molina
 Ethan Alan Hereth
+FlorianDm
 Francisco D. Palacios
 Gaurav Bansal
 Giulio Gori
@@ -76,7 +78,9 @@ João Loureiro
 Kedar Naik
 LaSerpe
 Matteo Pini
+Max Le
 Max Sagebaum
+Michele Gaffuri
 Mickael Philit
 Ole Burghardt
 Patrick Mischke
@@ -90,6 +94,7 @@ Ryan Barrett
 Salvatore Vitale
 Samet Cakmakcioglu
 Scott Imlay
+Steffen Schotthöfer
 Steven Endres
 Teus van der Stelt
 Thomas D. Economon
@@ -98,18 +103,22 @@ TobiKattmann
 Trent Lukaczyk
 VivaanKhatri
 Wally Maier
+aaronyicongfu
 anilvar
 bmunguia
 chamsolli
 costat
+cr109
 cvencro
 daniel-linton
 demanosalvas
 dmudiger
 erangit
+flo
 hlkline
 juliendm
 jvanoostrom
+koodlyakshay
 mcolonno
 minkwankim
 padronas

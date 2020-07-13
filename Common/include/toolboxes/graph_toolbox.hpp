@@ -2,7 +2,7 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -68,6 +68,24 @@ public:
   CCompressedSparsePattern() = default;
 
   /*!
+   * \brief Construct with default inner indices.
+   * \param[in] outerPtrBegin - Start of outer pointers.
+   * \param[in] outerPtrEnd - End of outer pointers.
+   * \param[in] defaultInnerIdx - Default value for inner indices.
+   */
+  template<class Iterator>
+  CCompressedSparsePattern(Iterator outerPtrBegin, Iterator outerPtrEnd, Index_t defaultInnerIdx)
+  {
+    const auto size = outerPtrEnd - outerPtrBegin;
+    m_outerPtr.resize(size);
+    Index_t k = 0;
+    for(auto it = outerPtrBegin; it != outerPtrEnd; ++it)
+      m_outerPtr(k++) = *it;
+
+    m_innerIdx.resize(m_outerPtr(size-1)) = defaultInnerIdx;
+  }
+
+  /*!
    * \brief Construct from rvalue refs.
    * \note This is the most efficient constructor as no data copy occurs.
    * \param[in] outerPtr - Outer index pointers.
@@ -100,6 +118,25 @@ public:
 
     /*--- perform a basic sanity check ---*/
     assert(m_innerIdx.size() == m_outerPtr(m_outerPtr.size()-1));
+  }
+
+  /*!
+   * \brief Build from a "list of lists" type object
+   * \param[in] lil - An object with operator [][] and method "size" e.g. vector<vector<?> >.
+   */
+  template<class T>
+  CCompressedSparsePattern(const T& lil)
+  {
+    m_outerPtr.resize(lil.size()+1);
+    m_outerPtr(0) = 0;
+    for(Index_t i=1; i < Index_t(m_outerPtr.size()); ++i)
+      m_outerPtr(i) = m_outerPtr(i-1) + lil[i-1].size();
+
+    m_innerIdx.resize(m_outerPtr(lil.size()));
+    Index_t k = 0;
+    for(Index_t i=0; i < Index_t(lil.size()); ++i)
+      for(Index_t j=0; j < Index_t(lil[i].size()); ++j)
+        m_innerIdx(k++) = lil[i][j];
   }
 
   /*!
@@ -168,6 +205,16 @@ public:
    * \return The index of the i'th inner index associated with the outer index.
    */
   inline Index_t getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) const {
+    assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
+    return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
+  }
+
+  /*!
+   * \param[in] iOuterIdx - Outer index.
+   * \param[in] iNonZero - Relative position of the inner index.
+   * \return The index of the i'th inner index associated with the outer index.
+   */
+  inline Index_t& getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) {
     assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
     return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
   }
@@ -285,6 +332,7 @@ using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowM
 
 
 using CCompressedSparsePatternUL = CCompressedSparsePattern<unsigned long>;
+using CCompressedSparsePatternL = CCompressedSparsePattern<long>;
 using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<unsigned long>;
 
 
@@ -335,14 +383,12 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
        *    neighbors, not duplicating any existing neighbor. ---*/
       for(auto jPoint : addedNeighbors)
       {
-        auto point = geometry.node[jPoint];
-
         if(type == ConnectivityType::FiniteVolume)
         {
           /*--- For FVM we know the neighbors of point j directly. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < point->GetnPoint(); ++iNeigh)
+          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnPoint(jPoint); ++iNeigh)
           {
-            Index_t kPoint = point->GetPoint(iNeigh);
+            Index_t kPoint = geometry.nodes->GetPoint(jPoint, iNeigh);
 
             if(neighbors.count(kPoint) == 0) // no duplication
               newNeighbors.insert(kPoint);
@@ -351,9 +397,9 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
         else // FiniteElement
         {
           /*--- For FEM we need the nodes of all elements that contain point j. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < point->GetnElem(); ++iNeigh)
+          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnElem(jPoint); ++iNeigh)
           {
-            auto elem = geometry.elem[point->GetElem(iNeigh)];
+            auto elem = geometry.elem[geometry.nodes->GetElem(jPoint, iNeigh)];
 
             for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
             {

@@ -2,7 +2,7 @@
  * \file CVertexMap.hpp
  * \brief An index to index lookup vector.
  * \author P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
