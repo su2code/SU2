@@ -3353,20 +3353,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           const su2double V_Vec = V_ij*Vector_ij[iDim]*Vector_ij[iDim]/Dist_ij;
 
           su2double Project_Grad_i = 0.5*Kappa*V_Vec
-                                  + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          su2double Project_Grad_j = -0.5*Kappa*V_Vec 
-                                   - (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+                                   + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+          su2double Project_Grad_j = 0.5*Kappa*V_Vec 
+                                   + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
 
           if (limiter) {
             if (van_albada) {
-              Limiter_i[iVar] = V_Vec*( 2.0*Project_Grad_i + V_Vec) / (4*pow(Project_Grad_i, 2) + pow(V_Vec, 2) + EPS);
-              Limiter_j[iVar] = V_Vec*(-2.0*Project_Grad_j + V_Vec) / (4*pow(Project_Grad_j, 2) + pow(V_Vec, 2) + EPS);
+              Limiter_i[iVar] = V_Vec*(2.0*Project_Grad_i + V_Vec) / (4*pow(Project_Grad_i, 2) + pow(V_Vec, 2) + EPS);
+              Limiter_j[iVar] = V_Vec*(2.0*Project_Grad_j + V_Vec) / (4*pow(Project_Grad_j, 2) + pow(V_Vec, 2) + EPS);
             }
             Project_Grad_i *= Limiter_i[iVar];
             Project_Grad_j *= Limiter_j[iVar];
           }
           Primitive_i[iVar] += Project_Grad_i;
-          Primitive_j[iVar] += Project_Grad_j;
+          Primitive_j[iVar] -= Project_Grad_j;
         }
       }
 
