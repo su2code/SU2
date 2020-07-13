@@ -180,18 +180,22 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         const su2double V_ij = V_j[iVar] - V_i[iVar];
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j -= 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
+            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*V_ij
+                            + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
+                            / (pow(2.0*Project_Grad_i,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)), 0.0);
+            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*V_ij
+                            + (pow(V_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
+                            / (pow(2.0*Project_Grad_j,2.0) + pow(V_ij,2.0) + pow(EPS,2.0)), 0.0);
           }
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
         }
         flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-        flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+        flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
 
       bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
@@ -213,18 +217,22 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         const su2double T_ij = Turb_j[iVar] - Turb_i[iVar];
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j -= 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[iVar] = T_ij*( 2.0*Project_Grad_i + T_ij) / (4*pow(Project_Grad_i, 2) + pow(T_ij, 2) + EPS);
-            Limiter_j[iVar] = T_ij*(-2.0*Project_Grad_j + T_ij) / (4*pow(Project_Grad_j, 2) + pow(T_ij, 2) + EPS);
+            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*T_ij
+                            + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
+                            / (pow(2.0*Project_Grad_i,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)), 0.0);
+            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*T_ij
+                            + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
+                            / (pow(2.0*Project_Grad_j,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)), 0.0);
           }
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
         }
         solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
-        solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
+        solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;
 
         neg_turb_i = neg_turb_i || (solution_i[iVar] < 0.0);
         neg_turb_j = neg_turb_j || (solution_j[iVar] < 0.0);

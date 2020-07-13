@@ -3145,19 +3145,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         const su2double Kappa = config->GetMUSCL_Kappa();
 
         su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-        const su2double Turb_ij = tke_j - tke_i;
+        const su2double T_ij = tke_j - tke_i;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += 0.5*Kappa*Turb_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-          Project_Grad_j += 0.5*Kappa*Turb_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+          Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
+          Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[0] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*Turb_ij
-                            + (pow(Turb_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
-                            / (pow(2.0*Project_Grad_i,2.0) + pow(Turb_ij,2.0) + pow(EPS,2.0)), 0.0);
-            Limiter_j[0] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*Turb_ij
-                            + (pow(Turb_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
-                            / (pow(2.0*Project_Grad_j,2.0) + pow(Turb_ij,2.0) + pow(EPS,2.0)), 0.0);
+            Limiter_i[0] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*T_ij
+                            + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
+                            / (pow(2.0*Project_Grad_i,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)), 0.0);
+            Limiter_j[0] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*T_ij
+                            + (pow(T_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
+                            / (pow(2.0*Project_Grad_j,2.0) + pow(T_ij,2.0) + pow(EPS,2.0)), 0.0);
           }
           Project_Grad_i *= Limiter_i[0];
           Project_Grad_j *= Limiter_j[0];
