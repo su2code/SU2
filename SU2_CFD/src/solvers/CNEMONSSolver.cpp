@@ -2328,7 +2328,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
 
   unsigned short iDim, jDim, iVar, jVar, iSpecies;
-  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve;
   su2double Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
@@ -2369,8 +2369,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   Twall = config->GetIsothermal_Temperature(Marker_Tag);
   TMAC  = 1.0;
   TAC   = 1.0;
-
-  unsigned short VEL_INDEX;
 
   /*--- Extract necessary indices ---*/
   T_INDEX       = nodes->GetTIndex();
