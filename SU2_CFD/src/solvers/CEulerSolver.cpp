@@ -3152,10 +3152,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         if (limiter) {
           if (van_albada) {
-            Limiter_i[iVar] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*Turb_ij
+            Limiter_i[0] = max(((pow(2.0*Project_Grad_i,2.0)+pow(EPS,2.0))*Turb_ij
                             + (pow(Turb_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_i) 
                             / (pow(2.0*Project_Grad_i,2.0) + pow(Turb_ij,2.0) + pow(EPS,2.0)), 0.0);
-            Limiter_j[iVar] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*Turb_ij
+            Limiter_j[0] = max(((pow(2.0*Project_Grad_j,2.0)+pow(EPS,2.0))*Turb_ij
                             + (pow(Turb_ij,2.0)+pow(EPS,2.0))*2.0*Project_Grad_j) 
                             / (pow(2.0*Project_Grad_j,2.0) + pow(Turb_ij,2.0) + pow(EPS,2.0)), 0.0);
           }
@@ -3182,11 +3182,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
-      su2double Dist_ij = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Dist_ij += Vector_ij[iDim]*Vector_ij[iDim];
-      }
-      Dist_ij = sqrt(Dist_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
