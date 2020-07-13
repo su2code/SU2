@@ -153,7 +153,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            geometry->node[jPoint]->GetGridVel());
 
     if (muscl) {
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
       const auto Coord_i = geometry->node[iPoint]->GetCoord();
       const auto Coord_j = geometry->node[jPoint]->GetCoord();
@@ -165,12 +164,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Reconstruct mean flow primitive variables. ---*/
 
-      auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
-      auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+      auto FlowGrad_i = flowNodes->GetGradient_Reconstruction(iPoint);
+      auto FlowGrad_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
+      su2double *FlowLim_i = nullptr, *FlowLim_j = nullptr;
       if (limiter) {
-        Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-        Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
+        FlowLim_i = flowNodes->GetLimiter_Primitive(iPoint);
+        FlowLim_j = flowNodes->GetLimiter_Primitive(jPoint);
       }
 
       const su2double Kappa = config->GetMUSCL_Kappa();
@@ -179,8 +179,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
         const su2double V_ij = V_j[iVar] - V_i[iVar];
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*FlowGrad_i[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*FlowGrad_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
@@ -195,8 +195,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
           }
           else {
-            Project_Grad_i *= Limiter_i[iVar];
-            Project_Grad_j *= Limiter_j[iVar];
+            Project_Grad_i *= FlowLim_i[iVar];
+            Project_Grad_j *= FlowLim_j[iVar];
           }
         }
         flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
@@ -208,12 +208,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Reconstruct turbulence variables. ---*/
 
-      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      auto TurbGrad_i = nodes->GetGradient_Reconstruction(iPoint);
+      auto TurbGrad_j = nodes->GetGradient_Reconstruction(jPoint);
 
+      su2double *TurbLim_i = nullptr, *TurbLim_j = nullptr;
       if (limiter) {
-        Limiter_i = nodes->GetLimiter(iPoint);
-        Limiter_j = nodes->GetLimiter(jPoint);
+        TurbLim_i = nodes->GetLimiter(iPoint);
+        TurbLim_j = nodes->GetLimiter(jPoint);
       }
 
       bool neg_turb_i = false, neg_turb_j = false;
@@ -221,8 +222,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
         const su2double T_ij = Turb_j[iVar] - Turb_i[iVar];
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_i[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
@@ -237,8 +238,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0)));
           }
           else {
-            Project_Grad_i *= Limiter_i[iVar];
-            Project_Grad_j *= Limiter_j[iVar];
+            Project_Grad_i *= TurbLim_i[iVar];
+            Project_Grad_j *= TurbLim_j[iVar];
           }
         }
         solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
