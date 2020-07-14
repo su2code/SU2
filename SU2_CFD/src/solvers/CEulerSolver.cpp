@@ -2749,146 +2749,146 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      if (muscl) {
+      // if (muscl) {
 
-        auto Coord_i = geometry->node[iPoint]->GetCoord();
-        auto Coord_j = geometry->node[jPoint]->GetCoord();
+      //   auto Coord_i = geometry->node[iPoint]->GetCoord();
+      //   auto Coord_j = geometry->node[jPoint]->GetCoord();
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-        }
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+      //   }
 
-        if (tkeNeeded) {
-          CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+      //   if (tkeNeeded) {
+      //     CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
 
-          tke_i = turbNodes->GetPrimitive(iPoint,0);
-          tke_j = turbNodes->GetPrimitive(jPoint,0);
+      //     tke_i = turbNodes->GetPrimitive(iPoint,0);
+      //     tke_j = turbNodes->GetPrimitive(jPoint,0);
 
-          /*--- Reconstruct turbulence variables. ---*/
+      //     /*--- Reconstruct turbulence variables. ---*/
 
-          auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-          auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+      //     auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+      //     auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
 
-          su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      //     su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-          if (limiter) {
-            Limiter_i = turbNodes->GetLimiter(iPoint);
-            Limiter_j = turbNodes->GetLimiter(jPoint);
-          }
+      //     if (limiter) {
+      //       Limiter_i = turbNodes->GetLimiter(iPoint);
+      //       Limiter_j = turbNodes->GetLimiter(jPoint);
+      //     }
 
-          const su2double Kappa = config->GetMUSCL_Kappa();
+      //     const su2double Kappa = config->GetMUSCL_Kappa();
 
-          su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-          const su2double T_ij = tke_j - tke_i;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-            Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
-          }
-          if (limiter) {
-            if (van_albada) {
-              su2double a = T_ij + 2.0*Project_Grad_i;
-              su2double b = T_ij;
-              Project_Grad_i = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
-                           + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                           / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-              a = T_ij + 2.0*Project_Grad_j;
-              Project_Grad_j = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
-                           + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                           / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-            }
-            else {
-              Project_Grad_i *= Limiter_i[0];
-              Project_Grad_j *= Limiter_j[0];
-            }
-          }
-          tke_i += Project_Grad_i;
-          tke_j -= Project_Grad_j;
-        }
+      //     su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+      //     const su2double T_ij = tke_j - tke_i;
+      //     for (iDim = 0; iDim < nDim; iDim++) {
+      //       Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
+      //       Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+      //     }
+      //     if (limiter) {
+      //       if (van_albada) {
+      //         su2double a = T_ij + 2.0*Project_Grad_i;
+      //         su2double b = T_ij;
+      //         Project_Grad_i = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+      //                      + (pow(b,2.0)+pow(EPS,2.0))*a) 
+      //                      / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+      //         a = T_ij + 2.0*Project_Grad_j;
+      //         Project_Grad_j = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+      //                      + (pow(b,2.0)+pow(EPS,2.0))*a) 
+      //                      / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+      //       }
+      //       else {
+      //         Project_Grad_i *= Limiter_i[0];
+      //         Project_Grad_j *= Limiter_j[0];
+      //       }
+      //     }
+      //     tke_i += Project_Grad_i;
+      //     tke_j -= Project_Grad_j;
+      //   }
 
-        /*--- Reconstruct primitive variables. ---*/
+      //   /*--- Reconstruct primitive variables. ---*/
 
-        auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-        auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      //   auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      //   auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-        auto V_i = nodes->GetPrimitive(iPoint);
-        auto V_j = nodes->GetPrimitive(jPoint);
+      //   auto V_i = nodes->GetPrimitive(iPoint);
+      //   auto V_j = nodes->GetPrimitive(jPoint);
 
-        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      //   su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-        if (limiter) {
-          Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-          Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-        }
+      //   if (limiter) {
+      //     Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+      //     Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      //   }
 
-        const su2double Kappa = config->GetMUSCL_Kappa();
+      //   const su2double Kappa = config->GetMUSCL_Kappa();
 
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      //   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-          su2double Project_Grad_i = 0.0;
-          su2double Project_Grad_j = 0.0;
+      //     su2double Project_Grad_i = 0.0;
+      //     su2double Project_Grad_j = 0.0;
 
-          const su2double V_ij = V_j[iVar] - V_i[iVar];
+      //     const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-            Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
-          }
+      //     for (iDim = 0; iDim < nDim; iDim++) {
+      //       Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+      //       Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+      //     }
 
-          if (limiter) {
-            if (van_albada) {
-              su2double a = V_ij + 2.0*Project_Grad_i;
-              su2double b = V_ij;
-              Project_Grad_i = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
-                              + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                              / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-              a = V_ij + 2.0*Project_Grad_j;
-              Project_Grad_j = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
-                              + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                              / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-            }
-            else{
-              Project_Grad_i *= Limiter_i[iVar];
-              Project_Grad_j *= Limiter_j[iVar];
-            }
-          }
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
+      //     if (limiter) {
+      //       if (van_albada) {
+      //         su2double a = V_ij + 2.0*Project_Grad_i;
+      //         su2double b = V_ij;
+      //         Project_Grad_i = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+      //                         + (pow(b,2.0)+pow(EPS,2.0))*a) 
+      //                         / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+      //         a = V_ij + 2.0*Project_Grad_j;
+      //         Project_Grad_j = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+      //                         + (pow(b,2.0)+pow(EPS,2.0))*a) 
+      //                         / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+      //       }
+      //       else{
+      //         Project_Grad_i *= Limiter_i[iVar];
+      //         Project_Grad_j *= Limiter_j[iVar];
+      //       }
+      //     }
+      //     Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+      //     Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
 
-        }
+      //   }
 
-        /*--- Check for non-physical solutions after reconstruction. If found, use the
-         cell-average value of the solution. This is a locally 1st order approximation,
-         which is typically only active during the start-up of a calculation. ---*/
+      //   /*--- Check for non-physical solutions after reconstruction. If found, use the
+      //    cell-average value of the solution. This is a locally 1st order approximation,
+      //    which is typically only active during the start-up of a calculation. ---*/
 
-        bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
-        bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
+      //   bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
+      //   bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-        su2double SoundSpeed_i = nodes->GetSoundSpeed(iPoint),     SoundSpeed_j = nodes->GetSoundSpeed(jPoint);
-        su2double ProjVel_i    = nodes->GetProjVel(iPoint,Normal), ProjVel_j    = nodes->GetProjVel(jPoint,Normal);
-        if (!neg_pres_or_rho_i) {
-          GetFluidModel()->SetTDState_Prho(Primitive_i[nDim+1], Primitive_i[nDim+2]);
-          SoundSpeed_i = GetFluidModel()->GetSoundSpeed();
-          ProjVel_i = 0.0;
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
-        }
+      //   su2double SoundSpeed_i = nodes->GetSoundSpeed(iPoint),     SoundSpeed_j = nodes->GetSoundSpeed(jPoint);
+      //   su2double ProjVel_i    = nodes->GetProjVel(iPoint,Normal), ProjVel_j    = nodes->GetProjVel(jPoint,Normal);
+      //   if (!neg_pres_or_rho_i) {
+      //     GetFluidModel()->SetTDState_Prho(Primitive_i[nDim+1], Primitive_i[nDim+2]);
+      //     SoundSpeed_i = GetFluidModel()->GetSoundSpeed();
+      //     ProjVel_i = 0.0;
+      //     for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      //       ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+      //   }
 
-        if (!neg_pres_or_rho_j) {
-          GetFluidModel()->SetTDState_Prho(Primitive_j[nDim+1], Primitive_j[nDim+2]);
-          SoundSpeed_j = GetFluidModel()->GetSoundSpeed();
-          ProjVel_j = 0.0;
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
-        }
+      //   if (!neg_pres_or_rho_j) {
+      //     GetFluidModel()->SetTDState_Prho(Primitive_j[nDim+1], Primitive_j[nDim+2]);
+      //     SoundSpeed_j = GetFluidModel()->GetSoundSpeed();
+      //     ProjVel_j = 0.0;
+      //     for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      //       ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+      //   }
 
-        Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
-        Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
+      //   Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+      //   Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
 
-      }// if muscl
-      else {
+      // }// if muscl
+      // else {
         Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
         Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-      }
+      // }
 
       /*--- Adjustment for grid movement ---*/
 
