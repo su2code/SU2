@@ -3284,8 +3284,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               eps = max(K*Range, eps);
             }
             else {
-              eps = max(max(fabs(Project_Grad_i), fabs(Project_Grad_j)),
-                        max(0.5*fabs(V_ij), eps));
+              eps = max(fabs(V_ij), eps);
             }
 
             su2double Delta_p = V_ij, Delta_m = Project_Grad_i;
