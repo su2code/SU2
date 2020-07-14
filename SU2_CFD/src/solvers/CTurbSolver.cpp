@@ -176,8 +176,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double Kappa = config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        su2double Project_Grad_i = 0.5*Kappa*V_ij, Project_Grad_j = 0.5*Kappa*V_ij;
         const su2double V_ij = V_j[iVar] - V_i[iVar];
+        su2double Project_Grad_i = 0.5*Kappa*V_ij, Project_Grad_j = 0.5*Kappa*V_ij;
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += (1.0-Kappa)*FlowGrad_i[iVar][iDim]*Vector_ij[iDim];
           Project_Grad_j += (1.0-Kappa)*FlowGrad_j[iVar][iDim]*Vector_ij[iDim];
@@ -219,8 +219,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       bool neg_turb_i = false, neg_turb_j = false;
       for (iVar = 0; iVar < nVar; iVar++) {
-        su2double Project_Grad_i = 0.5*Kappa*T_ij, Project_Grad_j = 0.5*Kappa*T_ij;
         const su2double T_ij = Turb_j[iVar] - Turb_i[iVar];
+        su2double Project_Grad_i = 0.5*Kappa*T_ij, Project_Grad_j = 0.5*Kappa*T_ij;
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += (1.0-Kappa)*TurbGrad_i[iVar][iDim]*Vector_ij[iDim];
           Project_Grad_j += (1.0-Kappa)*TurbGrad_j[iVar][iDim]*Vector_ij[iDim];
