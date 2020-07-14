@@ -326,11 +326,18 @@ public:
   void Read_Mesh(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
-   * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
+   * \brief Routine to load the grid points from a single zone into the proper SU2 data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
   void LoadLinearlyPartitionedPoints(CConfig *config, CMeshReader *mesh);
+
+  /*!
+   * \brief Routine to load the grid points from a single zone into the proper SU2 data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReader *mesh);
 
   /*!
    * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
@@ -340,11 +347,25 @@ public:
   void LoadLinearlyPartitionedVolumeElements(CConfig *config, CMeshReader *mesh);
 
   /*!
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedVolumeElementsFEM(CConfig *config, CMeshReader *mesh);
+
+  /*!
    * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
   void LoadUnpartitionedSurfaceElements(CConfig *config, CMeshReader *mesh);
+
+  /*!
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedSurfaceElementsFEM(CConfig *config, CMeshReader *mesh);
 
   /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph partitioning in parallel.
@@ -517,56 +538,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetColorFEMGrid_Parallel(CConfig *config) override;
-
-  /*!
-   * \brief Compute the weights of the FEM graph for ParMETIS.
-   * \param[in]  config                       - Definition of the particular problem.
-   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
-   * \param[in]  adjacency                    - Neighbors of the element.
-   * \param[in]  mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level
-                                                and number of DOFs.
-   * \param[out] vwgt                         - Weights of the vertices of the graph, i.e. the elements.
-   * \param[out] adjwgt                       - Weights of the edges of the graph.
-   */
-  void ComputeFEMGraphWeights(
-      CConfig                                    *config,
-      const vector<CFaceOfElement>               &localFaces,
-      const vector<vector<unsigned long> >       &adjacency,
-      const map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel,
-      vector<su2double>                          &vwgt,
-      vector<vector<su2double> >                 &adjwgt);
-
-  /*!
-   * \brief Determine the donor elements for the boundary elements on viscous
-            wall boundaries when wall functions are used.
-   * \param[in]  config - Definition of the particular problem.
-   */
-  void DetermineDonorElementsWallFunctions(CConfig *config);
-
-  /*!
-   * \brief Determine whether or not the Jacobians of the elements and faces
-            are constant and a length scale of the elements.
-   * \param[in]  config - Definition of the particular problem.
-   */
-  void DetermineFEMConstantJacobiansAndLenScale(CConfig *config);
-
-  /*!
-   * \brief Determine the neighboring information for periodic faces of a FEM grid.
-   * \param[in]     config      - Definition of the particular problem.
-   * \param[in,out] localFaces  - Vector, which contains the element faces of this rank.
-   */
-  void DeterminePeriodicFacesFEMGrid(CConfig                *config,
-                                     vector<CFaceOfElement> &localFaces);
-
-  /*!
-   * \brief Determine the time level of the elements when time accurate local time stepping is employed.
-   * \param[in]  config                       - Definition of the particular problem.
-   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
-   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of DOFs.
-   */
-  void DetermineTimeLevelElements(CConfig                              *config,
-                                  const vector<CFaceOfElement>         &localFaces,
-                                  map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Do an implicit smoothing of the grid coordinates.

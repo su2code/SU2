@@ -27,35 +27,23 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
-CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
-                                         unsigned long         val_domainElementID,
-                                         unsigned short        val_VTK_Type,
-                                         unsigned short        val_nPolyGrid,
-                                         unsigned short        val_nDOFsGrid,
-                                         vector<unsigned long> &val_nodes)
-{
-  /*--- Store the integer data in the member variables of this object. ---*/
+CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long *dataElem) {
 
-  VTK_Type = val_VTK_Type;
-  nDim = (VTK_Type == LINE) ? 1 : 2;
-
-  nPolyGrid = val_nPolyGrid;
-  nDOFsGrid = val_nDOFsGrid;
-
-  boundElemIDGlobal = val_elemGlobalID;
-  DomainElement     = val_domainElementID;
+  /*--- Store the meta data for this element. ---*/
+  VTK_Type          = (unsigned short) dataElem[0];
+  nPolyGrid         = (unsigned short) dataElem[1];
+  nDOFsGrid         = (unsigned short) dataElem[2];
+  boundElemIDGlobal = dataElem[3];
+  DomainElement     = dataElem[4];
 
   /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and copy them from val_nodes.                        ---*/
-
+        the geometry and copy them from val_nodes. ---*/
   Nodes = new unsigned long[nDOFsGrid];
   for(unsigned short i=0; i<nDOFsGrid; i++)
-    Nodes[i] = val_nodes[i];
+    Nodes[i] = dataElem[i+5];
 
-  /*--- For a linear quadrilateral the two last node numbers must be swapped,
-        such that the element numbering is consistent with the FEM solver.    ---*/
-
-  if(nPolyGrid == 1 && VTK_Type == QUADRILATERAL) swap(Nodes[2], Nodes[3]);
+  /*--- Determine the dimension of the boundary element. ---*/
+  nDim = (VTK_Type == LINE) ? 1 : 2;
 }
 
 CPrimalGridBoundFEM::~CPrimalGridBoundFEM(){}
@@ -68,7 +56,6 @@ void CPrimalGridBoundFEM::GetLocalCornerPointsFace(unsigned short elementType,
 
   /*--- Determine the element type and set the face data accordingly.
         The faceConn values are local to the element.                 ---*/
-
   switch( elementType ) {
     case LINE:
       nPointsPerFace = 2;
@@ -103,20 +90,8 @@ void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
   GetLocalCornerPointsFace(VTK_Type, nPolyGrid, nDOFsGrid,
                            nPointsPerFace[0], thisFaceConn);
 
-
   /*--- Convert the local values of thisFaceConn to global values. ---*/
 
   for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
     faceConn[0][j] = Nodes[thisFaceConn[j]];
-}
-
-void CPrimalGridBoundFEM::RemoveMultipleDonorsWallFunctions(void) {
-
-  /* Sort donorElementsWallFunctions in increasing order and remove the
-     the double entities. */
-  sort(donorElementsWallFunctions.begin(), donorElementsWallFunctions.end());
-  vector<unsigned long>::iterator lastEntry;
-  lastEntry = unique(donorElementsWallFunctions.begin(),
-                     donorElementsWallFunctions.end());
-  donorElementsWallFunctions.erase(lastEntry, donorElementsWallFunctions.end());
 }

@@ -183,9 +183,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
   CLinearPartitioner elemPartitioner(numberOfGlobalElements,0);
   const unsigned long firstIndex = elemPartitioner.GetFirstIndexOnRank(rank);
 
-  /*--- The box always has 6 markers. Allocate the memory for the marker
-        names and the first index of surfaceElementConnectivity. ---*/
+  /*--- The box always has 6 markers. Allocate the required memory. ---*/
   numberOfMarkers = 6;
+  numberOfLocalSurfaceElements.resize(numberOfMarkers, 0);
   surfaceElementConnectivity.resize(numberOfMarkers);
   markerNames.resize(numberOfMarkers);
 
@@ -213,6 +213,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[0].push_back((kNode+1)*mNode*nNode + jNode*nNode);
         surfaceElementConnectivity[0].push_back(kNode*mNode*nNode + (jNode+1)*nNode);
         surfaceElementConnectivity[0].push_back((kNode+1)*mNode*nNode + (jNode+1)*nNode);
+
+        /*--- Update the number of surface elements for this marker. ---*/
+        ++numberOfLocalSurfaceElements[0];
       }
     }
   }
@@ -241,6 +244,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[1].push_back(kNode*mNode*nNode + (jNode+1)*nNode + (nNode-1));
         surfaceElementConnectivity[1].push_back((kNode+1)*mNode*nNode + jNode*nNode + (nNode-1));
         surfaceElementConnectivity[1].push_back((kNode+1)*mNode*nNode + (jNode+1)*nNode + (nNode-1));
+
+        /*--- Update the number of surface elements for this marker. ---*/
+        ++numberOfLocalSurfaceElements[1];
       } 
     }
   }
@@ -269,6 +275,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[2].push_back(kNode*mNode*nNode + iNode+1);
         surfaceElementConnectivity[2].push_back((kNode+1)*mNode*nNode + iNode);
         surfaceElementConnectivity[2].push_back((kNode+1)*mNode*nNode + iNode+1);
+
+        /*--- Update the number of surface elements for this marker. ---*/
+        ++numberOfLocalSurfaceElements[2];
       }
     }
   }
@@ -297,6 +306,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[3].push_back(kNode*mNode*nNode + (mNode-1)*nNode + iNode+1);
         surfaceElementConnectivity[3].push_back((kNode+1)*mNode*nNode + (mNode-1)*nNode + iNode);
         surfaceElementConnectivity[3].push_back((kNode+1)*mNode*nNode + (mNode-1)*nNode + iNode+1);
+
+        /*--- Update the number of surface elements for this marker. ---*/
+        ++numberOfLocalSurfaceElements[3];
       }
     }
   }
@@ -325,6 +337,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[4].push_back(jNode*nNode + iNode+1);
         surfaceElementConnectivity[4].push_back((jNode+1)*nNode + iNode);
         surfaceElementConnectivity[4].push_back((jNode+1)*nNode + iNode+1);
+
+        /*--- Update the number of surface elements for this marker. ---*/
+        ++numberOfLocalSurfaceElements[4];
       }
     }
   }
@@ -353,6 +368,9 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[5].push_back((pNode-1)*mNode*nNode + jNode*nNode + iNode+1);
         surfaceElementConnectivity[5].push_back((pNode-1)*mNode*nNode + (jNode+1)*nNode + iNode);
         surfaceElementConnectivity[5].push_back((pNode-1)*mNode*nNode + (jNode+1)*nNode + iNode+1);
+
+        /*--- Update the number of surface elements for this marker. ---*/
+        ++numberOfLocalSurfaceElements[6];
       }
     }
   }

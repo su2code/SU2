@@ -166,9 +166,9 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
   CLinearPartitioner elemPartitioner(numberOfGlobalElements,0);
   const unsigned long firstIndex = elemPartitioner.GetFirstIndexOnRank(rank);
 
-  /*--- The rectangle always has 4 markers. Allocate the memory for the marker
-        names and the first index of surfaceElementConnectivity. ---*/
+  /*--- The rectangle always has 4 markers. Allocate the required memory. ---*/
   numberOfMarkers = 4;
+  numberOfLocalSurfaceElements.resize(numberOfMarkers, 0);
   surfaceElementConnectivity.resize(numberOfMarkers);
   markerNames.resize(numberOfMarkers);
 
@@ -192,6 +192,9 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       surfaceElementConnectivity[0].push_back(iNode);
       surfaceElementConnectivity[0].push_back(iNode+1);
+
+      /*--- Update the number of surface elements for this marker. ---*/
+      ++numberOfLocalSurfaceElements[0];
     }
   }
 
@@ -215,6 +218,9 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       surfaceElementConnectivity[1].push_back(jNode*nNode + (nNode-1));
       surfaceElementConnectivity[1].push_back((jNode+1)*nNode + (nNode-1));
+
+      /*--- Update the number of surface elements for this marker. ---*/
+      ++numberOfLocalSurfaceElements[1];
     }
   }
 
@@ -238,6 +244,9 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       surfaceElementConnectivity[2].push_back((mNode-1)*nNode + iNode+1);
       surfaceElementConnectivity[2].push_back((mNode-1)*nNode + iNode);
+
+      /*--- Update the number of surface elements for this marker. ---*/
+      ++numberOfLocalSurfaceElements[2];
     }
   }
 
@@ -261,6 +270,9 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       surfaceElementConnectivity[3].push_back((jNode+1)*nNode + (nNode-1));
       surfaceElementConnectivity[3].push_back(jNode*nNode + (nNode-1));
+
+      /*--- Update the number of surface elements for this marker. ---*/
+      ++numberOfLocalSurfaceElements[3];
     }
   }
 }

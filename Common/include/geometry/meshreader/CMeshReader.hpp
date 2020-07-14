@@ -106,6 +106,14 @@ public:
   inline unsigned short GetDimension() const {
     return dimension;
   }
+
+  /*!
+   * \brief Get the global IDs of the local points.
+   * \returns Reference to the vector containing the global points IDs.
+   */
+  inline const vector<unsigned long> &GetGlobalPointIDs() const {
+    return globalPointIDs;
+  }
   
   /*!
    * \brief Get the local point coordinates (linearly partitioned).
@@ -122,6 +130,14 @@ public:
    */
   inline const vector<unsigned long> &GetSurfaceElementConnectivityForMarker(int val_iMarker) const {
     return surfaceElementConnectivity[val_iMarker];
+  }
+
+  /*!
+   * \brief Get the number surface elements for all markers.
+   * \returns Reference to the vector containing the number of surface elements for all markers.
+   */
+  inline const vector<unsigned long> &GetNumberOfSurfaceElementsAllMarkers() const {
+    return numberOfLocalSurfaceElements;
   }
   
   /*!

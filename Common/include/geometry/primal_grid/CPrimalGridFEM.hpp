@@ -42,10 +42,8 @@ private:
   unsigned short nPolySol;      /*!< \brief Polynomial degree for the solution of the element. */
   unsigned short nDOFsGrid;     /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short nDOFsSol;      /*!< \brief Number of DOFs for the solution of the element. */
-  unsigned short nFaces;        /*!< \brief Number of faces of the element. */
 
   unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
-  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
   unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
 
   bool JacobianConsideredConstant;   /*!< \brief Whether or not the Jacobian of the transformation to
@@ -54,41 +52,10 @@ private:
 public:
 
   /*!
-   * \brief Constructor of the class.
-   */
-  CPrimalGridFEM(void);
-
-  /*!
    * \brief Constructor using data to initialize the element.
-   * \param[in] val_elemGlobalID - Global element ID of this element.
-   * \param[in] val_VTK_Type     - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
-   * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
-   * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
-   * \param[in] elem_line        - istringstream, which contains the grid node numbers of the element.
+   * \param[in] dataElem - Meta and connectivity data for this element.
    */
-  CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
-                 unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
-                 unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                 unsigned long  val_offDOfsSol,   istringstream  &elem_line);
-
-  /*!
-   * \brief Constructor using data to initialize the element.
-   * \param[in] val_elemGlobalID - Global element ID of this element.
-   * \param[in] val_VTK_Type     - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
-   * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
-   * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
-   * \param[in] connGrid         - Array, which contains the grid node numbers of the element.
-   */
-  CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
-                 unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
-                 unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                 unsigned long  val_offDOfsSol,   const unsigned long *connGrid);
+  CPrimalGridFEM(const unsigned long *dataElem); 
 
   /*!
    * \brief Destructor of the class.
@@ -96,18 +63,9 @@ public:
   ~CPrimalGridFEM(void) override;
 
   /*!
-   * \brief Get the node shared by the element
-   * \param[in] val_node - Local (to the element) index of the node.
-   * \return Global index of the node.
+   * \brief Change the orientation of an element.
    */
-  inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
-
-  /*!
-   * \brief Get the number of nodes that composes a face of an element.
-   * \param[in] val_face - Local index of the face.
-   * \return Number of nodes that composes a face of an element.
-   */
-  inline unsigned short GetnNodesFace(unsigned short val_face) override { return -1; }
+  inline void Change_Orientation(void) override {}
 
   /*!
    * \brief Get the face index of an element.
@@ -115,7 +73,32 @@ public:
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
    * \return Local (to the element) index of the nodes that compose the face.
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return -1; }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return -1; }  
+
+  /*!
+   * \brief Get the Maximum number of nodes of a face of an element.
+   * \return Maximum number of nodes of a face of an element.
+   */
+  inline unsigned short GetMaxNodesFace(void) override { return -1; }
+
+  /*!
+   * \brief Get the number of faces of an element.
+   * \return Number of faces of an element.
+   */
+  inline unsigned short GetnFaces(void) override { return -1; }  
+
+  /*!
+   * \brief Get the number of element that are neighbor to this element.
+   * \return Number of neighbor elements.
+   */
+  inline unsigned short GetnNeighbor_Elements(void) override { return -1; }
+
+  /*!
+   * \brief Get the number of neighbors nodes of a node.
+   * \param[in] val_node - Local (to the element) index of a node.
+   * \return Number if neighbors of a node val_node.
+   */
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return -1; }  
 
   /*!
    * \brief Get the local index of the neighbors to a node (given the local index).
@@ -132,88 +115,24 @@ public:
   inline unsigned short GetnNodes(void) override { return nDOFsGrid; }
 
   /*!
-   * \brief Get the number of faces of an element.
-   * \return Number of faces of an element.
+   * \brief Get the number of nodes that composes a face of an element.
+   * \param[in] val_face - Local index of the face.
+   * \return Number of nodes that composes a face of an element.
    */
-  inline unsigned short GetnFaces(void) override { return nFaces; }
+  inline unsigned short GetnNodesFace(unsigned short val_face) override { return -1; }
 
   /*!
-   * \brief Get the number of neighbors nodes of a node.
-   * \param[in] val_node - Local (to the element) index of a node.
-   * \return Number if neighbors of a node val_node.
+   * \brief Get the node shared by the element
+   * \param[in] val_node - Local (to the element) index of the node.
+   * \return Global index of the node.
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return -1; }
-
-  /*!
-   * \brief Change the orientation of an element.
-   */
-  inline void Change_Orientation(void) override {}
-
-  /*!
-   * \brief Make available the global ID of this element.
-   * \return The global ID of this element.
-   */
-  inline unsigned long GetGlobalElemID(void) override { return elemIDGlobal; }
-
-  /*!
-   * \brief Make available the global offset of the solution DOFs of this element.
-   * \return The global offset of the solution DOFs.
-   */
-  inline unsigned long GetGlobalOffsetDOFsSol(void) override { return offsetDOFsSolGlobal; }
-
-  /*!
-   * \brief Get the number of element that are neighbor to this element.
-   * \return Number of neighbor elements.
-   */
-  inline unsigned short GetnNeighbor_Elements(void) override { return nFaces; }
-
-  /*!
-   * \brief Get the Maximum number of nodes of a face of an element.
-   * \return Maximum number of nodes of a face of an element.
-   */
-  inline unsigned short GetMaxNodesFace(void) override { return -1; }
+  inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
 
   /*!
    * \brief Get the type of the element using VTK nomenclature.
    * \return Type of the element using VTK nomenclature.
    */
   inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
-
-  /*!
-   * \brief Get the polynomial degree of the grid for this element.
-   * \return The polynomial degree of the grid.
-   */
-  inline unsigned short GetNPolyGrid(void) override { return nPolyGrid; }
-
-  /*!
-   * \brief Get the polynomial degree of the solution for this element.
-   * \return The polynomial degree of the solution.
-   */
-  inline unsigned short GetNPolySol(void) override { return nPolySol; }
-
-  /*!
-   * \brief Function to make available the number of DOFs of the grid in the element.
-   * \return The number of DOFs of the grid in the element.
-   */
-  inline unsigned short GetNDOFsGrid(void) override { return nDOFsGrid; }
-
-  /*!
-   * \brief Function to make available the number of DOFs of the solution in the element.
-   * \return The number of DOFs of the solution in the element.
-   */
-  inline unsigned short GetNDOFsSol(void) override { return nDOFsSol; }
-
-  /*!
-   * \brief Get all the corner points of all the faces of this element. It must be made sure
-           that the numbering of the faces is identical to the numbering used for the
-           standard elements.
-   * \param[out] nFaces         - Number of faces of this element.
-   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
-   * \param[out] faceConn       - Global IDs of the corner points of the faces.
-   */
-  void GetCornerPointsAllFaces(unsigned short &numFaces,
-                               unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]) override;
 
   /*!
    * \brief Static member function to get the local the corner points of all the faces
@@ -232,33 +151,10 @@ public:
                                            unsigned short &numFaces,
                                            unsigned short nPointsPerFace[],
                                            unsigned long  faceConn[6][4]);
-  /*!
-   * \brief Function to get whether or not the Jacobian is considered constant.
-   * \return True if the Jacobian is (almost) constant and false otherwise.
-   */
-  inline bool GetJacobianConsideredConstant(void) override { return JacobianConsideredConstant; }
+private:
 
   /*!
-   * \brief Set the color of the element.
-   * \param[in] val_color - New color of the element.
+   * \brief Default constructor, disabled.
    */
-  inline void SetColor(unsigned long val_color) override { color = val_color; }
-
-  /*!
-   * \brief Get the color of the element for the partitioning.
-   * return - The color of the element in the partitioning.
-   */
-  inline unsigned long GetColor(void) override { return color; }
-
-  /*!
-   * \brief Function to set the value of JacobianConsideredConstant.
-   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
-   */
-  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) override {JacobianConsideredConstant = val_JacobianConsideredConstant;}
-
-  /*!
-   * \brief Function to correct the offset of the global DOFs.
-   * \param[in] val_offsetRank - The offset that must be added for this rank.
-   */
-  inline void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) override {offsetDOFsSolGlobal += val_offsetRank;}
+  CPrimalGridFEM(void);
 };

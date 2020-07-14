@@ -1,7 +1,7 @@
 /*!
  * \file CPrimalGridFEM.cpp
- * \brief Main classes for defining the primal grid elements
- * \author F. Palacios
+ * \brief Class for defining the primal grid element of the FEM solver
+ * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,78 +26,29 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
-
-CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
-                               unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
-                               unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   istringstream  &elem_line)
-{
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
-  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
-
-  nPolyGrid = val_nPolyGrid;
-  nPolySol  = val_nPolySol;
-  nDOFsGrid = val_nDOFsGrid;
-  nDOFsSol  = val_nDOFsSol;
-
-  elemIDGlobal        = val_elemGlobalID;
-  offsetDOFsSolGlobal = val_offDOfsSol;
-
-  /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and read them from elem_line.                        ---*/
-  Nodes = new unsigned long[nDOFsGrid];
-  for(unsigned short i=0; i<nDOFsGrid; i++)
-    elem_line >> Nodes[i];
-
-  /*--- If a linear element is used, the node numbering for non-simplices
-        must be adapted. The reason is that compatability with the original
-        SU2 format is maintained for linear elements, but for the FEM solver
-        the nodes of the elements are stored row-wise.                       ---*/
-  if(nPolyGrid == 1){
-    switch( VTK_Type ) {
-
-      case QUADRILATERAL:
-        swap(Nodes[2], Nodes[3]);
-        break;
-
-      case HEXAHEDRON:
-        swap(Nodes[2], Nodes[3]);
-        swap(Nodes[6], Nodes[7]);
-        break;
-
-      case PYRAMID:
-        swap(Nodes[2], Nodes[3]);
-        break;
-    }
-  }
-}
-
-CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
-                               unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
-                               unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid)
-{
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
-  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
-
-  nPolyGrid = val_nPolyGrid;
-  nPolySol  = val_nPolySol;
-  nDOFsGrid = val_nDOFsGrid;
-  nDOFsSol  = val_nDOFsSol;
-
-  elemIDGlobal        = val_elemGlobalID;
-  offsetDOFsSolGlobal = val_offDOfsSol;
-
-  /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and copy the data from connGrid. ---*/
-  Nodes = new unsigned long[nDOFsGrid];
-  for(unsigned short i=0; i<nDOFsGrid; i++)
-    Nodes[i] = connGrid[i];
-}
+#include "../../../include/fem/fem_standard_element.hpp"
 
 CPrimalGridFEM::~CPrimalGridFEM(){}
+
+CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem) {
+
+  /*--- Store the meta data for this element. ---*/
+  VTK_Type     = (unsigned short) dataElem[0];
+  nPolyGrid    = (unsigned short) dataElem[1];
+  nPolySol     = (unsigned short) dataElem[2];
+  nDOFsGrid    = (unsigned short) dataElem[3];
+  nDOFsSol     = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
+  elemIDGlobal = dataElem[4];
+
+  /*--- Allocate the memory for the global nodes of the element to define
+        the geometry and copy the data from dataElem. ---*/
+  Nodes = new unsigned long[nDOFsGrid];
+  for(unsigned short i=0; i<nDOFsGrid; ++i)
+    Nodes[i] = dataElem[i+5];
+
+  /*--- Determine the dimension of the element. ---*/
+  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
+}
 
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
                                                   unsigned short nPoly,
@@ -162,27 +113,4 @@ void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
       nPointsPerFace[5] = 4; faceConn[5][0] = nPoly; faceConn[5][1] = nPoly+nn4; faceConn[5][2] = nn2+nn4;   faceConn[5][3] = nn2;
       break;
   }
-}
-
-void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
-                                             unsigned short nPointsPerFace[],
-                                             unsigned long  faceConn[6][4]) {
-
-  /*--- Get the corner points of the faces local to the element. ---*/
-
-  GetLocalCornerPointsAllFaces(VTK_Type, nPolyGrid, nDOFsGrid,
-                               numFaces, nPointsPerFace, faceConn);
-
-  /*--- Convert the local values of faceConn to global values. ---*/
-
-  for(unsigned short i=0; i<numFaces; ++i) {
-    for(unsigned short j=0; j<nPointsPerFace[i]; ++j) {
-      unsigned long nn = faceConn[i][j];
-      faceConn[i][j] = Nodes[nn];
-    }
-  }
-
-  /*--- Store numFaces in nFaces for later purposes. ---*/
-
-  nFaces = numFaces;
 }

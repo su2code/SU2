@@ -3738,7 +3738,13 @@ void CPhysicalGeometry::Read_Mesh(CConfig        *config,
   /*--- Make a distinction between the FVM solver and FEM solver how to load
         the grid data in the member variables of CPhysicalGeometry. ---*/
   if( fem_solver ) {
-    SU2_MPI::Error("Loading FEM solver not implemented yet!", CURRENT_FUNCTION);
+
+    /*--- Load the grid points, volume elements, and surface elements
+     from the mesh object into the proper SU2 data structures. ---*/
+
+    LoadLinearlyPartitionedPointsFEM(config,          Mesh);
+    LoadLinearlyPartitionedVolumeElementsFEM(config,  Mesh);
+    LoadLinearlyPartitionedSurfaceElementsFEM(config, Mesh);
   }
   else {
 
@@ -3773,7 +3779,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig     *config,
   nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
-  /*--- Loop over the CGNS grid nodes and load into the SU2 data
+  /*--- Loop over the grid nodes and load into the SU2 data
    structure. Note that since we have performed a linear partitioning
    of the grid nodes, we can simply initialize the global index to
    the first node that lies on our rank and increment. ---*/
@@ -3801,7 +3807,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig     *confi
   const vector<unsigned long> &connElems =
   mesh->GetLocalVolumeElementConnectivity();
 
-  /*--- Allocate space for the CGNS interior elements in our SU2 data
+  /*--- Allocate space for the interior elements in our SU2 data
    structure. Note that we only instantiate our rank's local set. ---*/
 
   elem = new CPrimalGrid*[nElem] ();
@@ -3970,7 +3976,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig     *config,
     unsigned long iElem = 0;
     vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON);
 
-    /*--- Loop over all sections that we extracted from the CGNS file
+    /*--- Loop over all sections that we extracted from the grid file
      that were identified as boundary element sections so that we can
      store those elements into our SU2 data structures. ---*/
 

@@ -389,9 +389,6 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int                    val
 
 void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
-  /*--- This function only needs to do something when MPI is used. ---*/
-#ifdef HAVE_MPI
-
   /*--- Determine the linear partitioning of the points. ---*/
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
 
@@ -419,6 +416,9 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
   /*--- Determine the number of locally stored points. ---*/
   numberOfLocalPoints = globalPointIDs.size();
+
+ /*--- This rest of this function only needs to done when MPI is used. ---*/
+#ifdef HAVE_MPI
 
   /*--- Store the global ID's of the points in such a way that they can
         be sent to the rank that actually stores the coordinates.. ---*/
