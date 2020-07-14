@@ -801,7 +801,8 @@ enum ENUM_LIMITER {
   VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
   SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
   WALL_DISTANCE        = 6, /*!< \brief Slope limiter using wall distance. */
-  VENKATAKRISHNAN_EDGE = 7 /*!< \brief Slope limiter using Venkatakrishnan method (edge formulation). */
+  VENKATAKRISHNAN_EDGE = 7, /*!< \brief Slope limiter using Venkatakrishnan method (edge formulation). */
+  VENKATAK_WANG_EDGE   = 8 /*!< \brief Slope limiter using Venkatakrishnan method, eps based on solution (edge formulation). */
 };
 static const MapType<string, ENUM_LIMITER> Limiter_Map = {
   MakePair("NONE", NO_LIMITER)
@@ -812,6 +813,7 @@ static const MapType<string, ENUM_LIMITER> Limiter_Map = {
   MakePair("SHARP_EDGES", SHARP_EDGES)
   MakePair("WALL_DISTANCE", WALL_DISTANCE)
   MakePair("VENKATAKRISHNAN_EDGE", VENKATAKRISHNAN_EDGE)
+  MakePair("VENKAT_WANG_EDGE", VENKAT_WANG_EDGE)
 };
 
 /*!

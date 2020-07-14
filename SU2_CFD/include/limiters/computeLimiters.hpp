@@ -75,6 +75,7 @@ computeLimiters_impl<FieldType, GradientType, KIND>(solver, kindMpiComm, \
       break;
     }
     case VENKATAKRISHNAN_WANG:
+    case VENKAT_WANG_EDGE:
     {
       INSTANTIATE(VENKATAKRISHNAN_WANG);
       break;

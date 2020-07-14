@@ -3056,6 +3056,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
   const bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE);
+  const bool venkat_wang_edge = (config->GetKind_SlopeLimit_Flow() == VENKAT_WANG_EDGE);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
@@ -3182,6 +3183,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             Project_Grad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
+          else if (venkat_wang_edge) {
+            const su2double K     = config->GetVenkat_LimiterCoeff();
+            const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
+            const su2double eps   = max(pow(K*Range, 3.0), EPS);
+
+            su2double Delta_m = Project_Grad_i - T_ij;
+            su2double Delta_p = T_ij;
+            Project_Grad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
+                           / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
+            Delta_m = Project_Grad_j - T_ij;
+            Project_Grad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
+                           / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
+          }
           else {
             Project_Grad_i *= Limiter_i[0];
             Project_Grad_j *= Limiter_j[0];
@@ -3249,6 +3263,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           else if (venkat_edge) {
             const su2double K   = config->GetVenkat_LimiterCoeff();
             const su2double eps = pow (K*Dist_ij, 3.0);
+
+            su2double Delta_m = Project_Grad_i - V_ij;
+            su2double Delta_p = V_ij;
+            Project_Grad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
+                           / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
+            Delta_m = Project_Grad_j - V_ij;
+            Project_Grad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
+                           / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
+          }
+          else if (venkat_wang_edge) {
+            const su2double K     = config->GetVenkat_LimiterCoeff();
+            const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
+            const su2double eps   = max(pow(K*Range, 3.0), EPS);
 
             su2double Delta_m = Project_Grad_i - V_ij;
             su2double Delta_p = V_ij;
