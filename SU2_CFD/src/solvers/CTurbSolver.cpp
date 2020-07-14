@@ -177,30 +177,30 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
         const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
-        su2double Project_Grad_i = Kappa*V_ij, Project_Grad_j = Kappa*V_ij;
+        su2double ProjGrad_i = Kappa*V_ij, ProjGrad_j = Kappa*V_ij;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += (1.0-Kappa)*FlowGrad_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j += (1.0-Kappa)*FlowGrad_j[iVar][iDim]*Vector_ij[iDim];
+          ProjGrad_i += (1.0-Kappa)*FlowGrad_i[iVar][iDim]*Vector_ij[iDim];
+          ProjGrad_j += (1.0-Kappa)*FlowGrad_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            su2double a = Project_Grad_i - V_ij;
+            su2double a = ProjGrad_i - V_ij;
             su2double b = V_ij;
-            Project_Grad_i = ((pow(a,2.0)+pow(EPS,2.0))*b
-                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-            a = Project_Grad_j - V_ij;
-            Project_Grad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
-                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+            ProjGrad_i = ((pow(a,2.0)+pow(EPS,2.0))*b
+                       + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                       / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+            a = ProjGrad_j - V_ij;
+            ProjGrad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
+                       + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                       / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
           }
           else {
-            Project_Grad_i *= FlowLim_i[iVar];
-            Project_Grad_j *= FlowLim_j[iVar];
+            ProjGrad_i *= FlowLim_i[iVar];
+            ProjGrad_j *= FlowLim_j[iVar];
           }
         }
-        flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-        flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
+        flowPrimVar_i[iVar] = V_i[iVar] + ProjGrad_i;
+        flowPrimVar_j[iVar] = V_j[iVar] - ProjGrad_j;
       }
 
       bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
@@ -220,30 +220,30 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       bool neg_turb_i = false, neg_turb_j = false;
       for (iVar = 0; iVar < nVar; iVar++) {
         const su2double T_ij = 0.5*(Turb_j[iVar] - Turb_i[iVar]);
-        su2double Project_Grad_i = Kappa*T_ij, Project_Grad_j = Kappa*T_ij;
+        su2double ProjGrad_i = Kappa*T_ij, ProjGrad_j = Kappa*T_ij;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += (1.0-Kappa)*TurbGrad_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j += (1.0-Kappa)*TurbGrad_j[iVar][iDim]*Vector_ij[iDim];
+          ProjGrad_i += (1.0-Kappa)*TurbGrad_i[iVar][iDim]*Vector_ij[iDim];
+          ProjGrad_j += (1.0-Kappa)*TurbGrad_j[iVar][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
-            su2double a = Project_Grad_i - T_ij;
+            su2double a = ProjGrad_i - T_ij;
             su2double b = T_ij;
-            Project_Grad_i = ((pow(a,2.0)+pow(EPS,2.0))*b
-                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-            a = Project_Grad_j - T_ij;
-            Project_Grad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
-                            + (pow(b,2.0)+pow(EPS,2.0))*a) 
-                            / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+            ProjGrad_i = ((pow(a,2.0)+pow(EPS,2.0))*b
+                       + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                       / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+            a = ProjGrad_j - T_ij;
+            ProjGrad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
+                       + (pow(b,2.0)+pow(EPS,2.0))*a) 
+                       / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
           }
           else {
-            Project_Grad_i *= TurbLim_i[iVar];
-            Project_Grad_j *= TurbLim_j[iVar];
+            ProjGrad_i *= TurbLim_i[iVar];
+            ProjGrad_j *= TurbLim_j[iVar];
           }
         }
-        solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
-        solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;
+        solution_i[iVar] = Turb_i[iVar] + ProjGrad_i;
+        solution_j[iVar] = Turb_j[iVar] - ProjGrad_j;
 
         neg_turb_i = neg_turb_i || (solution_i[iVar] < 0.0);
         neg_turb_j = neg_turb_j || (solution_j[iVar] < 0.0);
