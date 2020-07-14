@@ -650,7 +650,6 @@ void CFluidIteration::Solve(COutput *output,
 
   unsigned long Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
-  bool libROM = config[val_iZone]->GetSave_libROM();
 
   /*--- Synchronization point before a single solver iteration.
         Compute the wall clock time required. ---*/
@@ -681,12 +680,6 @@ void CFluidIteration::Solve(COutput *output,
     if (singlezone && steady) {
       Output(output, geometry, solver, config, Inner_Iter, StopCalc, val_iZone, val_iInst);
     }
-
-#ifdef HAVE_LIBROM
-    if (singlezone && libROM) {
-      solver[0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver[0][INST_0][MESH_0], geometry[0][INST_0][0], config[0], StopCalc);
-    }
-#endif
     
     /*--- If the iteration has converged, break the loop ---*/
     if (StopCalc) break;

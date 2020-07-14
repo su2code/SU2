@@ -14,4 +14,6 @@ option('enable-pastix', type : 'boolean', value : false, description: 'enable Pa
 option('pastix_root', type : 'string', value : 'externals/pastix/', description: 'PaStiX base directory')
 option('scotch_root', type : 'string', value : 'externals/scotch/', description: 'Scotch base directory')
 option('custom-mpi',  type : 'boolean', value : false, description: 'Use custom mpi include and library path from env variables')
+option('librom_root', type : 'string', value : '', description: 'libROM base directory')
+option('enable-librom', type : 'boolean', value : false, description: 'enable LLNL libROM support')
 option('enable-tests',  type : 'boolean', value : false, description: 'Compile Unit Tests')
