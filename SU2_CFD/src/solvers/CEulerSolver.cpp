@@ -2626,6 +2626,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool venkat_edge      = config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE;
 
   /*--- Common preprocessing steps. ---*/
 
@@ -2648,7 +2649,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
+    if (limiter && (iMesh == MESH_0) && !Output && !van_albada && !venkat_edge)
       SetPrimitive_Limiter(geometry, config);
   }
 
@@ -2691,6 +2692,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
@@ -3053,6 +3055,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
@@ -3161,6 +3164,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                          + (pow(b,2.0)+pow(EPS,2.0))*a) 
                          / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
           }
+          else if (venkat_edge) {
+            su2double a = Project_Grad_i - T_ij;
+            su2double b = T_ij;
+            Project_Grad_i = 1.0/(a+EPS) * ((pow(b,2.0) + pow(EPS,2.0))*a + 2.0*pow(a,2.0)*b)
+                           / (pow(b,2.0) + 2.0*pow(a,2.0) + a*b + pow(EPS,2.0));
+            a = Project_Grad_j - T_ij;
+            Project_Grad_j = 1.0/(a+EPS) * ((pow(b,2.0) + pow(EPS,2.0))*a + 2.0*pow(a,2.0)*b)
+                           / (pow(b,2.0) + 2.0*pow(a,2.0) + a*b + pow(EPS,2.0));
+          }
           else {
             Project_Grad_i *= Limiter_i[0];
             Project_Grad_j *= Limiter_j[0];
@@ -3218,6 +3230,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             Project_Grad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
+          }
+          else if (venkat_edge) {
+            su2double a = Project_Grad_i - V_ij;
+            su2double b = V_ij;
+            Project_Grad_i = 1.0/(a+EPS) * ((pow(b,2.0) + pow(EPS,2.0))*a + 2.0*pow(a,2.0)*b)
+                           / (pow(b,2.0) + 2.0*pow(a,2.0) + a*b + pow(EPS,2.0));
+            a = Project_Grad_j - V_ij;
+            Project_Grad_j = 1.0/(a+EPS) * ((pow(b,2.0) + pow(EPS,2.0))*a + 2.0*pow(a,2.0)*b)
+                           / (pow(b,2.0) + 2.0*pow(a,2.0) + a*b + pow(EPS,2.0));
           }
           else{
             Project_Grad_i *= Limiter_i[iVar];

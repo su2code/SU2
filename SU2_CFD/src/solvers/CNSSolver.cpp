@@ -188,7 +188,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada         = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) && 
-                              ((config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
+                            ((config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
+  bool venkat_edge        = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) && 
+                            ((config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
   
   bool restart              = config->GetRestart();
   unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
@@ -223,7 +225,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada && !venkat_edge) {
     SetPrimitive_Limiter(geometry, config);
   }
 
