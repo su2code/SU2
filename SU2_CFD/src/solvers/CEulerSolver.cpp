@@ -3130,9 +3130,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
+        su2double Dist_ij = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+          Dist_ij += 2.0*Vector_ij[iDim];
         }
+        Dist_ij = sqrt(Dist_ij);
 
         auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
         auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
