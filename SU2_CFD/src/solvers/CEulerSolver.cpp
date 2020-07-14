@@ -2776,7 +2776,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       Mean_Density     = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
 
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-      //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
       Lambda_2 = Gamma*(Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb);
       Lambda = (Lambda_1+Lambda_2)*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
@@ -3144,11 +3143,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         const su2double Kappa = config->GetMUSCL_Kappa();
 
-        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+        su2double Project_Grad_i = 0.5*Kappa*T_ij, Project_Grad_j = 0.5*Kappa*T_ij;
         const su2double T_ij = tke_j - tke_i;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-          Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+          Project_Grad_i += (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
+          Project_Grad_j += (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
         }
         if (limiter) {
           if (van_albada) {
@@ -3202,14 +3201,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        su2double Project_Grad_i = 0.5*Kappa*V_ij;
+        su2double Project_Grad_j = 0.5*Kappa*V_ij;
 
         const su2double V_ij = V_j[iVar] - V_i[iVar];
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
         }
 
         if (limiter) {
@@ -3267,7 +3266,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
         su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
-        neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
       }
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
