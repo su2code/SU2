@@ -282,19 +282,20 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   inline void SetValZero(void) { *this = ScalarType(0); }
 
   /*!
-   * \brief Compound operations with scalars and expressions, "this" is not
-   * returned because the expression templates do not cover these operations.
+   * \brief Compound operations with scalars and expressions.
    * \param[in] val/expr - Scalar value or expression.
    */
-#define MAKE_COMPOUND(OP)                                          \
-  void operator OP(ScalarType val) {                               \
-    CSYSVEC_PARFOR                                                 \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;           \
-  }                                                                \
-  template <class T>                                               \
-  void operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
-    CSYSVEC_PARFOR                                                 \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr[i];       \
+#define MAKE_COMPOUND(OP)                                                 \
+  CSysVector& operator OP(ScalarType val) {                               \
+    CSYSVEC_PARFOR                                                        \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
+    return *this;                                                         \
+  }                                                                       \
+  template <class T>                                                      \
+  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
+    CSYSVEC_PARFOR                                                        \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr[i];              \
+    return *this;                                                         \
   }
   MAKE_COMPOUND(+=)
   MAKE_COMPOUND(-=)

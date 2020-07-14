@@ -53,6 +53,14 @@ public:
 template<class T>
 using decay_t = typename std::decay<T>::type;
 
+/*--- Namespace from which the math function implementations come. ---*/
+
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+namespace math = ::codi;
+#else
+namespace math = ::std;
+#endif
+
 /*--- Macro to create expressions and overloads for unary functions. ---*/
 
 #define MAKE_UNARY_FUN(FUN, NAME, IMPL)                                   \
@@ -70,8 +78,8 @@ FORCEINLINE NAME<U> FUN(const CVecExpr<U,T>& u) {                         \
 }
 
 MAKE_UNARY_FUN(operator-, negate_v, -)
-MAKE_UNARY_FUN(abs, abs_v, std::abs)
-MAKE_UNARY_FUN(sqrt, sqrt_v, std::sqrt)
+MAKE_UNARY_FUN(abs, abs_v, math::abs)
+MAKE_UNARY_FUN(sqrt, sqrt_v, math::sqrt)
 
 #undef MAKE_UNARY_FUN
 
@@ -147,9 +155,9 @@ MAKE_BINARY_FUN(operator==, eq_vv, eq_vs, eq_sv, eq_ss)
 MAKE_BINARY_FUN(operator!=, ne_vv, ne_vs, ne_sv, ne_ss)
 MAKE_BINARY_FUN(operator<, lt_vv, lt_vs, lt_sv, lt_ss)
 MAKE_BINARY_FUN(operator>, gt_vv, gt_vs, gt_sv, gt_ss)
-MAKE_BINARY_FUN(max, max_vv, max_vs, max_sv, std::max)
-MAKE_BINARY_FUN(min, min_vv, min_vs, min_sv, std::min)
-MAKE_BINARY_FUN(pow, pow_vv, pow_vs, pow_sv, std::pow)
+MAKE_BINARY_FUN(max, max_vv, max_vs, max_sv, math::max)
+MAKE_BINARY_FUN(min, min_vv, min_vs, min_sv, math::min)
+MAKE_BINARY_FUN(pow, pow_vv, pow_vs, pow_sv, math::pow)
 
 #undef add_ss
 #undef sub_ss

@@ -116,7 +116,7 @@ FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm
 template<class Container>
 FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars) {
   auto x = *vars.innerIter(iPoint);
-  AD::SetPreaccIn(x);
+  AD::SetPreaccIn(x, Double::Size);
   return x;
 }
 
@@ -126,7 +126,7 @@ FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars) {
 template<size_t nVar, class Container>
 FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
   auto x = vars.template get<VectorDbl<nVar> >(iPoint);
-  AD::SetPreaccIn(x, nVar);
+  AD::SetPreaccIn(x, nVar, Double::Size);
   return x;
 }
 
@@ -136,7 +136,7 @@ FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
 template<size_t nRows, size_t nCols, class Container>
 FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& vars) {
   auto x = vars.template get<MatrixDbl<nRows,nCols> >(iPoint);
-  AD::SetPreaccIn(x, nRows, nCols);
+  AD::SetPreaccIn(x, nRows, nCols, Double::Size);
   return x;
 }
 

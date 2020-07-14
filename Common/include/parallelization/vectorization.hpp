@@ -98,6 +98,15 @@ public:
     Scalar s(0); FOREACH s += x_[k] * other[k]; return s;                     \
   }
 
+#ifdef CODI_REVERSE_TYPE
+  template<class U = Scalar_t,
+           typename std::enable_if<std::is_same<U,su2double>::value, bool>::type = 0>
+  FORCEINLINE Array(passivedouble x) { bcast(x); }
+  template<class U = Scalar_t,
+           typename std::enable_if<std::is_same<U,su2double>::value, bool>::type = 0>
+  FORCEINLINE Array& operator= (passivedouble x) { bcast(x); return *this; }
+#endif
+
   ARRAY_BOILERPLATE
 
   /*! copy construct from expression. */

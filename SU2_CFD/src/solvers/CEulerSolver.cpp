@@ -242,7 +242,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     }
 
     if (config->GetUseVectorization() && (omp_get_max_threads() > 1) &&
-        (config->GetEdgeColoringGroupSize() % IntSize != 0)) {
+        (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
       SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
                      "by the SIMD length (4 or 8).", CURRENT_FUNCTION);
     }
@@ -3065,16 +3065,15 @@ void CEulerSolver::EdgeFluxResidual(const CGeometry *geometry, const CConfig *co
   for (auto color : EdgeColoring) {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for(auto k = 0ul; k < color.size; k += IntSize) {
-      Int iEdge = color.indices[k];
-      Double mask = 1;
-
-#if !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
-      for (auto j = 1ul; j < IntSize; ++j) {
-        if (k+j < color.size) iEdge[j] = color.indices[k+j];
-        else mask[j] = 0;
+    for(auto k = 0ul; k < color.size; k += Double::Size) {
+      Int iEdge;
+      Double mask;
+      for (auto j = 0ul; j < Double::Size; ++j) {
+        bool in = (k+j < color.size);
+        mask[j] = in;
+        iEdge[j] = color.indices[k+j*in];
       }
-#endif
+
       if (ReducerStrategy) {
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
       } else {

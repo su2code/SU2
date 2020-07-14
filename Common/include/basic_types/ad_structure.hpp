@@ -385,6 +385,18 @@ namespace AD{
     }
   }
 
+  template<class T>
+  FORCEINLINE void SetPreaccIn(const T& data, const int size_x, const int size_y, const int size_z) {
+    if (!PreaccActive) return;
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
+        for (int k = 0; k < size_z; k++) {
+          if (data[i][j][k].isActive()) PreaccHelper.addInput(data[i][j][k]);
+        }
+      }
+    }
+  }
+
   FORCEINLINE void StartPreacc() {
     if (globalTape.isActive() && PreaccEnabled) {
       PreaccHelper.start();
