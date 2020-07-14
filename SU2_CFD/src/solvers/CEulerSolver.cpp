@@ -3260,7 +3260,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (limiter) {
           if (van_albada) {
             const su2double K   = config->GetVenkat_LimiterCoeff();
-            const su2double eps = pow (K*Dist_ij, 3.0);
+            const su2double eps = pow(K*Dist_ij, 1.5);
 
             su2double Delta_m = Project_Grad_i - 0.5*V_ij;
             su2double Delta_p = 0.5*V_ij;
@@ -3276,12 +3276,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             su2double eps = EPS;
             if (venkat_edge) {
               const su2double K = config->GetVenkat_LimiterCoeff();
-              eps = max(pow(K*Dist_ij, 3.0), eps);
+              eps = max(pow(K*Dist_ij, 1.5), eps);
             }
             else if (venkat_wang_edge) {
               const su2double K     = config->GetVenkat_LimiterCoeff();
               const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
-              eps = max(pow(K*Range, 3.0), eps);
+              eps = max(K*Range, eps);
             }
             else {
               eps = max(max(fabs(Project_Grad_i), fabs(Project_Grad_j)),
