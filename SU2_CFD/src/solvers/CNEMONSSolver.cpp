@@ -178,6 +178,8 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
+  MassFrac_Inf        = config->GetMassFrac_FreeStream();
+
   /*--- Perform the non-dimensionalization for the flow equations using the
     specified reference values. ---*/
   SetNondimensionalization(config, iMesh);
@@ -909,8 +911,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
   }
 
-    cout<<"cat: end of ns SetPrimVar_Compressible"<<endl;
-  exit(0);
+  //  cout<<"cat: end of ns SetPrimVar_Compressible"<<endl;
+  //exit(0);
 
   /*--- Allowing for Primitive Variables to be passed ---*/
   //InitiateComms(geometry, config, PRIMITIVE);

@@ -66,7 +66,8 @@ private:
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   Particle_Mass,                  /*!< \brief Mass of all particles present in the plasma */
   MolarFracWBE,                   /*!< \brief Molar fractions to be used in Wilke/Blottner/Eucken model */
-  phis, mus;                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
+  phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
+  A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
 
   su2activematrix CharElTemp,                    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
@@ -184,7 +185,7 @@ public:
    * \param[out] A - Reference to coefficient array.
    * \param[in] val_reaction - Reaction number indicator.
    */
-  void GetKeqConstants(vector<su2double> A, unsigned short val_Reaction);
+  void GetKeqConstants(unsigned short val_Reaction);
 
   /*!
    * \brief Get species diffusion coefficients with Wilke/Blottner/Eucken transport model.

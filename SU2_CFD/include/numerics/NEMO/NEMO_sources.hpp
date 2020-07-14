@@ -49,7 +49,7 @@ private:
   su2double *dkf, *dkb, *dRfok, *dRbok, *A;
   su2double *Cvvs;
   su2double *Cves;
-  vector<su2double> Cvvsst, estar;
+  vector<su2double> Cvvsst, estar, ws;
 
 public:
 

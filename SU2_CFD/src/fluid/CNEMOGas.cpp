@@ -48,6 +48,8 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
+  frozen = config->GetFrozen();
+
 }
 
 CNEMOGas::~CNEMOGas(){}

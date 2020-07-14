@@ -39,7 +39,9 @@ class CNEMOGas : public CFluidModel {
 
 protected:
   
-  bool viscous;                          /*!< \brief Presence of viscous effects. */
+  bool viscous,                          /*!< \brief Presence of viscous effects. */
+  frozen;                                /*!< \brief Indicates if mixture is frozen. */
+  
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */

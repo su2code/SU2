@@ -37,6 +37,7 @@
 
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 #include <math.h>
+#include <iomanip> //cat:delete
 
 CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
                                        unsigned long val_ndim,
@@ -272,6 +273,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
       rho    = fluidmodel->GetDensity();
       soundspeed = fluidmodel->GetSoundSpeed();
 
+   //    cout << "cat: Density_Inf" << rho << endl;
+   //   cout << "cat: SoundSpeed_Inf" << soundspeed << endl;
+
       for (iDim = 0; iDim < nDim; iDim++){
         sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
       }
@@ -287,15 +291,23 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
       Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
       Solution_Old(iPoint,nSpecies+iDim) = rho*val_mach[iDim]*soundspeed;
     }
-    Solution(iPoint,nSpecies+nDim)       = rhoE;
-    Solution_Old(iPoint,nSpecies+nDim)   = rhoE;
-    Solution(iPoint,nSpecies+nDim+1)     = rhoEve;
-    Solution_Old(iPoint,nSpecies+nDim+1) = rhoEve;
+    Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
+    Solution_Old(iPoint,nSpecies+nDim)   = rho*(energies[0]+0.5*sqvel);
+    Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
+    Solution_Old(iPoint,nSpecies+nDim+1) = rho*(energies[1]);
 
     /*--- Assign primitive variables ---*/
     Primitive(iPoint,T_INDEX)   = val_temperature;
     Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
     Primitive(iPoint,P_INDEX)   = val_pressure;
+
+  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  //    cout <<setprecision(10)<< "cat: Solution[" << iSpecies << "]=" << Solution(iPoint,iSpecies) << endl;
+  //  for (iDim = 0; iDim < nDim; iDim++)
+  //    cout <<setprecision(10)<< "cat: Solution[" << nSpecies+iDim << "]=" << Solution(iPoint,nSpecies+iDim) << endl;
+  //  cout <<setprecision(10)<< "cat: Solution[" << nSpecies+nDim << "]=" << Solution(iPoint,nSpecies+nDim) << endl;
+   // cout <<setprecision(10)<< "cat: Solution[" << nSpecies+nDim+1 << "]=" << Solution(iPoint,nSpecies+nDim+1) << endl;
+   // exit(0);
 
   }
 
@@ -884,6 +896,12 @@ bool CNEMOEulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
   /*--- Convert conserved to primitive variables ---*/
   nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint],
                          dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
+
+ //cout << "cat: SetPrimVar_Compressible" << endl;
+ //cout << "cat: Primitive(iPoint," << T_INDEX << ")=" << Primitive(iPoint,T_INDEX) << endl;
+ //cout << "cat: Primitive(iPoint," << TVE_INDEX << ")=" << Primitive(iPoint,TVE_INDEX) << endl;
+
+
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
@@ -997,7 +1015,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   // Calculate T-R temperature
   V[T_INDEX] = (rhoE - rhoEve - rhoE_f + rhoE_ref - 0.5*rho*sqvel) / rhoCvtr;
   V[RHOCVTR_INDEX] = rhoCvtr;*/
-
+//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//  cout <<setprecision(10)<< "cat: rhos=" << rhos[iSpecies] << endl;
+//  cout <<setprecision(10)<< "cat: rhoE - rho*0.5*sqvel=" << rhoE - rho*0.5*sqvel << endl;
+// cout <<setprecision(10)<< "cat: rhoEve=" << rhoEve << endl;
+//
   vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE - rho*0.5*sqvel, rhoEve);
   V[T_INDEX]   = T[0];
   
@@ -1190,6 +1212,24 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   /*--- Enthalpy ---*/
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
+
+//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//   cout <<setprecision(10)<< "cat: val_eves["  << iSpecies << "]=" << val_eves[iSpecies] << endl;
+//   cout <<setprecision(10)<< "cat: val_cvves[" << iSpecies << "]=" << val_Cvves[iSpecies] << endl;
+//   cout <<setprecision(10)<< "cat: rhos[" << iSpecies << "]=" << V[RHOS_INDEX+iSpecies] << endl;
+// }
+// cout << "cat: rho=" << V[RHO_INDEX] << endl;
+// for (iDim = 0; iDim < nDim; iDim++)
+//   cout <<setprecision(10)<< "cat: Vel[" << iDim << "]=" << V[VEL_INDEX+iDim] << endl;
+// cout <<setprecision(10)<< "cat: T=" << V[T_INDEX] << endl;
+// cout <<setprecision(10)<< "cat: Tve=" << V[TVE_INDEX] << endl;
+// cout <<setprecision(10)<< "cat: rhoCvtr=" << V[RHOCVTR_INDEX] << endl;
+// cout <<setprecision(10)<< "cat: rhoCvve=" << V[RHOCVVE_INDEX] << endl;
+// cout <<setprecision(10)<< "cat: P=" << V[P_INDEX] << endl;
+// cout <<setprecision(10)<< "cat: A=" << V[A_INDEX] << endl;
+//
+// exit(0);
+
 
   return nonPhys;
 }

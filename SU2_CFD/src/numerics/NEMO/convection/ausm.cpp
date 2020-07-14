@@ -189,7 +189,6 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
 
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-  
 
   if (implicit) {
 

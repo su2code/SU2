@@ -509,6 +509,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
   node_infty = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
                                       Temperature_ve_Inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config, FluidModel);
+
+  cout <<   "cat: check infty" << endl;
   check_infty = node_infty->SetPrimVar_Compressible(0,config, FluidModel);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -516,6 +518,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                  Temperature_ve_Inf, nPoint, nDim, nVar,
                                  nPrimVar, nPrimVarGrad, config, FluidModel);
   SetBaseClassPointerToNodes();
+
+  cout <<   "cat: start check nodes" << endl;
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
@@ -586,6 +590,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
       Density_Inf    = FluidModel->GetDensity();
       Soundspeed_Inf = FluidModel->GetSoundSpeed();
 
+   //   cout << "cat: Density_Inf" << Density_Inf << endl;
+   //   cout << "cat: SoundSpeed_Inf" << Soundspeed_Inf << endl;
+
       for (iDim = 0; iDim < nDim; iDim++){
         sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
       }
@@ -605,9 +612,19 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
       nodes->SetSolution(iPoint,Solution);
       nodes->SetSolution_Old(iPoint,Solution);
 
-      counter_local++;
+ //   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+ //     cout << "cat: Solution[" << iSpecies << "]=" << Solution[iSpecies] << endl;
+ //   for (iDim = 0; iDim < nDim; iDim++)
+ //     cout << "cat: Solution[" << nSpecies+iDim << "]=" << Solution[nSpecies+iDim] << endl;
+ //   cout << "cat: Solution[" << nSpecies+nDim << "]=" << Solution[nSpecies+nDim] << endl;
+ //   cout << "cat: Solution[" << nSpecies+nDim+1 << "]=" << Solution[nSpecies+nDim] << endl;
+ //   exit(0);
+
+    counter_local++;
     }
   }
+
+  cout <<   "cat: end check nodes" << endl;
 
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
@@ -793,6 +810,8 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool nonPhys;
   
+
+  cout <<   "cat: preprocessing" << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
@@ -802,6 +821,9 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     /*--- Initialize the convective residual vector ---*/
     LinSysRes.SetBlock_Zero(iPoint);
 
+    //cout <<  "cat: nodes->GetPrimitive(iPoint," << T_INDEX << ")=" << nodes->GetPrimitive(iPoint,T_INDEX) << endl;
+    //cout <<  "cat: nodes->GetPrimitive(iPoint," << TVE_INDEX << ")=" << nodes->GetPrimitive(iPoint,TVE_INDEX) << endl;
+    //exit(0);
   }
 
   /*--- Upwind second order reconstruction ---*/
@@ -1298,8 +1320,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Get conserved & primitive variables from CVariable ---*/
     U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
     V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
-    
-    
+
     /*--- High order reconstruction using MUSCL strategy ---*/
     if (muscl) {
       
@@ -1507,6 +1528,13 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetConservative(nodes->GetSolution(iPoint),   nodes->GetSolution(iPoint));
     numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
 
+    //for(iVar=0;iVar<nVar;iVar++){
+    //  cout << std::setprecision(10)<<  "cat: U_i(iPoint," << iVar<< ")=" << nodes->GetSolution(iPoint,iVar) << endl;
+    //}
+    //for(iVar=0;iVar<nPrimVar;iVar++){
+    //  cout << std::setprecision(10)<<  "cat: V_i(iPoint," << iVar<< ")=" << nodes->GetPrimitive(iPoint, iVar) << endl;
+    //}
+
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(nodes->GetdPdU(iPoint), nodes->GetdPdU(iPoint));
     numerics->SetdTdU(nodes->GetdTdU(iPoint), nodes->GetdTdU(iPoint));
@@ -1547,6 +1575,9 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if(!frozen){
         /*--- Compute the non-equilibrium chemistry ---*/
         numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
+
+         //cout << std::setprecision(10)<<  "cat: Residual(5)=" << Residual[5] << endl;
+
         /*--- Check for errors before applying source to the linear system ---*/
         err = false;
         for (iVar = 0; iVar < nVar; iVar++)
@@ -1567,6 +1598,13 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Compute vibrational energy relaxation ---*/
     /// NOTE: Jacobians don't account for relaxation time derivatives
     numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
+
+    // cout << std::setprecision(10)<<  "cat: Residual(5)=" << Residual[5] << endl;
+
+   // for(iVar=0;iVar<nVar;iVar++)
+   //       cout << std::setprecision(10)<<  "cat: Residual(" << iVar<< ")=" << Residual[iVar] << endl;
+//
+          //exit(0);
     
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -2614,8 +2652,9 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   /*--- Compute the modulus of the free stream velocity ---*/
   ModVel_FreeStream = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++){
     ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+  }
   sqvel = ModVel_FreeStream;
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 

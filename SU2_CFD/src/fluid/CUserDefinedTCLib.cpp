@@ -27,6 +27,8 @@
 
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
 
+#include <iomanip> //cat:delete
+
 CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous): CNEMOGas(config){
 
   nDim = val_nDim;
@@ -43,10 +45,12 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   Enthalpy_Formation.resize(nSpecies,0.0);
   Ref_Temperature.resize(nSpecies,0.0);
   Diss.resize(nSpecies,0.0);
-  Blottner.resize(nSpecies,3) = su2double(0.0);
+  A.resize(5,0.0);
   Omega00.resize(nSpecies,nSpecies,4,0.0);
   Omega11.resize(nSpecies,nSpecies,4,0.0);
-
+  RxnConstantTable.resize(6,5) = su2double(0.0);
+  Blottner.resize(nSpecies,3)  = su2double(0.0);
+  
   if(viscous){ 
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
@@ -647,6 +651,10 @@ vector<su2double> CUserDefinedTCLib::GetMixtureEnergies(){
 
   su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
 
+  rhoEmix = 0.0;
+  rhoEve  = 0.0;
+  denom   = 0.0;
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
     
     // Species formation energy
@@ -681,9 +689,9 @@ vector<su2double> CUserDefinedTCLib::GetMixtureEnergies(){
     Ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1] * Ref_Temperature[nSpecies-1];
     
     // Electron t-r mode contributes to mixture vib-el energy
-    rhoEve += (3.0/2.0) * Ru/MolarMass[nSpecies-1] * (Tve - Ref_Temperature[nSpecies-1]);
+    rhoEve += (3.0/2.0) * Ru/MolarMass[nSpecies-1] * (Tve - Ref_Temperature[nSpecies-1]); //bug? not multiplying by rhos[iSpecies]
   }
-
+  
   energies[0] = rhoEmix/Density;
   energies[1] = rhoEve/Density;
 
@@ -735,7 +743,6 @@ vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
   su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, alpha, af, bf, ab, bb, coeff;
-  vector<su2double> A;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -745,6 +752,9 @@ vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
   epsilon = 80;
   /*--- Define preferential dissociation coefficient ---*/
   alpha = 0.3;
+
+  for( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    ws[iSpecies] = 0.0;
 
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
 
@@ -761,7 +771,7 @@ vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
     Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
 
     /*--- Get the Keq & Arrhenius coefficients ---*/
-    GetKeqConstants(A, iReaction);
+    GetKeqConstants(iReaction);
 
     /*--- Calculate Keq ---*/
     Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
@@ -788,6 +798,7 @@ vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
         bkwRxn *= 0.001*rhos[jSpecies]/MolarMass[jSpecies];
       }
     }
+
     fwdRxn = 1000.0 * kf * fwdRxn;
     bkwRxn = 1000.0 * kb * bkwRxn;
 
@@ -803,10 +814,16 @@ vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
       if (iSpecies != nSpecies) 
         ws[iSpecies] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn);
     }
+    //cout << std::setprecision(10)<<  "cat: fwdRxn-bkwRxn=" << fwdRxn-bkwRxn << endl;
   }
+
+
+
+  return ws;
+
 }
 
-void CUserDefinedTCLib::GetKeqConstants(vector<su2double> A, unsigned short val_Reaction) {
+void CUserDefinedTCLib::GetKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii, iIndex, tbl_offset, pwr;
   su2double N, tmp1, tmp2;
@@ -831,11 +848,11 @@ void CUserDefinedTCLib::GetKeqConstants(vector<su2double> A, unsigned short val_
   iIndex = int(pwr) - tbl_offset;
   if (iIndex <= 0) {
     for (ii = 0; ii < 5; ii++)
-      A[ii] = RxnConstantTable[0][ii];
+      A[ii] = RxnConstantTable(0,ii);
     return;
   } else if (iIndex >= 5) {
     for (ii = 0; ii < 5; ii++)
-      A[ii] = RxnConstantTable[5][ii];
+      A[ii] = RxnConstantTable(5,ii);
     return;
   }
 
@@ -850,12 +867,10 @@ void CUserDefinedTCLib::GetKeqConstants(vector<su2double> A, unsigned short val_
 
   /*--- Interpolate ---*/
   for (ii = 0; ii < 5; ii++) {
-    A[ii] =  (RxnConstantTable[iIndex+1][ii] - RxnConstantTable[iIndex][ii])
+    A[ii] =  (RxnConstantTable(iIndex+1,ii) - RxnConstantTable(iIndex,ii))
         / (tmp2 - tmp1) * (N - tmp1)
-        + RxnConstantTable[iIndex][ii];
+        + RxnConstantTable(iIndex,ii);
   }
-
-  return;
 }
 
 su2double CUserDefinedTCLib::GetEveSourceTerm(){
@@ -924,9 +939,13 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
   }
 
   /*--- Vibrational energy change due to chemical reactions ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    omegaCV += ws[iSpecies]*eve[iSpecies];
+  if(!frozen){
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      omegaCV += ws[iSpecies]*eve[iSpecies];
   }
+
+// cout << std::setprecision(10)<<  "cat: omegaVT=" << omegaVT << endl;
+// cout << std::setprecision(10)<<  "cat: omegaCV=" << omegaCV << endl;
 
   omega = omegaVT + omegaCV;
 
