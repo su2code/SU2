@@ -3288,7 +3288,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                         max(0.5*fabs(V_ij), eps));
             }
 
-            su2double Delta_p = 0.5*V_ij, Delta_m = Project_Grad_i;
+            su2double Delta_p, Delta_m = Project_Grad_i;
+            if (Delta_m > 0) Delta_p = max(max(Project_Grad_i, Project_Grad_j), 0.5*V_ij);
+            else Delta_p = min(min(Project_Grad_i, Project_Grad_j), 0.5*V_ij);
 
             su2double sign = (Delta_p > 0) ? 1.0 : -1.0;
             su2double denom = Delta_p + sign*EPS;
