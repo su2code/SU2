@@ -3288,28 +3288,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                         max(0.5*fabs(V_ij), eps));
             }
 
-            su2double Delta_p, Delta_m = Project_Grad_i;
-            if (Delta_m > 0) Delta_p = max(max(Project_Grad_i, Project_Grad_j), 0.5*V_ij);
-            else Delta_p = min(min(Project_Grad_i, Project_Grad_j), 0.5*V_ij);
-            su2double sign = (Delta_p > 0) ? 1.0 : -1.0;
-            su2double denom = Delta_p + sign*EPS;
-
-            Limiter_i[iVar] = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
-                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0))
-                            / (denom);
+            su2double Delta_p = V_ij, Delta_m = Project_Grad_i;
+            Project_Grad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
+                           / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
 
             Delta_m = Project_Grad_j;
-            if (Delta_m > 0) Delta_p = max(max(Project_Grad_i, Project_Grad_j), 0.5*V_ij);
-            else Delta_p = min(min(Project_Grad_i, Project_Grad_j), 0.5*V_ij);
-            sign = (Delta_p > 0) ? 1.0 : -1.0;
-            denom = Delta_p + sign*EPS;
-
-            Limiter_j[iVar] = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
-                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0))
-                            / (denom);
+            Project_Grad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
+                           / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
-
-          if (!van_albada){
+          else{
             Project_Grad_i *= Limiter_i[iVar];
             Project_Grad_j *= Limiter_j[iVar];
           }
