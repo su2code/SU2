@@ -2782,7 +2782,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
           const su2double T_ij = tke_j - tke_i;
           for (iDim = 0; iDim < nDim; iDim++) {
             Project_Grad_i += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-            Project_Grad_j -= 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+            Project_Grad_j += 0.5*Kappa*T_ij + (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
           }
           if (limiter) {
             if (van_albada) {
@@ -2831,7 +2831,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
           for (iDim = 0; iDim < nDim; iDim++) {
             Project_Grad_i += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-            Project_Grad_j -= 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+            Project_Grad_j += 0.5*Kappa*V_ij + (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
           }
 
           if (limiter) {
