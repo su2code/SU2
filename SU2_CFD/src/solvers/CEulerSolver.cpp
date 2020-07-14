@@ -3250,7 +3250,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double Kappa = config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+        const su2double V_ij = (V_j[iVar] - V_i[iVar]);
         su2double Project_Grad_i = Kappa*V_ij, Project_Grad_j = Kappa*V_ij;
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
@@ -3262,18 +3262,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double K   = config->GetVenkat_LimiterCoeff();
             const su2double eps = pow (K*Dist_ij, 3.0);
 
-            su2double Delta_m = Project_Grad_i - V_ij;
-            su2double Delta_p = V_ij;
+            su2double Delta_m = Project_Grad_i - 0.5*V_ij;
+            su2double Delta_p = 0.5*V_ij;
             Project_Grad_i = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
                            + (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
                            / (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
-            Delta_m = Project_Grad_j - V_ij;
+            Delta_m = Project_Grad_j - 0.5*V_ij;
             Project_Grad_j = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
                            + (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
                            / (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
           }
           else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
-            su2double eps = max(min(fabs(Project_Grad_i-V_ij), fabs(Project_Grad_j-V_ij)), EPS);
+            su2double eps = EPS;
             if (venkat_edge) {
               const su2double K   = config->GetVenkat_LimiterCoeff();
               eps = pow(K*Dist_ij, 3.0);
@@ -3283,9 +3283,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
               eps = max(pow(K*Range, 3.0), EPS);
             }
+            else {
+              eps = max(eps, fabs(Project_Grad_i-0.5*V_ij));
+              eps = max(eps, fabs(Project_Grad_j-0.5*V_ij));
+              eps = max(eps, 0.5*V_ij)
+            }
 
-            su2double Delta_m = Project_Grad_i;
-            su2double Delta_p = 2.0*V_ij;
+            su2double Delta_p = V_ij, Delta_m = Project_Grad_i;
             su2double denom = Delta_p + EPS;
             if (Delta_p < 0) denom = Delta_p - EPS;
             Limiter_i[iVar] = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
