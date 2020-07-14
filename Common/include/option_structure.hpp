@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1381,7 +1381,8 @@ enum ACTDISK_TYPE {
   NET_THRUST = 3,         /*!< \brief User specifies the Net thrust. */
   DRAG_MINUS_THRUST = 4,  /*!< \brief User specifies the D-T. */
   MASSFLOW = 5,           /*!< \brief User specifies the massflow. */
-  POWER = 6               /*!< \brief User specifies the power. */
+  POWER = 6,              /*!< \brief User specifies the power. */
+  VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
 };
 static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1390,6 +1391,7 @@ static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("DRAG_MINUS_THRUST", DRAG_MINUS_THRUST)
   MakePair("MASSFLOW", MASSFLOW)
   MakePair("POWER", POWER)
+  MakePair("VARIABLE_LOAD", VARIABLE_LOAD)
 };
 
 /*!
