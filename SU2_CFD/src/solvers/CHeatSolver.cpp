@@ -1280,7 +1280,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
 
-          /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
+          /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls TK::That creates unexpected behavior ---*/
 
           if ( Boundary == HEAT_FLUX ) {
 
