@@ -3151,13 +3151,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         if (limiter) {
           if (van_albada) {
-            su2double a = 2.0*Project_Grad_i - T_ij;
-            su2double b = T_ij;
-            Project_Grad_i = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+            su2double a = Project_Grad_i - 0.5*T_ij;
+            su2double b = 0.5*T_ij;
+            Project_Grad_i = ((pow(a,2.0)+pow(EPS,2.0))*b
                          + (pow(b,2.0)+pow(EPS,2.0))*a) 
                          / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-            a = 2.0*Project_Grad_j - T_ij;
-            Project_Grad_j = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+            a = Project_Grad_j - 0.5*T_ij;
+            Project_Grad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
                          + (pow(b,2.0)+pow(EPS,2.0))*a) 
                          / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
           }
@@ -3209,13 +3209,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         if (limiter) {
           if (van_albada) {
-            su2double a = 2.0*Project_Grad_i - V_ij;
-            su2double b = V_ij;
-            Project_Grad_i = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+            su2double a = Project_Grad_i - 0.5*V_ij;
+            su2double b = 0.5*V_ij;
+            Project_Grad_i = ((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
-            a = 2.0*Project_Grad_j - V_ij;
-            Project_Grad_j = 0.5*((pow(a,2.0)+pow(EPS,2.0))*b
+            a = Project_Grad_j - 0.5*V_ij;
+            Project_Grad_j = ((pow(a,2.0)+pow(EPS,2.0))*b
                             + (pow(b,2.0)+pow(EPS,2.0))*a) 
                             / (pow(a,2.0) + pow(b,2.0) + pow(EPS,2.0));
           }
