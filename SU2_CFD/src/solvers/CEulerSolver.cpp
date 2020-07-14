@@ -3184,8 +3184,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
           else if (venkat_wang_edge) {
+            CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
             const su2double K     = config->GetVenkat_LimiterCoeff();
-            const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
+            const su2double Range = turbNodes->GetSolution_Max(iPoint,0) - turbNodes->GetSolution_Min(iPoint,0);
             const su2double eps   = max(pow(K*Range, 3.0), EPS);
 
             su2double Delta_m = Project_Grad_i - T_ij;
