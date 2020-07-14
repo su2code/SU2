@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -228,6 +228,7 @@ private:
   bool Inlet_From_File;         /*!< \brief True if the inlet profile is to be loaded from a file. */
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
+  string ActDisk_FileName;      /*!< \brief Filename specifying an actuator disk. */
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
@@ -397,7 +398,6 @@ private:
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
   unsigned long Unst_nIntIter;      /*!< \brief Number of internal iterations (Dual time Method). */
-  unsigned long Dyn_nIntIter;       /*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -412,6 +412,8 @@ private:
   su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
+
+  unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -2953,12 +2955,6 @@ public:
   unsigned long GetUnst_nIntIter(void) const { return Unst_nIntIter; }
 
   /*!
-   * \brief Get the number of internal iterations for the Newton-Raphson Method in nonlinear structural applications.
-   * \return Number of internal iterations.
-   */
-  unsigned long GetDyn_nIntIter(void) const { return Dyn_nIntIter; }
-
-  /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
    * \return Starting direct iteration number for the unsteady adjoint.
    */
@@ -4046,6 +4042,11 @@ public:
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
 
   /*!
+   * \brief Get the number of samples used in quasi-Newton methods.
+   */
+  unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
+
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -4727,6 +4728,12 @@ public:
    * \return Name of the input file for the specified inlet profile.
    */
   string GetInlet_FileName(void) const { return Inlet_Filename; }
+
+  /*!
+   * \brief Get name of the input file for the specified actuator disk.
+   * \return Name of the input file for the specified actuator disk.
+   */
+  string GetActDisk_FileName(void) const { return ActDisk_FileName; }
 
   /*!
    * \brief Get the tolerance used for matching two points on a specified inlet

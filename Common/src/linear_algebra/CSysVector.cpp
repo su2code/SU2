@@ -2,7 +2,7 @@
  * \file CSysVector.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,10 +40,14 @@
  * CSysVector and do not have the same work scheduling must use a
  * SU2_OMP_BARRIER before using the vector.
  */
+#ifdef HAVE_OMP
 #ifdef HAVE_OMP_SIMD
 #define PARALLEL_FOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
 #else
 #define PARALLEL_FOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#endif
+#else
+#define PARALLEL_FOR SU2_OMP_SIMD
 #endif
 
 template<class ScalarType>
