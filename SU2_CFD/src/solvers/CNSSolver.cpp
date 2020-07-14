@@ -189,7 +189,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada         = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) && 
                             ((config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
-  bool venkat_edge        = ((config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKAT_MUNGUIA_EDGE))
+  bool venkat_edge        = ((config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKAT_MUNGUIA_EDGE)) &&
                             ((config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Turb() == VENKAT_MUNGUIA_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
   
   bool restart              = config->GetRestart();
