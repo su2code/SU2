@@ -3199,13 +3199,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
           else if (venkat_munguia_edge) {
+            su2double eps = max(min(fabs(Project_Grad_i-T_ij), fabs(Project_Grad_j-T_ij)), EPS);
             su2double Delta_m = Project_Grad_i - T_ij;
             su2double Delta_p = T_ij;
-            su2double eps = max(min(fabs(Delta_m), fabs(Delta_p)), EPS);
             Project_Grad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
             Delta_m = Project_Grad_j - T_ij;
-            eps = max(min(fabs(Delta_m), fabs(Delta_p)), EPS);
             Project_Grad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
@@ -3299,13 +3298,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
           else if (venkat_munguia_edge) {
+            su2double eps = max(min(fabs(Project_Grad_i-V_ij), fabs(Project_Grad_j-V_ij)), EPS);
             su2double Delta_m = Project_Grad_i - V_ij;
             su2double Delta_p = V_ij;
-            su2double eps = max(min(fabs(Delta_m), fabs(Delta_p)), EPS);
             Project_Grad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
             Delta_m = Project_Grad_j - V_ij;
-            eps = max(min(fabs(Delta_m), fabs(Delta_p)), EPS);
             Project_Grad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
                            / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
