@@ -3133,7 +3133,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Dist_ij = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-          Dist_ij += 2.0*Vector_ij[iDim];
+          Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
         }
         Dist_ij = sqrt(Dist_ij);
 
@@ -3207,7 +3207,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       su2double Dist_ij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-        Dist_ij += 2.0*Vector_ij[iDim];
+        Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
       }
       Dist_ij = sqrt(Dist_ij);
 
