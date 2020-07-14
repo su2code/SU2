@@ -3286,12 +3286,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             else {
               eps = max(eps, fabs(Project_Grad_i-0.5*V_ij));
               eps = max(eps, fabs(Project_Grad_j-0.5*V_ij));
+              eps = max(eps, Project_Grad_i);
+              eps = max(eps, Project_Grad_j);
               eps = max(eps, 0.5*V_ij);
             }
 
             su2double Delta_p = V_ij, Delta_m = Project_Grad_i;
-            su2double denom = Delta_p + EPS;
-            if (Delta_p < 0) denom = Delta_p - EPS;
+            su2double denom = Delta_p + sign(Delta_p)*EPS;
             Limiter_i[iVar] = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m,2.0)*Delta_p)
                             / (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0))
                             / (denom);
