@@ -5014,13 +5014,15 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
+  bool read_mask_from_file = true;
+  
   /*--- Get solver nodes ---*/
   //CVariable* nodes = GetNodes();
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 500; //TODO: create config file option
+  int desired_nodes = 5000; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -5054,7 +5056,6 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     PhiNodes.push_back( sqrt(norm_phi) );
   }
   
-  if (true) {
   unsigned long nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
   Mask.push_back( nodewithMax);
   std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
@@ -5137,24 +5138,43 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   }
-  // manually set masked nodes
-  //for (unsigned long i = 0; i < nPointDomain; i++) {
-  //  //if (i % 2 == 0) {
-  //  if (i < 2000) {
-  //    Mask.push_back(i);
-  //  }
-  //}
+  
+  /*--- Masked Nodes (read from file) ---*/
+  
+  if (read_mask_from_file) {
+    for (int i = 0; i < 13336; i++){
+      Mask.push_back(i);
+    }
+    
+    //std::cout << "Reading " << desired_nodes<< " masked nodes from file" << std::endl;
+    //ifstream in_ref("masked_nodes_2000.csv");
+    //
+    //if (in_ref) {
+    //  std::string line;
+    //  int s = 0;
+    //
+    //  while (getline(in_ref, line)) {
+    //    stringstream sep(line);
+    //    string field;
+    //    while (getline(sep, field, ',') && (s<desired_nodes)) {
+    //      Mask.push_back(stod(field));
+    //      s++;
+    //    }
+    //  }
+    //}
+  }
   
   sort(Mask.begin(),Mask.end());
   
   ofstream fs;
-  std::string fname = "masked_nodes.csv";
+  std::string fname = "masked_nodes_lamcyl_2000.csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
   }
   fs << "\n";
   fs.close();
+  
   
   auto t_end = std::chrono::high_resolution_clock::now();
   double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
@@ -5193,7 +5213,26 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
       if (!MaskedNode(iPoint)) MaskNeighbors.insert(iPoint);
     }
     
-    
+  }
+  
+  switch( config->GetKind_Solver() ) {
+
+    case NAVIER_STOKES: case INC_NAVIER_STOKES: {
+      // Get neighbor of neighbor
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        iPoint = geometry->edges->GetNode(iEdge, 0); jPoint = geometry->edges->GetNode(iEdge, 1);
+        
+        if (MaskNeighbors.find(iPoint) != MaskNeighbors.end()) {
+          if (std::find(Edge_masked.begin(), Edge_masked.end(), iEdge) != Edge_masked.end()) Edge_masked.push_back(iEdge);
+        }
+        
+        else if (MaskNeighbors.find(jPoint) != MaskNeighbors.end()) {
+          if (std::find(Edge_masked.begin(), Edge_masked.end(), iEdge) != Edge_masked.end()) Edge_masked.push_back(iEdge);
+        }
+      }
+      
+    }
+       
   }
   
   ofstream fs;

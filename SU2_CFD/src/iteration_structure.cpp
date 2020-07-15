@@ -561,7 +561,8 @@ bool CFluidIteration::Monitor(COutput *output,
     unsigned short val_iInst)     {
 
   bool StopCalc = false;
-
+  bool rom = (config[val_iZone]->GetReduced_Model());
+  
   StopTime = SU2_MPI::Wtime();
 
   UsedTime = StopTime - StartTime;
@@ -580,7 +581,8 @@ bool CFluidIteration::Monitor(COutput *output,
   StopCalc =  output->GetConvergence();
 
   /*--- If ROM convergence was reached --*/
-  StopCalc = solver[val_iZone][INST_0][MESH_0][0]->GetRom_Convergence();
+  if (rom) {
+    StopCalc = solver[val_iZone][INST_0][MESH_0][0]->GetRom_Convergence(); }
   
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
