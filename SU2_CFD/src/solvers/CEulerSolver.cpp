@@ -3136,7 +3136,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
           Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
-          Area += geometry->edge[iEdge]->GetNormal(iDim)*geometry->edge[iEdge]->GetNormal(iDim);
+          Area += geometry->edge[iEdge]->GetNormal()[iDim]*geometry->edge[iEdge]->GetNormal()[iDim];
         }
         Dist_ij = sqrt(Dist_ij);
         Area = sqrt(Area);
@@ -3222,7 +3222,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
           Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
-          Area += geometry->edge[iEdge]->GetNormal(iDim)*geometry->edge[iEdge]->GetNormal(iDim);
+          Area += geometry->edge[iEdge]->GetNormal()[iDim]*geometry->edge[iEdge]->GetNormal()[iDim];
         }
         Dist_ij = sqrt(Dist_ij);
         Area = sqrt(Area);
