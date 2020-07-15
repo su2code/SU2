@@ -3132,12 +3132,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-        su2double Dist_ij = 0.0;
+        su2double Dist_ij = 0.0, Area = 0.0;;
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
           Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
+          Area += geometry->edge[iEdge]->GetNormal(iDim)*geometry->edge[iEdge]->GetNormal(iDim);
         }
         Dist_ij = sqrt(Dist_ij);
+        Area = sqrt(Area);
 
         auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
         auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
@@ -3174,18 +3176,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           }
           else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
             su2double eps = EPS;
-            if (venkat_edge) {
-              const su2double K = config->GetVenkat_LimiterCoeff();
-              eps = max(pow(K*Dist_ij, 1.5), eps);
-            }
-            else if (venkat_wang_edge) {
-              const su2double K     = config->GetVenkat_LimiterCoeff();
-              const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
-              eps = max(K*Range, eps);
-            }
-            else {
-              eps = max(fabs(T_ij), eps);
-            }
+            // su2double eps_i = EPS, eps_j = EPS;
+            // if (venkat_edge) {
+            //   const su2double K = config->GetVenkat_LimiterCoeff();
+            //   eps_i = max(pow(K*geometry->node[iPoint]->GetVolume()/Area), eps);
+            //   eps_j = max(pow(K*geometry->node[jPoint]->GetVolume()/Area), eps);
+            // }
+            // else if (venkat_wang_edge) {
+            //   const su2double K     = config->GetVenkat_LimiterCoeff();
+            //   const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
+            //   eps_i = max(K*Range, eps_i);
+            // }
+            // else {
+            //   eps_i = max(fabs(T_ij), eps_i);
+            // }
 
             ProjGrad_i = ((pow(T_ij,2.0) + pow(eps,2.0))*ProjGrad_i + 2.0*pow(ProjGrad_i, 2.0)*T_ij)
                        / (pow(T_ij,2.0) + 2.0*pow(ProjGrad_i,2.0) + T_ij*ProjGrad_i + pow(eps,2.0));
@@ -3214,12 +3218,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      su2double Dist_ij = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-        Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
-      }
-      Dist_ij = sqrt(Dist_ij);
+      su2double Dist_ij = 0.0, Area = 0.0;;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+          Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
+          Area += geometry->edge[iEdge]->GetNormal(iDim)*geometry->edge[iEdge]->GetNormal(iDim);
+        }
+        Dist_ij = sqrt(Dist_ij);
+        Area = sqrt(Area);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
@@ -3257,24 +3263,25 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                        / (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
           }
           else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
-            su2double eps = EPS;
+            su2double eps_i = EPS, eps_j = EPS;
             if (venkat_edge) {
               const su2double K = config->GetVenkat_LimiterCoeff();
-              eps = max(pow(K*Dist_ij, 1.5), eps);
+              eps_i = max(pow(K*geometry->node[iPoint]->GetVolume()/Area), eps);
+              eps_j = max(pow(K*geometry->node[jPoint]->GetVolume()/Area), eps);
             }
             else if (venkat_wang_edge) {
               const su2double K     = config->GetVenkat_LimiterCoeff();
               const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
-              eps = max(K*Range, eps);
+              eps_i = max(K*Range, eps_i);
             }
             else {
-              eps = max(fabs(V_ij), eps);
+              eps_i = max(fabs(T_ij), eps_i);
             }
 
-            ProjGrad_i = ((pow(V_ij,2.0) + pow(eps,2.0))*ProjGrad_i + 2.0*pow(ProjGrad_i, 2.0)*V_ij)
-                       / (pow(V_ij,2.0) + 2.0*pow(ProjGrad_i,2.0) + V_ij*ProjGrad_i + pow(eps,2.0));
-            ProjGrad_j = ((pow(V_ij,2.0) + pow(eps,2.0))*ProjGrad_j + 2.0*pow(ProjGrad_j, 2.0)*V_ij)
-                       / (pow(V_ij,2.0) + 2.0*pow(ProjGrad_j,2.0) + V_ij*ProjGrad_j + pow(eps,2.0));
+            ProjGrad_i = ((pow(V_ij,2.0) + pow(eps_i,2.0))*ProjGrad_i + 2.0*pow(ProjGrad_i, 2.0)*V_ij)
+                       / (pow(V_ij,2.0) + 2.0*pow(ProjGrad_i,2.0) + V_ij*ProjGrad_i + pow(eps_i,2.0));
+            ProjGrad_j = ((pow(V_ij,2.0) + pow(eps_j,2.0))*ProjGrad_j + 2.0*pow(ProjGrad_j, 2.0)*V_ij)
+                       / (pow(V_ij,2.0) + 2.0*pow(ProjGrad_j,2.0) + V_ij*ProjGrad_j + pow(eps_j,2.0));
           }
           else{
             ProjGrad_i *= Limiter_i[iVar];
