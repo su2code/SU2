@@ -3272,14 +3272,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             }
 
             su2double Delta_m = ProjGrad_i;
-            su2double Delta_p;
-            if (Delta_m > 0) Delta_p = max(V_ij, ProjGrad_i);
-            else Delta_p = min(V_ij, ProjGrad_i);
+            su2double sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
+            su2double Delta_p = sign*V_ij;
             ProjGrad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m, 2.0)*Delta_p)
                        /  (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
             Delta_m = ProjGrad_j;
-            if (Delta_m > 0) Delta_p = max(V_ij, ProjGrad_j);
-            else Delta_p = min(V_ij, ProjGrad_j);
+            sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
+            Delta_p = sign*V_ij;
             ProjGrad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m, 2.0)*Delta_p)
                        /  (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
