@@ -3266,8 +3266,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             su2double eps_i = EPS, eps_j = EPS;
             if (venkat_edge) {
               const su2double K = config->GetVenkat_LimiterCoeff();
-              eps_i = max(pow(K*geometry->node[iPoint]->GetVolume()/Area), eps);
-              eps_j = max(pow(K*geometry->node[jPoint]->GetVolume()/Area), eps);
+              eps_i = max(pow(K*geometry->node[iPoint]->GetVolume()/Area, 1.5), eps);
+              eps_j = max(pow(K*geometry->node[jPoint]->GetVolume()/Area, 1.5), eps);
             }
             else if (venkat_wang_edge) {
               const su2double K     = config->GetVenkat_LimiterCoeff();
