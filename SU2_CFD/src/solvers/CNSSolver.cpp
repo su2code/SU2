@@ -190,7 +190,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   bool van_albada         = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) && 
                             ((config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
   bool venkat_edge        = ((config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKAT_MUNGUIA_EDGE)) &&
-                            ((config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Turb() == VENKAT_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
+                            ((config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Turb() == VENKAT_MUNGUIA_EDGE) || (config->GetKind_SlopeLimit_Turb() == NO_LIMITER));
   
   bool restart              = config->GetRestart();
   unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
