@@ -3267,19 +3267,24 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
               eps = max(K*Range, eps);
             }
-            else {
-              eps = max(fabs(V_ij), eps);
-            }
 
             su2double Delta_m = ProjGrad_i - 0.5*V_ij;
             su2double sign = 1.0;
             // su2double sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
             su2double Delta_p = sign*0.5*V_ij;
+            if (venkat_munguia_edge) {
+              eps = min(fabs(Delta_m),fabs(Delta_p));
+              eps = max(eps, EPS);
+            }
             ProjGrad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m, 2.0)*Delta_p)
                        /  (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
             Delta_m = ProjGrad_j - 0.5*V_ij;
             // sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
             Delta_p = sign*0.5*V_ij;
+            if (venkat_munguia_edge) {
+              eps = min(fabs(Delta_m),fabs(Delta_p));
+              eps = max(eps, EPS);
+            }
             ProjGrad_j = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m, 2.0)*Delta_p)
                        /  (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
           }
