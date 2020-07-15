@@ -3275,7 +3275,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               eps_i = max(K*Range, eps_i);
             }
             else {
-              eps_i = max(fabs(T_ij), eps_i);
+              eps_i = max(fabs(V_ij), eps_i);
             }
 
             ProjGrad_i = ((pow(V_ij,2.0) + pow(eps_i,2.0))*ProjGrad_i + 2.0*pow(ProjGrad_i, 2.0)*V_ij)
