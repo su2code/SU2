@@ -3268,7 +3268,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               eps = max(K*Range, eps);
             }
 
-            su2double Delta_m = ProjGrad_i - 0.5*V_ij;
+            su2double Delta_m = ProjGrad_i;
             su2double sign = 1.0;
             // su2double sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
             su2double Delta_p = sign*0.5*V_ij;
@@ -3278,7 +3278,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             }
             ProjGrad_i = ((pow(Delta_p,2.0) + pow(eps,2.0))*Delta_m + 2.0*pow(Delta_m, 2.0)*Delta_p)
                        /  (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0));
-            Delta_m = ProjGrad_j - 0.5*V_ij;
+            Delta_m = ProjGrad_j;
             // sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
             Delta_p = sign*0.5*V_ij;
             if (venkat_munguia_edge) {
