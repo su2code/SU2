@@ -3218,7 +3218,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      su2double Dist_ij = 0.0, Area = 0.0;;
+      su2double Dist_ij = 0.0, Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
           Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
@@ -3249,18 +3249,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         if (limiter) {
           if (van_albada) {
-            const su2double K   = config->GetVenkat_LimiterCoeff();
-            const su2double eps = pow(K*Dist_ij, 1.5);
+            const su2double K     = config->GetVenkat_LimiterCoeff();
+            const su2double eps_i = pow(K*geometry->node[iPoint]->GetVolume()/Area, 1.5);
+            const su2double eps_j = pow(K*geometry->node[jPoint]->GetVolume()/Area, 1.5);
 
             su2double Delta_m = ProjGrad_i - 0.5*V_ij;
             su2double Delta_p = 0.5*V_ij;
-            ProjGrad_i = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
-                       + (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
-                       / (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
+            ProjGrad_i = ((pow(Delta_m,2.0) + pow(eps_i,2.0)) * Delta_p
+                       +  (pow(Delta_p,2.0) + pow(eps_i,2.0)) * Delta_m) 
+                       /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps_i,2.0));
             Delta_m = ProjGrad_j - 0.5*V_ij;
-            ProjGrad_j = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
-                       + (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
-                       / (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
+            ProjGrad_j = ((pow(Delta_m,2.0) + pow(eps_j,2.0)) * Delta_p
+                       +  (pow(Delta_p,2.0) + pow(eps_j,2.0)) * Delta_m) 
+                       /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps_j,2.0));
           }
           else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
             su2double eps_i = EPS, eps_j = EPS;
@@ -3281,9 +3282,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             }
 
             ProjGrad_i = ((pow(V_ij,2.0) + pow(eps_i,2.0))*ProjGrad_i + 2.0*pow(ProjGrad_i, 2.0)*V_ij)
-                       / (pow(V_ij,2.0) + 2.0*pow(ProjGrad_i,2.0) + V_ij*ProjGrad_i + pow(eps_i,2.0));
+                       /  (pow(V_ij,2.0) + 2.0*pow(ProjGrad_i,2.0) + V_ij*ProjGrad_i + pow(eps_i,2.0));
             ProjGrad_j = ((pow(V_ij,2.0) + pow(eps_j,2.0))*ProjGrad_j + 2.0*pow(ProjGrad_j, 2.0)*V_ij)
-                       / (pow(V_ij,2.0) + 2.0*pow(ProjGrad_j,2.0) + V_ij*ProjGrad_j + pow(eps_j,2.0));
+                       /  (pow(V_ij,2.0) + 2.0*pow(ProjGrad_j,2.0) + V_ij*ProjGrad_j + pow(eps_j,2.0));
           }
           else{
             ProjGrad_i *= Limiter_i[iVar];
