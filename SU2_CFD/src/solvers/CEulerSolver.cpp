@@ -3269,7 +3269,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             }
 
             su2double Delta_m = ProjGrad_i;
-            su2double sign = 1.0;
             su2double sign = (Delta_m*V_ij > 0) ? 1.0 : -1.0;
             su2double Delta_p = sign*V_ij;
             if (venkat_munguia_edge) {
