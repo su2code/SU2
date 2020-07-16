@@ -542,7 +542,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       
       Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
       
-      if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+      if (jPoint != iPoint)
         Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
 
     }// iNode
@@ -565,7 +565,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     }// if physical boundary
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+    if (jPoint != iPoint)
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
   }// GG

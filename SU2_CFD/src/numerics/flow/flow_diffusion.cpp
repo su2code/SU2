@@ -690,11 +690,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
-
-  // if (TurbVar_Grad_i != NULL) {
-  //   AD::SetPreaccIn(TurbVar_Grad_i, 1, nDim); AD::SetPreaccIn(TurbVar_Grad_j, 1, nDim);
-  //   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
-  // }
   
   unsigned short iVar, jVar, iDim;
   
@@ -722,7 +717,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   for (iVar = 0; iVar < nPrimVar; iVar++) {
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
-
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 

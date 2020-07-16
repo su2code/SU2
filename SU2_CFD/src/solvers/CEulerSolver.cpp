@@ -3919,7 +3919,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
     
-    if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+    if (jPoint != iPoint)
       Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
 
   }// iNode
@@ -3964,7 +3964,7 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
   }
 
   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-  if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+  if (jPoint != iPoint)
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
 }
@@ -4060,7 +4060,7 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
     
-    if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+    if (jPoint != iPoint)
       Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
 
   }// iNode
@@ -4093,7 +4093,7 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
   }// if physical boundary
 
   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-  if ((geometry->node[jPoint]->GetDomain()) && (jPoint != iPoint))
+  if (jPoint != iPoint)
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   
 }
