@@ -2651,7 +2651,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) calc_limiter)
+    if (limiter && (iMesh == MESH_0) && calc_limiter)
       SetPrimitive_Limiter(geometry, config);
   }
 
