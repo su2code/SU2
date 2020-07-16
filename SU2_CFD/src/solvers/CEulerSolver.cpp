@@ -2838,31 +2838,30 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
               const su2double InvR_i = (ProjGrad_i)/(0.5*T_ij+EPS);
               const su2double InvR_j = (ProjGrad_j)/(0.5*T_ij+EPS);
               
-              Limiter_i[0] = 1.0/6.0*(1.0+2.0*R_i);
-              Limiter_j[0] = 1.0/6.0*(1.0+2.0*R_j);
+              ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
+              ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
+
               if (R_i < 0.0) {
-                Limiter_i[0] = 0.0;
+                ProjGrad_i = 0.0;
               }
               else if (R_i < 1.0) {
-                Limiter_i[0] *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                              / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
+                ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+                                 / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
               }
               else {
-                Limiter_i[0] *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-              }
-              if (R_j < 0.0) {
-                Limiter_j[0] = 0.0;
-              }
-              else if (R_j < 1.0) {
-                Limiter_j[0] *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                              / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-              }
-              else {
-                Limiter_j[0] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+                ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
               }
 
-              ProjGrad_i = Limiter_i[0]*ProjGrad_i;
-              ProjGrad_j = Limiter_j[0]*ProjGrad_j;
+              if (R_j < 0.0) {
+                ProjGrad_j = 0.0;
+              }
+              else if (R_j < 1.0) {
+                ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+                                 / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
+              }
+              else {
+                ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+              }
             }
             else{
               ProjGrad_i *= Limiter_i[0];
@@ -2944,31 +2943,30 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
               const su2double InvR_i = (ProjGrad_i)/(0.5*V_ij+EPS);
               const su2double InvR_j = (ProjGrad_j)/(0.5*V_ij+EPS);
               
-              Limiter_i[iVar] = 1.0/6.0*(1.0+2.0*R_i);
-              Limiter_j[iVar] = 1.0/6.0*(1.0+2.0*R_j);
+              ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
+              ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
+
               if (R_i < 0.0) {
-                Limiter_i[iVar] = 0.0;
+                ProjGrad_i = 0.0;
               }
               else if (R_i < 1.0) {
-                Limiter_i[iVar] *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+                ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
                                  / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
               }
               else {
-                Limiter_i[iVar] *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
+                ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
               }
+
               if (R_j < 0.0) {
-                Limiter_j[iVar] = 0.0;
+                ProjGrad_j = 0.0;
               }
               else if (R_j < 1.0) {
-                Limiter_j[iVar] *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+                ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
                                  / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
               }
               else {
-                Limiter_j[iVar] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+                ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
               }
-
-              ProjGrad_i = Limiter_i[iVar]*ProjGrad_i;
-              ProjGrad_j = Limiter_j[iVar]*ProjGrad_j;
             }
             else{
               ProjGrad_i *= Limiter_i[iVar];
@@ -3462,31 +3460,30 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double InvR_i = (ProjGrad_i)/(0.5*T_ij+EPS);
             const su2double InvR_j = (ProjGrad_j)/(0.5*T_ij+EPS);
             
-            Limiter_i[0] = 1.0/6.0*(1.0+2.0*R_i);
-            Limiter_j[0] = 1.0/6.0*(1.0+2.0*R_j);
+            ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
+            ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
+
             if (R_i < 0.0) {
-              Limiter_i[0] = 0.0;
+              ProjGrad_i = 0.0;
             }
             else if (R_i < 1.0) {
-              Limiter_i[0] *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                            / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
+              ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+                               / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
             }
             else {
-              Limiter_i[0] *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-            }
-            if (R_j < 0.0) {
-              Limiter_j[0] = 0.0;
-            }
-            else if (R_j < 1.0) {
-              Limiter_j[0] *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                            / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-            }
-            else {
-              Limiter_j[0] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+              ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
             }
 
-            ProjGrad_i = Limiter_i[0]*ProjGrad_i;
-            ProjGrad_j = Limiter_j[0]*ProjGrad_j;
+            if (R_j < 0.0) {
+              ProjGrad_j = 0.0;
+            }
+            else if (R_j < 1.0) {
+              ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+                               / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
+            }
+            else {
+              ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+            }
           }
           else{
             ProjGrad_i *= Limiter_i[0];
@@ -3581,31 +3578,30 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double InvR_i = (ProjGrad_i)/(0.5*V_ij+EPS);
             const su2double InvR_j = (ProjGrad_j)/(0.5*V_ij+EPS);
             
-            Limiter_i[iVar] = 1.0/6.0*(1.0+2.0*R_i);
-            Limiter_j[iVar] = 1.0/6.0*(1.0+2.0*R_j);
+            ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
+            ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
+            
             if (R_i < 0.0) {
-              Limiter_i[iVar] = 0.0;
+              ProjGrad_i = 0.0;
             }
             else if (R_i < 1.0) {
-              Limiter_i[iVar] *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+              ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
                                / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
             }
             else {
-              Limiter_i[iVar] *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
+              ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
             }
+
             if (R_j < 0.0) {
-              Limiter_j[iVar] = 0.0;
+              ProjGrad_j = 0.0;
             }
             else if (R_j < 1.0) {
-              Limiter_j[iVar] *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+              ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
                                / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
             }
             else {
-              Limiter_j[iVar] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+              ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
             }
-
-            ProjGrad_i = Limiter_i[iVar]*ProjGrad_i;
-            ProjGrad_j = Limiter_j[iVar]*ProjGrad_j;
           }
           else{
             ProjGrad_i *= Limiter_i[iVar];
