@@ -2974,6 +2974,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
               ProjGrad_i *= Limiter_i[iVar];
               ProjGrad_j *= Limiter_j[iVar];
             }
+          }
           Primitive_i[iVar] = V_i[iVar] + ProjGrad_i;
           Primitive_j[iVar] = V_j[iVar] - ProjGrad_j;
 
