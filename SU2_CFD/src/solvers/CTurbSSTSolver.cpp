@@ -286,7 +286,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-  cconst bool edge_limiter_flow  = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) ||
+  const bool edge_limiter_flow  = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) ||
                                   (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) ||
                                   (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG) ||
                                   (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
