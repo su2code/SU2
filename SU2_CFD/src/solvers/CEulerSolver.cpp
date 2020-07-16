@@ -2788,11 +2788,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
           const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
 
           const su2double T_ij = tke_j - tke_i;
-          su2double Project_Grad_i = 0.5*Kappa*T_ij;
-          su2double Project_Grad_j = 0.5*Kappa*T_ij;
+          su2double ProjGrad_i = 0.5*Kappa*T_ij;
+          su2double ProjGrad_j = 0.5*Kappa*T_ij;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-            Project_Grad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+            ProjGrad_i += (1.0-Kappa)*TurbGrad_i[iVar][iDim]*Vector_ij[iDim];
+            ProjGrad_j += (1.0-Kappa)*TurbGrad_j[iVar][iDim]*Vector_ij[iDim];
           }
           if (limiter) {
             if (van_albada) {
@@ -2869,8 +2869,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
               ProjGrad_j *= Limiter_j[0];
             }
           }
-          tke_i += Project_Grad_i;
-          tke_j -= Project_Grad_j;
+          tke_i += ProjGrad_i;
+          tke_j -= ProjGrad_j;
         }
 
         /*--- Reconstruct primitive variables. ---*/
@@ -2893,11 +2893,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
           const su2double V_ij = V_j[iVar] - V_i[iVar];
-          su2double Project_Grad_i = 0.5*Kappa*V_ij;
-          su2double Project_Grad_j = 0.5*Kappa*V_ij;
+          su2double ProjGrad_i = 0.5*Kappa*V_ij;
+          su2double ProjGrad_j = 0.5*Kappa*V_ij;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-            Project_Grad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+            ProjGrad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+            ProjGrad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
           }
 
           if (limiter) {
@@ -2974,8 +2974,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
               ProjGrad_i *= Limiter_i[iVar];
               ProjGrad_j *= Limiter_j[iVar];
             }
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
+          Primitive_i[iVar] = V_i[iVar] + ProjGrad_i;
+          Primitive_j[iVar] = V_j[iVar] - ProjGrad_j;
 
         }
 
