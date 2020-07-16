@@ -3284,16 +3284,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             
             Limiter_i[iVar] = 1.0/3.0*(1.0+2.0*R_i);
             Limiter_j[iVar] = 1.0/3.0*(1.0+2.0*R_j);
-            if (R_i < 1.0) {
-              Limiter_i[iVar] *= (3.0*InvR_i*InvR_i - 6.0*InvR_i + 19.0)
-                               / (InvR_i*InvR_i*InvR_i - 3.0*InvR_i + 18.0);
+            if (R_i < 0.0) {
+              Limiter_i[iVar] = 0.0;
+            }
+            else if (R_i < 1.0) {
+              Limiter_i[iVar] *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+                               / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
             }
             else {
               Limiter_i[iVar] *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
             }
-            if (R_j < 1.0) {
-              Limiter_j[iVar] *= (3.0*InvR_j*InvR_j - 6.0*InvR_j + 19.0)
-                               / (InvR_j*InvR_j*InvR_j - 3.0*InvR_j + 18.0);
+            if (R_j < 0.0) {
+              Limiter_j[iVar] = 0.0;
+            }
+            else if (R_j < 1.0) {
+              Limiter_j[iVar] *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+                               / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
             }
             else {
               Limiter_j[iVar] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
