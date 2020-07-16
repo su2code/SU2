@@ -2755,262 +2755,262 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      if (muscl) {
+      // if (muscl) {
 
-        auto Coord_i = geometry->node[iPoint]->GetCoord();
-        auto Coord_j = geometry->node[jPoint]->GetCoord();
+      //   auto Coord_i = geometry->node[iPoint]->GetCoord();
+      //   auto Coord_j = geometry->node[jPoint]->GetCoord();
 
-        su2double Dist_ij = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-          Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
-        }
-        Dist_ij = sqrt(Dist_ij);
+      //   su2double Dist_ij = 0.0;
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+      //     Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
+      //   }
+      //   Dist_ij = sqrt(Dist_ij);
 
-        if (tkeNeeded) {
-          CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+      //   if (tkeNeeded) {
+      //     CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
 
-          tke_i = turbNodes->GetPrimitive(iPoint,0);
-          tke_j = turbNodes->GetPrimitive(jPoint,0);
+      //     tke_i = turbNodes->GetPrimitive(iPoint,0);
+      //     tke_j = turbNodes->GetPrimitive(jPoint,0);
 
-          /*--- Reconstruct turbulence variables. ---*/
+      //     /*--- Reconstruct turbulence variables. ---*/
 
-          auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-          auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+      //     auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+      //     auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
 
-          su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      //     su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-          if (limiter) {
-            Limiter_i = turbNodes->GetLimiter(iPoint);
-            Limiter_j = turbNodes->GetLimiter(jPoint);
-          }
+      //     if (limiter) {
+      //       Limiter_i = turbNodes->GetLimiter(iPoint);
+      //       Limiter_j = turbNodes->GetLimiter(jPoint);
+      //     }
 
-          const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
+      //     const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
 
-          const su2double T_ij = tke_j - tke_i;
-          su2double ProjGrad_i = 0.5*Kappa*T_ij;
-          su2double ProjGrad_j = 0.5*Kappa*T_ij;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjGrad_i += (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-            ProjGrad_j += (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
-          }
-          if (limiter) {
-            if (van_albada) {
-              const su2double K   = config->GetVenkat_LimiterCoeff();
-              const su2double eps = pow(K*Dist_ij, 1.5);
+      //     const su2double T_ij = tke_j - tke_i;
+      //     su2double ProjGrad_i = 0.5*Kappa*T_ij;
+      //     su2double ProjGrad_j = 0.5*Kappa*T_ij;
+      //     for (iDim = 0; iDim < nDim; iDim++) {
+      //       ProjGrad_i += (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
+      //       ProjGrad_j += (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+      //     }
+      //     if (limiter) {
+      //       if (van_albada) {
+      //         const su2double K   = config->GetVenkat_LimiterCoeff();
+      //         const su2double eps = pow(K*Dist_ij, 1.5);
 
-              su2double Delta_m = ProjGrad_i - 0.5*T_ij;
-              su2double Delta_p = 0.5*T_ij;
-              ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
-                          / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
-              Delta_m = ProjGrad_j - 0.5*T_ij;
-              ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
-                          / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
-            }
-            else if (venkat_edge || venkat_munguia) {
-              su2double eps = EPS;
-              if (venkat_edge) {
-                const su2double K = config->GetVenkat_LimiterCoeff();
-                eps = max(pow(K*Dist_ij, 1.5), eps);
-              }
+      //         su2double Delta_m = ProjGrad_i - 0.5*T_ij;
+      //         su2double Delta_p = 0.5*T_ij;
+      //         ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
+      //                     / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
+      //         Delta_m = ProjGrad_j - 0.5*T_ij;
+      //         ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
+      //                     / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
+      //       }
+      //       else if (venkat_edge || venkat_munguia) {
+      //         su2double eps = EPS;
+      //         if (venkat_edge) {
+      //           const su2double K = config->GetVenkat_LimiterCoeff();
+      //           eps = max(pow(K*Dist_ij, 1.5), eps);
+      //         }
 
-              su2double Delta_m = ProjGrad_i;
-              su2double Delta_p = T_ij;
-              if (venkat_munguia) {
-                eps = min(fabs(Delta_m),fabs(Delta_p));
-                eps = max(eps, EPS);
-              }
-              ProjGrad_i *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                          /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-              Delta_m = ProjGrad_j;
-              Delta_p = T_ij;
-              if (venkat_munguia) {
-                eps = min(fabs(Delta_m),fabs(Delta_p));
-                eps = max(eps, EPS);
-              }
-              ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                          /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-            }
-            else if (piperno) {
-              const su2double R_i = 0.5*T_ij/(ProjGrad_i+EPS);
-              const su2double R_j = 0.5*T_ij/(ProjGrad_j+EPS);
+      //         su2double Delta_m = ProjGrad_i;
+      //         su2double Delta_p = T_ij;
+      //         if (venkat_munguia) {
+      //           eps = min(fabs(Delta_m),fabs(Delta_p));
+      //           eps = max(eps, EPS);
+      //         }
+      //         ProjGrad_i *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
+      //                     /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
+      //         Delta_m = ProjGrad_j;
+      //         Delta_p = T_ij;
+      //         if (venkat_munguia) {
+      //           eps = min(fabs(Delta_m),fabs(Delta_p));
+      //           eps = max(eps, EPS);
+      //         }
+      //         ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
+      //                     /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
+      //       }
+      //       else if (piperno) {
+      //         const su2double R_i = 0.5*T_ij/(ProjGrad_i+EPS);
+      //         const su2double R_j = 0.5*T_ij/(ProjGrad_j+EPS);
 
-              const su2double InvR_i = (ProjGrad_i)/(0.5*T_ij+EPS);
-              const su2double InvR_j = (ProjGrad_j)/(0.5*T_ij+EPS);
+      //         const su2double InvR_i = (ProjGrad_i)/(0.5*T_ij+EPS);
+      //         const su2double InvR_j = (ProjGrad_j)/(0.5*T_ij+EPS);
               
-              ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
-              ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
+      //         ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
+      //         ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
 
-              if (R_i < 0.0) {
-                ProjGrad_i = 0.0;
-              }
-              else if (R_i < 1.0) {
-                ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                                 / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
-              }
-              else {
-                ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-              }
+      //         if (R_i < 0.0) {
+      //           ProjGrad_i = 0.0;
+      //         }
+      //         else if (R_i < 1.0) {
+      //           ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+      //                            / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
+      //         }
+      //         else {
+      //           ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
+      //         }
 
-              if (R_j < 0.0) {
-                ProjGrad_j = 0.0;
-              }
-              else if (R_j < 1.0) {
-                ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                                 / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-              }
-              else {
-                ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
-              }
-            }
-            else{
-              ProjGrad_i *= Limiter_i[0];
-              ProjGrad_j *= Limiter_j[0];
-            }
-          }
-          tke_i += ProjGrad_i;
-          tke_j -= ProjGrad_j;
-        }
+      //         if (R_j < 0.0) {
+      //           ProjGrad_j = 0.0;
+      //         }
+      //         else if (R_j < 1.0) {
+      //           ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+      //                            / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
+      //         }
+      //         else {
+      //           ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+      //         }
+      //       }
+      //       else{
+      //         ProjGrad_i *= Limiter_i[0];
+      //         ProjGrad_j *= Limiter_j[0];
+      //       }
+      //     }
+      //     tke_i += ProjGrad_i;
+      //     tke_j -= ProjGrad_j;
+      //   }
 
-        /*--- Reconstruct primitive variables. ---*/
+      //   /*--- Reconstruct primitive variables. ---*/
 
-        auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-        auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      //   auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      //   auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-        auto V_i = nodes->GetPrimitive(iPoint);
-        auto V_j = nodes->GetPrimitive(jPoint);
+      //   auto V_i = nodes->GetPrimitive(iPoint);
+      //   auto V_j = nodes->GetPrimitive(jPoint);
 
-        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      //   su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-        if (limiter) {
-          Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-          Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-        }
+      //   if (limiter) {
+      //     Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+      //     Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      //   }
 
-        const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
+      //   const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
 
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      //   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-          const su2double V_ij = V_j[iVar] - V_i[iVar];
-          su2double ProjGrad_i = 0.5*Kappa*V_ij;
-          su2double ProjGrad_j = 0.5*Kappa*V_ij;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjGrad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-            ProjGrad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
-          }
+      //     const su2double V_ij = V_j[iVar] - V_i[iVar];
+      //     su2double ProjGrad_i = 0.5*Kappa*V_ij;
+      //     su2double ProjGrad_j = 0.5*Kappa*V_ij;
+      //     for (iDim = 0; iDim < nDim; iDim++) {
+      //       ProjGrad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
+      //       ProjGrad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+      //     }
 
-          if (limiter) {
-            if (van_albada) {
-              const su2double K   = config->GetVenkat_LimiterCoeff();
-              const su2double eps = pow(K*Dist_ij, 1.5);
+      //     if (limiter) {
+      //       if (van_albada) {
+      //         const su2double K   = config->GetVenkat_LimiterCoeff();
+      //         const su2double eps = pow(K*Dist_ij, 1.5);
 
-              su2double Delta_m = ProjGrad_i - 0.5*V_ij;
-              su2double Delta_p = 0.5*V_ij;
-              ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
-                          / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
-              Delta_m = ProjGrad_j - 0.5*V_ij;
-              ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
-                          / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
-            }
-            else if (venkat_edge || venkat_munguia) {
-              su2double eps = EPS;
-              if (venkat_edge) {
-                const su2double K = config->GetVenkat_LimiterCoeff();
-                eps = max(pow(K*Dist_ij, 1.5), eps);
-              }
+      //         su2double Delta_m = ProjGrad_i - 0.5*V_ij;
+      //         su2double Delta_p = 0.5*V_ij;
+      //         ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
+      //                     / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
+      //         Delta_m = ProjGrad_j - 0.5*V_ij;
+      //         ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
+      //                     / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
+      //       }
+      //       else if (venkat_edge || venkat_munguia) {
+      //         su2double eps = EPS;
+      //         if (venkat_edge) {
+      //           const su2double K = config->GetVenkat_LimiterCoeff();
+      //           eps = max(pow(K*Dist_ij, 1.5), eps);
+      //         }
 
-              su2double Delta_m = ProjGrad_i;
-              su2double Delta_p = V_ij;
-              if (venkat_munguia) {
-                eps = min(fabs(Delta_m),fabs(Delta_p));
-                eps = max(eps, EPS);
-              }
-              ProjGrad_i *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                          /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-              Delta_m = ProjGrad_j;
-              Delta_p = V_ij;
-              if (venkat_munguia) {
-                eps = min(fabs(Delta_m),fabs(Delta_p));
-                eps = max(eps, EPS);
-              }
-              ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                          /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-            }
-            else if (piperno) {
-              const su2double R_i = 0.5*V_ij/(ProjGrad_i+EPS);
-              const su2double R_j = 0.5*V_ij/(ProjGrad_j+EPS);
+      //         su2double Delta_m = ProjGrad_i;
+      //         su2double Delta_p = V_ij;
+      //         if (venkat_munguia) {
+      //           eps = min(fabs(Delta_m),fabs(Delta_p));
+      //           eps = max(eps, EPS);
+      //         }
+      //         ProjGrad_i *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
+      //                     /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
+      //         Delta_m = ProjGrad_j;
+      //         Delta_p = V_ij;
+      //         if (venkat_munguia) {
+      //           eps = min(fabs(Delta_m),fabs(Delta_p));
+      //           eps = max(eps, EPS);
+      //         }
+      //         ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
+      //                     /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
+      //       }
+      //       else if (piperno) {
+      //         const su2double R_i = 0.5*V_ij/(ProjGrad_i+EPS);
+      //         const su2double R_j = 0.5*V_ij/(ProjGrad_j+EPS);
 
-              const su2double InvR_i = (ProjGrad_i)/(0.5*V_ij+EPS);
-              const su2double InvR_j = (ProjGrad_j)/(0.5*V_ij+EPS);
+      //         const su2double InvR_i = (ProjGrad_i)/(0.5*V_ij+EPS);
+      //         const su2double InvR_j = (ProjGrad_j)/(0.5*V_ij+EPS);
               
-              ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
-              ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
+      //         ProjGrad_i *= 1.0/6.0*(1.0+2.0*R_i);
+      //         ProjGrad_j *= 1.0/6.0*(1.0+2.0*R_j);
 
-              if (R_i < 0.0) {
-                ProjGrad_i = 0.0;
-              }
-              else if (R_i < 1.0) {
-                ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                                 / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
-              }
-              else {
-                ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-              }
+      //         if (R_i < 0.0) {
+      //           ProjGrad_i = 0.0;
+      //         }
+      //         else if (R_i < 1.0) {
+      //           ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+      //                            / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
+      //         }
+      //         else {
+      //           ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
+      //         }
 
-              if (R_j < 0.0) {
-                ProjGrad_j = 0.0;
-              }
-              else if (R_j < 1.0) {
-                ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                                 / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-              }
-              else {
-                ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
-              }
-            }
-            else{
-              ProjGrad_i *= Limiter_i[iVar];
-              ProjGrad_j *= Limiter_j[iVar];
-            }
-          }
-          Primitive_i[iVar] = V_i[iVar] + ProjGrad_i;
-          Primitive_j[iVar] = V_j[iVar] - ProjGrad_j;
+      //         if (R_j < 0.0) {
+      //           ProjGrad_j = 0.0;
+      //         }
+      //         else if (R_j < 1.0) {
+      //           ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+      //                            / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
+      //         }
+      //         else {
+      //           ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+      //         }
+      //       }
+      //       else{
+      //         ProjGrad_i *= Limiter_i[iVar];
+      //         ProjGrad_j *= Limiter_j[iVar];
+      //       }
+      //     }
+      //     Primitive_i[iVar] = V_i[iVar] + ProjGrad_i;
+      //     Primitive_j[iVar] = V_j[iVar] - ProjGrad_j;
 
-        }
+      //   }
 
-        /*--- Check for non-physical solutions after reconstruction. If found, use the
-         cell-average value of the solution. This is a locally 1st order approximation,
-         which is typically only active during the start-up of a calculation. ---*/
+      //   /*--- Check for non-physical solutions after reconstruction. If found, use the
+      //    cell-average value of the solution. This is a locally 1st order approximation,
+      //    which is typically only active during the start-up of a calculation. ---*/
 
-        bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
-        bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
+      //   bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
+      //   bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-        su2double SoundSpeed_i = nodes->GetSoundSpeed(iPoint),     SoundSpeed_j = nodes->GetSoundSpeed(jPoint);
-        su2double ProjVel_i    = nodes->GetProjVel(iPoint,Normal), ProjVel_j    = nodes->GetProjVel(jPoint,Normal);
-        if (!neg_pres_or_rho_i) {
-          GetFluidModel()->SetTDState_Prho(Primitive_i[nDim+1], Primitive_i[nDim+2]);
-          SoundSpeed_i = GetFluidModel()->GetSoundSpeed();
-          ProjVel_i = 0.0;
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
-        }
+      //   su2double SoundSpeed_i = nodes->GetSoundSpeed(iPoint),     SoundSpeed_j = nodes->GetSoundSpeed(jPoint);
+      //   su2double ProjVel_i    = nodes->GetProjVel(iPoint,Normal), ProjVel_j    = nodes->GetProjVel(jPoint,Normal);
+      //   if (!neg_pres_or_rho_i) {
+      //     GetFluidModel()->SetTDState_Prho(Primitive_i[nDim+1], Primitive_i[nDim+2]);
+      //     SoundSpeed_i = GetFluidModel()->GetSoundSpeed();
+      //     ProjVel_i = 0.0;
+      //     for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      //       ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+      //   }
 
-        if (!neg_pres_or_rho_j) {
-          GetFluidModel()->SetTDState_Prho(Primitive_j[nDim+1], Primitive_j[nDim+2]);
-          SoundSpeed_j = GetFluidModel()->GetSoundSpeed();
-          ProjVel_j = 0.0;
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
-        }
+      //   if (!neg_pres_or_rho_j) {
+      //     GetFluidModel()->SetTDState_Prho(Primitive_j[nDim+1], Primitive_j[nDim+2]);
+      //     SoundSpeed_j = GetFluidModel()->GetSoundSpeed();
+      //     ProjVel_j = 0.0;
+      //     for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      //       ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+      //   }
 
-        Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
-        Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
+      //   Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+      //   Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
 
-      }// if muscl
+      // }// if muscl
       else {
         Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
         Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-      }
+      // }
 
       /*--- Adjustment for grid movement ---*/
 
