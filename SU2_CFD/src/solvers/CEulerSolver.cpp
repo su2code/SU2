@@ -3276,11 +3276,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                         /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
           }
           else if (piperno) {
-            const su2double R_i = 0.5*V_ij/(ProjGrad_i+EPS);
-            const su2double R_j = 0.5*V_ij/(ProjGrad_j+EPS);
+            const su2double R_i = 0.5*V_ij/(ProjGrad_i-0.5*V_ij+EPS);
+            const su2double R_j = 0.5*V_ij/(ProjGrad_j-0.5*V_ij+EPS);
 
-            const su2double InvR_i = ProjGrad_i/(0.5*V_ij+EPS);
-            const su2double InvR_j = ProjGrad_j/(0.5*V_ij+EPS);
+            const su2double InvR_i = (ProjGrad_i-0.5*V_ij)/(0.5*V_ij+EPS);
+            const su2double InvR_j = (ProjGrad_j-0.5*V_ij)/(0.5*V_ij+EPS);
             
             Limiter_i[iVar] = 1.0/6.0*(1.0+2.0*R_i);
             Limiter_j[iVar] = 1.0/6.0*(1.0+2.0*R_j);
@@ -3305,8 +3305,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               Limiter_j[iVar] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
             }
 
-            ProjGrad_i = Limiter_i[iVar]*V_ij;
-            ProjGrad_j = Limiter_j[iVar]*V_ij;
+            ProjGrad_i = Limiter_i[iVar]*ProjGrad_i;
+            ProjGrad_j = Limiter_j[iVar]*ProjGrad_j;
           }
           else{
             ProjGrad_i *= Limiter_i[iVar];
