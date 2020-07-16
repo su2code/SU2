@@ -286,8 +286,17 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
 
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-  const bool van_albada   = (config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) && 
-                            ((config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Flow() == NO_LIMITER));
+  cconst bool edge_limiter_flow  = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) ||
+                                  (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) ||
+                                  (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG) ||
+                                  (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
+                                  (config->GetKind_SlopeLimit_Flow() == NO_LIMITER);
+  const bool edge_limiter_turb  = (config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) ||
+                                  (config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_EDGE) ||
+                                  (config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_MUNG) ||
+                                  (config->GetKind_SlopeLimit_Turb() == PIPERNO) ||
+                                  (config->GetKind_SlopeLimit_Turb() == NO_LIMITER);
+  const bool calc_limiter       = (!edge_limiter_flow) || (!edge_limiter_turb);
   
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -309,7 +318,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
       SetPrimitive_Gradient_LS(geometry, config, true);
   }
 
-  if (limiter_turb && !van_albada) SetPrimitive_Limiter(geometry, config);
+  if (limiter_turb && calc_limiter) SetPrimitive_Limiter(geometry, config);
 
 }
 
