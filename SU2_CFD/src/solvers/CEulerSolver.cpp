@@ -3248,13 +3248,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
             su2double Delta_m = ProjGrad_i - 0.5*V_ij;
             su2double Delta_p = 0.5*V_ij;
-            ProjGrad_i = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
-                       +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
-                       /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
+            // ProjGrad_i = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
+            //            +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
+            //            /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
+            ProjGrad_i = 2.0*(Delta_p*Delta_m)
+                       / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS);
             Delta_m = ProjGrad_j - 0.5*V_ij;
-            ProjGrad_j = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
-                       +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
-                       /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
+            // ProjGrad_j = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
+            //            +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
+            //            /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
+            ProjGrad_j = 2.0*(Delta_p*Delta_m)
+                       / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS);
           }
           else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
             su2double eps = EPS;
