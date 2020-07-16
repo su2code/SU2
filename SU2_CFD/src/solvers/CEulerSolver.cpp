@@ -2791,8 +2791,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
           su2double ProjGrad_i = 0.5*Kappa*T_ij;
           su2double ProjGrad_j = 0.5*Kappa*T_ij;
           for (iDim = 0; iDim < nDim; iDim++) {
-            ProjGrad_i += (1.0-Kappa)*TurbGrad_i[iVar][iDim]*Vector_ij[iDim];
-            ProjGrad_j += (1.0-Kappa)*TurbGrad_j[iVar][iDim]*Vector_ij[iDim];
+            ProjGrad_i += (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
+            ProjGrad_j += (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
           }
           if (limiter) {
             if (van_albada) {
