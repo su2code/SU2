@@ -3231,7 +3231,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = config->GetMUSCL_Kappa();
+      const su2double Kappa = (van_albada_edge) ? 0.0 : config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         const su2double V_ij = (V_j[iVar] - V_i[iVar]);
@@ -3251,14 +3251,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             // ProjGrad_i = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
             //            +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
             //            /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
-            ProjGrad_i *= fabs(2.0*(Delta_p*Delta_m)
-                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS));
+            ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
+                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
             Delta_m = ProjGrad_j - 0.5*V_ij;
             // ProjGrad_j = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
             //            +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
             //            /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
-            ProjGrad_j *= fabs(2.0*(Delta_p*Delta_m)
-                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS));
+            ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
+                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
           }
           else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
             su2double eps = EPS;
