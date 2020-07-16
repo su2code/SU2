@@ -172,8 +172,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       su2double *FlowLim_i = nullptr, *FlowLim_j = nullptr;
       if (limiter) {
-        FlowLim_i = flowNodes->GetFlowLim_Primitive(iPoint);
-        FlowLim_j = flowNodes->GetFlowLim_Primitive(jPoint);
+        FlowLim_i = flowNodes->GetLimiter_Primitive(iPoint);
+        FlowLim_j = flowNodes->GetLimiter_Primitive(jPoint);
       }
 
       const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
