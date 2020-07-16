@@ -6082,8 +6082,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               case VENKATAKRISHNAN_WANG:
                 cout << "Venkatakrishnan-Wang slope-limiting method (node-based), with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
-              case VENKAT_WANG_EDGE:
-                cout << "Venkatakrishnan-Wang slope-limiting method (edge-based), with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              case PIPERNO:
+                cout << "Piperno slope-limiting method (edge-based), with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;

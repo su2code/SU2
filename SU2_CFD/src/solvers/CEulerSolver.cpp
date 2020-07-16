@@ -2620,13 +2620,15 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver, CC
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool cont_adjoint     = config->GetContinuous_Adjoint();
-  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKAT_MUNGUIA_EDGE);
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool cont_adjoint      = config->GetContinuous_Adjoint();
+  const bool muscl             = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  const bool limiter           = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool center            = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  const bool van_albada        = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const bool venkat_edge       = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG);
+  const bool piperno           = config->GetKind_SlopeLimit_Flow == PIPERNO;
+  const bool calc_limiter      = (!van_albada) && (!piperno) && (!venkat_edge) && (!Output);
 
   /*--- Common preprocessing steps. ---*/
 
@@ -2649,7 +2651,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada && !venkat_edge)
+    if (limiter && (iMesh == MESH_0) calc_limiter)
       SetPrimitive_Limiter(geometry, config);
   }
 
@@ -3056,8 +3058,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
   const bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE);
-  const bool venkat_wang_edge = (config->GetKind_SlopeLimit_Flow() == VENKAT_WANG_EDGE);
-  const bool venkat_munguia_edge = (config->GetKind_SlopeLimit_Flow() == VENKAT_MUNGUIA_EDGE);
+  const bool piperno          = (config->GetKind_SlopeLimit_Flow() == PIPERNO);
+  const bool venkat_munguia   = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
@@ -3172,16 +3174,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                        +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
                        /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
           }
-          else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
+          else if (venkat_edge || venkat_munguia) {
             su2double eps = EPS;
             if (venkat_edge) {
               const su2double K = config->GetVenkat_LimiterCoeff();
               eps = max(pow(K*Dist_ij, 1.5), eps);
-            }
-            else if (venkat_wang_edge) {
-              const su2double K     = config->GetVenkat_LimiterCoeff();
-              const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
-              eps = max(K*Range, eps);
             }
             else {
               eps = max(fabs(T_ij), eps);
@@ -3231,7 +3228,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (van_albada_edge) ? 0.0 : config->GetMUSCL_Kappa();
+      const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         const su2double V_ij = (V_j[iVar] - V_i[iVar]);
@@ -3248,33 +3245,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
             su2double Delta_m = ProjGrad_i - 0.5*V_ij;
             su2double Delta_p = 0.5*V_ij;
-            // ProjGrad_i = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
-            //            +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
-            //            /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
             ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
                         / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
             Delta_m = ProjGrad_j - 0.5*V_ij;
-            // ProjGrad_j = ((pow(Delta_m,2.0) + pow(eps,2.0)) * Delta_p
-            //            +  (pow(Delta_p,2.0) + pow(eps,2.0)) * Delta_m) 
-            //            /  (pow(Delta_m,2.0) + pow(Delta_p,2.0) + 2.0*pow(eps,2.0));
             ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
                         / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
           }
-          else if (venkat_edge || venkat_wang_edge || venkat_munguia_edge) {
+          else if (venkat_edge || venkat_munguia) {
             su2double eps = EPS;
             if (venkat_edge) {
               const su2double K = config->GetVenkat_LimiterCoeff();
               eps = max(pow(K*Dist_ij, 1.5), eps);
             }
-            else if (venkat_wang_edge) {
-              const su2double K     = config->GetVenkat_LimiterCoeff();
-              const su2double Range = nodes->GetSolution_Max(iPoint,iVar) - nodes->GetSolution_Min(iPoint,iVar);
-              eps = max(K*Range, eps);
-            }
 
             su2double Delta_m = ProjGrad_i;
             su2double Delta_p = V_ij;
-            if (venkat_munguia_edge) {
+            if (venkat_munguia) {
               eps = min(fabs(Delta_m),fabs(Delta_p));
               eps = max(eps, EPS);
             }
@@ -3282,12 +3268,39 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                         /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
             Delta_m = ProjGrad_j;
             Delta_p = V_ij;
-            if (venkat_munguia_edge) {
+            if (venkat_munguia) {
               eps = min(fabs(Delta_m),fabs(Delta_p));
               eps = max(eps, EPS);
             }
             ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
                         /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
+          }
+          else if (piperno) {
+            const su2double R_i = V_ij/(ProjGrad_i+EPS);
+            const su2double R_j = V_ij/(ProjGrad_j+EPS);
+
+            const su2double InvR_i = ProjGrad_i/(V_ij+EPS);
+            const su2double InvR_j = ProjGrad_j/(V_ij+EPS);
+            
+            Limiter_i[iVar] = 1.0/3.0*(1.0+2.0*R_i);
+            Limiter_j[iVar] = 1.0/3.0*(1.0+2.0*R_j);
+            if (R_i < 1.0) {
+              Limiter_i[iVar] *= (3.0*InvR_i*InvR_i - 6.0*InvR_i + 19.0)
+                               / (InvR_i*InvR_i*InvR_i - 3.0*InvR_i + 18.0);
+            }
+            else {
+              Limiter_i[iVar] *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
+            }
+            if (R_j < 1.0) {
+              Limiter_j[iVar] *= (3.0*InvR_j*InvR_j - 6.0*InvR_j + 19.0)
+                               / (InvR_j*InvR_j*InvR_j - 3.0*InvR_j + 18.0);
+            }
+            else {
+              Limiter_j[iVar] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+            }
+
+            ProjGrad_i = Limitere_i*V_ij;
+            ProjGrad_j = Limitere_j*V_ij;
           }
           else{
             ProjGrad_i *= Limiter_i[iVar];

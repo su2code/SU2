@@ -802,8 +802,8 @@ enum ENUM_LIMITER {
   SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
   WALL_DISTANCE        = 6, /*!< \brief Slope limiter using wall distance. */
   VENKATAKRISHNAN_EDGE = 7, /*!< \brief Slope limiter using Venkatakrishnan method (edge formulation). */
-  VENKAT_WANG_EDGE     = 8,/*!< \brief Slope limiter using Venkatakrishnan method, eps based on solution (edge formulation). */
-  VENKAT_MUNGUIA_EDGE  = 9 /*!< \brief Slope limiter using Venkatakrishnan method, eps based on solution (edge formulation). */
+  PIPERNO              = 8, /*!< \brief Slope limiter using Piperno method (edge formulation). */
+  VENKAAKRISHNAN_MUNG  = 9 /*!< \brief Slope limiter using Venkatakrishnan method, eps based on solution (edge formulation). */
 };
 static const MapType<string, ENUM_LIMITER> Limiter_Map = {
   MakePair("NONE", NO_LIMITER)
@@ -814,8 +814,8 @@ static const MapType<string, ENUM_LIMITER> Limiter_Map = {
   MakePair("SHARP_EDGES", SHARP_EDGES)
   MakePair("WALL_DISTANCE", WALL_DISTANCE)
   MakePair("VENKATAKRISHNAN_EDGE", VENKATAKRISHNAN_EDGE)
-  MakePair("VENKAT_WANG_EDGE", VENKAT_WANG_EDGE)
-  MakePair("VENKAT_MUNGUIA_EDGE", VENKAT_MUNGUIA_EDGE)
+  MakePair("PIPERNO", PIPERNO)
+  MakePair("VENKATAKRISHNAN_MUNG", VENKATAKRISHNAN_MUNG)
 };
 
 /*!
