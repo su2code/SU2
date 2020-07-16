@@ -2627,7 +2627,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
   const bool center            = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   const bool van_albada        = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   const bool venkat_edge       = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG);
-  const bool piperno           = config->GetKind_SlopeLimit_Flow == PIPERNO;
+  const bool piperno           = config->GetKind_SlopeLimit_Flow() == PIPERNO;
   const bool calc_limiter      = (!van_albada) && (!piperno) && (!venkat_edge) && (!Output);
 
   /*--- Common preprocessing steps. ---*/
@@ -3299,8 +3299,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               Limiter_j[iVar] *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
             }
 
-            ProjGrad_i = Limitere_i*V_ij;
-            ProjGrad_j = Limitere_j*V_ij;
+            ProjGrad_i = Limiter_i[iVar]*V_ij;
+            ProjGrad_j = Limiter_j[iVar]*V_ij;
           }
           else{
             ProjGrad_i *= Limiter_i[iVar];
