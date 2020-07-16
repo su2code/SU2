@@ -803,7 +803,7 @@ enum ENUM_LIMITER {
   WALL_DISTANCE        = 6, /*!< \brief Slope limiter using wall distance. */
   VENKATAKRISHNAN_EDGE = 7, /*!< \brief Slope limiter using Venkatakrishnan method (edge formulation). */
   PIPERNO              = 8, /*!< \brief Slope limiter using Piperno method (edge formulation). */
-  VENKAAKRISHNAN_MUNG  = 9 /*!< \brief Slope limiter using Venkatakrishnan method, eps based on solution (edge formulation). */
+  VENKATAKRISHNAN_MUNG = 9 /*!< \brief Slope limiter using Venkatakrishnan method, eps based on solution (edge formulation). */
 };
 static const MapType<string, ENUM_LIMITER> Limiter_Map = {
   MakePair("NONE", NO_LIMITER)
