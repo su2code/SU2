@@ -100,7 +100,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
                         (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
   /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
   const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                           (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
+                           (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) &&
+                           (config->GetKind_SlopeLimit_Flow() != PIPERNO);
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 

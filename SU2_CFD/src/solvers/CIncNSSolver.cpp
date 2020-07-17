@@ -692,16 +692,16 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
-  unsigned long InnerIter     = config->GetInnerIter();
-  bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
-  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool outlet               = ((config->GetnMarker_Outlet() != 0));
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool cont_adjoint       = config->GetContinuous_Adjoint();
+  const bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool center             = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
+  const bool center_jst         = center && config->GetKind_Centered_Flow() == JST;
+  const bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
+  const bool edge_limiter       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Flow() == PIPERNO);
+  const bool outlet             = ((config->GetnMarker_Outlet() != 0));
 
   /*--- Set the primitive variables ---*/
 
@@ -731,7 +731,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
-      && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
+      && !Output && !edge_limiter) { SetPrimitive_Limiter(geometry, config); }
 
   /*--- Artificial dissipation for centered schemes. ---*/
 

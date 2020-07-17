@@ -2625,12 +2625,12 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool cont_adjoint     = config->GetContinuous_Adjoint();
-  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool cont_adjoint     = config->GetContinuous_Adjoint();
+  const bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  const bool edge_limiter     = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Flow() == PIPERNO);
 
   /*--- Common preprocessing steps. ---*/
 
@@ -2653,7 +2653,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
+    if (limiter && (iMesh == MESH_0) && !Output && !edge_limiter)
       SetPrimitive_Limiter(geometry, config);
   }
 
@@ -3039,6 +3039,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool piperno          = (config->GetKind_SlopeLimit_Flow() == PIPERNO);
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -3105,6 +3106,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     else {
       /*--- Reconstruction ---*/
 
+      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
@@ -3122,28 +3125,60 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
+
+        su2double Project_Grad_i = 0.5*Kappa*V_ij;
+        su2double Project_Grad_j = 0.5*Kappa*V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += (1.0-Kappa)*Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += (1.0-Kappa)*Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
         if (limiter) {
           if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
-            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
+            Project_Grad_i *= V_ij*(2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
+            Project_Grad_j *= V_ij*(2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
           }
-          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
+          else if (piperno) {
+            const su2double R_i = 0.5*V_ij/(Project_Grad_i+EPS);
+            const su2double R_j = 0.5*V_ij/(Project_Grad_j+EPS);
 
+            const su2double InvR_i = (Project_Grad_i)/(0.5*V_ij+EPS);
+            const su2double InvR_j = (Project_Grad_j)/(0.5*V_ij+EPS);
+            
+            Project_Grad_i *= 1.0/6.0*(1.0+2.0*R_i);
+            Project_Grad_j *= 1.0/6.0*(1.0+2.0*R_j);
+
+            if (R_i < 0.0) {
+              Project_Grad_i = 0.0;
+            }
+            else if (R_i < 1.0) {
+              Project_Grad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
+                               / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
+            }
+            else {
+              Project_Grad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
+            }
+
+            if (R_j < 0.0) {
+              Project_Grad_j = 0.0;
+            }
+            else if (R_j < 1.0) {
+              Project_Grad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
+                               / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
+            }
+            else {
+              Project_Grad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
+            }
+          }
+          else {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
+        }
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
