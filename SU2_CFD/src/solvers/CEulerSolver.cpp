@@ -3206,8 +3206,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double InvR_i = (2.0*ProjGrad_i - T_ij)/(T_ij+EPS);
             const su2double InvR_j = (2.0*ProjGrad_j - T_ij)/(T_ij+EPS);
             
-            ProjGrad_i = 1.0/6.0*(1.0+2.0*R_i)*T_ij;
-            ProjGrad_j = 1.0/6.0*(1.0+2.0*R_j)*T_ij;
+            ProjGrad_i = 1.0/6.0*(1.0+2.0*R_i)*(2.0*ProjGrad_i - T_ij);
+            ProjGrad_j = 1.0/6.0*(1.0+2.0*R_j)*(2.0*ProjGrad_j - T_ij);
 
             if (R_i < 0.0) {
               ProjGrad_i = 0.0;
@@ -3324,8 +3324,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double InvR_i = (2.0*ProjGrad_i - V_ij)/(V_ij+EPS);
             const su2double InvR_j = (2.0*ProjGrad_j - V_ij)/(V_ij+EPS);
             
-            ProjGrad_i == 1.0/6.0*(1.0+2.0*R_i)*V_ij;
-            ProjGrad_j == 1.0/6.0*(1.0+2.0*R_j)*V_ij;
+            ProjGrad_i == 1.0/6.0*(1.0+2.0*R_i)*(2.0*ProjGrad_i - V_ij);
+            ProjGrad_j == 1.0/6.0*(1.0+2.0*R_j)*(2.0*ProjGrad_j - V_ij);
 
             if (R_i < 0.0) {
               ProjGrad_i = 0.0;
