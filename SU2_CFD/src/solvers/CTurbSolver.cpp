@@ -232,8 +232,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double InvR_i = (2.0*ProjGrad_i)/(V_ij+EPS);
             const su2double InvR_j = (2.0*ProjGrad_j)/(V_ij+EPS);
             
-            FlowLim_i[iVar] = 1.0/6.0*(1.0+2.0*R_i);
-            FlowLim_j[iVar] = 1.0/6.0*(1.0+2.0*R_j);
+            FlowLim_i[iVar] = 1.0/3.0*(1.0+2.0*R_i);
+            FlowLim_j[iVar] = 1.0/3.0*(1.0+2.0*R_j);
             if (R_i < 0.0) {
               FlowLim_i[iVar] = 0.0;
             }
@@ -333,8 +333,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             const su2double InvR_i = (2.0*ProjGrad_i)/(T_ij+EPS);
             const su2double InvR_j = (2.0*ProjGrad_j)/(T_ij+EPS);
             
-            TurbLim_i[iVar] = 1.0/6.0*(1.0+2.0*R_i);
-            TurbLim_j[iVar] = 1.0/6.0*(1.0+2.0*R_j);
+            TurbLim_i[iVar] = 1.0/3.0*(1.0+2.0*R_i);
+            TurbLim_j[iVar] = 1.0/3.0*(1.0+2.0*R_j);
             if (R_i < 0.0) {
               TurbLim_i[iVar] = 0.0;
             }
