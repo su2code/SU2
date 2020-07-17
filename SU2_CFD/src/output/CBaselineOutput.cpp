@@ -116,5 +116,5 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue(fields[iField], iPoint, Node_Sol->GetSolution(iPoint, iField));
   }
 
-  SetVolumeOutputValue("NODE_ID", iPoint, geometry->node[iPoint]->GetGlobalIndex());
+  SetVolumeOutputValue("NODE_ID", iPoint, geometry->nodes->GetGlobalIndex(iPoint));
 }
