@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -284,9 +284,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       auto targetVertex = target_geometry->vertex[markTarget][iVertexTarget];
       auto pointTarget = targetVertex->GetNode();
 
-      if (target_geometry->node[pointTarget]->GetDomain()) {
+      if (target_geometry->nodes->GetDomain(pointTarget)) {
         targetVertices.push_back(targetVertex);
-        targetCoord.push_back(target_geometry->node[pointTarget]->GetCoord());
+        targetCoord.push_back(target_geometry->nodes->GetCoord(pointTarget));
       }
     }
     nVertexTarget = targetVertices.size();

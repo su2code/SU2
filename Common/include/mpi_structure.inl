@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -512,7 +512,11 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
 }
 #endif
 #else // HAVE_MPI
+#ifdef _OPENMP
+#include <omp.h>
+#else
 #include <ctime>
+#endif
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
@@ -688,6 +692,10 @@ inline void CBaseMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Da
 }
 
 inline passivedouble CBaseMPIWrapper::Wtime(void) {
+#ifdef _OPENMP
+  return omp_get_wtime();
+#else
   return passivedouble(clock()) / CLOCKS_PER_SEC;
+#endif
 }
 #endif

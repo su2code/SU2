@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,12 +51,12 @@ int main(int argc, char *argv[]) {
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
-  COutput **output                = NULL;
-  CGeometry ***geometry_container = NULL;
-  CSolver ***solver_container     = NULL;
-  CConfig **config_container      = NULL;
-  CConfig *driver_config          = NULL;
-  unsigned short *nInst           = NULL;
+  COutput **output                = nullptr;
+  CGeometry ***geometry_container = nullptr;
+  CSolver ***solver_container     = nullptr;
+  CConfig **config_container      = nullptr;
+  CConfig *driver_config          = nullptr;
+  unsigned short *nInst           = nullptr;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
   if (argc == 2 || argc == 3) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
 
-  CConfig *config = NULL;
+  CConfig *config = nullptr;
   config = new CConfig(config_file_name, SU2_SOL);
 
   const auto nZone = config->GetnZone();
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
   config_container = new CConfig*[nZone] ();
   geometry_container = new CGeometry**[nZone] ();
   nInst = new unsigned short[nZone];
-  driver_config = NULL;
+  driver_config = nullptr;
   output = new COutput*[nZone] ();
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -138,13 +138,13 @@ int main(int argc, char *argv[]) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
       /*--- Allocate solver. ---*/
-      solver_container[iZone][iInst] = NULL;
+      solver_container[iZone][iInst] = nullptr;
 
       config_container[iZone]->SetiInst(iInst);
 
       /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
-      CGeometry *geometry_aux = NULL;
+      CGeometry *geometry_aux = nullptr;
 
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Allocate the memory of the current domain, and divide the grid between the nodes ---*/
 
-      geometry_container[iZone][iInst] = NULL;
+      geometry_container[iZone][iInst] = nullptr;
 
       /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
@@ -715,42 +715,42 @@ int main(int argc, char *argv[]) {
   }
 
   delete config;
-  config = NULL;
+  config = nullptr;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
 
-  if (geometry_container != NULL) {
+  if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
-        if (geometry_container[iZone][iInst] != NULL) {
+        if (geometry_container[iZone][iInst] != nullptr) {
           delete geometry_container[iZone][iInst];
         }
       }
-      if (geometry_container[iZone] != NULL)
+      if (geometry_container[iZone] != nullptr)
         delete [] geometry_container[iZone];
     }
     delete [] geometry_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
-  if (solver_container != NULL) {
+  if (solver_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
-        if (solver_container[iZone][iInst] != NULL) {
+        if (solver_container[iZone][iInst] != nullptr) {
           delete solver_container[iZone][iInst];
         }
       }
-      if (solver_container[iZone] != NULL)
+      if (solver_container[iZone] != nullptr)
         delete [] solver_container[iZone];
     }
     delete [] solver_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
 
-  if (config_container != NULL) {
+  if (config_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
+      if (config_container[iZone] != nullptr) {
         delete config_container[iZone];
       }
     }
@@ -758,9 +758,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
-  if (output != NULL) {
+  if (output != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (output[iZone] != NULL) {
+      if (output[iZone] != nullptr) {
         delete output[iZone];
       }
     }

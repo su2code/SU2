@@ -2,7 +2,7 @@
  * \file signal_processing_toolbox.hpp
  * \brief Header file for the signal processing toolbox.
  * \author S. Schotthöfer
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #pragma once
 
 #include <vector>
-#include "../../../Common/include/option_structure.hpp"
+#include "../../../../Common/include/option_structure.hpp"
 
 class CWindowingTools{
 public:

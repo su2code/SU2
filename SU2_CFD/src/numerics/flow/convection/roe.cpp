@@ -2,7 +2,7 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -91,6 +91,8 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 }
 
 CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iVar, jVar, iDim;
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
@@ -507,6 +509,8 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
 }
 
 CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 

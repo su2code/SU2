@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ public:
    * \param[in] nDim                - Number of physical dimensions
    * \return                     - Pointer to the allocated Output
    */
-  static COutput* createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig *config, int nDim);
+  static COutput* CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig *config, int nDim);
 
   /*!
    * \brief Create a multizone output
@@ -56,12 +56,12 @@ public:
    * \param nDim                - Number of physical dimensions
    * \return                    - Pointer to the allocated multizone output
    */
-  static COutput* createMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim);
+  static COutput* CreateMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim);
 
   /*!
    * \brief Create legacy output
    * \param config          - Pointer to the config
    * \return                - Pointer to the allocated legacy output
    */
-  static COutputLegacy* createLegacyOutput(CConfig *config);
+  static COutputLegacy* CreateLegacyOutput(CConfig *config);
 };

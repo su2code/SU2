@@ -2,7 +2,7 @@
  * \file CFileWriter.cpp
  * \brief Filewriter base class.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -207,10 +207,8 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 
 bool CFileWriter::OpenMPIFile(){
   
-  int ierr;
-
 #ifdef HAVE_MPI
-  
+  int ierr;
   disp     = 0.0;
   
   /*--- All ranks open the file using MPI. Here, we try to open the file with

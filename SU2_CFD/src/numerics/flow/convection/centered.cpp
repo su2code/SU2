@@ -2,7 +2,7 @@
  * \file centered.cpp
  * \brief Implementations of centered schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,6 +67,8 @@ CCentBase_Flow::~CCentBase_Flow(void) {
 
 CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
   bool preacc = SetPreaccInVars();
@@ -74,7 +76,7 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
   if (preacc) {
     AD::SetPreaccIn(Normal, nDim);
     AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
-    AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
+    AD::SetPreaccIn(Lambda_i, Lambda_j);
     if (dynamic_grid) {
       AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
     }
@@ -392,6 +394,8 @@ CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
 
 CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
 
@@ -611,6 +615,8 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 }
 
 CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;

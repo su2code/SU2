@@ -2,7 +2,7 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 #pragma once
 
-#include "../../include/datatype_structure.hpp"
+#include "../../include/basic_types/datatype_structure.hpp"
 #include "../../include/toolboxes/C2DContainer.hpp"
 #include <vector>
 

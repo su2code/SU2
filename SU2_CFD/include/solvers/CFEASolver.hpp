@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -83,7 +83,7 @@ protected:
   CSysVector<su2double> LinSysReact;  /*!< \brief Vector to store the residual before applying the BCs */
 
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+  CSysMatrix<su2mixedfloat> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
 #else
   CSysMatrix<su2double> MassMatrix;
 #endif
@@ -267,7 +267,7 @@ public:
   inline virtual su2double Get_ValCoord(const CGeometry *geometry,
                                         unsigned long indexNode,
                                         unsigned short iDim) const {
-    return geometry->node[indexNode]->GetCoord(iDim);
+    return geometry->nodes->GetCoord(indexNode, iDim);
   }
 
   /*!
