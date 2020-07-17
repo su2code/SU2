@@ -586,7 +586,7 @@ public:
     for (size_t i=0; i<blkSz; ++i) {
       SU2_OMP_SIMD
       for (size_t k=0; k<N; ++k) {
-        blk_i[k][i] = -1*PassiveAssign(mask[k] * block_i.data()[i][k]);
+        blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
       }
     }
@@ -678,7 +678,7 @@ public:
     for (size_t i=0; i<blkSz; ++i) {
       SU2_OMP_SIMD
       for (size_t k=0; k<N; ++k) {
-        blk_i[k][i] = -1*PassiveAssign(mask[k] * block_i.data()[i][k]);
+        blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
       }
     }

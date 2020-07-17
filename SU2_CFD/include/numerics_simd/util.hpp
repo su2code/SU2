@@ -172,10 +172,18 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
                                     SparseMatrixType& matrix) {
   if (updateType == UpdateType::COLORING) {
     vector.UpdateBlocks(iPoint, jPoint, flux, updateMask);
-    if(implicit) matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j, updateMask);
+    if(implicit) {
+      auto wasActive = AD::BeginPassive();
+      matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j, updateMask);
+      AD::EndPassive(wasActive);
+    }
   }
   else {
     vector.SetBlock(iEdge, flux, updateMask);
-    if(implicit) matrix.SetBlocks(iEdge, jac_i, jac_j, updateMask);
+    if(implicit) {
+      auto wasActive = AD::BeginPassive();
+      matrix.SetBlocks(iEdge, jac_i, jac_j, updateMask);
+      AD::EndPassive(wasActive);
+    }
   }
 }
