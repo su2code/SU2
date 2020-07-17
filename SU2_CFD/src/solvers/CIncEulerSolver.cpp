@@ -1865,7 +1865,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   const bool piperno          = config->GetKind_SlopeLimit_Flow() == PIPERNO;
 
   /*--- Loop over all the edges ---*/
@@ -1912,52 +1911,24 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Project_Grad_j = 0.5*Kappa*V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          const su2double Vector_ij = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-          Project_Grad_i += (1.0-Kappa)*Vector_ij*Gradient_i[iVar][iDim];
-          Project_Grad_j += (1.0-Kappa)*Vector_ij*Gradient_j[iVar][iDim];
+          const su2double Vector_ij = 0.5*(1.0-Kappa)*(Coord_j[iDim] - Coord_i[iDim]);
+          Project_Grad_i += Vector_ij*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij*Gradient_j[iVar][iDim];
         }
 
         if (limiter) {
-          if (van_albada) {
-            Project_Grad_i *= V_ij*(2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-            Project_Grad_j *= V_ij*(2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
+          switch(config->GetKind_SlopeLimit_Flow()) {
+            case VAN_ALBADA_EDGE:
+              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
+              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
+              break;
+            case PIPERNO:
+              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+              break;
           }
-          else if (piperno) {
-            const su2double R_i = 0.5*V_ij/(Project_Grad_i+EPS);
-            const su2double R_j = 0.5*V_ij/(Project_Grad_j+EPS);
-
-            const su2double InvR_i = (Project_Grad_i)/(0.5*V_ij+EPS);
-            const su2double InvR_j = (Project_Grad_j)/(0.5*V_ij+EPS);
-            
-            Project_Grad_i *= 1.0/3.0*(1.0+2.0*R_i);
-            Project_Grad_j *= 1.0/3.0*(1.0+2.0*R_j);
-
-            if (R_i < 0.0) {
-              Project_Grad_i = 0.0;
-            }
-            else if (R_i < 1.0) {
-              Project_Grad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                               / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
-            }
-            else {
-              Project_Grad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-            }
-
-            if (R_j < 0.0) {
-              Project_Grad_j = 0.0;
-            }
-            else if (R_j < 1.0) {
-              Project_Grad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                               / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-            }
-            else {
-              Project_Grad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
-            }
-          }
-          else {
-            Project_Grad_i *= Limiter_i[iVar];
-            Project_Grad_j *= Limiter_j[iVar];
-          }
+          Project_Grad_i *= Limiter_i[iVar];
+          Project_Grad_j *= Limiter_j[iVar];
         }
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
