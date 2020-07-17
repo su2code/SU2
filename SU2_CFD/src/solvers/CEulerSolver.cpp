@@ -3147,8 +3147,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
             const su2double InvR_i = (Project_Grad_i)/(0.5*V_ij+EPS);
             const su2double InvR_j = (Project_Grad_j)/(0.5*V_ij+EPS);
             
-            Project_Grad_i *= 1.0/6.0*(1.0+2.0*R_i);
-            Project_Grad_j *= 1.0/6.0*(1.0+2.0*R_j);
+            Project_Grad_i *= 1.0/3.0*(1.0+2.0*R_i);
+            Project_Grad_j *= 1.0/3.0*(1.0+2.0*R_j);
 
             if (R_i < 0.0) {
               Project_Grad_i = 0.0;
