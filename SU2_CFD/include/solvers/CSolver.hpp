@@ -598,6 +598,20 @@ public:
   inline su2double GetRes_Max(unsigned short val_var) const { return Residual_Max[val_var]; }
 
   /*!
+   * \brief Set the initial residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   */
+  inline void SetRes_Ini(unsigned short val_var, su2double val_residual) { Residual_Ini[val_var] = val_residual; }
+
+  /*!
+   * \brief Get the initial residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+   */
+  inline su2double GetRes_Ini(unsigned short val_var) const { return Residual_Ini[val_var]; }
+
+  /*!
    * \brief Set the residual for BGS subiterations.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
