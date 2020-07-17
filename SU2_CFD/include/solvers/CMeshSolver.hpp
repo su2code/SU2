@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,14 +39,14 @@ protected:
 
   bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
 
-  su2double MinVolume_Ref,     /*!< \brief Minimum volume in reference and current (deformed) configuration. */
-            MinVolume_Curr;
+  unsigned long ElemCounter;   /*!< \brief Error (negative volume) counter. */
 
-  su2double MaxVolume_Ref,
-            MaxVolume_Curr;
-
-  su2double MinDistance;
-  su2double MaxDistance;
+  /*!
+   * \brief Minimum/Maximum distance and volume (in reference and current (deformed) coords).
+   */
+  su2double MinVolume, MinVolume_Ref, MinVolume_Curr;
+  su2double MaxVolume, MaxVolume_Ref, MaxVolume_Curr;
+  su2double MinDistance, MaxDistance;
 
   vector<CMeshElement> element; /*!< \brief Vector which stores element information for each problem. */
 
@@ -92,7 +92,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
+  void UpdateMultiGrid(CGeometry **geometry, CConfig *config) const;
 
   /*!
    * \brief Check the boundary vertex that are going to be moved.
@@ -130,7 +130,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry*,
+  inline su2double Get_ValCoord(const CGeometry*,
                                 unsigned long indexNode,
                                 unsigned short iDim) const override {
     return nodes->GetMesh_Coord(indexNode,iDim);
@@ -172,5 +172,37 @@ public:
    * \return
    */
   inline su2double GetMaximum_Volume() const override {return MaxVolume_Curr;}
+
+  /*!
+   * \brief Pitching definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Rotating definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Plunging definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Translating definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter);
 
 };

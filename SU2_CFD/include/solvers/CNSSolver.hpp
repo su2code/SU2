@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -78,10 +78,44 @@ private:
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config, bool Output) override;
 
-protected:
+  /*!
+   * \brief Common code for wall boundaries, add the residual and Jacobian
+   * contributions due to grid motion associated with a particular boundary point.
+   */
+  void AddDynamicGridResidualContribution(unsigned long iPoint,
+                                          unsigned long Point_Normal,
+                                          CGeometry* geometry,
+                                          const su2double* UnitNormal,
+                                          su2double Area,
+                                          const su2double* GridVel,
+                                          su2double** Jacobian_i,
+                                          su2double& Res_Conv,
+                                          su2double& Res_Visc) const;
+
+  /*!
+   * \brief Get the wall temperature at a given vertex of a given marker for CHT problems.
+   */
+  su2double GetCHTWallTemperature(const CConfig* config,
+                                  unsigned short val_marker,
+                                  unsigned long iVertex,
+                                  su2double thermal_conductivity,
+                                  su2double dist_ij,
+                                  su2double There,
+                                  su2double Temperature_Ref) const;
+
+  /*!
+   * \brief Generic implementation of the isothermal wall also covering CHT cases,
+   * for which the wall temperature is given by GetCHTWallTemperature.
+   */
+  void BC_Isothermal_Wall_Generic(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *conv_numerics,
+                                  CNumerics *visc_numerics,
+                                  CConfig *config,
+                                  unsigned short val_marker,
+                                  bool cht_mode = false);
 
 public:
-
   /*!
    * \brief Constructor of the class.
    */
@@ -97,7 +131,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void);
+  ~CNSSolver(void) override;
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

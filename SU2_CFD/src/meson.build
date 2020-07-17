@@ -1,14 +1,12 @@
-su2_cfd_src = files(['transport_model.cpp',
-                     'fluid_model_pvdw.cpp',
-                     'fluid_model_pig.cpp',
-                     'iteration_structure.cpp',
-                     'fluid_model_inc.cpp',
-                     'definition_structure.cpp',
-                     'fluid_model.cpp',
-                     'fluid_model_ppr.cpp',
+su2_cfd_include = include_directories('./')
+su2_cfd_src = files(['definition_structure.cpp',
                      'python_wrapper_structure.cpp',
-                     'CMarkerProfileReaderFVM.cpp',
-                     'SU2_CFD.cpp'])
+                     'CMarkerProfileReaderFVM.cpp'])
+
+su2_cfd_src += files(['fluid/CFluidModel.cpp',
+                      'fluid/CIdealGas.cpp',
+                      'fluid/CPengRobinson.cpp',
+                      'fluid/CVanDerWaalsGas.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -131,9 +129,7 @@ su2_cfd_src += files(['interfaces/CInterface.cpp',
                       'interfaces/cht/CConjugateHeatInterface.cpp',
                       'interfaces/fsi/CDisplacementsInterface.cpp',
                       'interfaces/fsi/CFlowTractionInterface.cpp',
-                      'interfaces/fsi/CDiscAdjFlowTractionInterface.cpp',
-                      'interfaces/fsi/CDisplacementsInterfaceLegacy.cpp',
-                      'interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp'])
+                      'interfaces/fsi/CDiscAdjFlowTractionInterface.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
@@ -149,29 +145,62 @@ su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
                       'integration/CFEM_DG_Integration.cpp'])
 
+su2_cfd_src += files(['iteration/CIteration.cpp',
+                      'iteration/CIterationFactory.cpp',
+                      'iteration/CAdjFluidIteration.cpp',
+                      'iteration/CDiscAdjFluidIteration.cpp',
+                      'iteration/CDiscAdjHeatIteration.cpp',
+                      'iteration/CDiscAdjFEAIteration.cpp',
+                      'iteration/CFEAIteration.cpp',
+                      'iteration/CFEMFluidIteration.cpp',
+                      'iteration/CFluidIteration.cpp',
+                      'iteration/CHeatIteration.cpp',
+                      'iteration/CTurboIteration.cpp'])
+
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 
 if get_option('enable-normal')
+  su2_cfd_lib = static_library('SU2core',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, common_dep],
+		               cpp_args:  [default_warning_flags, su2_cpp_args])
+  su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
+                                   include_directories: su2_cfd_include)
   su2_cfd = executable('SU2_CFD',
-                       su2_cfd_src, 
-                       install : true, 
-                       dependencies : [su2_deps, common_dep], 
+                       'SU2_CFD.cpp',
+                       install : true,
+                       dependencies : [su2_cfd_dep, su2_deps, common_dep],
                        cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
 endif
 
 if get_option('enable-autodiff')
+  su2_cfd_lib_ad = static_library('SU2core_AD',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, codi_dep, commonAD_dep],
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
+  su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
+                                   include_directories: su2_cfd_include)
   su2_cfd_ad = executable('SU2_CFD_AD',
-                       su2_cfd_src,
-                       install : true, 
-                       dependencies : [su2_deps, codi_dep, commonAD_dep], 
-                       cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
+                          'SU2_CFD.cpp',
+                          install : true,
+                          dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
 endif
 
 if get_option('enable-directdiff')
+  su2_cfd_lib_dd = static_library('SU2core_DIRECTDIFF',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, codi_dep, commonDD_dep],
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args])
+  su2_cfd_dep_dd = declare_dependency(link_with: su2_cfd_lib_dd,
+                                   include_directories: su2_cfd_include)
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
-                       su2_cfd_src,
-                       install : true, 
-                       dependencies : [su2_deps, codi_dep, commonDD_dep], 
-                       cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
+                          'SU2_CFD.cpp',
+                          install : true,
+                          dependencies : [su2_cfd_dep_dd, su2_deps, codi_dep, commonDD_dep],
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
 endif
 

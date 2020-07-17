@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,8 +30,8 @@
 
 CHeatSolver::CHeatSolver(void) : CSolver() {
 
-  ConjugateVar = NULL;
-  HeatFlux     = NULL;
+  ConjugateVar = nullptr;
+  HeatFlux     = nullptr;
 }
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -132,19 +132,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     else if (nDim == 3) { nOutputVariables = 19; }
     OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
     OutputHeadingNames = new string[nOutputVariables];
-  }
-
-  /*--- Computation of gradients by least squares ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar+1];
-    for (iVar = 0; iVar < nVar+1; iVar++)
-      Cvector[iVar] = new su2double [nDim];
   }
 
   HeatFlux_per_Marker = new su2double[nMarker];
@@ -258,14 +245,14 @@ CHeatSolver::~CHeatSolver(void) {
 
   unsigned short iMarker;
 
-  if (HeatFlux != NULL) {
+  if (HeatFlux != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -424,11 +411,11 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
         Solution_Fine = solver[iMesh-1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -445,9 +432,9 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }
 
@@ -465,33 +452,33 @@ void CHeatSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Solution differences ---*/
 
     for (iVar = 0; iVar < nVar; iVar++)
       Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
 
-    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+    boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
     /*--- Both points inside the domain, or both in the boundary ---*/
 
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint,Diff);
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint,Diff);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint,Diff);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint,Diff);
     }
 
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
     if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint,Diff);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint,Diff);
 
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
 
     if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint,Diff);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint,Diff);
 
   }
 
@@ -523,9 +510,9 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
       /*--- Points in edge ---*/
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Primitive variables w/o reconstruction ---*/
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
@@ -535,7 +522,7 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
       Temp_j = nodes->GetSolution(jPoint,0);
 
       numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
-      numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+      numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetTemperature(Temp_i, Temp_j);
@@ -574,9 +561,9 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
       /*--- Points in edge ---*/
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
       /*--- Primitive variables w/o reconstruction ---*/
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
@@ -593,8 +580,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       if (muscl) {
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-          Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+          Vector_i[iDim] = 0.5*(geometry->nodes->GetCoord(jPoint, iDim) - geometry->nodes->GetCoord(iPoint, iDim));
+          Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
         }
 
         Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
@@ -673,14 +660,14 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- Points coordinates, and normal vector ---*/
 
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                       geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     Temp_i_Grad = nodes->GetGradient(iPoint);
     Temp_j_Grad = nodes->GetGradient(jPoint);
@@ -751,7 +738,7 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if(geometry->node[iPoint]->GetDomain()) {
+          if(geometry->nodes->GetDomain(iPoint)) {
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
@@ -808,7 +795,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -817,8 +804,8 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
         for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
         Area = sqrt (Area);
 
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        Coord_j = geometry->node[Point_Normal]->GetCoord();
+        Coord_i = geometry->nodes->GetCoord(iPoint);
+        Coord_j = geometry->nodes->GetCoord(Point_Normal);
         dist_ij = 0;
         for (iDim = 0; iDim < nDim; iDim++)
           dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -879,7 +866,7 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       Area = 0.0;
@@ -931,7 +918,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
@@ -959,7 +946,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetPrimitive(V_domain, V_inlet);
 
         if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
         conv_numerics->SetTemperature(nodes->GetSolution(iPoint,0), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
 
@@ -988,8 +975,8 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
         Area = sqrt (Area);
 
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        Coord_j = geometry->node[Point_Normal]->GetCoord();
+        Coord_i = geometry->nodes->GetCoord(iPoint);
+        Coord_j = geometry->nodes->GetCoord(Point_Normal);
         dist_ij = 0;
         for (iDim = 0; iDim < nDim; iDim++)
           dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -1037,7 +1024,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -1062,7 +1049,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           conv_numerics->SetPrimitive(V_domain, V_outlet);
 
           if (dynamic_grid)
-            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
           conv_numerics->SetTemperature(nodes->GetSolution(iPoint,0), nodes->GetSolution(Point_Normal,0));
 
@@ -1112,7 +1099,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = 0.0;
@@ -1140,7 +1127,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = 0.0;
@@ -1213,12 +1200,12 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if(geometry->node[iPoint]->GetDomain()) {
+        if(geometry->nodes->GetDomain(iPoint)) {
 
           iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-          Coord = geometry->node[iPoint]->GetCoord();
-          Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
+          Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0;
@@ -1251,14 +1238,14 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if(geometry->node[iPoint]->GetDomain()) {
+        if(geometry->nodes->GetDomain(iPoint)) {
 
           iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
           Twall = nodes->GetSolution(iPoint,0);
 
-          Coord = geometry->node[iPoint]->GetCoord();
-          Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+          Coord = geometry->nodes->GetCoord(iPoint);
+          Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0;
@@ -1321,8 +1308,9 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
-  su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
+  su2double Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
+  const su2double* Normal;
 
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
@@ -1355,11 +1343,11 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
     /*--- get the edge's normal vector to compute the edge's area ---*/
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
     /*--- Inviscid contribution ---*/
@@ -1371,8 +1359,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint, Lambda);
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint, Lambda);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint, Lambda);
+      if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint, Lambda);
     }
 
     /*--- Viscous contribution ---*/
@@ -1387,8 +1375,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     }
 
     Lambda = thermal_diffusivity*Area*Area;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
 
   }
 
@@ -1412,7 +1400,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
         Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
 
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint, Lambda);
+        if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint, Lambda);
       }
 
       /*--- Viscous contribution ---*/
@@ -1427,7 +1415,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       }
 
       Lambda = thermal_diffusivity*Area*Area;
-      if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
     }
   }
@@ -1436,7 +1424,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     if (Vol != 0.0) {
 
@@ -1551,7 +1539,7 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   /*--- Update the solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -1562,7 +1550,7 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         nodes->AddSolution(iPoint,iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
       }
     }
 
@@ -1608,7 +1596,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Read the volume ---*/
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
@@ -1639,7 +1627,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
 
@@ -1692,11 +1680,11 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
     Solution = new su2double[nVar];
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+        Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-        for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-          Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-          Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+          Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+          Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
           Solution_Fine = solver_container[iMesh-1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
           for (iVar = 0; iVar < nVar; iVar++) {
             Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -1774,7 +1762,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
 
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
 
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/

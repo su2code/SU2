@@ -2,7 +2,7 @@
  * \file CDriverOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,8 +37,6 @@
 #endif
 #include <fstream>
 #include <cmath>
-#include <time.h>
-#include <fstream>
 
 #include "COutput.hpp"
 #include "../../../Common/include/CConfig.hpp"

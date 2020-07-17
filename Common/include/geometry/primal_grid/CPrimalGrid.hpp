@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -102,7 +102,7 @@ public:
    * \brief Make available the length scale of the element.
    * \return The length scale of the element.
    */
-  inline su2double GetLengthScale(void) { return LenScale; }
+  inline su2double GetLengthScale(void) const { return LenScale; }
 
   /*!
    * \brief Set the length scale of the element.
@@ -114,7 +114,7 @@ public:
    * \brief Make available the time level of the element.
    * \return The time level of the element.
    */
-  inline unsigned short GetTimeLevel(void) { return TimeLevel; }
+  inline unsigned short GetTimeLevel(void) const { return TimeLevel; }
 
   /*!
    * \brief Set the time level of the element.
@@ -170,7 +170,7 @@ public:
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.
    */
-  void SetCoord_CG(su2double **val_coord);
+  void SetCoord_CG(const su2double* const* val_coord);
 
   /*!
    * \brief Get the center of gravity of an element (including edges).
@@ -190,7 +190,7 @@ public:
    * \param[in] val_dim - Coordinate of the center of gravity.
    * \return Coordinates of the center of gravity.
    */
-  inline su2double GetVolume(void) { return Volume; }
+  inline su2double GetVolume(void) const { return Volume; }
 
   /*!
    * \brief Get the CG of a face of an element.
@@ -216,7 +216,7 @@ public:
    * \brief Get if an element must be divided in the adaptation stage.
    * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
    */
-  inline bool GetDivide (void) { return Divide; }
+  inline bool GetDivide (void) const { return Divide; }
 
   /*!
   * \brief Initialize the array, which stores whether or not the faces have a constant Jacobian.
@@ -246,7 +246,7 @@ public:
    * \brief Get the element global index in a parallel computation.
    * \return Global index of the element in a parallel computation.
    */
-  inline unsigned long GetGlobalIndex(void) { return GlobalIndex; }
+  inline unsigned long GetGlobalIndex(void) const { return GlobalIndex; }
 
   /*!
    * \brief Set the global index for an element in a parallel computation.
@@ -438,7 +438,7 @@ public:
             for the wall function treatment.
    * \return The pointer to the data of donorElementsWallFunctions.
    */
-  inline virtual unsigned long *GetDonorsWallFunctions(void) {return NULL;}
+  inline virtual unsigned long *GetDonorsWallFunctions(void) {return nullptr;}
 
   /*!
    * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.

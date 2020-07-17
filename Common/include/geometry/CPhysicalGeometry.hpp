@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,71 +38,72 @@
  */
 class CPhysicalGeometry final : public CGeometry {
 
-  map<unsigned long, unsigned long> Global_to_Local_Point;  /*!< \brief Global-local indexation for the points. */
-  long *Local_to_Global_Point;                              /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker;                   /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker;                   /*!< \brief Global to Local marker. */
-  unsigned long *adj_counter;                               /*!< \brief Adjacency counter. */
-  unsigned long **adjacent_elem;                            /*!< \brief Adjacency element list. */
-  su2activematrix Sensitivity;                              /*!< \brief Matrix holding the sensitivities at each point. */
+  unordered_map<unsigned long, unsigned long>
+  Global_to_Local_Point;                           /*!< \brief Global-local indexation for the points. */
+  long *Local_to_Global_Point{nullptr};            /*!< \brief Local-global indexation for the points. */
+  unsigned short *Local_to_Global_Marker{nullptr}; /*!< \brief Local to Global marker. */
+  unsigned short *Global_to_Local_Marker{nullptr}; /*!< \brief Global to Local marker. */
+  unsigned long *adj_counter{nullptr};             /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem{nullptr};          /*!< \brief Adjacency element list. */
+  su2activematrix Sensitivity;                     /*!< \brief Matrix holding the sensitivities at each point. */
 
   vector<vector<unsigned long> > Neighbors;
-  map<unsigned long, unsigned long> Color_List;
+  unordered_map<unsigned long, unsigned long> Color_List;
   vector<string> Marker_Tags;
-  unsigned long nLocal_Point,
-  nLocal_PointDomain,
-  nLocal_PointGhost,
-  nLocal_PointPeriodic,
-  nLocal_Elem,
-  nLocal_Bound_Elem,
-  nGlobal_Elem,
-  nGlobal_Bound_Elem,
-  nLocal_Line,
-  nLocal_BoundTria,
-  nLocal_BoundQuad,
-  nLinear_Line,
-  nLinear_BoundTria,
-  nLinear_BoundQuad,
-  nLocal_Tria,
-  nLocal_Quad,
-  nLocal_Tetr,
-  nLocal_Hexa,
-  nLocal_Pris,
-  nLocal_Pyra;
-  unsigned long nMarker_Global;
-  su2double *Local_Coords;
-  unsigned long *Local_Points;
-  unsigned long *Local_Colors;
-  unsigned long *Conn_Line;
-  unsigned long *Conn_BoundTria;
-  unsigned long *Conn_BoundQuad;
-  unsigned long *Conn_Line_Linear;
-  unsigned long *Conn_BoundTria_Linear;
-  unsigned long *Conn_BoundQuad_Linear;
-  unsigned long *Conn_Tria;
-  unsigned long *Conn_Quad;
-  unsigned long *Conn_Tetr;
-  unsigned long *Conn_Hexa;
-  unsigned long *Conn_Pris;
-  unsigned long *Conn_Pyra;
-  unsigned long *ID_Line;
-  unsigned long *ID_BoundTria;
-  unsigned long *ID_BoundQuad;
-  unsigned long *ID_Line_Linear;
-  unsigned long *ID_BoundTria_Linear;
-  unsigned long *ID_BoundQuad_Linear;
-  unsigned long *ID_Tria;
-  unsigned long *ID_Quad;
-  unsigned long *ID_Tetr;
-  unsigned long *ID_Hexa;
-  unsigned long *ID_Pris;
-  unsigned long *ID_Pyra;
-  unsigned long *Elem_ID_Line;
-  unsigned long *Elem_ID_BoundTria;
-  unsigned long *Elem_ID_BoundQuad;
-  unsigned long *Elem_ID_Line_Linear;
-  unsigned long *Elem_ID_BoundTria_Linear;
-  unsigned long *Elem_ID_BoundQuad_Linear;
+  unsigned long nLocal_Point{0},
+  nLocal_PointDomain{0},
+  nLocal_PointGhost{0},
+  nLocal_PointPeriodic{0},
+  nLocal_Elem{0},
+  nLocal_Bound_Elem{0},
+  nGlobal_Elem{0},
+  nGlobal_Bound_Elem{0},
+  nLocal_Line{0},
+  nLocal_BoundTria{0},
+  nLocal_BoundQuad{0},
+  nLinear_Line{0},
+  nLinear_BoundTria{0},
+  nLinear_BoundQuad{0},
+  nLocal_Tria{0},
+  nLocal_Quad{0},
+  nLocal_Tetr{0},
+  nLocal_Hexa{0},
+  nLocal_Pris{0},
+  nLocal_Pyra{0};
+  unsigned long nMarker_Global{0};
+  su2double *Local_Coords{nullptr};
+  unsigned long *Local_Points{nullptr};
+  unsigned long *Local_Colors{nullptr};
+  unsigned long *Conn_Line{nullptr};
+  unsigned long *Conn_BoundTria{nullptr};
+  unsigned long *Conn_BoundQuad{nullptr};
+  unsigned long *Conn_Line_Linear{nullptr};
+  unsigned long *Conn_BoundTria_Linear{nullptr};
+  unsigned long *Conn_BoundQuad_Linear{nullptr};
+  unsigned long *Conn_Tria{nullptr};
+  unsigned long *Conn_Quad{nullptr};
+  unsigned long *Conn_Tetr{nullptr};
+  unsigned long *Conn_Hexa{nullptr};
+  unsigned long *Conn_Pris{nullptr};
+  unsigned long *Conn_Pyra{nullptr};
+  unsigned long *ID_Line{nullptr};
+  unsigned long *ID_BoundTria{nullptr};
+  unsigned long *ID_BoundQuad{nullptr};
+  unsigned long *ID_Line_Linear{nullptr};
+  unsigned long *ID_BoundTria_Linear{nullptr};
+  unsigned long *ID_BoundQuad_Linear{nullptr};
+  unsigned long *ID_Tria{nullptr};
+  unsigned long *ID_Quad{nullptr};
+  unsigned long *ID_Tetr{nullptr};
+  unsigned long *ID_Hexa{nullptr};
+  unsigned long *ID_Pris{nullptr};
+  unsigned long *ID_Pyra{nullptr};
+  unsigned long *Elem_ID_Line{nullptr};
+  unsigned long *Elem_ID_BoundTria{nullptr};
+  unsigned long *Elem_ID_BoundQuad{nullptr};
+  unsigned long *Elem_ID_Line_Linear{nullptr};
+  unsigned long *Elem_ID_BoundTria_Linear{nullptr};
+  unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -152,7 +153,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CPhysicalGeometry(void);
+  ~CPhysicalGeometry(void) override;
 
   /*!
    * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.
@@ -231,10 +232,10 @@ public:
    * \param[in] countPerElem - Pieces of data per element communicated.
    */
   void InitiateCommsAll(void *bufSend,
-                        int *nElemSend,
+                        const int *nElemSend,
                         SU2_MPI::Request *sendReq,
                         void *bufRecv,
-                        int *nElemRecv,
+                        const int *nElemRecv,
                         SU2_MPI::Request *recvReq,
                         unsigned short countPerElem,
                         unsigned short commType);
@@ -382,12 +383,6 @@ public:
                 unsigned short &face_second_elem) override;
 
   /*!
-   * \brief Computes the distance to the nearest no-slip wall for each grid node.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeWall_Distance(CConfig *config) override;
-
-  /*!
    * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
    * \param[in] config - Definition of the particular problem.
    */
@@ -396,7 +391,7 @@ public:
   /*!
    * \brief Set points which surround a point.
    */
-  void SetPoint_Connectivity(void) override;
+  void SetPoint_Connectivity() override;
 
   /*!
    * \brief Set a renumbering using a Reverse Cuthill-McKee Algorithm
@@ -522,13 +517,13 @@ public:
    * \brief Check the volume element orientation.
    * \param[in] config - Definition of the particular problem.
    */
-  void Check_IntElem_Orientation(CConfig *config) override;
+  void Check_IntElem_Orientation(const CConfig *config) override;
 
   /*!
    * \brief Check the volume element orientation.
    * \param[in] config - Definition of the particular problem.
    */
-  void Check_BoundElem_Orientation(CConfig *config) override;
+  void Check_BoundElem_Orientation(const CConfig *config) override;
 
   /*!
    * \brief Set the domains for grid grid partitioning using ParMETIS.
@@ -786,5 +781,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Check_Periodicity(CConfig *config) override;
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+
+  /*!
+   * \brief Set wall distances a specific value
+   */
+  void SetWallDistance(su2double val) override {
+    for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
+      nodes->SetWall_Distance(iPoint, val);
+    }
+  }
 
 };

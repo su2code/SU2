@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -135,6 +135,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
 
@@ -176,10 +177,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         /*--- Set the old solution ---*/
 
-        solver_fine->Set_OldSolution(geometry_fine);
+        solver_fine->Set_OldSolution();
 
         if (classical_rk4)
-          solver_fine->Set_NewSolution(geometry_fine);
+          solver_fine->Set_NewSolution();
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
 
@@ -218,11 +219,14 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     CSolver* solver_coarse = solver_container_coarse[Solver_Position];
     CNumerics** numerics_coarse = numerics_container[iZone][iInst][iMesh+1][Solver_Position];
 
+    /*--- Temporarily disable implicit integration, for what follows we do not need the Jacobian. ---*/
+
+    if (implicit) config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
 
     solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem, false);
 
-    /// TODO: For implicit schemes, this call to Space_Integration can skip building the system matrix.
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
     SetResidual_Term(geometry_fine, solver_fine);
@@ -238,6 +242,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+
+    /*--- Restore the time integration settings. ---*/
+
+    if (implicit) config->SetKind_TimeIntScheme(EULER_IMPLICIT);
 
     /*--- Recursive call to MultiGrid_Cycle (this routine). ---*/
 
@@ -269,9 +277,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
         if (iRKStep == 0) {
-          solver_fine->Set_OldSolution(geometry_fine);
+          solver_fine->Set_OldSolution();
 
-          if (classical_rk4) solver_fine->Set_NewSolution(geometry_fine);
+          if (classical_rk4) solver_fine->Set_NewSolution();
 
           solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  config->GetTimeIter());
         }
@@ -302,13 +310,13 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
-    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] -= Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -349,19 +357,15 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   /*--- MPI the set solution old ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
-    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
-  }
-  SU2_OMP_BARRIER
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
 
   /// TODO: Need to check for possible race condition here (multiple coarse points setting the same fine).
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       sol_fine->LinSysRes.SetBlock(Point_Fine, sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse));
     }
   }
@@ -397,8 +401,8 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
       solver->GetNodes()->SetResidualSumZero(iPoint);
 
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
-        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
         Residual_j = solver->LinSysRes.GetBlock(jPoint);
         solver->GetNodes()->AddResidual_Sum(iPoint, Residual_j);
       }
@@ -410,7 +414,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
     for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
 
-      su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(geometry->node[iPoint]->GetnPoint()));
+      su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(geometry->nodes->GetnPoint(iPoint)));
 
       Residual_Sum = solver->GetNodes()->GetResidual_Sum(iPoint);
       Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
@@ -461,12 +465,8 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   /*--- MPI the new interpolated solution ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_fine->InitiateComms(geo_fine, config, SOLUTION);
-    sol_fine->CompleteComms(geo_fine, config, SOLUTION);
-  }
-  SU2_OMP_BARRIER
+  sol_fine->InitiateComms(geo_fine, config, SOLUTION);
+  sol_fine->CompleteComms(geo_fine, config, SOLUTION);
 
 }
 
@@ -479,8 +479,8 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       sol_fine->GetNodes()->SetSolution(Point_Fine, sol_coarse->GetNodes()->GetSolution(Point_Coarse));
     }
   }
@@ -505,8 +505,8 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
       for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] += factor*Residual_Fine[iVar];
@@ -564,14 +564,14 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
-    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
 
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
@@ -601,7 +601,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
           /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
 
           if (grid_movement) {
-            Grid_Vel = geo_coarse->node[Point_Coarse]->GetGridVel();
+            Grid_Vel = geo_coarse->nodes->GetGridVel(Point_Coarse);
             for (iDim = 0; iDim < nDim; iDim++)
               Vector[iDim] = sol_coarse->GetNodes()->GetSolution(Point_Coarse,0)*Grid_Vel[iDim];
             sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Vector);
@@ -624,12 +624,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
   /*--- MPI the new interpolated solution ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
-  }
-  SU2_OMP_BARRIER
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
 
 }
 
@@ -649,15 +645,15 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
-    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     for (iVar = 0; iVar < nVar; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         Gradient[iVar][iDim] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       Gradient_fine = sol_fine->GetNodes()->GetGradient(Point_Fine);
 
       for (iVar = 0; iVar < nVar; iVar++)

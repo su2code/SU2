@@ -2,7 +2,7 @@
  * \file CFEALinearElasticity.hpp
  * \brief Declaration and inlines of the linear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CFEALinearElasticity : public CFEAElasticity {
 protected:
@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEALinearElasticity(void) = default;
+  ~CFEALinearElasticity(void) override = default;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
@@ -90,12 +90,11 @@ private:
  * \brief Particular case of linear elasticity used for mesh deformation.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CFEAMeshElasticity final : public CFEALinearElasticity {
 
   bool element_based;
-  bool stiffness_set;
 
 public:
   /*!
@@ -114,7 +113,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEAMeshElasticity(void) = default;
+  ~CFEAMeshElasticity(void) override = default;
 
   /*!
    * \brief Set the element-based local Young's modulus in mesh problems

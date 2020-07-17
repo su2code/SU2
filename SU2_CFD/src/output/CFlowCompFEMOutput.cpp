@@ -2,7 +2,7 @@
  * \file output_flow_comp_fem.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -114,9 +114,6 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
-
-  /// DESCRIPTION: Linear solver iterations
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
 
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 
@@ -263,7 +260,6 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   }
 
   SetHistoryOutputValue("AOA", config->GetAoA());
-  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
   /*--- Set the analyse surface history values --- */

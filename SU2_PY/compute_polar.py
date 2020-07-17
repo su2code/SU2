@@ -3,7 +3,7 @@
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
 #  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

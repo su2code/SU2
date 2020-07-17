@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CLine.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,10 +142,6 @@ public:
    * \brief Change the orientation of an element.
    */
   inline void Change_Orientation(void) override {
-    unsigned long Point_0, Point_1;
-    Point_0 = Nodes[0];
-    Point_1 = Nodes[1];
-    Nodes[0] = Point_1;
-    Nodes[1] = Point_0;
+    swap(Nodes[0], Nodes[1]);
   }
 };

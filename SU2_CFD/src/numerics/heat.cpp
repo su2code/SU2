@@ -2,7 +2,7 @@
  * \file heat.cpp
  * \brief Implementation of numerics classes for heat transfer.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

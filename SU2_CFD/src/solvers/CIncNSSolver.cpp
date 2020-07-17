@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,26 +34,26 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
 
   /*--- Basic array initialization ---*/
 
-  CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
-  CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
-  CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+  CD_Visc = nullptr; CL_Visc = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr;   CMy_Visc = nullptr;   CMz_Visc = nullptr;
+  CFx_Visc = nullptr;   CFy_Visc = nullptr;   CFz_Visc = nullptr;
+  CoPx_Visc = nullptr;   CoPy_Visc = nullptr;   CoPz_Visc = nullptr;
 
-  ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
+  ForceViscous = nullptr; MomentViscous = nullptr; CSkinFriction = nullptr;
 
   /*--- Surface based array initialization ---*/
 
-  Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
-  Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;
+  Surface_CL_Visc = nullptr; Surface_CD_Visc = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr;   Surface_CFy_Visc = nullptr;   Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr;   Surface_CMy_Visc = nullptr;   Surface_CMz_Visc = nullptr;
+  Surface_HF_Visc = nullptr; Surface_MaxHF_Visc = nullptr;
 
   /*--- Rotorcraft simulation array initialization ---*/
 
-  CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  CMerit_Visc = nullptr; CT_Visc = nullptr; CQ_Visc = nullptr;
 
-  SlidingState      = NULL;
-  SlidingStateNodes = NULL;
+  SlidingState      = nullptr;
+  SlidingStateNodes = nullptr;
 
 }
 
@@ -115,19 +115,19 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Array initialization ---*/
 
-  CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
-  CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
-  CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+  CD_Visc = nullptr; CL_Visc = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr;   CMy_Visc = nullptr;   CMz_Visc = nullptr;
+  CFx_Visc = nullptr;   CFy_Visc = nullptr;   CFz_Visc = nullptr;
+  CoPx_Visc = nullptr;   CoPy_Visc = nullptr;   CoPz_Visc = nullptr;
 
-  Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
-  Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;
+  Surface_CL_Visc = nullptr; Surface_CD_Visc = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr;   Surface_CFy_Visc = nullptr;   Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr;   Surface_CMy_Visc = nullptr;   Surface_CMz_Visc = nullptr;
+  Surface_HF_Visc = nullptr; Surface_MaxHF_Visc = nullptr;
 
-  CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
-  MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
-  CSkinFriction = NULL; HF_Visc = NULL;
+  CMerit_Visc = nullptr;      CT_Visc = nullptr;      CQ_Visc = nullptr;
+  MaxHF_Visc = nullptr; ForceViscous = nullptr; MomentViscous = nullptr;
+  CSkinFriction = nullptr; HF_Visc = nullptr;
 
   /*--- Set the gamma value ---*/
 
@@ -157,7 +157,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Fluid model intialization. ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
@@ -250,20 +250,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -546,8 +532,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
+    SlidingState[iMarker]      = nullptr;
+    SlidingStateNodes[iMarker] = nullptr;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
@@ -559,7 +545,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
         SlidingStateNodes[iMarker][iPoint] = 0;
         for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
+          SlidingState[iMarker][iPoint][iVar] = nullptr;
       }
 
     }
@@ -645,41 +631,41 @@ CIncNSSolver::~CIncNSSolver(void) {
 
   unsigned long iVertex;
 
-  if (CD_Visc != NULL)       delete [] CD_Visc;
-  if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)  delete [] CSF_Visc;
-  if (CMx_Visc != NULL)         delete [] CMx_Visc;
-  if (CMy_Visc != NULL)         delete [] CMy_Visc;
-  if (CMz_Visc != NULL)         delete [] CMz_Visc;
-  if (CoPx_Visc != NULL)        delete [] CoPx_Visc;
-  if (CoPy_Visc != NULL)        delete [] CoPy_Visc;
-  if (CoPz_Visc != NULL)        delete [] CoPz_Visc;
-  if (CFx_Visc != NULL)         delete [] CFx_Visc;
-  if (CFy_Visc != NULL)         delete [] CFy_Visc;
-  if (CFz_Visc != NULL)         delete [] CFz_Visc;
-  if (CEff_Visc != NULL)        delete [] CEff_Visc;
-  if (CMerit_Visc != NULL)      delete [] CMerit_Visc;
-  if (CT_Visc != NULL)          delete [] CT_Visc;
-  if (CQ_Visc != NULL)          delete [] CQ_Visc;
-  if (HF_Visc != NULL)        delete [] HF_Visc;
-  if (MaxHF_Visc != NULL) delete [] MaxHF_Visc;
-  if (ForceViscous != NULL)     delete [] ForceViscous;
-  if (MomentViscous != NULL)    delete [] MomentViscous;
+        delete [] CD_Visc;
+        delete [] CL_Visc;
+   delete [] CSF_Visc;
+          delete [] CMx_Visc;
+          delete [] CMy_Visc;
+          delete [] CMz_Visc;
+         delete [] CoPx_Visc;
+         delete [] CoPy_Visc;
+         delete [] CoPz_Visc;
+          delete [] CFx_Visc;
+          delete [] CFy_Visc;
+          delete [] CFz_Visc;
+         delete [] CEff_Visc;
+       delete [] CMerit_Visc;
+           delete [] CT_Visc;
+           delete [] CQ_Visc;
+         delete [] HF_Visc;
+  delete [] MaxHF_Visc;
+      delete [] ForceViscous;
+     delete [] MomentViscous;
 
-  if (Surface_CL_Visc != NULL)      delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != NULL)      delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != NULL) delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != NULL)       delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != NULL)        delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != NULL)        delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != NULL)        delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
-  if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
-  if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
+       delete [] Surface_CL_Visc;
+       delete [] Surface_CD_Visc;
+  delete [] Surface_CSF_Visc;
+        delete [] Surface_CEff_Visc;
+         delete [] Surface_CFx_Visc;
+         delete [] Surface_CFy_Visc;
+         delete [] Surface_CFz_Visc;
+         delete [] Surface_CMx_Visc;
+         delete [] Surface_CMy_Visc;
+         delete [] Surface_CMz_Visc;
+       delete [] Surface_HF_Visc;
+    delete [] Surface_MaxHF_Visc;
 
-  if (CSkinFriction != NULL) {
+  if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete [] CSkinFriction[iMarker][iDim];
@@ -689,7 +675,7 @@ CIncNSSolver::~CIncNSSolver(void) {
     delete [] CSkinFriction;
   }
 
-  if (HeatConjugateVar != NULL) {
+  if (HeatConjugateVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         delete [] HeatConjugateVar[iMarker][iVertex];
@@ -708,8 +694,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   unsigned long InnerIter     = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool disc_adjoint         = config->GetDiscrete_Adjoint();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
   bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
@@ -784,7 +769,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if (implicit && !Output) Jacobian.SetValZero();
 
   /*--- Error message ---*/
 
@@ -853,13 +838,14 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
 void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
 
-  su2double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
+  su2double Mean_BetaInc2, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
   Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Mean_Thermal_Conductivity = 0.0, Mean_Cv = 0.0, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   unsigned short iDim, iMarker;
   su2double ProjVel, ProjVel_i, ProjVel_j;
+  const su2double* Normal;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool energy = config->GetEnergy_Equation();
@@ -879,10 +865,10 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Point identification, Normal vector and area ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edges->GetNormal(iEdge);
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
     /*--- Mean Values ---*/
@@ -895,8 +881,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     /*--- Adjustment for grid movement ---*/
 
     if (dynamic_grid) {
-      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
       ProjVel_i = 0.0; ProjVel_j =0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
@@ -908,8 +894,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     /*--- Inviscid contribution ---*/
 
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
 
     /*--- Viscous contribution ---*/
 
@@ -924,8 +910,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
     Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint,Lambda);
+    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Visc(jPoint,Lambda);
 
   }
 
@@ -952,7 +938,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
         ProjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVel += GridVel[iDim]*Normal[iDim];
@@ -962,7 +948,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       /*--- Inviscid contribution ---*/
 
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->nodes->GetDomain(iPoint)) {
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
       }
 
@@ -979,7 +965,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
       Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-      if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+      if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Visc(iPoint,Lambda);
 
     }
     }
@@ -989,7 +975,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry->nodes->GetVolume(iPoint);
 
     if (Vol != 0.0) {
       Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
@@ -1090,17 +1076,17 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
   unsigned long iPoint, jPoint, iEdge;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points, coordinates and normal vector in edge ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                       geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Primitive and secondary variables ---*/
 
@@ -1160,7 +1146,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea     = config->GetRefArea();
   su2double RefLength   = config->GetRefLength();
   su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  su2double *Origin = NULL;
+  su2double *Origin = nullptr;
 
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
 
@@ -1249,8 +1235,8 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Coord = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+        Coord = geometry->nodes->GetCoord(iPoint);
+        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -1324,11 +1310,11 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 
-        if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
+        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
           /*--- Force computation ---*/
@@ -1605,7 +1591,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
   su2double *GridVel, *Normal, Area, Wall_HeatFlux;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary by string name ---*/
@@ -1630,7 +1616,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute dual-grid area and boundary normal ---*/
 
@@ -1656,7 +1642,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -1710,7 +1696,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double Twall, dTdn;
   su2double thermal_conductivity;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary by string name ---*/
@@ -1736,7 +1722,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
@@ -1753,7 +1739,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -1786,8 +1772,8 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        Coord_j = geometry->node[Point_Normal]->GetCoord();
+        Coord_i = geometry->nodes->GetCoord(iPoint);
+        Coord_j = geometry->nodes->GetCoord(Point_Normal);
         dist_ij = 0;
         for (iDim = 0; iDim < nDim; iDim++)
           dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -1856,7 +1842,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
   Temperature_Ref = config->GetTemperature_Ref();
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy        = config->GetEnergy_Equation();
 
   /*--- Identify the boundary ---*/
@@ -1876,7 +1862,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
@@ -1893,7 +1879,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->nodes->GetGridVel(iPoint);
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -1922,8 +1908,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
           /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-          Coord_i = geometry->node[iPoint]->GetCoord();
-          Coord_j = geometry->node[Point_Normal]->GetCoord();
+          Coord_i = geometry->nodes->GetCoord(iPoint);
+          Coord_j = geometry->nodes->GetCoord(Point_Normal);
           dist_ij = 0;
           for (iDim = 0; iDim < nDim; iDim++)
             dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);

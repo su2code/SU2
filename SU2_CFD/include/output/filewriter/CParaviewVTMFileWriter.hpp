@@ -2,7 +2,7 @@
  * \file CParaviewVTMFileWriter.hpp
  * \brief Headers fo paraview binary file writer class.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

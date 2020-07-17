@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -116,7 +116,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTurbSolver(void);
+  ~CTurbSolver(void) override;
 
   /*!
    * \brief Constructor of the class.
@@ -228,6 +228,20 @@ public:
                    CConfig *config) final;
 
   /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final;
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -296,7 +310,7 @@ public:
     int iVar;
 
     for( iVar = 0; iVar < nVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
         delete [] SlidingState[val_marker][val_vertex][iVar];
     }
 
@@ -356,7 +370,7 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
+    else if (Inlet_TurbVars == nullptr || Inlet_TurbVars[val_marker] == nullptr)
       SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
