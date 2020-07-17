@@ -1893,10 +1893,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
       const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
 
-      su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
       Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
@@ -1914,8 +1912,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Project_Grad_j = 0.5*Kappa*V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += (1.0-Kappa)*Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += (1.0-Kappa)*Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          const su2double Vector_ij = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+          Project_Grad_i += (1.0-Kappa)*Vector_ij*Gradient_i[iVar][iDim];
+          Project_Grad_j += (1.0-Kappa)*Vector_ij*Gradient_j[iVar][iDim];
         }
 
         if (limiter) {
