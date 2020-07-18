@@ -11391,29 +11391,22 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   su2double Pressure_out, Density_out,
   Pressure_in, Density_in;
 
-  su2double C[MAXNDIM], Prop_Axis[MAXNDIM], R, r[MAXNDIM], r_;
   su2double Fa, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
   su2double Temperature_out, H_in, H_out;
   su2double FQ, Q_out, Density_Disk;
   su2double SoSextr, Vnextr[MAXNDIM], Vnextr_, RiemannExtr, QdMnorm[MAXNDIM], QdMnorm2, appo2, SoS_out;
-  const su2double *P = nullptr;
 
   bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Gas_Constant  = config->GetGas_ConstantND();
   bool tkeNeeded          = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-  bool ratio              = (config->GetActDisk_Jump() == RATIO);
 
   su2double Normal[MAXNDIM];
 
   /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
   for (iDim = 0; iDim < nDim; iDim++){
-    C[iDim] = ActDisk_C(val_marker, iDim);
     Prop_Axis[iDim] = ActDisk_Axis(val_marker, iDim);
   }
-
-  /*--- Get the actuator disk radius for the current marker. ---*/
-  R = ActDisk_R(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -11526,82 +11519,82 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
         V_inlet[0] = Pressure / ( Gas_Constant * Density);
         for (iDim = 0; iDim < nDim; iDim++)
           V_inlet[iDim+1] = Velocity[iDim];
-          V_inlet[nDim+1] = Pressure;
-          V_inlet[nDim+2] = Density;
-          V_inlet[nDim+3] = Energy + Pressure/Density;
-          V_inlet[nDim+4] = SoundSpeed;
-          conv_numerics->SetPrimitive(V_domain, V_inlet);
-        }else{
-          /*--- Acoustic Riemann invariant extrapolation form the interior domain. ---*/
-          SoSextr = V_domain[nDim+4];
+        V_inlet[nDim+1] = Pressure;
+        V_inlet[nDim+2] = Density;
+        V_inlet[nDim+3] = Energy + Pressure/Density;
+        V_inlet[nDim+4] = SoundSpeed;
+        conv_numerics->SetPrimitive(V_domain, V_inlet);
+      }else{
+        /*--- Acoustic Riemann invariant extrapolation form the interior domain. ---*/
+        SoSextr = V_domain[nDim+4];
 
-          Vnextr_ = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++){
-            Vnextr[iDim] = V_domain[iDim+1]*Prop_Axis[iDim];
-            Vnextr_ += Vnextr[iDim]*Vnextr[iDim];
-          }
-          Vnextr_ = sqrt(max(0.0,Vnextr_));
-          RiemannExtr = Vnextr_ - ((2*SoSextr)/(Gamma_Minus_One));
+        Vnextr_ = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          Vnextr[iDim] = V_domain[iDim+1]*Prop_Axis[iDim];
+          Vnextr_ += Vnextr[iDim]*Vnextr[iDim];
+        }
+        Vnextr_ = sqrt(max(0.0,Vnextr_));
+        RiemannExtr = Vnextr_ - ((2*SoSextr)/(Gamma_Minus_One));
 
-          /*--- Assigning the momentum in tangential direction jump and the pressure jump. ---*/
-          Velocity[0] = u_in + uJ;
-          Velocity[1] = v_in + vJ;
-          Velocity[2] = w_in + wJ;
-          Pressure_out = Pressure_in + Fa;
+        /*--- Assigning the momentum in tangential direction jump and the pressure jump. ---*/
+        Velocity[0] = u_in + uJ;
+        Velocity[1] = v_in + vJ;
+        Velocity[2] = w_in + wJ;
+        Pressure_out = Pressure_in + Fa;
 
-          /*--- Computation of the momentum normal to the disk plane. ---*/
-          QdMnorm[0] = u_in*Prop_Axis[0];
-          QdMnorm[1] = v_in*Prop_Axis[1];
-          QdMnorm[2] = w_in*Prop_Axis[2];
+        /*--- Computation of the momentum normal to the disk plane. ---*/
+        QdMnorm[0] = u_in*Prop_Axis[0];
+        QdMnorm[1] = v_in*Prop_Axis[1];
+        QdMnorm[2] = w_in*Prop_Axis[2];
 
-          QdMnorm2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) QdMnorm2 += QdMnorm[iDim]*QdMnorm[iDim];
+        QdMnorm2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) QdMnorm2 += QdMnorm[iDim]*QdMnorm[iDim];
 
-          /*--- Resolving the second grade equation for the density. ---*/
-          appo2 = -((2*sqrt(QdMnorm2)*RiemannExtr)+((4*Gamma*Pressure_out)/(pow(Gamma_Minus_One,2))));
-          Density_out = (-appo2+sqrt(max(0.0,pow(appo2,2)-4*QdMnorm2*pow(RiemannExtr,2))))/(2*pow(RiemannExtr,2));
+        /*--- Resolving the second grade equation for the density. ---*/
+        appo2 = -((2*sqrt(QdMnorm2)*RiemannExtr)+((4*Gamma*Pressure_out)/(pow(Gamma_Minus_One,2))));
+        Density_out = (-appo2+sqrt(max(0.0,pow(appo2,2)-4*QdMnorm2*pow(RiemannExtr,2))))/(2*pow(RiemannExtr,2));
 
-          Velocity2 = 0;
-          for (iDim = 0; iDim < nDim; iDim++) Velocity2 += (Velocity[iDim]*Velocity[iDim]);
+        Velocity2 = 0;
+        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += (Velocity[iDim]*Velocity[iDim]);
 
-          /*--- Computation of the enthalpy, total energy, temperature and speed of sound. ---*/
-          H_out = H_in/Density_in + Fa/Density_out;
-          Energy = H_out - Pressure_out/Density_out;
-          if (tkeNeeded) Energy += GetTke_Inf();
-          Temperature_out = (Energy-0.5*Velocity2/(pow(Density_out,2)))*(Gamma_Minus_One/Gas_Constant);
+        /*--- Computation of the enthalpy, total energy, temperature and speed of sound. ---*/
+        H_out = H_in/Density_in + Fa/Density_out;
+        Energy = H_out - Pressure_out/Density_out;
+        if (tkeNeeded) Energy += GetTke_Inf();
+        Temperature_out = (Energy-0.5*Velocity2/(pow(Density_out,2)))*(Gamma_Minus_One/Gas_Constant);
 
-          SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
+        SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
 
-          /*--- Set the primitive variables. ---*/
-          V_outlet[0] = Temperature_out;
-          for (iDim = 0; iDim < nDim; iDim++)
-            V_outlet[iDim+1] = Velocity[iDim]/Density_out;
-          V_outlet[nDim+1] = Pressure_out;
-          V_outlet[nDim+2] = Density_out;
-          V_outlet[nDim+3] = H_out;
-          V_outlet[nDim+4] = SoS_out;
-          conv_numerics->SetPrimitive(V_domain, V_outlet);
-         }
+        /*--- Set the primitive variables. ---*/
+        V_outlet[0] = Temperature_out;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_outlet[iDim+1] = Velocity[iDim]/Density_out;
+        V_outlet[nDim+1] = Pressure_out;
+        V_outlet[nDim+2] = Density_out;
+        V_outlet[nDim+3] = H_out;
+        V_outlet[nDim+4] = SoS_out;
+        conv_numerics->SetPrimitive(V_domain, V_outlet);
+      }
 
-        /*--- Grid Movement (NOT TESTED!)---*/
+      /*--- Grid Movement (NOT TESTED!)---*/
 
-        if (dynamic_grid)
-          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-        /*--- Compute the residual using an upwind scheme ---*/
+      /*--- Compute the residual using an upwind scheme ---*/
 
-        auto residual = conv_numerics->ComputeResidual(config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
-        /*--- Update residual value ---*/
+      /*--- Update residual value ---*/
 
-        LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
-        /*--- Jacobian contribution for implicit integration ---*/
+      /*--- Jacobian contribution for implicit integration ---*/
 
-        if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-       }
-    }
+     }
+  }
 }
 
 void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
