@@ -490,7 +490,6 @@ bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *con
   //}
 
 
-
   Ds                       = fluidmodel->GetDiffusionCoeff();
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
@@ -500,7 +499,6 @@ bool CNEMONSVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *con
   thermalconductivities    = fluidmodel->GetThermalConductivities();
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
-
 
   return nonPhys;
 }

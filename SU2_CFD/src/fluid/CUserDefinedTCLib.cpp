@@ -26,10 +26,12 @@
  */
 
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../../Common/include/option_structure.hpp"
+
 
 #include <iomanip> //cat:delete
 
-CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous): CNEMOGas(config){
+CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config){
 
   nDim = val_nDim;
 
@@ -50,13 +52,13 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   Omega11.resize(nSpecies,nSpecies,4,0.0);
   RxnConstantTable.resize(6,5) = su2double(0.0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
-  
+
   if(viscous){ 
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
   }
-
+  
   String_GasModel = config->GetGasModel();
 
   if (String_GasModel == "N2"){
@@ -814,13 +816,8 @@ vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
       if (iSpecies != nSpecies) 
         ws[iSpecies] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn);
     }
-    //cout << std::setprecision(10)<<  "cat: fwdRxn-bkwRxn=" << fwdRxn-bkwRxn << endl;
   }
-
-
-
   return ws;
-
 }
 
 void CUserDefinedTCLib::GetKeqConstants(unsigned short val_Reaction) {
@@ -944,9 +941,6 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
       omegaCV += ws[iSpecies]*eve[iSpecies];
   }
 
-// cout << std::setprecision(10)<<  "cat: omegaVT=" << omegaVT << endl;
-// cout << std::setprecision(10)<<  "cat: omegaCV=" << omegaCV << endl;
-
   omega = omegaVT + omegaCV;
 
   return omega;
@@ -956,12 +950,13 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 vector<su2double> CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
 
   su2double ef;
+  vector<su2double> cvtrs;
+
+  cvtrs = GetSpeciesCvTraRot();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){  
     eves[iSpecies] = val_eves[iSpecies];
-    /*--- Calculate formation energy ---*/
-    ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];  
-    hs[iSpecies] = Ru/MolarMass[iSpecies]*val_T + Cvtrs[iSpecies]*val_T + Enthalpy_Formation[iSpecies] + eves[iSpecies];
+    hs[iSpecies] = Ru/MolarMass[iSpecies]*val_T + cvtrs[iSpecies]*val_T + Enthalpy_Formation[iSpecies] + eves[iSpecies];
   }    
 
   return hs;
@@ -970,9 +965,9 @@ vector<su2double> CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2doub
 
 vector<su2double> CUserDefinedTCLib::GetDiffusionCoeff(){
 
-  if(WILKE)
+  if(Kind_TransCoeffModel == WILKE)
    DiffusionCoeffWBE();
-  if(GUPTAYOS)
+  if(Kind_TransCoeffModel == GUPTAYOS)
    DiffusionCoeffGY();
 
   return DiffusionCoeff;
@@ -981,9 +976,9 @@ vector<su2double> CUserDefinedTCLib::GetDiffusionCoeff(){
 
 su2double CUserDefinedTCLib::GetViscosity(){
 
-  if(WILKE)
+  if(Kind_TransCoeffModel == WILKE)
     ViscosityWBE();
-  if(GUPTAYOS)
+  if(Kind_TransCoeffModel == GUPTAYOS)
     ViscosityGY();
 
   return Mu;
@@ -992,9 +987,9 @@ su2double CUserDefinedTCLib::GetViscosity(){
 
 vector<su2double> CUserDefinedTCLib::GetThermalConductivities(){
 
-  if(WILKE)
+  if(Kind_TransCoeffModel == WILKE)
     ThermalConductivitiesWBE();
-  if(GUPTAYOS)
+  if(Kind_TransCoeffModel == GUPTAYOS)
     ThermalConductivitiesGY();
 
   return ThermalConductivities;
@@ -1050,7 +1045,7 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
       }
     }
-    DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
+    DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;  
   }    
 }
 
@@ -1317,7 +1312,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos, su2double rhoEmix, su2double rhoEve){
+vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
   su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax;
@@ -1340,8 +1335,17 @@ vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos,
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
   }      
 
-  T = (rhoEmix - rhoEve - rhoE_f + rhoE_ref) / rhoCvtr;
+  //cout <<setprecision(25)<< "cat: rhoEvel=" << rhoEvel << endl;
+  //
+  //cout <<setprecision(25)<< "cat: rhoE=" << rhoE << endl;
+  //cout <<setprecision(25)<< "cat: rhoEve=" << rhoEve << endl;
+  //cout <<setprecision(25)<< "cat: rhoEf=" << rhoE_f << endl;
+  //cout <<setprecision(25)<< "cat: rhoEref=" << rhoE_ref << endl;
+  
 
+  T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
+
+  //cout <<setprecision(25)<< "cat: T=" << T << endl;
 
   /*----------Vibrational temperature----------*/
   /*--- Set vibrational temperature clipping values ---*/ //cat: probably not necessary, instead just initise Tve_o,tve2

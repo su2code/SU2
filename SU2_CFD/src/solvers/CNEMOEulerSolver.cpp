@@ -510,7 +510,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                       Temperature_ve_Inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config, FluidModel);
 
-  cout <<   "cat: check infty" << endl;
   check_infty = node_infty->SetPrimVar_Compressible(0,config, FluidModel);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -518,8 +517,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                  Temperature_ve_Inf, nPoint, nDim, nVar,
                                  nPrimVar, nPrimVarGrad, config, FluidModel);
   SetBaseClassPointerToNodes();
-
-  cout <<   "cat: start check nodes" << endl;
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
@@ -623,8 +620,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigne
     counter_local++;
     }
   }
-
-  cout <<   "cat: end check nodes" << endl;
 
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
@@ -1316,7 +1311,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     iPoint = geometry->edges->GetNode(iEdge, 0);
     jPoint = geometry->edges->GetNode(iEdge, 1);
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-     
+    
     /*--- Get conserved & primitive variables from CVariable ---*/
     U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
     V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
@@ -1463,6 +1458,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
           if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
               (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
             err = true;
+
+    //cout <<  "err=" << err << endl;      
     
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
@@ -1491,6 +1488,16 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   delete [] Eve_j;
   delete [] Cvve_i;
   delete [] Cvve_j;
+
+//     su2double *local_Residual;
+// for(iPoint=0;iPoint<nPoint;iPoint++){
+//   local_Residual = LinSysRes.GetBlock(iPoint);
+//   for(iVar=0;iVar<nVar;iVar++)
+//     cout <<  "up local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl;
+// }
+//
+// exit(0);
+
 }
 
 
@@ -1641,6 +1648,15 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     cout << "Chemical:    " << eChm_global << endl;
     cout << "Vib. Relax:  " << eVib_global << endl;
   }
+
+ //  su2double *local_Residual;
+ //for(iPoint=0;iPoint<nPoint;iPoint++){
+ //  local_Residual = LinSysRes.GetBlock(iPoint);
+ //  for(iVar=0;iVar<nVar;iVar++)
+ //    cout <<  "sou local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl;
+ //}
+
+// exit(0);
 }
 
 void CNEMOEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
@@ -2386,6 +2402,11 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+
+ //  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+ //  for (iVar = 0; iVar < nVar; iVar++)
+ //    cout <<  "nodes->GetSolution(iPoint,ivar)=" << nodes->GetSolution(iPoint,iVar) << endl;//cat:
+ //}
  
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2399,9 +2420,10 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
 
-
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
+
+       // cout <<  "local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl;
          
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         nodes->AddSolution(iPoint, iVar, -Res*Delta);
@@ -2412,7 +2434,11 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     }
   }
 
- 
+  // for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+  // for (iVar = 0; iVar < nVar; iVar++)
+  //   cout <<  "nodes->GetSolution("  << iPoint << "," << iVar << ")=" << nodes->GetSolution(iPoint,iVar) << endl;//cat:
+  //
+
   /*--- MPI solution ---*/
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
@@ -3387,6 +3413,15 @@ void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
     }
   }
   delete [] u;
+
+//     su2double *local_Residual;
+// for(iPoint=0;iPoint<nPoint;iPoint++){
+//   local_Residual = LinSysRes.GetBlock(iPoint);
+//   for(iVar=0;iVar<nVar;iVar++)
+//     cout <<  "eu local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl;
+// }
+//
+// exit(0);
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
@@ -3787,6 +3822,11 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   su2double Ef, Ev, Ee, RuSI, Ru;
   su2double thoTve, exptv, thsqr, Cvvs, Cves;
   su2double num, num2, num3, denom;
+  vector<su2double> rhos;
+  rhos.resize(nSpecies,0.0);
+
+
+  vector<su2double> energies;
 
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -3824,6 +3864,14 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   const auto& g         = config->GetElDegeneracy();
   nElStates = config->GetnElStates();
 
+  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  //  cout <<  "out Ms=" << Ms[iSpecies] << endl;
+  //  cout <<  "out xi[iSpecies]=" << xi[iSpecies] << endl;
+  //  cout <<  "out 3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]=" << (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies] << endl;
+  //}
+//
+  //exit(0);
+
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else { nHeavy = nSpecies; nEl = 0; }
 
@@ -3857,37 +3905,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = 0.0;
       for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = 0.0;
 
-      /*--- Build the fictitious intlet state based on characteristics ---*/
-
-      /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
-      else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
-
-      /*--- Non-dim. the inputs if necessary. ---*/
-      P_Exit = P_Exit/config->GetPressure_Ref();
-
-      /*--- Check whether the flow is supersonic at the exit. The type
-       of boundary update depends on this. ---*/
-      Density = V_domain[RHO_INDEX];
-      Velocity2 = 0.0; Vn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = V_domain[VEL_INDEX+iDim];
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-        Vn += Velocity[iDim]*UnitaryNormal[iDim];
-      }
-      Energy      = U_domain[nVar-2]/Density;
-      Temperature = V_domain[T_INDEX];
-      Tve         = V_domain[TVE_INDEX];
-      Pressure    = V_domain[PRESS_INDEX];
-      SoundSpeed  = V_domain[A_INDEX];
-      Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
-
-      /*--- Compute Species Concentrations ---*/
-      //Using partial pressures, maybe not
-      for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-        Ys[iSpecies] = V_domain[iSpecies]/Density;
-      }
-
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {
 
@@ -3907,6 +3924,38 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
          (T and Tve) and species concentraition are also assumed to be extrapolated.
          ---*/
 
+        /*--- Build the fictitious intlet state based on characteristics ---*/
+
+        /*--- Retrieve the specified back pressure for this outlet. ---*/
+        if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
+        else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
+  
+        /*--- Non-dim. the inputs if necessary. ---*/
+        P_Exit = P_Exit/config->GetPressure_Ref();
+  
+        /*--- Check whether the flow is supersonic at the exit. The type
+         of boundary update depends on this. ---*/
+        Density = V_domain[RHO_INDEX];
+        Velocity2 = 0.0; Vn = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = V_domain[VEL_INDEX+iDim];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+          Vn += Velocity[iDim]*UnitaryNormal[iDim];
+        }
+        Energy      = U_domain[nVar-2]/Density;
+        Temperature = V_domain[T_INDEX];
+        Tve         = V_domain[TVE_INDEX];
+        Pressure    = V_domain[PRESS_INDEX];
+        SoundSpeed  = V_domain[A_INDEX];
+        Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
+  
+        /*--- Compute Species Concentrations ---*/
+        //Using partial pressures, maybe not
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = V_domain[iSpecies]/Density;
+        }
+
+
         Entropy = Pressure*pow(1.0/Density,Gamma);
         Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
 
@@ -3925,7 +3974,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
         /*--- Primitive variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
-          V_outlet[iSpecies]= Ys[iSpecies]*Density;
+          V_outlet[iSpecies] = Ys[iSpecies]*Density;
+          rhos[iSpecies]     = V_outlet[iSpecies];
         }
 
         V_outlet[T_INDEX]     = V_domain[T_INDEX];
@@ -3939,52 +3989,58 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         V_outlet[RHO_INDEX]   = Density;
         V_outlet[A_INDEX]     = SoundSpeed;
 
-        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-          V_outlet[RHOCVTR_INDEX ] += Density* Ys[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-        }
+        FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
+        V_outlet[RHOCVTR_INDEX] = FluidModel->GetrhoCvtr();
+        V_outlet[RHOCVVE_INDEX] = FluidModel->GetrhoCvve();
 
-        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        energies = FluidModel->GetMixtureEnergies();
 
-          /*--- Vibrational energy ---*/
-          if (thetav[iSpecies] != 0.0) {
 
-            /*--- Rename for convenience ---*/
-            thoTve = thetav[iSpecies]/Tve;
-            exptv = exp(thetav[iSpecies]/Tve);
-            thsqr = thetav[iSpecies]*thetav[iSpecies];
 
-            /*--- Calculate species vibrational specific heats ---*/
-            Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
-
-            /*--- Add contribution ---*/
-            V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cvvs;
-          }
-
-          /*--- Electronic energy ---*/
-          if (nElStates[iSpecies] != 0) {
-            num = 0.0; num2 = 0.0;
-            denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
-            num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-            for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-              thoTve = thetae[iSpecies][iEl]/Tve;
-              exptv = exp(-thetae[iSpecies][iEl]/Tve);
-
-              num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
-              denom += g[iSpecies][iEl] * exptv;
-              num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
-              num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
-            }
-            Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
-            V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cves;
-          }
-
-        }
-
-        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-          cout << "THIS MAY BE WRONG" << endl;
-          Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
-          V_outlet[RHOCVVE_INDEX] += V_outlet[nSpecies-1] * Cves;
-        }
+//        exit(0);
+//
+//        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//
+//          /*--- Vibrational energy ---*/
+//          if (thetav[iSpecies] != 0.0) {
+//
+//            /*--- Rename for convenience ---*/
+//            thoTve = thetav[iSpecies]/Tve;
+//            exptv = exp(thetav[iSpecies]/Tve);
+//            thsqr = thetav[iSpecies]*thetav[iSpecies];
+//
+//            /*--- Calculate species vibrational specific heats ---*/
+//            Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+//
+//            /*--- Add contribution ---*/
+//            V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cvvs;
+//          }
+//
+//          /*--- Electronic energy ---*/
+//          if (nElStates[iSpecies] != 0) {
+//            num = 0.0; num2 = 0.0;
+//            denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
+//            num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+//            for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//              thoTve = thetae[iSpecies][iEl]/Tve;
+//              exptv = exp(-thetae[iSpecies][iEl]/Tve);
+//
+//              num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
+//              denom += g[iSpecies][iEl] * exptv;
+//              num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
+//              num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+//            }
+//            Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
+//            V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cves;
+//          }
+//
+//        }
+//
+//        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//          cout << "THIS MAY BE WRONG" << endl;
+//          Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
+//          V_outlet[RHOCVVE_INDEX] += V_outlet[nSpecies-1] * Cves;
+//        }
 
         /*--- Conservative variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
@@ -3994,46 +4050,49 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         for (iDim = 0; iDim < nDim; iDim++)
           U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
 
+        U_outlet[nVar-2] = (energies[0] + 0.5*Velocity2) * Density;
+        U_outlet[nVar-1] = energies[1] * Density;
+
         /*--- Calculate energy (RRHO and Electronic) ---*/
-        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-
-          // Species formation energy
-          Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-          // Species vibrational energy
-          if (thetav[iSpecies] != 0.0)
-            Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-          else
-            Ev = 0.0;
-
-          // Species electronic energy
-          num = 0.0;
-          denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-          for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-            num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-            denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-          }
-          Ee = Ru/Ms[iSpecies] * (num/denom);
-
-          // Mixture total Energy
-          U_outlet[nVar-2] += U_outlet[iSpecies] * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies]*
-                              (V_outlet[T_INDEX]-Tref[iSpecies]) + Ev + Ee + Ef +
-                              0.5*Velocity2);
-
-          // Mixture vibrational-electronic energy
-          U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
-
-
-        }
-
-        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-
-          // Species formation energy
-          Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-
-          // Electron t-r mode contributes to mixture vib-el energy
-          U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-        }
+//        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//
+//          // Species formation energy
+//          Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+//
+//          // Species vibrational energy
+//          if (thetav[iSpecies] != 0.0)
+//            Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+//          else
+//            Ev = 0.0;
+//
+//          // Species electronic energy
+//          num = 0.0;
+//          denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+//          for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//            num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//            denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//          }
+//          Ee = Ru/Ms[iSpecies] * (num/denom);
+//
+//          // Mixture total Energy
+//          U_outlet[nVar-2] += U_outlet[iSpecies] * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies]*
+//                              (V_outlet[T_INDEX]-Tref[iSpecies]) + Ev + Ee + Ef +
+//                              0.5*Velocity2);
+//
+//          // Mixture vibrational-electronic energy
+//          U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
+//
+//
+//        }
+//
+//        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//
+//          // Species formation energy
+//          Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+//
+//          // Electron t-r mode contributes to mixture vib-el energy
+//          U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+//        }
 
       }
 

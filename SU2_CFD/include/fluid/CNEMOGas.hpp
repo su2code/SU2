@@ -39,8 +39,7 @@ class CNEMOGas : public CFluidModel {
 
 protected:
   
-  bool viscous,                          /*!< \brief Presence of viscous effects. */
-  frozen;                                /*!< \brief Indicates if mixture is frozen. */
+  bool frozen;                           /*!< \brief Indicates if mixture is frozen. */
   
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
@@ -62,7 +61,10 @@ protected:
   su2double ThermalCond_ve{0.0};         /*!< \brief V-E thermal conductivity of the gas mixture. */
   su2double RuSI{UNIVERSAL_GAS_CONSTANT};/*!< \brief Universal gas constant [J/(mol*K)] */
   su2double Ru{1000.0*RuSI};             /*!< \brief Universal gas constant [J/(kmol*K)] */
-  su2double GasConstant{0.0};             /*!< \brief Universal gas constant [J/(kmol*K)] */
+  su2double GasConstant{0.0};            /*!< \brief Universal gas constant [J/(kmol*K)] */
+  su2double rhoCvtr{0.0};                /*!< \brief density times T-R specific heat */
+  su2double rhoCvve{0.0};                /*!< \brief density times V-E specific heat */
+
 
   vector<su2double> MassFrac_Freestream;  /*!< \brief Freestream species mass fractions. */
 
@@ -167,7 +169,7 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve){}
+  virtual vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
   
   /*!
    * \brief Get speed of sound.
@@ -213,5 +215,20 @@ public:
    * \brief Get gas constant.
    */
   su2double GetGasConstant();
+
+  /*!
+   * \brief Get rhoCvtr.
+   */
+  inline su2double GetrhoCvtr() {
+    rhoCvtr = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+      rhoCvtr += rhos[iSpecies]*Cvtrs[iSpecies];
+    return rhoCvtr;
+  }
+
+  /*!
+   * \brief Get rhoCvtr.
+   */
+  su2double GetrhoCvve();
 
 };

@@ -606,8 +606,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
                                    Mvec_Inf, Temperature_Inf,
                                    Temperature_ve_Inf, 1, nDim, nVar,
                                    nPrimVar, nPrimVarGrad, config, FluidModel);
-
-
+ 
   check_infty = node_infty->SetPrimVar_Compressible(0, config, FluidModel); 
 
  
@@ -756,7 +755,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
       counter_local++;
     }
   }
-  
+
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
@@ -897,6 +896,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   errV = new su2double[nPrimVar];
 
 
+  //cout << "cat: Preprocessing"  << endl;
+
   /*--- Set the primitive variables ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     /*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
@@ -910,6 +911,9 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     /*--- Initialize the convective, source and viscous residual vector ---*/
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
   }
+
+ // exit(0);
+
 
   //  cout<<"cat: end of ns SetPrimVar_Compressible"<<endl;
   //exit(0);
@@ -1144,6 +1148,8 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
 
+     // exit(0);//cat: 
+
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1167,6 +1173,15 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
       }
     }
   } //iEdge
+
+// su2double *local_Residual;
+// for(iPoint=0;iPoint<nPoint;iPoint++){
+//   local_Residual = LinSysRes.GetBlock(iPoint);
+//   for(iVar=0;iVar<nVar;iVar++)
+//     cout <<  "visc local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl;
+// }
+//
+// exit(0);
 }
 
 void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
@@ -2007,7 +2022,6 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                        CConfig *config,
                                        unsigned short val_marker) {
 
-
   unsigned short iDim, iVar, jVar;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
@@ -2017,6 +2031,14 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   su2double Area, *Normal, UnitNormal[3];
   su2double *Coord_i, *Coord_j;
   su2double C;
+
+
+// su2double *local_Residual;//cat:
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    local_Residual = LinSysRes.GetBlock(iPoint);
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      cout <<  "bef local_Residual[" << iPoint << "," << iVar << "]=" << local_Residual[iVar] << endl;
+//  }
 
   bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool ionization = config->GetIonization();
@@ -2103,10 +2125,19 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       ktr     = nodes->GetThermalConductivity(iPoint);
       kve     = nodes->GetThermalConductivity_ve(iPoint);
 
+  //      cout <<  "cat: ktr=" << ktr << endl;
+  //   cout <<  "cat: kve=" << kve << endl;
+
       /*--- Apply to the linear system ---*/
       Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
+
+
+   //      cout <<  "cat: Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << endl;
+   //   cout <<  "cat: Res_Visc[nSpecies+nDim+1]=" << Res_Visc[nSpecies+nDim+1] << endl;
+//
+     //  exit(0);
 
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -2127,6 +2158,16 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       } // implicit
     }
   } 
+
+//su2double *local_Residual;//cat:
+
+// for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//   local_Residual = LinSysRes.GetBlock(iPoint);
+//   for (iVar = 0; iVar < nVar; iVar++)
+//     cout <<  "iso local_Residual[" << iPoint << "," << iVar << "]=" << local_Residual[iVar] << endl;
+// }
+
+// exit(0);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,

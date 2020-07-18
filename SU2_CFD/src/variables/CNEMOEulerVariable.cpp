@@ -1020,7 +1020,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 //  cout <<setprecision(10)<< "cat: rhoE - rho*0.5*sqvel=" << rhoE - rho*0.5*sqvel << endl;
 // cout <<setprecision(10)<< "cat: rhoEve=" << rhoEve << endl;
 //
-  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE - rho*0.5*sqvel, rhoEve);
+
+  //cout <<setprecision(25)<< "cat: 0.5*rho*sqvel=" << 0.5*rho*sqvel << endl;
+ 
+  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
   V[T_INDEX]   = T[0];
   
   // Determine if the temperature lies within the acceptable range
@@ -1143,19 +1146,18 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   }
 
   // Determine properties of the mixture at the current state
-  rhoCvtr  = 0.0;
-  rhoCvve  = 0.0;
   
-  vector<su2double> cvtrs = fluidmodel->GetSpeciesCvTraRot();
+  //vector<su2double> cvtrs = fluidmodel->GetSpeciesCvTraRot();
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); //cat: just val_cvves
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); //cat: just val_eves
 
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
   	val_eves[iSpecies]  = eves[iSpecies];
   	val_Cvves[iSpecies] = cvves[iSpecies];
-  	rhoCvve            += U[iSpecies]*val_Cvves[iSpecies];
-    rhoCvtr            += U[iSpecies] * cvtrs[iSpecies];
   }
+
+  rhoCvtr = fluidmodel->GetrhoCvtr();
+  rhoCvve = fluidmodel->GetrhoCvve();  
   
   V[RHOCVTR_INDEX] = rhoCvtr;
   V[RHOCVVE_INDEX] = rhoCvve;
@@ -1179,6 +1181,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   //  V[P_INDEX] += U[nSpecies-1] * Ru/Ms[nSpecies-1] * V[TVE_INDEX];
 
   V[P_INDEX] = fluidmodel->GetPressure();
+
+  //cout <<setprecision(25)<< "cat: V[P_INDEX]=" << V[P_INDEX] << endl;
 
   if (V[P_INDEX] < 0.0) {
     V[P_INDEX] = 1E-20;
@@ -1214,21 +1218,25 @@ bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
 //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-//   cout <<setprecision(10)<< "cat: val_eves["  << iSpecies << "]=" << val_eves[iSpecies] << endl;
+// cout <<setprecision(10)<< "cat: val_eves["  << iSpecies << "]=" << val_eves[iSpecies] << endl;
 //   cout <<setprecision(10)<< "cat: val_cvves[" << iSpecies << "]=" << val_Cvves[iSpecies] << endl;
 //   cout <<setprecision(10)<< "cat: rhos[" << iSpecies << "]=" << V[RHOS_INDEX+iSpecies] << endl;
-// }
-// cout << "cat: rho=" << V[RHO_INDEX] << endl;
-// for (iDim = 0; iDim < nDim; iDim++)
-//   cout <<setprecision(10)<< "cat: Vel[" << iDim << "]=" << V[VEL_INDEX+iDim] << endl;
-// cout <<setprecision(10)<< "cat: T=" << V[T_INDEX] << endl;
-// cout <<setprecision(10)<< "cat: Tve=" << V[TVE_INDEX] << endl;
-// cout <<setprecision(10)<< "cat: rhoCvtr=" << V[RHOCVTR_INDEX] << endl;
-// cout <<setprecision(10)<< "cat: rhoCvve=" << V[RHOCVVE_INDEX] << endl;
-// cout <<setprecision(10)<< "cat: P=" << V[P_INDEX] << endl;
-// cout <<setprecision(10)<< "cat: A=" << V[A_INDEX] << endl;
+//    
+//}
+//cout << "cat: rho=" << V[RHO_INDEX] << endl;
+//for (iDim = 0; iDim < nDim; iDim++)
+//  cout <<setprecision(10)<< "cat: Vel[" << iDim << "]=" << V[VEL_INDEX+iDim] << endl;
+//cout <<setprecision(10)<< "cat: T=" << V[T_INDEX] << endl;
+//cout <<setprecision(10)<< "cat: Tve=" << V[TVE_INDEX] << endl;
+//cout <<setprecision(10)<< "cat: rhoCvtr=" << V[RHOCVTR_INDEX] << endl;
+//cout <<setprecision(10)<< "cat: rhoCvve=" << V[RHOCVVE_INDEX] << endl;
+//cout <<setprecision(10)<< "cat: P=" << V[P_INDEX] << endl;
+//cout <<setprecision(10)<< "cat: A=" << V[A_INDEX] << endl;
 //
-// exit(0);
+//   exit(0);
+//
+
+
 
 
   return nonPhys;

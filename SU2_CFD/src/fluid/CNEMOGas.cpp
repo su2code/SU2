@@ -27,6 +27,8 @@
 
 #include "../../include/fluid/CNEMOGas.hpp"
 
+#include <iomanip> //cat:delete
+
 CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
   nSpecies            = config->GetnSpecies();
@@ -86,14 +88,27 @@ su2double CNEMOGas::GetSoundSpeed(){
 
   conc    = 0.0;
   rhoCvtr = 0.0; 
+  Density = 0.0;
 
   vector<su2double> Cvtrs = GetSpeciesCvTraRot();
 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Density+=rhos[iSpecies];
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
     conc += rhos[iSpecies]/MolarMass[iSpecies];
-    rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies]; 
+    rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies];
   }
   SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
+
+ // cout <<setprecision(10)<< "cat: Ru=" << Ru << endl;
+ //cout <<setprecision(10)<< "cat: conc=" << conc << endl;
+
+// cout<<endl<<endl;
+//
+// cout <<setprecision(10)<< "cat: rhoCvtr=" << rhoCvtr << endl;
+// cout <<setprecision(10)<< "cat: Pressure=" << Pressure << endl;
+// cout <<setprecision(10)<< "cat: Density=" << Density << endl;
 
   return(sqrt(SoundSpeed2));
 
@@ -102,6 +117,16 @@ su2double CNEMOGas::GetSoundSpeed(){
 su2double CNEMOGas::GetPressure(){
 
   su2double P = 0.0;
+
+ //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+ //  cout <<setprecision(20)<< "cat: rhos=" << rhos[iSpecies] << endl;
+ //  cout <<setprecision(20)<< "cat: MolarMass=" << MolarMass[iSpecies] << endl;
+ //}
+
+ //cout <<setprecision(20)<< "cat: Ru=" << Ru << endl;
+ //cout <<setprecision(20)<< "cat: T=" << T << endl;
+ //cout <<setprecision(20)<< "cat: Tve=" << Tve << endl;
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
@@ -123,6 +148,17 @@ su2double CNEMOGas::GetGasConstant(){
   GasConstant = Ru / Mass;
  
   return GasConstant;
+}
+
+su2double CNEMOGas::GetrhoCvve() {
+
+    Cvves = GetSpeciesCvVibEle();
+
+    rhoCvve = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
+
+    return rhoCvve;
 }
 
 

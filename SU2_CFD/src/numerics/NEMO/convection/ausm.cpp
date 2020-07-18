@@ -27,6 +27,8 @@
 
 #include "../../../../include/numerics/NEMO/convection/ausm.hpp"
 
+#include <iomanip> //cat: delete
+
 CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, 
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad, 
@@ -140,6 +142,37 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//    cout << setprecision(10) << "cat: rhos_i[" << iSpecies << "]=" << rhos_i[iSpecies] << endl;
+//    cout << setprecision(10) << "cat: rhos_j[" << iSpecies << "]=" << rhos_j[iSpecies] << endl;
+//  }
+//  
+//  for (iDim = 0; iDim < nDim; iDim++){
+//    cout << setprecision(10) << "cat: u_i[" << iDim << "]=" << u_i[iDim] << endl;
+//    cout << setprecision(10) << "cat: u_j[" << iDim << "]=" << u_j[iDim] << endl;
+//  }
+//
+//  cout << setprecision(10) << "cat: P_i=" << P_i << endl;
+//  cout << setprecision(10) << "cat: P_j=" << P_j << endl;
+//  
+//  cout << setprecision(10) << "cat: h_i=" << h_i << endl;
+//  cout << setprecision(10) << "cat: h_j=" << h_j << endl;
+//  
+//  cout << setprecision(10) << "cat: a_i=" << a_i << endl;
+//  cout << setprecision(10) << "cat: a_j=" << a_j << endl;
+//  
+//  cout << setprecision(10) << "cat: rho_i=" << rho_i << endl;
+//  cout << setprecision(10) << "cat: rho_j=" << rho_j << endl;
+//  
+//  cout << setprecision(10) << "cat: eve_i=" << e_ve_i << endl;
+//  cout << setprecision(10) << "cat: eve_j=" << e_ve_j << endl;
+//  
+//  cout << setprecision(10) << "cat: rhoCvtr_i=" << rhoCvtr_i << endl;
+//  cout << setprecision(10) << "cat: rhoCvtr_j=" << rhoCvtr_j << endl;
+//  
+//  cout << setprecision(10) << "cat: rhoCvve_i=" << rhoCvve_i << endl;
+//  cout << setprecision(10) << "cat: rhoCvve_j=" << rhoCvve_j << endl;
+
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -189,6 +222,13 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
 
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
+
+  
+for (iVar = 0; iVar < nVar; iVar++)
+  
+//cout << setprecision(20) << "cat: val_residual[" << iVar << "]=" << val_residual[iVar] << endl;
+//  
+//exit(0);
 
   if (implicit) {
 

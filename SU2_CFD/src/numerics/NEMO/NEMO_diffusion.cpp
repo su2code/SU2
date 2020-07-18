@@ -28,6 +28,8 @@
 
 #include "../../../include/numerics/NEMO/NEMO_diffusion.hpp"
 
+#include <iomanip> //cat:delete
+
 CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
                              unsigned short val_nPrimVar,
@@ -152,6 +154,14 @@ void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
+// cout <<setprecision(10)<< "cat: k=" << Mean_Thermal_Conductivity << endl;
+// cout <<setprecision(10)<< "cat: kve=" << Mean_Thermal_Conductivity_ve << endl;
+// cout <<setprecision(10)<< "cat: visc=" << Mean_Laminar_Viscosity << endl;
+// for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//   cout <<setprecision(10)<< "cat: Mean_Diffusion_Coeff=" << Mean_Diffusion_Coeff[iSpecies] << endl;
+//   cout <<setprecision(10)<< "cat: Mean_Eve=" << Mean_Eve[iSpecies] << endl;
+// }
+
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
                      Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
@@ -160,9 +170,8 @@ void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
   
 
   /*--- Update viscous residual ---*/
-  for (iVar = 0; iVar < nVar; iVar++){
+  for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
-  }
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
@@ -288,6 +297,9 @@ void CAvgGrad_NEMO::GetViscousProjFlux(su2double *val_primvar,
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
     }
   }
+
+ //for (iVar = 0; iVar < nVar; iVar++)
+ //cout << "cat: Proj_Flux_Tensor[" << iVar << "]=" << Proj_Flux_Tensor[iVar] << endl;
 }
 
 void CAvgGrad_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
@@ -1154,6 +1166,15 @@ void CAvgGradCorrected_NEMO::ComputeResidual(su2double *val_residual,
     }
   }
 
+ // cout <<setprecision(10)<< "cat: k=" << Mean_Thermal_Conductivity << endl;
+ // cout <<setprecision(10)<< "cat: kve=" << Mean_Thermal_Conductivity_ve << endl;
+ // cout <<setprecision(10)<< "cat: visc=" << Mean_Laminar_Viscosity << endl;
+ // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+ //   cout <<setprecision(10)<< "cat: Mean_Diffusion_Coeff=" << Mean_Diffusion_Coeff[iSpecies] << endl;
+ //   cout <<setprecision(10)<< "cat: Mean_Eve=" << Mean_Eve[iSpecies] << endl;
+ // }
+
+
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
                      Normal, Mean_Diffusion_Coeff,
@@ -1165,6 +1186,10 @@ void CAvgGradCorrected_NEMO::ComputeResidual(su2double *val_residual,
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
+
+  //for (iVar = 0; iVar < nVar; iVar++)
+  //cout << "cat: avgcorr val_residual[" << iVar << "]=" << val_residual[iVar] << endl;
+
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
