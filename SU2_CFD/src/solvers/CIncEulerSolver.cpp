@@ -1495,7 +1495,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   const bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-  const bool edge_limiter     = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Flow() == PIPERNO);
+  const bool edge_limiter     = config->GetEdgeLimiter_Flow();
   const bool outlet           = ((config->GetnMarker_Outlet() != 0));
 
   /*--- Set the primitive variables ---*/

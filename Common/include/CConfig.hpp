@@ -4327,6 +4327,18 @@ public:
   su2double GetMUSCL_Kappa(void) const { return MUSCL_Kappa; }
 
   /*!
+   * \brief Return true if an edge-based limiter is in use.
+   */
+  bool GetEdgeLimiter_Flow(void) const {
+    switch (Kind_SlopeLimit_Flow) {
+      case VAN_ALBADA_EDGE : case PIPERNO:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
    * \note This value is obtained from the config file, and it is constant
