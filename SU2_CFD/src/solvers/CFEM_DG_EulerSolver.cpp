@@ -7738,240 +7738,261 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     }
   }
 
-  int naca_dim = 0;
   Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-  // start to compute the i,j information of a structured grid
   if(config->GetInnerIter() == 0) {
     Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
-    if(const char* env_naca_dim = std::getenv("NACA_DIM")) {
-      naca_dim = std::atoi(env_naca_dim);
-      if(naca_dim && rank == 0) printf("Getting NACA_DIM = %d from environment\n", naca_dim);
-      std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
-      std::vector<std::vector<std::vector<double>>> element_edgelist_coord(nVolElemOwned);
-      std::vector<double> boundary_coord_x;
-      std::vector<double> boundary_coord_y;
-      std::vector<double> boundary_coord_x_temp;
-      std::vector<double> boundary_coord_y_temp;
-      std::vector<int> ind_list;
-      std::vector<int> ind_list_temp;
-      for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
-        if ((boundaries[iMarker].markerTag == "airfoil") || (boundaries[iMarker].markerTag == "symmetry") || (boundaries[iMarker].markerTag == "wall")) {
-          for (int j = 0; j < boundaries[iMarker].surfElem.size(); ++j){
-            int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
-            int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
-            boundary_coord_x_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point1].coor[0]));
-            boundary_coord_x_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point2].coor[0]));
-            boundary_coord_y_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point1].coor[1]));
-            boundary_coord_y_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point2].coor[1]));
-            // cout << "nodeIDsGrid: "; printvec(boundaries[iMarker].surfElem[j].nodeIDsGrid);
-            // cout << "DOFsGridFace: "; printvec(boundaries[iMarker].surfElem[j].DOFsGridFace);
-            // cout << "DOFsSolFace: "; printvec(boundaries[iMarker].surfElem[j].DOFsSolFace);
-            // cout << "DOFsGridElement: "; printvec(boundaries[iMarker].surfElem[j].DOFsGridElement);
-            // cout << "DOFsSolElement: "; printvec(boundaries[iMarker].surfElem[j].DOFsSolElement);
-            // cout << " (" << boundaries[iMarker].surfElem[j].boundElemIDGlobal << "), ";
-          }
-        }
+    if(const char* env_naca_file = std::getenv("NACA_FILE")) {
+      cout << "Taking NACA_FILE = " << env_naca_file << " from environment" << endl;
+      Eigen::SparseMatrix<double, storage> Coord_file(2, nDOFsGlobal);
+      Eigen::loadMarket(Coord_file, env_naca_file);
+      for(unsigned long l=0; l<nVolElemOwned; ++l) {
+        const unsigned long id = volElem[l].elemIDGlobal;
+        const unsigned long offset = volElem[l].offsetDOFsSolLocal;
+        Coord_ij(0, offset/4) = Coord_file.coeff(0, id);
+        Coord_ij(1, offset/4) = Coord_file.coeff(1, id);
       }
-      std::vector<int> list_counts(size, 0);
-      std::vector<int> list_displs(size, 0);
-      int n_size = boundary_coord_x_temp.size();
-      MPI_Allgather(&n_size, 1, MPI_INT, list_counts.data(), 1, MPI_INT, MPI_COMM_WORLD);
-      // cout << "list_counts:"; printvec(list_counts);
-      for (int i = 0; i < size-1; ++i) {
-        list_displs[i+1] = list_displs[i] + list_counts[i];
-      }
-      // cout << "list_displs:"; printvec(list_displs);
-      int n_total = list_displs.back() + list_counts.back();
-      boundary_coord_x.resize(n_total);
-      boundary_coord_y.resize(n_total);
-      // cout << "start MPI call" << endl;
-      MPI_Allgatherv(boundary_coord_x_temp.data(), boundary_coord_x_temp.size(), MPI_DOUBLE, 
-        boundary_coord_x.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
-      MPI_Allgatherv(boundary_coord_y_temp.data(), boundary_coord_y_temp.size(), MPI_DOUBLE, 
-        boundary_coord_y.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
-      // cout << "finish MPI call" << endl;
-
-      assert(n_total/2 == naca_dim);
-
-      for (int i = 0; i < (list_displs.back() + list_counts.back())/2; ++i){
-        ind_list_temp.push_back(i);
-      }
-      // cout << "boundary_coord_x: "; printvec(boundary_coord_x);
-      // cout << "boundary_coord_y: "; printvec(boundary_coord_y);
-      // cout << "ind_list: "; printvec(ind_list);
-      // cout << "ind_list_temp: "; printvec(ind_list_temp);
-
-      ind_list.push_back(ind_list_temp[0]);
-      ind_list_temp.erase(ind_list_temp.begin());
-      while (ind_list_temp.size()!=0){
-        for (int i = 0; i < ind_list_temp.size(); ++i){
-        	int current_index = ind_list_temp[i];
-        	int first_index = current_index*2;
-        	int second_index = current_index*2+1;
-          // insert at front
-        	if ((boundary_coord_x[second_index] == boundary_coord_x[ind_list.front()*2]) && 
-        		(boundary_coord_y[second_index] == boundary_coord_y[ind_list.front()*2])) {
-            ind_list.insert(ind_list.begin(), current_index);
-            ind_list_temp.erase(ind_list_temp.begin() + i);
-          }
-          // insert at front with swapped entries
-          else if ((boundary_coord_x[first_index] == boundary_coord_x[ind_list.front()*2]) &&
-            (boundary_coord_y[first_index] == boundary_coord_y[ind_list.front()*2])){
-            ind_list.insert(ind_list.begin(), current_index);
-            ind_list_temp.erase(ind_list_temp.begin() + i);
-            swap(boundary_coord_x[first_index], boundary_coord_x[second_index]);
-            swap(boundary_coord_y[first_index], boundary_coord_y[second_index]);
-          }
-          // insert at back
-          else if ((boundary_coord_x[first_index] == boundary_coord_x[ind_list.back()*2+1]) &&
-            (boundary_coord_y[first_index] == boundary_coord_y[ind_list.back()*2+1])) {
-            ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
-            ind_list_temp.erase(ind_list_temp.begin() + i);
-          }
-          // insert at back with swapped entries
-          else if ((boundary_coord_x[second_index] == boundary_coord_x[ind_list.back()*2+1]) &&
-            (boundary_coord_y[second_index] == boundary_coord_y[ind_list.back()*2+1])) {
-            ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
-            ind_list_temp.erase(ind_list_temp.begin() + i);
-            swap(boundary_coord_x[first_index], boundary_coord_x[second_index]);
-            swap(boundary_coord_y[first_index], boundary_coord_y[second_index]);
-          }
-
-          // if (boundary_list[current_index].second == boundary_list[ind_list.front()].first) {
-          //   ind_list.insert(ind_list.begin(), current_index);
-          //   ind_list_temp.erase(ind_list_temp.begin() + i);
-          // }
-          // else if (boundary_list[current_index].first == boundary_list[ind_list.front()].first) {
-          //   ind_list.insert(ind_list.begin(), current_index);
-          //   ind_list_temp.erase(ind_list_temp.begin() + i);
-          //   boundary_list[i] = pair<int, int>(boundary_list[i].second, boundary_list[i].first);
-          // }
-          // else if (boundary_list[current_index].first == boundary_list[ind_list.back()].second) {
-          //   ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
-          //   ind_list_temp.erase(ind_list_temp.begin() + i);
-          // }
-          // else if (boundary_list[current_index].second == boundary_list[ind_list.back()].second) {
-          //   ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
-          //   ind_list_temp.erase(ind_list_temp.begin() + i);
-          //   boundary_list[i] = pair<int, int>(boundary_list[i].second, boundary_list[i].first);
-          // }
-        }
-      }
-      
-      // cout << "sorted ind_list: "; printvec(ind_list);
-      // cout << "sorted ind_list_temp: "; printvec(ind_list_temp);
-      // cout << "sorted boundary_coord_x: "; printvecind(boundary_coord_x, ind_list);
-      // cout << "sorted boundary_coord_y: "; printvecind(boundary_coord_y, ind_list);
-      for (int i = 0; i < nVolElemOwned; ++i){
-        const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
-        const unsigned long nDOFs = volElem[i].nDOFsSol;
-        // element_edgelist[i].resize(nDOFs);
-        // element_edgelist[i][0] = make_pair<int, int>(min(DOFs[0], DOFs[1]), max(DOFs[0], DOFs[1]));
-        // element_edgelist[i][1] = make_pair<int, int>(min(DOFs[1], DOFs[3]), max(DOFs[1], DOFs[3]));
-        // element_edgelist[i][2] = make_pair<int, int>(min(DOFs[2], DOFs[3]), max(DOFs[2], DOFs[3]));
-        // element_edgelist[i][3] = make_pair<int, int>(min(DOFs[0], DOFs[2]), max(DOFs[0], DOFs[2]));
-        element_edgelist_coord[i].resize(nDOFs);
-        element_edgelist_coord[i][0] = {SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[1]),
-                                        SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[1])};
-        element_edgelist_coord[i][1] = {SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[1]),
-                                        SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[1])};
-        element_edgelist_coord[i][2] = {SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[1]),
-                                        SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[1])};
-        element_edgelist_coord[i][3] = {SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[1]),
-                                        SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[1])};
-      }
-      for (int layer = 0; layer < naca_dim; ++layer){
-        ind_list_temp.clear();
-        boundary_coord_x_temp.clear();
-        boundary_coord_y_temp.clear();
-        for (int i = 0; i < element_edgelist_coord.size(); ++i) {
-          for (int k = 0; k < element_edgelist_coord[i].size(); ++k) {
-            // cout << "k = " << k << ": ("
-            // << element_edgelist_coord[i][k][0] << ", "
-            // << element_edgelist_coord[i][k][1] << ", "
-            // << element_edgelist_coord[i][k][2] << ", "
-            // << element_edgelist_coord[i][k][3] << ") "<< endl;
-            for (int j = 0; j < ind_list.size(); ++j){
-              int first_index = ind_list[j]*2;
-              int second_index = ind_list[j]*2 + 1;
-              vector<double> vec{boundary_coord_x[first_index],    boundary_coord_y[first_index],
-                                 boundary_coord_x[second_index],   boundary_coord_y[second_index]};
-              vector<double> vec2{boundary_coord_x[second_index],  boundary_coord_y[second_index],
-                                  boundary_coord_x[first_index],   boundary_coord_y[first_index]};
-              // cout << " (" << vec[0] << ", "
-              // << vec[1] << ", "
-              // << vec[2] << ", "
-              // << vec[3] << ") " << endl;
-              if ((vec == element_edgelist_coord[i][k]) || (vec2 == element_edgelist_coord[i][k])) {
-                const unsigned long offset = volElem[i].offsetDOFsSolLocal;
-                const unsigned long globalID = volElem[i].elemIDGlobal;
-                ind_list_temp.push_back(ind_list[j]);
-                boundary_coord_x_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][0]);
-                boundary_coord_y_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][1]);
-                boundary_coord_x_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][2]);
-                boundary_coord_y_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][3]);
-                // cout << "j = " << j << ", ind_list[j] = " << ind_list[j] << ", with original boundaries ("
-                // << element_edgelist_coord[i][k][0] << ", "
-                // << element_edgelist_coord[i][k][1] << ", "
-                // << element_edgelist_coord[i][k][2] << ", "
-                // << element_edgelist_coord[i][k][3] << "), and new boundaries ("
-                // << element_edgelist_coord[i][(k+2)%nVar][0] << ", "
-                // << element_edgelist_coord[i][(k+2)%nVar][1] << ", "
-                // << element_edgelist_coord[i][(k+2)%nVar][2] << ", "
-                // << element_edgelist_coord[i][(k+2)%nVar][3] << "), and offset = " << offset << " and layer = " << layer << endl;
-                // cout << "in rank " << rank << ", j = " << j << ", ind_list[j] = " << ind_list[j] << ", globalID = " << globalID 
-                // << ", offset = " << offset << ", layer = " << layer << endl;
-                element_edgelist_coord[i].clear();
-                Coord_ij(1, offset/nVar) = j;
-                Coord_ij(0, offset/nVar) = layer;
-                break;
-              }
-            }
-          }
-        }
-        // if (rank == 1) {
-        //   cout << "sorted ind_list_temp in loop: "; printvec(ind_list_temp);
-        // }
-        std::vector<double> boundary_coord_x_recvbuf(n_total);
-        std::vector<double> boundary_coord_y_recvbuf(n_total);
-        std::vector<int> ind_list_recvbuf(n_total/2);
-        n_size = boundary_coord_x_temp.size();
-        MPI_Allgather(&n_size, 1, MPI_INT, list_counts.data(), 1, MPI_INT, MPI_COMM_WORLD);
-        for (int i = 0; i < size-1; ++i) {
-          list_displs[i+1] = list_displs[i] + list_counts[i];
-        }
-        MPI_Allgatherv(boundary_coord_x_temp.data(), boundary_coord_x_temp.size(), MPI_DOUBLE, 
-          boundary_coord_x_recvbuf.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
-        MPI_Allgatherv(boundary_coord_y_temp.data(), boundary_coord_y_temp.size(), MPI_DOUBLE, 
-          boundary_coord_y_recvbuf.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
-        for (int i = 0; i < size; ++i) {
-          list_displs[i] = list_displs[i]/2;
-          list_counts[i] = list_counts[i]/2;
-        }
-        MPI_Allgatherv(ind_list_temp.data(), ind_list_temp.size(), MPI_INT, 
-          ind_list_recvbuf.data(), list_counts.data(), list_displs.data(), MPI_INT, MPI_COMM_WORLD);
-        for (int j = 0; j < ind_list_recvbuf.size(); ++j){
-          int first_index = ind_list_recvbuf[j]*2;
-          int second_index = ind_list_recvbuf[j]*2 + 1;
-          boundary_coord_x[first_index] = boundary_coord_x_recvbuf[j*2];
-          boundary_coord_y[first_index] = boundary_coord_y_recvbuf[j*2];
-          boundary_coord_x[second_index] = boundary_coord_x_recvbuf[j*2+1];
-          boundary_coord_y[second_index] = boundary_coord_y_recvbuf[j*2+1];
-        }
-        // if (rank==0){
-        //   cout << "sorted boundary_coord_x: "; printvecind(boundary_coord_x, ind_list);
-        //   cout << "sorted boundary_coord_y: "; printvecind(boundary_coord_y, ind_list);
-        // }
-        // boundary_coord_x_temp.clear();
-        // boundary_coord_y_temp.clear();
-        // ind_list_temp.clear();
-        // boundary_coord_x = boundary_coord_x_temp;
-        // boundary_coord_y = boundary_coord_y_temp;
-      }
-      // if (rank == 1)
-        // cout << Coord_ij.format(CleanFmt) << endl;
+      // if (rank == 0)
+      //   cout << Coord_ij.format(CleanFmt) << endl;
+    }
+    else {
+      cout << "NACA_FILE not found" << endl;
     }
   }
+
+  // int naca_dim = 0;
+  // start to compute the i,j information of a structured grid
+  // if(config->GetInnerIter() == 0) {
+  //   Coord_ij = Eigen::MatrixXd::Zero(2, nVolElemOwned);
+  //   if(const char* env_naca_dim = std::getenv("NACA_DIM")) {
+  //     naca_dim = std::atoi(env_naca_dim);
+  //     if(naca_dim && rank == 0) printf("Getting NACA_DIM = %d from environment\n", naca_dim);
+  //     std::vector<std::vector<pair<int, int>>> element_edgelist(nVolElemOwned);
+  //     std::vector<std::vector<std::vector<double>>> element_edgelist_coord(nVolElemOwned);
+  //     std::vector<double> boundary_coord_x;
+  //     std::vector<double> boundary_coord_y;
+  //     std::vector<double> boundary_coord_x_temp;
+  //     std::vector<double> boundary_coord_y_temp;
+  //     std::vector<int> ind_list;
+  //     std::vector<int> ind_list_temp;
+  //     for(unsigned short iMarker=0; iMarker < nMarker; ++iMarker) {
+  //       if ((boundaries[iMarker].markerTag == "airfoil") || (boundaries[iMarker].markerTag == "symmetry") || (boundaries[iMarker].markerTag == "wall")) {
+  //         for (int j = 0; j < boundaries[iMarker].surfElem.size(); ++j){
+  //           int Point1 = boundaries[iMarker].surfElem[j].nodeIDsGrid[0];
+  //           int Point2 = boundaries[iMarker].surfElem[j].nodeIDsGrid[1];
+  //           boundary_coord_x_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point1].coor[0]));
+  //           boundary_coord_x_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point2].coor[0]));
+  //           boundary_coord_y_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point1].coor[1]));
+  //           boundary_coord_y_temp.push_back(SU2_TYPE::GetValue(meshPoints[Point2].coor[1]));
+  //           // cout << "nodeIDsGrid: "; printvec(boundaries[iMarker].surfElem[j].nodeIDsGrid);
+  //           // cout << "DOFsGridFace: "; printvec(boundaries[iMarker].surfElem[j].DOFsGridFace);
+  //           // cout << "DOFsSolFace: "; printvec(boundaries[iMarker].surfElem[j].DOFsSolFace);
+  //           // cout << "DOFsGridElement: "; printvec(boundaries[iMarker].surfElem[j].DOFsGridElement);
+  //           // cout << "DOFsSolElement: "; printvec(boundaries[iMarker].surfElem[j].DOFsSolElement);
+  //           // cout << " (" << boundaries[iMarker].surfElem[j].boundElemIDGlobal << "), ";
+  //         }
+  //       }
+  //     }
+  //     std::vector<int> list_counts(size, 0);
+  //     std::vector<int> list_displs(size, 0);
+  //     int n_size = boundary_coord_x_temp.size();
+  //     MPI_Allgather(&n_size, 1, MPI_INT, list_counts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  //     // cout << "list_counts:"; printvec(list_counts);
+  //     for (int i = 0; i < size-1; ++i) {
+  //       list_displs[i+1] = list_displs[i] + list_counts[i];
+  //     }
+  //     // cout << "list_displs:"; printvec(list_displs);
+  //     int n_total = list_displs.back() + list_counts.back();
+  //     boundary_coord_x.resize(n_total);
+  //     boundary_coord_y.resize(n_total);
+  //     // cout << "start MPI call" << endl;
+  //     MPI_Allgatherv(boundary_coord_x_temp.data(), boundary_coord_x_temp.size(), MPI_DOUBLE, 
+  //       boundary_coord_x.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+  //     MPI_Allgatherv(boundary_coord_y_temp.data(), boundary_coord_y_temp.size(), MPI_DOUBLE, 
+  //       boundary_coord_y.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+  //     // cout << "finish MPI call" << endl;
+
+  //     assert(n_total/2 == naca_dim);
+
+  //     for (int i = 0; i < (list_displs.back() + list_counts.back())/2; ++i){
+  //       ind_list_temp.push_back(i);
+  //     }
+  //     // cout << "boundary_coord_x: "; printvec(boundary_coord_x);
+  //     // cout << "boundary_coord_y: "; printvec(boundary_coord_y);
+  //     // cout << "ind_list: "; printvec(ind_list);
+  //     // cout << "ind_list_temp: "; printvec(ind_list_temp);
+
+  //     ind_list.push_back(ind_list_temp[0]);
+  //     ind_list_temp.erase(ind_list_temp.begin());
+  //     while (ind_list_temp.size()!=0){
+  //       for (int i = 0; i < ind_list_temp.size(); ++i){
+  //       	int current_index = ind_list_temp[i];
+  //       	int first_index = current_index*2;
+  //       	int second_index = current_index*2+1;
+  //         // insert at front
+  //       	if ((boundary_coord_x[second_index] == boundary_coord_x[ind_list.front()*2]) && 
+  //       		(boundary_coord_y[second_index] == boundary_coord_y[ind_list.front()*2])) {
+  //           ind_list.insert(ind_list.begin(), current_index);
+  //           ind_list_temp.erase(ind_list_temp.begin() + i);
+  //         }
+  //         // insert at front with swapped entries
+  //         else if ((boundary_coord_x[first_index] == boundary_coord_x[ind_list.front()*2]) &&
+  //           (boundary_coord_y[first_index] == boundary_coord_y[ind_list.front()*2])){
+  //           ind_list.insert(ind_list.begin(), current_index);
+  //           ind_list_temp.erase(ind_list_temp.begin() + i);
+  //           swap(boundary_coord_x[first_index], boundary_coord_x[second_index]);
+  //           swap(boundary_coord_y[first_index], boundary_coord_y[second_index]);
+  //         }
+  //         // insert at back
+  //         else if ((boundary_coord_x[first_index] == boundary_coord_x[ind_list.back()*2+1]) &&
+  //           (boundary_coord_y[first_index] == boundary_coord_y[ind_list.back()*2+1])) {
+  //           ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
+  //           ind_list_temp.erase(ind_list_temp.begin() + i);
+  //         }
+  //         // insert at back with swapped entries
+  //         else if ((boundary_coord_x[second_index] == boundary_coord_x[ind_list.back()*2+1]) &&
+  //           (boundary_coord_y[second_index] == boundary_coord_y[ind_list.back()*2+1])) {
+  //           ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
+  //           ind_list_temp.erase(ind_list_temp.begin() + i);
+  //           swap(boundary_coord_x[first_index], boundary_coord_x[second_index]);
+  //           swap(boundary_coord_y[first_index], boundary_coord_y[second_index]);
+  //         }
+
+  //         // if (boundary_list[current_index].second == boundary_list[ind_list.front()].first) {
+  //         //   ind_list.insert(ind_list.begin(), current_index);
+  //         //   ind_list_temp.erase(ind_list_temp.begin() + i);
+  //         // }
+  //         // else if (boundary_list[current_index].first == boundary_list[ind_list.front()].first) {
+  //         //   ind_list.insert(ind_list.begin(), current_index);
+  //         //   ind_list_temp.erase(ind_list_temp.begin() + i);
+  //         //   boundary_list[i] = pair<int, int>(boundary_list[i].second, boundary_list[i].first);
+  //         // }
+  //         // else if (boundary_list[current_index].first == boundary_list[ind_list.back()].second) {
+  //         //   ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
+  //         //   ind_list_temp.erase(ind_list_temp.begin() + i);
+  //         // }
+  //         // else if (boundary_list[current_index].second == boundary_list[ind_list.back()].second) {
+  //         //   ind_list.insert(ind_list.begin() + ind_list.size(), current_index);
+  //         //   ind_list_temp.erase(ind_list_temp.begin() + i);
+  //         //   boundary_list[i] = pair<int, int>(boundary_list[i].second, boundary_list[i].first);
+  //         // }
+  //       }
+  //     }
+      
+  //     // cout << "sorted ind_list: "; printvec(ind_list);
+  //     // cout << "sorted ind_list_temp: "; printvec(ind_list_temp);
+  //     // cout << "sorted boundary_coord_x: "; printvecind(boundary_coord_x, ind_list);
+  //     // cout << "sorted boundary_coord_y: "; printvecind(boundary_coord_y, ind_list);
+  //     for (int i = 0; i < nVolElemOwned; ++i){
+  //       const unsigned long *DOFs = volElem[i].nodeIDsGrid.data();
+  //       const unsigned long nDOFs = volElem[i].nDOFsSol;
+  //       // element_edgelist[i].resize(nDOFs);
+  //       // element_edgelist[i][0] = make_pair<int, int>(min(DOFs[0], DOFs[1]), max(DOFs[0], DOFs[1]));
+  //       // element_edgelist[i][1] = make_pair<int, int>(min(DOFs[1], DOFs[3]), max(DOFs[1], DOFs[3]));
+  //       // element_edgelist[i][2] = make_pair<int, int>(min(DOFs[2], DOFs[3]), max(DOFs[2], DOFs[3]));
+  //       // element_edgelist[i][3] = make_pair<int, int>(min(DOFs[0], DOFs[2]), max(DOFs[0], DOFs[2]));
+  //       element_edgelist_coord[i].resize(nDOFs);
+  //       element_edgelist_coord[i][0] = {SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[1]),
+  //                                       SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[1])};
+  //       element_edgelist_coord[i][1] = {SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[1]].coor[1]),
+  //                                       SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[1])};
+  //       element_edgelist_coord[i][2] = {SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[1]),
+  //                                       SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[3]].coor[1])};
+  //       element_edgelist_coord[i][3] = {SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[0]].coor[1]),
+  //                                       SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[0]), SU2_TYPE::GetValue(meshPoints[DOFs[2]].coor[1])};
+  //     }
+  //     for (int layer = 0; layer < naca_dim; ++layer){
+  //       ind_list_temp.clear();
+  //       boundary_coord_x_temp.clear();
+  //       boundary_coord_y_temp.clear();
+  //       for (int i = 0; i < element_edgelist_coord.size(); ++i) {
+  //         for (int k = 0; k < element_edgelist_coord[i].size(); ++k) {
+  //           // cout << "k = " << k << ": ("
+  //           // << element_edgelist_coord[i][k][0] << ", "
+  //           // << element_edgelist_coord[i][k][1] << ", "
+  //           // << element_edgelist_coord[i][k][2] << ", "
+  //           // << element_edgelist_coord[i][k][3] << ") "<< endl;
+  //           for (int j = 0; j < ind_list.size(); ++j){
+  //             int first_index = ind_list[j]*2;
+  //             int second_index = ind_list[j]*2 + 1;
+  //             vector<double> vec{boundary_coord_x[first_index],    boundary_coord_y[first_index],
+  //                                boundary_coord_x[second_index],   boundary_coord_y[second_index]};
+  //             vector<double> vec2{boundary_coord_x[second_index],  boundary_coord_y[second_index],
+  //                                 boundary_coord_x[first_index],   boundary_coord_y[first_index]};
+  //             // cout << " (" << vec[0] << ", "
+  //             // << vec[1] << ", "
+  //             // << vec[2] << ", "
+  //             // << vec[3] << ") " << endl;
+  //             if ((vec == element_edgelist_coord[i][k]) || (vec2 == element_edgelist_coord[i][k])) {
+  //               const unsigned long offset = volElem[i].offsetDOFsSolLocal;
+  //               const unsigned long globalID = volElem[i].elemIDGlobal;
+  //               ind_list_temp.push_back(ind_list[j]);
+  //               boundary_coord_x_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][0]);
+  //               boundary_coord_y_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][1]);
+  //               boundary_coord_x_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][2]);
+  //               boundary_coord_y_temp.push_back(element_edgelist_coord[i][(k+2)%nVar][3]);
+  //               // cout << "globalID = " << globalID << ", offset = " << offset << endl;
+  //               // cout << "j = " << j << ", ind_list[j] = " << ind_list[j] << ", with original boundaries ("
+  //               // << element_edgelist_coord[i][k][0] << ", "
+  //               // << element_edgelist_coord[i][k][1] << ", "
+  //               // << element_edgelist_coord[i][k][2] << ", "
+  //               // << element_edgelist_coord[i][k][3] << "), and new boundaries ("
+  //               // << element_edgelist_coord[i][(k+2)%nVar][0] << ", "
+  //               // << element_edgelist_coord[i][(k+2)%nVar][1] << ", "
+  //               // << element_edgelist_coord[i][(k+2)%nVar][2] << ", "
+  //               // << element_edgelist_coord[i][(k+2)%nVar][3] << "), and offset = " << offset << " and layer = " << layer << endl;
+  //               // cout << "in rank " << rank << ", j = " << j << ", ind_list[j] = " << ind_list[j] << ", globalID = " << globalID 
+  //               // << ", offset = " << offset << ", layer = " << layer << endl;
+  //               element_edgelist_coord[i].clear();
+  //               Coord_ij(1, offset/nVar) = j;
+  //               Coord_ij(0, offset/nVar) = layer;
+  //               break;
+  //             }
+  //           }
+  //         }
+  //       }
+  //       // if (rank == 1) {
+  //       //   cout << "sorted ind_list_temp in loop: "; printvec(ind_list_temp);
+  //       // }
+  //       std::vector<double> boundary_coord_x_recvbuf(n_total);
+  //       std::vector<double> boundary_coord_y_recvbuf(n_total);
+  //       std::vector<int> ind_list_recvbuf(n_total/2);
+  //       n_size = boundary_coord_x_temp.size();
+  //       MPI_Allgather(&n_size, 1, MPI_INT, list_counts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  //       for (int i = 0; i < size-1; ++i) {
+  //         list_displs[i+1] = list_displs[i] + list_counts[i];
+  //       }
+  //       MPI_Allgatherv(boundary_coord_x_temp.data(), boundary_coord_x_temp.size(), MPI_DOUBLE, 
+  //         boundary_coord_x_recvbuf.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+  //       MPI_Allgatherv(boundary_coord_y_temp.data(), boundary_coord_y_temp.size(), MPI_DOUBLE, 
+  //         boundary_coord_y_recvbuf.data(), list_counts.data(), list_displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+  //       for (int i = 0; i < size; ++i) {
+  //         list_displs[i] = list_displs[i]/2;
+  //         list_counts[i] = list_counts[i]/2;
+  //       }
+  //       MPI_Allgatherv(ind_list_temp.data(), ind_list_temp.size(), MPI_INT, 
+  //         ind_list_recvbuf.data(), list_counts.data(), list_displs.data(), MPI_INT, MPI_COMM_WORLD);
+  //       for (int j = 0; j < ind_list_recvbuf.size(); ++j){
+  //         int first_index = ind_list_recvbuf[j]*2;
+  //         int second_index = ind_list_recvbuf[j]*2 + 1;
+  //         boundary_coord_x[first_index] = boundary_coord_x_recvbuf[j*2];
+  //         boundary_coord_y[first_index] = boundary_coord_y_recvbuf[j*2];
+  //         boundary_coord_x[second_index] = boundary_coord_x_recvbuf[j*2+1];
+  //         boundary_coord_y[second_index] = boundary_coord_y_recvbuf[j*2+1];
+  //       }
+  //       // if (rank==0){
+  //       //   cout << "sorted boundary_coord_x: "; printvecind(boundary_coord_x, ind_list);
+  //       //   cout << "sorted boundary_coord_y: "; printvecind(boundary_coord_y, ind_list);
+  //       // }
+  //       // boundary_coord_x_temp.clear();
+  //       // boundary_coord_y_temp.clear();
+  //       // ind_list_temp.clear();
+  //       // boundary_coord_x = boundary_coord_x_temp;
+  //       // boundary_coord_y = boundary_coord_y_temp;
+  //     }
+  //     // if (rank == 1)
+  //       // cout << Coord_ij.format(CleanFmt) << endl;
+  //   }
+  // }
 
   // dummy preconditioner
   class precond {
@@ -8003,12 +8024,17 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
 
   /*--- Newton iteration with damping parameter lambda ---*/
   double lambda = 1.0;
-  // double norm0 = Res_global.norm();
-  // double norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-  // while (norm_temp/norm0 > 1 && lambda > 1e-6)
+  // double res_norm = VecNorm(Res_global);
+  // Eigen::VectorXd Res_temp = Res_global + MassMatrix_global.block(fst_row[rank],0,nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta;
+  // double res_norm_temp = VecNorm(Res_temp);
+  // if (rank == MASTER_NODE){
+  //   cout << res_norm_temp/res_norm << endl;
+  // }
+  // while (res_norm_temp/res_norm > 1 && lambda > 1e-8)
   // {
   //   lambda = lambda/2;
-  //   norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
+  //   Res_temp = Res_global + MassMatrix_global.block(fst_row[rank],0,nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta * lambda;
+  //   res_norm_temp = VecNorm(Res_temp);
   // }
   // if (rank == MASTER_NODE) {
   //   cout << "lambda = " << lambda << endl;
