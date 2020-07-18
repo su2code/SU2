@@ -1907,11 +1907,11 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
         const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        Project_Grad_i = 0.5*Kappa*V_ij;
-        Project_Grad_j = 0.5*Kappa*V_ij;
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          const su2double Vector_ij = 0.5*(1.0-Kappa)*(Coord_j[iDim] - Coord_i[iDim]);
+          const su2double Vector_ij = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
           Project_Grad_i += Vector_ij*Gradient_i[iVar][iDim];
           Project_Grad_j += Vector_ij*Gradient_j[iVar][iDim];
         }
@@ -1927,8 +1927,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
               Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          Project_Grad_i = Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + 0.5*Kappa*V_ij);
+          Project_Grad_j = Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + 0.5*Kappa*V_ij);
         }
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
