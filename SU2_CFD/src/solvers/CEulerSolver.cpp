@@ -11391,6 +11391,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   su2double Pressure_out, Density_out,
   Pressure_in, Density_in;
 
+  su2double Prop_Axis[MAXNDIM];
   su2double Fa, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
   su2double Temperature_out, H_in, H_out;
