@@ -309,7 +309,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
       SetPrimitive_Gradient_LS(geometry, config, true);
   }
 
-  if (limiter_turb && (!edge_limiter_flow || !edge_limiter_turb)) SetPrimitive_Limiter(geometry, config);
+  if (limiter_turb && !(edge_limiter_flow && edge_limiter_turb)) SetPrimitive_Limiter(geometry, config);
 
 }
 
