@@ -29,6 +29,7 @@
 #include "catch.hpp"
 #include <sstream>
 #include <iomanip>
+#include "../../../Common/include/basic_types/datatype_structure.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 struct Problem {
