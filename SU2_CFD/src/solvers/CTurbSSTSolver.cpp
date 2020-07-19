@@ -285,7 +285,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && 
-                            (InnerIter <= config->GetLimiterIter());
+                            (config->GetInnerIter() <= config->GetLimiterIter());
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
   const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
