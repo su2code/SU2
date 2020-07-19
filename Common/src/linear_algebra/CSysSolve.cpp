@@ -99,23 +99,23 @@ void CSysSolve<ScalarType>::GenerateGivens(ScalarType & dx, ScalarType & dy, Sca
 }
 
 template<class ScalarType>
-void CSysSolve<ScalarType>::SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
-                                         const vector<ScalarType> & rhs, vector<ScalarType> & x) const {
+void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsbg,
+                                         const su2vector<ScalarType>& rhs, su2vector<ScalarType>& x) const {
   // initialize...
   for (int i = 0; i < n; i++)
     x[i] = rhs[i];
   // ... and backsolve
   for (int i = n-1; i >= 0; i--) {
-    x[i] /= Hsbg[i][i];
+    x[i] /= Hsbg(i,i);
     for (int j = i-1; j >= 0; j--) {
-      x[j] -= Hsbg[j][i]*x[i];
+      x[j] -= Hsbg(j,i)*x[i];
     }
   }
 }
 
 template<class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg,
-                                           vector<CSysVector<ScalarType> > & w) const {
+void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
+                                           vector<CSysVector<ScalarType> >& w) const {
 
   /*--- Parameter for reorthonormalization ---*/
 
@@ -139,28 +139,28 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & 
 
   for (int k = 0; k < i+1; k++) {
     ScalarType prod = w[i+1].dot(w[k]);
-    Hsbg[k][i] = prod;
+    Hsbg(k,i) = prod;
     w[i+1] -= prod * w[k];
 
     /*--- Check if reorthogonalization is necessary ---*/
 
     if (prod*prod > thr) {
       prod = w[i+1].dot(w[k]);
-      Hsbg[k][i] += prod;
+      Hsbg(k,i) += prod;
       w[i+1] -= prod * w[k];
     }
 
     /*--- Update the norm and check its size ---*/
 
-    nrm -= Hsbg[k][i]*Hsbg[k][i];
-    if (nrm < 0.0) nrm = 0.0;
+    nrm -= pow(Hsbg(k,i),2);
+    nrm = max<ScalarType>(nrm, 0.0);
     thr = nrm*reorth;
   }
 
   /*--- Test the resulting vector ---*/
 
   nrm = w[i+1].norm();
-  Hsbg[i+1][i] = nrm;
+  Hsbg(i+1,i) = nrm;
 
   /*--- Scale the resulting vector ---*/
 
@@ -374,11 +374,13 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    on its own thread, since calculations on these arrays are based on dot products
    (reduced across all threads and ranks) all threads do the same computations. ---*/
 
-  vector<ScalarType> g(m+1, 0.0);
-  vector<ScalarType> sn(m+1, 0.0);
-  vector<ScalarType> cs(m+1, 0.0);
-  vector<ScalarType> y(m, 0.0);
-  vector<vector<ScalarType> > H(m+1, vector<ScalarType>(m, 0.0));
+  su2vector<ScalarType> g(m+1), sn(m+1), cs(m+1), y(m);
+  g = ScalarType(0);
+  sn = ScalarType(0);
+  cs = ScalarType(0);
+  y = ScalarType(0);
+  su2matrix<ScalarType> H(m+1, m);
+  H = ScalarType(0);
 
   /*--- Calculate the norm of the rhs vector. ---*/
 

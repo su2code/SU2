@@ -40,6 +40,11 @@
 #define FORCEINLINE inline
 #endif
 
+/*--- Convenience SFINAE typedef to conditionally
+ * enable/disable function template overloads. ---*/
+template<bool condition>
+using su2enable_if = typename std::enable_if<condition,bool>::type;
+
 /*--- Depending on the datatype defined during the configuration,
  * include the correct definition, and create the main typedef. ---*/
 
@@ -194,10 +199,10 @@ namespace SU2_TYPE {
 
   /*--- Special handling of the sprintf routine for non-primitive types. ---*/
   /*--- Pass-through for built-in types. ---*/
-  template<class T, typename std::enable_if<std::is_trivial<T>::value,bool>::type = 0>
+  template<class T, su2enable_if<std::is_trivial<T>::value> = 0>
   FORCEINLINE const T& _printGetValue(const T& val) {return val;}
   /*--- Overload for expressions of active types. ---*/
-  template<class T, typename std::enable_if<!std::is_trivial<T>::value,bool>::type = 0>
+  template<class T, su2enable_if<!std::is_trivial<T>::value> = 0>
   FORCEINLINE passivedouble _printGetValue(const T& val) { return val.getValue(); }
 
   /*!

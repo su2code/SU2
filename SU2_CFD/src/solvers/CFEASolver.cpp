@@ -1891,8 +1891,7 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
-template<class T, class U,
-         typename enable_if<is_same<T,U>::value,bool>::type = 0>
+template<class T, class U, su2enable_if<is_same<T,U>::value> = 0>
 CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
                                     const CSysVector<U>& x,
                                     const CSysVector<U>& b) {
@@ -1901,8 +1900,7 @@ CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
   return r;
 }
 
-template<class T, class U,
-         typename enable_if<!is_same<T,U>::value,bool>::type = 0>
+template<class T, class U, su2enable_if<!is_same<T,U>::value> = 0>
 CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
                                     const CSysVector<U>& x,
                                     const CSysVector<U>& b) {

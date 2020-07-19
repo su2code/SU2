@@ -353,8 +353,7 @@ namespace AD{
   /*--- Base case for parameter pack expansion. ---*/
   FORCEINLINE void SetPreaccIn() {}
 
-  template<class T, class... Ts,
-           typename std::enable_if<std::is_same<T,su2double>::value,bool>::type = 0>
+  template<class T, class... Ts, su2enable_if<std::is_same<T,su2double>::value> = 0>
   FORCEINLINE void SetPreaccIn(const T& data, Ts&&... moreData) {
     if (!PreaccActive) return;
     if (data.isActive())
@@ -407,8 +406,7 @@ namespace AD{
   /*--- Base case for parameter pack expansion. ---*/
   FORCEINLINE void SetPreaccOut() {}
 
-  template<class T, class... Ts,
-           typename std::enable_if<std::is_same<T,su2double>::value,bool>::type = 0>
+  template<class T, class... Ts, su2enable_if<std::is_same<T,su2double>::value> = 0>
   FORCEINLINE void SetPreaccOut(T& data, Ts&&... moreData) {
     if (!PreaccActive) return;
     if (data.isActive())

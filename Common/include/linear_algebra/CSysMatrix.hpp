@@ -453,7 +453,7 @@ public:
    * \param[in] alpha - Scale factor.
    */
   template<class OtherType, bool Overwrite = true,
-           typename enable_if<!is_pointer<OtherType>::value,bool>::type = 0>
+           su2enable_if<!is_pointer<OtherType>::value> = 0>
   inline void SetBlock(unsigned long block_i, unsigned long block_j,
                        const OtherType *val_block, OtherType alpha = 1.0) {
 
@@ -472,8 +472,7 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType,
-           typename enable_if<!is_pointer<OtherType>::value,bool>::type = 0>
+  template<class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
   inline void AddBlock(unsigned long block_i, unsigned long block_j,
                        const OtherType *val_block, OtherType alpha = 1.0) {
     SetBlock<OtherType,false>(block_i, block_j, val_block, alpha);

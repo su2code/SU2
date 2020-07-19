@@ -244,7 +244,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if (config->GetUseVectorization() && (omp_get_max_threads() > 1) &&
         (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
       SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
-                     "by the SIMD length (4 or 8).", CURRENT_FUNCTION);
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
   }
 
@@ -573,12 +573,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       SU2_MPI::Error("The numerical scheme in use does not "
                      "support vectorization.", CURRENT_FUNCTION);
     }
-#ifndef __AVX__
-    if (rank == MASTER_NODE) {
-      cout << "WARNING: SU2 was not compiled for an AVX-capable "
-              "architecture, performance may be worse." << endl;
-    }
-#endif
   }
 
   /*--- Finally, check that the static arrays will be large enough (keep this

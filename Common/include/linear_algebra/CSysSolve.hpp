@@ -26,10 +26,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include "../mpi_structure.hpp"
+#include "../containers/C2DContainer.hpp"
 
 #include <cmath>
 #include <vector>
@@ -45,8 +44,6 @@ class CGeometry;
 template<class T> class CSysMatrix;
 template<class T> class CMatrixVectorProduct;
 template<class T> class CPreconditioner;
-
-using namespace std;
 
 /*--- Relative tolerance, target residual is tol*||b-Ax||,
  *    Absolute tolerance, target residual is tol*||b||. ---*/
@@ -95,8 +92,8 @@ private:
   mutable VectorType r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
-  mutable vector<VectorType> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
-  mutable vector<VectorType> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+  mutable std::vector<VectorType> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  mutable std::vector<VectorType> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
 
   VectorType  LinSysSol_tmp;        /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType  LinSysRes_tmp;        /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
@@ -151,8 +148,8 @@ private:
    * \pre the upper Hessenberg matrix has been transformed into a
    * triangular matrix.
    */
-  void SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
-                    const vector<ScalarType> & rhs, vector<ScalarType> & x) const;
+  void SolveReduced(int n, const su2matrix<ScalarType>& Hsbg,
+                    const su2vector<ScalarType>& rhs, su2vector<ScalarType>& x) const;
 
   /*!
    * \brief Modified Gram-Schmidt orthogonalization
@@ -171,7 +168,7 @@ private:
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg, vector<VectorType> & w) const;
+  void ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType> & w) const;
 
   /*!
    * \brief writes header information for a CSysSolve residual history
@@ -181,7 +178,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHeader(string solver, ScalarType restol, ScalarType resinit) const;
+  void WriteHeader(std::string solver, ScalarType restol, ScalarType resinit) const;
 
   /*!
    * \brief writes residual convergence data for one iteration to a stream
@@ -198,7 +195,7 @@ private:
    * \param[in] iter - current iteration
    * \param[in] res - the residual norm
    */
-  void WriteFinalResidual(string solver, unsigned long iter, ScalarType res) const;
+  void WriteFinalResidual(std::string solver, unsigned long iter, ScalarType res) const;
 
   /*!
    * \brief writes the convergence warning
@@ -214,8 +211,7 @@ private:
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
-  template<class OtherType,
-           typename enable_if<is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  template<class OtherType, su2enable_if<std::is_same<ScalarType,OtherType>::value> = 0>
   void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
 
     /*--- Set the pointers. ---*/
@@ -232,8 +228,7 @@ private:
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
-  template<class OtherType,
-           typename enable_if<!is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  template<class OtherType, su2enable_if<!std::is_same<ScalarType,OtherType>::value> = 0>
   void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
 
     /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
@@ -253,8 +248,7 @@ private:
    * \note Same type specialization, temporary variables are not required.
    * \param[out] LinSysSol - Linear system solution
    */
-  template<class OtherType,
-           typename enable_if<is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  template<class OtherType, su2enable_if<std::is_same<ScalarType,OtherType>::value> = 0>
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
 
     /*--- Reset the pointers. ---*/
@@ -270,8 +264,7 @@ private:
    * \note Different type specialization, copy data from the temporary solution vector.
    * \param[out] LinSysSol - Linear system solution
    */
-  template<class OtherType,
-           typename enable_if<!is_same<ScalarType,OtherType>::value,bool>::type = 0>
+  template<class OtherType, su2enable_if<!std::is_same<ScalarType,OtherType>::value> = 0>
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
 
     /*--- Copy data, only the temporary solution needs to be copied. ---*/

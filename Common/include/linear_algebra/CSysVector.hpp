@@ -96,6 +96,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
  public:
+  static constexpr bool StoreAsRef = true; /*! \brief Required by CVecExpr. */
+
   /*!
    * \brief Default constructor of the class.
    */
@@ -255,34 +257,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
   /*!
-   * \brief Assignment operator taking an expression.
-   * \note Does not resize, because expressions do not have size info.
-   * \param[in] expr - Expression being evaluated.
-   */
-  template <class T>
-  CSysVector& operator=(const VecExpr::CVecExpr<T, ScalarType>& expr) {
-    CSYSVEC_PARFOR
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] = expr[i];
-    return *this;
-  }
-
-  /*!
-   * \brief Scalar broadcast assignment operator
-   * \param[in] val - Value assigned to every element.
-   */
-  CSysVector& operator=(ScalarType val) {
-    CSYSVEC_PARFOR
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] = val;
-    return *this;
-  }
-
-  /*!
-   * \brief Sets to zero all the entries of the vector.
-   */
-  inline void SetValZero(void) { *this = ScalarType(0); }
-
-  /*!
-   * \brief Compound operations with scalars and expressions.
+   * \brief Compound assignement operations with scalars and expressions.
    * \param[in] val/expr - Scalar value or expression.
    */
 #define MAKE_COMPOUND(OP)                                                 \
@@ -294,14 +269,20 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   template <class T>                                                      \
   CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
     CSYSVEC_PARFOR                                                        \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr[i];              \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
     return *this;                                                         \
   }
+  MAKE_COMPOUND(=)
   MAKE_COMPOUND(+=)
   MAKE_COMPOUND(-=)
   MAKE_COMPOUND(*=)
   MAKE_COMPOUND(/=)
 #undef MAKE_COMPOUND
+
+  /*!
+   * \brief Sets to zero all the entries of the vector.
+   */
+  inline void SetValZero(void) { *this = ScalarType(0); }
 
   /*!
    * \brief Dot product between "this" and an expression.
@@ -320,7 +301,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElmDomain; ++i) {
-      sum += vec_val[i] * expr[i];
+      sum += vec_val[i] * expr.derived()[i];
     }
 
     /*--- Update shared variable with "our" partial sum. ---*/

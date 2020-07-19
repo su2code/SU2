@@ -1,6 +1,6 @@
 /*!
  * \file vector_expressions.hpp
- * \brief Basic expression templates for vector types.
+ * \brief Expression templates for vector types with coefficient-wise operations.
  * \author P. Gomes
  * \version 7.0.6 "Blackbird"
  *
@@ -38,20 +38,56 @@ namespace VecExpr {
 
 /*!
  * \brief Base vector expression class.
- * \param[in] Derived - The class that inherits (derives) from this one.
- * \param[in] Scalar_t - Return type of Derived::operator[] (which must be implemented).
- * \note Derived classes must be constructible from expressions (that is when the
- * expression tree is evaluated).
+ * \param[in] Derived - The class that inherits from this one to use the expressions.
+ * \param[in] Scalar - Associated scalar type, prevents implicit conversions between exprs.
+ * \note Derived classes must implement operator[], and at least operator= with
+ * expressions (that is when they are evaluated). They must also contain a constexpr
+ * boolean "StoreAsRef", indicating whether to store them by value (false) or by
+ * reference (true), when composing expressions.
+ * Expression classes need to be stored by value to allow nested expressions to
+ * propagate correctly (i.e. if "Scalar" has its own expression templates).
+ * Vector classes should be stored by reference to avoid copies, especially if they
+ * allocate memory dynamically.
  */
-template<class Derived, class Scalar_t>
+template<class Derived, class Scalar>
 class CVecExpr {
 public:
-  using Scalar = Scalar_t;
-  FORCEINLINE Scalar operator[] (size_t i) const { return static_cast<const Derived&>(*this)[i]; }
+  /*!
+   * \brief Cast the expression to Derived, usually to allow evaluation via operator[].
+   */
+  FORCEINLINE const Derived& derived() const { return static_cast<const Derived&>(*this); }
+
+  // Allowed from C++14, allows nested expression propagation without
+  // manually calling derived() on the expression being evaluated.
+  //FORCEINLINE auto operator[] (size_t i) const { return derived()[i]; }
 };
 
-template<class T>
-using decay_t = typename std::decay<T>::type;
+/*!
+ * \brief Expression class to broadcast a scalar value. Allows implementing
+ * "vector-scalar" operations re-using "vector-vector" expressions.
+ */
+template<class Scalar>
+class Bcast : public CVecExpr<Bcast<Scalar>, Scalar> {
+  Scalar x;
+public:
+  static constexpr bool StoreAsRef = false;
+  FORCEINLINE Bcast(const Scalar& x_) : x(x_) {}
+  FORCEINLINE const Scalar& operator[] (size_t) const { return x; }
+};
+
+/*!
+ * \brief std::decay_t from C++14, used to allow implicit conversions
+ * between scalar types, e.g. "CVecExpr<U,double>" + "int/double/etc.".
+ */
+template<class T> using decay_t = typename std::decay<T>::type;
+
+/*! \brief std::remove_reference_t from C++14, removes references from some type. */
+template<class T> using remove_reference_t = typename std::remove_reference<T>::type;
+
+/*! \brief Mechanism to conditionally (based on "StoreAsRef") add lvalue reference to a type. */
+template<class T, bool> struct add_lref_if { using type = remove_reference_t<T>; };
+template<class T> struct add_lref_if<T,true> { using type = remove_reference_t<T> &; };
+template<class T> using store_t = typename add_lref_if<T,T::StoreAsRef>::type;
 
 /*--- Namespace from which the math function implementations come. ---*/
 
@@ -61,114 +97,104 @@ namespace math = ::codi;
 namespace math = ::std;
 #endif
 
-/*--- Macro to create expressions and overloads for unary functions. ---*/
+/*--- Macro to simplify auto return type deduction in C++11, operator[] needs
+ * it to allow inner expressions to propagate as the outer is evaluated.  ---*/
 
-#define MAKE_UNARY_FUN(FUN, NAME, IMPL)                                   \
-template<class U>                                                         \
-class NAME : public CVecExpr<NAME<U>, typename U::Scalar> {               \
-  const U& u;                                                             \
-public:                                                                   \
-  using Scalar = typename U::Scalar;                                      \
-  FORCEINLINE NAME(const U& u_) : u(u_) {}                                \
-  FORCEINLINE Scalar operator[] (size_t i) const { return IMPL(u[i]); }   \
-};                                                                        \
-template<class U, class T>                                                \
-FORCEINLINE NAME<U> FUN(const CVecExpr<U,T>& u) {                         \
-  return NAME<U>(static_cast<const U&>(u));                               \
-}
+#define RETURNS(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
+
+/*--- Macro to create expression classes (EXPR) and overloads (FUN) for unary
+ * functions, based on their coefficient-wise implementation (IMPL). ---*/
+
+#define MAKE_UNARY_FUN(FUN, EXPR, IMPL)                                       \
+/*!--- Expression class. ---*/                                                \
+template<class U, class Scalar>                                               \
+class EXPR : public CVecExpr<EXPR<U,Scalar>, Scalar> {                        \
+  store_t<const U> u;                                                         \
+public:                                                                       \
+  static constexpr bool StoreAsRef = false;                                   \
+  FORCEINLINE EXPR(const U& u_) : u(u_) {}                                    \
+  FORCEINLINE auto operator[] (size_t i) const RETURNS( IMPL(u[i]) )          \
+};                                                                            \
+/*!--- Function overload, returns an expression object. ---*/                 \
+template<class U, class S>                                                    \
+FORCEINLINE auto FUN(const CVecExpr<U,S>& u) RETURNS( EXPR<U,S>(u.derived()) )
 
 MAKE_UNARY_FUN(operator-, negate_v, -)
-MAKE_UNARY_FUN(abs, abs_v, math::abs)
-MAKE_UNARY_FUN(sqrt, sqrt_v, math::sqrt)
+MAKE_UNARY_FUN(abs, abs_, math::abs)
+MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
 
 #undef MAKE_UNARY_FUN
 
 /*--- Macro to create expressions and overloads for binary functions. ---*/
 
-#define MAKE_BINARY_FUN(FUN, NAME1, NAME2, NAME3, IMPL)                       \
-/*--- Vector with vector, expression (NAME1) and function overload. ---*/     \
-template<class U, class V>                                                    \
-class NAME1 : public CVecExpr<NAME1<U,V>, typename U::Scalar> {               \
-  const U& u;                                                                 \
-  const V& v;                                                                 \
+#define MAKE_BINARY_FUN(FUN, EXPR, IMPL)                                      \
+/*!--- Expression class. ---*/                                                \
+template<class U, class V, class Scalar>                                      \
+class EXPR : public CVecExpr<EXPR<U,V,Scalar>, Scalar> {                      \
+  store_t<const U> u;                                                         \
+  store_t<const V> v;                                                         \
 public:                                                                       \
-  using Scalar = typename U::Scalar;                                          \
-  FORCEINLINE NAME1(const U& u_, const V& v_) : u(u_), v(v_) {}               \
-  FORCEINLINE Scalar operator[] (size_t i) const { return IMPL(u[i], v[i]); } \
+  static constexpr bool StoreAsRef = false;                                   \
+  FORCEINLINE EXPR(const U& u_, const V& v_) : u(u_), v(v_) {}                \
+  FORCEINLINE auto operator[] (size_t i) const RETURNS( IMPL(u[i], v[i]) )    \
 };                                                                            \
-template<class U, class V, class T>                                           \
-FORCEINLINE NAME1<U,V> FUN(const CVecExpr<U,T>& u, const CVecExpr<V,T>& v) {  \
-  return NAME1<U,V>(static_cast<const U&>(u), static_cast<const V&>(v));      \
-}                                                                             \
-/*--- Vector with scalar, expression (NAME2) and function overload. ---*/     \
-template<class U, class V>                                                    \
-class NAME2 : public CVecExpr<NAME2<U,V>, typename U::Scalar> {               \
-  const U& u;                                                                 \
-  V v;                                                                        \
-public:                                                                       \
-  using Scalar = typename U::Scalar;                                          \
-  FORCEINLINE NAME2(const U& u_, const V& v_) : u(u_), v(v_) {}               \
-  FORCEINLINE Scalar operator[] (size_t i) const { return IMPL(u[i], v); }    \
-};                                                                            \
-template<class U, class T>                                                    \
-FORCEINLINE NAME2<U,T> FUN(const CVecExpr<U,T>& u, decay_t<T> v) {            \
-  return NAME2<U,T>(static_cast<const U&>(u), v);                             \
-}                                                                             \
-/*--- Scalar with vector, expression (NAME3) and function overload. ---*/     \
-template<class U, class V>                                                    \
-class NAME3 : public CVecExpr<NAME3<U,V>, typename U::Scalar> {               \
-  const U& u;                                                                 \
-  V v;                                                                        \
-public:                                                                       \
-  using Scalar = typename U::Scalar;                                          \
-  FORCEINLINE NAME3(const U& u_, const V& v_) : u(u_), v(v_) {}               \
-  FORCEINLINE Scalar operator[] (size_t i) const { return IMPL(v, u[i]); }    \
-};                                                                            \
-template<class U, class T>                                                    \
-FORCEINLINE NAME3<U,T> FUN(decay_t<T> v, const CVecExpr<U,T>& u) {            \
-  return NAME3<U,T>(static_cast<const U&>(u), v);                             \
-}
+/*!--- Vector with vector function overload. ---*/                            \
+template<class U, class V, class S>                                           \
+FORCEINLINE auto FUN(const CVecExpr<U,S>& u, const CVecExpr<V,S>& v)          \
+  RETURNS( EXPR<U,V,S>(u.derived(), v.derived())                              \
+)                                                                             \
+/*!--- Vector with scalar function overload. ---*/                            \
+template<class U, class S>                                                    \
+FORCEINLINE auto FUN(const CVecExpr<U,S>& u, decay_t<S> v)                    \
+  RETURNS( EXPR<U,Bcast<S>,S>(u.derived(), Bcast<S>(v))                       \
+)                                                                             \
+/*!--- Scalar with vector function overload. ---*/                            \
+template<class S, class V>                                                    \
+FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
+  RETURNS( EXPR<Bcast<S>,V,S>(Bcast<S>(u), v.derived())                       \
+)                                                                             \
 
-/*--- Naming convention: v - vector (expression); s - scalar. ---*/
+MAKE_BINARY_FUN(max, max_, math::max)
+MAKE_BINARY_FUN(min, min_, math::min)
+MAKE_BINARY_FUN(pow, pow_, math::pow)
 
-/*--- sts::plus and co. were tried, the code was horrendous
- * (due to the forced conversion between different types). ---*/
+/*--- sts::plus and co. were tried, the code was horrendous (due to the forced
+ * conversion between different types) and creating functions for these ops
+ * requires a lot of boilerplate (template args, auto return, etc.). ---*/
 
-#define add_ss(a,b) a+b
-#define sub_ss(a,b) a-b
-#define mul_ss(a,b) a*b
-#define div_ss(a,b) a/b
-#define leq_ss(a,b) a<=b
-#define geq_ss(a,b) a>=b
-#define eq_ss(a,b) a==b
-#define ne_ss(a,b) a!=b
-#define lt_ss(a,b) a<b
-#define gt_ss(a,b) a>b
+#define add_impl(a,b) a+b
+#define sub_impl(a,b) a-b
+#define mul_impl(a,b) a*b
+#define div_impl(a,b) a/b
+MAKE_BINARY_FUN(operator+, add_, add_impl)
+MAKE_BINARY_FUN(operator-, sub_, sub_impl)
+MAKE_BINARY_FUN(operator*, mul_, mul_impl)
+MAKE_BINARY_FUN(operator/, div_, div_impl)
+#undef add_impl
+#undef sub_impl
+#undef mul_impl
+#undef div_impl
 
-MAKE_BINARY_FUN(operator+, add_vv, add_vs, add_sv, add_ss)
-MAKE_BINARY_FUN(operator-, sub_vv, sub_vs, sub_sv, sub_ss)
-MAKE_BINARY_FUN(operator*, mul_vv, mul_vs, mul_sv, mul_ss)
-MAKE_BINARY_FUN(operator/, div_vv, div_vs, div_sv, div_ss)
-MAKE_BINARY_FUN(operator<=, leq_vv, leq_vs, leq_sv, leq_ss)
-MAKE_BINARY_FUN(operator>=, geq_vv, geq_vs, geq_sv, geq_ss)
-MAKE_BINARY_FUN(operator==, eq_vv, eq_vs, eq_sv, eq_ss)
-MAKE_BINARY_FUN(operator!=, ne_vv, ne_vs, ne_sv, ne_ss)
-MAKE_BINARY_FUN(operator<, lt_vv, lt_vs, lt_sv, lt_ss)
-MAKE_BINARY_FUN(operator>, gt_vv, gt_vs, gt_sv, gt_ss)
-MAKE_BINARY_FUN(max, max_vv, max_vs, max_sv, math::max)
-MAKE_BINARY_FUN(min, min_vv, min_vs, min_sv, math::min)
-MAKE_BINARY_FUN(pow, pow_vv, pow_vs, pow_sv, math::pow)
+/*--- Relational operators need to be cast to the scalar type to allow vectorization. ---*/
 
-#undef add_ss
-#undef sub_ss
-#undef mul_ss
-#undef div_ss
-#undef leq_ss
-#undef geq_ss
-#undef eq_ss
-#undef ne_ss
-#undef lt_ss
-#undef gt_ss
+#define leq_impl(a,b) Scalar(a<=b)
+#define geq_impl(a,b) Scalar(a>=b)
+#define eq_impl(a,b) Scalar(a==b)
+#define ne_impl(a,b) Scalar(a!=b)
+#define lt_impl(a,b) Scalar(a<b)
+#define gt_impl(a,b) Scalar(a>b)
+MAKE_BINARY_FUN(operator<=, leq_, leq_impl)
+MAKE_BINARY_FUN(operator>=, geq_, geq_impl)
+MAKE_BINARY_FUN(operator==, eq_, eq_impl)
+MAKE_BINARY_FUN(operator!=, ne_, ne_impl)
+MAKE_BINARY_FUN(operator<, lt_, lt_impl)
+MAKE_BINARY_FUN(operator>, gt_, gt_impl)
+#undef leq_impl
+#undef geq_impl
+#undef eq_impl
+#undef ne_impl
+#undef lt_impl
+#undef gt_impl
 
 #undef MAKE_BINARY_FUN
 

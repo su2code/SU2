@@ -193,15 +193,13 @@ void parallelSet(size_t size, T val, U* dst)
  * \param[in] rhs - Local variable being added to the shared one.
  * \param[in,out] lhs - Shared variable being updated.
  */
-template<class T,
-         typename std::enable_if<!std::is_arithmetic<T>::value,bool>::type = 0>
+template<class T, su2enable_if<!std::is_arithmetic<T>::value> = 0>
 inline void atomicAdd(T rhs, T& lhs)
 {
   SU2_OMP_CRITICAL
   lhs += rhs;
 }
-template<class T,
-         typename std::enable_if<std::is_arithmetic<T>::value,bool>::type = 0>
+template<class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
 inline void atomicAdd(T rhs, T& lhs)
 {
   SU2_OMP_ATOMIC

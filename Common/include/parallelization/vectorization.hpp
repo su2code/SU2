@@ -37,12 +37,12 @@ namespace simd {
 
 using namespace VecExpr;
 
-/*--- Detect preferred SIMD size (bytes). ---*/
+/*--- Detect preferred SIMD size (bytes). This only covers x86 architectures. ---*/
 #if defined(__AVX512F__)
 constexpr size_t SIMD_SIZE = 64;
 #elif defined(__AVX__)
 constexpr size_t SIMD_SIZE = 32;
-#elif defined(__SSE__)
+#elif defined(__SSE2__)
 constexpr size_t SIMD_SIZE = 16;
 #else
 constexpr size_t SIMD_SIZE = 8;
@@ -66,12 +66,13 @@ constexpr size_t simdLen<su2double>() { return SIMD_SIZE / sizeof(passivedouble)
  */
 template<class Scalar_t, size_t N = simdLen<Scalar_t>()>
 class Array : public CVecExpr<Array<Scalar_t,N>, Scalar_t> {
-#define FOREACH SU2_OMP_SIMD for(size_t k=0; k<N; ++k)
+#define FOREACH for(size_t k=0; k<N; ++k)
   static_assert(N > 0, "Invalid SIMD size");
 public:
   using Scalar = Scalar_t;
   enum : size_t {Size = N};
-  enum : size_t {Align = SIMD_SIZE};
+  enum : size_t {Align = Size*sizeof(Scalar)};
+  static constexpr bool StoreAsRef = true;
 
 private:
   alignas(Align) Scalar x_[N];
@@ -84,7 +85,6 @@ public:
   /*!--- Constructors ---*/                                                   \
   FORCEINLINE Array() = default;                                              \
   FORCEINLINE Array(Scalar x) { bcast(x); }                                   \
-  FORCEINLINE Array& operator= (Scalar x) { bcast(x); return *this; }         \
   FORCEINLINE Array(std::initializer_list<Scalar> vals) {                     \
     auto it = vals.begin(); FOREACH { x_[k] = *it; ++it; }                    \
   }                                                                           \
@@ -99,23 +99,21 @@ public:
   }
 
 #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-  template<class U = Scalar_t,
-           typename std::enable_if<std::is_same<U,su2double>::value, bool>::type = 0>
+  /*--- These are not very nice but without them it would not be possible
+   * to assign builtin types to Arrays of active types. ---*/
+  template<class U = Scalar, su2enable_if<std::is_same<U,su2double>::value> = 0>
   FORCEINLINE Array(passivedouble x) { bcast(x); }
-  template<class U = Scalar_t,
-           typename std::enable_if<std::is_same<U,su2double>::value, bool>::type = 0>
+  template<class U = Scalar, su2enable_if<std::is_same<U,su2double>::value> = 0>
   FORCEINLINE Array& operator= (passivedouble x) { bcast(x); return *this; }
 #endif
 
   ARRAY_BOILERPLATE
 
-  /*! copy construct from expression. */
-  template<class T, class U>
-  FORCEINLINE Array(const CVecExpr<T,U>& expr) { FOREACH x_[k] = expr[k]; }
-
-  /*! assign from expression. */
-  template<class T, class U>
-  FORCEINLINE Array& operator= (const CVecExpr<T,U>& expr) { FOREACH x_[k] = expr[k]; return *this; }
+  /*! \brief Copy construct from expression. */
+  template<class U>
+  FORCEINLINE Array(const CVecExpr<U,Scalar>& expr) {
+    FOREACH x_[k] = expr.derived()[k];
+  }
 
   /*--- Implementation of the construction primitives. ---*/
 
@@ -128,12 +126,15 @@ public:
   template<class T>
   FORCEINLINE void gather(const Scalar* begin, const T& offsets) { FOREACH x_[k] = begin[offsets[k]]; }
 
-  /*--- Compound math operators, "this" is not returned because it generates poor assembly. ---*/
+  /*--- Compound assignment operators. ---*/
 
-#define MAKE_COMPOUND(OP)\
-  FORCEINLINE void operator OP (Scalar x) { FOREACH x_[k] OP x; }\
-  template<class T, class U>\
-  FORCEINLINE void operator OP (const CVecExpr<T,U>& expr) { FOREACH x_[k] OP expr[k]; }
+#define MAKE_COMPOUND(OP)                                                         \
+  FORCEINLINE Array& operator OP (Scalar x) { FOREACH x_[k] OP x; return *this; } \
+  template<class U>                                                               \
+  FORCEINLINE Array& operator OP (const CVecExpr<U,Scalar>& expr) {               \
+    FOREACH x_[k] OP expr.derived()[k]; return *this;                             \
+  }
+  MAKE_COMPOUND(=)
   MAKE_COMPOUND(+=)
   MAKE_COMPOUND(-=)
   MAKE_COMPOUND(*=)
@@ -145,16 +146,55 @@ public:
 
 /*--- Explicit vectorization specializations. ---*/
 
-#ifdef __AVX__
-#include "x86intrin.h"
-
 /*--- Size tags for overload resolution of some wrapper functions. ---*/
 namespace SizeTag {
+  struct TWO {};
   struct FOUR {};
   struct EIGHT {};
   struct SIXTEEN {};
 }
 
+#ifdef __SSE2__
+#include "x86intrin.h"
+/*!
+ * Create specialization for array of 2 doubles (this should be always available).
+ */
+#define ARRAY_T Array<double,2>
+#define SCALAR_T double
+#define REGISTER_T __m128d
+#define SIZE_TAG SizeTag::TWO()
+
+/*--- abs forces the sign bit to 0 (& 0b0111...). ---*/
+static const __m128d abs_mask_2d = _mm_castsi128_pd(_mm_set1_epi64x(0x7FFFFFFFFFFFFFFFL));
+/*--- negation flips the sign bit (^ 0b1000...). ---*/
+static const __m128d neg_mask_2d = _mm_castsi128_pd(_mm_set1_epi64x(0x8000000000000000L));
+
+FORCEINLINE __m128d set1_p(SizeTag::TWO, double p) { return _mm_set1_pd(p); }
+FORCEINLINE __m128d load_p(SizeTag::TWO, const double* p) { return _mm_load_pd(p); }
+FORCEINLINE __m128d loadu_p(SizeTag::TWO, const double* p) { return _mm_loadu_pd(p); }
+FORCEINLINE void store_p(double* p, __m128d x) { _mm_store_pd(p,x); }
+FORCEINLINE void storeu_p(double* p, __m128d x) { _mm_storeu_pd(p,x); }
+FORCEINLINE void stream_p(double* p, __m128d x) { _mm_stream_pd(p,x); }
+
+FORCEINLINE __m128d add_p(__m128d a, __m128d b) { return _mm_add_pd(a,b); }
+FORCEINLINE __m128d sub_p(__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
+FORCEINLINE __m128d mul_p(__m128d a, __m128d b) { return _mm_mul_pd(a,b); }
+FORCEINLINE __m128d div_p(__m128d a, __m128d b) { return _mm_div_pd(a,b); }
+FORCEINLINE __m128d max_p(__m128d a, __m128d b) { return _mm_max_pd(a,b); }
+FORCEINLINE __m128d min_p(__m128d a, __m128d b) { return _mm_min_pd(a,b); }
+
+FORCEINLINE __m128d sqrt_p(__m128d x) { return _mm_sqrt_pd(x); }
+FORCEINLINE __m128d abs_p(__m128d x) { return _mm_and_pd(x, abs_mask_2d); }
+FORCEINLINE __m128d neg_p(__m128d x) { return _mm_xor_pd(x, neg_mask_2d); }
+
+/*--- Generate specialization based on the defines
+ * and functions above by including the header. ---*/
+
+#include "special_vectorization.hpp"
+
+#endif // __SSE2__
+
+#ifdef __AVX__
 /*!
  * Create specialization for array of 4 doubles.
  */
@@ -163,9 +203,7 @@ namespace SizeTag {
 #define REGISTER_T __m256d
 #define SIZE_TAG SizeTag::FOUR()
 
-/*--- abs forces the sign bit to 0 (& 0b0111...). ---*/
 static const __m256d abs_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FFFFFFFFFFFFFFFL));
-/*--- negation flips the sign bit (^ 0b1000...). ---*/
 static const __m256d neg_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(0x8000000000000000L));
 
 FORCEINLINE __m256d set1_p(SizeTag::FOUR, double p) { return _mm256_set1_pd(p); }
@@ -191,7 +229,6 @@ FORCEINLINE __m256d neg_p(__m256d x) { return _mm256_xor_pd(x, neg_mask_4d); }
 #endif // __AVX__
 
 #ifdef __AVX512F__
-
 /*!
  * Create specialization for array of 8 doubles.
  */

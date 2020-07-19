@@ -53,9 +53,12 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
 /*!
  * \brief This function instantiates both 2D and 3D versions of the implementation in
  * createNumerics, which in turn instantiates the class templates of the different
- * methods.
+ * numerical methods.
  */
 CNumericsSIMD* CNumericsSIMD::CreateNumerics(const CConfig& config, int nDim, int iMesh) {
+  if ((Double::Size < 4) && (SU2_MPI::GetRank() == MASTER_NODE)) {
+    cout << "WARNING: SU2 was not compiled for an AVX-capable architecture." << endl;
+  }
   CNumericsSIMD* obj = nullptr;
   if (config.GetViscous()) {
     if (nDim == 2) obj = createNumerics<CCompressibleViscousFlux<2> >(config, iMesh);

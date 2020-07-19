@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// no #pragma once, it needs to be included once per specialization.
+// no #pragma once, header needs to be included once per specialization.
 
 /*!
  * \brief Symbols that need to be defined before including this header:
@@ -42,6 +42,8 @@
 template<>
 class ARRAY_T {
 #define FOREACH SU2_OMP_SIMD for(size_t k=0; k<Size; ++k)
+  template<class F, class S>
+  FORCEINLINE static S second(F, S s) { return s; }
 public:
   using Scalar = SCALAR_T;
   using Register = REGISTER_T;
@@ -62,7 +64,6 @@ public:
 
   FORCEINLINE Array(Register y) { reg = y; }
   FORCEINLINE Array(const Array& other) { reg = other.reg; }
-  FORCEINLINE Array& operator= (const Array& other) { reg = other.reg; return *this; }
 
   /*--- Specialized construction primitives. ---*/
 
@@ -75,11 +76,12 @@ public:
   template<class T>
   FORCEINLINE void gather(const Scalar* begin, const T& offsets) { FOREACH x_[k] = begin[offsets[k]]; }
 
-  /*--- Compound math operators, "this" is not returned because it generates poor assembly. ---*/
+  /*--- Compound assignement operators. ---*/
 
 #define MAKE_COMPOUND(OP,IMPL)\
-  FORCEINLINE void operator OP (Scalar x) { reg = IMPL(reg, set1_p(SIZE_TAG, x)); }\
-  FORCEINLINE void operator OP (const Array& other) { reg = IMPL(reg, other.reg); }
+  FORCEINLINE Array& operator OP (Scalar x) { reg = IMPL(reg, set1_p(SIZE_TAG, x)); return *this; }\
+  FORCEINLINE Array& operator OP (const Array& other) { reg = IMPL(reg, other.reg); return *this; }
+  MAKE_COMPOUND(=, second)
   MAKE_COMPOUND(+=, add_p)
   MAKE_COMPOUND(-=, sub_p)
   MAKE_COMPOUND(*=, mul_p)

@@ -162,8 +162,7 @@ struct C2DDummyLastView
 
   C2DDummyLastView(T& ref) : data(ref) {}
 
-  template<class U = T,
-           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  template<class U = T, su2enable_if<!std::is_const<U>::value> = 0>
   Scalar& operator() (Index i, Index) noexcept
   {
     return data(i);
@@ -195,8 +194,7 @@ struct C3DDummyMiddleView
 
   C3DDummyMiddleView(T& ref) : data(ref) {}
 
-  template<class U = T,
-           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  template<class U = T, su2enable_if<!std::is_const<U>::value> = 0>
   Scalar& operator() (Index i, Index, Index k) noexcept
   {
     return data(i,k);
