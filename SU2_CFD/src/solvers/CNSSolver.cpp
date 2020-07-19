@@ -188,7 +188,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   const bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
-  const bool edge_limiter_turb  = (config->GetKind_Turb_Model() != NONE) && (config->GetEdgeLimiter_Turb());
+  const bool edge_limiter_turb  = config->GetEdgeLimiter_Turb();
 
   const bool restart              = config->GetRestart();
   const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
