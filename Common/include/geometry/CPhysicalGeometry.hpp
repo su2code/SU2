@@ -30,7 +30,7 @@
 #include "CGeometry.hpp"
 #include "meshreader/CMeshReader.hpp"
 #include "../toolboxes/C2DContainer.hpp"
-#include "../toolboxes/CFaceOfElement.hpp"
+#include "../toolboxes/fem/CFaceOfElement.hpp"
 
 /*!
  * \class CPhysicalGeometry
@@ -756,4 +756,21 @@ public:
     }
   }
 
+private:
+
+  /*!
+   * \brief Function, which determines the matching faces of a FEM grid.
+   * \param[in]  config      - Definition of the particular problem.
+   * \param[out] localFaces  - Vector containing the local faces of the FEM grid. On output the matching faces are stored as one face.
+   */
+  void DetermineMatchingFacesFEMGrid(const CConfig          *config,
+                                     vector<CFaceOfElement> &localFaces);
+
+  /*!
+   * \brief Determine the neighboring information for periodic faces of a FEM grid.
+   * \param[in]     config      - Definition of the particular problem.
+   * \param[in,out] localFaces  - Vector, which contains the element faces of this rank.
+   */
+  void DeterminePeriodicFacesFEMGrid(const CConfig          *config,
+                                     vector<CFaceOfElement> &localFaces);
 };

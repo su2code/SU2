@@ -3,7 +3,7 @@
  * \brief Helper class used in distributing the surface elements and
  *        creating the surface elements for the DG solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/toolboxes/CFaceOfElement.hpp" 
+#include "../../../include/toolboxes/fem/CFaceOfElement.hpp" 
 
 
 CFaceOfElement::CFaceOfElement() {

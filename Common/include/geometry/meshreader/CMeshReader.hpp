@@ -33,7 +33,7 @@
 
 #include "../../mpi_structure.hpp"
 #include "../../CConfig.hpp"
-#include "../../../include/toolboxes/CFaceOfElement.hpp"
+#include "../../../include/toolboxes/fem/CFaceOfElement.hpp"
 
 /*!
  * \class CMeshReader

@@ -76,6 +76,12 @@ public:
   inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return -1; }  
 
   /*!
+   * \brief Make available the global ID of this element.
+   * \return The global ID of this element.
+   */
+  inline unsigned long GetGlobalElemID(void) override { return elemIDGlobal; }
+
+  /*!
    * \brief Get the Maximum number of nodes of a face of an element.
    * \return Maximum number of nodes of a face of an element.
    */
@@ -134,6 +140,41 @@ public:
    */
   inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
 
+  /*!
+   * \brief Get the polynomial degree of the grid for this element.
+   * \return The polynomial degree of the grid.
+   */
+  inline unsigned short GetNPolyGrid(void) override { return nPolyGrid; }
+
+  /*!
+   * \brief Get the polynomial degree of the solution for this element.
+   * \return The polynomial degree of the solution.
+   */
+  inline unsigned short GetNPolySol(void) override { return nPolySol; }
+
+  /*!
+   * \brief Function to make available the number of DOFs of the grid in the element.
+   * \return The number of DOFs of the grid in the element.
+   */
+  inline unsigned short GetNDOFsGrid(void) override { return nDOFsGrid; }
+
+  /*!
+   * \brief Function to make available the number of DOFs of the solution in the element.
+   * \return The number of DOFs of the solution in the element.
+   */
+  inline unsigned short GetNDOFsSol(void) override { return nDOFsSol; }
+
+ /*!
+   * \brief Get all the corner points of all the faces of this element. It must be made sure
+           that the numbering of the faces is identical to the numbering used for the
+           standard elements.
+   * \param[out] nFaces         - Number of faces of this element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
+  void GetCornerPointsAllFaces(unsigned short &numFaces,
+                               unsigned short nPointsPerFace[],
+                               unsigned long  faceConn[6][4]) override;
   /*!
    * \brief Static member function to get the local the corner points of all the faces
            of this element. It must be made sure that the numbering of the faces is

@@ -28,8 +28,8 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
-#include "../option_structure.hpp"
+#include "../../mpi_structure.hpp"
+#include "../../option_structure.hpp"
 
 #include <vector>
 #include <algorithm>

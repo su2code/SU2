@@ -50,6 +50,25 @@ CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem) {
   nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
 }
 
+void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
+                                             unsigned short nPointsPerFace[],
+                                             unsigned long  faceConn[6][4]) {
+
+  /*--- Get the corner points of the faces local to the element. ---*/
+
+  GetLocalCornerPointsAllFaces(VTK_Type, nPolyGrid, nDOFsGrid,
+                               numFaces, nPointsPerFace, faceConn);
+
+  /*--- Convert the local values of faceConn to global values. ---*/
+
+  for(unsigned short i=0; i<numFaces; ++i) {
+    for(unsigned short j=0; j<nPointsPerFace[i]; ++j) {
+      unsigned long nn = faceConn[i][j];
+      faceConn[i][j] = Nodes[nn];
+    }
+  }
+}
+
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
                                                   unsigned short nPoly,
                                                   unsigned short nDOFs,

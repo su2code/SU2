@@ -1,7 +1,7 @@
-common_src += files(['CFaceOfElement.cpp',
-                     'CLinearPartitioner.cpp',
+common_src += files(['CLinearPartitioner.cpp',
                      'printing_toolbox.cpp',
                      'C1DInterpolation.cpp',
                      'CSymmetricMatrix.cpp'])
 
 subdir('MMS')
+subdir('fem')

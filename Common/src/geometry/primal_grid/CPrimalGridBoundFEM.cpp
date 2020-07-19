@@ -81,17 +81,15 @@ void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
 
   /*--- For compatibility reasons with the base class, nFaces is also an
         argument to this function. However, it is always 1, because the
-        boundary element is the face.                                   ---*/
+        boundary element is the face. ---*/
   nFaces = 1;
 
   /*--- Get the corner points of the face local to the element. ---*/
-
   unsigned long thisFaceConn[4] = {0, 0, 0, 0};
   GetLocalCornerPointsFace(VTK_Type, nPolyGrid, nDOFsGrid,
                            nPointsPerFace[0], thisFaceConn);
 
   /*--- Convert the local values of thisFaceConn to global values. ---*/
-
   for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
     faceConn[0][j] = Nodes[thisFaceConn[j]];
 }

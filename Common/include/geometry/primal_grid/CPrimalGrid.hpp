@@ -374,12 +374,6 @@ public:
   inline virtual unsigned long GetGlobalElemID(void) { return 0; }
 
   /*!
-   * \brief Virtual function to make available the global offset of the solution DOFs.
-   * \return The global offset of the solution DOFs.
-   */
-  inline virtual unsigned long GetGlobalOffsetDOFsSol(void) { return 0; }
-
-  /*!
    * \brief Virtual function to make available the polynomial degree of the grid.
    * \return The polynomial degree of the grid.
    */
