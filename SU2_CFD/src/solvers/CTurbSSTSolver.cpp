@@ -284,6 +284,8 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  const bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && 
+                            (InnerIter <= config->GetLimiterIter());
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
   const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
@@ -309,7 +311,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
       SetPrimitive_Gradient_LS(geometry, config, true);
   }
 
-  if (limiter_turb && !(edge_limiter_flow && edge_limiter_turb)) SetPrimitive_Limiter(geometry, config);
+  if ((limiter_flow || limiter_turb) && !(edge_limiter_flow && edge_limiter_turb)) SetPrimitive_Limiter(geometry, config);
 
 }
 
