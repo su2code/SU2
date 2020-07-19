@@ -187,17 +187,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   const bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  const bool edge_limiter_flow  = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) ||
-                                  (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) ||
-                                  (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG) ||
-                                  (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
-                                  (config->GetKind_SlopeLimit_Flow() == NO_LIMITER);
-  const bool edge_limiter_turb  = (config->GetKind_SlopeLimit_Turb() == VAN_ALBADA_EDGE) ||
-                                  (config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_EDGE) ||
-                                  (config->GetKind_SlopeLimit_Turb() == VENKATAKRISHNAN_MUNG) ||
-                                  (config->GetKind_SlopeLimit_Turb() == PIPERNO) ||
-                                  (config->GetKind_SlopeLimit_Turb() == NO_LIMITER);
-  const bool calc_limiter       = (!edge_limiter_flow) || (!edge_limiter_turb);
+  const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
+  const bool edge_limiter_turb  = (config->GetKind_Turb_Model() != NONE) && (config->GetEdgeLimiter_Turb());
 
   const bool restart              = config->GetRestart();
   const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
@@ -232,7 +223,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && calc_limiter) {
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && (!edge_limiter_flow || !edge_limiter_turb)) {
     SetPrimitive_Limiter(geometry, config);
   }
 

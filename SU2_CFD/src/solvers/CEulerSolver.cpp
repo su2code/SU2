@@ -2625,10 +2625,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
   const bool muscl             = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   const bool limiter           = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool center            = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  const bool van_albada        = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  const bool venkat_edge       = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG);
-  const bool piperno           = config->GetKind_SlopeLimit_Flow() == PIPERNO;
-  const bool calc_limiter      = (!van_albada) && (!piperno) && (!venkat_edge) && (!Output);
+  const bool edge_limiter      = config->GetEdgeLimiter_Flow();
 
   /*--- Common preprocessing steps. ---*/
 
@@ -2651,7 +2648,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) && calc_limiter)
+    if (limiter && (iMesh == MESH_0) && !Output && !edge_limiter)
       SetPrimitive_Limiter(geometry, config);
   }
 
@@ -3058,10 +3055,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
-  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-  const bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE);
   const bool piperno          = (config->GetKind_SlopeLimit_Flow() == PIPERNO);
-  const bool venkat_munguia   = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
@@ -3153,91 +3147,34 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Limiter_j = turbNodes->GetLimiter(jPoint);
         }
 
-        const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
+        const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
 
         const su2double T_ij = (tke_j - tke_i);
-        su2double ProjGrad_i = 0.5*Kappa*T_ij, ProjGrad_j = 0.5*Kappa*T_ij;
+
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
         for (iDim = 0; iDim < nDim; iDim++) {
-          ProjGrad_i += (1.0-Kappa)*TurbGrad_i[0][iDim]*Vector_ij[iDim];
-          ProjGrad_j += (1.0-Kappa)*TurbGrad_j[0][iDim]*Vector_ij[iDim];
+          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
+          Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
         }
 
         if (limiter) {
-          if (van_albada) {
-            const su2double K   = config->GetVenkat_LimiterCoeff();
-            const su2double eps = pow(K*Dist_ij, 1.5);
-
-            su2double Delta_m = ProjGrad_i - 0.5*T_ij;
-            su2double Delta_p = 0.5*T_ij;
-            ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
-                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
-            Delta_m = ProjGrad_j - 0.5*T_ij;
-            ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
-                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
+          switch(config->GetKind_SlopeLimit_Flow()) {
+            case VAN_ALBADA_EDGE:
+              Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+              Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+              break;
+            case PIPERNO:
+              Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+              Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+              break;
           }
-          else if (venkat_edge || venkat_munguia) {
-            su2double eps = EPS;
-            if (venkat_edge) {
-              const su2double K = config->GetVenkat_LimiterCoeff();
-              eps = max(pow(K*Dist_ij, 1.5), eps);
-            }
-
-            su2double Delta_m = ProjGrad_i;
-            su2double Delta_p = T_ij;
-            if (venkat_munguia) {
-              eps = min(fabs(Delta_m),fabs(Delta_p));
-              eps = max(eps, EPS);
-            }
-            ProjGrad_i *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                        /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-            Delta_m = ProjGrad_j;
-            Delta_p = T_ij;
-            if (venkat_munguia) {
-              eps = min(fabs(Delta_m),fabs(Delta_p));
-              eps = max(eps, EPS);
-            }
-            ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                        /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-          }
-          else if (piperno) {
-            const su2double R_i = T_ij/(2.0*ProjGrad_i + EPS);
-            const su2double R_j = T_ij/(2.0*ProjGrad_j + EPS);
-
-            const su2double InvR_i = (2.0*ProjGrad_i)/(T_ij+EPS);
-            const su2double InvR_j = (2.0*ProjGrad_j)/(T_ij+EPS);
-            
-            ProjGrad_i = 1.0/3.0*(1.0+2.0*R_i)*ProjGrad_i;
-            ProjGrad_j = 1.0/3.0*(1.0+2.0*R_j)*ProjGrad_j;
-
-            if (R_i < 0.0) {
-              ProjGrad_i = 0.0;
-            }
-            else if (R_i < 1.0) {
-              ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                               / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
-            }
-            else {
-              ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-            }
-
-            if (R_j < 0.0) {
-              ProjGrad_j = 0.0;
-            }
-            else if (R_j < 1.0) {
-              ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                               / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-            }
-            else {
-              ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
-            }
-          }
-          else{
-            ProjGrad_i *= Limiter_i[0];
-            ProjGrad_j *= Limiter_j[0];
-          }
+          Project_Grad_i = Limiter_i[0]*((1.0-Kappa)*Project_Grad_i + 0.5*Kappa*T_ij);
+          Project_Grad_j = Limiter_j[0]*((1.0-Kappa)*Project_Grad_j + 0.5*Kappa*T_ij);
         }
-        tke_i += ProjGrad_i;
-        tke_j -= ProjGrad_j;
+        tke_i += Project_Grad_i;
+        tke_j -= Project_Grad_j;
       }
     }
 
@@ -3270,92 +3207,36 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (piperno) ? 1.0/3.0 : 0.0;
+      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        const su2double V_ij = (V_j[iVar] - V_i[iVar]);
-        su2double ProjGrad_i = 0.5*Kappa*V_ij, ProjGrad_j = 0.5*Kappa*V_ij;
+
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
+
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
         for (iDim = 0; iDim < nDim; iDim++) {
-          ProjGrad_i += (1.0-Kappa)*Gradient_i[iVar][iDim]*Vector_ij[iDim];
-          ProjGrad_j += (1.0-Kappa)*Gradient_j[iVar][iDim]*Vector_ij[iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
         if (limiter) {
-          if (van_albada) {
-            const su2double K   = config->GetVenkat_LimiterCoeff();
-            const su2double eps = pow(K*Dist_ij, 1.5);
-
-            su2double Delta_m = ProjGrad_i - 0.5*V_ij;
-            su2double Delta_p = 0.5*V_ij;
-            ProjGrad_i *= max(2.0*(Delta_p*Delta_m)
-                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
-            Delta_m = ProjGrad_j - 0.5*V_ij;
-            ProjGrad_j *= max(2.0*(Delta_p*Delta_m)
-                        / (pow(Delta_p,2.0) + pow(Delta_m,2.0) + EPS), 0.0);
+          switch(config->GetKind_SlopeLimit_Flow()) {
+            case VAN_ALBADA_EDGE:
+              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+              break;
+            case PIPERNO:
+              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+              break;
           }
-          else if (venkat_edge || venkat_munguia) {
-            su2double eps = EPS;
-            if (venkat_edge) {
-              const su2double K = config->GetVenkat_LimiterCoeff();
-              eps = max(pow(K*Dist_ij, 1.5), eps);
-            }
-
-            su2double Delta_m = ProjGrad_i;
-            su2double Delta_p = V_ij;
-            if (venkat_munguia) {
-              eps = min(fabs(Delta_m),fabs(Delta_p));
-              eps = max(eps, EPS);
-            }
-            ProjGrad_i *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                        /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-            Delta_m = ProjGrad_j;
-            Delta_p = V_ij;
-            if (venkat_munguia) {
-              eps = min(fabs(Delta_m),fabs(Delta_p));
-              eps = max(eps, EPS);
-            }
-            ProjGrad_j *= fabs(((pow(Delta_p,2.0) + pow(eps,2.0)) + 2.0*Delta_m*Delta_p)
-                        /       (pow(Delta_p,2.0) + 2.0*pow(Delta_m,2.0) + Delta_p*Delta_m + pow(eps,2.0)));
-          }
-          else if (piperno) {
-            const su2double R_i = V_ij/(2.0*ProjGrad_i + EPS);
-            const su2double R_j = V_ij/(2.0*ProjGrad_j + EPS);
-
-            const su2double InvR_i = (2.0*ProjGrad_i)/(V_ij+EPS);
-            const su2double InvR_j = (2.0*ProjGrad_j)/(V_ij+EPS);
-            
-            ProjGrad_i = 1.0/3.0*(1.0+2.0*R_i)*ProjGrad_i;
-            ProjGrad_j = 1.0/3.0*(1.0+2.0*R_j)*ProjGrad_j;
-
-            if (R_i < 0.0) {
-              ProjGrad_i = 0.0;
-            }
-            else if (R_i < 1.0) {
-              ProjGrad_i *= (3.0*pow(InvR_i, 2.0) - 6.0*InvR_i + 19.0)
-                          / (pow(InvR_i, 3.0) - 3.0*InvR_i + 18.0);
-            }
-            else {
-              ProjGrad_i *= 1.0 + (1.5*InvR_i + 1.0)*pow(InvR_i - 1.0, 3.0);
-            }
-
-            if (R_j < 0.0) {
-              ProjGrad_j = 0.0;
-            }
-            else if (R_j < 1.0) {
-              ProjGrad_j *= (3.0*pow(InvR_j, 2.0) - 6.0*InvR_j + 19.0)
-                          / (pow(InvR_j, 3.0) - 3.0*InvR_j + 18.0);
-            }
-            else {
-              ProjGrad_j *= 1.0 + (1.5*InvR_j + 1.0)*pow(InvR_j - 1.0, 3.0);
-            }
-          }
-          else{
-            ProjGrad_i *= Limiter_i[iVar];
-            ProjGrad_j *= Limiter_j[iVar];
-          }
+          Project_Grad_i = Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + 0.5*Kappa*V_ij);
+          Project_Grad_j = Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + 0.5*Kappa*V_ij);
         }
-        Primitive_i[iVar] = V_i[iVar] + ProjGrad_i;
-        Primitive_j[iVar] = V_j[iVar] - ProjGrad_j;
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
