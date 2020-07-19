@@ -27,7 +27,11 @@
 # imports
 import numpy as np
 from optparse import OptionParser
-import os, sys, shutil, copy, os.path
+import os
+import sys
+import shutil
+import copy
+import os.path
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
@@ -66,13 +70,13 @@ def main():
 
     # perform eigenvalue perturbations
     for comp in range(1,4):
-        print "\n\n =================== Performing " + str(comp) + "  Component Perturbation =================== \n\n"
+        print('\n\n =================== Performing ' + str(comp) + '  Component Perturbation =================== \n\n')
 
         # make copies
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
 
-	# set componentality
+        # set componentality
         konfig.UQ_COMPONENT = comp
 
         # send output to a folder
@@ -85,14 +89,14 @@ def main():
         # run su2
         info = SU2.run.CFD(konfig)
         ztate.update(info)
-	
-	# Solution merging
-    	konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
-    	info = SU2.run.merge(konfig)
-    	ztate.update(info)
+
+        # Solution merging
+        konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
+        info = SU2.run.merge(konfig)
+        ztate.update(info)
 
 
-    print "\n\n =================== Performing p1c1 Component Perturbation =================== \n\n"
+    print('\n\n =================== Performing p1c1 Component Perturbation =================== \n\n')
 
     # make copies
     konfig = copy.deepcopy(config)
@@ -118,7 +122,7 @@ def main():
     info = SU2.run.merge(konfig)
     state.update(info)
 
-    print "\n\n =================== Performing p1c2 Component Perturbation =================== \n\n"
+    print('\n\n =================== Performing p1c2 Component Perturbation =================== \n\n')
 
     # make copies
     konfig = copy.deepcopy(config)
