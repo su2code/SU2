@@ -29,6 +29,7 @@
 #include "../../include/solvers/CTurbSolver.hpp"
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../../Common/include/omp_structure.hpp"
+#include "../../include/limiters/computeLimiters.hpp"
 
 
 CTurbSolver::CTurbSolver(void) : CSolver() { }
