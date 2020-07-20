@@ -57,7 +57,7 @@ protected:
   *Velocity_Inf,	                       /*!< \brief Free stream flow velocity. */
   Temperature_Inf,                       /*!< \brief Trans.-rot. free stream temperature. */
   Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
-  vector<su2double> MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
+  const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
   
 
   su2double
@@ -442,7 +442,7 @@ public:
   /*!
    * \brief Reset Node Infty for discrete adjoint
    */
-  void ResetNodeInfty(su2double pressure_inf, vector<su2double> &massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+  void ResetNodeInfty(su2double pressure_inf, const su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
                       su2double temperature_ve_inf, CConfig *config);
 
   /*!

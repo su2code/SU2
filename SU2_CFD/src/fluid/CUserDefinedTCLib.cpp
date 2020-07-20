@@ -28,9 +28,6 @@
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
-
-#include <iomanip> //cat:delete
-
 CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config){
 
   nDim = val_nDim;
@@ -38,6 +35,11 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   bool init_err;
   unsigned short maxEl = 0;
   su2double mf;
+
+  const auto MassFrac_Freestream = config->GetGas_Composition();
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      mf += MassFrac_Freestream[iSpecies];
 
   /*--- Allocate vectors for gas properties ---*/
   nElStates.resize(nSpecies,0);

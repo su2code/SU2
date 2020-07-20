@@ -37,7 +37,6 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   /*--- Read configuration parameters ---*/
   implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar         = val_nVar;

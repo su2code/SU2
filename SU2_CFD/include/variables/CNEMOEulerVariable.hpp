@@ -108,7 +108,7 @@ public:
    * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOEulerVariable(su2double val_pressure, const vector<su2double> &val_massfrac,
+  CNEMOEulerVariable(su2double val_pressure, const su2double *val_massfrac,
                      su2double *val_mach, su2double val_temperature,
                      su2double val_temperature_ve, unsigned long npoint,
                      unsigned long ndim,
@@ -144,11 +144,6 @@ public:
   inline void AddSolution_New(unsigned long iPoint, unsigned long iVar, su2double val_solution) final {
     Solution_New(iPoint,iVar) += val_solution;
   }
-
-  /*!
-   * \brief Set all the secondary variable for compressible flows .
-   */
-  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -345,56 +340,10 @@ public:
   bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
                    su2double *val_Cvves, CNEMOGas *fluidmodel);
-//  /*!
-//   * \brief Set Gradient of the primitive variables from
-//   */
-//  bool GradCons2GradPrimVar(CConfig *config, su2double *U, su2double *V,
-//                            su2double **GradU, su2double **GradV);
-//
-//  /*!
-//   * \brief Set all the conserved variables.
-//   */
-//  void Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) override; //cat: delete
-
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/
   /*---------------------------------------*/
-
-  /*!
-   * \brief Set the value of the pressure.
-   */
-  bool SetPressure(unsigned long iPoint, CConfig *config) override;
-
-  /*!
-   * \brief Set the value of the speed of the sound.
-   * \param[in] soundspeed2 - Value of soundspeed^2.
-   */
-  bool SetSoundSpeed(unsigned long iPoint) override;
-
-  /*!
-   * \brief Set the value of the enthalpy.
-   */
-  inline void SetEnthalpy(unsigned long iPoint) final {
-    Primitive(iPoint,H_INDEX) = (Solution(iPoint,nDim+nSpecies) + Primitive(iPoint,P_INDEX)) / Solution(iPoint,RHO_INDEX);
-  }
-
-  /*!
-   * \brief Set the value of the density for the incompressible flows.
-   */
-  bool SetDensity(unsigned long iPoint) override;
-
-  /*!
-   * \brief Set the value of the temperature.
-   * \param[in] temperature - how agitated the particles are :)
-   */
-  bool SetTemperature(unsigned long iPoint, CConfig *config ) override;
-
-  /*!
-   * \brief Set the norm 2 of the velocity.
-   * \return Norm 2 of the velocity vector.
-   */
-  void SetVelocity2(unsigned long iPoint) override;
 
   /*!
    * \brief Get the norm 2 of the velocity.
@@ -512,53 +461,6 @@ public:
    */
   inline su2double GetRhoCv_ve(unsigned long iPoint) const
                               { return Primitive(iPoint,RHOCVVE_INDEX); }
-
-  /*---------------------------------------*/
-  /*--- NEMO specific variable routines ---*/
-  /*---------------------------------------*/
-
-  /*!
-   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
-   */
-  su2double CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species);
-
-  /*!
-   * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
-   */
-  su2double CalcHs(CConfig *config, su2double val_T, su2double val_eves,
-                   unsigned short val_Species);
-
-  /*!
-   * \brief Calculates enthalpy per mass, \f$C^{vib-el}_{v_s}\f$, for input species (not including KE)
-   */
-  su2double CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species);
-
-  /*!
-   * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
-   * \param[in] config - Configuration settings
-   * \param[in] dPdU - Passed-by-reference array to assign the derivatives
-   */
-  void CalcdPdU(su2double *V, su2double *val_eves, CConfig *config, su2double *dPdU);
-
-  /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU);
-
-  /*!
-   * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  void CalcdTvedU(su2double *V, su2double *val_eves, CConfig *config, su2double *dTvedU);
-
-  /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  void SetdTdrhos(CConfig *config);
-
-  /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  void SetdTvedrhos(CConfig *config);
 
   /*!
    * \brief Returns the stored value of Eve at the specified node

@@ -37,7 +37,6 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
 
   /*--- Read configuration parameters ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar         = val_nVar;

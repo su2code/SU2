@@ -64,12 +64,9 @@ protected:
   su2double GasConstant{0.0};            /*!< \brief Universal gas constant [J/(kmol*K)] */
   su2double rhoCvtr{0.0};                /*!< \brief density times T-R specific heat */
   su2double rhoCvve{0.0};                /*!< \brief density times V-E specific heat */
-
-
-  vector<su2double> MassFrac_Freestream;  /*!< \brief Freestream species mass fractions. */
-
+  
   vector<su2double> MolarMass,           /*!< \brief Species molar mass */
-  MassFrac,                                    /*!< \brief Species mass fractions */
+  MassFrac,                              /*!< \brief Species mass fractions */
   rhos,                                  /*!< \brief Species partial densities */
   Cvtrs,                                 /*!< \brief Species T-R specific heats at constant volume */
   Cvves,                                 /*!< \brief Species V-E specific heats at constant volume */
@@ -108,7 +105,7 @@ public:
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
-  void SetTDStatePTTv(su2double P, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve);
+  void SetTDStatePTTv(su2double P, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve);
   
   
   /*!
@@ -230,5 +227,11 @@ public:
    * \brief Get rhoCvtr.
    */
   su2double GetrhoCvve();
+
+  /*!
+   * \brief Get species molar mass.
+   */
+  inline vector<su2double> GetMolarMass() { return MolarMass; }
+
 
 };

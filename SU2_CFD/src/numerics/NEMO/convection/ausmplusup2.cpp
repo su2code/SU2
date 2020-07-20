@@ -37,7 +37,6 @@ CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned sho
 
   /*--- Read configuration parameters ---*/
   implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   Kp       = 0.25;
@@ -109,14 +108,9 @@ CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
 
 void CUpwAUSMPLUSUP2_NEMO::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  unsigned short iDim, iVar, jVar, kVar, iSpecies, nHeavy, nEl;
-  su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
-  su2double Cvtrs;
-  su2double RuSI, Ru, rho_el_i, rho_el_j;
-  const su2double *Ms, *xi;
-  su2double e_ve_i, e_ve_j;
-  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
-  su2double sq_veli, sq_velj;
+  unsigned short iDim, iVar, jVar, kVar, iSpecies;
+  su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, Cvtrs, rho_el_i, rho_el_j,
+  e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi, sq_veli, sq_velj;
 
   /*--- Face area ---*/
   Area = 0.0;
@@ -128,26 +122,8 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeResidual(su2double *val_residual, su2double **
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  /*--- Read from config ---*/
-  Ms    = config->GetMolar_Mass();
-  xi    = config->GetRotationModes();
-  RuSI  = UNIVERSAL_GAS_CONSTANT;
-  Ru    = 1000.0*RuSI;
   Minf  = config->GetMach();
   Gamma = config->GetGamma();
-
-  /*--- Determine the number of heavy particle species ---*/
-  if (ionization) {
-    nHeavy = nSpecies-1;
-    nEl = 1;
-    rho_el_i = V_i[nSpecies-1];
-    rho_el_j = V_j[nSpecies-1];
-  } else {
-    nHeavy = nSpecies;
-    nEl = 0;
-    rho_el_i = 0.0;
-    rho_el_j = 0.0;
-  }
 
   /*--- Extracting primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
@@ -343,220 +319,220 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeResidual(su2double *val_residual, su2double **
   //}
 
   /*--- AUSM's Jacobian....requires tiny CFL's (this must be fixed) ---*/
-  if (implicit) {
-
-    /*--- Initialize the Jacobians ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] = 0.0;
-        val_Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
-
-    if (mF >= 0.0) FcLR = FcL;
-    else           FcLR = FcR;
-
-    /*--- Sound speed derivatives: Species density ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-      daL[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
-          + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
-      daR[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
-          + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
-    }
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      daL[nSpecies-1] = 1.0/(2.0*aF*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
-      daR[nSpecies-1] = 1.0/(2.0*aF*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[nSpecies-1] - P_j/rho_j);
-    }
-
-    /*--- Sound speed derivatives: Momentum ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      daL[nSpecies+iDim] = -1.0/(2.0*rho_i*aF) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim])*u_i[iDim];
-      daR[nSpecies+iDim] = -1.0/(2.0*rho_j*aF) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim])*u_j[iDim];
-    }
-
-    /*--- Sound speed derivatives: Energy ---*/
-    daL[nSpecies+nDim]   = 1.0/(2.0*rho_i*aF) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim]);
-    daR[nSpecies+nDim]   = 1.0/(2.0*rho_j*aF) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim]);
-
-    /*--- Sound speed derivatives: Vib-el energy ---*/
-    daL[nSpecies+nDim+1] = 1.0/(2.0*rho_i*aF) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim+1]);
-    daR[nSpecies+nDim+1] = 1.0/(2.0*rho_j*aF) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim+1]);
-
-    /*--- Left state Jacobian ---*/
-    if (mF >= 0) {
-
-      /*--- Jacobian contribution: dFc terms ---*/
-      for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_i[iVar][jVar] += mF * FcL[iVar]/aF * daL[jVar];
-        }
-        val_Jacobian_i[iVar][iVar] += mF * aF;
-      }
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        val_Jacobian_i[nSpecies+nDim][iSpecies] += mF * (dPdU_i[iSpecies]*aF + rho_i*h_i*daL[iSpecies]);
-      }
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_i[nSpecies+nDim]*u_i[iDim]*aF + rho_i*h_i*daL[nSpecies+iDim]);
-      }
-      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_i[nSpecies+nDim])*aF + rho_i*h_i*daL[nSpecies+nDim]);
-      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_i[nSpecies+nDim+1]*aF + rho_i*h_i*daL[nSpecies+nDim+1]);
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[nSpecies+nDim+1][jVar] +=  mF * FcL[nSpecies+nDim+1]/aF * daL[jVar];
-      }
-      val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += mF * aF;
-    }
-
-
-    /*--- Calculate derivatives of the split pressure flux ---*/
-    if ( (mF >= 0) || ((mF < 0)&&(fabs(mF) <= 1.0)) ) {
-      if (fabs(mL) <= 1.0) {
-
-        /*--- Mach number ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dmLP[iSpecies] = 0.5*(mL+1.0) * (-ProjVel_i/(rho_i*aF) - ProjVel_i*daL[iSpecies]/(aF*aF));
-        for (iDim = 0; iDim < nDim; iDim++)
-          dmLP[nSpecies+iDim] = 0.5*(mL+1.0) * (-ProjVel_i/(aF*aF) * daL[nSpecies+iDim] + UnitNormal[iDim]/(rho_i*aF));
-        dmLP[nSpecies+nDim]   = 0.5*(mL+1.0) * (-ProjVel_i/(aF*aF) * daL[nSpecies+nDim]);
-        dmLP[nSpecies+nDim+1] = 0.5*(mL+1.0) * (-ProjVel_i/(aF*aF) * daL[nSpecies+nDim+1]);
-
-        /*--- Pressure ---*/
-        for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dpLP[iSpecies] = 0.25*(mL+1.0) * (dPdU_i[iSpecies]*(mL+1.0)*(2.0-mL)
-                                            + P_i*(-ProjVel_i/(rho_i*aF)
-                                                   -ProjVel_i*daL[iSpecies]/(aF*aF))*(3.0-3.0*mL));
-        for (iDim = 0; iDim < nDim; iDim++)
-          dpLP[nSpecies+iDim] = 0.25*(mL+1.0) * (-u_i[iDim]*dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
-              + P_i*( -ProjVel_i/(aF*aF) * daL[nSpecies+iDim]
-              + UnitNormal[iDim]/(rho_i*aF))*(3.0-3.0*mL));
-        dpLP[nSpecies+nDim]   = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
-            + P_i*(-ProjVel_i/(aF*aF) * daL[nSpecies+nDim])*(3.0-3.0*mL));
-        dpLP[nSpecies+nDim+1] = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim+1]*(mL+1.0)*(2.0-mL)
-            + P_i*(-ProjVel_i/(aF*aF) * daL[nSpecies+nDim+1])*(3.0-3.0*mL));
-      } else {
-
-        /*--- Mach number ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dmLP[iSpecies]      = -ProjVel_i/(rho_i*aF) - ProjVel_i*daL[iSpecies]/(aF*aF);
-        for (iDim = 0; iDim < nDim; iDim++)
-          dmLP[nSpecies+iDim] = -ProjVel_i/(aF*aF) * daL[nSpecies+iDim] + UnitNormal[iDim]/(rho_i*aF);
-        dmLP[nSpecies+nDim]   = -ProjVel_i/(aF*aF) * daL[nSpecies+nDim];
-        dmLP[nSpecies+nDim+1] = -ProjVel_i/(aF*aF) * daL[nSpecies+nDim+1];
-
-        /*--- Pressure ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dpLP[iSpecies] = dPdU_i[iSpecies];
-        for (iDim = 0; iDim < nDim; iDim++)
-          dpLP[nSpecies+iDim] = (-u_i[iDim]*dPdU_i[nSpecies+nDim]);
-        dpLP[nSpecies+nDim]   = dPdU_i[nSpecies+nDim];
-        dpLP[nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1];
-      }
-
-      /*--- dM contribution ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_i[iVar][jVar] += dmLP[jVar]*FcLR[iVar];
-        }
-      }
-
-      /*--- Jacobian contribution: dP terms ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          val_Jacobian_i[nSpecies+iDim][iVar] += dpLP[iVar]*UnitNormal[iDim];
-        }
-      }
-    }
-
-    /*--- Right state Jacobian ---*/
-    if (mF < 0) {
-
-      /*--- Jacobian contribution: dFc terms ---*/
-      for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_j[iVar][jVar] += mF * FcR[iVar]/aF * daR[jVar];
-        }
-        val_Jacobian_j[iVar][iVar] += mF * aF;
-      }
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        val_Jacobian_j[nSpecies+nDim][iSpecies] += mF * (dPdU_j[iSpecies]*aF + rho_j*h_j*daR[iSpecies]);
-      }
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_j[nSpecies+nDim]*u_j[iDim]*aF + rho_j*h_j*daR[nSpecies+iDim]);
-      }
-      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_j[nSpecies+nDim])*aF + rho_j*h_j*daR[nSpecies+nDim]);
-      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_j[nSpecies+nDim+1]*aF + rho_j*h_j*daR[nSpecies+nDim+1]);
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_j[nSpecies+nDim+1][jVar] +=  mF * FcR[nSpecies+nDim+1]/aF * daR[jVar];
-      }
-      val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += mF * aF;
-    }
-
-    /*--- Calculate derivatives of the split pressure flux ---*/
-    if ( (mF < 0) || ((mF >= 0)&&(fabs(mF) <= 1.0)) ) {
-      if (fabs(mR) <= 1.0) {
-
-        /*--- Mach ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dmRM[iSpecies] = -0.5*(mR-1.0) * (-ProjVel_j/(rho_j*aF) - ProjVel_j*daR[iSpecies]/(aF*aF));
-        for (iDim = 0; iDim < nDim; iDim++)
-          dmRM[nSpecies+iDim] = -0.5*(mR-1.0) * (-ProjVel_j/(aF*aF) * daR[nSpecies+iDim] + UnitNormal[iDim]/(rho_j*aF));
-        dmRM[nSpecies+nDim]   = -0.5*(mR-1.0) * (-ProjVel_j/(aF*aF) * daR[nSpecies+nDim]);
-        dmRM[nSpecies+nDim+1] = -0.5*(mR-1.0) * (-ProjVel_j/(aF*aF) * daR[nSpecies+nDim+1]);
-
-        /*--- Pressure ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dpRM[iSpecies] = 0.25*(mR-1.0) * (dPdU_j[iSpecies]*(mR-1.0)*(2.0+mR)
-                                            + P_j*(-ProjVel_j/(rho_j*aF)
-                                                   -ProjVel_j*daR[iSpecies]/(aF*aF))*(3.0+3.0*mR));
-        for (iDim = 0; iDim < nDim; iDim++)
-          dpRM[nSpecies+iDim] = 0.25*(mR-1.0) * ((-u_j[iDim]*dPdU_j[nSpecies+nDim])*(mR-1.0)*(2.0+mR)
-              + P_j*( -ProjVel_j/(aF*aF) * daR[nSpecies+iDim]
-              + UnitNormal[iDim]/(rho_j*aF))*(3.0+3.0*mR));
-        dpRM[nSpecies+nDim]   = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim]*(mR-1.0)*(2.0+mR)
-            + P_j*(-ProjVel_j/(aF*aF)*daR[nSpecies+nDim])*(3.0+3.0*mR));
-        dpRM[nSpecies+nDim+1] = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim+1]*(mR-1.0)*(2.0+mR)
-            + P_j*(-ProjVel_j/(aF*aF) * daR[nSpecies+nDim+1])*(3.0+3.0*mR));
-
-      } else {
-
-        /*--- Mach ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dmRM[iSpecies]      = -ProjVel_j/(rho_j*aF) - ProjVel_j*daR[iSpecies]/(aF*aF);
-        for (iDim = 0; iDim < nDim; iDim++)
-          dmRM[nSpecies+iDim] = -ProjVel_j/(aF*aF) * daR[nSpecies+iDim] + UnitNormal[iDim]/(rho_j*aF);
-        dmRM[nSpecies+nDim]   = -ProjVel_j/(aF*aF) * daR[nSpecies+nDim];
-        dmRM[nSpecies+nDim+1] = -ProjVel_j/(aF*aF) * daR[nSpecies+nDim+1];
-
-        /*--- Pressure ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          dpRM[iSpecies] = dPdU_j[iSpecies];
-        for (iDim = 0; iDim < nDim; iDim++)
-          dpRM[nSpecies+iDim] = -u_j[iDim]*dPdU_j[nSpecies+nDim];
-        dpRM[nSpecies+nDim]   = dPdU_j[nSpecies+nDim];
-        dpRM[nSpecies+nDim+1] = dPdU_j[nSpecies+nDim+1];
-      }
-
-      /*--- Jacobian contribution: dM terms ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_j[iVar][jVar] += dmRM[jVar] * FcLR[iVar];
-        }
-      }
-
-      /*--- Jacobian contribution: dP terms ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          val_Jacobian_j[nSpecies+iDim][iVar] += dpRM[iVar]*UnitNormal[iDim];
-        }
-      }
-    }
-
-    /*--- Integrate over dual-face area ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] *= Area;
-        val_Jacobian_j[iVar][jVar] *= Area;
-      }
-    }
-  }
+//  if (implicit)  {
+//
+//    /*--- Initialize the Jacobians ---*/
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_i[iVar][jVar] = 0.0;
+//        val_Jacobian_j[iVar][jVar] = 0.0;
+//      }
+//    }
+//
+//    if (mF >= 0.0) FcLR = FcL;
+//    else           FcLR = FcR;
+//
+//    /*--- Sound speed derivatives: Species density ---*/
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//      Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+//      daL[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
+//          + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
+//      daR[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
+//          + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
+//    }
+//    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//      daL[nSpecies-1] = 1.0/(2.0*aF*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
+//      daR[nSpecies-1] = 1.0/(2.0*aF*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[nSpecies-1] - P_j/rho_j);
+//    }
+//
+//    /*--- Sound speed derivatives: Momentum ---*/
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      daL[nSpecies+iDim] = -1.0/(2.0*rho_i*aF) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim])*u_i[iDim];
+//      daR[nSpecies+iDim] = -1.0/(2.0*rho_j*aF) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim])*u_j[iDim];
+//    }
+//
+//    /*--- Sound speed derivatives: Energy ---*/
+//    daL[nSpecies+nDim]   = 1.0/(2.0*rho_i*aF) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim]);
+//    daR[nSpecies+nDim]   = 1.0/(2.0*rho_j*aF) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim]);
+//
+//    /*--- Sound speed derivatives: Vib-el energy ---*/
+//    daL[nSpecies+nDim+1] = 1.0/(2.0*rho_i*aF) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim+1]);
+//    daR[nSpecies+nDim+1] = 1.0/(2.0*rho_j*aF) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim+1]);
+//
+//    /*--- Left state Jacobian ---*/
+//    if (mF >= 0) {
+//
+//      /*--- Jacobian contribution: dFc terms ---*/
+//      for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          val_Jacobian_i[iVar][jVar] += mF * FcL[iVar]/aF * daL[jVar];
+//        }
+//        val_Jacobian_i[iVar][iVar] += mF * aF;
+//      }
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        val_Jacobian_i[nSpecies+nDim][iSpecies] += mF * (dPdU_i[iSpecies]*aF + rho_i*h_i*daL[iSpecies]);
+//      }
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_i[nSpecies+nDim]*u_i[iDim]*aF + rho_i*h_i*daL[nSpecies+iDim]);
+//      }
+//      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_i[nSpecies+nDim])*aF + rho_i*h_i*daL[nSpecies+nDim]);
+//      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_i[nSpecies+nDim+1]*aF + rho_i*h_i*daL[nSpecies+nDim+1]);
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_i[nSpecies+nDim+1][jVar] +=  mF * FcL[nSpecies+nDim+1]/aF * daL[jVar];
+//      }
+//      val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += mF * aF;
+//    }
+//
+//
+//    /*--- Calculate derivatives of the split pressure flux ---*/
+//    if ( (mF >= 0) || ((mF < 0)&&(fabs(mF) <= 1.0)) ) {
+//      if (fabs(mL) <= 1.0) {
+//
+//        /*--- Mach number ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dmLP[iSpecies] = 0.5*(mL+1.0) * (-ProjVel_i/(rho_i*aF) - ProjVel_i*daL[iSpecies]/(aF*aF));
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dmLP[nSpecies+iDim] = 0.5*(mL+1.0) * (-ProjVel_i/(aF*aF) * daL[nSpecies+iDim] + UnitNormal[iDim]/(rho_i*aF));
+//        dmLP[nSpecies+nDim]   = 0.5*(mL+1.0) * (-ProjVel_i/(aF*aF) * daL[nSpecies+nDim]);
+//        dmLP[nSpecies+nDim+1] = 0.5*(mL+1.0) * (-ProjVel_i/(aF*aF) * daL[nSpecies+nDim+1]);
+//
+//        /*--- Pressure ---*/
+//        for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dpLP[iSpecies] = 0.25*(mL+1.0) * (dPdU_i[iSpecies]*(mL+1.0)*(2.0-mL)
+//                                            + P_i*(-ProjVel_i/(rho_i*aF)
+//                                                   -ProjVel_i*daL[iSpecies]/(aF*aF))*(3.0-3.0*mL));
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dpLP[nSpecies+iDim] = 0.25*(mL+1.0) * (-u_i[iDim]*dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
+//              + P_i*( -ProjVel_i/(aF*aF) * daL[nSpecies+iDim]
+//              + UnitNormal[iDim]/(rho_i*aF))*(3.0-3.0*mL));
+//        dpLP[nSpecies+nDim]   = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
+//            + P_i*(-ProjVel_i/(aF*aF) * daL[nSpecies+nDim])*(3.0-3.0*mL));
+//        dpLP[nSpecies+nDim+1] = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim+1]*(mL+1.0)*(2.0-mL)
+//            + P_i*(-ProjVel_i/(aF*aF) * daL[nSpecies+nDim+1])*(3.0-3.0*mL));
+//      } else {
+//
+//        /*--- Mach number ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dmLP[iSpecies]      = -ProjVel_i/(rho_i*aF) - ProjVel_i*daL[iSpecies]/(aF*aF);
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dmLP[nSpecies+iDim] = -ProjVel_i/(aF*aF) * daL[nSpecies+iDim] + UnitNormal[iDim]/(rho_i*aF);
+//        dmLP[nSpecies+nDim]   = -ProjVel_i/(aF*aF) * daL[nSpecies+nDim];
+//        dmLP[nSpecies+nDim+1] = -ProjVel_i/(aF*aF) * daL[nSpecies+nDim+1];
+//
+//        /*--- Pressure ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dpLP[iSpecies] = dPdU_i[iSpecies];
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dpLP[nSpecies+iDim] = (-u_i[iDim]*dPdU_i[nSpecies+nDim]);
+//        dpLP[nSpecies+nDim]   = dPdU_i[nSpecies+nDim];
+//        dpLP[nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1];
+//      }
+//
+//      /*--- dM contribution ---*/
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          val_Jacobian_i[iVar][jVar] += dmLP[jVar]*FcLR[iVar];
+//        }
+//      }
+//
+//      /*--- Jacobian contribution: dP terms ---*/
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          val_Jacobian_i[nSpecies+iDim][iVar] += dpLP[iVar]*UnitNormal[iDim];
+//        }
+//      }
+//    }
+//
+//    /*--- Right state Jacobian ---*/
+//    if (mF < 0) {
+//
+//      /*--- Jacobian contribution: dFc terms ---*/
+//      for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          val_Jacobian_j[iVar][jVar] += mF * FcR[iVar]/aF * daR[jVar];
+//        }
+//        val_Jacobian_j[iVar][iVar] += mF * aF;
+//      }
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        val_Jacobian_j[nSpecies+nDim][iSpecies] += mF * (dPdU_j[iSpecies]*aF + rho_j*h_j*daR[iSpecies]);
+//      }
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_j[nSpecies+nDim]*u_j[iDim]*aF + rho_j*h_j*daR[nSpecies+iDim]);
+//      }
+//      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_j[nSpecies+nDim])*aF + rho_j*h_j*daR[nSpecies+nDim]);
+//      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_j[nSpecies+nDim+1]*aF + rho_j*h_j*daR[nSpecies+nDim+1]);
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_j[nSpecies+nDim+1][jVar] +=  mF * FcR[nSpecies+nDim+1]/aF * daR[jVar];
+//      }
+//      val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += mF * aF;
+//    }
+//
+//    /*--- Calculate derivatives of the split pressure flux ---*/
+//    if ( (mF < 0) || ((mF >= 0)&&(fabs(mF) <= 1.0)) ) {
+//      if (fabs(mR) <= 1.0) {
+//
+//        /*--- Mach ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dmRM[iSpecies] = -0.5*(mR-1.0) * (-ProjVel_j/(rho_j*aF) - ProjVel_j*daR[iSpecies]/(aF*aF));
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dmRM[nSpecies+iDim] = -0.5*(mR-1.0) * (-ProjVel_j/(aF*aF) * daR[nSpecies+iDim] + UnitNormal[iDim]/(rho_j*aF));
+//        dmRM[nSpecies+nDim]   = -0.5*(mR-1.0) * (-ProjVel_j/(aF*aF) * daR[nSpecies+nDim]);
+//        dmRM[nSpecies+nDim+1] = -0.5*(mR-1.0) * (-ProjVel_j/(aF*aF) * daR[nSpecies+nDim+1]);
+//
+//        /*--- Pressure ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dpRM[iSpecies] = 0.25*(mR-1.0) * (dPdU_j[iSpecies]*(mR-1.0)*(2.0+mR)
+//                                            + P_j*(-ProjVel_j/(rho_j*aF)
+//                                                   -ProjVel_j*daR[iSpecies]/(aF*aF))*(3.0+3.0*mR));
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dpRM[nSpecies+iDim] = 0.25*(mR-1.0) * ((-u_j[iDim]*dPdU_j[nSpecies+nDim])*(mR-1.0)*(2.0+mR)
+//              + P_j*( -ProjVel_j/(aF*aF) * daR[nSpecies+iDim]
+//              + UnitNormal[iDim]/(rho_j*aF))*(3.0+3.0*mR));
+//        dpRM[nSpecies+nDim]   = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim]*(mR-1.0)*(2.0+mR)
+//            + P_j*(-ProjVel_j/(aF*aF)*daR[nSpecies+nDim])*(3.0+3.0*mR));
+//        dpRM[nSpecies+nDim+1] = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim+1]*(mR-1.0)*(2.0+mR)
+//            + P_j*(-ProjVel_j/(aF*aF) * daR[nSpecies+nDim+1])*(3.0+3.0*mR));
+//
+//      } else {
+//
+//        /*--- Mach ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dmRM[iSpecies]      = -ProjVel_j/(rho_j*aF) - ProjVel_j*daR[iSpecies]/(aF*aF);
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dmRM[nSpecies+iDim] = -ProjVel_j/(aF*aF) * daR[nSpecies+iDim] + UnitNormal[iDim]/(rho_j*aF);
+//        dmRM[nSpecies+nDim]   = -ProjVel_j/(aF*aF) * daR[nSpecies+nDim];
+//        dmRM[nSpecies+nDim+1] = -ProjVel_j/(aF*aF) * daR[nSpecies+nDim+1];
+//
+//        /*--- Pressure ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          dpRM[iSpecies] = dPdU_j[iSpecies];
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dpRM[nSpecies+iDim] = -u_j[iDim]*dPdU_j[nSpecies+nDim];
+//        dpRM[nSpecies+nDim]   = dPdU_j[nSpecies+nDim];
+//        dpRM[nSpecies+nDim+1] = dPdU_j[nSpecies+nDim+1];
+//      }
+//
+//      /*--- Jacobian contribution: dM terms ---*/
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          val_Jacobian_j[iVar][jVar] += dmRM[jVar] * FcLR[iVar];
+//        }
+//      }
+//
+//      /*--- Jacobian contribution: dP terms ---*/
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          val_Jacobian_j[nSpecies+iDim][iVar] += dpRM[iVar]*UnitNormal[iDim];
+//        }
+//      }
+//    }
+//
+//    /*--- Integrate over dual-face area ---*/
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_i[iVar][jVar] *= Area;
+//        val_Jacobian_j[iVar][jVar] *= Area;
+//      }
+//    }
+//  }
 }

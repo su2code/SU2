@@ -31,11 +31,12 @@
 
 CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
-  nSpecies            = config->GetnSpecies();
-  MassFrac_Freestream = config->GetMassFrac_FreeStream();
 
-  MolarMass.resize(nSpecies,0.0);
+
+  nSpecies = config->GetnSpecies();
+
   MassFrac.resize(nSpecies,0.0);
+  MolarMass.resize(nSpecies,0.0);
   MolarFractions.resize(nSpecies,0.0);
   rhos.resize(nSpecies,0.0);
   Cvtrs.resize(nSpecies,0.0);         
@@ -57,11 +58,12 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 CNEMOGas::~CNEMOGas(){}
 
 
-void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve){
+void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve){
 
   su2double denom;
 
-  MassFrac = val_massfrac;                   
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    MassFrac[iSpecies] = val_massfrac[iSpecies];                   
   Pressure = val_pressure;                   
   T        = val_temperature;                
   Tve      = val_temperature_ve; 

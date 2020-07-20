@@ -178,7 +178,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
-  MassFrac_Inf        = config->GetMassFrac_FreeStream();
+  MassFrac_Inf = config->GetGas_Composition();
 
   /*--- Perform the non-dimensionalization for the flow equations using the
     specified reference values. ---*/
@@ -554,7 +554,6 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   Pressure_Inf       = config->GetPressure_FreeStream();
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
-  MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Mach_Inf           = config->GetMach();
   Velocity_Inf       = config->GetVelocity_FreeStreamND();
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
@@ -629,117 +628,19 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
 
     if (check) {
 
-//      bool ionization;
-//      unsigned short iEl, nHeavy, nEl;
-//      const unsigned short *nElStates;
-//      su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
-//      su2double rho, rhos, Ef, Ev, Ee, soundspeed;
-//      const su2double *xi, *Ms, *thetav, *Tref, *hf;
-//
-//      /*--- Determine the number of heavy species ---*/
-//      ionization = config->GetIonization();
-//      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-//      else            { nHeavy = nSpecies;   nEl = 0; }
-//
-//      /*--- Load variables from the config class --*/
-//      xi        = config->GetRotationModes();      // Rotational modes of energy storage
-//      Ms        = config->GetMolar_Mass();         // Species molar mass
-//      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-//      const auto& thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-//      const auto& g         = config->GetElDegeneracy();       // Degeneracy of electron states
-//      nElStates = config->GetnElStates();          // Number of electron states
-//      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-//      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-//
-//      /*--- Rename & initialize for convenience ---*/
-//      RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)]
-//      Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
-//      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
-//      T       = Temperature_Inf;                // Translational-rotational temperature [K]
-//      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
-//      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
-//      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
-//      denom   = 0.0;
-//      conc    = 0.0;
-//      rhoCvtr = 0.0;
-//
-//      /*--- Calculate mixture density from supplied primitive quantities ---*/
-//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-//        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
-//      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-//        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
-//      rho = Pressure_Inf / denom;
-//
-//      /*--- Calculate sound speed and extract velocities ---*/
-//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
-//        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-//      }
-//      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
-//      for (iDim = 0; iDim < nDim; iDim++){
-//        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
-//      }
-//      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
-//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//        // Species density
-//        rhos = MassFrac_Inf[iSpecies]*rho;
-//
-//        // Species formation energy
-//        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-//
-//        // Species vibrational energy
-//        if (thetav[iSpecies] != 0.0)
-//          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-//        else
-//          Ev = 0.0;
-//
-//        // Species electronic energy
-//        num = 0.0;
-//        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-//        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-//          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//        }
-//        Ee = Ru/Ms[iSpecies] * (num/denom);
-//
-//        // Mixture total energy
-//        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-//                        + Ev + Ee + Ef + 0.5*sqvel);
-//
-//        // Mixture vibrational-electronic energy
-//        rhoEve += rhos * (Ev + Ee);
-//      }
-//      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-//        // Species formation energy
-//        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-//
-//        // Electron t-r mode contributes to mixture vib-el energy
-//        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-//      }
-//
-//      /*--- Initialize Solution & Solution_Old vectors ---*/
-//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//        Solution[iSpecies]      = rho*MassFrac_Inf[iSpecies];
-//      }
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Solution[nSpecies+iDim] = rho*Mvec_Inf[iDim]*soundspeed;
-//      }
-//      Solution[nSpecies+nDim]     = rhoE;
-//      Solution[nSpecies+nDim+1]   = rhoEve;
-//
-//      nodes->SetSolution(iPoint,Solution);
-//      nodes->SetSolution_Old(iPoint,Solution);
-
       sqvel = 0.0;
-        
+
+      /*--- Set mixture state ---*/
       FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
+
+      /*--- Compute other freestream quantities ---*/
       Density_Inf    = FluidModel->GetDensity();
       Soundspeed_Inf = FluidModel->GetSoundSpeed();
       for (iDim = 0; iDim < nDim; iDim++){
         sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
       }
-      
       Energies_Inf = FluidModel->GetMixtureEnergies();
+      
       /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
@@ -766,7 +667,6 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
-
   
   /*--- Define some structures for locating max residuals ---*/
   Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
@@ -775,7 +675,6 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
     Point_Max_Coord_BGS[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
   }
-
 
   /*--- Define solver parameters needed for execution of destructor ---*/
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
@@ -895,9 +794,6 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   errU = new su2double[nVar];
   errV = new su2double[nPrimVar];
 
-
-  //cout << "cat: Preprocessing"  << endl;
-
   /*--- Set the primitive variables ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     /*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
@@ -911,17 +807,6 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     /*--- Initialize the convective, source and viscous residual vector ---*/
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
   }
-
- // exit(0);
-
-
-  //  cout<<"cat: end of ns SetPrimVar_Compressible"<<endl;
-  //exit(0);
-
-  /*--- Allowing for Primitive Variables to be passed ---*/
-  //InitiateComms(geometry, config, PRIMITIVE);
-  //CompleteComms(geometry, config, PRIMITIVE);
-
 
   /*--- Artificial dissipation ---*/
   if (center && !Output) {
@@ -947,10 +832,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
       SetSolution_Limiter(geometry, config);
     }
-
   }
 
- 
   /*--- Primitive gradient computation ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
@@ -1002,7 +885,6 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       //solver_container[NEMO_SOL]->SetOmega_Max(Omega_Max);
     }
   }
-
 }
 
 void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
@@ -1053,22 +935,6 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *confi
 
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
-  /*--- Get indices of species & mixture density ---*/
-  //RHOS_INDEX = nodes->GetRhosIndex();
-  //RHO_INDEX  = nodes->GetRhoIndex();
-
-  /*--- Modify species density to mass concentration ---*/
-  //for ( iPoint = 0; iPoint < nPoint; iPoint++){
-  //  for( iVar = 0; iVar < nPrimVar; iVar++) {
-  //    primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
-  //  }
-  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //    primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
-  //  for( iVar = 0; iVar < nPrimVar; iVar++)
-  //    nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
-  //}
-
-  //const auto& primitives = nodes->GetPrimitive_Aux();
   const auto& primitives = nodes->GetPrimitive();
   
   computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
@@ -1089,19 +955,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   CNumerics* numerics = numerics_container[VISC_TERM];
-
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  //numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  //numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  //numerics->SetPIndex      ( nodes->GetPIndex()       );
-  //numerics->SetTIndex      ( nodes->GetTIndex()       );
-  //numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  //numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  //numerics->SetHIndex      ( nodes->GetHIndex()       );
-  //numerics->SetAIndex      ( nodes->GetAIndex()       );
-  //numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  //numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -1148,8 +1001,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
 
-     // exit(0);//cat: 
-
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1173,15 +1024,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
       }
     }
   } //iEdge
-
-// su2double *local_Residual;
-// for(iPoint=0;iPoint<nPoint;iPoint++){
-//   local_Residual = LinSysRes.GetBlock(iPoint);
-//   for(iVar=0;iVar<nVar;iVar++)
-//     cout <<  "visc local_Residual[" << iVar << "]=" << local_Residual[iVar] << endl;
-// }
-//
-// exit(0);
 }
 
 void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
@@ -1189,29 +1031,12 @@ void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, iPointNormal;
-  su2double **Grad_PrimVar;
-  su2double Delta, Viscosity, ThermalCond, ThermalCond_ve;
-  su2double TauNormal;
-  su2double FrictionVel;
-  su2double *Normal, *Coord, *Coord_Normal, Area;
-  su2double Force[3];
-  su2double MomentDist[3];
-  su2double RefDensity, Density;
-  su2double div_vel, RefVel2;
-  su2double dTn, dTven, pnorm;
-  su2double Alpha, Beta, RefLength, RefArea, *Origin;
-  su2double factor;
-  su2double MaxNorm = 8.0;
-
-  su2double WallShearStress, WallDistMod, WallDist[3];
-
-  su2double Vel[3], Velocity_Inf[3];
-
-  su2double UnitNormal[3];
-  su2double TauElem[3];
-  su2double TauTangent[3];
-  su2double Tau[3][3];
-  su2double MomentX_Force[3], MomentY_Force[3], MomentZ_Force[3];
+  su2double **Grad_PrimVar, Delta, Viscosity, ThermalCond, ThermalCond_ve, TauNormal,
+  FrictionVel, *Normal, *Coord, *Coord_Normal, Area, Force[3], MomentDist[3],
+  RefDensity, Density, div_vel, RefVel2, dTn, dTven, pnorm, Alpha, Beta, RefLength,
+  RefArea, *Origin, factor, MaxNorm = 8.0, WallShearStress, WallDistMod, WallDist[3],
+  Vel[3], Velocity_Inf[3], UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3],
+  MomentX_Force[3], MomentY_Force[3], MomentZ_Force[3];
   string Marker_Tag, Monitoring_Tag;
 
 #ifdef HAVE_MPI
@@ -1224,7 +1049,7 @@ void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   TVE_INDEX = nodes->GetTveIndex();
 
   /*--- Retrieve data from CConfig ---*/
-  pnorm = config->GetPnormHeat();
+  pnorm = 0.0; //cat: getbackpnorm config->GetPnormHeat();
 
   /*--- Calculate angle of attack & sideslip ---*/
   Alpha = config->GetAoA()*PI_NUMBER/180.0;
@@ -1875,18 +1700,6 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
 
-  //  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  //  sour_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
-  //  sour_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
-  //  sour_numerics->SetPIndex      ( nodes->GetPIndex()       );
-  //  sour_numerics->SetTIndex      ( nodes->GetTIndex()       );
-  //  sour_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
-  //  sour_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
-  //  sour_numerics->SetHIndex      ( nodes->GetHIndex()       );
-  //  sour_numerics->SetAIndex      ( nodes->GetAIndex()       );
-  //  sour_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
-  //  sour_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
-
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1953,8 +1766,8 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           Ys   = V[RHOS_INDEX+iSpecies]/rho;
-          eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
-          hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
+          //eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
+          //hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
           //          Res_Visc[iSpecies] = -rho*Ds[iSpecies]*dYdn[iSpecies] + Ys*SdYdn;
           //          Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
           //          Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
@@ -2025,20 +1838,8 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   unsigned short iDim, iVar, jVar;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double ktr, kve;
-  su2double Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
-  su2double Twall, dij, theta;
-  su2double Area, *Normal, UnitNormal[3];
-  su2double *Coord_i, *Coord_j;
-  su2double C;
-
-
-// su2double *local_Residual;//cat:
-//  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-//    local_Residual = LinSysRes.GetBlock(iPoint);
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      cout <<  "bef local_Residual[" << iPoint << "," << iVar << "]=" << local_Residual[iVar] << endl;
-//  }
+  su2double ktr, kve, Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU, Twall, dij, theta,
+  Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
 
   bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool ionization = config->GetIonization();
@@ -2064,14 +1865,11 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
   RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
-
   /*--- Loop over boundary points to calculate energy flux ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-
     if (geometry->nodes->GetDomain(iPoint)) {
-
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -2115,7 +1913,6 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       }
 
       /*--- Calculate the gradient of temperature ---*/
-
       Ti   = nodes->GetTemperature(iPoint);
       Tj   = nodes->GetTemperature(jPoint);
       Tvei = nodes->GetTemperature_ve(iPoint);
@@ -2125,20 +1922,10 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       ktr     = nodes->GetThermalConductivity(iPoint);
       kve     = nodes->GetThermalConductivity_ve(iPoint);
 
-  //      cout <<  "cat: ktr=" << ktr << endl;
-  //   cout <<  "cat: kve=" << kve << endl;
-
       /*--- Apply to the linear system ---*/
       Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
-
-
-   //      cout <<  "cat: Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << endl;
-   //   cout <<  "cat: Res_Visc[nSpecies+nDim+1]=" << Res_Visc[nSpecies+nDim+1] << endl;
-//
-     //  exit(0);
-
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
@@ -2158,16 +1945,6 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       } // implicit
     }
   } 
-
-//su2double *local_Residual;//cat:
-
-// for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-//   local_Residual = LinSysRes.GetBlock(iPoint);
-//   for (iVar = 0; iVar < nVar; iVar++)
-//     cout <<  "iso local_Residual[" << iPoint << "," << iVar << "]=" << local_Residual[iVar] << endl;
-// }
-
-// exit(0);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
@@ -2197,17 +1974,12 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
   bool implicit;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
-  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, RHOS_INDEX, RHO_INDEX, T_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double pcontrol;
-  su2double rho, *eves, *hs, RuSI, Ru;
-  su2double *dTdU, *dTvedU, *Cvtr, *Cvve;
-  su2double *Normal, Area, dij, UnitNormal[3];
-  su2double *Di, *Dj, *Vi, *Vj, *Yj, *dYdn, SdYdn;
-  su2double **GradY;
-  su2double **dVdU;
-  const su2double *Yst, *Ms, *xi;
+  su2double pcontrol, rho, *eves, *dTdU, *dTvedU, *Cvtr, *Cvve, *Normal, Area, Ru, RuSI,
+  dij, UnitNormal[3], *Di, *Dj, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
+  const su2double *Yst;
+  vector<su2double> hs, Cvtrs, Ms;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -2218,13 +1990,17 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   /*--- Get species mass fractions at the wall ---*/
   Yst = config->GetWall_Catalycity();
 
+  /*--- Get universal information ---*/
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
+  Ms   = FluidModel->GetMolarMass();
+  
   /*--- Get the locations of the primitive variables ---*/
   RHOS_INDEX    = nodes->GetRhosIndex();
   RHO_INDEX     = nodes->GetRhoIndex();
   T_INDEX       = nodes ->GetTIndex();
 
   /*--- Allocate arrays ---*/
-  hs    = new su2double[nSpecies];
   Yj    = new su2double[nSpecies];
   dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
@@ -2233,13 +2009,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   dVdU = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     dVdU[iVar] = new su2double[nVar];
-  Cvtr = new su2double[nSpecies];
-
-  /*--- Get universal information ---*/
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
-  Ms   = config->GetMolar_Mass();
-  xi   = config->GetRotationModes();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2277,20 +2046,17 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         Res_Visc[iVar] = 0.0;
 
       /*--- Get primitive information ---*/
-      Vi = nodes->GetPrimitive(iPoint);
-      Vj = nodes->GetPrimitive(jPoint);
-      Di = nodes->GetDiffusionCoeff(iPoint);
-      Dj = nodes->GetDiffusionCoeff(jPoint);
+      Vi   = nodes->GetPrimitive(iPoint);
+      Vj   = nodes->GetPrimitive(jPoint);
+      Di   = nodes->GetDiffusionCoeff(iPoint);
+      Dj   = nodes->GetDiffusionCoeff(jPoint);
       eves = nodes->GetEve(iPoint);
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        hs[iSpecies] = nodes->CalcHs(config, Vi[T_INDEX],
-                                            eves[iSpecies], iSpecies);
+      hs   = FluidModel->GetSpeciesEnthalpy(Vi[T_INDEX], eves);
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)      
         Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
-      }
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
-
 
       /*--- Calculate normal derivative of mass fraction ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -2334,9 +2100,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         }
 
         /*--- Calculate supplementary quantities ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-        }
+        Cvtrs = FluidModel->GetSpeciesCvTraRot();
         Cvve = nodes->GetCvve(iPoint);
 
         /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
@@ -2353,7 +2117,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
             Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
           }
           Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
-                                                                               Cvtr[iSpecies]  );
+                                                                               Cvtrs[iSpecies]  );
           Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
         }
 
@@ -2380,10 +2144,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
     delete [] GradY[iSpecies];
   delete [] GradY;
   delete [] dYdn;
-  delete [] hs;
   delete [] Yj;
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] dVdU[iVar];
   delete [] dVdU;
-  delete [] Cvtr;
 }

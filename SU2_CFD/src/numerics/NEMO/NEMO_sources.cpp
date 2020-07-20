@@ -28,8 +28,6 @@
 
 #include "../../../include/numerics/NEMO/NEMO_sources.hpp"
 
-#include <iomanip> //cat:delete
-
 CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
                            unsigned short val_nVar,
                            unsigned short val_nPrimVar,
@@ -42,7 +40,6 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 
   /*--- Assign booleans from CConfig ---*/
   implicit   = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar         = val_nVar;
@@ -121,73 +118,17 @@ CSource_NEMO::~CSource_NEMO(void) {
 
 }
 
-void CSource_NEMO::GetKeqConstants(su2double *A, unsigned short val_Reaction,
-                                   CConfig *config) {
-  unsigned short ii, iSpecies, iIndex, tbl_offset, pwr;
-  su2double N;
-  su2double tmp1, tmp2;
-
-  /*--- Acquire database constants from CConfig ---*/
-  const su2double *Ms = config->GetMolar_Mass();
-  config->GetChemistryEquilConstants(RxnConstantTable, val_Reaction);
-
-  /*--- Calculate mixture number density ---*/
-  N = 0.0;
-  for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++) {
-    N += V_i[iSpecies]/Ms[iSpecies]*AVOGAD_CONSTANT;
-  }
-
-  /*--- Convert number density from 1/m^3 to 1/cm^3 for table look-up ---*/
-  N = N*(1E-6);
-
-  /*--- Determine table index based on mixture N ---*/
-  tbl_offset = 14;
-  pwr        = floor(log10(N));
-
-  /*--- Bound the interpolation to table limit values ---*/
-  iIndex = int(pwr) - tbl_offset;
-  if (iIndex <= 0) {
-    for (ii = 0; ii < 5; ii++)
-      A[ii] = RxnConstantTable[0][ii];
-    return;
-  } else if (iIndex >= 5) {
-    for (ii = 0; ii < 5; ii++)
-      A[ii] = RxnConstantTable[5][ii];
-    return;
-  }
-
-  /*--- Calculate interpolation denominator terms avoiding pow() ---*/
-  tmp1 = 1.0;
-  tmp2 = 1.0;
-  for (ii = 0; ii < pwr; ii++) {
-    tmp1 *= 10.0;
-    tmp2 *= 10.0;
-  }
-  tmp2 *= 10.0;
-
-  /*--- Interpolate ---*/
-  for (ii = 0; ii < 5; ii++) {
-    A[ii] =  (RxnConstantTable[iIndex+1][ii] - RxnConstantTable[iIndex][ii])
-        / (tmp2 - tmp1) * (N - tmp1)
-        + RxnConstantTable[iIndex][ii];
-  }
-  return;
-}
-
 void CSource_NEMO::ComputeChemistry(su2double *val_residual,
                                     su2double *val_source,
                                     su2double **val_Jacobian_i,
                                     CConfig *config) {
 
   /*--- Nonequilibrium chemistry ---*/
-  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
-  unsigned short nHeavy, nEl, nEve;
-  su2double T_min, epsilon;
-  su2double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
-  su2double rho, rhoCvtr, rhoCvve, P;
-  su2double fwdRxn, bkwRxn, alpha, RuSI, Ru;
-  su2double af, bf, ab, bb, coeff;
-  su2double dThf, dThb;
+  unsigned short iSpecies, iVar, jVar;
+  su2double T, Tve;
+  vector<su2double> rhos;
+
+  rhos.resize(nSpecies,0.0);
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -199,121 +140,23 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
         val_Jacobian_i[iVar][jVar] = 0.0;
   }
 
-  /*--- Define artificial chemistry parameters ---*/
-  // Note: These parameters artificially increase the rate-controlling reaction
-  //       temperature.  This relaxes some of the stiffness in the chemistry
-  //       source term.
-  T_min   = 800.0;
-  epsilon = 80;
-
-  /*--- Define preferential dissociation coefficient ---*/
-  alpha = 0.3;
-
-  /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
-
   /*--- Rename for convenience ---*/
-  RuSI    = UNIVERSAL_GAS_CONSTANT;
-  Ru      = 1000.0*RuSI;
-//  cout << "delete me : "<< V_i[T_INDEX] << endl;
-//  cout << "delete me : "<< V_i[TVE_INDEX] << endl;
-//  cout << "delete me : "<< V_i[P_INDEX] << endl;
-  rho     = V_i[RHO_INDEX];
-  P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  rhoCvtr = V_i[RHOCVTR_INDEX];
-  rhoCvve = V_i[RHOCVVE_INDEX];
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhos[iSpecies]=V_i[RHOS_INDEX+iSpecies];
 
-  /*--- Acquire parameters from the configuration file ---*/
-  nReactions = config->GetnReactions();
-  const su2double *Ms         = config->GetMolar_Mass();
-  const su2double *hf         = config->GetEnthalpy_Formation();
-  const su2double *xi         = config->GetRotationModes();
-  const su2double *Tref       = config->GetRefTemperature();
-  const su2double *Tcf_a      = config->GetRxnTcf_a();
-  const su2double *Tcf_b      = config->GetRxnTcf_b();
-  const su2double *Tcb_a      = config->GetRxnTcb_a();
-  const su2double *Tcb_b      = config->GetRxnTcb_b();
-  const auto& RxnMap = config->GetReaction_Map();
+  /*--- Set mixture state ---*/
+  fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-//  for (iReaction = 0; iReaction < nReactions; iReaction++) {
-//
-//    /*--- Determine the rate-controlling temperature ---*/
-//    af = Tcf_a[iReaction];
-//    bf = Tcf_b[iReaction];
-//    ab = Tcb_a[iReaction];
-//    bb = Tcb_b[iReaction];
-//    Trxnf = pow(T, af)*pow(Tve, bf);
-//    Trxnb = pow(T, ab)*pow(Tve, bb);
-//
-//    /*--- Calculate the modified temperature ---*/
-//    Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
-//    Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
-//
-//    /*--- Get the Keq & Arrhenius coefficients ---*/
-//    GetKeqConstants(A, iReaction, config);
-//    Cf    = config->GetArrheniusCoeff(iReaction);
-//    eta   = config->GetArrheniusEta(iReaction);
-//    theta = config->GetArrheniusTheta(iReaction);
-//
-//    /*--- Calculate Keq ---*/
-//    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
-//        + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
-//
-//    /*--- Calculate rate coefficients ---*/
-//    kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
-//    kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
-//    kb  = kfb / Keq;
-//
-//    /*--- Determine production & destruction of each species ---*/
-//    fwdRxn = 1.0;
-//    bkwRxn = 1.0;
-//    for (ii = 0; ii < 3; ii++) {
-//
-//      /*--- Reactants ---*/
-//      iSpecies = RxnMap(iReaction,0,ii);
-//      if ( iSpecies != nSpecies)
-//        fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
-//
-//      /*--- Products ---*/
-//      jSpecies = RxnMap(iReaction,1,ii);
-//      if (jSpecies != nSpecies) {
-//        bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
-//      }
-//    }
-//    fwdRxn = 1000.0 * kf * fwdRxn;
-//    bkwRxn = 1000.0 * kb * bkwRxn;
-//
-//    for (ii = 0; ii < 3; ii++) {
-//
-//      /*--- Products ---*/
-//      iSpecies = RxnMap(iReaction,1,ii);
-//      if (iSpecies != nSpecies) {
-//        val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-//        val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-//            * eve_i[iSpecies] * Volume;
-//      }
-//
-//      /*--- Reactants ---*/
-//      iSpecies = RxnMap(iReaction,0,ii);
-//      if (iSpecies != nSpecies) {
-//        val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-//        val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-//            * eve_i[iSpecies] * Volume;
-//      }
-//    }
-//
-//    for (iVar = 0; iVar < nVar; iVar++)
-//    cout <<  "val_residual[" << iVar << "]=" << val_residual[iVar] << endl;
-//    exit(0);
-//
-//    /*---Set source term ---*/
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
-//
-//    if (implicit) {
+  ws = fluidmodel->GetNetProductionRates();
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+    val_residual[iSpecies] = ws[iSpecies] *Volume;
+
+
+//  if (implicit) {
+//    su2double dThf, dThb;
 //
 //      /*--- Initializing derivative variables ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) {
@@ -430,29 +273,7 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
 //        } // != nSpecies
 //      } // ii
 //    } // implicit
-//  } // iReaction
-
-  vector<su2double> rhos; rhos.resize(nSpecies,0.0);
-
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhos[iSpecies]=V_i[RHOS_INDEX+iSpecies];
-
-  fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
-
-  ws      = fluidmodel->GetNetProductionRates();
-
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
-    val_residual[iSpecies]      = ws[iSpecies] *Volume;
-  //val_residual[nSpecies+nDim+1] = omegacv * Volume;//ws[iSpecies]* eve_i[iSpecies] * Volume;
-
-//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-//      // cout << std::setprecision(10)<<  "cat: eve_i[" << iSpecies << "]=" << eve_i[iSpecies] << endl;
-//     cout << std::setprecision(10)<<  "cat: val_residual[iSpecies]=" << val_residual[iSpecies] << endl;}
-//    cout << std::setprecision(10)<<  "cat: val_residual[nSpecies+nDim+1]=" << val_residual[nSpecies+nDim+1] << endl;
-//
-//     exit(0);
-
-  if(implicit){}
+ 
 }
 
 void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
@@ -468,9 +289,9 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
   unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl;
   su2double  P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N;
-  su2double Qtv, taunum, taudenom;
-  su2double mu, A_sr, B_sr, num, denom;
-  su2double Cs, sig_s;
+  vector<su2double> rhos;
+
+  rhos.resize(nSpecies,0.0);
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -482,87 +303,15 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
         val_Jacobian_i[iVar][jVar] = 0.0;
   }
 
-  /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
-
   /*--- Rename for convenience ---*/
-  RuSI    = UNIVERSAL_GAS_CONSTANT;
-  Ru      = 1000.0*RuSI;
-  P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  rhoCvtr = V_i[RHOCVTR_INDEX];
-  rhoCvve = V_i[RHOCVVE_INDEX];
-  nEv     = nSpecies+nDim+1;
-
-  /*--- Read from CConfig ---*/
-  const su2double *Ms        = config->GetMolar_Mass();
-  const su2double *thetav    = config->GetCharVibTemp();
-
-//  /*--- Calculate mole fractions ---*/
-//  N    = 0.0;
-//  conc = 0.0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
-//    N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
-//  }
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
-//
-//  /*--- Get species vibrational energy --*/
-//  estar = fluidmodel->GetSpeciesEve(T);
-//
-//  /*--- Loop over species to calculate source term --*/
-//  Qtv      = 0.0;
-//  taunum   = 0.0;
-//  taudenom = 0.0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//
-//    /*--- Rename for convenience ---*/
-//    rhos   = V_i[RHOS_INDEX+iSpecies];
-//
-//    /*--- Millikan & White relaxation time ---*/
-//    num   = 0.0;
-//    denom = 0.0;
-//    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-//      mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-//      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
-//      B_sr   = 0.015 * pow(mu, 0.25);
-//      tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
-//      num   += X[jSpecies];
-//      denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
-//    }
-//
-//    tauMW[iSpecies] = num / denom;
-//  
-//    /*--- Park limiting cross section ---*/
-//    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
-//    sig_s = 1E-20*(5E4*5E4)/(T*T);
-//
-//    tauP[iSpecies] = 1/(sig_s*Cs*N);
-//
-//    /*--- Species relaxation time ---*/
-//    taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
-//
-//    /*--- Calculate vib.-el. energies ---*/
-//    //estar[iSpecies] = variable->CalcEve(config, T, iSpecies);
-//
-//    /*--- Add species contribution to residual ---*/
-//    val_residual[nEv] += rhos * (estar[iSpecies] -
-//                                 eve_i[iSpecies]) / taus[iSpecies] * Volume;
-//  }
-
-  vector<su2double> rhos; rhos.resize(nSpecies,0.0);
-
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhos[iSpecies]=V_i[RHOS_INDEX+iSpecies];
 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  val_residual[nEv] = fluidmodel->GetEveSourceTerm() * Volume;
-
- // cout << std::setprecision(10)<<  "cat: val_residual[nEv]=" << val_residual[nEv] << endl;
+  val_residual[nSpecies+nDim+1] = fluidmodel->GetEveSourceTerm() * Volume;
 
   /*---Set source term ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -576,12 +325,12 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
+        val_Jacobian_i[nSpecies+nDim+1][iVar] += rhos[iSpecies]/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
                                                           Cvve_i[iSpecies]*dTvedU_i[iVar])*Volume;
       }
     }
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
+      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
   }
 }
 

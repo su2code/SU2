@@ -85,7 +85,7 @@ public:
    * \param[in] val_nPrimVargrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMONSVariable(su2double val_density, const vector<su2double> &val_massfrac, su2double *val_velocity,
+  CNEMONSVariable(su2double val_density, const su2double *val_massfrac, su2double *val_velocity,
                   su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
                   unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
                   unsigned long val_nPrimVarGrad, CConfig *config, CNEMOGas *fluidmodel);
@@ -131,30 +131,9 @@ public:
   bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) override;
 
   /*!
-   * \brief Set the laminar viscosity.
-   */
-  void SetDiffusionCoeff_GuptaYos(CConfig *config, unsigned long iPoint);
-
-  /*!
-   * \brief Set the laminar viscosity.
-   */
-  void SetLaminarViscosity_GuptaYos(CConfig *config, unsigned long iPoint);
-
-  /*!
-   * \brief Get the laminar viscosity of the flow.
-   * \return Value of the laminar viscosity of the flow.
-   */
-  void SetThermalConductivity_GuptaYos(CConfig *config, unsigned long iPoint);
-
-  /*!
    * \brief Set the vorticity value.
    */
   bool SetVorticity(void);
-
-  /*!
-   * \brief Set the transport coefficients for the Wilke/Blottner/Eucken model
-   */
-  void SetTransportCoefficients_WBE(CConfig *config, unsigned long iPoint);
 
   /*!
    * \brief Get the species diffusion coefficient.

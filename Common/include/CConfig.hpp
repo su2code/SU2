@@ -476,7 +476,6 @@ private:
   Kind_ConductivityModel_Turb,     /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
   Kind_FreeStreamOption,           /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
-  Kind_GasModel,                   /*!< \brief Kind of the Gas Model. */
   Kind_TransCoeffModel,            /*!< \brief Transport coefficient Model for NEMO solver. */
   Kind_DensityModel,               /*!< \brief Kind of the density model for incompressible flows. */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -1154,36 +1153,11 @@ private:
 
   /* other NEMO configure options*/
   unsigned short nSpecies;                  /*!< \brief No of species present in flow */
-  su2double *ArrheniusCoefficient,          /*!< \brief Arrhenius reaction coefficient */
-  *ArrheniusEta,                            /*!< \brief Arrhenius reaction temperature exponent */
-  *ArrheniusTheta,                          /*!< \brief Arrhenius reaction characteristic temperature */
-  *CharVibTemp,                             /*!< \brief Characteristic vibrational temperature for e_vib */
-  *RotationModes,                           /*!< \brief Rotational modes of energy storage */
-  *Ref_Temperature,                         /*!< \brief Reference temperature for thermodynamic relations */
-  *Tcf_a,                                   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcf_b,                                   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcb_a,                                   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Tcb_b,                                   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Diss;                                    /*!< \brief Dissociation potential. */
-  su2double pnorm_heat;                     /*! brief pnorm for heat-flux. */
-  C3DIntMatrix Reactions;                   /*!</brief reaction map for chemically reacting flows */
-  C3DDoubleMatrix Omega00,                  /*!< \brief Collision integrals (Omega(0,0)) */
-  Omega11;                                  /*!< \brief Collision integrals (Omega(1,1)) */
-  unsigned short nTemp;                     /*!< \brief No of freestream temperatures specified */
-  su2double *Molar_Mass,                    /*!< \brief Molar mass of species in the plasma [kg/kmol] */
-  *Gas_Composition,                         /*!< \brief Initial mass fractions of flow [dimensionless] */
-  *Enthalpy_Formation;                      /*!< \brief Enthalpy of formation */
-  unsigned short *nElStates;                /*!< \brief Number of electron states. */
-  su2activematrix CharElTemp,               /*!< \brief Characteristic temperature of electron states. */
-  degen,                                    /*!< \brief Degeneracy of electron states. */
-  Blottner;                                 /*!< \brief Blottner viscosity coefficients */
-  unsigned short nReactions;                /*!< \brief Number of reactions in chemical model. */
-  bool ionization;                          /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  su2double *Gas_Composition;               /*!< \brief Initial mass fractions of flow [dimensionless] */
   bool frozen;                              /*!< \brief Flag for determining if mixture is frozen. */
-
-//  bool mutationpp;     //cat: delete                     /*!< \brief Flag for determining if Mutation++ library is used. */ 
   string GasModel;                          /*!< \brief Gas Model. */
-
+  bool ionization;                          /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  su2double pnorm_heat;                     /*!< \brief pnorm for heat-flux. */
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -1650,24 +1624,16 @@ public:
   su2double GetSpecific_Heat_CvND(void) const { return Specific_Heat_CvND; }
 
   /*!
-   * \brief Get the coefficients of the Blottner viscosity model
-   * \param[in] val_Species - Index of the species
-   * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
-   * \return Value of the Blottner coefficient
-   */
-  su2double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
-
-  /*!
-   * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
-   * \return Value of the heat flux p-norm
-   */
-  su2double GetPnormHeat(void) const { return pnorm_heat; }
-
-  /*!
    * \brief Get the value of wall temperature.
    * \return Value of the constant: Temperature
    */
   su2double GetWallTemperature(void) const { return Wall_Temperature; }
+
+    /*!
+   * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
+   * \return Value of the heat flux p-norm
+   */
+  su2double GetPnormHeat(void) const { return pnorm_heat; }
 
   /*!
    * \brief Get the reference value for the specific gas constant.
@@ -1709,12 +1675,6 @@ public:
    * \return Freestream temperature.
    */
   su2double GetDensity_FreeStream(void) const { return Density_FreeStream; }
-
-   /*!
-   * \brief Get the vector of free stream mass fraction values.
-   * \return Ratio of species mass to mixture mass.
-   */
-  const vector<su2double>& GetMassFrac_FreeStream(void) const { return MassFrac_FreeStream; }
 
   /*!
    * \brief Get the value of the solid density.
@@ -3745,17 +3705,6 @@ public:
   unsigned short GetSystemMeasurements(void) const { return SystemMeasurements; }
 
   /*!
-   * \brief Indicates if Mutattion++ library is used.
-   */
-  //bool GetMutationpp(void) const { return mutationpp; } //cat: delete
-
-  /*!
-   * \brief Gas model that we are using.
-   * \return Gas model that we are using.
-   */
-  unsigned short GetKind_GasModel(void) const { return Kind_GasModel; }
-
-  /*!
    * \brief Gas model that we are using.
    * \return Gas model that we are using.
    */
@@ -5184,72 +5133,6 @@ public:
    */
   unsigned short GetnSpecies(void) const { return nSpecies; }
 
-  /*!
-   * \brief Provides the number of chemical reactions in the chemistry model
-   * \return: The number of chemical reactions, read from input file
-   */
-  unsigned short GetnReactions(void) const { return nReactions; }
-
-  /*!
-   * \brief Get the array that maps chemical consituents to each chemical reaction.
-   * \return Memory location of the triple pointer to the 3-D reaction map array.
-   */
-  const C3DIntMatrix& GetReaction_Map(void) const { return Reactions; }
-
-  /*!
-   * \brief Provides the number of chemical reactions in the chemistry model
-   * \return: The number of chemical reactions, read from input file
-   */
-  su2double GetArrheniusCoeff(unsigned short iReaction) const { return ArrheniusCoefficient[iReaction]; }
-
-  /*!
-   * \brief Provides the number of chemical reactions in the chemistry model
-   * \return: The number of chemical reactions, read from input file
-   */
-  su2double GetArrheniusEta(unsigned short iReaction) const { return ArrheniusEta[iReaction]; }
-
-  /*!
-   * \brief Provides the number of chemical reactions in the chemistry model
-   * \return: The number of chemical reactions, read from input file
-   */
-  su2double GetArrheniusTheta(unsigned short iReaction) const { return ArrheniusTheta[iReaction]; }
-
-  /*!
-   * \brief Provides the rate controlling temperature exponents for chemistry.
-   * \return: Rate controlling temperature exponents.
-   */
-  const su2double* GetRxnTcf_a(void) const { return Tcf_a; }
-
-  /*!
-   * \brief Provides the rate controlling temperature exponents for chemistry.
-   * \return: Rate controlling temperature exponents.
-   */
-  const su2double* GetRxnTcf_b(void) const { return Tcf_b; }
-
-  /*!
-   * \brief Provides the rate controlling temperature exponents for chemistry.
-   * \return: Rate controlling temperature exponents.
-   */
-  const su2double* GetRxnTcb_a(void) const { return Tcb_a; }
-
-  /*!
-   * \brief Provides the rate controlling temperature exponents for chemistry.
-   * \return: Rate controlling temperature exponents.
-   */
-  const su2double* GetRxnTcb_b(void) const { return Tcb_b; }
-
-  /*!
-   * \brief Provides a table of equilibrium constants for a particular chemical reaction for a supplied gas model.
-   * \return: Matrix of reaction constants
-   */
-  void GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction);
-
-  /*!
-   * \brief Dissociation potential of species.
-   * \return: Dissociation potential.
-   */
-  const su2double* GetDissociationPot(void) const { return Diss; }
-
    /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.
    * \return The heat flux.
@@ -5257,103 +5140,10 @@ public:
   const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
 
   /*!
-   * \brief Provides the number of rotational modes of energy storage
-   * \return: Vector of rotational mode count
-   */
-  const su2double* GetRotationModes(void) const { return RotationModes; }
-
-  /*!
-   * \brief Provides the characteristic vibrational temperature for calculating e_vib
-   * \return: Vector of characteristic vibrational temperatures [K]
-   */
-  const su2double* GetCharVibTemp(void) const { return CharVibTemp; }
-
-  /*!
-   * \brief Provides the characteristic electronic temperature for calculating e_el
-   * \return: Vector of characteristic vibrational temperatures [K]
-   */
-  const su2activematrix& GetCharElTemp(void) const { return CharElTemp; }
-
-  /*!
-   * \brief Provides the degeneracy of electron states for calculating e_el
-   * \return: Vector of characteristic vibrational temperatures [K]
-   */
-  const su2activematrix& GetElDegeneracy(void) const { return degen; }
-
-  /*!
-   * \brief Provides number electron states for calculating e_el
-   * \return: Vector of number of electron states for each species
-   */
-  const unsigned short* GetnElStates(void) const { return nElStates; }
-
-
-  /*!
-   * \brief Provides the thermodynamic reference temperatures from the JANAF tables
-   * \return: Vector of reference temperatures [K]
-   */
-  const su2double* GetRefTemperature(void) const { return Ref_Temperature; }
-
-  /*!
-   * \brief Provides the characteristic vibrational temperature for calculating e_vib
-   * \return: The number of chemical reactions, read from input file
-   */
-  su2double GetCharVibTemp(unsigned short iSpecies) const { return CharVibTemp[iSpecies]; }
-
-  /*!
-   * \brief Provides the molar mass of each species present in multi species fluid
-   * \return: Vector of molar mass of each species in kg/kmol
-   */
-  const su2double* GetMolar_Mass(void) const { return Molar_Mass; }
-
-  /*!
-   * \brief Provides the molar mass of each species present in multi species fluid
-   * \return: Mass of each species in Kg
-   */
-  su2double GetMolar_Mass(unsigned short iSpecies) const { return Molar_Mass[iSpecies]; }
-
-  /*!
    * \brief Provides the gas mass fractions of the flow
    * \return: Gas Mass fractions
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
-
-  /*!
-   * \brief Provides the molar mass of each species present in multi species fluid
-   * \return: Molar mass of the specified gas consituent [kg/kmol]
-   */
-  su2double GetInitial_Gas_Composition(unsigned short iSpecies) const { return Gas_Composition[iSpecies]; }
-
-  /*!
-   * \brief Provides the formation enthalpy of the specified species at standard conditions
-   * \return: Enthalpy of formation
-   */
-  const su2double* GetEnthalpy_Formation(void) const { return Enthalpy_Formation; }
-
-  /*!
-   * \brief Provides the formation enthalpy of the specified species at standard conditions
-   * \return: Enthalpy of formation
-   */
-  su2double GetEnthalpy_Formation(unsigned short iSpecies) const { return Enthalpy_Formation[iSpecies]; }
-
-  /*!
-   * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
-   * \return Memory location of the triple pointer to the 3-D collision integral array.
-   */
-  const C3DDoubleMatrix& GetCollisionIntegral00(void) const { return Omega00; }
-
-  /*!
-   * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
-   * \return Memory location of the triple pointer to the 3-D collision integral array.
-   */
-  const C3DDoubleMatrix& GetCollisionIntegral11(void) const { return Omega11; }
-
-  /*!
-   * \brief Get the coefficients of the Blottner viscosity model
-   * \param[in] val_Species - Index of the species
-   * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
-   * \return Value of the Blottner coefficient
-   */
-  const su2activematrix& GetBlottnerCoeff(void) const { return Blottner; }
 
   /*!
    * \brief Provides the restart information.
@@ -5400,14 +5190,14 @@ public:
   bool GetRestart_Flow(void) const { return Restart_Flow; }
 
   /*!
-   * \brief Indicates whether electron gas is present in the gas mixture.
-   */
-  bool GetIonization(void) const { return ionization; }
-
-  /*!
    * \brief Indicates whether the flow is frozen (chemistry deactivated).
    */
   bool GetFrozen(void) const { return frozen; }
+
+  /*!
+   * \brief Indicates whether electron gas is present in the gas mixture.
+   */
+  bool GetIonization(void) const { return ionization; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
