@@ -159,12 +159,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      su2double Dist_ij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
-        Dist_ij += pow(Vector_ij[iDim], 2.0);
       }
-      Dist_ij = sqrt(Dist_ij);
 
       /*--- Reconstruct mean flow primitive variables. ---*/
 
