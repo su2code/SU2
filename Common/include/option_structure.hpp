@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -541,7 +541,9 @@ enum ENUM_FLUIDMODEL {
   PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
   CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6  /*!< \brief Inc. ideal gas, polynomial gas model. */
+  INC_IDEAL_GAS_POLY = 6,  /*!< \brief Inc. ideal gas, polynomial gas model. */
+  MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
+  USER_DEFINED_NONEQ = 8        /*!< \brief User defined gas model for nonequilibrium flow. */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -551,6 +553,8 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("CONSTANT_DENSITY", CONSTANT_DENSITY)
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
+  MakePair("MUTATIONPP", MUTATIONPP)
+  MakePair("USER_DEFINED_NONEQ", USER_DEFINED_NONEQ)
 };
 
 /*!
@@ -1432,7 +1436,8 @@ enum ACTDISK_TYPE {
   NET_THRUST = 3,         /*!< \brief User specifies the Net thrust. */
   DRAG_MINUS_THRUST = 4,  /*!< \brief User specifies the D-T. */
   MASSFLOW = 5,           /*!< \brief User specifies the massflow. */
-  POWER = 6               /*!< \brief User specifies the power. */
+  POWER = 6,              /*!< \brief User specifies the power. */
+  VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
 };
 static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1441,6 +1446,7 @@ static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("DRAG_MINUS_THRUST", DRAG_MINUS_THRUST)
   MakePair("MASSFLOW", MASSFLOW)
   MakePair("POWER", POWER)
+  MakePair("VARIABLE_LOAD", VARIABLE_LOAD)
 };
 
 /*!

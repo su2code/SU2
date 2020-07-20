@@ -28,7 +28,6 @@
 #pragma once
 
 #include "../../CNumerics.hpp"
-#include "../../../variables/CNEMOEulerVariable.hpp"
 
 /*!
  * \class CUpwMSW_NEMO
@@ -45,11 +44,11 @@ private:
     su2double *Fc_i, *Fc_j;
     su2double *Lambda_i, *Lambda_j;
     su2double *rhos_i, *rhos_j, *rhosst_i, *rhosst_j;
-    su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Evest_i, *Evest_j;
+    su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j;
+    vector<su2double> eves_st_i, eves_st_j;
     su2double *dPdUst_i, *dPdUst_j;
     su2double **P_Tensor, **invP_Tensor;
     unsigned short nPrimVar, nPrimVarGrad;
-    CNEMOEulerVariable *variable;
 
 public:
 

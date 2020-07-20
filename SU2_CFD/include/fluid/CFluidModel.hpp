@@ -2,7 +2,7 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -297,4 +297,5 @@ class CFluidModel {
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
 };

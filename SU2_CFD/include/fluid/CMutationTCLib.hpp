@@ -83,7 +83,7 @@ public:
   /*!
    * \brief Get vector of species V-E energy.
    */
-  vector<su2double> GetSpeciesEve();
+  vector<su2double> GetSpeciesEve(su2double val_T);
   
   /*!
    * \brief Get species net production rates.
@@ -98,7 +98,7 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  vector<su2double> GetSpeciesEnthalpy();
+  vector<su2double> GetSpeciesEnthalpy(su2double val_T, su2double *val_eves);
 
   /*!
    * \brief Get species diffusion coefficients.
@@ -119,12 +119,12 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  vector<su2double> GetTemperatures(su2double *rhos, su2double rhoEmix, su2double rhoEve);
+  vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel);
    
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  void GetdPdU(su2double *V, su2double *val_eves, su2double *val_dPdU);
+  void GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU);
 
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
@@ -134,6 +134,6 @@ public:
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  void GetdTvedU(su2double *V, su2double *val_eves, su2double *val_dTvedU);
+  void GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU);
 
 };

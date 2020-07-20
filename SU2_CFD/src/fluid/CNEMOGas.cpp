@@ -27,13 +27,18 @@
 
 #include "../../include/fluid/CNEMOGas.hpp"
 
+#include <iomanip> //cat:delete
+
 CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
-  nSpecies            = config->GetnSpecies();
-  MassFrac_Freestream = config->GetMassFrac_FreeStream();
 
+
+  nSpecies = config->GetnSpecies();
+
+  MassFrac.resize(nSpecies,0.0);
   MolarMass.resize(nSpecies,0.0);
   MolarFractions.resize(nSpecies,0.0);
+  rhos.resize(nSpecies,0.0);
   Cvtrs.resize(nSpecies,0.0);         
   Cvves.resize(nSpecies,0.0);               
   eves.resize(nSpecies,0.0);            
@@ -46,19 +51,22 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
+  frozen = config->GetFrozen();
+
 }
 
 CNEMOGas::~CNEMOGas(){}
 
 
-void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve){
+void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve){
 
   su2double denom;
 
-  MassFrac = val_massfrac;                   
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    MassFrac[iSpecies] = val_massfrac[iSpecies];                   
   Pressure = val_pressure;                   
   T        = val_temperature;                
-  Tve      = val_temperature_ve;             
+  Tve      = val_temperature_ve; 
   
   denom   = 0.0;   
 
@@ -69,27 +77,40 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, vector<su2double> val_mass
     denom += MassFrac[nSpecies-1] * (Ru/MolarMass[nSpecies-1]) * Tve;
   Density = Pressure / denom;
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhos[iSpecies] = MassFrac[iSpecies]*Density;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    rhos[iSpecies]     = MassFrac[iSpecies]*Density;
+    MassFrac[iSpecies] = rhos[iSpecies]/Density;
+  } 
 }
 
 
-su2double CNEMOGas::GetSoundSpeed(su2double val_pressure){
+su2double CNEMOGas::GetSoundSpeed(){
 
   su2double conc, rhoCvtr;
 
-  Pressure = val_pressure;
-
   conc    = 0.0;
   rhoCvtr = 0.0; 
+  Density = 0.0;
 
   vector<su2double> Cvtrs = GetSpeciesCvTraRot();
 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Density+=rhos[iSpecies];
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
     conc += rhos[iSpecies]/MolarMass[iSpecies];
-    rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies]; 
+    rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies];
   }
   SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
+
+ // cout <<setprecision(10)<< "cat: Ru=" << Ru << endl;
+ //cout <<setprecision(10)<< "cat: conc=" << conc << endl;
+
+// cout<<endl<<endl;
+//
+// cout <<setprecision(10)<< "cat: rhoCvtr=" << rhoCvtr << endl;
+// cout <<setprecision(10)<< "cat: Pressure=" << Pressure << endl;
+// cout <<setprecision(10)<< "cat: Density=" << Density << endl;
 
   return(sqrt(SoundSpeed2));
 
@@ -98,13 +119,48 @@ su2double CNEMOGas::GetSoundSpeed(su2double val_pressure){
 su2double CNEMOGas::GetPressure(){
 
   su2double P = 0.0;
+
+ //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+ //  cout <<setprecision(20)<< "cat: rhos=" << rhos[iSpecies] << endl;
+ //  cout <<setprecision(20)<< "cat: MolarMass=" << MolarMass[iSpecies] << endl;
+ //}
+
+ //cout <<setprecision(20)<< "cat: Ru=" << Ru << endl;
+ //cout <<setprecision(20)<< "cat: T=" << T << endl;
+ //cout <<setprecision(20)<< "cat: Tve=" << Tve << endl;
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     P += rhos[nSpecies-1] * Ru/MolarMass[nSpecies-1] * Tve;
 
+  Pressure = P;
+
   return P;
 
+}
+
+su2double CNEMOGas::GetGasConstant(){
+
+  su2double Mass = 0.0;
+
+  // This needs work for Ionization and such
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
+  GasConstant = Ru / Mass;
+ 
+  return GasConstant;
+}
+
+su2double CNEMOGas::GetrhoCvve() {
+
+    Cvves = GetSpeciesCvVibEle();
+
+    rhoCvve = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
+
+    return rhoCvve;
 }
 
 

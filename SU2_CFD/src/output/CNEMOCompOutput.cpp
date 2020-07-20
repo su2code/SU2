@@ -371,9 +371,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Primitive variables
-  AddVolumeOutput("PRESSURE",       "Pressure",                "PRIMITIVE", "Pressure");
-  AddVolumeOutput("TEMPERATURE",    "Temperature",             "PRIMITIVE", "Temperature");
-  AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve",          "PRIMITIVE", "Temperature_ve");
+  AddVolumeOutput("PRESSURE",       "Pressure",       "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE_TR", "Temperature_tr", "PRIMITIVE", "Temperature_tr");
+  AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve", "PRIMITIVE", "Temperature_ve");
 
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
 //  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
@@ -545,7 +545,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
-  SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+  SetVolumeOutputValue("TEMPERATURE_TR", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("TEMPERATURE_VE", iPoint, Node_Flow->GetTemperature_ve(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 

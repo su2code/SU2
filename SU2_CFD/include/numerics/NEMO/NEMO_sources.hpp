@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../CNumerics.hpp"
-#include "../../variables/CNEMOEulerVariable.hpp"
+
 /*!
  * \class CSource_NEMO
  * \brief Class for two-temperature model source terms.
@@ -44,12 +44,12 @@ private:
   su2double *X; // Mole fraction
   su2double *Y, **dYdr; // Mass fraction
   su2double **RxnConstantTable;
-  su2double *estar, *evib;
+  su2double *evib;
   su2double **tau_sr, *tauP, *tauMW, *taus;
   su2double *dkf, *dkb, *dRfok, *dRbok, *A;
-  su2double *Cvvs, *Cvvsst;
+  su2double *Cvvs;
   su2double *Cves;
-  CNEMOEulerVariable *variable;
+  vector<su2double> Cvvsst, estar, ws;
 
 public:
 

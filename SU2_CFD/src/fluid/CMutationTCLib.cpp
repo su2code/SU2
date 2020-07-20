@@ -49,13 +49,13 @@ su2double CMutationTCLib::GetGamma(){}
 
 vector<su2double> CMutationTCLib::GetMixtureEnergies(){}
 
-vector<su2double> CMutationTCLib::GetSpeciesEve(){}
+vector<su2double> CMutationTCLib::GetSpeciesEve(su2double val_T){}
 
 vector<su2double> CMutationTCLib::GetNetProductionRates(){}
 
 su2double CMutationTCLib::GetEveSourceTerm(){}
 
-vector<su2double> CMutationTCLib::GetSpeciesEnthalpy(){}
+vector<su2double> CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
 
 vector<su2double> CMutationTCLib::GetDiffusionCoeff(){}
 
@@ -63,11 +63,11 @@ su2double CMutationTCLib::GetViscosity(){}
 
 vector<su2double> CMutationTCLib::GetThermalConductivities(){}
 
-vector<su2double> CMutationTCLib::GetTemperatures(su2double *rhos, su2double rhoEmix, su2double rhoEve){}
+vector<su2double> CMutationTCLib::GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
 
-void CMutationTCLib::GetdPdU(su2double *V, su2double *val_eves, su2double *val_dPdU){}
+void CMutationTCLib::GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU){}
 
 void CMutationTCLib::GetdTdU(su2double *V, su2double *val_dTdU){}
  
-void CMutationTCLib::GetdTvedU(su2double *V, su2double *val_eves, su2double *val_dTvedU){}
+void CMutationTCLib::GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU){}
 

@@ -39,7 +39,8 @@ class CNEMOGas : public CFluidModel {
 
 protected:
   
-  bool viscous;                          /*!< \brief Presence of viscous effects. */
+  bool frozen;                           /*!< \brief Indicates if mixture is frozen. */
+  
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
@@ -60,11 +61,12 @@ protected:
   su2double ThermalCond_ve{0.0};         /*!< \brief V-E thermal conductivity of the gas mixture. */
   su2double RuSI{UNIVERSAL_GAS_CONSTANT};/*!< \brief Universal gas constant [J/(mol*K)] */
   su2double Ru{1000.0*RuSI};             /*!< \brief Universal gas constant [J/(kmol*K)] */
-
-  const su2double *MassFrac_Freestream;  /*!< \brief Freestream species mass fractions. */
-
+  su2double GasConstant{0.0};            /*!< \brief Universal gas constant [J/(kmol*K)] */
+  su2double rhoCvtr{0.0};                /*!< \brief density times T-R specific heat */
+  su2double rhoCvve{0.0};                /*!< \brief density times V-E specific heat */
+  
   vector<su2double> MolarMass,           /*!< \brief Species molar mass */
-  MassFrac,                                    /*!< \brief Species mass fractions */
+  MassFrac,                              /*!< \brief Species mass fractions */
   rhos,                                  /*!< \brief Species partial densities */
   Cvtrs,                                 /*!< \brief Species T-R specific heats at constant volume */
   Cvves,                                 /*!< \brief Species V-E specific heats at constant volume */
@@ -103,7 +105,7 @@ public:
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
-  void SetTDStatePTTv(su2double P, vector<su2double> val_massfrac, su2double val_temperature, su2double val_temperature_ve);
+  void SetTDStatePTTv(su2double P, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve);
   
   
   /*!
@@ -139,12 +141,12 @@ public:
   /*!
    * \brief Get vector of species V-E energy.
    */
-  virtual vector<su2double> GetSpeciesEve(){}
+  virtual vector<su2double> GetSpeciesEve(su2double val_T){}
   
   /*!
    * \brief Get species enthalpies.
    */
-  virtual vector<su2double> GetSpeciesEnthalpy(){}
+  virtual vector<su2double> GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
   
   /*!
    * \brief Get species diffusion coefficients.
@@ -164,12 +166,12 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double> GetTemperatures(su2double *rhos, su2double rhoEmix, su2double rhoEve){}
+  virtual vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
   
   /*!
    * \brief Get speed of sound.
    */
-  su2double GetSoundSpeed(su2double val_pressure);
+  su2double GetSoundSpeed();
 
   /*!
    * \brief Get pressure.
@@ -179,7 +181,7 @@ public:
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  virtual void GetdPdU(su2double *V, su2double *val_eves, su2double *val_dPdU){}
+  virtual void GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU){}
   
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
@@ -189,7 +191,7 @@ public:
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  virtual void GetdTvedU(su2double *V, su2double *val_eves, su2double *val_dTvedU){}
+  virtual void GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU){}
 
   /*!
    * \brief Set the translational temperature.
@@ -205,6 +207,31 @@ public:
    * \brief Set species vibrational energies.
    */
   inline void SetEves(vector<su2double> val_eves) { eves = val_eves; }
+
+  /*!
+   * \brief Get gas constant.
+   */
+  su2double GetGasConstant();
+
+  /*!
+   * \brief Get rhoCvtr.
+   */
+  inline su2double GetrhoCvtr() {
+    rhoCvtr = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+      rhoCvtr += rhos[iSpecies]*Cvtrs[iSpecies];
+    return rhoCvtr;
+  }
+
+  /*!
+   * \brief Get rhoCvtr.
+   */
+  su2double GetrhoCvve();
+
+  /*!
+   * \brief Get species molar mass.
+   */
+  inline vector<su2double> GetMolarMass() { return MolarMass; }
 
 
 };

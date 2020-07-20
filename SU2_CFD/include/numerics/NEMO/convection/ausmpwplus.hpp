@@ -51,9 +51,6 @@ private:
   su2double *dPdU_i, *dPdU_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
-  CNEMOEulerVariable *variable;
-  
-
 public:
 
   /*!

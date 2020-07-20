@@ -29,8 +29,6 @@
 #pragma once
 
 #include "../../CNumerics.hpp"
-#include "../../../variables/CNEMOEulerVariable.hpp"
-
 
 /*!
  * \class CUpwRoe_NEMO
@@ -43,7 +41,8 @@ class CUpwRoe_NEMO : public CNumerics {
 private:
     bool implicit, ionization;
     su2double *Diff_U;
-    su2double *RoeU, *RoeV, *RoeEve;
+    su2double *RoeU, *RoeV;
+    vector<su2double> roe_eves;
     su2double *ProjFlux_i, *ProjFlux_j;
     su2double *Lambda, *Epsilon;
     su2double **P_Tensor, **invP_Tensor;
@@ -52,7 +51,6 @@ private:
     su2double Proj_ModJac_Tensor_ij, R;
     su2double *RoedPdU;
     unsigned short nPrimVar, nPrimVarGrad;
-    CNEMOEulerVariable *variable;
 
 public:
 

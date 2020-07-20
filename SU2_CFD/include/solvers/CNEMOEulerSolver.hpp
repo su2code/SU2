@@ -29,6 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CNEMOEulerVariable.hpp"
+#include "../include/fluid/CNEMOGas.hpp"
 
 /*!
  * \class CNEMOEulerSolver
@@ -41,22 +42,22 @@ class CNEMOEulerSolver : public CSolver {
 protected:
 
   unsigned short
-  nSpecies;	           /*!< \brief Number of species in the gas mixture. */
-
-  su2double
-  Gamma,               /*!< \brief Mixture Cp/Cv. */
-  Gamma_Minus_One;     /*!< \brief Mixture Cp/Cv - 1. */
-
-  su2double
-  Mach_Inf,            /*!< \brief Free stream Mach number. */
-  *Density,            /*!< \brief Free stream species density. */
-  Density_Inf,         /*!< \brief Free stream sdensity. */
-  Energy_ve_Inf,       /*!< \brief Vib.-el. free stream energy. */
-  Pressure_Inf,	       /*!< \brief Free stream pressure. */
-  *Velocity_Inf,	   /*!< \brief Free stream flow velocity. */
-  Temperature_Inf,     /*!< \brief Trans.-rot. free stream temperature. */
-  Temperature_ve_Inf;  /*!< \brief Vib.-el. free stream temperature. */
-  const su2double *MassFrac_Inf;      /*!< \brief Free stream species mass fraction. */
+  nSpecies;	                             /*!< \brief Number of species in the gas mixture. */
+                  
+  su2double                  
+  Gamma,                                 /*!< \brief Mixture Cp/Cv. */
+  Gamma_Minus_One;                       /*!< \brief Mixture Cp/Cv - 1. */
+                  
+  su2double                  
+  Mach_Inf,                              /*!< \brief Free stream Mach number. */
+  *Density,                              /*!< \brief Free stream species density. */
+  Density_Inf,                           /*!< \brief Free stream sdensity. */
+  Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
+  Pressure_Inf,	                         /*!< \brief Free stream pressure. */
+  *Velocity_Inf,	                       /*!< \brief Free stream flow velocity. */
+  Temperature_Inf,                       /*!< \brief Trans.-rot. free stream temperature. */
+  Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
+  const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
   
 
   su2double
@@ -288,7 +289,7 @@ protected:
   unsigned short nSpanMax;          /*!< \brief Max number of maximum span-wise sections for all zones */
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
 
-  CFluidModel  *FluidModel;         /*!< \brief fluid model used in the solver */
+  CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
 
   
 
@@ -338,6 +339,7 @@ protected:
 
   CNEMOEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
   CNEMOEulerVariable* node_infty;
+
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
@@ -440,7 +442,7 @@ public:
   /*!
    * \brief Reset Node Infty for discrete adjoint
    */
-  void ResetNodeInfty(su2double pressure_inf, su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+  void ResetNodeInfty(su2double pressure_inf, const su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
                       su2double temperature_ve_inf, CConfig *config);
 
   /*!

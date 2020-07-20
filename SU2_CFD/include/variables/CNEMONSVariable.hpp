@@ -57,6 +57,8 @@ private:
   VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
   VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
+  vector<su2double> thermalconductivities;
+  vector<su2double> Ds;
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
@@ -86,7 +88,7 @@ public:
   CNEMONSVariable(su2double val_density, const su2double *val_massfrac, su2double *val_velocity,
                   su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
                   unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
-                  unsigned long val_nPrimVarGrad, CConfig *config);
+                  unsigned long val_nPrimVarGrad, CConfig *config, CNEMOGas *fluidmodel);
 
   /*!
    * \brief Constructor of the class.
@@ -126,33 +128,12 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config) override;
-
-  /*!
-   * \brief Set the laminar viscosity.
-   */
-  void SetDiffusionCoeff_GuptaYos(CConfig *config, unsigned long iPoint);
-
-  /*!
-   * \brief Set the laminar viscosity.
-   */
-  void SetLaminarViscosity_GuptaYos(CConfig *config, unsigned long iPoint);
-
-  /*!
-   * \brief Get the laminar viscosity of the flow.
-   * \return Value of the laminar viscosity of the flow.
-   */
-  void SetThermalConductivity_GuptaYos(CConfig *config, unsigned long iPoint);
+  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) override;
 
   /*!
    * \brief Set the vorticity value.
    */
   bool SetVorticity(void);
-
-  /*!
-   * \brief Set the transport coefficients for the Wilke/Blottner/Eucken model
-   */
-  void SetTransportCoefficients_WBE(CConfig *config, unsigned long iPoint);
 
   /*!
    * \brief Get the species diffusion coefficient.

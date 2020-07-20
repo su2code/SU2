@@ -37,7 +37,6 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   /*--- Read configuration parameters ---*/
   implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar         = val_nVar;
@@ -51,11 +50,12 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   RoeU        = new su2double  [nVar];
   RoeV        = new su2double  [nPrimVar];
   RoedPdU     = new su2double  [nVar];
-  RoeEve      = new su2double  [nSpecies];
   Lambda      = new su2double  [nVar];
   Epsilon     = new su2double  [nVar];
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
+
+  roe_eves.resize(nSpecies,0.0);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar]    = new su2double [nVar];
@@ -65,7 +65,6 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
@@ -76,7 +75,6 @@ CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
   delete [] RoeU;
   delete [] RoeV;
   delete [] RoedPdU;
-  delete [] RoeEve;
   delete [] Lambda;
   delete [] Epsilon;
 
@@ -117,11 +115,10 @@ void CUpwRoe_NEMO::ComputeResidual(su2double *val_residual,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    RoeEve[iSpecies] = variable->CalcEve(config, RoeV[TVE_INDEX], iSpecies);
+  vector<su2double> roe_eves = fluidmodel->GetSpeciesEve(RoeV[TVE_INDEX]); //cat: just RoeEve
 
   /*--- Calculate derivatives of pressure ---*/
-  variable->CalcdPdU(RoeV, RoeEve, config, RoedPdU);
+  fluidmodel->GetdPdU(RoeV, roe_eves, RoedPdU);
 
   /*--- Calculate dual grid tangent vectors for P & invP ---*/
   CreateBasis(UnitNormal);

@@ -66,7 +66,8 @@ private:
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   Particle_Mass,                  /*!< \brief Mass of all particles present in the plasma */
   MolarFracWBE,                   /*!< \brief Molar fractions to be used in Wilke/Blottner/Eucken model */
-  phis, mus;                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
+  phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
+  A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
 
   su2activematrix CharElTemp,                    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
@@ -135,7 +136,7 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  vector<su2double> GetSpeciesEnthalpy();
+  vector<su2double> GetSpeciesEnthalpy(su2double val_T, su2double *val_eves);
 
   /*!
    * \brief Get species diffusion coefficients.
@@ -155,12 +156,12 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  vector<su2double> GetTemperatures(su2double *rhos, su2double rhoEmix, su2double rhoEve);
+  vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel);
 
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  void GetdPdU(su2double *V, su2double *val_eves, su2double *val_dPdU);
+  void GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU);
 
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
@@ -170,7 +171,7 @@ public:
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  void GetdTvedU(su2double *V, su2double *val_eves, su2double *val_dTvedU);
+  void GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU);
 
   private:
 
@@ -184,7 +185,7 @@ public:
    * \param[out] A - Reference to coefficient array.
    * \param[in] val_reaction - Reaction number indicator.
    */
-  void GetKeqConstants(vector<su2double> A, unsigned short val_Reaction);
+  void GetKeqConstants(unsigned short val_Reaction);
 
   /*!
    * \brief Get species diffusion coefficients with Wilke/Blottner/Eucken transport model.

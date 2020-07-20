@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,9 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../variables/CNEMOEulerVariable.hpp"
+#include "../fluid/CNEMOGas.hpp"
+#include "../../include/fluid/CMutationTCLib.hpp"
+#include "../../include/fluid/CUserDefinedTCLib.hpp"
 
 using namespace std;
 
@@ -232,7 +234,8 @@ protected:
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
 
-  su2double *hs, *Cvtr;
+  vector<su2double> hs;
+  su2double *Cvtr;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
   su2double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
   su2double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
@@ -241,6 +244,8 @@ protected:
   *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+
+  CNEMOGas *fluidmodel;
   
 
 public:

@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -517,13 +517,13 @@ public:
    * \brief Check the volume element orientation.
    * \param[in] config - Definition of the particular problem.
    */
-  void Check_IntElem_Orientation(CConfig *config) override;
+  void Check_IntElem_Orientation(const CConfig *config) override;
 
   /*!
    * \brief Check the volume element orientation.
    * \param[in] config - Definition of the particular problem.
    */
-  void Check_BoundElem_Orientation(CConfig *config) override;
+  void Check_BoundElem_Orientation(const CConfig *config) override;
 
   /*!
    * \brief Set the domains for grid grid partitioning using ParMETIS.

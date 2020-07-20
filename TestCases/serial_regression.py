@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -46,7 +46,7 @@ def main():
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
     thermalbath.test_vals = [2.473627, 2.473627, -12.033039, -11.945257, -32.000000, 10.804939] #last 4 columns
-    thermalbath.su2_exec  = "SU2_CFD"
+    thermalbath.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
     thermalbath.tol       = 0.00001
@@ -58,7 +58,7 @@ def main():
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
     thermalbath_frozen.test_vals = [ -32.000000, -32.000000, -11.953727, -12.066776, -32.000000, 10.813864] #last 4 columns
-    thermalbath_frozen.su2_exec  = "SU2_CFD"
+    thermalbath_frozen.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
     thermalbath_frozen.tol       = 0.00001
@@ -70,7 +70,7 @@ def main():
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
     invwedge.test_vals = [ -0.954130, -1.478893, -16.737310, -17.063693, -17.010416, 2.374072, 1.733626, 5.401966, 0.955538] #last 4 columns
-    invwedge.su2_exec  = "SU2_CFD"
+    invwedge.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = False
     invwedge.tol       = 0.00001
@@ -81,12 +81,12 @@ def main():
     viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.277112, -5.801874, -20.855161, -20.833552, -23.593984, -1.775303, -2.244927, 1.720285, -2.870337] #last 4 columns
-    viscwedge.su2_exec  = "SU2_CFD"
+    viscwedge.test_vals = [-5.267324, -5.792087, -20.236749, -20.204632, -20.221054, -1.780516, -2.208251, 1.723062, -2.871713]
+    viscwedge.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
     viscwedge.timeout   = 1600
     viscwedge.new_output = False
     viscwedge.tol       = 0.00001
-    test_list.append(viscwedge)
+    test_list.append(viscwedge)    
     
     #########################
     ## Compressible Euler ###
@@ -321,7 +321,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.372347, -6.579371, 0.229867, 0.147638]#last 4 columns
+    turb_oneram6.test_vals = [-2.412449, -6.702976, 0.229867, 0.147638]#last 4 columns
     turb_oneram6.su2_exec  = "SU2_CFD"
     turb_oneram6.new_output = True
     turb_oneram6.timeout   = 3200
@@ -374,6 +374,18 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+
+    # PROPELLER VARIBLE LOAD
+    propeller_var_load            = TestCase('propeller_variable_load')
+    propeller_var_load.cfg_dir    = "rans/actuatordisk_variable_load"
+    propeller_var_load.cfg_file   = "propeller_variable_load.cfg"
+    propeller_var_load.test_iter  = 20
+    propeller_var_load.test_vals  = [-1.826392, -4.535254, 0.000003, 0.170298] #last 4 columns
+    propeller_var_load.su2_exec   = "SU2_CFD"
+    propeller_var_load.new_output = True
+    propeller_var_load.timeout    = 3200
+    propeller_var_load.tol        = 0.00001
+    test_list.append(propeller_var_load)
 
     #################################
     ## Compressible RANS Restart  ###

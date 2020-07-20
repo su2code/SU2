@@ -37,7 +37,6 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
 
   /*--- Read configuration parameters ---*/
   implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
@@ -75,7 +74,6 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
   dPdU_i  = new su2double [nVar];
   dPdU_j  = new su2double [nVar];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwAUSMPWplus_NEMO::~CUpwAUSMPWplus_NEMO(void) {
@@ -123,7 +121,6 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
   su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j;
-  const su2double *Ms, *xi;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double fact, gam, dV2L, dV2R;
@@ -144,23 +141,8 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Read from config ---*/
-  Ms = config->GetMolar_Mass();
-  xi = config->GetRotationModes();
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
-
-  /*--- Determine the number of heavy particle species ---*/
-  if (ionization) {
-    nHeavy = nSpecies-1;
-    nEl = 1;
-    rho_el_i = V_i[nSpecies-1];
-    rho_el_j = V_j[nSpecies-1];
-  } else {
-    nHeavy = nSpecies;
-    nEl = 0;
-    rho_el_i = 0.0;
-    rho_el_j = 0.0;
-  }
 
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
@@ -184,6 +166,9 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
+
+  vector<su2double> Ms = fluidmodel->GetMolarMass();
+  
   rhoRi = 0.0;
   rhoRj = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -277,252 +262,252 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += (pLP*UnitNormal[iDim] + pRM*UnitNormal[iDim])*Area;
 
-  if (implicit) {
-
-    /*--- Initialize the Jacobians ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] = 0.0;
-        val_Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
-
-    /*--- Derivatives of the interface speed of sound, aij ---*/
-    // Derivatives of Hnorm
-    //fact = 0.5*sqrt(2*(gam-1.0)/((gam+1.0)*Hnorm));
-    //for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    //  dHnL[iSpecies] = 0.5*(dPdU_i[iSpecies] /*+ sqVi/rho_i*/);
-    //  dHnR[iSpecies] = 0.5*(dPdU_j[iSpecies] /*+ sqVj/rho_j*/);
-    //}
-    //for (iDim = 0; iDim < nDim; iDim++) {
-    //	dV2L = 0.0;
-    //  dV2R = 0.0;
-    //  for (jDim = 0; jDim < nDim; jDim++) {
-    //    dV2L += 2.0/rho_i*(u_i[jDim]-ProjVel_i*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
-    //    dV2R += 2.0/rho_j*(u_j[jDim]-ProjVel_j*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
-    //  }
-    //  dV2L += 2.0/rho_i*(u_i[iDim]-ProjVel_i*UnitNormal[iDim] - sqVi);
-    //  dV2R += 2.0/rho_j*(u_j[iDim]-ProjVel_j*UnitNormal[iDim] - sqVj);
-    //  dHnL[nSpecies+iDim] = 0.5*(dPdU_i[nSpecies+iDim] /*- 0.5*(dV2L)*/);
-    //  dHnR[nSpecies+iDim] = 0.5*(dPdU_j[nSpecies+iDim] /*- 0.5*(dV2R)*/);
-    //}
-    //dHnL[nSpecies+nDim]   = 0.5*(1.0+dPdU_i[nSpecies+nDim]);
-    //dHnR[nSpecies+nDim]   = 0.5*(1.0+dPdU_j[nSpecies+nDim]);
-    //dHnL[nSpecies+nDim+1] = 0.5*dPdU_i[nSpecies+nDim+1];
-    //dHnR[nSpecies+nDim+1] = 0.5*dPdU_j[nSpecies+nDim+1];
-
-    //    //////////////////
-    //    //debug:
-    //    cout << "sqVi before: " << sqVi << endl;
-    //    //check sqV routine w/ conserved:
-    //    double rVi, delta;
-    //    rVi = 0.0;
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
-    //    }
-    //    sqVi = 0.0;
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      sqVi += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
-    //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
-    //    }
-    //    cout << "sqVi after: " << sqVi << endl;
-    //
-    //      //perturb:
-    //    delta = V_i[0];
-    //    rho_i = V_i[0]+V_i[1]+delta;
-    //    rVi = 0.0;
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
-    //    }
-    //    sqVj = 0.0;
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      sqVj += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
-    //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
-    //    }
-    //    cout << "FD: " << (sqVj-sqVi)/delta << endl;
-    //    cout << "analytic: " << -2*sqVi/(rho_i-delta) << endl;
-    //    cout << "V0: " << V_i[0] << endl;
-    //    cout << "V1: " << V_i[1] << endl;
-    //    cout << "rho_i: " << rho_i << endl;
-    //    cout << "delta: " << delta << endl;
-    //    cout << "diff: " << sqVj-sqVi << endl;
-    //    cin.get();
-
-
-
-
-    // Derivatives of aij
-    //if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) {
-    //  if (atl >= fabs(ProjVel_i)) {
-    //    for (iVar = 0; iVar < nVar; iVar++) {
-    //      daL[iVar] = fact*dHnL[iVar];
-    //      daR[iVar] = fact*dHnR[iVar];
-    //    }
-    //  } else {
-    //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    //      daL[iSpecies] = atl*atl/(rho_i*fabs(ProjVel_i))
-    //                    + 2*atl/fabs(ProjVel_i)*fact*dHnL[iSpecies];
-    //      daR[iSpecies] = 2*atl/fabs(ProjVel_i)*fact*dHnR[iSpecies];
-    //    }
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      daL[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_i)*ProjVel_i)
-    //                          + 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+iDim];
-    //       daR[nSpecies+iDim] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+iDim];
-    //    }
-    //    daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim];
-    //    daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim];
-    //    daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim+1];
-    //    daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim+1];
-    //  }
-    //} else {
-    //  if (atl >= fabs(ProjVel_j)) {
-    //    for (iVar = 0; iVar < nVar; iVar++) {
-    //      daL[iVar] = fact*dHnL[iVar];
-    //      daR[iVar] = fact*dHnR[iVar];
-    //    }
-    //  } else {
-    //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    //      daR[iSpecies] = atl*atl/(rho_j*fabs(ProjVel_j))
-    //                    + 2*atl/fabs(ProjVel_j)*fact*dHnR[iSpecies];
-    //     daL[iSpecies] = 2*atl/fabs(ProjVel_j)*fact*dHnL[iSpecies];
-    //    }
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      daR[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_j)*ProjVel_j)
-    //                         + 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+iDim];
-    //      daL[nSpecies+iDim] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+iDim];
-    //    }
-    //    daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim];
-    //    daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim];
-    //    daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim+1];
-    //    daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim+1];
-    //  }
-    // }
-
-    //    cout << "atl: " << atl << endl;
-    //    cout << "ProjVel_i: " << ProjVel_i << endl;
-    //    cout << "term1: " << atl*atl/(rho_i*fabs(ProjVel_i)) << endl;
-    //    cout << "term2: " << endl;
-    //    for (iVar = 0; iVar < nVar; iVar++)
-    //      cout << 2*atl/fabs(ProjVel_i)*fact*dHnL[iVar] << endl;
-    //    cout << "area: " << Area << endl;
-    //    cout << "daL: " << endl;
-    //    for (iVar = 0; iVar < nVar; iVar++) {
-    //      cout << daL[iVar] << endl;
-    //    }
-    //    cin.get();
-
-    /*--- Derivatives of advection speed, mL & mR ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      dmLdL[iSpecies] = -ProjVel_i/(rho_i*aij) - ProjVel_i/(aij*aij)*daL[iSpecies];
-      dmRdR[iSpecies] = -ProjVel_j/(rho_j*aij) - ProjVel_j/(aij*aij)*daR[iSpecies];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
-      dmLdL[nSpecies+iDim] = UnitNormal[iDim]/(rho_i*aij) - ProjVel_i/(aij*aij)*daL[nSpecies+iDim];
-      dmRdR[nSpecies+iDim] = UnitNormal[iDim]/(rho_j*aij) - ProjVel_j/(aij*aij)*daR[nSpecies+iDim];
-    }
-    dmLdL[nSpecies+nDim]   = -ProjVel_i/(aij*aij)*daL[nSpecies+nDim];
-    dmRdR[nSpecies+nDim]   = -ProjVel_j/(aij*aij)*daR[nSpecies+nDim];
-    dmLdL[nSpecies+nDim+1] = -ProjVel_i/(aij*aij)*daL[nSpecies+nDim+1];
-    dmRdR[nSpecies+nDim+1] = -ProjVel_j/(aij*aij)*daR[nSpecies+nDim+1];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      dmLdR[iVar] = -ProjVel_i/(aij*aij)*daR[iVar];
-      dmRdL[iVar] = -ProjVel_j/(aij*aij)*daL[iVar];
-    }
-
-    /*--- Derivatives of numerical advection, mLP & mRM ---*/
-    if (fabs(mL) <= 1.0) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dmLPdL[iVar] = 0.5*(mL+1)*dmLdL[iVar];
-        dmLPdR[iVar] = 0.5*(mL+1)*dmLdR[iVar];
-      }
-    } else {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dmLPdL[iVar] = 0.5*(dmLdL[iVar] + mL/fabs(mL)*dmLdL[iVar]);
-        dmLPdR[iVar] = 0.5*(dmLdR[iVar] + mL/fabs(mL)*dmLdR[iVar]);
-      }
-    }
-    if (fabs(mR) <= 1.0) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dmRMdR[iVar] = -0.5*(mR-1)*dmRdR[iVar];
-        dmRMdL[iVar] = -0.5*(mR-1)*dmRdL[iVar];
-      }
-    } else {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dmRMdR[iVar] = 0.5*(dmRdR[iVar] - mR/fabs(mR)*dmRdR[iVar]);
-        dmRMdL[iVar] = 0.5*(dmRdL[iVar] - mR/fabs(mR)*dmRdL[iVar]);
-      }
-    }
-
-    /*--- Derivatives of numerical advection, mbLP & mbRM ---*/
-    if (mF >= 0) {
-      dmbLPdL[iVar] = dmLPdL[iVar] + dmRMdL[iVar]*((1-w)*(1+fR)-fL);
-      dmbLPdR[iVar] = dmLPdR[iVar] + dmRMdR[iVar]*((1-w)*(1+fR)-fL);
-      dmbRMdR[iVar] = dmRMdR[iVar]*w*(1+fR);
-      dmbRMdL[iVar] = dmRMdL[iVar]*w*(1+fR);
-    } else {
-      dmbLPdL[iVar] = dmLPdL[iVar]*w*(1+fL);
-      dmbLPdR[iVar] = dmLPdR[iVar]*w*(1+fL);
-      dmbRMdR[iVar] = dmRMdR[iVar] + dmLPdR[iVar]*((1-w)*(1+fL)+fL-fR);
-      dmbRMdL[iVar] = dmRMdL[iVar] + dmLPdL[iVar]*((1-w)*(1+fL)+fL-fR);
-    }
-
-    /*--- Derivatives of pressure function ---*/
-    if (fabs(mL) <= 1.0) {
-      fact = 0.5*(mL+1)*(2-mL) - 0.25*(mL+1)*(mL+1)
-          + alpha*(mL*mL-1)*(mL*mL-1) + 4*alpha*mL*mL*(mL*mL-1);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dpLPdL[iVar] = dPdU_i[iVar]*pLP/P_i + P_i*fact*dmLdL[iVar];
-        dpLPdR[iVar] = P_i*fact*dmLdR[iVar];
-      }
-    } else {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dpLPdL[iVar] = dPdU_i[iVar] * 0.5*(mL+fabs(mL))/mL;
-        dpLPdR[iVar] = 0.0;
-      }
-    }
-    if (fabs(mR) <= 1.0) {
-      fact = 0.5*(mR-1)*(2+mR) + 0.25*(mR-1)*(mR-1)
-          - alpha*(mR*mR-1)*(mR*mR-1) - 4*alpha*mR*mR*(mR*mR-1);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dpRMdR[iVar] = dPdU_j[iVar]*pRM/P_j + P_j*fact*dmRdR[iVar];
-        dpRMdL[iVar] = P_j*fact*dmRdL[iVar];
-      }
-    } else {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        dpRMdR[iVar] = dPdU_j[iVar] * 0.5*(mR+fabs(mR))/mR;
-        dpRMdL[iVar] = 0.0;
-      }
-    }
-
-    /*--- L Jacobian ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] += (dmbLPdL[jVar]*FcL[iVar] + dmbRMdL[jVar]*FcR[iVar])*aij*Area;
-        val_Jacobian_i[iVar][jVar] += (mbLP*FcL[iVar] + mbRM*FcR[iVar])*daL[jVar]*Area;
-      }
-      val_Jacobian_i[iVar][iVar] += mbLP*aij*Area;
-      val_Jacobian_i[nSpecies+nDim][iVar] += mbLP*aij*dPdU_i[iVar]*Area;
-
-      // pressure terms
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_i[nSpecies+iDim][iVar] += dpLPdL[iVar]*UnitNormal[iDim]*Area;
-        val_Jacobian_i[nSpecies+iDim][iVar] += dpRMdL[iVar]*UnitNormal[iDim]*Area;
-      }
-    }
-    /*--- R Jacobian ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_j[iVar][jVar] += (dmbLPdR[jVar]*FcL[iVar] + dmbRMdR[jVar]*FcR[iVar])*aij*Area;
-        val_Jacobian_j[iVar][jVar] += (mbLP*FcL[iVar] + mbRM*FcR[iVar])*daR[jVar]*Area;
-      }
-      val_Jacobian_j[iVar][iVar] += mbRM*aij*Area;
-      val_Jacobian_j[nSpecies+nDim][iVar] += mbRM*aij*dPdU_j[iVar]*Area;
-
-      // pressure terms
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_j[nSpecies+iDim][iVar] += dpLPdR[iVar]*UnitNormal[iDim]*Area;
-        val_Jacobian_j[nSpecies+iDim][iVar] += dpRMdR[iVar]*UnitNormal[iDim]*Area;
-      }
-    }
-  }
+//  if (implicit) //{
+//
+//    /*--- Initialize the Jacobians ---*/
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_i[iVar][jVar] = 0.0;
+//        val_Jacobian_j[iVar][jVar] = 0.0;
+//      }
+//    }
+//
+//    /*--- Derivatives of the interface speed of sound, aij ---*/
+//    // Derivatives of Hnorm
+//    //fact = 0.5*sqrt(2*(gam-1.0)/((gam+1.0)*Hnorm));
+//    //for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//    //  dHnL[iSpecies] = 0.5*(dPdU_i[iSpecies] /*+ sqVi/rho_i*/);
+//    //  dHnR[iSpecies] = 0.5*(dPdU_j[iSpecies] /*+ sqVj/rho_j*/);
+//    //}
+//    //for (iDim = 0; iDim < nDim; iDim++) {
+//    //	dV2L = 0.0;
+//    //  dV2R = 0.0;
+//    //  for (jDim = 0; jDim < nDim; jDim++) {
+//    //    dV2L += 2.0/rho_i*(u_i[jDim]-ProjVel_i*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
+//    //    dV2R += 2.0/rho_j*(u_j[jDim]-ProjVel_j*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
+//    //  }
+//    //  dV2L += 2.0/rho_i*(u_i[iDim]-ProjVel_i*UnitNormal[iDim] - sqVi);
+//    //  dV2R += 2.0/rho_j*(u_j[iDim]-ProjVel_j*UnitNormal[iDim] - sqVj);
+//    //  dHnL[nSpecies+iDim] = 0.5*(dPdU_i[nSpecies+iDim] /*- 0.5*(dV2L)*/);
+//    //  dHnR[nSpecies+iDim] = 0.5*(dPdU_j[nSpecies+iDim] /*- 0.5*(dV2R)*/);
+//    //}
+//    //dHnL[nSpecies+nDim]   = 0.5*(1.0+dPdU_i[nSpecies+nDim]);
+//    //dHnR[nSpecies+nDim]   = 0.5*(1.0+dPdU_j[nSpecies+nDim]);
+//    //dHnL[nSpecies+nDim+1] = 0.5*dPdU_i[nSpecies+nDim+1];
+//    //dHnR[nSpecies+nDim+1] = 0.5*dPdU_j[nSpecies+nDim+1];
+//
+//    //    //////////////////
+//    //    //debug:
+//    //    cout << "sqVi before: " << sqVi << endl;
+//    //    //check sqV routine w/ conserved:
+//    //    double rVi, delta;
+//    //    rVi = 0.0;
+//    //    for (iDim = 0; iDim < nDim; iDim++) {
+//    //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
+//    //    }
+//    //    sqVi = 0.0;
+//    //    for (iDim = 0; iDim < nDim; iDim++) {
+//    //      sqVi += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
+//    //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
+//    //    }
+//    //    cout << "sqVi after: " << sqVi << endl;
+//    //
+//    //      //perturb:
+//    //    delta = V_i[0];
+//    //    rho_i = V_i[0]+V_i[1]+delta;
+//    //    rVi = 0.0;
+//    //    for (iDim = 0; iDim < nDim; iDim++) {
+//    //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
+//    //    }
+//    //    sqVj = 0.0;
+//    //    for (iDim = 0; iDim < nDim; iDim++) {
+//    //      sqVj += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
+//    //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
+//    //    }
+//    //    cout << "FD: " << (sqVj-sqVi)/delta << endl;
+//    //    cout << "analytic: " << -2*sqVi/(rho_i-delta) << endl;
+//    //    cout << "V0: " << V_i[0] << endl;
+//    //    cout << "V1: " << V_i[1] << endl;
+//    //    cout << "rho_i: " << rho_i << endl;
+//    //    cout << "delta: " << delta << endl;
+//    //    cout << "diff: " << sqVj-sqVi << endl;
+//    //    cin.get();
+//
+//
+//
+//
+//    // Derivatives of aij
+//    //if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) {
+//    //  if (atl >= fabs(ProjVel_i)) {
+//    //    for (iVar = 0; iVar < nVar; iVar++) {
+//    //      daL[iVar] = fact*dHnL[iVar];
+//    //      daR[iVar] = fact*dHnR[iVar];
+//    //    }
+//    //  } else {
+//    //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    //      daL[iSpecies] = atl*atl/(rho_i*fabs(ProjVel_i))
+//    //                    + 2*atl/fabs(ProjVel_i)*fact*dHnL[iSpecies];
+//    //      daR[iSpecies] = 2*atl/fabs(ProjVel_i)*fact*dHnR[iSpecies];
+//    //    }
+//    //    for (iDim = 0; iDim < nDim; iDim++) {
+//    //      daL[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_i)*ProjVel_i)
+//    //                          + 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+iDim];
+//    //       daR[nSpecies+iDim] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+iDim];
+//    //    }
+//    //    daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim];
+//    //    daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim];
+//    //    daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim+1];
+//    //    daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim+1];
+//    //  }
+//    //} else {
+//    //  if (atl >= fabs(ProjVel_j)) {
+//    //    for (iVar = 0; iVar < nVar; iVar++) {
+//    //      daL[iVar] = fact*dHnL[iVar];
+//    //      daR[iVar] = fact*dHnR[iVar];
+//    //    }
+//    //  } else {
+//    //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    //      daR[iSpecies] = atl*atl/(rho_j*fabs(ProjVel_j))
+//    //                    + 2*atl/fabs(ProjVel_j)*fact*dHnR[iSpecies];
+//    //     daL[iSpecies] = 2*atl/fabs(ProjVel_j)*fact*dHnL[iSpecies];
+//    //    }
+//    //    for (iDim = 0; iDim < nDim; iDim++) {
+//    //      daR[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_j)*ProjVel_j)
+//    //                         + 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+iDim];
+//    //      daL[nSpecies+iDim] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+iDim];
+//    //    }
+//    //    daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim];
+//    //    daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim];
+//    //    daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim+1];
+//    //    daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim+1];
+//    //  }
+//    // }
+//
+//    //    cout << "atl: " << atl << endl;
+//    //    cout << "ProjVel_i: " << ProjVel_i << endl;
+//    //    cout << "term1: " << atl*atl/(rho_i*fabs(ProjVel_i)) << endl;
+//    //    cout << "term2: " << endl;
+//    //    for (iVar = 0; iVar < nVar; iVar++)
+//    //      cout << 2*atl/fabs(ProjVel_i)*fact*dHnL[iVar] << endl;
+//    //    cout << "area: " << Area << endl;
+//    //    cout << "daL: " << endl;
+//    //    for (iVar = 0; iVar < nVar; iVar++) {
+//    //      cout << daL[iVar] << endl;
+//    //    }
+//    //    cin.get();
+//
+//    /*--- Derivatives of advection speed, mL & mR ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      dmLdL[iSpecies] = -ProjVel_i/(rho_i*aij) - ProjVel_i/(aij*aij)*daL[iSpecies];
+//      dmRdR[iSpecies] = -ProjVel_j/(rho_j*aij) - ProjVel_j/(aij*aij)*daR[iSpecies];
+//    }
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      dmLdL[nSpecies+iDim] = UnitNormal[iDim]/(rho_i*aij) - ProjVel_i/(aij*aij)*daL[nSpecies+iDim];
+//      dmRdR[nSpecies+iDim] = UnitNormal[iDim]/(rho_j*aij) - ProjVel_j/(aij*aij)*daR[nSpecies+iDim];
+//    }
+//    dmLdL[nSpecies+nDim]   = -ProjVel_i/(aij*aij)*daL[nSpecies+nDim];
+//    dmRdR[nSpecies+nDim]   = -ProjVel_j/(aij*aij)*daR[nSpecies+nDim];
+//    dmLdL[nSpecies+nDim+1] = -ProjVel_i/(aij*aij)*daL[nSpecies+nDim+1];
+//    dmRdR[nSpecies+nDim+1] = -ProjVel_j/(aij*aij)*daR[nSpecies+nDim+1];
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      dmLdR[iVar] = -ProjVel_i/(aij*aij)*daR[iVar];
+//      dmRdL[iVar] = -ProjVel_j/(aij*aij)*daL[iVar];
+//    }
+//
+//    /*--- Derivatives of numerical advection, mLP & mRM ---*/
+//    if (fabs(mL) <= 1.0) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dmLPdL[iVar] = 0.5*(mL+1)*dmLdL[iVar];
+//        dmLPdR[iVar] = 0.5*(mL+1)*dmLdR[iVar];
+//      }
+//    } else {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dmLPdL[iVar] = 0.5*(dmLdL[iVar] + mL/fabs(mL)*dmLdL[iVar]);
+//        dmLPdR[iVar] = 0.5*(dmLdR[iVar] + mL/fabs(mL)*dmLdR[iVar]);
+//      }
+//    }
+//    if (fabs(mR) <= 1.0) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dmRMdR[iVar] = -0.5*(mR-1)*dmRdR[iVar];
+//        dmRMdL[iVar] = -0.5*(mR-1)*dmRdL[iVar];
+//      }
+//    } else {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dmRMdR[iVar] = 0.5*(dmRdR[iVar] - mR/fabs(mR)*dmRdR[iVar]);
+//        dmRMdL[iVar] = 0.5*(dmRdL[iVar] - mR/fabs(mR)*dmRdL[iVar]);
+//      }
+//    }
+//
+//    /*--- Derivatives of numerical advection, mbLP & mbRM ---*/
+//    if (mF >= 0) {
+//      dmbLPdL[iVar] = dmLPdL[iVar] + dmRMdL[iVar]*((1-w)*(1+fR)-fL);
+//      dmbLPdR[iVar] = dmLPdR[iVar] + dmRMdR[iVar]*((1-w)*(1+fR)-fL);
+//      dmbRMdR[iVar] = dmRMdR[iVar]*w*(1+fR);
+//      dmbRMdL[iVar] = dmRMdL[iVar]*w*(1+fR);
+//    } else {
+//      dmbLPdL[iVar] = dmLPdL[iVar]*w*(1+fL);
+//      dmbLPdR[iVar] = dmLPdR[iVar]*w*(1+fL);
+//      dmbRMdR[iVar] = dmRMdR[iVar] + dmLPdR[iVar]*((1-w)*(1+fL)+fL-fR);
+//      dmbRMdL[iVar] = dmRMdL[iVar] + dmLPdL[iVar]*((1-w)*(1+fL)+fL-fR);
+//    }
+//
+//    /*--- Derivatives of pressure function ---*/
+//    if (fabs(mL) <= 1.0) {
+//      fact = 0.5*(mL+1)*(2-mL) - 0.25*(mL+1)*(mL+1)
+//          + alpha*(mL*mL-1)*(mL*mL-1) + 4*alpha*mL*mL*(mL*mL-1);
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dpLPdL[iVar] = dPdU_i[iVar]*pLP/P_i + P_i*fact*dmLdL[iVar];
+//        dpLPdR[iVar] = P_i*fact*dmLdR[iVar];
+//      }
+//    } else {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dpLPdL[iVar] = dPdU_i[iVar] * 0.5*(mL+fabs(mL))/mL;
+//        dpLPdR[iVar] = 0.0;
+//      }
+//    }
+//    if (fabs(mR) <= 1.0) {
+//      fact = 0.5*(mR-1)*(2+mR) + 0.25*(mR-1)*(mR-1)
+//          - alpha*(mR*mR-1)*(mR*mR-1) - 4*alpha*mR*mR*(mR*mR-1);
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dpRMdR[iVar] = dPdU_j[iVar]*pRM/P_j + P_j*fact*dmRdR[iVar];
+//        dpRMdL[iVar] = P_j*fact*dmRdL[iVar];
+//      }
+//    } else {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dpRMdR[iVar] = dPdU_j[iVar] * 0.5*(mR+fabs(mR))/mR;
+//        dpRMdL[iVar] = 0.0;
+//      }
+//    }
+//
+//    /*--- L Jacobian ---*/
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_i[iVar][jVar] += (dmbLPdL[jVar]*FcL[iVar] + dmbRMdL[jVar]*FcR[iVar])*aij*Area;
+//        val_Jacobian_i[iVar][jVar] += (mbLP*FcL[iVar] + mbRM*FcR[iVar])*daL[jVar]*Area;
+//      }
+//      val_Jacobian_i[iVar][iVar] += mbLP*aij*Area;
+//      val_Jacobian_i[nSpecies+nDim][iVar] += mbLP*aij*dPdU_i[iVar]*Area;
+//
+//      // pressure terms
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        val_Jacobian_i[nSpecies+iDim][iVar] += dpLPdL[iVar]*UnitNormal[iDim]*Area;
+//        val_Jacobian_i[nSpecies+iDim][iVar] += dpRMdL[iVar]*UnitNormal[iDim]*Area;
+//      }
+//    }
+//    /*--- R Jacobian ---*/
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_j[iVar][jVar] += (dmbLPdR[jVar]*FcL[iVar] + dmbRMdR[jVar]*FcR[iVar])*aij*Area;
+//        val_Jacobian_j[iVar][jVar] += (mbLP*FcL[iVar] + mbRM*FcR[iVar])*daR[jVar]*Area;
+//      }
+//      val_Jacobian_j[iVar][iVar] += mbRM*aij*Area;
+//      val_Jacobian_j[nSpecies+nDim][iVar] += mbRM*aij*dPdU_j[iVar]*Area;
+//
+//      // pressure terms
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        val_Jacobian_j[nSpecies+iDim][iVar] += dpLPdR[iVar]*UnitNormal[iDim]*Area;
+//        val_Jacobian_j[nSpecies+iDim][iVar] += dpRMdR[iVar]*UnitNormal[iDim]*Area;
+//      }
+//    }
+//  }
 }

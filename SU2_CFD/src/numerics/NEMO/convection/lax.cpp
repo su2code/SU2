@@ -37,7 +37,6 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
 
   /*--- Read configuration parameters ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar         = val_nVar;
@@ -54,18 +53,17 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   Diff_U   = new su2double[nVar];
   MeanU    = new su2double[nVar];
   MeanV    = new su2double[nPrimVar];
-  MeanEve  = new su2double[nSpecies];
   MeandPdU = new su2double[nVar];
   ProjFlux = new su2double [nVar];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+  mean_eves.resize(nSpecies,0.0);
+
 }
 
 CCentLax_NEMO::~CCentLax_NEMO(void) {
   delete [] Diff_U;
   delete [] MeanU;
   delete [] MeanV;
-  delete [] MeanEve;
   delete [] MeandPdU;
   delete [] ProjFlux;
 }
@@ -101,10 +99,10 @@ void CCentLax_NEMO::ComputeResidual(su2double *val_resconv,
     MeanU[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
   for (iVar = 0; iVar < nPrimVar; iVar++)
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    MeanEve[iSpecies] = variable->CalcEve(config, MeanV[TVE_INDEX], iSpecies);
 
-  variable->CalcdPdU(MeanV, MeanEve, config, MeandPdU);
+  vector<su2double> mean_eves = fluidmodel->GetSpeciesEve(MeanV[TVE_INDEX]); // cat: just MeanEve 
+
+  fluidmodel->GetdPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
