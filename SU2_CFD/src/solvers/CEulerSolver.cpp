@@ -3149,7 +3149,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Limiter_j = turbNodes->GetLimiter(jPoint);
         }
 
-        const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
+        su2double Kappa = config->GetMUSCL_Kappa();
 
         const su2double T_ij = 0.5*(tke_j - tke_i);
 
@@ -3164,10 +3164,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
             case VAN_ALBADA_EDGE:
+              Kappa = 0.0;
               Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
               Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
               break;
             case PIPERNO:
+              Kappa = 2.0/3.0;
               Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
               Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
               break;
@@ -3213,7 +3215,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
+      su2double Kappa = config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
@@ -3230,10 +3232,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
             case VAN_ALBADA_EDGE:
+              Kappa = 0.0;
               Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
               Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
               break;
             case PIPERNO:
+              Kappa = 2.0/3.0;
               Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
               Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;

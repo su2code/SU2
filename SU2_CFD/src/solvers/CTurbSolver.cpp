@@ -177,7 +177,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         FlowLim_j = flowNodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
+      su2double Kappa = config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
 
@@ -192,12 +192,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
 
         if (limiter) {
-          switch(config->GetKind_SlopeLimit_Flow()) {
+          switch(config->GetKind_SlopeLimit_Turb()) {
             case VAN_ALBADA_EDGE:
+              Kappa = 0.0;
               FlowLim_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
               FlowLim_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
               break;
             case PIPERNO:
+              Kappa = 2.0/3.0;
               FlowLim_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
               FlowLim_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
@@ -241,7 +243,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
 
         if (limiter) {
-          switch(config->GetKind_SlopeLimit_Flow()) {
+          switch(config->GetKind_SlopeLimit_Turb()) {
             case VAN_ALBADA_EDGE:
               TurbLim_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
               TurbLim_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
