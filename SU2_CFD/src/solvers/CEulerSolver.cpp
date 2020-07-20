@@ -3055,10 +3055,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
-  const bool piperno          = (config->GetKind_SlopeLimit_Flow() == PIPERNO);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+
+  const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
+                         (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;

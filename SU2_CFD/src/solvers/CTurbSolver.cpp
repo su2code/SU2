@@ -97,7 +97,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
-  const bool piperno = (config->GetKind_SlopeLimit_Turb() == PIPERNO);
+  const bool piperno = (config->GetKind_SlopeLimit_Flow() == PIPERNO) || (config->GetKind_SlopeLimit_Turb() == PIPERNO);
   const bool sst = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
