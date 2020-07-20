@@ -102,7 +102,7 @@ namespace LimiterHelpers
     //   return phi;
     // }
     else {
-      return (proj >= delta) ? su2double(delta*(3.0*pow(proj, 2.0) - 6.0*proj*delta + 19.0*pow(delta, 2.0)) 
+      return (fabs(proj) >= fabs(delta)) ? su2double(delta*(3.0*pow(proj, 2.0) - 6.0*proj*delta + 19.0*pow(delta, 2.0)) 
                                        / (pow(proj, 3.0) - 3.0*proj*pow(delta, 2.0) + 18.0*pow(delta, 3.0)))
                              : su2double(0.5*proj*(3.0*pow(proj, 3.0) - 7.0*pow(proj, 2.0)*delta + 3.0*proj*pow(delta, 2.0) + 3.0*pow(delta, 3.0))
                                        / (pow(delta, 4.0) + epsilon()));
