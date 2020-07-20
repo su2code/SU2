@@ -99,8 +99,8 @@ public:
   }
 
 #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-  /*--- These are not very nice but without them it would not be possible
-   * to assign builtin types to Arrays of active types. ---*/
+  /*--- These are not very nice but without them it would not be
+   * possible to assign literals to Arrays of active types. ---*/
   template<class U = Scalar, su2enable_if<std::is_same<U,su2double>::value> = 0>
   FORCEINLINE Array(passivedouble x) { bcast(x); }
   template<class U = Scalar, su2enable_if<std::is_same<U,su2double>::value> = 0>
@@ -154,6 +154,12 @@ namespace SizeTag {
   struct SIXTEEN {};
 }
 
+/*--- Constants to implement abs and unary minus. ---*/
+/*--- abs forces the sign bit to 0 ("x" & 0b0111...). ---*/
+constexpr auto abs_mask_d = 0x7FFFFFFFFFFFFFFFL;
+/*--- negation flips the sign bit ("x" ^ 0b1000...). ---*/
+constexpr auto neg_mask_d = 0x8000000000000000L;
+
 #ifdef __SSE2__
 #include "x86intrin.h"
 /*!
@@ -164,10 +170,8 @@ namespace SizeTag {
 #define REGISTER_T __m128d
 #define SIZE_TAG SizeTag::TWO()
 
-/*--- abs forces the sign bit to 0 (& 0b0111...). ---*/
-static const __m128d abs_mask_2d = _mm_castsi128_pd(_mm_set1_epi64x(0x7FFFFFFFFFFFFFFFL));
-/*--- negation flips the sign bit (^ 0b1000...). ---*/
-static const __m128d neg_mask_2d = _mm_castsi128_pd(_mm_set1_epi64x(0x8000000000000000L));
+static const __m128d abs_mask_2d = _mm_castsi128_pd(_mm_set1_epi64x(abs_mask_d));
+static const __m128d neg_mask_2d = _mm_castsi128_pd(_mm_set1_epi64x(neg_mask_d));
 
 FORCEINLINE __m128d set1_p(SizeTag::TWO, double p) { return _mm_set1_pd(p); }
 FORCEINLINE __m128d load_p(SizeTag::TWO, const double* p) { return _mm_load_pd(p); }
@@ -203,8 +207,8 @@ FORCEINLINE __m128d neg_p(__m128d x) { return _mm_xor_pd(x, neg_mask_2d); }
 #define REGISTER_T __m256d
 #define SIZE_TAG SizeTag::FOUR()
 
-static const __m256d abs_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FFFFFFFFFFFFFFFL));
-static const __m256d neg_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(0x8000000000000000L));
+static const __m256d abs_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(abs_mask_d));
+static const __m256d neg_mask_4d = _mm256_castsi256_pd(_mm256_set1_epi64x(neg_mask_d));
 
 FORCEINLINE __m256d set1_p(SizeTag::FOUR, double p) { return _mm256_set1_pd(p); }
 FORCEINLINE __m256d load_p(SizeTag::FOUR, const double* p) { return _mm256_load_pd(p); }
@@ -237,8 +241,8 @@ FORCEINLINE __m256d neg_p(__m256d x) { return _mm256_xor_pd(x, neg_mask_4d); }
 #define REGISTER_T __m512d
 #define SIZE_TAG SizeTag::EIGHT()
 
-static const __m512d abs_mask_8d = _mm512_castsi512_pd(_mm512_set1_epi64(0x7FFFFFFFFFFFFFFFL));
-static const __m512d neg_mask_8d = _mm512_castsi512_pd(_mm512_set1_epi64(0x8000000000000000L));
+static const __m512d abs_mask_8d = _mm512_castsi512_pd(_mm512_set1_epi64(abs_mask_d));
+static const __m512d neg_mask_8d = _mm512_castsi512_pd(_mm512_set1_epi64(neg_mask_d));
 
 FORCEINLINE __m512d set1_p(SizeTag::EIGHT, double p) { return _mm512_set1_pd(p); }
 FORCEINLINE __m512d load_p(SizeTag::EIGHT, const double* p) { return _mm512_load_pd(p); }

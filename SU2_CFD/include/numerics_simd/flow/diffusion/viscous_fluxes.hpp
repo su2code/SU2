@@ -48,6 +48,8 @@ template<size_t NDIM>
 class CNoViscousFlux : public CNumericsSIMD {
 protected:
   enum: size_t {nDim = NDIM};
+  enum: size_t {nPrimVar = 0};
+  static constexpr bool IsViscous = false;
 
   template<class... Ts>
   CNoViscousFlux(Ts&...) {}
@@ -68,6 +70,9 @@ template<size_t NDIM>
 class CCompressibleViscousFlux : public CNumericsSIMD {
 protected:
   enum: size_t {nDim = NDIM};
+  enum: size_t {nPrimVar = nDim+7};
+  enum: size_t {nPrimVarGrad = nDim+1};
+  static constexpr bool IsViscous = true;
 
   const su2double gamma;
   const su2double gasConst;
@@ -77,6 +82,9 @@ protected:
   const bool correct;
   const bool useSA_QCR;
 
+  /*!
+   * \brief Constructor, initialize constants and booleans.
+   */
   template<class... Ts>
   CCompressibleViscousFlux(const CConfig& config, int iMesh, Ts&...) :
     gamma(config.GetGamma()),
@@ -95,22 +103,20 @@ protected:
   FORCEINLINE void updateFlux(Int iEdge,
                               Int iPoint,
                               Int jPoint,
-                              const CConfig& config,
-                              const CGeometry& geometry,
+                              const CPair<CCompressiblePrimitives<nDim,nPrimVar> >& V,
+                              const CCompressiblePrimitives<nDim,nPrimVar>& avgV,
                               const CVariable& solution_,
+                              VectorDbl<nDim>& vector_ij,
+                              const CGeometry& geometry,
+                              const CConfig& config,
                               Double area,
                               const VectorDbl<nDim>& unitNormal,
-                              VectorDbl<nDim> vector_ij,
                               bool implicit,
                               VectorDbl<nVar>& flux,
                               MatrixDbl<nVar>& jac_i,
                               MatrixDbl<nVar>& jac_j) const {
 
-    constexpr size_t nPrimVar = nDim+7;
-    constexpr size_t nPrimVarGrad = nDim+1;
-
     const auto& solution = static_cast<const CNSVariable&>(solution_);
-    const auto& primitives = solution.GetPrimitive();
     const auto& gradient = solution.GetGradient_Primitive();
 
     /*--- (Re)compute some geometric properties. ---*/
@@ -123,17 +129,6 @@ protected:
     /*--- Handle zero distance without "ifs" by making it large. ---*/
     Double mask = dist2_ij < EPS*EPS;
     dist2_ij += mask / (EPS*EPS);
-
-    /*--- Get primitive variables and average them. ---*/
-
-    CPair<CCompressiblePrimitives<nDim,nPrimVar> > V;
-    V.i.all = gatherVariables<nPrimVar>(iPoint, primitives);
-    V.j.all = gatherVariables<nPrimVar>(jPoint, primitives);
-
-    CCompressiblePrimitives<nDim,nPrimVar> avgV;
-    for (size_t iVar = 0; iVar < nPrimVar; ++iVar) {
-      avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
-    }
 
     /*--- Compute the corrected mean gradient. ---*/
 
@@ -205,5 +200,52 @@ protected:
       jac_i(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
       jac_j(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
     }
+  }
+
+  /*!
+   * \overload Fetches primitives if not provided yet.
+   */
+  template<class... Ts>
+  FORCEINLINE void updateFlux(Int iEdge,
+                              Int iPoint,
+                              Int jPoint,
+                              const CVariable& solution_,
+                              Ts&... args) const {
+    /*--- Get primitive variables and average them. ---*/
+
+    const auto& solution = static_cast<const CNSVariable&>(solution_);
+
+    CPair<CCompressiblePrimitives<nDim,nPrimVar> > V;
+    V.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
+    V.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
+
+    CCompressiblePrimitives<nDim,nPrimVar> avgV;
+    for (size_t iVar = 0; iVar < nPrimVar; ++iVar) {
+      avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
+    }
+
+    /*--- Continue calculation. ---*/
+
+    updateFlux(iEdge, iPoint, jPoint, V, avgV, solution_, args...);
+  }
+
+  /*!
+   * \overload Compute the i-j vector if not provided yet.
+   */
+  template<class... Ts>
+  FORCEINLINE void updateFlux(Int iEdge,
+                              Int iPoint,
+                              Int jPoint,
+                              const CPair<CCompressiblePrimitives<nDim,nPrimVar> >& V,
+                              const CCompressiblePrimitives<nDim,nPrimVar>& avgV,
+                              const CVariable& solution_,
+                              const CGeometry& geometry,
+                              Ts&... args) const {
+
+    auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
+
+    /*--- Continue calculation. ---*/
+
+    updateFlux(iEdge, iPoint, jPoint, V, avgV, solution_, vector_ij, geometry, args...);
   }
 };

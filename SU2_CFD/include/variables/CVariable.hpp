@@ -1007,6 +1007,7 @@ public:
    * \return Value of the spectral radius.
    */
   inline su2double GetLambda(unsigned long iPoint) const { return Lambda(iPoint); }
+  inline const VectorType& GetLambda() const { return Lambda; }
 
   /*!
    * \brief Get the value of the spectral radius.
@@ -1106,6 +1107,7 @@ public:
    * \return Value of the undivided laplacian vector.
    */
   inline su2double GetUndivided_Laplacian(unsigned long iPoint, unsigned long iVar) const { return Undivided_Laplacian(iPoint, iVar); }
+  inline const MatrixType& GetUndivided_Laplacian() const { return Undivided_Laplacian; }
 
   /*!
    * \brief A virtual member.

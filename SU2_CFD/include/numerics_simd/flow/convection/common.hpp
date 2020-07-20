@@ -269,8 +269,8 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 /*!
  * \brief Convective projected (onto normal) flux (compressible flow).
  */
-template<size_t nDim>
-FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim>& V,
+template<size_t nDim, size_t N>
+FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim,N>& V,
                                                const CCompressibleConservatives<nDim>& U,
                                                const VectorDbl<nDim>& normal) {
   Double mdot = dot(U.momentum(), normal);
@@ -370,5 +370,27 @@ FORCEINLINE Double roeDissipation(Int iPoint,
     default:
       assert(false);
       return 1.0;
+  }
+}
+
+/*!
+ * \brief Update of a flux Jacobian due to a scalar dissipation term.
+ */
+template<class VariableType, size_t nVar>
+FORCEINLINE void scalarDissipationJacobian(const VariableType& V,
+                                           Double gamma,
+                                           Double dissipConst,
+                                           MatrixDbl<nVar>& jac) {
+  /*--- Diagonal entries. ---*/
+  for (size_t iVar = 0; iVar < nVar-1; ++iVar) {
+    jac(iVar,iVar) += dissipConst;
+  }
+  jac(nVar-1,nVar-1) += dissipConst * gamma;
+
+  /*--- N-1 columns of last row. ---*/
+  dissipConst *= gamma-1.0;
+  for (size_t iDim = 0; iDim < VariableType::nDim; ++iDim) {
+    jac(nVar-1,iDim+1) -= dissipConst * V.velocity(iDim);
+    jac(nVar-1,0) += dissipConst * pow(V.velocity(iDim), 2);
   }
 }

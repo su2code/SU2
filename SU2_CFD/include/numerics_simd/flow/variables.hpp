@@ -34,8 +34,9 @@
  * \brief Type to store compressible primitive variables and access them by name.
  * \note The default nVar assumes inviscid flow.
  */
-template<size_t nDim, size_t nVar_= nDim+4>
+template<size_t nDim_, size_t nVar_= nDim_+4>
 struct CCompressiblePrimitives {
+  enum : size_t {nDim = nDim_};
   enum : size_t {nVar = nVar_};
   VectorDbl<nVar> all;
   FORCEINLINE Double& temperature() { return all(0); }
@@ -62,8 +63,9 @@ struct CCompressiblePrimitives {
 /*!
  * \brief Type to store compressible conservative (i.e. solution) variables.
  */
-template<size_t nDim>
+template<size_t nDim_>
 struct CCompressibleConservatives {
+  enum : size_t {nDim = nDim_};
   enum : size_t {nVar = nDim+2};
   VectorDbl<nVar> all;
 
@@ -81,8 +83,8 @@ struct CCompressibleConservatives {
 /*!
  * \brief Primitive to conservative conversion.
  */
-template<size_t nDim>
-FORCEINLINE CCompressibleConservatives<nDim> compressibleConservatives(const CCompressiblePrimitives<nDim>& V) {
+template<size_t nDim, size_t N>
+FORCEINLINE CCompressibleConservatives<nDim> compressibleConservatives(const CCompressiblePrimitives<nDim,N>& V) {
   CCompressibleConservatives<nDim> U;
   U.density() = V.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {

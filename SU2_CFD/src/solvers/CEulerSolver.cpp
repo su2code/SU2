@@ -2627,6 +2627,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     SetMax_Eigenvalue(geometry, config);
     if (center_jst)
       SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(geometry, config);
+    /// TODO: Bug JST_KE also needs the sensors...
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
@@ -3012,6 +3013,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
                                        nodes->GetUndivided_Laplacian(jPoint));
       numerics->SetSensor(nodes->GetSensor(iPoint),
                           nodes->GetSensor(jPoint));
+      /// TODO: Bug JST_KE also needs the sensors...
     }
 
     /*--- Grid movement ---*/

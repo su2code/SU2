@@ -4,7 +4,7 @@
  * \note This should be the only cpp for this family of classes
  * (which are all templates). All compilation takes place here.
  * \author P. Gomes
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 
 #include "CNumericsSIMD.hpp"
 #include "flow/convection/roe.hpp"
+#include "flow/convection/centered.hpp"
 #include "flow/diffusion/viscous_fluxes.hpp"
 
 /*!
@@ -38,14 +39,28 @@ template<class ViscousDecorator>
 CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
   CNumericsSIMD* obj = nullptr;
   switch (config.GetKind_ConvNumScheme_Flow()) {
-    case SPACE_UPWIND: {
+    case SPACE_UPWIND:
       switch (config.GetKind_Upwind_Flow()) {
         case ROE:
           obj = new CRoeScheme<ViscousDecorator>(config, iMesh);
           break;
       }
       break;
-    }
+
+    case SPACE_CENTERED:
+      if (iMesh != MESH_0) {
+        obj = new CLaxScheme<ViscousDecorator>(config, iMesh);
+        break;
+      }
+      switch (config.GetKind_Centered_Flow()) {
+        case JST:
+          obj = new CJSTScheme<ViscousDecorator>(config, iMesh);
+          break;
+        case JST_KE:
+          obj = new CJSTkeScheme<ViscousDecorator>(config, iMesh);
+          break;
+      }
+      break;
   }
   return obj;
 }
