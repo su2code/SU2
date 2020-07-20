@@ -119,7 +119,7 @@ public:                                                                       \
 template<class U, class S>                                                    \
 FORCEINLINE auto FUN(const CVecExpr<U,S>& u) RETURNS( EXPR<U,S>(u.derived()) )
 
-MAKE_UNARY_FUN(operator-, negate_v, -)
+MAKE_UNARY_FUN(operator-, minus_, -)
 MAKE_UNARY_FUN(abs, abs_, math::abs)
 MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
 
