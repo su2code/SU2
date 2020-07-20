@@ -205,6 +205,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_i = FlowLim_i[iVar]*((1.0-Kappa)*Project_Grad_i + Kappa*V_ij);
           Project_Grad_j = FlowLim_j[iVar]*((1.0-Kappa)*Project_Grad_j + Kappa*V_ij);
         }
+        else {
+          Project_Grad_i = (1.0-Kappa)*Project_Grad_i + Kappa*V_ij;
+          Project_Grad_j = (1.0-Kappa)*Project_Grad_j + Kappa*V_ij;
+        }
         flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
         flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
@@ -249,6 +253,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           }
           Project_Grad_i = TurbLim_i[iVar]*((1.0-Kappa)*Project_Grad_i + Kappa*T_ij);
           Project_Grad_j = TurbLim_j[iVar]*((1.0-Kappa)*Project_Grad_j + Kappa*T_ij);
+        }
+        else {
+          Project_Grad_i = (1.0-Kappa)*Project_Grad_i + Kappa*T_ij;
+          Project_Grad_j = (1.0-Kappa)*Project_Grad_j + Kappa*T_ij;
         }
         solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
         solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;

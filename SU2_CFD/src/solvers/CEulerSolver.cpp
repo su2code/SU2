@@ -3173,6 +3173,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_i = Limiter_i[0]*((1.0-Kappa)*Project_Grad_i + Kappa*T_ij);
           Project_Grad_j = Limiter_j[0]*((1.0-Kappa)*Project_Grad_j + Kappa*T_ij);
         }
+        else {
+          Project_Grad_i = (1.0-Kappa)*Project_Grad_i + Kappa*T_ij;
+          Project_Grad_j = (1.0-Kappa)*Project_Grad_j + Kappa*T_ij;
+        }
         tke_i += Project_Grad_i;
         tke_j -= Project_Grad_j;
       }
@@ -3234,6 +3238,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           }
           Project_Grad_i = Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + Kappa*V_ij);
           Project_Grad_j = Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + Kappa*V_ij);
+        }
+        else {
+          Project_Grad_i = (1.0-Kappa)*Project_Grad_i + Kappa*V_ij;
+          Project_Grad_j = (1.0-Kappa)*Project_Grad_j + Kappa*V_ij;
         }
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
