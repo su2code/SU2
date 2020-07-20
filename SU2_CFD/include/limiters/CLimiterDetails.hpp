@@ -76,7 +76,8 @@ namespace LimiterHelpers
 
   inline su2double vanAlbadaFunction(su2double proj, su2double delta)
   {
-    return delta*(2.0*proj + delta) / (4*pow(proj, 2) + pow(delta, 2) + epsilon());
+    proj = 2.0*proj - 0.5*delta;
+    return 0.5*delta*(proj + 0.5*delta) / (pow(proj, 2) + pow(0.5*delta, 2) + epsilon());
   }
 
   inline su2double pipernoFunction(su2double proj, su2double delta)
