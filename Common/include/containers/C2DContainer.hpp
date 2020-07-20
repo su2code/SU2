@@ -350,6 +350,12 @@ public:
 #undef UNIV_ACCESSORS
 }
 
+#include <unordered_set>
+
+extern std::unordered_set<int> preaccIdx;
+extern size_t preaccCounter1;
+extern size_t preaccCounter2;
+
 /*!
  * \class C2DContainer
  * \brief A templated matrix/vector-like object.
@@ -602,8 +608,19 @@ public:
     StaticContainer ret;
     for (size_t k=0; k<N; ++k) {
       SU2_OMP_SIMD
-      for (size_t i=0; i<Size; ++i)
-        ret.data()[i][k] = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
+      for (size_t i=0; i<Size; ++i) {
+        const auto& val = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
+        if (AD::PreaccActive && val.isActive()) {
+          preaccCounter1++;
+          auto idx = val.getGradientData();
+          if (!preaccIdx.count(idx)) {
+            preaccCounter2++;
+            preaccIdx.insert(idx);
+            AD::PreaccHelper.addInput(val);
+          }
+        }
+        ret.data()[i][k] = val;
+      }
     }
     return ret;
   }

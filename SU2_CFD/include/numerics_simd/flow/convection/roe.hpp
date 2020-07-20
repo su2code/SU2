@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <unordered_set>
+extern std::unordered_set<int> preaccIdx;
 extern double preaccMem;
 
 #include "../../CNumericsSIMD.hpp"
@@ -89,6 +91,7 @@ public:
     /*--- Start preaccumulation, inputs are registered
      *    automatically in "gatherVariables". ---*/
     preaccMem -= AD::globalTape.getTapeValues().getUsedMemorySize();
+    preaccIdx.clear();
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);

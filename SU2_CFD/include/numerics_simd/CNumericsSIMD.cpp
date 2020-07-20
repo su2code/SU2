@@ -32,6 +32,7 @@
 #include "flow/diffusion/viscous_fluxes.hpp"
 
 double preaccMem;
+std::unordered_set<int> preaccIdx;
 
 /*!
  * \brief Generic factory implementation.
