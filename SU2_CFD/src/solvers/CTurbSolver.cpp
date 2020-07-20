@@ -161,8 +161,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       su2double Vector_ij[MAXNDIM] = {0.0};
       su2double Dist_ij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-        Dist_ij += pow(2.0*Vector_ij[iDim], 2.0);
+        Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
+        Dist_ij += pow(Vector_ij[iDim], 2.0);
       }
       Dist_ij = sqrt(Dist_ij);
 
@@ -183,8 +183,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        su2double Project_Grad_i = -V_ij;
+        su2double Project_Grad_j = -V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_ij[iDim]*FlowGrad_i[iVar][iDim];
@@ -202,12 +202,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               FlowLim_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
-          Project_Grad_i = FlowLim_i[iVar]*((1.0-Kappa)*Project_Grad_i + Kappa*V_ij);
-          Project_Grad_j = FlowLim_j[iVar]*((1.0-Kappa)*Project_Grad_j + Kappa*V_ij);
+          Project_Grad_i = 0.5*FlowLim_i[iVar]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+          Project_Grad_j = 0.5*FlowLim_j[iVar]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
         }
         else {
-          Project_Grad_i = (1.0-Kappa)*Project_Grad_i + Kappa*V_ij;
-          Project_Grad_j = (1.0-Kappa)*Project_Grad_j + Kappa*V_ij;
+          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
         }
         flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
         flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
@@ -232,8 +232,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         const su2double T_ij = 0.5*(Turb_j[iVar] - Turb_i[iVar]);
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        su2double Project_Grad_i = -T_ij;
+        su2double Project_Grad_j = -T_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[iVar][iDim];
@@ -251,12 +251,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               TurbLim_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
               break;
           }
-          Project_Grad_i = TurbLim_i[iVar]*((1.0-Kappa)*Project_Grad_i + Kappa*T_ij);
-          Project_Grad_j = TurbLim_j[iVar]*((1.0-Kappa)*Project_Grad_j + Kappa*T_ij);
+          Project_Grad_i = 0.5*TurbLim_i[iVar]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+          Project_Grad_j = 0.5*TurbLim_j[iVar]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
         }
         else {
-          Project_Grad_i = (1.0-Kappa)*Project_Grad_i + Kappa*T_ij;
-          Project_Grad_j = (1.0-Kappa)*Project_Grad_j + Kappa*T_ij;
+          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
         }
         solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
         solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;
