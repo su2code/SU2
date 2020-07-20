@@ -2460,7 +2460,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     }
     if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
       for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-        New_Func += solverTurb->GetRes_RMS(iVar);
+        New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
       }
     }
 
