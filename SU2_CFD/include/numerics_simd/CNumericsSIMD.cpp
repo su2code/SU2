@@ -31,6 +31,8 @@
 #include "flow/convection/roe.hpp"
 #include "flow/diffusion/viscous_fluxes.hpp"
 
+double preaccMem;
+
 /*!
  * \brief Generic factory implementation.
  */

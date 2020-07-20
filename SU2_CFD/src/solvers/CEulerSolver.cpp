@@ -3053,7 +3053,12 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
+extern double preaccMem;
+
 void CEulerSolver::EdgeFluxResidual(const CGeometry *geometry, const CConfig *config) {
+
+  preaccMem = 0.0;
+  const auto memInitial = AD::globalTape.getTapeValues().getUsedMemorySize();
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
@@ -3082,6 +3087,9 @@ void CEulerSolver::EdgeFluxResidual(const CGeometry *geometry, const CConfig *co
       Jacobian.SetDiagonalAsColumnSum();
     }
   }
+
+  cout << "\nPreacc memory: " << preaccMem << endl;
+  cout << "Total memory: " << AD::globalTape.getTapeValues().getUsedMemorySize() - memInitial << "\n" << endl;
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,

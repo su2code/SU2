@@ -27,6 +27,8 @@
 
 #pragma once
 
+extern double preaccMem;
+
 #include "../../CNumericsSIMD.hpp"
 #include "../../util.hpp"
 #include "../variables.hpp"
@@ -86,6 +88,7 @@ public:
 
     /*--- Start preaccumulation, inputs are registered
      *    automatically in "gatherVariables". ---*/
+    preaccMem -= AD::globalTape.getTapeValues().getUsedMemorySize();
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -198,6 +201,7 @@ public:
 
     AD::SetPreaccOut(flux, nVar, Double::Size);
     AD::EndPreacc();
+    preaccMem += AD::globalTape.getTapeValues().getUsedMemorySize();
 
     /*--- Update the vector and system matrix. ---*/
 
