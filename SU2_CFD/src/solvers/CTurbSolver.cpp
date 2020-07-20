@@ -177,7 +177,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         FlowLim_j = flowNodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+      const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
 

@@ -3147,7 +3147,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Limiter_j = turbNodes->GetLimiter(jPoint);
         }
 
-        const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+        const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
 
         const su2double T_ij = (tke_j - tke_i);
 
@@ -3207,20 +3207,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+      const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        // su2double Project_Grad_i = 0.0;
-        // su2double Project_Grad_j = 0.0;
-        su2double Project_Grad_i = -0.5*V_ij;
-        su2double Project_Grad_j = -0.5*V_ij;
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+        // su2double Project_Grad_i = -0.5*V_ij;
+        // su2double Project_Grad_j = -0.5*V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += 2.0*Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += 2.0*Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
         if (limiter) {
