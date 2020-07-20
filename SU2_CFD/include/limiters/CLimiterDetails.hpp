@@ -74,7 +74,7 @@ namespace LimiterHelpers
     return (y + delta*proj) / (y + 2*proj*proj);
   }
 
-  inline su2double vanAlbadaFunction(su2double proj, su2double delta)
+  inline su2double vanAlbadaFunction(const su2double proj, const su2double delta)
   {
     if (proj*delta < 0.0) {
       return 0.0;
@@ -84,7 +84,7 @@ namespace LimiterHelpers
     }
   }
 
-  inline su2double pipernoFunction(su2double proj, su2double delta)
+  inline su2double pipernoFunction(const su2double proj, const su2double delta)
   {
     if (proj*delta < 0.0) {
       return 0.0;
