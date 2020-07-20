@@ -3149,7 +3149,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         const su2double Kappa = (piperno) ? 2.0/3.0 : config->GetMUSCL_Kappa();
 
-        const su2double T_ij = (tke_j - tke_i);
+        const su2double T_ij = 0.5*(tke_j - tke_i);
 
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
@@ -3170,8 +3170,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
               break;
           }
-          Project_Grad_i = Limiter_i[0]*((1.0-Kappa)*Project_Grad_i + 0.5*Kappa*T_ij);
-          Project_Grad_j = Limiter_j[0]*((1.0-Kappa)*Project_Grad_j + 0.5*Kappa*T_ij);
+          Project_Grad_i = Limiter_i[0]*((1.0-Kappa)*Project_Grad_i + Kappa*T_ij);
+          Project_Grad_j = Limiter_j[0]*((1.0-Kappa)*Project_Grad_j + Kappa*T_ij);
         }
         tke_i += Project_Grad_i;
         tke_j -= Project_Grad_j;
@@ -3211,7 +3211,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        const su2double V_ij = V_j[iVar] - V_i[iVar];
+        const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
@@ -3232,8 +3232,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
-          Project_Grad_i = Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + 0.5*Kappa*V_ij);
-          Project_Grad_j = Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + 0.5*Kappa*V_ij);
+          Project_Grad_i = Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + Kappa*V_ij);
+          Project_Grad_j = Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + Kappa*V_ij);
         }
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
