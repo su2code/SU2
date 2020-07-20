@@ -99,10 +99,10 @@ namespace LimiterHelpers
     //                                    : su2double(1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
     //   return phi;
     // }
-    return (proj >= delta) ? su2double((3.0*pow(proj, 2.0)*delta - 6.0*proj*pow(delta, 2.0) + 19.0*pow(delta, 3.0)) 
+    return (proj >= delta) ? su2double(delta*(3.0*pow(proj, 2.0) - 6.0*proj*delta + 19.0*pow(delta, 2.0)) 
                                      / (pow(proj, 3.0) - 3.0*proj*pow(delta, 2.0) + 18.0*pow(delta, 3.0)))
-                           : su2double(0.5*proj*(3*pow(proj, 3.0) - 7.0*pow(proj, 2.0)*delta + 3.0*proj*pow(delta, 2.0) + 3.0*pow(delta, 3.0))
-                                     / (pow(delta, 3.0) + epsilon()));
+                           : su2double(0.5*proj*(3.0*pow(proj, 3.0) - 7.0*pow(proj, 2.0)*delta + 3.0*proj*pow(delta, 2.0) + 3.0*pow(delta, 3.0))
+                                     / (pow(delta, 4.0) + epsilon()));
   }
 
   inline su2double raisedSine(su2double dist)
