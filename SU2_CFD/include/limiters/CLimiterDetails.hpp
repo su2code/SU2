@@ -81,8 +81,8 @@ namespace LimiterHelpers
       return 0.0;
     }
     else {
-      const su2double r = proj/delta;
-      return (pow(r, 2.0) + r)/(pow(r, 2.0) + 1.0);
+      const su2double R = delta/proj;
+      return (pow(R, 2.0) + R)/(pow(R, 2.0) + 1.0);
     }
   }
 
