@@ -3215,12 +3215,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         // su2double Project_Grad_i = 0.0;
         // su2double Project_Grad_j = 0.0;
-        su2double Project_Grad_i = -0.25*V_ij;
-        su2double Project_Grad_j = -0.25*V_ij;
+        su2double Project_Grad_i = -0.5*V_ij;
+        su2double Project_Grad_j = -0.5*V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += 2.0*Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += 2.0*Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
         if (limiter) {
