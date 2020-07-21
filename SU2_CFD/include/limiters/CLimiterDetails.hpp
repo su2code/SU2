@@ -82,7 +82,7 @@ namespace LimiterHelpers
   inline su2double pipernoFunction(su2double proj, su2double delta)
   {
     const su2double sign = 1.0 - 2.0*(delta < 0.0);
-    const r = max(0.0, proj / (delta + sign*epsilon());
+    const su2double r = max(0.0, proj / (delta + sign*epsilon());
     return min(3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0),
                1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
   }
