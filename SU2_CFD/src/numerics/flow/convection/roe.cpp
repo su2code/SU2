@@ -127,7 +127,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
 
   MInv[0][0] = 1.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    MInv[iDim+1][0] = -(*val_density)*val_velocity[iDim];
+    MInv[iDim+1][0] = -val_velocity[iDim]/(*val_density);
     MInv[iDim+1][iDim+1] = 1.0/(*val_density);
     MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity[iDim];
   }
