@@ -2182,6 +2182,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double Tau[3][3];
   su2double TauNormal;
   su2double div_vel=0, Delta;
+
+  vector<su2double> Ms;
   
   bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool ionization = config->GetIonization();
@@ -2257,10 +2259,12 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Density = nodes->GetDensity(iPoint);
 
+      Ms = FluidModel->GetMolarMass();
+
       /*--- Calculate specific gas constant --- */
       GasConstant=0;
       for(iSpecies=0;iSpecies<nSpecies;iSpecies++)
-        GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/config->GetMolar_Mass(iSpecies)*nodes->GetMassFraction(iPoint,iSpecies);
+        GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
       
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn   = - (Ti-Tj)/dij;
