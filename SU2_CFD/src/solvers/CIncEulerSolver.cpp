@@ -1907,8 +1907,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
         const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-        su2double Project_Grad_i = -V_ij;
-        su2double Project_Grad_j = -V_ij;
+        Project_Grad_i = -V_ij;
+        Project_Grad_j = -V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
           const su2double Vector_ij = Coord_j[iDim] - Coord_i[iDim];
