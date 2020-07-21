@@ -86,7 +86,7 @@ namespace LimiterHelpers
 
   inline su2double pipernoFunction(const su2double proj, const su2double delta)
   {
-    if (proj*delta < 0.0) {
+    if (proj*delta <= 0.0) {
       return 0.0;
     }
     else {
