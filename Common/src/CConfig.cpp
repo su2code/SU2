@@ -6076,9 +6076,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method (node-based), with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case VENKATAKRISHNAN_EDGE:
-                cout << "Venkatakrishnan slope-limiting method (edge-based), with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
               case VENKATAKRISHNAN_WANG:
                 cout << "Venkatakrishnan-Wang slope-limiting method (node-based), with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
