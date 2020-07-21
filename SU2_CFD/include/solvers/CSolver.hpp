@@ -841,13 +841,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1531,7 +1524,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) { }
+  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) { }
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
@@ -1617,21 +1610,21 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Pressure_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Pressure_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Momentum_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Momentum_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Friction_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Friction_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
@@ -2957,72 +2950,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
-
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetDonorPrimVar(unsigned short val_marker,
-                                      unsigned long val_vertex,
-                                      unsigned short val_var,
-                                      su2double val_value) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual void SetDonorAdjVar(unsigned short val_marker,
-                                     unsigned long val_vertex,
-                                     unsigned short val_var,
-                                     su2double val_value) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double GetDonorPrimVar(unsigned short val_marker,
-                                           unsigned long val_vertex,
-                                           unsigned short val_var) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
-    return nullptr;
-  }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual su2double GetDonorAdjVar(unsigned short val_marker,
-                                          unsigned long val_vertex,
-                                          unsigned short val_var) const {
-    return 0;
-  }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
@@ -3049,42 +2976,6 @@ public:
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
                                              unsigned long val_vertex) const { return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double GetActDisk_DeltaP(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetActDisk_DeltaP(unsigned short val_marker,
-                                        unsigned long val_vertex,
-                                        su2double val_deltap) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double GetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex) { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetActDisk_DeltaT(unsigned short val_marker,
-                                        unsigned long val_vertex,
-                                        su2double val_deltat) { }
 
   /*!
    * \brief A virtual member
@@ -3162,7 +3053,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  inline virtual void SetUniformInlet(CConfig* config, unsigned short iMarker) {};
+  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {};
 
   /*!
    * \brief A virtual member
@@ -3170,7 +3061,7 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  inline virtual void SetInletAtVertex(su2double *val_inlet,
+  inline virtual void SetInletAtVertex(const su2double *val_inlet,
                                        unsigned short iMarker,
                                        unsigned long iVertex) { };
 
@@ -3187,8 +3078,8 @@ public:
                                             unsigned long val_inlet_point,
                                             unsigned short val_kind_marker,
                                             string val_marker,
-                                            CGeometry *geometry,
-                                            CConfig *config) const { return 0; }
+                                            const CGeometry *geometry,
+                                            const CConfig *config) const { return 0; }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -3642,7 +3533,7 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_ASCII(CGeometry *geometry,
-                              CConfig *config,
+                              const CConfig *config,
                               string val_filename);
 
   /*!
@@ -3652,7 +3543,7 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_Binary(CGeometry *geometry,
-                               CConfig *config,
+                               const CConfig *config,
                                string val_filename);
 
   /*!
@@ -4547,44 +4438,6 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   inline virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief Initialize the vertex traction containers at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTraction = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
-
-  /*!
-   * \brief Initialize the adjoint vertex traction containers at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTractionAdjoint = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
 
   /*!
    * \brief Compute the tractions at the vertices.

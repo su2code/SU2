@@ -396,7 +396,6 @@ private:
   unsigned long OuterIter;          /*!< \brief Current Outer iterations for multizone problems. */
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
-  unsigned long Unst_nIntIter;      /*!< \brief Number of internal iterations (Dual time Method). */
   long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -730,7 +729,6 @@ private:
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,         /*!< \brief Reference coefficient for detecting sharp edges. */
   RefLength,             /*!< \brief Reference length for moment computation. */
-  *RefOriginMoment,      /*!< \brief Origin for moment computation. */
   *RefOriginMoment_X,    /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,    /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,    /*!< \brief Z Origin for moment computation. */
@@ -1371,7 +1369,8 @@ public:
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin (in cartesians coordinates) for moment computation.
    */
-  su2double *GetRefOriginMoment(unsigned short val_marker) {
+  std::array<su2double,3> GetRefOriginMoment(unsigned short val_marker) const {
+    std::array<su2double,3> RefOriginMoment{{0.0}};
     if(val_marker < nMarker_Monitoring) {
       RefOriginMoment[0] = RefOriginMoment_X[val_marker];
       RefOriginMoment[1] = RefOriginMoment_Y[val_marker];
@@ -2937,12 +2936,6 @@ public:
    * \param[in] val_nmarker - Number of markers of the problem.
    */
   void SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
-
-  /*!
-   * \brief Get the number of internal iterations.
-   * \return Number of internal iterations.
-   */
-  unsigned long GetUnst_nIntIter(void) const { return Unst_nIntIter; }
 
   /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
@@ -5395,19 +5388,13 @@ public:
   string GetVolume_FileName(void) const { return Volume_FileName; }
 
   /*!
-   * \brief Get the name of the restart file for the heat variables.
-   * \return Name of the restart file for the flow variables.
-   */
-  string GetRestart_HeatFileName(void);
-
-  /*!
    * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
    * \param[in] config - Definition of the particular problem.
    * \param[in] filename - the base filename.
    * \param[in] ext - the extension to be added.
    * \return The new filename
    */
-  string GetFilename(string filename, string ext, unsigned long Iter);
+  string GetFilename(string filename, string ext, unsigned long Iter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5425,13 +5412,13 @@ public:
    * \brief Append the instance index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext);
+  string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
    * \return Name of the restart file for the flow variables.
    */
-  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst);
+  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const;
 
   /*!
    * \brief Get the name of the restart file for the flow variables.
@@ -5500,7 +5487,7 @@ public:
    * \param[in] val_filename - String value of the base filename.
    * \return Name of the file with the appropriate objective function extension.
    */
-  string GetObjFunc_Extension(string val_filename);
+  string GetObjFunc_Extension(string val_filename) const;
 
   /*!
    * \brief Get the criteria for structural residual (relative/absolute).
@@ -6572,7 +6559,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  su2double* GetInlet_FlowDir(string val_index);
+  const su2double* GetInlet_FlowDir(string val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8373,14 +8360,14 @@ public:
    * \brief Start the timer for profiling subroutines.
    * \param[in] val_start_time - the value of the start time.
    */
-  void GEMM_Tick(double *val_start_time);
+  void GEMM_Tick(double *val_start_time) const;
 
   /*!
    * \brief Stop the timer for the GEMM profiling and store results.
    * \param[in] val_start_time - The value of the start time.
    * \param[in] M, N, K        - Matrix size of the GEMM call.
    */
-  void GEMM_Tock(double val_start_time, int M, int N, int K);
+  void GEMM_Tock(double val_start_time, int M, int N, int K) const;
 
   /*!
    * \brief Write a CSV file containing the results of the profiling.
