@@ -99,14 +99,14 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
     MLim[iVar]  = new su2double[nVar];
     MInv[iVar] = new su2double[nVar];
     for (jVar = 0; jVar < nVar; jVar++) {
-      Jac[iVar][jVar] = 0.0;
+      tmp[iVar][jVar] = 0.0;
       MLim[iVar][jVar] = 0.0;
       MInv[iVar][jVar] = 0.0;
     }
   }
 
   for (iVar = 0; iVar < nDim+3; iVar++) 
-    dlim[iVar] = 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
+    dLim[iVar] = 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
 
   su2double sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -114,11 +114,11 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
 
   /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
 
-  MLim[0][0] = dlim[nDim+2];
+  MLim[0][0] = dLim[nDim+2];
   for (iDim = 0; iDim < nDim; iDim++) {
-    MLim[iDim+1][0] = dlim[nDim+2]*val_velocity[iDim];
-    MLim[iDim+1][iDim+1] = dlim[iDim+1]*(*val_density);
-    MLim[nDim+1][iDim+1] = dlim[iDim+1]*(*val_density)*val_velocity[iDim];
+    MLim[iDim+1][0] = dLim[nDim+2]*val_velocity[iDim];
+    MLim[iDim+1][iDim+1] = dLim[iDim+1]*(*val_density);
+    MLim[nDim+1][iDim+1] = dLim[iDim+1]*(*val_density)*val_velocity[iDim];
   }
   MLim[nDim+1][0] = dLim[nDim+2]*sq_vel/2.0;
   MLim[nDim+1][nDim+1] = dLim[nDim+1]*1.0/Gamma_Minus_One;
@@ -153,6 +153,16 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
       val_Jacobian[iVar][jVar] += tmp[iVar][kVar]*MInv[kVar][jVar];
     }
   }
+
+  for(iVar = 0; iVar < nVar; iVar++) {
+    delete [] tmp[iVar];
+    delete [] MLim[iVar];
+    delete [] MInv[iVar];
+  }
+  delete [] tmp;
+  delete [] MLim;
+  delete [] MInv;
+  delete [] dLim;
 
   AD::EndPassive(wasActive);
 }
