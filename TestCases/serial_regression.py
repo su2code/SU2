@@ -46,7 +46,7 @@ def main():
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
     thermalbath.test_vals = [2.473627, 2.473627, -12.033039, -11.945257, -32.000000, 10.804939] #last 4 columns
-    thermalbath.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
+    thermalbath.su2_exec  = "SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
     thermalbath.tol       = 0.00001
@@ -58,7 +58,7 @@ def main():
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
     thermalbath_frozen.test_vals = [ -32.000000, -32.000000, -11.953727, -12.066776, -32.000000, 10.813864] #last 4 columns
-    thermalbath_frozen.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
+    thermalbath_frozen.su2_exec  = "SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
     thermalbath_frozen.tol       = 0.00001
@@ -70,7 +70,7 @@ def main():
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
     invwedge.test_vals = [ -0.954130, -1.478893, -16.737310, -17.063693, -17.010416, 2.374072, 1.733626, 5.401966, 0.955538] #last 4 columns
-    invwedge.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
+    invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = False
     invwedge.tol       = 0.00001
@@ -82,7 +82,7 @@ def main():
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
     viscwedge.test_vals = [-5.267324, -5.792087, -20.236749, -20.204632, -20.221054, -1.780516, -2.208251, 1.723062, -2.871713]
-    viscwedge.su2_exec  = "/home/catarina/Desktop/PhD/Codes/SU2/bin/SU2_CFD"
+    viscwedge.su2_exec  = "SU2_CFD"
     viscwedge.timeout   = 1600
     viscwedge.new_output = False
     viscwedge.tol       = 0.00001
