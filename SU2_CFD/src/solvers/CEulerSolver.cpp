@@ -2690,10 +2690,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
-  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-  const bool venkat_edge      = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_EDGE);
-  const bool piperno          = (config->GetKind_SlopeLimit_Flow() == PIPERNO);
-  const bool venkat_munguia   = (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MUNG);
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
