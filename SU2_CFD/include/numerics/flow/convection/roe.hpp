@@ -82,8 +82,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   * \param[in] val_muscl - Use MUSCL extrapolation.
    */
-  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
+  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation, bool val_muscl);
 
   /*!
    * \brief Destructor of the class.
@@ -124,8 +125,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
+  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation, bool val_muscl);
 
 };
 
@@ -154,8 +156,9 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
 };
 
@@ -184,8 +187,9 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
 };
 
