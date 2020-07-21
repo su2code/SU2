@@ -315,8 +315,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, Jacobian_j);
 
     if (muscl) {
-      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
-      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i);
+      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j);
     }
   }
 
