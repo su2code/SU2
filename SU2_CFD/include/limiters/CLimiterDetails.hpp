@@ -74,21 +74,29 @@ namespace LimiterHelpers
     return (y + delta*proj) / (y + 2*proj*proj);
   }
 
-  inline su2double vanAlbadaFunction(su2double proj, su2double delta)
+  inline su2double vanAlbadaFunction(const su2double proj, const su2double delta)
   {
-    return delta*(2.0*proj + delta) / (4*pow(proj, 2) + pow(delta, 2) + epsilon());
+    if (proj*delta < 0.0) {
+      return 0.0;
+    }
+    else {
+      return delta*(proj + delta) / (pow(proj, 2) + pow(delta, 2) + epsilon());
+    }
   }
 
-  inline su2double pipernoFunction(su2double proj, su2double delta)
+  inline su2double pipernoFunction(const su2double proj, const su2double delta)
   {
     if (proj*delta <= 0.0) {
       return 0.0;
     }
     else {
-      const su2double r = (2.0*proj - delta)/delta;
-      const su2double phi = (r >= 1.0) ? su2double((3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0))
-                                       : su2double(1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
-      return phi;
+      const su2double num = (fabs(proj) >= fabs(delta)) 
+                          ? su2double(delta*(3.0*pow(proj, 2.0) - 6.0*proj*delta + 19.0*pow(delta, 2.0)))
+                          : su2double(0.5*proj*(3.0*pow(proj, 3.0) - 7.0*pow(proj, 2.0)*delta + 3.0*proj*pow(delta, 2.0) + 3.0*pow(delta, 3.0)));
+      const su2double den = (fabs(proj) >= fabs(delta)) 
+                          ? su2double(pow(proj, 3.0) - 3.0*proj*pow(delta, 2.0) + 18.0*pow(delta, 3.0))
+                          : su2double (pow(delta, 4.0));
+      return num / den;
     }
   }
 
