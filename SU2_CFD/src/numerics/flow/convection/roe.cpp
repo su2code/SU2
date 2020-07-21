@@ -28,7 +28,7 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation, bool val_limiter) : CNumerics(val_nDim, val_nVar, config) {
+                                   bool val_low_dissipation, bool val_muscl) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -36,7 +36,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   kappa = config->GetRoe_Kappa(); // 1 is unstable
   muscl_kappa = (config->GetKind_SlopeLimit_Flow() == PIPERNO)
               ? 1.0/6.0 : 0.5*config->GetMUSCL_Kappa();
-  limiter = val_limiter;
+  muscl = val_muscl;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -302,8 +302,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, Jacobian_j);
 
-    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
-    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+    if (muscl)
+      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
+      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+    }
   }
 
   /*--- Finalize in children class ---*/
