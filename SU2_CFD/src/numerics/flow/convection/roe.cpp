@@ -151,7 +151,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
   for(iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
       for (kVar = 0; kVar < nVar; kVar++) {
-      val_Jacobian[iVar][jVar] += tmp[iVar][kVar]*MInv[kVar][jVar];
+        val_Jacobian[iVar][jVar] += tmp[iVar][kVar]*MInv[kVar][jVar];
+      }
     }
   }
 
