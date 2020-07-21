@@ -730,7 +730,7 @@ public:
   * \param[in] lim_i - Slope limiter vector at node i
   * \param[in] lim_j - Slope limiter vector at node j
   */
-  inline void SetLimiter(const su2double *lim_i, const su2double *lim_j) {
+  inline void SetLimiter(su2double *lim_i, su2double *lim_j) {
     Limiter_i = lim_i;
     Limiter_j = lim_j;
   }
