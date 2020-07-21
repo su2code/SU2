@@ -196,6 +196,18 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   }
 }
 
+void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
+
+  unsigned short iDim;
+
+  Velocity2(iPoint) = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Primitive(iPoint,VEL_INDEX+iDim) = Solution(iPoint,nSpecies+iDim) / Primitive(iPoint,RHO_INDEX);
+    Velocity2(iPoint) +=  Solution(iPoint,nSpecies+iDim)*Solution(iPoint,nSpecies+iDim)
+        / (Primitive(iPoint,RHO_INDEX)*Primitive(iPoint,RHO_INDEX));
+  }
+}
+
 bool CNEMOEulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) {
 
   bool nonPhys, bkup;
