@@ -44,8 +44,8 @@ template<class Derived, class Base>
 class CCenteredBase : public Base {
 protected:
   using Base::nDim;
-  enum: size_t {nVar = CCompressibleConservatives<nDim>::nVar};
-  enum: size_t {nPrimVar = Base::IsViscous? Base::nPrimVar : nDim+5};
+  static constexpr size_t nVar = CCompressibleConservatives<nDim>::nVar;
+  static constexpr size_t nPrimVar = Max(Base::nPrimVar, nDim+5);
 
   const su2double gamma;
   const su2double fixFactor;
@@ -183,7 +183,7 @@ public:
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
-    Base::updateFlux(iEdge, iPoint, jPoint, V, avgV, solution_, geometry,
+    Base::updateFlux(iEdge, iPoint, jPoint, avgV, V, solution_, geometry,
                      config, area, unitNormal, implicit, flux, jac_i, jac_j);
 
     /*--- Stop preaccumulation. ---*/

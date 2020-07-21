@@ -35,52 +35,45 @@
 /*!
  * \brief Unlimited reconstruction.
  */
-template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
-FORCEINLINE VectorDbl<nVar> musclUnlimited(Int iPoint,
-                                           const VectorDbl<nDim>& vector_ij,
-                                           Double direction,
-                                           const Field_t& field,
-                                           const Gradient_t& gradient) {
-  auto vars = gatherVariables<nVar>(iPoint, field);
+template<size_t nVar, size_t nDim, class Gradient_t>
+FORCEINLINE void musclUnlimited(Int iPoint,
+                                const VectorDbl<nDim>& vector_ij,
+                                Double scale,
+                                const Gradient_t& gradient,
+                                VectorDbl<nVar>& vars) {
   auto grad = gatherVariables<nVar,nDim>(iPoint, gradient);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += direction * dot(grad[iVar], vector_ij);
+    vars(iVar) += scale * dot(grad[iVar], vector_ij);
   }
-  return vars;
 }
 
 /*!
  * \brief Limited reconstruction with point-based limiter.
  */
-template<size_t nVar, size_t nDim, class Field_t, class Gradient_t>
-FORCEINLINE VectorDbl<nVar> musclPointLimited(Int iPoint,
-                                              const VectorDbl<nDim>& vector_ij,
-                                              Double direction,
-                                              const Field_t& field,
-                                              const Field_t& limiter,
-                                              const Gradient_t& gradient) {
-  auto vars = gatherVariables<nVar>(iPoint, field);
+template<size_t nVar, size_t nDim, class Limiter_t, class Gradient_t>
+FORCEINLINE void musclPointLimited(Int iPoint,
+                                   const VectorDbl<nDim>& vector_ij,
+                                   Double scale,
+                                   const Limiter_t& limiter,
+                                   const Gradient_t& gradient,
+                                   VectorDbl<nVar>& vars) {
   auto lim = gatherVariables<nVar>(iPoint, limiter);
   auto grad = gatherVariables<nVar,nDim>(iPoint, gradient);
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    vars(iVar) += lim(iVar) * direction * dot(grad[iVar], vector_ij);
+    vars(iVar) += lim(iVar) * scale * dot(grad[iVar], vector_ij);
   }
-  return vars;
 }
 
 /*!
  * \brief Limited reconstruction with edge-based limiter.
  */
-template<size_t nDim, size_t nVar, class Field_t, class Gradient_t>
+template<size_t nDim, class VarType, class Gradient_t>
 FORCEINLINE void musclEdgeLimited(Int iPoint,
                                   Int jPoint,
                                   const VectorDbl<nDim>& vector_ij,
-                                  const Field_t& field,
                                   const Gradient_t& gradient,
-                                  VectorDbl<nVar>& vars_i,
-                                  VectorDbl<nVar>& vars_j) {
-  vars_i = gatherVariables<nVar>(iPoint, field);
-  vars_j = gatherVariables<nVar>(jPoint, field);
+                                  CPair<VarType>& V) {
+  constexpr size_t nVar = VarType::nVar;
 
   auto grad_i = gatherVariables<nVar,nDim>(iPoint, gradient);
   auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
@@ -88,13 +81,13 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
     auto proj_i = dot(grad_i[iVar], vector_ij);
     auto proj_j = dot(grad_j[iVar], vector_ij);
-    auto delta_ij = vars_j(iVar) - vars_i(iVar);
-    auto delta_ij_2 = pow(delta_ij,2);
-    /// TODO: Customize the limiter function (template functor).
-    auto lim_i = (delta_ij_2 + 2*proj_i*delta_ij) / (4*pow(proj_i,2) + delta_ij_2 + EPS);
-    auto lim_j = (delta_ij_2 + 2*proj_j*delta_ij) / (4*pow(proj_j,2) + delta_ij_2 + EPS);
-    vars_i(iVar) += lim_i * proj_i;
-    vars_j(iVar) -= lim_j * proj_j;
+    auto delta_ij = V.j.all(iVar) - V.i.all(iVar);
+    auto delta_ij_2 = pow(delta_ij, 2);
+    /// TODO: Customize the limiter function.
+    auto lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2 + EPS);
+    auto lim_j = (delta_ij_2 + proj_j*delta_ij) / (pow(proj_j,2) + delta_ij_2 + EPS);
+    V.i.all(iVar) += lim_i * 0.5 * proj_i;
+    V.j.all(iVar) -= lim_j * 0.5 * proj_j;
   }
 }
 
@@ -106,34 +99,36 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
  * \param[in] solution - Entire solution container (a derived CVariable).
  * \return Pair of primitive variables.
  */
-template<class PrimitiveType, size_t nDim, class VariableType>
-FORCEINLINE CPair<PrimitiveType> reconstructPrimitives(Int iPoint, Int jPoint, bool muscl,
-                                                       ENUM_LIMITER limiterType,
-                                                       const VectorDbl<nDim>& vector_ij,
-                                                       const VariableType& solution) {
-  CPair<PrimitiveType> V;
-  constexpr size_t nVar = PrimitiveType::nVar;
+template<class ReconVarType, class PrimVarType, size_t nDim, class VariableType>
+FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iPoint, Int jPoint, bool muscl,
+                                                      ENUM_LIMITER limiterType,
+                                                      const CPair<PrimVarType>& V1st,
+                                                      const VectorDbl<nDim>& vector_ij,
+                                                      const VariableType& solution) {
+  static_assert(ReconVarType::nVar <= size_t(PrimVarType::nVar),"");
 
-  const auto& primitives = solution.GetPrimitive();
   const auto& gradients = solution.GetGradient_Reconstruction();
   const auto& limiters = solution.GetLimiter_Primitive();
 
-  if (!muscl) {
-    V.i.all = gatherVariables<nVar>(iPoint, primitives);
-    V.j.all = gatherVariables<nVar>(jPoint, primitives);
+  CPair<ReconVarType> V;
+
+  for (size_t iVar = 0; iVar < ReconVarType::nVar; ++iVar) {
+    V.i.all(iVar) = V1st.i.all(iVar);
+    V.j.all(iVar) = V1st.j.all(iVar);
   }
-  else {
+
+  if (muscl) {
     switch (limiterType) {
     case NO_LIMITER:
-      V.i.all = musclUnlimited<nVar>(iPoint, vector_ij, 1, primitives, gradients);
-      V.j.all = musclUnlimited<nVar>(jPoint, vector_ij,-1, primitives, gradients);
+      musclUnlimited(iPoint, vector_ij, 0.5, gradients, V.i.all);
+      musclUnlimited(jPoint, vector_ij,-0.5, gradients, V.j.all);
       break;
     case VAN_ALBADA_EDGE:
-      musclEdgeLimited(iPoint, jPoint, vector_ij, primitives, gradients, V.i.all, V.j.all);
+      musclEdgeLimited(iPoint, jPoint, vector_ij, gradients, V);
       break;
     default:
-      V.i.all = musclPointLimited<nVar>(iPoint, vector_ij, 1, primitives, limiters, gradients);
-      V.j.all = musclPointLimited<nVar>(jPoint, vector_ij,-1, primitives, limiters, gradients);
+      musclPointLimited(iPoint, vector_ij, 0.5, limiters, gradients, V.i.all);
+      musclPointLimited(jPoint, vector_ij,-0.5, limiters, gradients, V.j.all);
       break;
     }
     /// TODO: Extra reconstruction checks needed.

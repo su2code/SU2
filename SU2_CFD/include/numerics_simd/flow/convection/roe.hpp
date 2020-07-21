@@ -49,13 +49,17 @@ template<class Derived, class Base>
 class CRoeBase : public Base {
 protected:
   using Base::nDim;
-  enum: size_t {nVar = CCompressibleConservatives<nDim>::nVar};
+  static constexpr size_t nVar = CCompressibleConservatives<nDim>::nVar;
+  static constexpr size_t nPrimVarGrad = nDim+4;
+  static constexpr size_t nPrimVar = Max(Base::nPrimVar, nPrimVarGrad);
 
   const su2double kappa;
   const su2double gamma;
   const su2double entropyFix;
   const bool finestGrid;
   const bool dynamicGrid;
+  const bool muscl;
+  const ENUM_LIMITER typeLimiter;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -66,7 +70,9 @@ protected:
     gamma(config.GetGamma()),
     entropyFix(config.GetEntropyFix_Coeff()),
     finestGrid(iMesh == MESH_0),
-    dynamicGrid(config.GetDynamic_Grid()) {
+    dynamicGrid(config.GetDynamic_Grid()),
+    muscl(finestGrid && config.GetMUSCL_Flow()),
+    typeLimiter(static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow())) {
   }
 
 public:
@@ -87,8 +93,6 @@ public:
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const bool muscl = finestGrid && config.GetMUSCL_Flow();
-    const auto limiter = static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow());
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
@@ -96,7 +100,7 @@ public:
 
     /*--- Geometric properties. ---*/
 
-    auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
+    const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
 
     const auto normal = gatherVariables<nDim>(iEdge, geometry.edges->GetNormal());
     const auto area = norm(normal);
@@ -107,8 +111,12 @@ public:
 
     /*--- Reconstructed primitives. ---*/
 
-    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim> >(
-               iPoint, jPoint, muscl, limiter, vector_ij, solution);
+    CPair<CCompressiblePrimitives<nDim,nPrimVar> > V1st;
+    V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
+    V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
+
+    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
+                  iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
@@ -191,7 +199,7 @@ public:
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
-    Base::updateFlux(iEdge, iPoint, jPoint, solution_, vector_ij, geometry,
+    Base::updateFlux(iEdge, iPoint, jPoint, V1st, solution_, vector_ij, geometry,
                      config, area, unitNormal, implicit, flux, jac_i, jac_j);
 
     /*--- Stop preaccumulation. ---*/
@@ -233,15 +241,15 @@ public:
    * \brief Updates flux and Jacobians with standard Roe dissipation.
    * \note "Ts" is here just in case other schemes in the family need extra args.
    */
-  template<class... Ts>
+  template<class PrimVarType, class ConsVarType, class... Ts>
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
                                 bool implicit,
                                 Double area,
                                 const VectorDbl<nDim>& unitNormal,
-                                const CPair<CCompressiblePrimitives<nDim> >& V,
-                                const CPair<CCompressibleConservatives<nDim> >& U,
+                                const CPair<PrimVarType>& V,
+                                const CPair<ConsVarType>& U,
                                 const CRoeVariables<nDim>& roeAvg,
                                 const VectorDbl<nVar>& lambda,
                                 const MatrixDbl<nVar>& pMat,
