@@ -345,6 +345,12 @@ public:
   /*---   Specific variable routines    ---*/
   /*---------------------------------------*/
 
+   /*!
+   * \brief Set the norm 2 of the velocity.
+   * \return Norm 2 of the velocity vector.
+   */
+  void SetVelocity2(unsigned long iPoint) override;
+
   /*!
    * \brief Get the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
