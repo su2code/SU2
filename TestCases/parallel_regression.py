@@ -83,7 +83,7 @@ def main():
     viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.277112, -5.801874, -20.855161, -20.833552, -23.593984, -1.775303, -2.244927, 1.720285, -2.870337] #last 4 columns
+    viscwedge.test_vals = [-5.267324, -5.792087, -20.236749, -20.204632, -20.221054, -1.780516, -2.208251, 1.723062, -2.871713]
     viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     viscwedge.timeout   = 1600
     viscwedge.new_output = False
