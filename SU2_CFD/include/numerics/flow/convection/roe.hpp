@@ -45,10 +45,25 @@ protected:
   su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
   su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
   su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+  su2double muscl_kappa;
+  bool limiter;
 
   su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
+  /*!
+   * \brief Compute the contribution of central differencing to the flux Jacobian.
+   * \param[in] val_kappa - MUSCL kappa blending parameter.
+   * \param[in/out] val_Jacobian - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[in] lim_i - Slope limiter at node i.
+   * \param[in] lim_j - Slope limiter at node j.
+   * \param[in] val_velocity - Velocity at node i.
+   * \param[in] val_density - Density at node i.
+   */
+  void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                   const su2double *lim_i, const su2double *lim_j,
+                   const su2double *val_velocity, const su2double *val_density);
 
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).

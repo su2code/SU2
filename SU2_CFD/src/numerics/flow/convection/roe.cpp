@@ -28,12 +28,15 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
+                                   bool val_low_dissipation, bool val_limiter) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
+  muscl_kappa = (config->GetKind_SlopeLimit_Flow() == PIPERNO)
+              ? 1.0/6.0 : 0.5*config->GetMUSCL_Kappa();
+  limiter = val_limiter;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -79,6 +82,79 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
   delete [] Jacobian_i;
   delete [] Jacobian_j;
 
+}
+
+void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                                   const su2double *lim_i, const su2double *lim_j,
+                                   const su2double *val_velocity, const su2double *val_density) {
+  const bool wasActive = AD::BeginPassive();
+
+  unsigned short iVar, jVar, kVar, iDim;
+  su2double **tmp = new su2double*[nVar],
+            **MLim = new su2double*[nVar],
+            **MInv = new su2double*[nVar],
+            *dLim  = new su2double[nDim+3];
+  for(iVar = 0; iVar < nVar; iVar++) {
+    tmp[iVar]   = new su2double[nVar];
+    MLim[iVar]  = new su2double[nVar];
+    MInv[iVar] = new su2double[nVar];
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Jac[iVar][jVar] = 0.0;
+      MLim[iVar][jVar] = 0.0;
+      MInv[iVar][jVar] = 0.0;
+    }
+  }
+
+  for (iVar = 0; iVar < nDim+3; iVar++) 
+    dlim[iVar] = 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
+
+  su2double sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    sq_vel += pow(val_velocity[iDim], 2.0);
+
+  /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
+
+  MLim[0][0] = dlim[nDim+2];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    MLim[iDim+1][0] = dlim[nDim+2]*val_velocity[iDim];
+    MLim[iDim+1][iDim+1] = dlim[iDim+1]*(*val_density);
+    MLim[nDim+1][iDim+1] = dlim[iDim+1]*(*val_density)*val_velocity[iDim];
+  }
+  MLim[nDim+1][0] = dLim[nDim+2]*sq_vel/2.0;
+  MLim[nDim+1][nDim+1] = dLim[nDim+1]*1.0/Gamma_Minus_One;
+
+  /*--- Inv(d{r,v,p}/dU) ---*/
+
+  MInv[0][0] = 1.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    MInv[iDim+1][0] = -(*val_density)*val_velocity[iDim];
+    MInv[iDim+1][iDim+1] = 1.0/(*val_density);
+    MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity[iDim];
+  }
+  MInv[nDim+1][0] = Gamma_Minus_One*sq_vel/2.0;
+  MInv[nDim+1][nDim+1] = Gamma_Minus_One;
+
+  /*--- Now multiply them all together ---*/
+
+  for(iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      for (kVar = 0; kVar < nVar; kVar++) {
+      tmp[iVar][jVar] += val_Jacobian[iVar][kVar]*MLim[kVar][jVar];
+    }
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      val_Jacobian[iVar][jVar] = 0.0;
+
+  for(iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      for (kVar = 0; kVar < nVar; kVar++) {
+      val_Jacobian[iVar][jVar] += tmp[iVar][kVar]*MInv[kVar][jVar];
+    }
+  }
+
+  AD::EndPassive(wasActive);
 }
 
 void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
@@ -225,6 +301,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   if (implicit) {
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, Jacobian_j);
+
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
   }
 
   /*--- Finalize in children class ---*/

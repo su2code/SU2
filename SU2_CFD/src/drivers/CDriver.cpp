@@ -1630,7 +1630,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
+            numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false, false);
 
         }
         if (incompressible) {
@@ -1660,8 +1660,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               if (ideal_gas) {
 
                 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                  numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, roe_low_dissipation);
-                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
+                  numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, roe_low_dissipation, true);
+                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false, false);
                 }
               } else {
 

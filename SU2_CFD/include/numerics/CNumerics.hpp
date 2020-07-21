@@ -205,6 +205,7 @@ protected:
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
+  su2double *Limiter_i, *Limiter_j; /*!< \brief Slope limiter. */
 
   su2double *l, *m;
 
@@ -723,6 +724,16 @@ public:
   * \brief Get the final Roe dissipation factor.
   */
   inline su2double GetDissipation() const { return Dissipation_ij; }
+
+  /*!
+  * \brief Sets the values of the slope limiter
+  * \param[in] lim_i - Slope limiter vector at node i
+  * \param[in] lim_j - Slope limiter vector at node j
+  */
+  inline void SetLimiter(const su2double *lim_i, const su2double *lim_j) {
+    Limiter_i = lim_i;
+    Limiter_j = lim_j;
+  }
 
   /*!
    * \brief Get the inviscid fluxes.

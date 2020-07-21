@@ -3201,6 +3201,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
       numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
 
+      su2double ZeroVec[MAXNDIM+3] = {0.0};
+      numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
     }
 
     /*--- Roe Low Dissipation Scheme ---*/
