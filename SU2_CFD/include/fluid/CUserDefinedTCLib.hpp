@@ -178,7 +178,7 @@ public:
   /*!
   * \brief Set equilibrium reaction constants for finite-rate chemistry
   */
-  su2activematrix GetChemistryEquilConstants(unsigned short iReaction);
+  void GetChemistryEquilConstants(unsigned short iReaction);
 
   /*!
    * \brief Calculates constants used for Keq correlation.

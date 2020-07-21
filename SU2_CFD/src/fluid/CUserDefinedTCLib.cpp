@@ -1527,7 +1527,7 @@ void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double> val_eves, su2d
 
 }
 
-su2activematrix CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
+void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
 
   if (String_GasModel == "O2"){
 
