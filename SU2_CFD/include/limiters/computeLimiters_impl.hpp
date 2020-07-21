@@ -91,6 +91,8 @@ void computeLimiters_impl(CSolver* solver,
                   (kindPeriodicComm1 != PERIODIC_NONE) &&
                   (config.GetnMarker_Periodic() > 0);
 
+  su2double kappa = config.GetMUSCL_Kappa();
+
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
 
@@ -182,21 +184,21 @@ void computeLimiters_impl(CSolver* solver,
       su2double dist_ij[MAXNDIM] = {0.0};
 
       for(size_t iDim = 0; iDim < nDim; ++iDim)
-        dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
+        dist_ij[iDim] = 0.5 * (1.0 - kappa) * (coord_j[iDim] - coord_i[iDim]);
 
       /*--- Project each variable, update min/max. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        su2double proj = 0.0;
+        AD::SetPreaccIn(field(jPoint,iVar));
+        
+        su2double proj = 0.5 * kappa * (field(jPoint,iVar) - field(iPoint,iVar));
 
         for(size_t iDim = 0; iDim < nDim; ++iDim)
           proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
 
         projMax[iVar] = max(projMax[iVar], proj);
         projMin[iVar] = min(projMin[iVar], proj);
-
-        AD::SetPreaccIn(field(jPoint,iVar));
 
         fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
         fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));
