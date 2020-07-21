@@ -35,7 +35,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
   muscl_kappa = (config->GetKind_SlopeLimit_Flow() == PIPERNO)
-              ? 1.0/6.0 : 0.5*config->GetMUSCL_Kappa();
+              ? su2double(1.0/6.0) : 0.5*config->GetMUSCL_Kappa();
   muscl = val_muscl;
 
   Gamma = config->GetGamma();
