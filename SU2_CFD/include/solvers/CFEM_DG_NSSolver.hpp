@@ -398,7 +398,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Friction_Forces(CGeometry *geometry, CConfig *config) override;
+  void Friction_Forces(const CGeometry* geometry, const CConfig* config) override;
 
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
