@@ -27,39 +27,15 @@
 
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CNEMONSSolver.hpp"
-#include "../../include/gradients/computeGradientsGreenGauss.hpp"
-#include "../../include/gradients/computeGradientsLeastSquares.hpp"
+#include "../../include/solvers/CFVMFlowSolverBase.inl"
 
-CNEMONSSolver::CNEMONSSolver(void) : CNEMOEulerSolver() {
+/*--- Explicit instantiation of the parent class of CEulerSolver,
+ *    to spread the compilation over two cpp files. ---*/
+template class CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>;
 
-  /*--- Array initialization ---*/
-  CD_Visc   = nullptr; CL_Visc   = nullptr; CSF_Visc  = nullptr; CEff_Visc = nullptr;
-  CFx_Visc  = nullptr; CFy_Visc  = nullptr; CFz_Visc  = nullptr;
-  CMx_Visc  = nullptr; CMy_Visc  = nullptr; CMz_Visc  = nullptr;
-  CoPx_Visc = nullptr; CoPy_Visc = nullptr; CoPz_Visc = nullptr;
 
-  ForceViscous = nullptr; MomentViscous = nullptr; CSkinFriction = nullptr;
-
-  Buffet_Sensor = nullptr; Buffet_Metric = nullptr;
-
-  /*--- Surface based array initialization ---*/
-  Surface_CL_Visc  = nullptr; Surface_CD_Visc    = nullptr; Surface_CSF_Visc      = nullptr; Surface_CEff_Visc = nullptr;
-  Surface_CFx_Visc = nullptr; Surface_CFy_Visc   = nullptr; Surface_CFz_Visc      = nullptr;
-  Surface_CMx_Visc = nullptr; Surface_CMy_Visc   = nullptr; Surface_CMz_Visc      = nullptr;
-  Surface_HF_Visc  = nullptr; Surface_MaxHF_Visc = nullptr; Surface_Buffet_Metric = nullptr;
-
-  /*--- Rotorcraft simulation array initialization ---*/
-  CMerit_Visc = nullptr; CT_Visc = nullptr; CQ_Visc = nullptr;
-
-  /*--- Inlet Variables ---*/
-  Inlet_Ttotal = nullptr;
-  Inlet_Ptotal = nullptr;
-  Inlet_FlowDir = nullptr;
-
-}
-
-CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
-                             unsigned short iMesh) : CNEMOEulerSolver() {
+CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
+               CNEMOEulerSolver(geometry, config, iMesh, true) {
 
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iSpecies, iMarker, nLineLets;
@@ -85,687 +61,27 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config,
   bool check_infty, check;
   su2double *Mvec_Inf, Alpha, Beta, dull_val;
 
-  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
-     before computing all the non-dimesional quantities. ---*/
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-    }
-
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    }
-
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-
-    /*--- Read and store the restart metadata. ---*/
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
-
-  }
-
-  /*--- Array initialization ---*/
-  CD_Visc   = nullptr; CL_Visc   = nullptr; CSF_Visc  = nullptr; CEff_Visc = nullptr;
-  CFx_Visc  = nullptr; CFy_Visc  = nullptr; CFz_Visc  = nullptr;
-  CMx_Visc  = nullptr; CMy_Visc  = nullptr; CMz_Visc  = nullptr;
-  CoPx_Visc = nullptr; CoPy_Visc = nullptr; CoPz_Visc = nullptr;
-
-  Buffet_Sensor = nullptr; Buffet_Metric = nullptr;
-
-  Surface_CL_Visc  = nullptr; Surface_CD_Visc    = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
-  Surface_CFx_Visc = nullptr; Surface_CFy_Visc   = nullptr; Surface_CFz_Visc = nullptr;
-  Surface_CMx_Visc = nullptr; Surface_CMy_Visc   = nullptr; Surface_CMz_Visc = nullptr;
-  Surface_HF_Visc  = nullptr; Surface_MaxHF_Visc = nullptr;
-
-  Surface_Buffet_Metric = nullptr;
-
-  CMerit_Visc      = nullptr; CT_Visc      = nullptr; CQ_Visc       = nullptr;
-  MaxHF_Visc       = nullptr; ForceViscous = nullptr; MomentViscous = nullptr;
-  CSkinFriction    = nullptr; Cauchy_Serie = nullptr; HF_Visc       = nullptr;
-  HeatConjugateVar = nullptr;
-
-  /*--- Initialize quantities for the average process for internal flow ---*/
-  AverageVelocity 		    = nullptr;
-  AverageTurboVelocity 	    = nullptr;
-  OldAverageTurboVelocity   = nullptr;
-  ExtAverageTurboVelocity   = nullptr;
-  AverageFlux 			    = nullptr;
-  SpanTotalFlux 		    = nullptr;
-  AveragePressure  			= nullptr;
-  OldAveragePressure        = nullptr;
-  RadialEquilibriumPressure = nullptr;
-  ExtAveragePressure  		= nullptr;
-  AverageDensity   			= nullptr;
-  OldAverageDensity         = nullptr;
-  ExtAverageDensity   		= nullptr;
-  AverageNu                 = nullptr;
-  AverageKine               = nullptr;
-  AverageOmega              = nullptr;
-  ExtAverageNu              = nullptr;
-  ExtAverageKine            = nullptr;
-  ExtAverageOmega           = nullptr;
-
-  /*--- Set the gamma value ---*/
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  /*--- Define geometry constants in the solver structure ---*/
-  nSpecies     = config->GetnSpecies();
-  nMarker      = config->GetnMarker_All();
-  nPoint       = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-  nDim         = geometry->GetnDim();
-
-  /*--- Set the size of the primitive and conserve vectors ---*/
-  //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
-  //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-  // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
-  nVar         = nSpecies+nDim+2;
-  nPrimVar     = nSpecies+nDim+8;
-  nPrimVarGrad = nSpecies+nDim+8;
-
-  /*--- Initialize nVarGrad for deallocation ---*/
-  nVarGrad     = nPrimVarGrad;
-
-  /*--- Store the number of vertices on each marker for deallocation later ---*/
-  nVertex = new unsigned long[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    nVertex[iMarker] = geometry->nVertex[iMarker];
-
-  MassFrac_Inf = config->GetGas_Composition();
-
-  /*--- Perform the non-dimensionalization for the flow equations using the
-    specified reference values. ---*/
-  SetNondimensionalization(config, iMesh);
-
-  /*--- Define auxiliary vectors to store residual-related quantities ---*/
-  Residual     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
-  Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
-  Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
-  Residual_i   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]   = 0.0;
-  Residual_j   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]   = 0.0;
-  Res_Conv     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]     = 0.0;
-  Res_Visc     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]     = 0.0;
-  Res_Sour     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]     = 0.0;
-
-  /*--- Define some structures for locating max residuals ---*/
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
-
-  /*--- Define some auxiliary vectors related to the solution ---*/
-  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-  Solution_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-  Solution_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
-
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
-
-  /*--- Define some auxiliary vectors related to the Source term evolution ---*/
-  Source      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-
-  /*--- Allocate arrays for conserved variable limits ---*/
-  lowerlimit = new su2double[nVar];
-  upperlimit = new su2double[nVar];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    lowerlimit[iSpecies] = 0.0;
-    upperlimit[iSpecies] = 1E16;
-  }
-  for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-    lowerlimit[iVar] = -1E16;
-    upperlimit[iVar] = 1E16;
-  }
-  for (iVar = nSpecies+nDim; iVar < nSpecies+nDim+2; iVar++) {
-    lowerlimit[iVar] = 1E-4;
-    upperlimit[iVar] = 1E16;
-  }
-
-  /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double [nPoint];
-    jPoint_UndLapl = new su2double [nPoint];
-  }
-
-  /*--- Initialize the solution & residual CVectors ---*/
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-  /*--- Create the structure for storing extra information ---*/
-  if (config->GetExtraOutput()) {
-    nOutputVariables = nVar;
-    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
-  }
-
-  /*--- Allocate Jacobians for implicit time-stepping ---*/
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
-
-    /*--- Initialization of the structure of the global Jacobian ---*/
-    if (rank == MASTER_NODE) cout << "Initialize jacobian structure (NEMO Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
-  } else {
-    if (rank == MASTER_NODE)
-      cout << "Explicit scheme. No jacobian structure (NEMO Navier-Stokes). MG level: "
-           << iMesh <<"." << endl;
-  }
-
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-  CharacPrimVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-      for (iVar = 0; iVar < nPrimVar; iVar++) {
-        CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
-      }
-    }
-  }
-
-  /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
-   used for IO with a donor cell ---*/
-  DonorPrimVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      if (rans) {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
-        for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
-          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-      else {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-        for (iVar = 0; iVar < nPrimVar ; iVar++) {
-          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-    }
-  }
-
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-     used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 4;
-  HeatConjugateVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar];
-      for (iVar = 1; iVar < nHeatConjugateVar ; iVar++) {
-        HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
-      }
-      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
-
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-  DonorGlobalIndex = new unsigned long* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Total Pressure at the inlet BC ---*/
-  Inlet_Ttotal = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Total Temperature at the inlet BC ---*/
-  Inlet_Ptotal = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
-    }
-  }
-
-  /*--- Store the value of the Flow direction at the inlet BC ---*/
-  Inlet_FlowDir = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
-      }
-    }
-  }
-
-  /*--- Inviscid force definition and coefficient in all the markers ---*/
-  CPressure = new su2double* [nMarker];
-  CPressureTarget = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CPressure[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    CPressureTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CPressure[iMarker][iVertex] = 0.0;
-      CPressureTarget[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Heat flux in all the markers ---*/
-  HeatFlux = new su2double* [nMarker];
-  HeatFluxTarget = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    HeatFluxTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      HeatFlux[iMarker][iVertex] = 0.0;
-      HeatFluxTarget[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Y plus in all the markers ---*/
-  YPlus = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    YPlus[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      YPlus[iMarker][iVertex] = 0.0;
-    }
-  }
-
-  /*--- Skin friction in all the markers ---*/
-  CSkinFriction = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        CSkinFriction[iMarker][iDim][iVertex] = 0.0;
-      }
-    }
-  }
-
-  /*--- Buffet sensor in all the markers ---*/
-  if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-    Buffet_Sensor = new su2double*[nMarker];
-    for(iMarker = 0; iMarker < nMarker; iMarker++) {
-      Buffet_Sensor[iMarker] = new su2double[geometry->nVertex[iMarker]];
-    }
-  }
-
-  /*--- Non dimensional coefficients ---*/
-  ForceInviscid  = new su2double[3];
-  MomentInviscid = new su2double[3];
-  CD_Inv         = new su2double[nMarker];
-  CL_Inv         = new su2double[nMarker];
-  CSF_Inv        = new su2double[nMarker];
-  CEff_Inv       = new su2double[nMarker];
-  CFx_Inv        = new su2double[nMarker];
-  CFy_Inv        = new su2double[nMarker];
-  CFz_Inv        = new su2double[nMarker];
-  CMx_Inv        = new su2double[nMarker];
-  CMy_Inv        = new su2double[nMarker];
-  CMz_Inv        = new su2double[nMarker];
-  CoPx_Inv       = new su2double[nMarker];
-  CoPy_Inv       = new su2double[nMarker];
-  CoPz_Inv       = new su2double[nMarker];
-
-  ForceMomentum  = new su2double[3];
-  MomentMomentum = new su2double[3];
-  CD_Mnt         = new su2double[nMarker];
-  CL_Mnt         = new su2double[nMarker];
-  CSF_Mnt        = new su2double[nMarker];
-  CEff_Mnt       = new su2double[nMarker];
-  CFx_Mnt        = new su2double[nMarker];
-  CFy_Mnt        = new su2double[nMarker];
-  CFz_Mnt        = new su2double[nMarker];
-  CMx_Mnt        = new su2double[nMarker];
-  CMy_Mnt        = new su2double[nMarker];
-  CMz_Mnt        = new su2double[nMarker];
-  CoPx_Mnt       = new su2double[nMarker];
-  CoPy_Mnt       = new su2double[nMarker];
-  CoPz_Mnt       = new su2double[nMarker];
-
-  ForceViscous   = new su2double[3];
-  MomentViscous  = new su2double[3];
-  CD_Visc        = new su2double[nMarker];
-  CL_Visc        = new su2double[nMarker];
-  CSF_Visc       = new su2double[nMarker];
-  CEff_Visc      = new su2double[nMarker];
-  CFx_Visc       = new su2double[nMarker];
-  CFy_Visc       = new su2double[nMarker];
-  CFz_Visc       = new su2double[nMarker];
-  CMx_Visc       = new su2double[nMarker];
-  CMy_Visc       = new su2double[nMarker];
-  CMz_Visc       = new su2double[nMarker];
-  CoPx_Visc      = new su2double[nMarker];
-  CoPy_Visc      = new su2double[nMarker];
-  CoPz_Visc      = new su2double[nMarker];
-
-  Surface_CL_Inv   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CD_Inv   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Inv  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CEff_Inv = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFx_Inv  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFy_Inv  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFz_Inv  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMx_Inv  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMy_Inv  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMz_Inv  = new su2double[config->GetnMarker_Monitoring()];
-
-  Surface_CL_Mnt   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CD_Mnt   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CEff_Mnt = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFx_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFy_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFz_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMx_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMy_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMz_Mnt  = new su2double[config->GetnMarker_Monitoring()];
-
-  Surface_CL       = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CD       = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CEff     = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFx      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFy      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFz      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMx      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMy      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMz      = new su2double[config->GetnMarker_Monitoring()];
-
-  Surface_CL_Visc    = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CD_Visc    = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CEff_Visc  = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFx_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFy_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CFz_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMx_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMy_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CMz_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  Surface_HF_Visc    = new su2double[config->GetnMarker_Monitoring()];
-  Surface_MaxHF_Visc = new su2double[config->GetnMarker_Monitoring()];
-
-  if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-    Buffet_Metric          = new su2double[nMarker];
-    Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
-  }
-
-  /*--- Rotational coefficients ---*/
-  CMerit_Inv = new su2double[nMarker];
-  CT_Inv     = new su2double[nMarker];
-  CQ_Inv     = new su2double[nMarker];
-
-  CMerit_Mnt = new su2double[nMarker];
-  CT_Mnt     = new su2double[nMarker];
-  CQ_Mnt     = new su2double[nMarker];
-
-  CMerit_Visc = new su2double[nMarker];
-  CT_Visc     = new su2double[nMarker];
-  CQ_Visc     = new su2double[nMarker];
-
-  /*--- Heat based coefficients ---*/
-  HF_Visc    = new su2double[nMarker];
-  MaxHF_Visc = new su2double[nMarker];
-
-  /*--- Supersonic coefficients ---*/
-  CEquivArea_Inv   = new su2double[nMarker];
-  CNearFieldOF_Inv = new su2double[nMarker];
-
-  /*--- Init total coefficients ---*/
-  Total_CD        = 0.0; Total_CL           = 0.0; Total_CSF          = 0.0;
-  Total_CMx       = 0.0; Total_CMy          = 0.0; Total_CMz          = 0.0;
-  Total_CoPx      = 0.0; Total_CoPy         = 0.0; Total_CoPz          = 0.0;
-  Total_CEff      = 0.0; Total_CEquivArea   = 0.0; Total_CNearFieldOF = 0.0;
-  Total_CFx       = 0.0; Total_CFy          = 0.0; Total_CFz          = 0.0;
-  Total_CT        = 0.0; Total_CQ           = 0.0; Total_CMerit       = 0.0;
-  Total_MaxHeat   = 0.0; Total_Heat         = 0.0; Total_ComboObj     = 0.0;
-  Total_CpDiff    = 0.0; Total_HeatFluxDiff = 0.0;
-  Total_NetThrust = 0.0; Total_CL_Prev      = 0.0;
-  Total_Power     = 0.0; AoA_Prev           = 0.0; Total_CD_Prev      = 0.0;
-  Total_CMx_Prev  = 0.0; Total_CMy_Prev     = 0.0; Total_CMz_Prev     = 0.0;
-  Total_AeroCD    = 0.0; Total_SolidCD      = 0.0; Total_IDR          = 0.0;
-  Total_IDC       = 0.0;
-  Total_Custom_ObjFunc = 0.0;
-
-  /*--- Read farfield conditions from config ---*/
-  Density_Inf        = config->GetDensity_FreeStreamND();
-  Pressure_Inf       = config->GetPressure_FreeStream();
-  Temperature_Inf    = config->GetTemperature_FreeStream();
-  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
-  Mach_Inf           = config->GetMach();
-  Velocity_Inf       = config->GetVelocity_FreeStreamND();
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
-  switch(direct_diff) {
-  case NO_DERIVATIVE:
-    break;
-  case D_DENSITY:
-    SU2_TYPE::SetDerivative(Density_Inf, 1.0);
-    break;
-  case D_PRESSURE:
-    SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
-    break;
-  case D_TEMPERATURE:
-    SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
-    break;
-  case D_VISCOSITY:
-    SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);
-    break;
-  case D_MACH: case D_AOA:
-  case D_SIDESLIP: case D_REYNOLDS:
-  case D_TURB2LAM: case D_DESIGN:
-    /*--- Already done in postprocessing of config ---*/
-    break;
-  default:
-    break;
+  switch(config->GetDirectDiff()) {
+    case D_VISCOSITY:
+      SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);
+      break;
+    default:
+      /*--- Already done upstream. ---*/
+      break;
   }
-
-  /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
-  Mvec_Inf = new su2double[nDim];
-  Alpha    = config->GetAoA()*PI_NUMBER/180.0;
-  Beta     = config->GetAoS()*PI_NUMBER/180.0;
-  if (nDim == 2) {
-    Mvec_Inf[0] = cos(Alpha)*Mach_Inf;
-    Mvec_Inf[1] = sin(Alpha)*Mach_Inf;
-  }
-  if (nDim == 3) {
-    Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach_Inf;
-    Mvec_Inf[1] = sin(Beta)*Mach_Inf;
-    Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
-  }
-
-   /*--- Create a CVariable that stores the free-stream values ---*/
-
-  node_infty = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
-                                   Mvec_Inf, Temperature_Inf,
-                                   Temperature_ve_Inf, 1, nDim, nVar,
-                                   nPrimVar, nPrimVarGrad, config, FluidModel);
- 
-  check_infty = node_infty->SetPrimVar_Compressible(0, config, FluidModel); 
-
- 
-  /*--- Initialize the solution to the far-field state everywhere. ---*/
-  nodes = new CNEMONSVariable(Pressure_Inf, MassFrac_Inf,
-                                       Mvec_Inf, Temperature_Inf,
-                                       Temperature_ve_Inf, nPoint, nDim, nVar,
-                                       nPrimVar, nPrimVarGrad, config, FluidModel); 
-
-  SetBaseClassPointerToNodes();
-
-  su2double Density_Inf, Soundspeed_Inf, sqvel;
-  vector<su2double> Energies_Inf;
-
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-  counter_local = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    check = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel); 
-
-    if (check) {
-
-      sqvel = 0.0;
-
-      /*--- Set mixture state ---*/
-      FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
-
-      /*--- Compute other freestream quantities ---*/
-      Density_Inf    = FluidModel->GetDensity();
-      Soundspeed_Inf = FluidModel->GetSoundSpeed();
-      for (iDim = 0; iDim < nDim; iDim++){
-        sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
-      }
-      Energies_Inf = FluidModel->GetMixtureEnergies();
-      
-      /*--- Initialize Solution & Solution_Old vectors ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
-      }
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
-      }
-      Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
-      Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
-      nodes->SetSolution(iPoint,Solution);
-      nodes->SetSolution_Old(iPoint,Solution);
-
-      counter_local++;
-    }
-  }
-
-  /*--- Warning message about non-physical points ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    counter_global = counter_local;
-#endif
-    if ((rank == MASTER_NODE) && (counter_global != 0))
-      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-  }
-  
-  /*--- Define some structures for locating max residuals ---*/
-  Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-  Point_Max_Coord_BGS = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-  }
-
-  /*--- Define solver parameters needed for execution of destructor ---*/
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
-  else space_centered = false;
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-  else euler_implicit = false;
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-  else least_squares = false;
 
   /* Auxiliary vector for storing primitives for gradient computation in viscous flow */
   /* V = [Y1, ... , Yn, T, Tve, ... ] */
   primitives_aux = new su2double[nPrimVar];
 
-  /*--- Perform the MPI communication of the solution ---*/
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Deallocate arrays ---*/
-  delete [] Mvec_Inf;
-
 }
 
 CNEMONSSolver::~CNEMONSSolver(void) {
-  unsigned short iMarker, iDim;
-
-  unsigned long iVertex;
-
-  if (CD_Visc != nullptr)          delete [] CD_Visc;
-  if (CL_Visc != nullptr)          delete [] CL_Visc;
-  if (CSF_Visc != nullptr)         delete [] CSF_Visc;
-  if (CFx_Visc != nullptr)         delete [] CFx_Visc;
-  if (CFy_Visc != nullptr)         delete [] CFy_Visc;
-  if (CFz_Visc != nullptr)         delete [] CFz_Visc;
-  if (CMx_Visc != nullptr)         delete [] CMx_Visc;
-  if (CMy_Visc != nullptr)         delete [] CMy_Visc;
-  if (CMz_Visc != nullptr)         delete [] CMz_Visc;
-  if (CoPx_Visc != nullptr)        delete [] CoPx_Visc;
-  if (CoPy_Visc != nullptr)        delete [] CoPy_Visc;
-  if (CoPz_Visc != nullptr)        delete [] CoPz_Visc;
-  if (CEff_Visc != nullptr)        delete [] CEff_Visc;
-  if (CMerit_Visc != nullptr)      delete [] CMerit_Visc;
-  if (Buffet_Metric != nullptr)    delete [] Buffet_Metric;
-  if (CT_Visc != nullptr)          delete [] CT_Visc;
-  if (CQ_Visc != nullptr)          delete [] CQ_Visc;
-  if (HF_Visc != nullptr)          delete [] HF_Visc;
-  if (MaxHF_Visc != nullptr)       delete [] MaxHF_Visc;
-  if (ForceViscous != nullptr)     delete [] ForceViscous;
-  if (MomentViscous != nullptr)    delete [] MomentViscous;
-
-  if (Surface_CL_Visc != nullptr)      delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != nullptr)      delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != nullptr)     delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != nullptr)    delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != nullptr)     delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != nullptr)     delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != nullptr)     delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != nullptr)     delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != nullptr)     delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != nullptr)     delete [] Surface_CMz_Visc;
-  if (Surface_HF_Visc != nullptr)      delete [] Surface_HF_Visc;
-  if (Surface_MaxHF_Visc != nullptr)   delete [] Surface_MaxHF_Visc;
-  if (Surface_Buffet_Metric != nullptr) delete [] Surface_Buffet_Metric;
-
-  if (CSkinFriction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        delete [] CSkinFriction[iMarker][iDim];
-      }
-      delete [] CSkinFriction[iMarker];
-    }
-    delete [] CSkinFriction;
-  }
-
-  if (HeatConjugateVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        delete [] HeatConjugateVar[iMarker][iVertex];
-      }
-      delete [] HeatConjugateVar[iMarker];
-    }
-    delete [] HeatConjugateVar;
-  }
-
-  if (Buffet_Sensor != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      delete [] Buffet_Sensor[iMarker];
-    }
-    delete [] Buffet_Sensor;
-  }
 
   if (primitives_aux != nullptr) delete [] primitives_aux;
 
@@ -1028,445 +344,432 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
 
 void CNEMONSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
-  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
-  unsigned long iVertex, iPoint, iPointNormal;
-  su2double **Grad_PrimVar, Delta, Viscosity, ThermalCond, ThermalCond_ve, TauNormal,
-  FrictionVel, *Normal, *Coord, *Coord_Normal, Area, Force[3], MomentDist[3],
-  RefDensity, Density, div_vel, RefVel2, dTn, dTven, pnorm, Alpha, Beta, RefLength,
-  RefArea, *Origin, factor, MaxNorm = 8.0, WallShearStress, WallDistMod, WallDist[3],
-  Vel[3], Velocity_Inf[3], UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3],
-  MomentX_Force[3], MomentY_Force[3], MomentZ_Force[3];
-  string Marker_Tag, Monitoring_Tag;
-
-#ifdef HAVE_MPI
-  su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CoPx_Visc, MyAllBound_CoPy_Visc, MyAllBound_CoPz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = nullptr, *MySurface_CD_Visc = nullptr, *MySurface_CSF_Visc = nullptr, *MySurface_CEff_Visc = nullptr, *MySurface_CFx_Visc = nullptr, *MySurface_CFy_Visc = nullptr, *MySurface_CFz_Visc = nullptr, *MySurface_CMx_Visc = nullptr, *MySurface_CMy_Visc = nullptr, *MySurface_CMz_Visc = nullptr, *MySurface_HF_Visc = nullptr, *MySurface_MaxHF_Visc;
-#endif
-
-  /*--- Retrieve index information from CVariable ---*/
-  VEL_INDEX = nodes->GetVelIndex();
-  T_INDEX   = nodes->GetTIndex();
-  TVE_INDEX = nodes->GetTveIndex();
-
-  /*--- Retrieve data from CConfig ---*/
-  pnorm = 0.0; //cat: getbackpnorm config->GetPnormHeat();
-
-  /*--- Calculate angle of attack & sideslip ---*/
-  Alpha = config->GetAoA()*PI_NUMBER/180.0;
-  Beta  = config->GetAoS()*PI_NUMBER/180.0;
-
-  /*--- Determine reference geometrical parameters ---*/
-  RefArea    = config->GetRefArea();
-  RefLength  = config->GetRefLength();
-  Origin     = config->GetRefOriginMoment(0);
-
-  /*--- Get reference values from the freestream node. ---*/
-  RefVel2 = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_Inf[iDim] = node_infty->GetVelocity(0,iDim);
-    RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
-  RefDensity  = node_infty->GetDensity(0);
-
-  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
-
-  /*-- Initialization --*/
-  AllBound_CMx_Visc  = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
-  AllBound_CFx_Visc  = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
-  AllBound_CD_Visc   = 0.0; AllBound_CL_Visc    = 0.0;
-  AllBound_HF_Visc   = 0.0; AllBound_MaxHF_Visc = 0.0;
-  AllBound_CEff_Visc = 0.0;
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CL_Visc[iMarker_Monitoring]  = 0.0; Surface_CD_Visc[iMarker_Monitoring]    = 0.0;
-    Surface_CSF_Visc[iMarker_Monitoring] = 0.0; Surface_CEff_Visc[iMarker_Monitoring]  = 0.0;
-    Surface_CFx_Visc[iMarker_Monitoring] = 0.0; Surface_CFy_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CFz_Visc[iMarker_Monitoring] = 0.0; Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMy_Visc[iMarker_Monitoring] = 0.0; Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_HF_Visc[iMarker_Monitoring]  = 0.0; Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
-  }
-
-  /*--- Loop over the Navier-Stokes markers ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    /*--- Identify boundary information ---*/
-    Boundary   = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-
-    /*--- Obtain the origin for the moment computation for a particular marker ---*/
-    if (Monitoring == YES) {
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if (Marker_Tag == Monitoring_Tag)
-          Origin = config->GetRefOriginMoment(iMarker_Monitoring);
-      }
-    }
-
-    /*--- Solve for the forces ---*/
-    if ((Boundary == HEAT_FLUX              ) ||
-        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
-        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
-        (Boundary == ISOTHERMAL             ) ||
-        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
-        (Boundary == SMOLUCHOWSKI_MAXWELL)) {
-
-      /*--- Forces initialization at each Marker ---*/
-      CD_Visc[iMarker]   = 0.0; CL_Visc[iMarker]    = 0.0; CSF_Visc[iMarker]    = 0.0;
-      CFx_Visc[iMarker]  = 0.0; CFy_Visc[iMarker]   = 0.0; CFz_Visc[iMarker]    = 0.0;
-      CMx_Visc[iMarker]  = 0.0; CMy_Visc[iMarker]   = 0.0; CMz_Visc[iMarker]    = 0.0;
-      CoPx_Visc[iMarker] = 0.0; CoPy_Visc[iMarker]  = 0.0; CoPz_Visc[iMarker]   = 0.0;
-      CT_Visc[iMarker]   = 0.0; CQ_Visc[iMarker]    = 0.0; CMerit_Visc[iMarker] = 0.0;
-      HF_Visc[iMarker]   = 0.0; MaxHF_Visc[iMarker] = 0.0; CEff_Visc[iMarker]   = 0.0;
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ForceViscous[iDim]  = 0.0; MomentViscous[iDim] = 0.0;
-        MomentX_Force[iDim] = 0.0; MomentY_Force[iDim] = 0.0; MomentZ_Force[iDim] = 0.0;
-      }
-
-      /*--- Loop over the boundary points ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-        /*--- Acquire & calculate geometric parameters ---*/
-        iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        Coord        = geometry->nodes->GetCoord(iPoint);
-        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-        Normal       = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-        Area         = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          UnitNormal[iDim] = Normal[iDim]/Area;
-          MomentDist[iDim] = Coord[iDim] - Origin[iDim];
-        }
-
-        /*--- Get vertex flow parameters ---*/
-        Grad_PrimVar   = nodes->GetGradient_Primitive(iPoint);
-        Viscosity      = nodes->GetLaminarViscosity(iPoint);
-        ThermalCond    = nodes->GetThermalConductivity(iPoint);
-        ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
-        Density        = nodes->GetDensity(iPoint);
-
-        /*--- Calculate the viscous stress tensor ---*/
-        div_vel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
-            Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-            Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[VEL_INDEX+jDim][iDim] +
-                Grad_PrimVar[VEL_INDEX+iDim][jDim]  )
-                - TWO3*Viscosity*div_vel*Delta;
-          }
-          TauElem[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++)
-            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-        }
-
-        /*--- Compute wall shear stress (using the stress tensor) ---*/
-        TauNormal = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauNormal += TauElem[iDim] * UnitNormal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-        WallShearStress = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          WallShearStress += TauTangent[iDim]*TauTangent[iDim];
-        WallShearStress = sqrt(WallShearStress);
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-        WallDistMod = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          WallDistMod += WallDist[iDim]*WallDist[iDim];
-        WallDistMod = sqrt(WallDistMod);
-
-        /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
-
-        /*--- Compute y+ and non-dimensional velocity ---*/
-        FrictionVel = sqrt(fabs(WallShearStress)/Density);
-        YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
-
-        /*--- Compute heat flux on the wall ---*/
-        dTn = 0.0; dTven = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
-        }
-
-        HeatFlux[iMarker][iVertex] = ThermalCond*dTn + ThermalCond_ve*dTven;
-        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], pnorm)*Area;
-
-        /*--- Compute viscous forces, and moment using the stress tensor ---*/
-        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = TauElem[iDim]*Area*factor;
-            ForceViscous[iDim] += Force[iDim];
-          }
-
-          if (iDim == 3) {
-            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
-            MomentX_Force[1] += (-Force[1]*Coord[2]);
-            MomentX_Force[2] += (Force[2]*Coord[1]);
-
-            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLength;
-            MomentY_Force[2] += (-Force[2]*Coord[0]);
-            MomentY_Force[0] += (Force[0]*Coord[2]);
-          }
-          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
-          MomentZ_Force[0] += (-Force[0]*Coord[1]);
-          MomentZ_Force[1] += (Force[1]*Coord[0]);
-        }
-      }
-
-      /*--- Transform ForceInviscid into CLift and CDrag ---*/
-      if  (Monitoring == YES) {
-
-        if (nDim == 2) {
-          CD_Visc[iMarker]     =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
-          CL_Visc[iMarker]     = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
-          CEff_Visc[iMarker]   = CL_Visc[iMarker] / (CD_Visc[iMarker]+EPS);
-          CFx_Visc[iMarker]    = ForceViscous[0];
-          CFy_Visc[iMarker]    = ForceViscous[1];
-          CMz_Visc[iMarker]    = MomentViscous[2];
-          CoPx_Visc[iMarker]   = MomentZ_Force[1];
-          CoPy_Visc[iMarker]   = -MomentZ_Force[0];
-          CT_Visc[iMarker]     = -CFx_Visc[iMarker];
-          CQ_Visc[iMarker]     = -CMz_Visc[iMarker];
-          CMerit_Visc[iMarker] = CT_Visc[iMarker] / (CQ_Visc[iMarker]+EPS);
-          MaxHF_Visc[iMarker]  = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
-        }
-
-        if (nDim == 3) {
-          CD_Visc[iMarker]     =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
-          CL_Visc[iMarker]     = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
-          CSF_Visc[iMarker]    = -ForceViscous[0]*sin(Beta)*cos(Alpha) + ForceViscous[1]*cos(Beta) - ForceViscous[2]*sin(Beta)*sin(Alpha);
-          CEff_Visc[iMarker]   = CL_Visc[iMarker]/(CD_Visc[iMarker] + EPS);
-          CFx_Visc[iMarker]    = ForceViscous[0];
-          CFy_Visc[iMarker]    = ForceViscous[1];
-          CFz_Visc[iMarker]    = ForceViscous[2];
-          CMx_Visc[iMarker]    = MomentViscous[0];
-          CMy_Visc[iMarker]    = MomentViscous[1];
-          CMz_Visc[iMarker]    = MomentViscous[2];
-          CoPx_Visc[iMarker]   =  -MomentY_Force[0];
-          CoPz_Visc[iMarker]   = MomentY_Force[2];
-          CT_Visc[iMarker]     = -CFz_Visc[iMarker];
-          CQ_Visc[iMarker]     = -CMz_Visc[iMarker];
-          CMerit_Visc[iMarker] = CT_Visc[iMarker] / (CQ_Visc[iMarker] + EPS);
-          MaxHF_Visc[iMarker]  = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
-        }
-
-        AllBound_CD_Visc    += CD_Visc[iMarker];
-        AllBound_CL_Visc    += CL_Visc[iMarker];
-        AllBound_CSF_Visc   += CSF_Visc[iMarker];
-        AllBound_CFx_Visc   += CFx_Visc[iMarker];
-        AllBound_CFy_Visc   += CFy_Visc[iMarker];
-        AllBound_CFz_Visc   += CFz_Visc[iMarker];
-        AllBound_CMx_Visc   += CMx_Visc[iMarker];
-        AllBound_CMy_Visc   += CMy_Visc[iMarker];
-        AllBound_CMz_Visc   += CMz_Visc[iMarker];
-        AllBound_CoPx_Visc  += CoPx_Visc[iMarker];
-        AllBound_CoPy_Visc  += CoPy_Visc[iMarker];
-        AllBound_CoPz_Visc  += CoPz_Visc[iMarker];
-        AllBound_CT_Visc    += CT_Visc[iMarker];
-        AllBound_CQ_Visc    += CQ_Visc[iMarker];
-        AllBound_HF_Visc    += HF_Visc[iMarker];
-        AllBound_MaxHF_Visc += pow(MaxHF_Visc[iMarker], MaxNorm);
-
-        /*--- Compute the coefficients per surface ---*/
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if (Marker_Tag == Monitoring_Tag) {
-            Surface_CL_Visc[iMarker_Monitoring]    += CL_Visc[iMarker];
-            Surface_CD_Visc[iMarker_Monitoring]    += CD_Visc[iMarker];
-            Surface_CSF_Visc[iMarker_Monitoring]   += CSF_Visc[iMarker];
-            Surface_CEff_Visc[iMarker_Monitoring]  += CEff_Visc[iMarker];
-            Surface_CFx_Visc[iMarker_Monitoring]   += CFx_Visc[iMarker];
-            Surface_CFy_Visc[iMarker_Monitoring]   += CFy_Visc[iMarker];
-            Surface_CFz_Visc[iMarker_Monitoring]   += CFz_Visc[iMarker];
-            Surface_CMx_Visc[iMarker_Monitoring]   += CMx_Visc[iMarker];
-            Surface_CMy_Visc[iMarker_Monitoring]   += CMy_Visc[iMarker];
-            Surface_CMz_Visc[iMarker_Monitoring]   += CMz_Visc[iMarker];
-            Surface_HF_Visc[iMarker_Monitoring]    += HF_Visc[iMarker];
-            Surface_MaxHF_Visc[iMarker_Monitoring] += pow(MaxHF_Visc[iMarker],MaxNorm);
-          }
-        }
-      }
-    }
-  }
-
-  /*--- Update some global coeffients ---*/
-  AllBound_CEff_Visc   = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
-  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
-  AllBound_MaxHF_Visc  = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
-
-#ifdef HAVE_MPI
-
-  /*--- Add AllBound information using all the nodes ---*/
-  MyAllBound_CD_Visc    = AllBound_CD_Visc;   AllBound_CD_Visc = 0.0;
-  MyAllBound_CL_Visc    = AllBound_CL_Visc;   AllBound_CL_Visc = 0.0;
-  MyAllBound_CSF_Visc   = AllBound_CSF_Visc;  AllBound_CSF_Visc = 0.0;
-  AllBound_CEff_Visc    = 0.0;
-  MyAllBound_CMx_Visc   = AllBound_CMx_Visc;  AllBound_CMx_Visc = 0.0;
-  MyAllBound_CMy_Visc   = AllBound_CMy_Visc;  AllBound_CMy_Visc = 0.0;
-  MyAllBound_CMz_Visc   = AllBound_CMz_Visc;  AllBound_CMz_Visc = 0.0;
-  MyAllBound_CoPx_Visc  = AllBound_CoPx_Visc; AllBound_CoPx_Visc = 0.0;
-  MyAllBound_CoPy_Visc  = AllBound_CoPy_Visc; AllBound_CoPy_Visc = 0.0;
-  MyAllBound_CoPz_Visc  = AllBound_CoPz_Visc; AllBound_CoPz_Visc = 0.0;
-  MyAllBound_CFx_Visc   = AllBound_CFx_Visc;  AllBound_CFx_Visc = 0.0;
-  MyAllBound_CFy_Visc   = AllBound_CFy_Visc;  AllBound_CFy_Visc = 0.0;
-  MyAllBound_CFz_Visc   = AllBound_CFz_Visc;  AllBound_CFz_Visc = 0.0;
-  MyAllBound_CT_Visc    = AllBound_CT_Visc;   AllBound_CT_Visc = 0.0;
-  MyAllBound_CQ_Visc    = AllBound_CQ_Visc;   AllBound_CQ_Visc = 0.0;
-  AllBound_CMerit_Visc  = 0.0;
-  MyAllBound_HF_Visc    = AllBound_HF_Visc;   AllBound_HF_Visc = 0.0;
-  MyAllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, MaxNorm);
-  AllBound_MaxHF_Visc = 0.0;
-
-  SU2_MPI::Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CSF_Visc, &AllBound_CSF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_CMx_Visc, &AllBound_CMx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMy_Visc, &AllBound_CMy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMz_Visc, &AllBound_CMz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFx_Visc, &AllBound_CFx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFy_Visc, &AllBound_CFy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFz_Visc, &AllBound_CFz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPx_Visc, &AllBound_CoPx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPy_Visc, &AllBound_CoPy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPz_Visc, &AllBound_CoPz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_HF_Visc, &AllBound_HF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_MaxHF_Visc, &AllBound_MaxHF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
-
-  /*--- Add the forces on the surfaces using all the nodes ---*/
-
-  MySurface_CL_Visc    = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CD_Visc    = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CSF_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CEff_Visc  = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CFx_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CFy_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CFz_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CMx_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CMy_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CMz_Visc   = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_HF_Visc    = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_MaxHF_Visc = new su2double[config->GetnMarker_Monitoring()];
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-    MySurface_CL_Visc[iMarker_Monitoring]    = Surface_CL_Visc[iMarker_Monitoring];
-    MySurface_CD_Visc[iMarker_Monitoring]    = Surface_CD_Visc[iMarker_Monitoring];
-    MySurface_CSF_Visc[iMarker_Monitoring]   = Surface_CSF_Visc[iMarker_Monitoring];
-    MySurface_CEff_Visc[iMarker_Monitoring]  = Surface_CEff_Visc[iMarker_Monitoring];
-    MySurface_CFx_Visc[iMarker_Monitoring]   = Surface_CFx_Visc[iMarker_Monitoring];
-    MySurface_CFy_Visc[iMarker_Monitoring]   = Surface_CFy_Visc[iMarker_Monitoring];
-    MySurface_CFz_Visc[iMarker_Monitoring]   = Surface_CFz_Visc[iMarker_Monitoring];
-    MySurface_CMx_Visc[iMarker_Monitoring]   = Surface_CMx_Visc[iMarker_Monitoring];
-    MySurface_CMy_Visc[iMarker_Monitoring]   = Surface_CMy_Visc[iMarker_Monitoring];
-    MySurface_CMz_Visc[iMarker_Monitoring]   = Surface_CMz_Visc[iMarker_Monitoring];
-    MySurface_HF_Visc[iMarker_Monitoring]    = Surface_HF_Visc[iMarker_Monitoring];
-    MySurface_MaxHF_Visc[iMarker_Monitoring] = Surface_MaxHF_Visc[iMarker_Monitoring];
-
-    Surface_CL_Visc[iMarker_Monitoring]    = 0.0;
-    Surface_CD_Visc[iMarker_Monitoring]    = 0.0;
-    Surface_CSF_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CEff_Visc[iMarker_Monitoring]  = 0.0;
-    Surface_CFx_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CFy_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CFz_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMy_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_HF_Visc[iMarker_Monitoring]    = 0.0;
-    Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
-  }
-
-  SU2_MPI::Allreduce(MySurface_CL_Visc, Surface_CL_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CD_Visc, Surface_CD_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CSF_Visc, Surface_CSF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
-    Surface_CEff_Visc[iMarker_Monitoring] = Surface_CL_Visc[iMarker_Monitoring] / (Surface_CD_Visc[iMarker_Monitoring] + EPS);
-  SU2_MPI::Allreduce(MySurface_CFx_Visc, Surface_CFx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFy_Visc, Surface_CFy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFz_Visc, Surface_CFz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_HF_Visc, Surface_HF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_MaxHF_Visc, Surface_MaxHF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  delete [] MySurface_CL_Visc;   delete [] MySurface_CD_Visc;  delete [] MySurface_CSF_Visc;
-  delete [] MySurface_CEff_Visc; delete [] MySurface_CFx_Visc; delete [] MySurface_CFy_Visc;
-  delete [] MySurface_CFz_Visc;  delete [] MySurface_CMx_Visc; delete [] MySurface_CMy_Visc;
-  delete [] MySurface_CMz_Visc;  delete [] MySurface_HF_Visc;  delete [] MySurface_MaxHF_Visc;
-
-#endif
-
-  /*--- Update the total coefficients (note that all the nodes have the same value)---*/
-
-  Total_CD      += AllBound_CD_Visc;
-  Total_CL      += AllBound_CL_Visc;
-  Total_CSF     += AllBound_CSF_Visc;
-  Total_CEff     = Total_CL / (Total_CD + EPS);
-  Total_CFx     += AllBound_CFx_Visc;
-  Total_CFy     += AllBound_CFy_Visc;
-  Total_CFz     += AllBound_CFz_Visc;
-  Total_CMx     += AllBound_CMx_Visc;
-  Total_CMy     += AllBound_CMy_Visc;
-  Total_CMz     += AllBound_CMz_Visc;
-  Total_CoPx    += AllBound_CoPx_Visc;
-  Total_CoPy    += AllBound_CoPy_Visc;
-  Total_CoPz    += AllBound_CoPz_Visc;
-  Total_CT      += AllBound_CT_Visc;
-  Total_CQ      += AllBound_CQ_Visc;
-  Total_CMerit   = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
-  Total_Heat     = AllBound_HF_Visc;
-  Total_MaxHeat  = AllBound_MaxHF_Visc;
-
-  /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CL[iMarker_Monitoring]   += Surface_CL_Visc[iMarker_Monitoring];
-    Surface_CD[iMarker_Monitoring]   += Surface_CD_Visc[iMarker_Monitoring];
-    Surface_CSF[iMarker_Monitoring]  += Surface_CSF_Visc[iMarker_Monitoring];
-    Surface_CEff[iMarker_Monitoring]  = Surface_CL[iMarker_Monitoring] / (Surface_CD[iMarker_Monitoring] + EPS);
-    Surface_CFx[iMarker_Monitoring]  += Surface_CFx_Visc[iMarker_Monitoring];
-    Surface_CFy[iMarker_Monitoring]  += Surface_CFy_Visc[iMarker_Monitoring];
-    Surface_CFz[iMarker_Monitoring]  += Surface_CFz_Visc[iMarker_Monitoring];
-    Surface_CMx[iMarker_Monitoring]  += Surface_CMx_Visc[iMarker_Monitoring];
-    Surface_CMy[iMarker_Monitoring]  += Surface_CMy_Visc[iMarker_Monitoring];
-    Surface_CMz[iMarker_Monitoring]  += Surface_CMz_Visc[iMarker_Monitoring];
-  }
-}
-
-void CNEMONSSolver::BC_Sym_Plane(CGeometry *geometry,
-                                 CSolver **solver_container,
-                                 CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics,
-                                 CConfig *config,
-                                 unsigned short val_marker) {
-
-  /*--- Call the Euler wall routine ---*/
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics,
-                config, val_marker);
-
+//  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
+//  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
+//  unsigned long iVertex, iPoint, iPointNormal;
+//  su2double **Grad_PrimVar, Delta, Viscosity, ThermalCond, ThermalCond_ve, TauNormal,
+//  FrictionVel, *Normal, *Coord, *Coord_Normal, Area, Force[3], MomentDist[3],
+//  RefDensity, Density, div_vel, RefVel2, dTn, dTven, pnorm, Alpha, Beta, RefLength,
+//  RefArea, *Origin, factor, MaxNorm = 8.0, WallShearStress, WallDistMod, WallDist[3],
+//  Vel[3], Velocity_Inf[3], UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3],
+//  MomentX_Force[3], MomentY_Force[3], MomentZ_Force[3];
+//  string Marker_Tag, Monitoring_Tag;
+//
+//#ifdef HAVE_MPI
+//  su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CoPx_Visc, MyAllBound_CoPy_Visc, MyAllBound_CoPz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = nullptr, *MySurface_CD_Visc = nullptr, *MySurface_CSF_Visc = nullptr, *MySurface_CEff_Visc = nullptr, *MySurface_CFx_Visc = nullptr, *MySurface_CFy_Visc = nullptr, *MySurface_CFz_Visc = nullptr, *MySurface_CMx_Visc = nullptr, *MySurface_CMy_Visc = nullptr, *MySurface_CMz_Visc = nullptr, *MySurface_HF_Visc = nullptr, *MySurface_MaxHF_Visc;
+//#endif
+//
+//  /*--- Retrieve index information from CVariable ---*/
+//  VEL_INDEX = nodes->GetVelIndex();
+//  T_INDEX   = nodes->GetTIndex();
+//  TVE_INDEX = nodes->GetTveIndex();
+//
+//  /*--- Retrieve data from CConfig ---*/
+//  pnorm = 0.0; //cat: getbackpnorm config->GetPnormHeat();
+//
+//  /*--- Calculate angle of attack & sideslip ---*/
+//  Alpha = config->GetAoA()*PI_NUMBER/180.0;
+//  Beta  = config->GetAoS()*PI_NUMBER/180.0;
+//
+//  /*--- Determine reference geometrical parameters ---*/
+//  RefArea    = config->GetRefArea();
+//  RefLength  = config->GetRefLength();
+//  Origin     = config->GetRefOriginMoment(0);
+//
+//  /*--- Get reference values from the freestream node. ---*/
+//  RefVel2 = 0.0;
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    Velocity_Inf[iDim] = node_infty->GetVelocity(0,iDim);
+//    RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+//  }
+//  RefDensity  = node_infty->GetDensity(0);
+//
+//  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
+//
+//  /*-- Initialization --*/
+//  AllBound_CMx_Visc  = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
+//  AllBound_CFx_Visc  = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
+//  AllBound_CD_Visc   = 0.0; AllBound_CL_Visc    = 0.0;
+//  AllBound_HF_Visc   = 0.0; AllBound_MaxHF_Visc = 0.0;
+//  AllBound_CEff_Visc = 0.0;
+//
+//  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//    Surface_CL_Visc[iMarker_Monitoring]  = 0.0; Surface_CD_Visc[iMarker_Monitoring]    = 0.0;
+//    Surface_CSF_Visc[iMarker_Monitoring] = 0.0; Surface_CEff_Visc[iMarker_Monitoring]  = 0.0;
+//    Surface_CFx_Visc[iMarker_Monitoring] = 0.0; Surface_CFy_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CFz_Visc[iMarker_Monitoring] = 0.0; Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CMy_Visc[iMarker_Monitoring] = 0.0; Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_HF_Visc[iMarker_Monitoring]  = 0.0; Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
+//  }
+//
+//  /*--- Loop over the Navier-Stokes markers ---*/
+//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//
+//    /*--- Identify boundary information ---*/
+//    Boundary   = config->GetMarker_All_KindBC(iMarker);
+//    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+//
+//    /*--- Obtain the origin for the moment computation for a particular marker ---*/
+//    if (Monitoring == YES) {
+//      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+//        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+//        if (Marker_Tag == Monitoring_Tag)
+//          Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+//      }
+//    }
+//
+//    /*--- Solve for the forces ---*/
+//    if ((Boundary == HEAT_FLUX              ) ||
+//        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
+//        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
+//        (Boundary == ISOTHERMAL             ) ||
+//        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
+//        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+//        (Boundary == SMOLUCHOWSKI_MAXWELL)) {
+//
+//      /*--- Forces initialization at each Marker ---*/
+//      CD_Visc[iMarker]   = 0.0; CL_Visc[iMarker]    = 0.0; CSF_Visc[iMarker]    = 0.0;
+//      CFx_Visc[iMarker]  = 0.0; CFy_Visc[iMarker]   = 0.0; CFz_Visc[iMarker]    = 0.0;
+//      CMx_Visc[iMarker]  = 0.0; CMy_Visc[iMarker]   = 0.0; CMz_Visc[iMarker]    = 0.0;
+//      CoPx_Visc[iMarker] = 0.0; CoPy_Visc[iMarker]  = 0.0; CoPz_Visc[iMarker]   = 0.0;
+//      CT_Visc[iMarker]   = 0.0; CQ_Visc[iMarker]    = 0.0; CMerit_Visc[iMarker] = 0.0;
+//      HF_Visc[iMarker]   = 0.0; MaxHF_Visc[iMarker] = 0.0; CEff_Visc[iMarker]   = 0.0;
+//
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        ForceViscous[iDim]  = 0.0; MomentViscous[iDim] = 0.0;
+//        MomentX_Force[iDim] = 0.0; MomentY_Force[iDim] = 0.0; MomentZ_Force[iDim] = 0.0;
+//      }
+//
+//      /*--- Loop over the boundary points ---*/
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//
+//        /*--- Acquire & calculate geometric parameters ---*/
+//        iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
+//        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+//        Coord        = geometry->nodes->GetCoord(iPoint);
+//        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+//        Normal       = geometry->vertex[iMarker][iVertex]->GetNormal();
+//
+//        Area         = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Area += Normal[iDim]*Normal[iDim];
+//        Area = sqrt(Area);
+//
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          UnitNormal[iDim] = Normal[iDim]/Area;
+//          MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+//        }
+//
+//        /*--- Get vertex flow parameters ---*/
+//        Grad_PrimVar   = nodes->GetGradient_Primitive(iPoint);
+//        Viscosity      = nodes->GetLaminarViscosity(iPoint);
+//        ThermalCond    = nodes->GetThermalConductivity(iPoint);
+//        ThermalCond_ve = nodes->GetThermalConductivity_ve(iPoint);
+//        Density        = nodes->GetDensity(iPoint);
+//
+//        /*--- Calculate the viscous stress tensor ---*/
+//        div_vel = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
+//
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          for (jDim = 0 ; jDim < nDim; jDim++) {
+//            Delta = 0.0; if (iDim == jDim) Delta = 1.0;
+//            Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[VEL_INDEX+jDim][iDim] +
+//                Grad_PrimVar[VEL_INDEX+iDim][jDim]  )
+//                - TWO3*Viscosity*div_vel*Delta;
+//          }
+//          TauElem[iDim] = 0.0;
+//          for (jDim = 0; jDim < nDim; jDim++)
+//            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+//        }
+//
+//        /*--- Compute wall shear stress (using the stress tensor) ---*/
+//        TauNormal = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauNormal += TauElem[iDim] * UnitNormal[iDim];
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+//
+//        WallShearStress = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+//        WallShearStress = sqrt(WallShearStress);
+//
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+//        WallDistMod = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          WallDistMod += WallDist[iDim]*WallDist[iDim];
+//        WallDistMod = sqrt(WallDistMod);
+//
+//        /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+//
+//        /*--- Compute y+ and non-dimensional velocity ---*/
+//        FrictionVel = sqrt(fabs(WallShearStress)/Density);
+//        YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
+//
+//        /*--- Compute heat flux on the wall ---*/
+//        dTn = 0.0; dTven = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+//          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+//        }
+//
+//        HeatFlux[iMarker][iVertex] = ThermalCond*dTn + ThermalCond_ve*dTven;
+//        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
+//        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], pnorm)*Area;
+//
+//        /*--- Compute viscous forces, and moment using the stress tensor ---*/
+//        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
+//
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            Force[iDim] = TauElem[iDim]*Area*factor;
+//            ForceViscous[iDim] += Force[iDim];
+//          }
+//
+//          if (iDim == 3) {
+//            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
+//            MomentX_Force[1] += (-Force[1]*Coord[2]);
+//            MomentX_Force[2] += (Force[2]*Coord[1]);
+//
+//            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLength;
+//            MomentY_Force[2] += (-Force[2]*Coord[0]);
+//            MomentY_Force[0] += (Force[0]*Coord[2]);
+//          }
+//          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
+//          MomentZ_Force[0] += (-Force[0]*Coord[1]);
+//          MomentZ_Force[1] += (Force[1]*Coord[0]);
+//        }
+//      }
+//
+//      /*--- Transform ForceInviscid into CLift and CDrag ---*/
+//      if  (Monitoring == YES) {
+//
+//        if (nDim == 2) {
+//          CD_Visc[iMarker]     =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
+//          CL_Visc[iMarker]     = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
+//          CEff_Visc[iMarker]   = CL_Visc[iMarker] / (CD_Visc[iMarker]+EPS);
+//          CFx_Visc[iMarker]    = ForceViscous[0];
+//          CFy_Visc[iMarker]    = ForceViscous[1];
+//          CMz_Visc[iMarker]    = MomentViscous[2];
+//          CoPx_Visc[iMarker]   = MomentZ_Force[1];
+//          CoPy_Visc[iMarker]   = -MomentZ_Force[0];
+//          CT_Visc[iMarker]     = -CFx_Visc[iMarker];
+//          CQ_Visc[iMarker]     = -CMz_Visc[iMarker];
+//          CMerit_Visc[iMarker] = CT_Visc[iMarker] / (CQ_Visc[iMarker]+EPS);
+//          MaxHF_Visc[iMarker]  = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
+//        }
+//
+//        if (nDim == 3) {
+//          CD_Visc[iMarker]     =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
+//          CL_Visc[iMarker]     = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
+//          CSF_Visc[iMarker]    = -ForceViscous[0]*sin(Beta)*cos(Alpha) + ForceViscous[1]*cos(Beta) - ForceViscous[2]*sin(Beta)*sin(Alpha);
+//          CEff_Visc[iMarker]   = CL_Visc[iMarker]/(CD_Visc[iMarker] + EPS);
+//          CFx_Visc[iMarker]    = ForceViscous[0];
+//          CFy_Visc[iMarker]    = ForceViscous[1];
+//          CFz_Visc[iMarker]    = ForceViscous[2];
+//          CMx_Visc[iMarker]    = MomentViscous[0];
+//          CMy_Visc[iMarker]    = MomentViscous[1];
+//          CMz_Visc[iMarker]    = MomentViscous[2];
+//          CoPx_Visc[iMarker]   =  -MomentY_Force[0];
+//          CoPz_Visc[iMarker]   = MomentY_Force[2];
+//          CT_Visc[iMarker]     = -CFz_Visc[iMarker];
+//          CQ_Visc[iMarker]     = -CMz_Visc[iMarker];
+//          CMerit_Visc[iMarker] = CT_Visc[iMarker] / (CQ_Visc[iMarker] + EPS);
+//          MaxHF_Visc[iMarker]  = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
+//        }
+//
+//        AllBound_CD_Visc    += CD_Visc[iMarker];
+//        AllBound_CL_Visc    += CL_Visc[iMarker];
+//        AllBound_CSF_Visc   += CSF_Visc[iMarker];
+//        AllBound_CFx_Visc   += CFx_Visc[iMarker];
+//        AllBound_CFy_Visc   += CFy_Visc[iMarker];
+//        AllBound_CFz_Visc   += CFz_Visc[iMarker];
+//        AllBound_CMx_Visc   += CMx_Visc[iMarker];
+//        AllBound_CMy_Visc   += CMy_Visc[iMarker];
+//        AllBound_CMz_Visc   += CMz_Visc[iMarker];
+//        AllBound_CoPx_Visc  += CoPx_Visc[iMarker];
+//        AllBound_CoPy_Visc  += CoPy_Visc[iMarker];
+//        AllBound_CoPz_Visc  += CoPz_Visc[iMarker];
+//        AllBound_CT_Visc    += CT_Visc[iMarker];
+//        AllBound_CQ_Visc    += CQ_Visc[iMarker];
+//        AllBound_HF_Visc    += HF_Visc[iMarker];
+//        AllBound_MaxHF_Visc += pow(MaxHF_Visc[iMarker], MaxNorm);
+//
+//        /*--- Compute the coefficients per surface ---*/
+//        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+//          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+//          if (Marker_Tag == Monitoring_Tag) {
+//            Surface_CL_Visc[iMarker_Monitoring]    += CL_Visc[iMarker];
+//            Surface_CD_Visc[iMarker_Monitoring]    += CD_Visc[iMarker];
+//            Surface_CSF_Visc[iMarker_Monitoring]   += CSF_Visc[iMarker];
+//            Surface_CEff_Visc[iMarker_Monitoring]  += CEff_Visc[iMarker];
+//            Surface_CFx_Visc[iMarker_Monitoring]   += CFx_Visc[iMarker];
+//            Surface_CFy_Visc[iMarker_Monitoring]   += CFy_Visc[iMarker];
+//            Surface_CFz_Visc[iMarker_Monitoring]   += CFz_Visc[iMarker];
+//            Surface_CMx_Visc[iMarker_Monitoring]   += CMx_Visc[iMarker];
+//            Surface_CMy_Visc[iMarker_Monitoring]   += CMy_Visc[iMarker];
+//            Surface_CMz_Visc[iMarker_Monitoring]   += CMz_Visc[iMarker];
+//            Surface_HF_Visc[iMarker_Monitoring]    += HF_Visc[iMarker];
+//            Surface_MaxHF_Visc[iMarker_Monitoring] += pow(MaxHF_Visc[iMarker],MaxNorm);
+//          }
+//        }
+//      }
+//    }
+//  }
+//
+//  /*--- Update some global coeffients ---*/
+//  AllBound_CEff_Visc   = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
+//  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+//  AllBound_MaxHF_Visc  = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
+//
+//#ifdef HAVE_MPI
+//
+//  /*--- Add AllBound information using all the nodes ---*/
+//  MyAllBound_CD_Visc    = AllBound_CD_Visc;   AllBound_CD_Visc = 0.0;
+//  MyAllBound_CL_Visc    = AllBound_CL_Visc;   AllBound_CL_Visc = 0.0;
+//  MyAllBound_CSF_Visc   = AllBound_CSF_Visc;  AllBound_CSF_Visc = 0.0;
+//  AllBound_CEff_Visc    = 0.0;
+//  MyAllBound_CMx_Visc   = AllBound_CMx_Visc;  AllBound_CMx_Visc = 0.0;
+//  MyAllBound_CMy_Visc   = AllBound_CMy_Visc;  AllBound_CMy_Visc = 0.0;
+//  MyAllBound_CMz_Visc   = AllBound_CMz_Visc;  AllBound_CMz_Visc = 0.0;
+//  MyAllBound_CoPx_Visc  = AllBound_CoPx_Visc; AllBound_CoPx_Visc = 0.0;
+//  MyAllBound_CoPy_Visc  = AllBound_CoPy_Visc; AllBound_CoPy_Visc = 0.0;
+//  MyAllBound_CoPz_Visc  = AllBound_CoPz_Visc; AllBound_CoPz_Visc = 0.0;
+//  MyAllBound_CFx_Visc   = AllBound_CFx_Visc;  AllBound_CFx_Visc = 0.0;
+//  MyAllBound_CFy_Visc   = AllBound_CFy_Visc;  AllBound_CFy_Visc = 0.0;
+//  MyAllBound_CFz_Visc   = AllBound_CFz_Visc;  AllBound_CFz_Visc = 0.0;
+//  MyAllBound_CT_Visc    = AllBound_CT_Visc;   AllBound_CT_Visc = 0.0;
+//  MyAllBound_CQ_Visc    = AllBound_CQ_Visc;   AllBound_CQ_Visc = 0.0;
+//  AllBound_CMerit_Visc  = 0.0;
+//  MyAllBound_HF_Visc    = AllBound_HF_Visc;   AllBound_HF_Visc = 0.0;
+//  MyAllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, MaxNorm);
+//  AllBound_MaxHF_Visc = 0.0;
+//
+//  SU2_MPI::Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CSF_Visc, &AllBound_CSF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
+//  SU2_MPI::Allreduce(&MyAllBound_CMx_Visc, &AllBound_CMx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CMy_Visc, &AllBound_CMy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CMz_Visc, &AllBound_CMz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CFx_Visc, &AllBound_CFx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CFy_Visc, &AllBound_CFy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CFz_Visc, &AllBound_CFz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CoPx_Visc, &AllBound_CoPx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CoPy_Visc, &AllBound_CoPy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CoPz_Visc, &AllBound_CoPz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+//  SU2_MPI::Allreduce(&MyAllBound_HF_Visc, &AllBound_HF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&MyAllBound_MaxHF_Visc, &AllBound_MaxHF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
+//
+//  /*--- Add the forces on the surfaces using all the nodes ---*/
+//
+//  MySurface_CL_Visc    = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CD_Visc    = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CSF_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CEff_Visc  = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CFx_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CFy_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CFz_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CMx_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CMy_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_CMz_Visc   = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_HF_Visc    = new su2double[config->GetnMarker_Monitoring()];
+//  MySurface_MaxHF_Visc = new su2double[config->GetnMarker_Monitoring()];
+//
+//  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//
+//    MySurface_CL_Visc[iMarker_Monitoring]    = Surface_CL_Visc[iMarker_Monitoring];
+//    MySurface_CD_Visc[iMarker_Monitoring]    = Surface_CD_Visc[iMarker_Monitoring];
+//    MySurface_CSF_Visc[iMarker_Monitoring]   = Surface_CSF_Visc[iMarker_Monitoring];
+//    MySurface_CEff_Visc[iMarker_Monitoring]  = Surface_CEff_Visc[iMarker_Monitoring];
+//    MySurface_CFx_Visc[iMarker_Monitoring]   = Surface_CFx_Visc[iMarker_Monitoring];
+//    MySurface_CFy_Visc[iMarker_Monitoring]   = Surface_CFy_Visc[iMarker_Monitoring];
+//    MySurface_CFz_Visc[iMarker_Monitoring]   = Surface_CFz_Visc[iMarker_Monitoring];
+//    MySurface_CMx_Visc[iMarker_Monitoring]   = Surface_CMx_Visc[iMarker_Monitoring];
+//    MySurface_CMy_Visc[iMarker_Monitoring]   = Surface_CMy_Visc[iMarker_Monitoring];
+//    MySurface_CMz_Visc[iMarker_Monitoring]   = Surface_CMz_Visc[iMarker_Monitoring];
+//    MySurface_HF_Visc[iMarker_Monitoring]    = Surface_HF_Visc[iMarker_Monitoring];
+//    MySurface_MaxHF_Visc[iMarker_Monitoring] = Surface_MaxHF_Visc[iMarker_Monitoring];
+//
+//    Surface_CL_Visc[iMarker_Monitoring]    = 0.0;
+//    Surface_CD_Visc[iMarker_Monitoring]    = 0.0;
+//    Surface_CSF_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CEff_Visc[iMarker_Monitoring]  = 0.0;
+//    Surface_CFx_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CFy_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CFz_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CMy_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
+//    Surface_HF_Visc[iMarker_Monitoring]    = 0.0;
+//    Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
+//  }
+//
+//  SU2_MPI::Allreduce(MySurface_CL_Visc, Surface_CL_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CD_Visc, Surface_CD_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CSF_Visc, Surface_CSF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
+//    Surface_CEff_Visc[iMarker_Monitoring] = Surface_CL_Visc[iMarker_Monitoring] / (Surface_CD_Visc[iMarker_Monitoring] + EPS);
+//  SU2_MPI::Allreduce(MySurface_CFx_Visc, Surface_CFx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CFy_Visc, Surface_CFy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CFz_Visc, Surface_CFz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_HF_Visc, Surface_HF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(MySurface_MaxHF_Visc, Surface_MaxHF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//
+//  delete [] MySurface_CL_Visc;   delete [] MySurface_CD_Visc;  delete [] MySurface_CSF_Visc;
+//  delete [] MySurface_CEff_Visc; delete [] MySurface_CFx_Visc; delete [] MySurface_CFy_Visc;
+//  delete [] MySurface_CFz_Visc;  delete [] MySurface_CMx_Visc; delete [] MySurface_CMy_Visc;
+//  delete [] MySurface_CMz_Visc;  delete [] MySurface_HF_Visc;  delete [] MySurface_MaxHF_Visc;
+//
+//#endif
+//
+//  /*--- Update the total coefficients (note that all the nodes have the same value)---*/
+//
+//  Total_CD      += AllBound_CD_Visc;
+//  Total_CL      += AllBound_CL_Visc;
+//  Total_CSF     += AllBound_CSF_Visc;
+//  Total_CEff     = Total_CL / (Total_CD + EPS);
+//  Total_CFx     += AllBound_CFx_Visc;
+//  Total_CFy     += AllBound_CFy_Visc;
+//  Total_CFz     += AllBound_CFz_Visc;
+//  Total_CMx     += AllBound_CMx_Visc;
+//  Total_CMy     += AllBound_CMy_Visc;
+//  Total_CMz     += AllBound_CMz_Visc;
+//  Total_CoPx    += AllBound_CoPx_Visc;
+//  Total_CoPy    += AllBound_CoPy_Visc;
+//  Total_CoPz    += AllBound_CoPz_Visc;
+//  Total_CT      += AllBound_CT_Visc;
+//  Total_CQ      += AllBound_CQ_Visc;
+//  Total_CMerit   = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+//  Total_Heat     = AllBound_HF_Visc;
+//  Total_MaxHeat  = AllBound_MaxHF_Visc;
+//
+//  /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
+//  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//    Surface_CL[iMarker_Monitoring]   += Surface_CL_Visc[iMarker_Monitoring];
+//    Surface_CD[iMarker_Monitoring]   += Surface_CD_Visc[iMarker_Monitoring];
+//    Surface_CSF[iMarker_Monitoring]  += Surface_CSF_Visc[iMarker_Monitoring];
+//    Surface_CEff[iMarker_Monitoring]  = Surface_CL[iMarker_Monitoring] / (Surface_CD[iMarker_Monitoring] + EPS);
+//    Surface_CFx[iMarker_Monitoring]  += Surface_CFx_Visc[iMarker_Monitoring];
+//    Surface_CFy[iMarker_Monitoring]  += Surface_CFy_Visc[iMarker_Monitoring];
+//    Surface_CFz[iMarker_Monitoring]  += Surface_CFz_Visc[iMarker_Monitoring];
+//    Surface_CMx[iMarker_Monitoring]  += Surface_CMx_Visc[iMarker_Monitoring];
+//    Surface_CMy[iMarker_Monitoring]  += Surface_CMy_Visc[iMarker_Monitoring];
+//    Surface_CMz[iMarker_Monitoring]  += Surface_CMz_Visc[iMarker_Monitoring];
+//  }
 }
 
 void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,

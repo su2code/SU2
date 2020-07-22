@@ -164,6 +164,18 @@ public:
   }
 
   /*!
+   * \brief Get the primitive variables limiter.
+   * \return Primitive variables as dummy return.
+   */
+  inline MatrixType& GetLimiter_Primitive(void) {
+
+    SU2_MPI::Error(string("Limiters (associated to MUSCL) are computed for conserved variables in the NEMO solver.") +
+                   string("Limiters for primitive variables are not allocated/computed."),
+                   CURRENT_FUNCTION);
+    return Primitive;
+  }
+
+  /*!
    * \brief Set the value of the primitive variables.
    * \param[in] iVar - Index of the variable.
    * \param[in] iVar - Index of the variable.
