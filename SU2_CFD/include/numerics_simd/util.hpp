@@ -37,13 +37,13 @@
  * \note These should be used instead of C-style arrays.
  */
 template<class Type, size_t Size>
-using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, simd::SIMD_SIZE, Size, 1>;
+using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, Type::Align, Size, 1>;
 
 template<size_t Size> using VectorInt = Vector<Int, Size>;
 template<size_t Size> using VectorDbl = Vector<Double, Size>;
 
 template<class Type, size_t Rows, size_t Cols>
-using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, simd::SIMD_SIZE, Rows, Cols>;
+using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, Type::Align, Rows, Cols>;
 
 template<size_t Rows, size_t Cols = Rows> using MatrixInt = Matrix<Int, Rows, Cols>;
 template<size_t Rows, size_t Cols = Rows> using MatrixDbl = Matrix<Double, Rows, Cols>;

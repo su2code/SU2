@@ -119,9 +119,12 @@ public:                                                                       \
 template<class U, class S>                                                    \
 FORCEINLINE auto FUN(const CVecExpr<U,S>& u) RETURNS( EXPR<U,S>(u.derived()) )
 
+#define sign_impl(x) Scalar(1-2*(x<0))
 MAKE_UNARY_FUN(operator-, minus_, -)
 MAKE_UNARY_FUN(abs, abs_, math::abs)
 MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
+MAKE_UNARY_FUN(sign, sign_, sign_impl)
+#undef sign_impl
 
 #undef MAKE_UNARY_FUN
 
@@ -177,20 +180,20 @@ MAKE_BINARY_FUN(operator/, div_, div_impl)
 
 /*--- Relational operators need to be cast to the scalar type to allow vectorization. ---*/
 
-#define leq_impl(a,b) Scalar(a<=b)
-#define geq_impl(a,b) Scalar(a>=b)
+#define le_impl(a,b) Scalar(a<=b)
+#define ge_impl(a,b) Scalar(a>=b)
 #define eq_impl(a,b) Scalar(a==b)
 #define ne_impl(a,b) Scalar(a!=b)
 #define lt_impl(a,b) Scalar(a<b)
 #define gt_impl(a,b) Scalar(a>b)
-MAKE_BINARY_FUN(operator<=, leq_, leq_impl)
-MAKE_BINARY_FUN(operator>=, geq_, geq_impl)
+MAKE_BINARY_FUN(operator<=, le_, le_impl)
+MAKE_BINARY_FUN(operator>=, ge_, ge_impl)
 MAKE_BINARY_FUN(operator==, eq_, eq_impl)
 MAKE_BINARY_FUN(operator!=, ne_, ne_impl)
 MAKE_BINARY_FUN(operator<, lt_, lt_impl)
 MAKE_BINARY_FUN(operator>, gt_, gt_impl)
-#undef leq_impl
-#undef geq_impl
+#undef le_impl
+#undef ge_impl
 #undef eq_impl
 #undef ne_impl
 #undef lt_impl

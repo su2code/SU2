@@ -97,12 +97,12 @@ protected:
   /*!
    * \brief Add viscous contributions to flux and jacobians.
    */
-  template<size_t nVar>
+  template<class PrimVarType, size_t nVar>
   FORCEINLINE void updateFlux(Int iEdge,
                               Int iPoint,
                               Int jPoint,
-                              const CCompressiblePrimitives<nDim,nPrimVar>& avgV,
-                              const CPair<CCompressiblePrimitives<nDim,nPrimVar> >& V,
+                              const PrimVarType& avgV,
+                              const CPair<PrimVarType>& V,
                               const CVariable& solution_,
                               const VectorDbl<nDim>& vector_ij,
                               const CGeometry& geometry,
@@ -113,6 +113,8 @@ protected:
                               VectorDbl<nVar>& flux,
                               MatrixDbl<nVar>& jac_i,
                               MatrixDbl<nVar>& jac_j) const {
+
+    static_assert(PrimVarType::nVar <= nPrimVar,"");
 
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
@@ -198,15 +200,14 @@ protected:
   /*!
    * \overload Average primitives if not provided yet.
    */
-  template<class... Ts>
+  template<class PrimVarType, class... Ts>
   FORCEINLINE void updateFlux(Int iEdge,
                               Int iPoint,
                               Int jPoint,
-                              const CPair<CCompressiblePrimitives<nDim,nPrimVar> >& V,
+                              const CPair<PrimVarType>& V,
                               Ts&... args) const {
-
-    CCompressiblePrimitives<nDim,nPrimVar> avgV;
-    for (size_t iVar = 0; iVar < nPrimVar; ++iVar) {
+    PrimVarType avgV;
+    for (size_t iVar = 0; iVar < PrimVarType::nVar; ++iVar) {
       avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
     }
 
@@ -217,12 +218,12 @@ protected:
   /*!
    * \overload Compute the i-j vector if not provided yet.
    */
-  template<class... Ts>
+  template<class PrimVarType, class... Ts>
   FORCEINLINE void updateFlux(Int iEdge,
                               Int iPoint,
                               Int jPoint,
-                              const CCompressiblePrimitives<nDim,nPrimVar>& avgV,
-                              const CPair<CCompressiblePrimitives<nDim,nPrimVar> >& V,
+                              const PrimVarType& avgV,
+                              const CPair<PrimVarType>& V,
                               const CVariable& solution_,
                               const CGeometry& geometry,
                               Ts&... args) const {

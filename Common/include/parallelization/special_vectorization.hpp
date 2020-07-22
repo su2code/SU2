@@ -101,6 +101,7 @@ FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) {return IMPL(x.reg);}
 MAKE_UNARY_FUN(operator-, neg_p)
 MAKE_UNARY_FUN(sqrt, sqrt_p)
 MAKE_UNARY_FUN(abs, abs_p)
+MAKE_UNARY_FUN(sign, sign_p)
 
 #undef MAKE_UNARY_FUN
 
@@ -119,6 +120,12 @@ MAKE_BINARY_FUN(operator+, add_p)
 MAKE_BINARY_FUN(operator-, sub_p)
 MAKE_BINARY_FUN(operator*, mul_p)
 MAKE_BINARY_FUN(operator/, div_p)
+MAKE_BINARY_FUN(operator<, lt_p)
+MAKE_BINARY_FUN(operator>, gt_p)
+MAKE_BINARY_FUN(operator==, eq_p)
+MAKE_BINARY_FUN(operator!=, ne_p)
+MAKE_BINARY_FUN(operator<=, le_p)
+MAKE_BINARY_FUN(operator>=, ge_p)
 MAKE_BINARY_FUN(max, max_p)
 MAKE_BINARY_FUN(min, min_p)
 
@@ -128,28 +135,6 @@ MAKE_BINARY_FUN(min, min_p)
  * Compatibility mode overloads, element-wise implementation.
  */
 #define FOREACH SU2_OMP_SIMD for(size_t k=0; k<ARRAY_T::Size; ++k)
-
-/*--- Logical and relational operators, with arrays and scalars. ---*/
-
-#define MAKE_OPERATOR(OP)                                               \
-FORCEINLINE ARRAY_T operator OP (const ARRAY_T& a, const ARRAY_T& b) {  \
-  ARRAY_T res; FOREACH res[k] = a[k] OP b[k]; return res;               \
-}                                                                       \
-FORCEINLINE ARRAY_T operator OP (const ARRAY_T& a, SCALAR_T b) {        \
-  ARRAY_T res; FOREACH res[k] = a[k] OP b; return res;                  \
-}                                                                       \
-FORCEINLINE ARRAY_T operator OP (SCALAR_T b, const ARRAY_T& a) {        \
-  ARRAY_T res; FOREACH res[k] = b OP a[k]; return res;                  \
-}
-
-MAKE_OPERATOR(<)
-MAKE_OPERATOR(>)
-MAKE_OPERATOR(==)
-MAKE_OPERATOR(!=)
-MAKE_OPERATOR(<=)
-MAKE_OPERATOR(>=)
-
-#undef MAKE_OPERATOR
 
 /*--- Functions of one (array) argument. ---*/
 

@@ -3456,9 +3456,8 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CCo
     jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint))
     {
-      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/

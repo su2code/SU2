@@ -33,7 +33,7 @@ using namespace GeometryToolbox;
 
 CEdge::CEdge(unsigned long nEdge, unsigned long nDim) {
   /*--- Allocate with padding. ---*/
-  const auto nEdgeSIMD = nextMultiple(nEdge, simd::simdLen<su2double>());
+  const auto nEdgeSIMD = nextMultiple(nEdge, simd::preferredLen<su2double>());
   Nodes.resize(nEdgeSIMD,2) = 0;
   Normal.resize(nEdgeSIMD,nDim) = su2double(0.0);
   Coord_CG.resize(nEdgeSIMD,nDim) = su2double(0.0);
