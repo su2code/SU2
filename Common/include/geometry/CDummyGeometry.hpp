@@ -2,7 +2,7 @@
  * \file CDummyGeometry.hpp
  * \brief Headers of the dummy geometry class used in "dry run" mode.
  * \author T. Albring
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,11 +44,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CDummyGeometry(CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDummyGeometry() override;
 
 };
 

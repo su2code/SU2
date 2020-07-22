@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,8 @@
 #include "../../include/drivers/CMultizoneDriver.hpp"
 #include "../../include/definition_structure.hpp"
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIteration.hpp"
 
 CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
                   CDriver(confFile, val_nZone, MPICommunicator, false) {
@@ -691,4 +693,8 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
   return StopCalc;
 
+}
+
+bool CMultizoneDriver::GetTimeConvergence() const{
+  return driver_output->GetTimeConvergence();
 }

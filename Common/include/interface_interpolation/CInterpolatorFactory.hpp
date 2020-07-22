@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CInterpolatorFactory.hpp
  * \brief Factory to generate interpolator objects.
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,7 +44,7 @@ namespace CInterpolatorFactory {
  * \param[in] verbose - If true, print information to screen.
  * \return Pointer to interpolator on the heap, caller is responsible for deletion.
  */
-CInterpolator* createInterpolator(CGeometry ****geometry_container,
+CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
                                   unsigned iZone, unsigned jZone,
                                   bool verbose = true);

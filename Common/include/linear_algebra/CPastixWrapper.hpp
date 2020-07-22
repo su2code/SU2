@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -114,7 +114,7 @@ private:
   /*!
    * \brief Initialize the matrix format that PaStiX requires.
    */
-  void Initialize(CGeometry *geometry, CConfig *config);
+  void Initialize(CGeometry *geometry, const CConfig *config);
 
 public:
   /*!
@@ -169,7 +169,7 @@ public:
    * \param[in] kind_fact - Type of factorization.
    * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void Factorize(CGeometry *geometry, CConfig *config, unsigned short kind_fact, bool transposed);
+  void Factorize(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed);
 
   /*!
    * \brief Runs the "solve" task for any rhs/sol with operator []

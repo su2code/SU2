@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -508,8 +508,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       }
 
       /*--- Allocate space for elements ---*/
-      elem = new CPrimalGrid*[nElem];
-      for (unsigned long i = 0; i < nElem; i++) elem[i] = nullptr;
+      elem = new CPrimalGrid*[nElem] ();
 
       /*--- Loop over all the elements and store the elements to be stored on
             this rank. Furthermore, determine the total amount of DOFs for
@@ -984,8 +983,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   }
 
   /*--- Allocate space for elements ---*/
-  elem = new CPrimalGrid*[nElem];
-  for(unsigned long i=0; i<nElem; ++i) elem[i] = NULL;
+  elem = new CPrimalGrid*[nElem] ();
 
   /*--- Loop over over the connectivities and read the elements to be stored on
         this rank. Furthermore, determine the local amount of DOFs for the
@@ -2744,9 +2742,9 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
             current marker to the donor marker.    ---*/
       unsigned short jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
 
-      su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
-      su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
-      su2double *trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
+      auto center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+      auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      auto trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
 
       /*--- Store (center+trans) as it is constant and will be added on. ---*/
       su2double translation[] = {center[0] + trans[0],

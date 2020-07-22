@@ -4,7 +4,7 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>blass_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,18 +29,18 @@
 
 #pragma once
 
-#include "CConfig.hpp"
-
 /* LIBXSMM include files, if supported. */
 #ifdef HAVE_LIBXSMM
 #include "libxsmm.h"
 #endif
 
+class CConfig;
+
 /*!
  * \class CBlasStructure
  * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CBlasStructure {
 public:
@@ -66,7 +66,7 @@ public:
    */
   void gemm(const int M,        const int N,        const int K,
             const su2double *A, const su2double *B, su2double *C,
-            CConfig *config);
+            const CConfig *config);
 
   /*!
    * \brief Function, which carries out a dense matrix vector product

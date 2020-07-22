@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,105 +55,11 @@
 #endif
 
 
-CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  Local_to_Global_Point  = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-  SpanWiseValue           = nullptr;
-
-}
+CPhysicalGeometry::CPhysicalGeometry() : CGeometry() { }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
 
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  Local_to_Global_Point = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
-
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-  SpanWiseValue           = nullptr;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -201,7 +107,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
 
-  assert((nDim == 2) || (nDim == 3));
+  assert(((nDim == 2) || (nDim == 3)) && "There shall be bugs.");
 
   /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
 
@@ -276,120 +182,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
-                                     CConfig *config) {
-
-  /*--- Get rank and size. ---*/
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  /*--- Initialize several class data members for later. ---*/
-
-  Local_to_Global_Point  = nullptr;
-  Local_to_Global_Marker = nullptr;
-  Global_to_Local_Marker = nullptr;
-
-  /*--- Arrays for defining the linear partitioning. ---*/
-
-  beg_node = nullptr;
-  end_node = nullptr;
-
-  nPointLinear      = nullptr;
-  nPointCumulative  = nullptr;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = nullptr;
-  xadj      = nullptr;
-#endif
-#endif
+                                     CConfig *config) : CGeometry() {
 
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = nullptr;
-  nSpanSectionsByMarker   = nullptr;
-  SpanWiseValue           = nullptr;
-  nVertexSpan             = nullptr;
-  nTotVertexSpan          = nullptr;
-  turbovertex             = nullptr;
-  AverageTurboNormal      = nullptr;
-  AverageNormal           = nullptr;
-  AverageGridVel          = nullptr;
-  AverageTangGridVel      = nullptr;
-  SpanArea                = nullptr;
-  TurboRadius             = nullptr;
-  MaxAngularCoord         = nullptr;
-  MinAngularCoord         = nullptr;
-  MinRelAngularCoord      = nullptr;
-
-  TangGridVelIn           = nullptr;
-  SpanAreaIn              = nullptr;
-  TurboRadiusIn           = nullptr;
-  TangGridVelOut          = nullptr;
-  SpanAreaOut             = nullptr;
-  TurboRadiusOut          = nullptr;
-
-  /*--- Initialize counters for the points/elements local to a rank. ---*/
-
-  nLocal_Point         = 0;
-  nLocal_PointDomain   = 0;
-  nLocal_PointGhost    = 0;
-  nLocal_PointPeriodic = 0;
-  nLocal_Line          = 0;
-  nLocal_BoundTria     = 0;
-  nLocal_BoundQuad     = 0;
-  nLocal_Tria          = 0;
-  nLocal_Quad          = 0;
-  nLocal_Tetr          = 0;
-  nLocal_Hexa          = 0;
-  nLocal_Pris          = 0;
-  nLocal_Pyra          = 0;
-
-  Local_Coords = nullptr;
-  Local_Points = nullptr;
-  Local_Colors = nullptr;
-
-  /*--- Arrays for holding the element connectivity. ---*/
-
-  Conn_Line      = nullptr;
-  Conn_BoundTria = nullptr;
-  Conn_BoundQuad = nullptr;
-
-  Conn_Line_Linear      = nullptr;
-  Conn_BoundTria_Linear = nullptr;
-  Conn_BoundQuad_Linear = nullptr;
-
-  Conn_Tria = nullptr;
-  Conn_Quad = nullptr;
-  Conn_Tetr = nullptr;
-  Conn_Hexa = nullptr;
-  Conn_Pris = nullptr;
-  Conn_Pyra = nullptr;
-
-  /*--- Arrays for holding the element IDs. ---*/
-
-  ID_Line             = nullptr;
-  ID_BoundTria        = nullptr;
-  ID_BoundQuad        = nullptr;
-  ID_Line_Linear      = nullptr;
-  ID_BoundTria_Linear = nullptr;
-  ID_BoundQuad_Linear = nullptr;
-
-  ID_Tria = nullptr;
-  ID_Quad = nullptr;
-  ID_Tetr = nullptr;
-  ID_Hexa = nullptr;
-  ID_Pris = nullptr;
-  ID_Pyra = nullptr;
-
-  Elem_ID_Line             = nullptr;
-  Elem_ID_BoundTria        = nullptr;
-  Elem_ID_BoundQuad        = nullptr;
-  Elem_ID_Line_Linear      = nullptr;
-  Elem_ID_BoundTria_Linear = nullptr;
-  Elem_ID_BoundQuad_Linear = nullptr;
 
   /*--- The new geometry class has the same problem dimension/zone. ---*/
 
@@ -475,29 +270,26 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
-  Neighbors.clear();
-  Color_List.clear();
+  decltype(Neighbors)().swap(Neighbors);
+  decltype(Color_List)().swap(Color_List);
 
   delete [] Local_Points;
   delete [] Local_Colors;
   delete [] Local_Coords;
 
-  if (nLinear_Line > 0      && Conn_Line_Linear      != nullptr)
-    delete [] Conn_Line_Linear;
-  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != nullptr)
-    delete [] Conn_BoundTria_Linear;
-  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != nullptr)
-    delete [] Conn_BoundQuad_Linear;
+  delete [] Conn_Line_Linear;
+  delete [] Conn_BoundTria_Linear;
+  delete [] Conn_BoundQuad_Linear;
 
-  if (nLocal_Line > 0      && Conn_Line      != nullptr) delete [] Conn_Line;
-  if (nLocal_BoundTria > 0 && Conn_BoundTria != nullptr) delete [] Conn_BoundTria;
-  if (nLocal_BoundQuad > 0 && Conn_BoundQuad != nullptr) delete [] Conn_BoundQuad;
-  if (nLocal_Tria > 0      && Conn_Tria      != nullptr) delete [] Conn_Tria;
-  if (nLocal_Quad > 0      && Conn_Quad      != nullptr) delete [] Conn_Quad;
-  if (nLocal_Tetr > 0      && Conn_Tetr      != nullptr) delete [] Conn_Tetr;
-  if (nLocal_Hexa > 0      && Conn_Hexa      != nullptr) delete [] Conn_Hexa;
-  if (nLocal_Pris > 0      && Conn_Pris      != nullptr) delete [] Conn_Pris;
-  if (nLocal_Pyra > 0      && Conn_Pyra      != nullptr) delete [] Conn_Pyra;
+  delete [] Conn_Line;
+  delete [] Conn_BoundTria;
+  delete [] Conn_BoundQuad;
+  delete [] Conn_Tria;
+  delete [] Conn_Quad;
+  delete [] Conn_Tetr;
+  delete [] Conn_Hexa;
+  delete [] Conn_Pris;
+  delete [] Conn_Pyra;
 
   delete [] ID_Line;
   delete [] ID_BoundTria;
@@ -2497,7 +2289,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   jElem = 0;
   nElem = Local_Elem;
-  elem  = new CPrimalGrid*[nElem];
+  elem  = new CPrimalGrid*[nElem] ();
 
   /*--- Store the elements of each type in the proper containers. ---*/
 
@@ -4021,7 +3813,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
   /*--- Allocate space for the CGNS interior elements in our SU2 data
    structure. Note that we only instantiate our rank's local set. ---*/
 
-  elem = new CPrimalGrid*[nElem];
+  elem = new CPrimalGrid*[nElem] ();
 
   /*--- Some temporaries for the loop below. ---*/
 
@@ -4554,431 +4346,305 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
-  unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6,
-  iElem, triangle_flip = 0, quad_flip = 0, tet_flip = 0, prism_flip = 0,
-  hexa_flip = 0, pyram_flip = 0;
-  su2double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
-  *Coord_5, *Coord_6, a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, test;
-  unsigned short iDim;
+  unsigned long tria_flip=0, quad_flip=0, tet_flip=0, prism_flip=0, hexa_flip=0, pyram_flip=0;
+  unsigned long quad_error=0, prism_error=0, hexa_error=0, pyram_error=0;
 
-  /*--- Loop over all the elements ---*/
+  SU2_OMP_PARALLEL_(reduction(+:tria_flip,quad_flip,tet_flip,prism_flip,hexa_flip,pyram_flip)) {
 
-  for (iElem = 0; iElem < nElem; iElem++) {
+  /*--- Lambda to test triangles. Normal should be positive in the z direction (right hand rule). ---*/
+  auto checkTria = [this](unsigned long iElem, int Node_1, int Node_2, int Node_3) {
+    const auto Coord_1 = nodes->GetCoord(elem[iElem]->GetNode(Node_1));
+    const auto Coord_2 = nodes->GetCoord(elem[iElem]->GetNode(Node_2));
+    const auto Coord_3 = nodes->GetCoord(elem[iElem]->GetNode(Node_3));
+    constexpr int nDim = 2;
+    su2double a[nDim]={0.0}, b[nDim]={0.0};
+    GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
+    GeometryToolbox::Distance(nDim, Coord_3, Coord_1, b);
+    return a[0]*b[1]-a[1]*b[0] < 0.0;
+  };
 
-    /*--- 2D grid, triangle case ---*/
+  /*--- Lambda to test tetrahedrons, volume must be positive,
+   * the normal of any face must point towards the other point. ---*/
+  auto checkTetra = [this](unsigned long iElem, int Node_1, int Node_2, int Node_3, int Node_4) {
+    const auto Coord_1 = nodes->GetCoord(elem[iElem]->GetNode(Node_1));
+    const auto Coord_2 = nodes->GetCoord(elem[iElem]->GetNode(Node_2));
+    const auto Coord_3 = nodes->GetCoord(elem[iElem]->GetNode(Node_3));
+    const auto Coord_4 = nodes->GetCoord(elem[iElem]->GetNode(Node_4));
+    constexpr int nDim = 3;
+    su2double a[nDim]={0.0}, b[nDim]={0.0}, c[nDim]={0.0}, n[nDim]={0.0};
+    GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
+    GeometryToolbox::Distance(nDim, Coord_3, Coord_1, b);
+    GeometryToolbox::Distance(nDim, Coord_4, Coord_1, c);
+    GeometryToolbox::CrossProduct(a,b,n);
+    return GeometryToolbox::DotProduct(nDim,n,c) < 0.0;
+  };
+
+  /*--- Loop over all the elements. ---*/
+
+  SU2_OMP_FOR_DYN(roundUpDiv(nElem, 2*omp_get_max_threads()))
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+
+    /*--- 2D grid. ---*/
 
     if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
-      test = a[0]*b[1]-b[0]*a[1];
-
-      if (test < 0.0) {
-    	  elem[iElem]->Change_Orientation();
-    	  triangle_flip++;
+      if (checkTria(iElem,0,1,2)) {
+        elem[iElem]->Change_Orientation();
+        tria_flip++;
       }
     }
-
-    /*--- 2D grid, quadrilateral case ---*/
 
     if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4);
+      /*--- Two triangles. ---*/
+      bool test_1 = checkTria(iElem,0,1,2);
+      bool test_2 = checkTria(iElem,0,2,3);
 
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
-      test_1 = a[0]*b[1]-b[0]*a[1];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_3[iDim]-Coord_2[iDim]);
-        b[iDim] = 0.5*(Coord_4[iDim]-Coord_2[iDim]); }
-      test_2 = a[0]*b[1]-b[0]*a[1];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_4[iDim]-Coord_3[iDim]);
-        b[iDim] = 0.5*(Coord_1[iDim]-Coord_3[iDim]); }
-      test_3 = a[0]*b[1]-b[0]*a[1];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_1[iDim]-Coord_4[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_4[iDim]); }
-      test_4 = a[0]*b[1]-b[0]*a[1];
-
-      if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
+      if (test_1 && test_2) {
         elem[iElem]->Change_Orientation();
         quad_flip++;
       }
+      else if (test_1 || test_2) {
+        /*--- If one test fails and the other passes the
+         * element probably has serious problems. ---*/
+        SU2_OMP_ATOMIC
+        quad_error++;
+      }
     }
 
-    /*--- 3D grid, tetrahedron case ---*/
+    /*--- 3D grid. ---*/
 
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-      if (test < 0.0) {
-    	  elem[iElem]->Change_Orientation();
-    	  tet_flip++;
+      if (checkTetra(iElem,0,1,2,3) < 0.0) {
+        elem[iElem]->Change_Orientation();
+        tet_flip++;
       }
-
-    }
-
-    /*--- 3D grid, prism case ---*/
-
-    if (elem[iElem]->GetVTK_Type() == PRISM) {
-
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4);
-      Point_5 = elem[iElem]->GetNode(4); Coord_5 = nodes->GetCoord(Point_5);
-      Point_6 = elem[iElem]->GetNode(5); Coord_6 = nodes->GetCoord(Point_6);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        c[iDim] = (Coord_4[iDim]-Coord_1[iDim])+
-        (Coord_5[iDim]-Coord_2[iDim])+
-        (Coord_6[iDim]-Coord_3[iDim]); }
-
-      /*--- The normal vector should point to the interior of the element ---*/
-
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_5[iDim]-Coord_4[iDim]);
-        b[iDim] = 0.5*(Coord_6[iDim]-Coord_4[iDim]);
-        c[iDim] = (Coord_1[iDim]-Coord_4[iDim])+
-        (Coord_2[iDim]-Coord_5[iDim])+
-        (Coord_3[iDim]-Coord_6[iDim]); }
-
-      /*--- The normal vector should point to the interior of the element ---*/
-
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      if ((test_1 < 0.0) || (test_2 < 0.0)) {
-          elem[iElem]->Change_Orientation();
-          prism_flip++;
-      }
-
-    }
-
-    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(5); Coord_4 = nodes->GetCoord(Point_4);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      Point_1 = elem[iElem]->GetNode(2); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(3); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(0); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(7); Coord_4 = nodes->GetCoord(Point_4);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      Point_1 = elem[iElem]->GetNode(1); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(2); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(3); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(6); Coord_4 = nodes->GetCoord(Point_4);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_3 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      Point_1 = elem[iElem]->GetNode(3); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(0); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(1); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(4); Coord_4 = nodes->GetCoord(Point_4);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      if ((test_1 < 0.0) || (test_2 < 0.0) || (test_3 < 0.0)
-          || (test_4 < 0.0)) {
-    	  elem[iElem]->Change_Orientation();
-      	  hexa_flip++;
-      }
-
     }
 
     if (elem[iElem]->GetVTK_Type() == PYRAMID) {
 
-      Point_1 = elem[iElem]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(4); Coord_4 = nodes->GetCoord(Point_4);
+      /*--- Slice across top vertex into 2 tets. ---*/
+      bool test_1 = checkTetra(iElem,0,1,2,4);
+      bool test_2 = checkTetra(iElem,2,3,0,4);
 
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      Point_1 = elem[iElem]->GetNode(2); Coord_1 = nodes->GetCoord(Point_1);
-      Point_2 = elem[iElem]->GetNode(3); Coord_2 = nodes->GetCoord(Point_2);
-      Point_3 = elem[iElem]->GetNode(0); Coord_3 = nodes->GetCoord(Point_3);
-      Point_4 = elem[iElem]->GetNode(4); Coord_4 = nodes->GetCoord(Point_4);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-        b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-        c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-      n[0] = a[1]*b[2]-b[1]*a[2];
-      n[1] = -(a[0]*b[2]-b[0]*a[2]);
-      n[2] = a[0]*b[1]-b[0]*a[1];
-
-      test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-      if ((test_1 < 0.0) || (test_2 < 0.0)) {
-          elem[iElem]->Change_Orientation();
-      	  pyram_flip++;
+      if (test_1 && test_2) {
+        elem[iElem]->Change_Orientation();
+        pyram_flip++;
       }
-
+      else if (test_1 || test_2) {
+        SU2_OMP_ATOMIC
+        pyram_error++;
+      }
     }
 
-  }
+    if (elem[iElem]->GetVTK_Type() == PRISM) {
 
-#ifdef HAVE_MPI
-  unsigned long Mytriangle_flip  = triangle_flip;
-  unsigned long Myquad_flip      = quad_flip;
-  unsigned long Mytet_flip       = tet_flip;
-  unsigned long Myprism_flip     = prism_flip;
-  unsigned long Myhexa_flip      = hexa_flip;
-  unsigned long Mypyram_flip     = pyram_flip;
+      /*--- The triangular faces should point at each other. ---*/
+      bool test_1 = checkTetra(iElem,0,2,1,3);
+      bool test_2 = checkTetra(iElem,3,4,5,2);
 
-  SU2_MPI::Allreduce(&Mytriangle_flip, &triangle_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Myquad_flip, &quad_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Mytet_flip, &tet_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Myprism_flip, &prism_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Myhexa_flip, &hexa_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Mypyram_flip, &pyram_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+      if (test_1 && test_2) {
+        elem[iElem]->Change_Orientation();
+        prism_flip++;
+      }
+      else if (test_1 || test_2) {
+        SU2_OMP_ATOMIC
+        prism_error++;
+      }
+    }
+
+    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+
+      /*--- The base points at the top. ---*/
+      bool test_1 = checkTetra(iElem,0,1,2,5);
+      bool test_2 = checkTetra(iElem,0,2,3,7);
+      /*--- The top points at the base. ---*/
+      bool test_3 = checkTetra(iElem,4,6,5,1);
+      bool test_4 = checkTetra(iElem,4,7,6,3);
+
+      if (test_1 && test_2 && test_3 && test_4) {
+        elem[iElem]->Change_Orientation();
+        hexa_flip++;
+      }
+      else if (test_1 || test_2 || test_3 || test_4) {
+        SU2_OMP_ATOMIC
+        hexa_error++;
+      }
+    }
+
+  }} // end SU2_OMP_PARALLEL
+
+  auto reduce = [](unsigned long& val) {
+    unsigned long tmp = val;
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  };
+  reduce(tria_flip); reduce(quad_flip);
+  reduce(tet_flip); reduce(pyram_flip);
+  reduce(prism_flip); reduce(hexa_flip);
+  reduce(quad_error); reduce(pyram_error);
+  reduce(prism_error); reduce(hexa_error);
 
   if (rank == MASTER_NODE) {
-    if (triangle_flip > 0) cout << "There has been a re-orientation of the TRIANGLE volume elements." << endl;
-    if (quad_flip > 0) cout << "There has been a re-orientation of the QUADRILATERAL volume elements." << endl;
-    if (tet_flip > 0) cout << "There has been a re-orientation of the TETRAHEDRON volume elements." << endl;
-    if (prism_flip > 0) cout << "There has been a re-orientation of the PRISM volume elements." << endl;
-    if (hexa_flip > 0) cout << "There has been a re-orientation of the HEXAHEDRON volume elements." << endl;
-    if (pyram_flip > 0) cout << "There has been a re-orientation of the PYRAMID volume elements." << endl;
+    string start("There has been a re-orientation of ");
+    if (tria_flip) cout << start << tria_flip << " TRIANGLE volume elements." << endl;
+    if (quad_flip) cout << start << quad_flip << " QUADRILATERAL volume elements." << endl;
+    if (tet_flip) cout << start << tet_flip << " TETRAHEDRON volume elements." << endl;
+    if (hexa_flip) cout << start << hexa_flip << " HEXAHEDRON volume elements." << endl;
+    if (pyram_flip) cout << start << pyram_flip << " PYRAMID volume elements." << endl;
+    if (prism_flip) cout << start << prism_flip << " PRISM volume elements." << endl;
+
+    if (quad_error+pyram_error+prism_error+hexa_error) {
+      cout << ">>> WARNING: ";
+      if (quad_error) cout << quad_error << " QUADRILATERAL, ";
+      if (pyram_error) cout << pyram_error << " PYRAMID, ";
+      if (prism_error) cout << prism_error << " PRISM, ";
+      if (hexa_error) cout << hexa_error << " HEXAHEDRON, ";
+      cout << "volume elements are distorted.\n    It was not possible "
+              "to determine if their orientation is correct." << endl;
+    }
+
+    if (tria_flip+quad_flip+tet_flip+hexa_flip+pyram_flip+prism_flip+
+        quad_error+pyram_error+prism_error+hexa_error == 0) {
+      cout << "All volume elements are correctly orientend." << endl;
+    }
   }
 
 }
 
-void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
-  unsigned long Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
-  iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface,
-  line_flip = 0, triangle_flip = 0, quad_flip = 0;
-  su2double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
-  *Coord_5, a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, test;
-  unsigned short iDim, iMarker, iNode_Domain, iNode_Surface;
-  bool find;
+  unsigned long line_flip = 0, tria_flip = 0, quad_flip = 0, quad_error = 0;
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  SU2_OMP_PARALLEL_(reduction(+:line_flip,tria_flip,quad_flip,quad_error)) {
 
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) {
+  /*--- Lambda to test tetrahedrons. ---*/
+  auto checkTetra = [this](unsigned long Point_1, unsigned long Point_2,
+                           unsigned long Point_3, unsigned long Point_4) {
+    const auto Coord_1 = nodes->GetCoord(Point_1);
+    const auto Coord_2 = nodes->GetCoord(Point_2);
+    const auto Coord_3 = nodes->GetCoord(Point_3);
+    const auto Coord_4 = nodes->GetCoord(Point_4);
+    constexpr int nDim = 3;
+    su2double a[nDim]={0.0}, b[nDim]={0.0}, c[nDim]={0.0}, n[nDim]={0.0};
+    GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
+    GeometryToolbox::Distance(nDim, Coord_3, Coord_1, b);
+    GeometryToolbox::Distance(nDim, Coord_4, Coord_1, c);
+    GeometryToolbox::CrossProduct(a,b,n);
+    return GeometryToolbox::DotProduct(nDim,n,c) < 0.0;
+  };
 
-      for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
 
-        iElem_Domain = bound[iMarker][iElem_Surface]->GetDomainElement();
-        for (iNode_Domain = 0; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
-          Point_Domain = elem[iElem_Domain]->GetNode(iNode_Domain);
-          find = false;
-          for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-            Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-            if (Point_Surface == Point_Domain) {find = true; break;}
-          }
-          if (!find) break;
+    if (config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY) continue;
+
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    for (auto iElem_Surface = 0ul; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
+
+      /*--- Pick a reference point inside the domain that is not part of the surface element. ---*/
+      const auto iElem_Domain = bound[iMarker][iElem_Surface]->GetDomainElement();
+      unsigned long Point_Domain = 0;
+
+      for (auto iNode_Domain = 0u; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
+        Point_Domain = elem[iElem_Domain]->GetNode(iNode_Domain);
+        bool find = false;
+        for (auto iNode_Surface = 0u; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
+          auto Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
+          if (Point_Surface == Point_Domain) {find = true; break;}
         }
+        if (!find) break;
+      }
 
-        /*--- 2D grid, line case ---*/
+      /*--- 2D grid. ---*/
 
-        if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
+      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
 
-          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1_Surface);
-          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2_Surface);
-          Coord_3 = nodes->GetCoord(Point_Domain);
+        auto Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0);
+        auto Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1);
+        const auto Coord_1 = nodes->GetCoord(Point_1_Surface);
+        const auto Coord_2 = nodes->GetCoord(Point_2_Surface);
+        const auto Coord_3 = nodes->GetCoord(Point_Domain);
 
-          for (iDim = 0; iDim < nDim; iDim++) {
-            a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-            b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-          }
-          test = a[0]*b[1]-b[0]*a[1];
+        /*--- The normal of the triangle formed by the line and domain
+         * point should point in the positive z direction. ---*/
+        constexpr int nDim = 2;
+        su2double a[nDim]={0.0}, b[nDim]={0.0};
+        GeometryToolbox::Distance(nDim, Coord_2, Coord_1, a);
+        GeometryToolbox::Distance(nDim, Coord_3, Coord_1, b);
+        bool test = a[0]*b[1]-a[1]*b[0] < 0.0;
 
-          if (test < 0.0) {
-            bound[iMarker][iElem_Surface]->Change_Orientation();
-            line_flip++;
-          }
-
+        if (test) {
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          line_flip++;
         }
+      }
 
-        /*--- 3D grid, triangle case ---*/
+      /*--- 3D grid. ---*/
 
-        if (bound[iMarker][iElem_Surface]->GetVTK_Type() == TRIANGLE) {
+      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == TRIANGLE) {
 
-          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1_Surface);
-          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2_Surface);
-          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3_Surface);
-          Coord_4 = nodes->GetCoord(Point_Domain);
+        auto Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0);
+        auto Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1);
+        auto Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2);
 
-          for (iDim = 0; iDim < nDim; iDim++) {
-            a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-            b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-            c[iDim] = Coord_4[iDim]-Coord_1[iDim];
-          }
-          n[0] = a[1]*b[2]-b[1]*a[2];
-          n[1] = -(a[0]*b[2]-b[0]*a[2]);
-          n[2] = a[0]*b[1]-b[0]*a[1];
-
-          test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-          if (test < 0.0) {
-            bound[iMarker][iElem_Surface]->Change_Orientation();
-            triangle_flip++;
-          }
-
+        /*--- The normal of the triangle should point into the domain,
+         * resulting in a tetrahedron with positive volume. ---*/
+        if (checkTetra(Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_Domain)) {
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          tria_flip++;
         }
+      }
 
-        /*--- 3D grid, rectangle case ---*/
+      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == QUADRILATERAL) {
 
-        if (bound[iMarker][iElem_Surface]->GetVTK_Type() == QUADRILATERAL) {
+        auto Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0);
+        auto Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1);
+        auto Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2);
+        auto Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3);
 
-          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = nodes->GetCoord(Point_1_Surface);
-          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = nodes->GetCoord(Point_2_Surface);
-          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = nodes->GetCoord(Point_3_Surface);
-          Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3); Coord_4 = nodes->GetCoord(Point_4_Surface);
-          Coord_5 = nodes->GetCoord(Point_Domain);
+        /*--- Divide quadrilateral/pyramid into triangles/tetrahedrons. ---*/
+        int test_1 = checkTetra(Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_Domain);
+        int test_2 = checkTetra(Point_2_Surface, Point_3_Surface, Point_4_Surface, Point_Domain);
+        int test_3 = checkTetra(Point_3_Surface, Point_4_Surface, Point_1_Surface, Point_Domain);
+        int test_4 = checkTetra(Point_4_Surface, Point_1_Surface, Point_2_Surface, Point_Domain);
 
-          for (iDim = 0; iDim < nDim; iDim++) {
-            a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-            b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-            c[iDim] = Coord_5[iDim]-Coord_1[iDim];
-          }
-          n[0] = a[1]*b[2]-b[1]*a[2];
-          n[1] = -(a[0]*b[2]-b[0]*a[2]);
-          n[2] = a[0]*b[1]-b[0]*a[1];
-          test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            a[iDim] = 0.5*(Coord_3[iDim]-Coord_2[iDim]);
-            b[iDim] = 0.5*(Coord_4[iDim]-Coord_2[iDim]);
-            c[iDim] = Coord_5[iDim]-Coord_2[iDim];
-          }
-          n[0] = a[1]*b[2]-b[1]*a[2];
-          n[1] = -(a[0]*b[2]-b[0]*a[2]);
-          n[2] = a[0]*b[1]-b[0]*a[1];
-          test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            a[iDim] = 0.5*(Coord_4[iDim]-Coord_3[iDim]);
-            b[iDim] = 0.5*(Coord_1[iDim]-Coord_3[iDim]);
-            c[iDim] = Coord_5[iDim]-Coord_3[iDim];
-          }
-          n[0] = a[1]*b[2]-b[1]*a[2];
-          n[1] = -(a[0]*b[2]-b[0]*a[2]);
-          n[2] = a[0]*b[1]-b[0]*a[1];
-          test_3 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            a[iDim] = 0.5*(Coord_1[iDim]-Coord_4[iDim]);
-            b[iDim] = 0.5*(Coord_3[iDim]-Coord_4[iDim]);
-            c[iDim] = Coord_5[iDim]-Coord_4[iDim];
-          }
-          n[0] = a[1]*b[2]-b[1]*a[2];
-          n[1] = -(a[0]*b[2]-b[0]*a[2]);
-          n[2] = a[0]*b[1]-b[0]*a[1];
-          test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-
-          if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
-            bound[iMarker][iElem_Surface]->Change_Orientation();
-            quad_flip++;
-          }
-
+        if (test_1+test_2+test_3+test_4 >= 3) {
+          /*--- If 3 or 4 tests fail there is > 75% chance flipping is the right choice. ---*/
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          quad_flip++;
+        }
+        else if (test_1+test_2+test_3+test_4 == 2) {
+          /*--- If 50/50 we cannot be sure of what to do -> report to user.
+           * If only one test fails it is probably (75%) due to skewness or warping. ---*/
+          quad_error++;
         }
       }
     }
-  }
+  }} // end SU2_OMP_PARALLEL
 
-#ifdef HAVE_MPI
-  unsigned long Myline_flip   = line_flip;
-  unsigned long Mytriangle_flip  = triangle_flip;
-  unsigned long Myquad_flip   = quad_flip;
-  SU2_MPI::Allreduce(&Myline_flip, &line_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Mytriangle_flip, &triangle_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Myquad_flip, &quad_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+  auto reduce = [](unsigned long& val) {
+    unsigned long tmp = val;
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  };
+  reduce(line_flip); reduce(tria_flip);
+  reduce(quad_flip); reduce(quad_error);
 
   if (rank == MASTER_NODE) {
-    if (line_flip > 0) cout << "There has been a re-orientation of the LINE surface elements." << endl;
-    if (triangle_flip > 0) cout << "There has been a re-orientation of the TRIANGLE surface elements." << endl;
-    if (quad_flip > 0) cout << "There has been a re-orientation of the QUADRILATERAL surface elements." << endl;
+    string start("There has been a re-orientation of ");
+    if (line_flip) cout << start << line_flip << " LINE surface elements." << endl;
+    if (tria_flip) cout << start << tria_flip << " TRIANGLE surface elements." << endl;
+    if (quad_flip) cout << start << quad_flip << " QUADRILATERAL surface elements." << endl;
+
+    if (quad_error) {
+      cout << ">>> WARNING: " << quad_error << " QUADRILATERAL surface elements are distorted.\n"
+              "    It was not possible to determine if their orientation is correct." << endl;
+    }
+
+    if (line_flip+tria_flip+quad_flip+quad_error == 0) {
+      cout << "All surface elements are correctly orientend." << endl;
+    }
   }
 
 }
@@ -7114,8 +6780,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 void CPhysicalGeometry::SetCoord_CG(void) {
 
-  SU2_OMP_PARALLEL
-  {
   unsigned short iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
 
@@ -7170,10 +6834,12 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     edges->SetCoord_CG(iEdge, Coord.data());
   }
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
+
+  SU2_OMP_MASTER {
+
   unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
   unsigned long Neighbor_Point, iVertex, iPoint, iElem;
   long iEdge;
@@ -7251,55 +6917,45 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
-    const unsigned short nNeigh = nodes->GetnPoint(iPoint);
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,omp_get_max_threads()))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double* Coord_i = nodes->GetCoord(iPoint);
 
-    /*--- If using AD, computing the maximum grid length can generate
-     * a lot of unnecessary overhead since we would store all computations
-     * of each grid length, even though we only need the maximum value.
-     * We solve that by finding the neighbor that's furthest away
-     * (corresponding to the maximum distance) using passive calculations,
-     * then set the max using the AD datatype. ---*/
+    /*--- If using AD, stop the recording to find the most distant
+     * neighbor, then enable it again and recompute the distance.
+     * This reduces the overhead of storing irrelevant computations. ---*/
 
-    passivedouble passive_max_delta=0;
-    unsigned short max_neighbor = 0;
-    for (unsigned short iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+    const bool wasActive = AD::BeginPassive();
+
+    su2double max_delta=0;
+    auto max_neighbor = iPoint;
+    for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
 
       /*-- Calculate the cell-center to cell-center length ---*/
 
       const unsigned long jPoint  = nodes->GetPoint(iPoint, iNeigh);
       const su2double* Coord_j = nodes->GetCoord(jPoint);
 
-      passivedouble delta_aux = 0;
-      for (unsigned short iDim = 0;iDim < nDim; iDim++){
-        delta_aux += pow(SU2_TYPE::GetValue(Coord_j[iDim])-SU2_TYPE::GetValue(Coord_i[iDim]), 2.);
-      }
+      su2double delta = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
 
       /*--- Only keep the maximum length ---*/
 
-      if (delta_aux > passive_max_delta) {
-        passive_max_delta = delta_aux;
-        max_neighbor = iNeigh;
+      if (delta > max_delta) {
+        max_delta = delta;
+        max_neighbor = jPoint;
       }
     }
 
-    /*--- Now that we know where the maximum distance is, repeat
-     * calculation with the AD-friendly su2double datatype ---*/
+    AD::EndPassive(wasActive);
 
-    const unsigned long jPoint  = nodes->GetPoint(iPoint, max_neighbor);
-    const su2double* Coord_j = nodes->GetCoord(jPoint);
-
-    su2double max_delta = 0;
-    for (unsigned short iDim = 0;iDim < nDim; iDim++) {
-      max_delta += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
-    }
-    max_delta = sqrt(max_delta);
-
+    /*--- Recompute and set. ---*/
+    const su2double* Coord_j = nodes->GetCoord(max_neighbor);
+    max_delta = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
     nodes->SetMaxLength(iPoint, max_delta);
   }
 
@@ -7707,7 +7363,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   string Marker_Tag;
 
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist_local, maxdist_global;
-  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
+  const su2double *center, *angles, *trans;
+  su2double translation[3]={0.0,0.0,0.0}, dx, dy, dz;
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
@@ -8081,6 +7738,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
 
+  SU2_OMP_MASTER {
+
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
   su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
@@ -8180,6 +7839,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<< endl;
     if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
+
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {

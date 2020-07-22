@@ -2,7 +2,7 @@
  * \file CQuadrilateral.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -88,11 +88,5 @@ CQuadrilateral::~CQuadrilateral() {
 }
 
 void CQuadrilateral::Change_Orientation(void) {
-  unsigned long Point_1, Point_3;
-
-  Point_1 = Nodes[1];
-  Point_3 = Nodes[3];
-  Nodes[1] = Point_3;
-  Nodes[3] = Point_1;
-
+  swap(Nodes[1], Nodes[3]);
 }

@@ -1,9 +1,9 @@
 /*!
- * \file linear_solvers_structure.hpp
+ * \file CSysSolve.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
- *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -242,7 +242,7 @@ public:
    */
   unsigned long CG_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                              const PrecondType & precond, ScalarType tol, unsigned long m,
-                             ScalarType & residual, bool monitoring, CConfig *config) const;
+                             ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -258,7 +258,7 @@ public:
    */
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
-                                 ScalarType & residual, bool monitoring, CConfig *config) const;
+                                 ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -274,7 +274,7 @@ public:
    */
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                   const PrecondType & precond, ScalarType tol, unsigned long m,
-                                  ScalarType & residual, bool monitoring, CConfig *config) const;
+                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Generic smoother (modified Richardson iteration with preconditioner)
@@ -290,7 +290,7 @@ public:
    */
   unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                    const PrecondType & precond, ScalarType tol, unsigned long m,
-                                   ScalarType & residual, bool monitoring, CConfig *config) const;
+                                   ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Solve the linear system using a Krylov subspace method
@@ -301,7 +301,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                      CGeometry *geometry, CConfig *config);
+                      CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Solve the adjoint linear system using a Krylov subspace method
@@ -312,7 +312,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve_b(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                        CGeometry *geometry, CConfig *config);
+                        CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Get the number of iterations.

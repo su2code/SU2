@@ -2,7 +2,7 @@
  * \file CParaviewXMLFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -343,7 +343,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   unsigned long totalByteSize;
   totalByteSize = globalSize*typeSize;
 
-  /*--- Only the master node writes the total size in bytes as int32 in front of the array data ---*/
+  /*--- Only the master node writes the total size in bytes as unsigned long in front of the array data ---*/
   
   if (!WriteMPIBinaryData(&totalByteSize, sizeof(unsigned long), MASTER_NODE)){
     SU2_MPI::Error("Writing array size failed", CURRENT_FUNCTION);

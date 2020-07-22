@@ -2,7 +2,7 @@
  * \file CFEM_DG_NSSolver.cpp
  * \brief Main subroutines for solving finite element Navier-Stokes flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -180,7 +180,7 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   delete SGSModel;
 }
 
-void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig* config) {
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -215,7 +215,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin      = config->GetRefOriginMoment(0);
+  auto Origin      = config->GetRefOriginMoment(0);
   const bool grid_movement     = config->GetGrid_Movement();
 
 /*--- Evaluate reference values for non-dimensionalization.
