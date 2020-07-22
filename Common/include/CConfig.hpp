@@ -4332,6 +4332,7 @@ public:
         return 1.0/3.0;
       default:
         return MUSCL_Kappa; 
+    }
   }
 
   /*!
