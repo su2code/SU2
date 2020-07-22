@@ -29,12 +29,12 @@
 
 #pragma once
 
-#include "CConfig.hpp"
-
 /* LIBXSMM include files, if supported. */
 #ifdef HAVE_LIBXSMM
 #include "libxsmm.h"
 #endif
+
+class CConfig;
 
 /*!
  * \class CBlasStructure
@@ -66,7 +66,7 @@ public:
    */
   void gemm(const int M,        const int N,        const int K,
             const su2double *A, const su2double *B, su2double *C,
-            CConfig *config);
+            const CConfig *config);
 
   /*!
    * \brief Function, which carries out a dense matrix vector product

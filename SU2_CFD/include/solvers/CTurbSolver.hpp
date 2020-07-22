@@ -271,7 +271,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
+  void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
 
   /*!
    * \brief Load a solution from a restart file.
