@@ -105,7 +105,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iPoint, Int jPoint, bo
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution) {
-  static_assert(ReconVarType::nVar <= size_t(PrimVarType::nVar),"");
+  static_assert(ReconVarType::nVar <= PrimVarType::nVar,"");
 
   const auto& gradients = solution.GetGradient_Reconstruction();
   const auto& limiters = solution.GetLimiter_Primitive();
