@@ -1890,7 +1890,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if (muscl) {
 
-      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+      const su2double Kappa = config->GetMUSCL_Kappa();
 
       auto Coord_i = geometry->nodes->GetCoord(iPoint);
       auto Coord_j = geometry->nodes->GetCoord(jPoint);

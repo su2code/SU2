@@ -3105,7 +3105,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     else {
       /*--- Reconstruction ---*/
 
-      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+      const su2double Kappa = config->GetMUSCL_Kappa();
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -3134,9 +3134,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
-
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
             case VAN_ALBADA_EDGE:
@@ -3148,8 +3145,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
               Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          Project_Grad_i = 0.5*Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+          Project_Grad_j = 0.5*Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+        }
+        else {
+          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
         }
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;

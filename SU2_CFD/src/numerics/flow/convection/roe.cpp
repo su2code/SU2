@@ -34,8 +34,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
-  muscl_kappa = (config->GetKind_SlopeLimit_Flow() == PIPERNO)
-              ? su2double(1.0/6.0) : 0.5*config->GetMUSCL_Kappa();
+  muscl_kappa = 0.5*config->GetMUSCL_Kappa();
   muscl = val_muscl;
 
   Gamma = config->GetGamma();
