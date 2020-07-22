@@ -2,7 +2,7 @@
  * \file CPolynomialViscosity.hpp
  * \brief Defines a laminar viscosity model as a polynomial function of temperature.
  * \author T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,9 +69,9 @@ class CPolynomialViscosity final : public CViscosityModel {
   void SetViscosity(su2double t, su2double rho) override {
     /* Evaluate the new mu from the coefficients and temperature. */
     mu_ = coeffs_[0];
+    su2double t_i = 1.0;
     for (int i = 1; i < N; ++i) {
-      su2double t_i = t;
-      for (int j = 1; j < i; ++j) t_i *= t;
+      t_i *= t;
       mu_ += coeffs_[i] * t_i;
     }
   }

@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1403,6 +1403,9 @@ void CConfig::SetConfig_Options() {
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
 
+  /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
+  addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
+
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
@@ -1571,6 +1574,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
+  /* DESCRIPTION: Number of samples for quasi-Newton methods. */
+  addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
@@ -1585,7 +1590,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
-   * Factor down generally <1.0, factor up generally > 1.0 to cause the CFL to increase when the under-relaxation parameter is 1.0 
+   * Factor down generally <1.0, factor up generally > 1.0 to cause the CFL to increase when the under-relaxation parameter is 1.0
    * and to decrease when the under-relaxation parameter is less than 0.1. Factor is multiplicative. \ingroup Config*/
   default_cfl_adapt[0] = 1.0; default_cfl_adapt[1] = 1.0; default_cfl_adapt[2] = 10.0; default_cfl_adapt[3] = 100.0;
   addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
@@ -2323,9 +2328,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
-  /* DESCRIPTION: Number of internal iterations for Newton-Raphson Method in nonlinear structural applications */
-  addUnsignedLongOption("NONLINEAR_FEM_INT_ITER", Dyn_nIntIter, 10);
-
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
   addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRAIN);
   /*  DESCRIPTION: Apply dead loads
@@ -2833,7 +2835,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
      * If there is a statement after a cont. char
      * throw an error. ---*/
 
-     if (text_line.front() != '%'){
+     if (text_line.size() && (text_line.front() != '%')){
        while (text_line.back() == '\\' ||
               (PrintingToolbox::split(text_line, '\\').size() > 1)){
          string tmp;
@@ -3029,7 +3031,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -4865,11 +4867,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /* Protect against using incorrect CFL adaption parameters. */
-  
+
   if (CFL_Adapt && (CFL_AdaptParam[0] > 1.0)) {
     SU2_MPI::Error(string("CFL adaption factor down should be less than 1.0."), CURRENT_FUNCTION);
   }
-  
+
   if (CFL_Adapt && (CFL_AdaptParam[1] < 1.0)) {
     SU2_MPI::Error(string("CFL adaption factor up should be greater than 1.0."), CURRENT_FUNCTION);
   }
@@ -6888,6 +6890,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_ActDiskOutlet != 0) {
+    if (GetKind_ActDisk() == VARIABLE_LOAD) {
+      cout << endl << "Actuator disk with variable load." << endl;
+      cout << "Actuator disk data read from file: " << GetActDisk_FileName() << endl;
+    }
   }
 
 }

@@ -2,7 +2,7 @@
  * \file CIncIdealGasPolynomial.hpp
  * \brief Defines the incompressible Ideal Gas model with polynomial Cp.
  * \author T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -74,9 +74,9 @@ class CIncIdealGasPolynomial final : public CFluidModel {
 
     /* Evaluate the new Cp from the coefficients and temperature. */
     Cp = coeffs_[0];
+    su2double t_i = 1.0;
     for (int i = 1; i < N; ++i) {
-      su2double t_i = t;
-      for (int j = 1; j < i; ++j) t_i *= t;
+      t_i *= t;
       Cp += coeffs_[i] * t_i;
     }
     Cv = Cp / Gamma;
