@@ -911,7 +911,6 @@ void CConfig::SetPointersNull(void) {
   Velocity_FreeStream = nullptr;
   Inc_Velocity_Init   = nullptr;
 
-  RefOriginMoment     = nullptr;
   CFL_AdaptParam      = nullptr;
   CFL                 = nullptr;
   HTP_Axis = nullptr;
@@ -3856,10 +3855,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }*/
 
 
-  /*--- Initialize the RefOriginMoment Pointer ---*/
-
-  RefOriginMoment = new su2double[3]();
-
   /*--- In case the moment origin coordinates have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each marker, a value has been declared for the moment origin.
@@ -6216,11 +6211,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case TIME_STEPPING:
       cout << "Unsteady simulation using a time stepping strategy."<< endl;
       if (Unst_CFL != 0.0) {
-                          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-                          if (Delta_UnstTime != 0.0) {
-                            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
-                          }
-                        }
+        cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        if (Delta_UnstTime != 0.0) {
+          cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        }
+      }
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
       break;
       case DT_STEPPING_1ST: case DT_STEPPING_2ND:
@@ -6228,16 +6223,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
       if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+      cout << "Total number of internal Dual Time iterations: "<< InnerIter <<"." << endl;
       break;
     }
   }
   else {
     if (Time_Domain) {
-            cout << "Dynamic structural analysis."<< endl;
-            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-     } else {
-            cout << "Static structural analysis." << endl;
+      cout << "Dynamic structural analysis."<< endl;
+      cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+    } else {
+      cout << "Static structural analysis." << endl;
     }
   }
 
@@ -7296,7 +7291,6 @@ CConfig::~CConfig(void) {
 
   /*--- reference origin for moments ---*/
 
-  delete [] RefOriginMoment;
   delete [] RefOriginMoment_X;
   delete [] RefOriginMoment_Y;
   delete [] RefOriginMoment_Z;
@@ -7667,7 +7661,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
+string CConfig::GetFilename(string filename, string ext, unsigned long Iter) const {
 
   /*--- Remove any extension --- */
 
@@ -7755,33 +7749,33 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
-    multizone_filename += ext;
-    return multizone_filename;
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
+  multizone_filename += ext;
+  return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
 
-    return multizone_filename;
+  return multizone_filename;
 }
 
-string CConfig::GetObjFunc_Extension(string val_filename) {
+string CConfig::GetObjFunc_Extension(string val_filename) const {
 
   string AdjExt, Filename = val_filename;
 
@@ -8359,7 +8353,7 @@ void CConfig::SetInlet_Ptotal(su2double val_pressure, string val_marker) {
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
 }
 
-su2double* CConfig::GetInlet_FlowDir(string val_marker) {
+const su2double* CConfig::GetInlet_FlowDir(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
@@ -9263,7 +9257,7 @@ void CConfig::SetProfilingCSV(void) {
 
 }
 
-void CConfig::GEMM_Tick(double *val_start_time) {
+void CConfig::GEMM_Tick(double *val_start_time) const {
 
 #ifdef PROFILE
 
@@ -9277,7 +9271,7 @@ void CConfig::GEMM_Tick(double *val_start_time) {
 
 }
 
-void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
+void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) const {
 
 #ifdef PROFILE
 

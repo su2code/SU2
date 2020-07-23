@@ -1843,6 +1843,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
   }
 
 }
+
 void CSolver::CompleteComms(CGeometry *geometry,
                             const CConfig *config,
                             unsigned short commType) {
@@ -3196,7 +3197,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, string val_filename) {
+void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   ifstream restart_file;
   string text_line, Tag;
@@ -3355,7 +3356,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
 }
 
-void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename) {
+void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   unsigned short iVar;
