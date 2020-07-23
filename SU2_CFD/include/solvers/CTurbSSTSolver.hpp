@@ -97,10 +97,6 @@ public:
   
   void SetPrimitive_Variables(CSolver **solver_container) final;
   
-  void SetFlowPrimitive(CSolver **solver_container);
-  
-  void SetFlowGradient(CSolver **solver_container);
-  
   void SetEddyViscosity(CGeometry *geometry, CSolver **solver_container);
   
   /*!

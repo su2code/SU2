@@ -344,32 +344,6 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
 
 }
 
-void CTurbSSTSolver::SetFlowPrimitive(CSolver **solver) {
-  
-  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nDim+7; iVar++) {
-      if (iVar == nDim+2) nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetDensity(iPoint));
-      else if (iVar == nDim+6) nodes->SetFlowPrimitive(iPoint,iVar,nodes->GetmuT(iPoint));
-      else nodes->SetFlowPrimitive(iPoint,iVar,flowNodes->GetPrimitive(iPoint,iVar));
-    }
-  }
-}
-
-void CTurbSSTSolver::SetFlowGradient(CSolver **solver) {
-  
-  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nDim+1; iVar++) {
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetFlowGradient(iPoint,iVar,iDim,flowNodes->GetGradient_Primitive(iPoint,iVar,iDim));
-      }
-    }
-  }
-}
-
 void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
