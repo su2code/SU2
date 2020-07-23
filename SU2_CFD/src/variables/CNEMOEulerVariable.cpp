@@ -37,38 +37,6 @@
 
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 #include <math.h>
-#include <iomanip> //cat:delete
-
-CNEMOEulerVariable::CNEMOEulerVariable(unsigned long npoint,
-                                       unsigned long val_ndim,
-                                       unsigned long val_nvar,
-                                       unsigned long val_nprimvar,
-                                       unsigned long val_nprimvargrad,
-                                       CConfig *config) : CVariable(npoint,
-                                                                    val_ndim,
-                                                                    val_nvar,
-                                                                    config),
-                                       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
-
-  nDim         = val_ndim;
-  nVar         = val_nvar;
-
-  nPrimVar     = val_nprimvar;
-  nPrimVarGrad = val_nprimvargrad;
-
-  /*--- Array initialization ---*/
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
-  Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
-
-  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-
-  Gradient.resize(nPoint,nVar,nDim,0.0);
-
-  if (config->GetReconstructionGradientRequired()) {
-    Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
-  }
-}
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
@@ -150,13 +118,8 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Lambda.resize(nPoint) = su2double(0.0);
   Sensor.resize(nPoint) = su2double(0.0);
 
-  /* Under-relaxation parameter. */
-  //UnderRelaxation.resize(nPoint) = su2double(1.0);
-  //LocalCFL.resize(nPoint) = su2double(0.0);
-
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
-  //Non_Physical_Counter.resize(nPoint) = 0;
 
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
@@ -176,18 +139,15 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     energies = fluidmodel->GetMixtureEnergies();      
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
       Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies];
-      Solution_Old(iPoint,iSpecies) = rho*val_massfrac[iSpecies];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (iDim = 0; iDim < nDim; iDim++) 
       Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
-      Solution_Old(iPoint,nSpecies+iDim) = rho*val_mach[iDim]*soundspeed;
-    }
+    
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
-    Solution_Old(iPoint,nSpecies+nDim)   = rho*(energies[0]+0.5*sqvel);
     Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
-    Solution_Old(iPoint,nSpecies+nDim+1) = rho*(energies[1]);
+
+    Solution_Old = Solution;
 
     /*--- Assign primitive variables ---*/
     Primitive(iPoint,T_INDEX)   = val_temperature;

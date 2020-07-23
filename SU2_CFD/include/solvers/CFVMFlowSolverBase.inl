@@ -1970,13 +1970,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
+  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
   su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, WallShearStress, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
+            thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve,
+            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
   su2double AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
+  su2double **Grad_PrimVar, dTn, dTven;
+
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -1992,6 +1996,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool energy = config->GetEnergy_Equation();
   bool QCR = config->GetQCR();
   bool axisymmetric = config->GetAxisymmetric();
+  bool nemo = config->GetNEMOProblem();
 
   /// TODO: Move these ifs to specialized functions.
 
@@ -2098,6 +2103,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         Viscosity = nodes->GetLaminarViscosity(iPoint);
         Density = nodes->GetDensity(iPoint);
 
+        if (nemo) {
+          thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
+          thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
+          Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+        }
+
         Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
         Area = sqrt(Area);
@@ -2184,25 +2195,38 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         /*--- Compute total and maximum heat flux on the wall ---*/
 
-        GradTemperature = 0.0;
+        
 
         /// TODO: Move these ifs to specialized functions.
+        if (!nemo){
 
-        if (FlowRegime == COMPRESSIBLE) {
-          for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+          GradTemperature = 0.0;
 
-          Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-          thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
-        }
-
-        if (FlowRegime == INCOMPRESSIBLE) {
-          if (energy)
+          if (FlowRegime == COMPRESSIBLE) {
             for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+  
+            Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+            thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
+          }
+          if (FlowRegime == INCOMPRESSIBLE) {
+            if (energy)
+              for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+  
+            thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+          }
 
-          thermal_conductivity = nodes->GetThermalConductivity(iPoint);
-        }
+          HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
 
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
+        } else {
+  
+          dTn = 0.0; dTven = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+            dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+          }
+          HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+
+        }  
 
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/

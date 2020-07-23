@@ -60,7 +60,6 @@ private:
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Tcb_b,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Diss,                           /*!< \brief Dissociation potential. */
-  Molar_Mass,           		   /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */ //cat: is this really necessary?
   MassFrac_FreeStream,            /*!< \brief Mixture mass fractions of the fluid. */
   Enthalpy_Formation,             /*!< \brief Enthalpy of formation */
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */

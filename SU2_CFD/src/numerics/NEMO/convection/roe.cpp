@@ -115,7 +115,7 @@ void CUpwRoe_NEMO::ComputeResidual(su2double *val_residual,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
-  vector<su2double> roe_eves = fluidmodel->GetSpeciesEve(RoeV[TVE_INDEX]); //cat: just RoeEve
+  vector<su2double> roe_eves = fluidmodel->GetSpeciesEve(RoeV[TVE_INDEX]);
 
   /*--- Calculate derivatives of pressure ---*/
   fluidmodel->GetdPdU(RoeV, roe_eves, RoedPdU);

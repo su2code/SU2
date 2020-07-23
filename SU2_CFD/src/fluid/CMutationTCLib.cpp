@@ -29,11 +29,11 @@
 
 CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
   
-  //cat: if wilke - transportmodel = 'wilke' and so on;
+  //CGarbacz: if wilke - transportmodel = 'wilke' and so on;
 
-  // nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;
+  //CGarbacz: nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;
 
-	//if frozen send nonchecmttv
+  //CGarbacz: if frozen send nonchecmttv
 
 }
 

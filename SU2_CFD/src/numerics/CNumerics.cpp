@@ -156,7 +156,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
     unsigned long nPoint = 1;
 
-    RHOS_INDEX    = 0; //cat: meter isto no config.cpp
+    RHOS_INDEX    = 0; 
     T_INDEX       = nSpecies;
     TVE_INDEX     = nSpecies+1;
     VEL_INDEX     = nSpecies+2;

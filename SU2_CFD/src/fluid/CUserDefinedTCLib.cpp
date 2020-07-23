@@ -1321,9 +1321,6 @@ vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos,
   bool Bconvg;
   unsigned short iIter, maxBIter;
 
-  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //  rhos[iSpecies] = val_rhos[iSpecies];
-
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
@@ -1335,22 +1332,13 @@ vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos,
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
-  }      
-
-  //cout <<setprecision(25)<< "cat: rhoEvel=" << rhoEvel << endl;
-  //
-  //cout <<setprecision(25)<< "cat: rhoE=" << rhoE << endl;
-  //cout <<setprecision(25)<< "cat: rhoEve=" << rhoEve << endl;
-  //cout <<setprecision(25)<< "cat: rhoEf=" << rhoE_f << endl;
-  //cout <<setprecision(25)<< "cat: rhoEref=" << rhoE_ref << endl;
-  
+  }       
 
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
-  //cout <<setprecision(25)<< "cat: T=" << T << endl;
-
   /*----------Vibrational temperature----------*/
-  /*--- Set vibrational temperature clipping values ---*/ //cat: probably not necessary, instead just initise Tve_o,tve2
+  //Cgarbacz: probably not necessary, instead just initialise Tve_o,tve2
+  /*--- Set vibrational temperature clipping values ---*/ 
   Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Set vibrational temperature algorithm parameters ---*/

@@ -28,7 +28,6 @@
 #pragma once
 
 #include "../CNumerics.hpp"
-#include "../../variables/CNEMOEulerVariable.hpp"
 
 /*!
  * \class CAvgGrad_NEMO
@@ -58,7 +57,6 @@ private:
   *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
-  CNEMOEulerVariable *variable;
 
 public:
 
@@ -169,8 +167,6 @@ private:
   *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
-
-  CNEMOEulerVariable *variable;
 
 public:
 

@@ -1530,9 +1530,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
 
-
-
-  //Output to be updated with the next changes to CNEMOSolvers //cat:
   /*--- Write output to the console if this is the master node and first domain ---*/
 
   if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
@@ -1540,12 +1537,12 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     cout.precision(6);
 
     if (viscous) {
-      cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
-      cout << "based on the free-stream temperature and a density computed" << endl;
+      cout << "Viscous flow: Computing pressure using the equation of state for multi-species and multi-temperatures." << endl;
+      cout << "based on the free-stream temperatures and a density computed" << endl;
       cout << "from the Reynolds number." << endl;
     } else {
       cout << "Inviscid flow: Computing density based on free-stream" << endl;
-      cout << "temperature and pressure using the ideal gas law." << endl;
+      cout << "and pressure using the the equation of state for multi-species and multi-temperatures." << endl;
     }
 
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
@@ -1555,86 +1552,42 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     switch (config->GetKind_FluidModel()) {
 
-    case STANDARD_AIR:
-      cout << "Fluid Model: STANDARD_AIR "<< endl;
+    case USER_DEFINED_NONEQ:
+      cout << "Fluid Model: USER_DEFINED_NONEQ "<< endl;
+      cout << "Mixture: " << config->GetGasModel() << endl;
       cout << "Specific gas constant: " << config->GetGas_Constant();
       if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
       cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-      cout << "Specific Heat Ratio: "<< Gamma << endl;
       break;
 
-    case IDEAL_GAS:
-      cout << "Fluid Model: IDEAL_GAS "<< endl;
-      cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+    case MUTATIONPP:
+      cout << "Fluid Model: MUTATIONPP "<< endl;
+      cout << "Mixture: " << config->GetGasModel() << endl;
+      cout << "Specific gas constant: " << config->GetGas_Constant();
+      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
       cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-      cout << "Specific Heat Ratio: "<< Gamma << endl;
       break;
 
-    case VW_GAS:
-      cout << "Fluid Model: Van der Waals "<< endl;
-      cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-      cout << "Specific Heat Ratio: "<< Gamma << endl;
-      cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
-      cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
-      cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
-      cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
-      break;
-
-    case PR_GAS:
-      cout << "Fluid Model: Peng-Robinson "<< endl;
-      cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-      cout << "Specific Heat Ratio: "<< Gamma << endl;
-      cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
-      cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
-      cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
-      cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
-      break;
-
-    }
     if (viscous) {
-      switch (config->GetKind_ViscosityModel()) {
+      switch (config->GetKind_TransCoeffModel()) {
 
-      case CONSTANT_VISCOSITY:
-        cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
-        cout << "Laminar Viscosity: " << config->GetMu_Constant();
+      case WILKE:
+        cout << "Transport model: WILKE "<< endl;
+        cout << "Laminar Viscosity freestream: " << config->GetMu_Constant();
         if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-        cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
+        cout << "Laminar Viscosity freestream (non-dim): " << config->GetMu_ConstantND() << endl;
         break;
 
-      case SUTHERLAND:
-        cout << "Viscosity Model: SUTHERLAND "<< endl;
-        cout << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
+      case GUPTAYOS:
+        cout << "Transport model: GUPTAYOS "<< endl;
+        cout << "Laminar Viscosity freestream: " << config->GetMu_Constant();
         if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-        cout << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
-        if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-        cout << "Sutherland Constant: "<< config->GetMu_S();
-        if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-        cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
-        cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
-        cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
-        break;
-
-      }
-      switch (config->GetKind_ConductivityModel()) {
-
-      case CONSTANT_PRANDTL:
-        cout << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
-        cout << "Prandtl: " << config->GetPrandtl_Lam()<< endl;
-        break;
-
-      case CONSTANT_CONDUCTIVITY:
-        cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
-        cout << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << endl;
-        cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
-        break;
-
+        cout << "Laminar Viscosity freestream (non-dim): " << config->GetMu_ConstantND()<< endl;
+        break;  
       }
     }
 
@@ -1779,6 +1732,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     }
     cout << endl;
   }
+ }
 }
 
 void CNEMOEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
@@ -1832,131 +1786,6 @@ void CNEMOEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
     }
   }
 }
-
-//void CNEMOEulerSolver::Evaluate_ObjFunc(CConfig *config) {
-//
-//  unsigned short iMarker_Monitoring, Kind_ObjFunc;
-//  su2double Weight_ObjFunc;
-//  Total_ComboObj = 0.0;
-//
-//  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
-//
-//  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-//
-//    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-//    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
-//
-//    switch(Kind_ObjFunc) {
-//    case DRAG_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
-//      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
-//      if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
-//      break;
-//    case LIFT_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
-//      break;
-//    case SIDEFORCE_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
-//      break;
-//    case EFFICIENCY:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
-//      break;
-//    case MOMENT_X_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
-//      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
-//      break;
-//    case MOMENT_Y_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
-//      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
-//      break;
-//    case MOMENT_Z_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
-//      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
-//      break;
-//    case FORCE_X_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
-//      break;
-//    case FORCE_Y_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
-//      break;
-//    case FORCE_Z_COEFFICIENT:
-//      Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
-//      break;
-//    case TOTAL_HEATFLUX:
-//      Total_ComboObj+=Weight_ObjFunc*Surface_HF_Visc[iMarker_Monitoring];
-//      break;
-//    case MAXIMUM_HEATFLUX:
-//      Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
-//      break;
-//    default:
-//      break;
-//    }
-//  }
-//
-//  /*--- The following are not per-surface, and so to avoid that they are
-//   double-counted when multiple surfaces are specified, they have been
-//   placed outside of the loop above. In addition, multi-objective mode is
-//   also disabled for these objective functions (error thrown at start). ---*/
-//
-//  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-//  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
-//
-//  switch(Kind_ObjFunc) {
-//  case EQUIVALENT_AREA:
-//    Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-//    break;
-//  case NEARFIELD_PRESSURE:
-//    Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
-//    break;
-//  case INVERSE_DESIGN_PRESSURE:
-//    Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-//    break;
-//  case INVERSE_DESIGN_HEATFLUX:
-//    Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-//    break;
-//  case THRUST_COEFFICIENT:
-//    Total_ComboObj+=Weight_ObjFunc*Total_CT;
-//    break;
-//  case TORQUE_COEFFICIENT:
-//    Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-//    break;
-//  case FIGURE_OF_MERIT:
-//    Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-//    break;
-//  case SURFACE_TOTAL_PRESSURE:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-//    break;
-//  case SURFACE_STATIC_PRESSURE:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-//    break;
-//  case SURFACE_MASSFLOW:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-//    break;
-//  case SURFACE_MACH:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-//    break;
-//  case SURFACE_UNIFORMITY:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-//    break;
-//  case SURFACE_SECONDARY:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-//    break;
-//  case SURFACE_MOM_DISTORTION:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-//    break;
-//  case SURFACE_SECOND_OVER_UNIFORM:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-//    break;
-//  case TOTAL_AVG_TEMPERATURE:
-//    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
-//    break;
-//  case CUSTOM_OBJFUNC:
-//    Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-//    break;
-//  default:
-//    break;
-//  }
-//}
 
 void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

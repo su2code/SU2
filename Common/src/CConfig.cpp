@@ -1153,7 +1153,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
   ///* DESCRIPTION: Specify if Mutation++ library is used */
-  //addBoolOption("MUTATIONPP", mutationpp, true);//Cat:delete
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
   /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
   addStringOption("GAS_MODEL", GasModel, string("N2"));
@@ -3548,6 +3547,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only MUTATIONPP or USER_DEFINED_NONEQ fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
   }
 
+  cout << "cat: HELLOOO" << endl;
+
+  //CGarbacz: to delete
+  if ( Kind_FluidModel == MUTATIONPP ) {
+    SU2_MPI::Error("The link to Mutation++ library is currently being developed and will soon be released!.", CURRENT_FUNCTION);
+  }
+
   /*--- Check for Convective scheme available for NICFD ---*/
     if ((!ideal_gas) && (!noneq_gas)) {
       if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
@@ -5525,7 +5531,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){  
+        if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
+                  cout << "cat: deleteeeeee"<< endl;
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }

@@ -82,20 +82,6 @@ public:
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] npoint - Number of points/nodes/vertices in the domain.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of conserved variables.
-   * \param[in] val_nVarPrim - Number of primitive variables.
-   * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CNEMOEulerVariable(unsigned long npoint,
-                     unsigned long ndim,
-                     unsigned long nvar, unsigned long nvalprim,
-                     unsigned long nvarprimgrad, CConfig *config);
-
-  /*!
-   * \brief Constructor of the class.
    * \param[in] val_pressure - Value of the flow pressure (initialization value).
    * \param[in] val_massfrac - Value of the mass fraction (initialization value).
    * \param[in] val_mach - Value of the Mach number (initialization value).
@@ -118,7 +104,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CNEMOEulerVariable() = default;
+  ~CNEMOEulerVariable() override = default;
 
   /*---------------------------------------*/
   /*---          U,V,S Routines         ---*/

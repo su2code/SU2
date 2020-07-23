@@ -610,18 +610,6 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
   Proj_Mean_GradPrimVar_Edge = new su2double[nPrimVarGrad];
   Edge_Vector = new su2double[3];
 
-  variable = new CNEMOEulerVariable(1, nDim, nVar, nPrimVar, nPrimVarGrad, config); //cat: meter isto no config.pp
-
-  RHOS_INDEX    = variable->GetRhosIndex()    ;
-  RHO_INDEX     = variable->GetRhoIndex()     ;
-  P_INDEX       = variable->GetPIndex()       ;
-  T_INDEX       = variable->GetTIndex()       ;
-  TVE_INDEX     = variable->GetTveIndex()     ;
-  VEL_INDEX     = variable->GetVelIndex()     ;
-  H_INDEX       = variable->GetHIndex()       ;
-  A_INDEX       = variable->GetAIndex()       ;
-  RHOCVTR_INDEX = variable->GetRhoCvtrIndex() ;
-  RHOCVVE_INDEX = variable->GetRhoCvveIndex() ;
 }
 
 CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {

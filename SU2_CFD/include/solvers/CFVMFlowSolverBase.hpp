@@ -1450,7 +1450,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
+  void Friction_Forces(const CGeometry* geometry, const CConfig* config) override;
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it.

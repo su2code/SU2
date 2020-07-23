@@ -27,8 +27,6 @@
 
 #include "../../include/fluid/CNEMOGas.hpp"
 
-#include <iomanip> //cat:delete
-
 CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
 

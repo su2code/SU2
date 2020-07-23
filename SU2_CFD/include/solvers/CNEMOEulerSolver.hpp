@@ -193,13 +193,6 @@ public:
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
-  ///*!
-  // * \author H. Kline
-  // * \brief Compute weighted-sum "combo" objective output
-  // * \param[in] config - Definition of the particular problem.
-  // */
-  //void Evaluate_ObjFunc(CConfig *config) override;
-
   /*!
      * \brief Impose via the residual the Euler wall boundary condition.
      * \param[in] geometry - Geometrical definition of the problem.

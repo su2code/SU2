@@ -191,12 +191,12 @@ public:
                                CConfig *config,
                                unsigned short val_marker);
 
-  /*!
-   * \brief Compute the viscous forces and all the addimensional coefficients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Friction_Forces(CGeometry *geometry, CConfig *config);
+ // /*!
+ //  * \brief Compute the viscous forces and all the addimensional coefficients.
+ //  * \param[in] geometry - Geometrical definition of the problem.
+ //  * \param[in] config - Definition of the particular problem.
+ //  */
+ // void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
    * \brief Compute the viscous residuals.
