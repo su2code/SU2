@@ -29,7 +29,7 @@
 
 
 #include "../../include/numerics/CNumerics.hpp"
-#include "../../include/fluid/CFluidModel.hpp"
+#include "../../include/fluid_model.hpp"
 
 CNumerics::CNumerics(void) {
 
