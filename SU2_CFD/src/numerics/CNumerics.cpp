@@ -369,7 +369,7 @@ void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
 }
 
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
-                                   const su2double *val_normal, su2double val_scale,
+                                   const su2double *val_normal, const su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) const {
   AD_BEGIN_PASSIVE
   unsigned short iDim, jDim;
