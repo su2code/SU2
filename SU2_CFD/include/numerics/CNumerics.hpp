@@ -827,9 +827,9 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
-                          su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor);
+  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
+                          const su2double *val_normal, const su2double val_scale,
+                          su2double **val_Proj_Jac_tensor) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -840,10 +840,10 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity,
-                             su2double *val_betainc2, su2double *val_normal,
-                             su2double val_scale,
-                             su2double **val_Proj_Jac_tensor);
+  void GetInviscidIncProjJac(const su2double *val_density, const su2double *val_velocity,
+                             const su2double *val_betainc2, const su2double *val_normal,
+                             const su2double val_scale,
+                             su2double **val_Proj_Jac_tensor) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (overload for low speed preconditioner version).

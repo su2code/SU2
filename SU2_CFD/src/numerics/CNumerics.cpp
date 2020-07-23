@@ -406,10 +406,10 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
 }
 
 
-void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_enthalpy,
-    su2double *val_chi, su2double *val_kappa,
-    su2double *val_normal, su2double val_scale,
-    su2double **val_Proj_Jac_Tensor) {
+void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalpy,
+    const su2double *val_chi, const su2double *val_kappa,
+    const su2double *val_normal, const su2double val_scale,
+    su2double **val_Proj_Jac_Tensor) const {
   AD_BEGIN_PASSIVE
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
