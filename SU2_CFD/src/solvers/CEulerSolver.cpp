@@ -2704,11 +2704,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iVar, iMarker;
 
-  /*--- BCM: vars for reconstruction ---*/
-  su2double tke_i = 0.0, tke_j = 0.0;
-  su2double Vector_ij[MAXNDIM] = {0.0};
-  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
-
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
