@@ -864,6 +864,7 @@ private:
   Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
+  Temperature_ve_Ref,  /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
   Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
   Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
   Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
@@ -876,6 +877,7 @@ private:
   Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
   Pressure_ThermodynamicND,   /*!< \brief Farfield thermodynamic pressure value. */
   Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
+  Temperature_ve_FreeStreamND,/*!< \brief Farfield vibrational-electronic temperature value (external flow). */
   Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
@@ -1752,6 +1754,12 @@ public:
   su2double GetTemperature_Ref(void) const { return Temperature_Ref; }
 
   /*!
+   * \brief Get the value of the reference temperature for non-dimensionalization.
+   * \return Reference temperature for non-dimensionalization.
+   */
+  su2double GetTemperature_ve_Ref(void) const { return Temperature_ve_Ref; }
+
+  /*!
    * \brief Get the value of the reference density for non-dimensionalization.
    * \return Reference density for non-dimensionalization.
    */
@@ -1840,6 +1848,12 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream temperature.
+   * \return Non-dimensionalized freestream temperature.
+   */
+  su2double GetTemperature_ve_FreeStreamND(void) const { return Temperature_ve_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream density.
@@ -2324,6 +2338,12 @@ public:
   void SetTemperature_Ref(su2double val_temperature_ref) { Temperature_Ref = val_temperature_ref; }
 
   /*!
+   * \brief Set the reference temperature.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_ve_Ref(su2double val_temperature_ve_ref) { Temperature_ve_Ref = val_temperature_ve_ref; }
+
+  /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
    */
@@ -2466,6 +2486,18 @@ public:
    * \return Value of the Froude number.
    */
   void SetTemperature_FreeStreamND(su2double val_temperature_freestreamnd) { Temperature_FreeStreamND = val_temperature_freestreamnd; }
+
+  /*!
+   * \brief Set the Froude number for free surface problems.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_ve_FreeStream(su2double val_temperature_ve_freestream) { Temperature_ve_FreeStream = val_temperature_ve_freestream; }
+
+  /*!
+   * \brief Set the Froude number for free surface problems.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_ve_FreeStreamND(su2double val_temperature_ve_freestreamnd) { Temperature_ve_FreeStreamND = val_temperature_ve_freestreamnd; }
 
   /*!
    * \brief Set the Froude number for free surface problems.

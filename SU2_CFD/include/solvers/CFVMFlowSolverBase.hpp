@@ -33,7 +33,7 @@
 namespace detail {
 template <class VariableType>
 constexpr size_t flowSolMaxnVar() {
-  return 12;
+  return 15;
 }
 // template<>
 // constexpr size_t flowSolMaxnVar<"your variable type">() { return "your size"; }

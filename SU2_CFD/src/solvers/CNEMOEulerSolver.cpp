@@ -48,7 +48,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     nSecVar = 2;
   }
 
-  unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
+  unsigned long iPoint, counter_local, counter_global = 0;
   unsigned short iVar, iDim, iMarker, iSpecies, nLineLets;
   unsigned short nZone = geometry->GetnZone();
   unsigned short iZone = config->GetiZone();
@@ -68,6 +68,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   su2double *Mvec_Inf;
   su2double Alpha, Beta;
   bool check_infty, nonPhys;
+
+
+  su2double Density_Inf, Soundspeed_Inf, sqvel;
+  vector<su2double> Energies_Inf;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -103,6 +107,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Define geometric constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
+  nMarker      = config->GetnMarker_All();
+  nPoint       = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 
   /*--- Set size of the conserved and primitive vectors ---*/
   //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -126,52 +133,16 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     specified reference values. ---*/
   SetNondimensionalization(config, iMesh);
 
-  /*--- Define some auxiliary vectors related to the residual ---*/
-  Residual     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
-  Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
-  Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
-  Residual_i   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]   = 0.0;
-  Residual_j   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]   = 0.0;
-  Res_Conv     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]     = 0.0;
-  Res_Visc     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]     = 0.0;
-  Res_Sour     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]     = 0.0;
+  /// TODO: This type of variables will be replaced.
 
-  /*--- Define some structure for locating max residuals ---*/
-  Point_Max       = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++){
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  AllocateTerribleLegacyTemporaryVariables();
 
-  /*--- Define some auxiliary vectors related to the solution ---*/
-  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-  Solution_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-  Solution_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  /*--- Allocate base class members. ---*/
 
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
-
-  /*--- Initialize the solution & residual CVectors ---*/
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-  /*--- Create the structure for storing extra information ---*/
-  if (config->GetExtraOutput()) {
-    nOutputVariables = nVar;
-    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
-  }
+  Allocate(*config); 
 
   /*--- Allocate Jacobians for implicit time-stepping ---*/
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
 
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
@@ -192,8 +163,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   Pressure_Inf        = config->GetPressure_FreeStreamND();
   Velocity_Inf        = config->GetVelocity_FreeStreamND();
   Temperature_Inf     = config->GetTemperature_FreeStreamND(); 
-  Temperature_ve_Inf  = config->GetTemperature_ve_FreeStream();
-  MassFrac_Inf        = config->GetGas_Composition();
+  Temperature_ve_Inf  = config->GetTemperature_ve_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(direct_diff) {
@@ -235,28 +205,29 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes      = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
-                                         Temperature_ve_Inf, nPoint, nDim, nVar,
-                                         nPrimVar, nPrimVarGrad, config, FluidModel);
-    node_infty = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
-                                        Temperature_ve_Inf, 1, nDim, nVar,
-                                        nPrimVar, nPrimVarGrad, config, FluidModel);    
+    nodes      = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf,
+                                         Temperature_Inf, Temperature_ve_Inf,
+                                         nPoint, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                         config, FluidModel);
+    node_infty = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf,
+                                        Temperature_Inf, Temperature_ve_Inf,
+                                        1, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                        config, FluidModel);    
   } else {    
-    nodes      = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
-                                        Temperature_ve_Inf, nPoint, nDim, nVar,
-                                        nPrimVar, nPrimVarGrad, config, FluidModel);
-    node_infty = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
-                                        Temperature_ve_Inf, 1, nDim, nVar,
-                                        nPrimVar, nPrimVarGrad, config, FluidModel);        
+    nodes      = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
+                                        Temperature_Inf, Temperature_ve_Inf,
+                                        nPoint, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                        config, FluidModel);
+    node_infty = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
+                                        Temperature_Inf, Temperature_ve_Inf,
+                                        1, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                        config, FluidModel);        
   }
   SetBaseClassPointerToNodes();
 
   check_infty = node_infty->SetPrimVar_Compressible(0 ,config, FluidModel);
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-
-  su2double Density_Inf, Soundspeed_Inf, sqvel;
-  vector<su2double> Energies_Inf;
 
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -286,10 +257,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       }
       Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
       Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
-
       nodes->SetSolution(iPoint,Solution);
       nodes->SetSolution_Old(iPoint,Solution);
-
       counter_local++;
     }
   }
@@ -305,22 +274,19 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
 
-  /*--- Define solver parameters needed for execution of destructor ---*/
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
-  else space_centered = false;
+  /*--- Initial comms. ---*/
 
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-  else euler_implicit = false;
+  CommunicateInitialState(geometry, config);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-  else least_squares = false;
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "NEMO.FLOW";
+ 
+  /*--- Finally, check that the static arrays will be large enough (keep this
+   *    check at the bottom to make sure we consider the "final" values). ---*/
+  if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
+    SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 
-
-  /*--- MPI solution ---*/
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Deallocate arrays ---*/
+   /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
 
 }
@@ -1329,20 +1295,20 @@ void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
 
   su2double 
-  Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream  = 0.0,
-  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, ModVel_FreeStreamND  = 0.0,
-  Velocity_Reynolds      = 0.0, Omega_FreeStream          = 0.0, Omega_FreeStreamND   = 0.0,
-  Viscosity_FreeStream   = 0.0, Density_FreeStream        = 0.0, Pressure_FreeStream  = 0.0,
-  Tke_FreeStream         = 0.0, Length_Ref                = 0.0, Density_Ref          = 0.0,
-  Pressure_Ref           = 0.0, Velocity_Ref              = 0.0, Temperature_Ref      = 0.0,
-  Time_Ref               = 0.0, Omega_Ref                 = 0.0, Force_Ref            = 0.0,
-  Gas_Constant_Ref       = 0.0, Viscosity_Ref             = 0.0, Conductivity_Ref     = 0.0,
-  Energy_Ref             = 0.0, Pressure_FreeStreamND     = 0.0, Density_FreeStreamND = 0.0,
-  Energy_FreeStreamND    = 0.0, Temperature_FreeStreamND  = 0.0, Gas_Constant         = 0.0, 
-  Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, Tke_FreeStreamND     = 0.0,
-  Total_UnstTimeND       = 0.0, Delta_UnstTimeND          = 0.0, Mass                 = 0.0,
-  soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude               = 0.0,
-  sqvel                  = 0.0;
+  Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream         = 0.0,
+  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, ModVel_FreeStreamND         = 0.0,
+  Velocity_Reynolds      = 0.0, Omega_FreeStream          = 0.0, Omega_FreeStreamND          = 0.0,
+  Viscosity_FreeStream   = 0.0, Density_FreeStream        = 0.0, Pressure_FreeStream         = 0.0,
+  Tke_FreeStream         = 0.0, Length_Ref                = 0.0, Density_Ref                 = 0.0,
+  Pressure_Ref           = 0.0, Velocity_Ref              = 0.0, Temperature_Ref             = 0.0,
+  Temperature_ve_Ref     = 0.0, Time_Ref                  = 0.0, Omega_Ref                   = 0.0,
+  Force_Ref              = 0.0, Gas_Constant_Ref          = 0.0, Viscosity_Ref               = 0.0,
+  Conductivity_Ref       = 0.0, Energy_Ref                = 0.0, Pressure_FreeStreamND       = 0.0, 
+  Energy_FreeStreamND    = 0.0, Temperature_FreeStreamND  = 0.0, Temperature_ve_FreeStreamND = 0.0,
+  Gas_Constant           = 0.0, Gas_ConstantND            = 0.0, Viscosity_FreeStreamND      = 0.0,
+  Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
+  soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
+  Density_FreeStreamND   = 0.0, Mass                      = 0.0, sqvel                       = 0.0;
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
@@ -1483,28 +1449,33 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
      Lref is one because we have converted the grid to meters. ---*/
 
   if (config->GetRef_NonDim() == DIMENSIONAL) {
-    Pressure_Ref      = 1.0;
-    Density_Ref       = 1.0;
-    Temperature_Ref   = 1.0;
+    Pressure_Ref       = 1.0;
+    Density_Ref        = 1.0;
+    Temperature_Ref    = 1.0;
+    Temperature_ve_Ref = 1.0;
   }
   else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
-    Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
-    Density_Ref       = Density_FreeStream;      // Density_FreeStream = 1.0
-    Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
+    Pressure_Ref       = Pressure_FreeStream;       // Pressure_FreeStream = 1.0
+    Density_Ref        = Density_FreeStream;        // Density_FreeStream = 1.0
+    Temperature_Ref    = Temperature_FreeStream;    // Temperature_FreeStream = 1.0
+    Temperature_ve_Ref = Temperature_ve_FreeStream; // Temperature_ve_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
-    Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
-    Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
-    Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+    Pressure_Ref       = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+    Density_Ref        = Density_FreeStream;        // Density_FreeStream = 1.0
+    Temperature_Ref    = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+    Temperature_ve_Ref = Temperature_ve_FreeStream; // Temp_ve_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
-    Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
-    Density_Ref       = Density_FreeStream;                  // Density_FreeStream = 1.0
-    Temperature_Ref   = Temperature_FreeStream;              // Temp_FreeStream = 1.0
+    Pressure_Ref       = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    Density_Ref        = Density_FreeStream;                  // Density_FreeStream = 1.0
+    Temperature_Ref    = Temperature_FreeStream;              // Temp_FreeStream = 1.0
+    Temperature_ve_Ref = Temperature_ve_FreeStream;        // Temp_ve_FreeStream = 1.0
   }
   config->SetPressure_Ref(Pressure_Ref);
   config->SetDensity_Ref(Density_Ref);
   config->SetTemperature_Ref(Temperature_Ref);
+  config->SetTemperature_ve_Ref(Temperature_ve_Ref);
 
   Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
   Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
@@ -1525,8 +1496,9 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
   }
 
-  Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  Gas_ConstantND           = config->GetGas_Constant()/Gas_Constant_Ref;          config->SetGas_ConstantND(Gas_ConstantND);
+  Temperature_FreeStreamND    = Temperature_FreeStream/config->GetTemperature_Ref();       config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
+  Temperature_ve_FreeStreamND = Temperature_ve_FreeStream/config->GetTemperature_ve_Ref(); config->SetTemperature_ve_FreeStreamND(Temperature_ve_FreeStreamND);
+  Gas_ConstantND              = config->GetGas_Constant()/Gas_Constant_Ref;                config->SetGas_ConstantND(Gas_ConstantND);
 
   ModVel_FreeStreamND = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
