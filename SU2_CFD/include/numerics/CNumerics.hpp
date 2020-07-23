@@ -910,7 +910,7 @@ public:
   void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalphy,
                           const su2double *val_chi, const su2double *val_kappa,
                           const su2double *val_normal, const su2double val_scale,
-                          su2double **val_Proj_Jac_tensor);
+                          su2double **val_Proj_Jac_tensor) const;
 
   /*!
    * \brief Mapping between primitives variables P and conservatives variables C.
