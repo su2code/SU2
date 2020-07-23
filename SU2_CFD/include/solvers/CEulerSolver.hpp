@@ -30,12 +30,9 @@
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CEulerVariable.hpp"
 
-class CNumericsSIMD;
-
 /*!
- * \class CSolver
- * \brief Main class for defining the PDE solution, it requires
- * a child class for each particular solver (Euler, Navier-Stokes, etc.)
+ * \class CEulerSolver
+ * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */
 class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
@@ -122,8 +119,6 @@ protected:
   su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
   Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
 
-  CNumericsSIMD* edgeNumerics = nullptr; /*!< \brief Object for edge flux computation. */
-
   /*--- Turbomachinery Solver Variables ---*/
 
   su2double ***AverageFlux = nullptr,
@@ -170,12 +165,6 @@ protected:
    */
   template<ENUM_TIME_INT IntegrationType>
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(const CGeometry* geometry);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -365,11 +354,6 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
-
-  /*!
-   * \brief Method to compute convective and viscous residual numerics.
-   */
-  void EdgeFluxResidual(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.

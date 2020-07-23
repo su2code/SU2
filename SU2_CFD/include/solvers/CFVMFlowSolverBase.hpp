@@ -30,6 +30,8 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
 
+class CNumericsSIMD;
+
 namespace detail {
 template <class VariableType>
 constexpr size_t flowSolMaxnVar() {
@@ -189,7 +191,12 @@ class CFVMFlowSolverBase : public CSolver {
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
-  VariableType* nodes = nullptr; /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CNumericsSIMD* edgeNumerics = nullptr; /*!< \brief Object for edge flux computation. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy the DERIVED solver can safely use.
+   */
+  VariableType* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -231,6 +238,16 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Evaluate common part of objective function to all solvers.
    */
   su2double EvaluateCommonObjFunc(const CConfig& config) const;
+
+  /*!
+   * \brief Method to compute convective and viscous residual contribution using vectorized numerics.
+   */
+  void EdgeFluxResidual(const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   */
+  void SumEdgeFluxes(const CGeometry* geometry);
 
   /*!
    * \brief Destructor.

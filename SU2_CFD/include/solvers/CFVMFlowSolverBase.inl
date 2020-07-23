@@ -1286,6 +1286,55 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
   }
 }
 
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry, const CConfig *config) {
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring) {
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for(auto k = 0ul; k < color.size; k += Double::Size) {
+      Int iEdge;
+      Double mask;
+      for (auto j = 0ul; j < Double::Size; ++j) {
+        bool in = (k+j < color.size);
+        mask[j] = in;
+        iEdge[j] = color.indices[k+j*in];
+      }
+
+      if (ReducerStrategy) {
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+      } else {
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+      }
+    }
+  }
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      Jacobian.SetDiagonalAsColumnSum();
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
+
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
+        LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      else
+        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+    }
+  }
+}
+
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
   unsigned long iVertex, iPoint;
