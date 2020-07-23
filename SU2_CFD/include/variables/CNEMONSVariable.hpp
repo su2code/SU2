@@ -128,7 +128,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) override;
+  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel);
 
   /*!
    * \brief Set the vorticity value.

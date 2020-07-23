@@ -208,19 +208,19 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
   }
 }
 
-bool CNEMOEulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel) {
+bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) {
 
   bool nonPhys, bkup;
   unsigned short iVar;
 
   /*--- Convert conserved to primitive variables ---*/
-  nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint],
+  nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
                          dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
 
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-    bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
+    bkup = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
                         dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
   }
 
@@ -229,7 +229,7 @@ bool CNEMOEulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
   return nonPhys;
 }
 
-bool CNEMOEulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *V,
+bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
                                       su2double *val_dPdU, su2double *val_dTdU,
                                       su2double *val_dTvedU, su2double *val_eves,
                                       su2double *val_Cvves, CNEMOGas *fluidmodel) {

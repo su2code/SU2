@@ -170,6 +170,16 @@ public:
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   /*!
+   * \brief Computes primitive variables.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       bool Output); 
+
+  /*!
      * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
      * \param[in] iPoint - Index of the grid point
      * \param[in] config - Definition of the particular problem.

@@ -339,19 +339,14 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  virtual bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config, CNEMOGas *fluidmodel);
-
-// /*!
-//  * \brief Set all the primitive variables for compressible flows.
-//  */
-// void SetPrimVar_Gradient(CConfig *config, unsigned long iPoint); //cat: delete
+  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel);
 
  /*!
   * \brief Set all the conserved variables.
   */
-  bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
-                   su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                   su2double *val_Cvves, CNEMOGas *fluidmodel);
+  bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
+                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
+                    su2double *val_Cvves, CNEMOGas *fluidmodel);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/

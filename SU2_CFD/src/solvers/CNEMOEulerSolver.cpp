@@ -49,27 +49,19 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   unsigned long iPoint, counter_local, counter_global = 0;
-  unsigned short iVar, iDim, iMarker, iSpecies, nLineLets;
+  unsigned short iDim, iMarker, iSpecies, nLineLets;
   unsigned short nZone = geometry->GetnZone();
-  unsigned short iZone = config->GetiZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans = false; //((config->GetKind_Solver() == NEMO_RANS )|| (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS));
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-
   bool adjoint = config->GetDiscrete_Adjoint();
-  bool multizone = config->GetMultizone_Problem();
-
   string filename_ = "flow";
-
   su2double *Mvec_Inf;
   su2double Alpha, Beta;
   bool check_infty, nonPhys;
-
-
   su2double Density_Inf, Soundspeed_Inf, sqvel;
   vector<su2double> Energies_Inf;
 
@@ -225,13 +217,13 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-  check_infty = node_infty->SetPrimVar_Compressible(0 ,config, FluidModel);
+  check_infty = node_infty->SetPrimVar(0, FluidModel);
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel);
+    nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
 
     if (nonPhys) {
 
@@ -356,10 +348,11 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
   }
 }
 
-void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container,
+void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
+
   unsigned long iPoint, ErrorCounter = 0;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -370,18 +363,12 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool center           = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool nonPhys;
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  const bool viscous    = config->GetViscous();
 
-    /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
-    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config, FluidModel);
-    if (nonPhys) ErrorCounter++;
+  /*--- Set the primitive variables ---*/
 
-    /*--- Initialize the convective residual vector ---*/
-    LinSysRes.SetBlock_Zero(iPoint);
+  ErrorCounter = SetPrimitive_Variables(solver_container, Output);
 
-  }
 
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
@@ -399,6 +386,16 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
       SetSolution_Limiter(geometry, config);
     }
 
+  }
+
+  /*--- Primitive gradient computation if viscous flow ---*/
+  if (viscous){
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetPrimitive_Gradient_GG(geometry, config);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetPrimitive_Gradient_LS(geometry, config);
+    }
   }
 
   /*--- Artificial dissipation ---*/
@@ -423,41 +420,29 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   }
 }
 
-//cat: new CNEMOEulerSolver::Preprocessing
-//void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container,
-//                                     CConfig *config, unsigned short iMesh,
-//                                     unsigned short iRKStep,
-//                                     unsigned short RunTime_EqSystem, bool Output) {
-//  
-//  bool muscl            = config->GetMUSCL_Flow();
-//  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-//  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-//  
-//  /*--- Common preprocessing steps. ---*/
-//
-//  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
-//
-//  /*--- Upwind second order reconstruction ---*/
-//
-//  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
-//
-//    /*--- Gradient computation for MUSCL reconstruction. ---*/
-//
-//    switch (config->GetKind_Gradient_Method_Recon()) {
-//      case GREEN_GAUSS:
-//        SetSolution_Gradient_GG(geometry, config, true); break;
-//      case LEAST_SQUARES:
-//      case WEIGHTED_LEAST_SQUARES:
-//        SetSolution_Gradient_LS(geometry, config, true); break;
-//      default: break;
-//    }
-//
-//    /*--- Limiter computation ---*/
-//
-//    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
-//      SetSolution_Limiter(geometry, config);
-//  }
-//}
+unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, bool Output) {
+
+  unsigned long iPoint, nonPhysicalPoints = 0;
+  bool physical = true;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Incompressible flow, primitive variables ---*/
+
+    physical = nodes->SetPrimVar(iPoint,FluidModel);
+
+    /* Check for non-realizable states for reporting. */
+
+    if (!physical) nonPhysicalPoints++;
+
+    /*--- Initialize the convective, source and viscous residual vector ---*/
+
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  return nonPhysicalPoints;
+}
 
 void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
@@ -921,9 +906,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         }
       }   
       
-      chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
+      chk_err_i = nodes->Cons2PrimVar(Conserved_i, Primitive_i,
                                              dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i, FluidModel);
-      chk_err_j = nodes->Cons2PrimVar(config, Conserved_j, Primitive_j,
+      chk_err_j = nodes->Cons2PrimVar(Conserved_j, Primitive_j,
                                              dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j, FluidModel);
       
        /*--- Check for physical solutions in the reconstructed values ---*/
