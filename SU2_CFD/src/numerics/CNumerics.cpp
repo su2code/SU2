@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,24 +33,27 @@
 
 CNumerics::CNumerics(void) {
 
-  Normal      = nullptr;
-  UnitNormal  = nullptr;
-  UnitNormald = nullptr;
+  Normal      = NULL;
+  UnitNormal  = NULL;
+  UnitNormald = NULL;
 
-  Proj_Flux_Tensor  = nullptr;
-  Flux_Tensor       = nullptr;
+  Proj_Flux_Tensor  = NULL;
+  Flux_Tensor       = NULL;
 
-  tau    = nullptr;
-  delta  = nullptr;
-  delta3 = nullptr;
+  tau    = NULL;
+  delta  = NULL;
+  delta3 = NULL;
 
-  Diffusion_Coeff_i = nullptr;
-  Diffusion_Coeff_j = nullptr;
+  Diffusion_Coeff_i = NULL;
+  Diffusion_Coeff_j = NULL;
+  
+  TurbVar_Grad_i = NULL;
+  TurbVar_Grad_j = NULL;
 
-  Vector = nullptr;
+  Vector = NULL;
 
-  l = nullptr;
-  m = nullptr;
+  l = NULL;
+  m = NULL;
 
   using_uq = false;
 
@@ -59,12 +62,27 @@ CNumerics::CNumerics(void) {
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
                      const CConfig* config) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, jDim;
 
-  Normal = nullptr;
+  Normal      = NULL;
+  UnitNormal  = NULL;
+  UnitNormald = NULL;
 
-  Diffusion_Coeff_i = nullptr;
-  Diffusion_Coeff_j = nullptr;
+  Proj_Flux_Tensor  = NULL;
+  Flux_Tensor       = NULL;
+
+  tau    = NULL;
+  delta  = NULL;
+  delta3 = NULL;
+
+  Diffusion_Coeff_i = NULL;
+  Diffusion_Coeff_j = NULL;
+  
+  TurbVar_Grad_i = NULL;
+  TurbVar_Grad_j = NULL;
+
+  l = NULL;
+  m = NULL;
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -74,38 +92,53 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 
-  UnitNormal = new su2double [nDim] ();
-  UnitNormald = new su2double [nDim] ();
+  UnitNormal = new su2double [nDim];
+  UnitNormald = new su2double [nDim];
 
   Flux_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < (nVar); iVar++)
-    Flux_Tensor[iVar] = new su2double [nDim] ();
+    Flux_Tensor[iVar] = new su2double [nDim];
 
   tau = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    tau[iDim] = new su2double [nDim] ();
+  for (iDim = 0; iDim < nDim; iDim++) {
+    tau[iDim] = new su2double [nDim];
+  }
 
   delta = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    delta[iDim] = new su2double [nDim] ();
-    delta[iDim][iDim] = 1.0;
+    delta[iDim] = new su2double [nDim];
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      if (iDim == jDim) delta[iDim][jDim] = 1.0;
+      else delta[iDim][jDim]=0.0;
+    }
   }
 
   delta3 = new su2double* [3];
   for (iDim = 0; iDim < 3; iDim++) {
-    delta3[iDim] = new su2double [3] ();
-    delta3[iDim][iDim] = 1.0;
+    delta3[iDim] = new su2double [3];
   }
 
-  Proj_Flux_Tensor = new su2double [nVar] ();
+  for (iDim = 0; iDim < 3; iDim++) {
+    for (jDim = 0; jDim < 3; jDim++) {
+      if (iDim == jDim) delta3[iDim][jDim] = 1.0;
+      else delta3[iDim][jDim]=0.0;
+    }
+  }
+
+  Proj_Flux_Tensor = new su2double [nVar];
 
   turb_ke_i = 0.0;
   turb_ke_j = 0.0;
+  turb_omega_i = 1.0;
+  turb_omega_j = 1.0;
 
-  Vector = new su2double[nDim] ();
+  Vector = new su2double[nDim];
 
-  l = new su2double [nDim] ();
-  m = new su2double [nDim] ();
+  l = new su2double [nDim];
+  m = new su2double [nDim];
 
   Dissipation_ij = 1.0;
 
@@ -150,42 +183,46 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNumerics::~CNumerics(void) {
 
-  delete [] UnitNormal;
-  delete [] UnitNormald;
+  if (UnitNormal!= NULL) delete [] UnitNormal;
+  if (UnitNormald!= NULL) delete [] UnitNormald;
 
   // visc
-  delete [] Proj_Flux_Tensor;
+  if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  if (Flux_Tensor!= NULL) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
+    }
     delete [] Flux_Tensor;
   }
 
-  if (tau) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  if (tau != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
+    }
     delete [] tau;
   }
 
-  if (delta) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  if (delta != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] delta[iDim];
+    }
     delete [] delta;
   }
 
-  if (delta3) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++)
+  if (delta3 != NULL) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
       delete [] delta3[iDim];
+    }
     delete [] delta3;
   }
 
-  delete [] Diffusion_Coeff_i;
-  delete [] Diffusion_Coeff_j;
-  delete [] Vector;
+  if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
+  if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
+  if (Vector != NULL) delete [] Vector;
 
-  delete [] l;
-  delete [] m;
+  if (l != NULL) delete [] l;
+  if (m != NULL) delete [] m;
 
   if (using_uq) {
     for (unsigned short iDim = 0; iDim < 3; iDim++){
@@ -211,7 +248,7 @@ CNumerics::~CNumerics(void) {
 
 }
 
-void CNumerics::GetInviscidFlux(su2double val_density, const su2double *val_velocity,
+void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
     su2double val_pressure, su2double val_enthalpy) {
   if (nDim == 3) {
     Flux_Tensor[0][0] = val_density*val_velocity[0];
@@ -246,12 +283,12 @@ void CNumerics::GetInviscidFlux(su2double val_density, const su2double *val_velo
   }
 }
 
-void CNumerics::GetInviscidProjFlux(const su2double *val_density,
-                                    const su2double *val_velocity,
-                                    const su2double *val_pressure,
-                                    const su2double *val_enthalpy,
-                                    const su2double *val_normal,
-                                    su2double *val_Proj_Flux) const {
+void CNumerics::GetInviscidProjFlux(su2double *val_density,
+                                    su2double *val_velocity,
+                                    su2double *val_pressure,
+                                    su2double *val_enthalpy,
+                                    su2double *val_normal,
+                                    su2double *val_Proj_Flux) {
 
   su2double rhou, rhov, rhow;
 
@@ -299,13 +336,13 @@ void CNumerics::GetInviscidProjFlux(const su2double *val_density,
 
 }
 
-void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
-                                       const su2double *val_velocity,
-                                       const su2double *val_pressure,
-                                       const su2double *val_betainc2,
-                                       const su2double *val_enthalpy,
-                                       const su2double *val_normal,
-                                       su2double *val_Proj_Flux) const {
+void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
+                                           su2double *val_velocity,
+                                           su2double *val_pressure,
+                                           su2double *val_betainc2,
+                                           su2double *val_enthalpy,
+                                           su2double *val_normal,
+                                           su2double *val_Proj_Flux) {
   su2double rhou, rhov, rhow;
 
   if (nDim == 2) {
@@ -369,10 +406,10 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
 }
 
 
-void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalpy,
-                                   const su2double *val_chi, const su2double *val_kappa,
-                                   const su2double *val_normal, su2double val_scale,
-                                   su2double **val_Proj_Jac_Tensor) const {
+void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_enthalpy,
+    su2double *val_chi, su2double *val_kappa,
+    su2double *val_normal, su2double val_scale,
+    su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
@@ -404,15 +441,12 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*(a2+1)*proj_vel;
-  AD::EndPassive(wasActive);
+  AD_END_PASSIVE
 }
 
-void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2double *val_velocity,
-                                      const su2double *val_betainc2, const su2double *val_cp,
-                                      const su2double *val_temperature, const su2double *val_dRhodT,
-                                      const su2double *val_normal, su2double val_scale,
-                                      su2double **val_Proj_Jac_Tensor) const {
-  AD_END_PASSIVE
+void CNumerics::GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_cp, su2double *val_temperature, su2double *val_dRhodT, su2double *val_normal,
+    su2double val_scale, su2double **val_Proj_Jac_Tensor) {
+  AD_BEGIN_PASSIVE
   unsigned short iDim;
   su2double proj_vel;
 
@@ -475,13 +509,12 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
     val_Proj_Jac_Tensor[4][4] = val_scale*((*val_cp)*((*val_temperature)*(*val_dRhodT) + (*val_density))*proj_vel);
 
   }
-  AD::EndPassive(wasActive);
+  AD_END_PASSIVE
 }
 
-void CNumerics::GetPreconditioner(const su2double *val_density, const su2double *val_velocity,
-                                  const su2double *val_betainc2, const su2double *val_cp,
-                                  const su2double *val_temperature, const su2double *val_drhodt,
-                                  su2double **val_Precon) const {
+void CNumerics::GetPreconditioner(su2double *val_density, su2double *val_velocity,
+                                  su2double *val_betainc2, su2double *val_cp,
+                                  su2double *val_temperature, su2double *val_drhodt, su2double **val_Precon) {
   unsigned short iDim, jDim;
 
   val_Precon[0][0] = 1.0/(*val_betainc2);
@@ -505,9 +538,8 @@ void CNumerics::GetPreconditioner(const su2double *val_density, const su2double 
 
 }
 
-void CNumerics::GetPreconditionedProjJac(const su2double *val_density, const su2double *val_lambda,
-                                         const su2double *val_betainc2, const su2double *val_normal,
-                                         su2double **val_invPrecon_A) const {
+void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_lambda,
+                                         su2double *val_betainc2, su2double *val_normal, su2double **val_invPrecon_A) {
   unsigned short iDim, jDim, kDim;
 
   val_invPrecon_A[0][0] = val_lambda[nDim]/2.0 + val_lambda[nDim+1]/2.0;
@@ -538,9 +570,8 @@ void CNumerics::GetPreconditionedProjJac(const su2double *val_density, const su2
 
 }
 
-void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_velocity,
-                           const su2double *val_soundspeed, const su2double *val_normal,
-                           su2double **val_p_tensor) const {
+void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
+                           su2double *val_soundspeed, su2double *val_normal, su2double **val_p_tensor) {
 
   su2double sqvel, rhooc, rhoxc;
   //su2double c2;
@@ -612,10 +643,9 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
 
 }
 
-void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_velocity,
-                           const su2double *val_soundspeed, const su2double *val_enthalpy,
-                           const su2double *val_chi, const su2double *val_kappa,
-                           const su2double *val_normal, su2double **val_p_tensor) const {
+void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2double *val_soundspeed,
+                           su2double *val_enthalpy, su2double *val_chi, su2double *val_kappa,
+                           su2double *val_normal, su2double **val_p_tensor) {
 
   su2double sqvel, rhooc, zeta;
   //su2double rhoxc, c2;
@@ -685,9 +715,9 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
 
 }
 
-void CNumerics::GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
-                               const su2double *val_soundspeed, const su2double *val_normal,
-                               su2double **val_invp_tensor) const {
+void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
+                               su2double *val_soundspeed, su2double *val_normal,
+                               su2double **val_invp_tensor) {
 
   su2double rhoxc, c2, gm1, k0orho, k1orho, gm1_o_c2, gm1_o_rhoxc, sqvel;
 
@@ -761,9 +791,9 @@ void CNumerics::GetPMatrix_inv(const su2double *val_density, const su2double *va
   }
 }
 
-void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val_density,
-                               const su2double *val_velocity, const su2double *val_soundspeed,
-                               const su2double *val_chi, const su2double *val_kappa, const su2double *val_normal) const {
+void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_density,
+                               su2double *val_velocity, su2double *val_soundspeed,
+                               su2double *val_chi, su2double *val_kappa, su2double *val_normal) {
 
   su2double rhoxc, c2, k0orho, k1orho, sqvel, k_o_c2, k_o_rhoxc, dp_drho;
 
@@ -836,7 +866,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val
 
 void CNumerics::GetinvRinvPe(su2double Beta2, su2double val_enthalpy,
                              su2double val_soundspeed, su2double val_density,
-                             const su2double* val_velocity, su2double **invRinvPe) const {
+                             su2double* val_velocity, su2double **invRinvPe) {
 
   su2double sqvel;
   su2double factor = 1.0/(val_soundspeed*val_soundspeed*Beta2);
@@ -905,7 +935,7 @@ void CNumerics::GetinvRinvPe(su2double Beta2, su2double val_enthalpy,
 }
 
 void CNumerics::GetRMatrix(su2double val_pressure, su2double val_soundspeed, su2double val_density,
-                           const su2double* val_velocity, su2double **R_Matrix) const {
+                           su2double* val_velocity, su2double **R_Matrix) {
 
   su2double sqvel;
   //su2double factor = 1.0/(val_soundspeed*val_soundspeed*1);
@@ -975,7 +1005,7 @@ void CNumerics::GetRMatrix(su2double val_pressure, su2double val_soundspeed, su2
 
 
 
-void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix) const {
+void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix) {
 
   su2double cc, rhoc;
   cc = val_soundspeed*val_soundspeed;
@@ -1039,7 +1069,7 @@ void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 }
 
-void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) const {
+void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) {
 
   su2double cc, rhoc;
   cc = val_soundspeed*val_soundspeed;
@@ -1102,7 +1132,7 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 }
 
-void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, const su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv){
+void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv){
   su2double rhoc, cc;
   su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
 
@@ -1215,7 +1245,7 @@ void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
 
 }
 
-void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, const su2double *delta_prim, su2double *delta_char) const{
+void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char){
 
   su2double cc, rhoc;
   cc = val_soundspeed*val_soundspeed;
@@ -1235,7 +1265,7 @@ void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, con
 }
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat,
-                                   su2double rB2a2, const su2double* Lambda, const su2double *val_normal, su2double **val_absPeJac) const {
+                                   su2double rB2a2, su2double* Lambda, su2double *val_normal, su2double **val_absPeJac) {
 
   su2double lam1, lam2, lam3, lam4;
   lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];
@@ -1301,8 +1331,8 @@ void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s
 
 }
 
-void CNumerics::GetJacInviscidLambda_fabs(const su2double *val_velocity, su2double val_soundspeed,
-                                          const su2double *val_normal, su2double *val_Lambda_Vector) const {
+void CNumerics::GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val_soundspeed,
+    su2double *val_normal, su2double *val_Lambda_Vector) {
   su2double ProjVelocity = 0;
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1324,12 +1354,12 @@ void CNumerics::GetJacInviscidLambda_fabs(const su2double *val_velocity, su2doub
 }
 
 void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j, su2double Density_i, su2double Density_j,
-                                      su2double ViscDens_i, su2double ViscDens_j, const su2double *Velocity_i, const su2double *Velocity_j,
+                                      su2double ViscDens_i, su2double ViscDens_j, su2double *Velocity_i, su2double *Velocity_j,
                                       su2double sq_vel_i, su2double sq_vel_j,
-                                      su2double XiDens_i, su2double XiDens_j, su2double **Mean_GradPhi, const su2double *Mean_GradPsiE,
-                                      su2double dPhiE_dn, const su2double *Normal, const su2double *Edge_Vector, su2double dist_ij_2, su2double *val_residual_i, su2double *val_residual_j,
+                                      su2double XiDens_i, su2double XiDens_j, su2double **Mean_GradPhi, su2double *Mean_GradPsiE,
+                                      su2double dPhiE_dn, su2double *Normal, su2double *Edge_Vector, su2double dist_ij_2, su2double *val_residual_i, su2double *val_residual_j,
                                       su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji,
-                                      su2double **val_Jacobian_jj, bool implicit) const {
+                                      su2double **val_Jacobian_jj, bool implicit) {
 
   su2double Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
   Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
@@ -1675,9 +1705,8 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
 
 }
 
-void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
-                                           const su2double *val_Mean_SecVar,
-                                           su2double **val_Jac_PC) const {
+void CNumerics::GetPrimitive2Conservative (su2double *val_Mean_PrimVar, su2double *val_Mean_SecVar, su2double **val_Jac_PC) {
+
   unsigned short iVar, jVar, iDim;
 
   // order of primitives: T, vx, vy, vz, P, rho, h, c, MuLam, MuEddy, kt, Cp
@@ -1766,7 +1795,7 @@ void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
 
 
 
-void CNumerics::CreateBasis(const su2double *val_Normal) {
+void CNumerics::CreateBasis(su2double *val_Normal) {
   unsigned short iDim;
   su2double modm, modl;
 
@@ -1883,7 +1912,7 @@ void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
   delete [] e;
 }
 
-void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, const su2double *Eig_Val, unsigned short n){
+void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n){
   unsigned short i,j,k;
   su2double **tmp = new su2double* [n];
   su2double **deltaN = new su2double* [n];
