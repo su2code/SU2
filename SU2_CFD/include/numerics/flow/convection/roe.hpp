@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for Roe-type schemes,
  *        implemented in roe.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,10 +45,25 @@ protected:
   su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
   su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
   su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+  su2double muscl_kappa;
+  bool muscl;
 
   su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
+  /*!
+   * \brief Compute the contribution of central differencing to the flux Jacobian.
+   * \param[in] val_kappa - MUSCL kappa blending parameter.
+   * \param[in/out] val_Jacobian - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[in] lim_i - Slope limiter at node i.
+   * \param[in] lim_j - Slope limiter at node j.
+   * \param[in] val_velocity - Velocity at node i.
+   * \param[in] val_density - Density at node i.
+   */
+  void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                   const su2double *lim_i, const su2double *lim_j,
+                   const su2double *val_velocity, const su2double *val_density);
 
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
@@ -67,8 +82,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   * \param[in] val_muscl - Use MUSCL extrapolation.
    */
-  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
+  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation, bool val_muscl);
 
   /*!
    * \brief Destructor of the class.
@@ -109,8 +125,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
+  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation, bool val_muscl);
 
 };
 
@@ -119,7 +136,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of L2Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CUpwL2Roe_Flow final : public CUpwRoeBase_Flow {
 private:
@@ -139,8 +156,9 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
 };
 
@@ -149,7 +167,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of LMRoe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CUpwLMRoe_Flow final : public CUpwRoeBase_Flow {
 private:
@@ -169,8 +187,9 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
 };
 

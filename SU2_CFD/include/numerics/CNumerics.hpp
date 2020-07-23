@@ -816,7 +816,7 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(su2double *val_velocity, su2double *val_energy, su2double *val_tke,
+  void GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
                           su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor);
 

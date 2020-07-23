@@ -2,7 +2,7 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,12 +28,14 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
+                                   bool val_low_dissipation, bool val_muscl) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
+  muscl_kappa = 0.5*config->GetMUSCL_Kappa();
+  muscl = val_muscl;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -81,6 +83,91 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
 
 }
 
+void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                                   const su2double *lim_i, const su2double *lim_j,
+                                   const su2double *val_velocity, const su2double *val_density) {
+  AD_BEGIN_PASSIVE
+
+  unsigned short iVar, jVar, kVar, iDim;
+  su2double **tmp = new su2double*[nVar],
+            **MLim = new su2double*[nVar],
+            **MInv = new su2double*[nVar],
+            *dLim  = new su2double[nDim+3];
+  for(iVar = 0; iVar < nVar; iVar++) {
+    tmp[iVar]   = new su2double[nVar];
+    MLim[iVar]  = new su2double[nVar];
+    MInv[iVar] = new su2double[nVar];
+    for (jVar = 0; jVar < nVar; jVar++) {
+      tmp[iVar][jVar] = 0.0;
+      MLim[iVar][jVar] = 0.0;
+      MInv[iVar][jVar] = 0.0;
+    }
+  }
+
+  for (iVar = 0; iVar < nDim+3; iVar++) 
+    dLim[iVar] = 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
+
+  su2double sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    sq_vel += pow(val_velocity[iDim], 2.0);
+
+  /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
+
+  MLim[0][0] = dLim[nDim+2];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    MLim[iDim+1][0] = dLim[nDim+2]*val_velocity[iDim];
+    MLim[iDim+1][iDim+1] = dLim[iDim+1]*(*val_density);
+    MLim[nDim+1][iDim+1] = dLim[iDim+1]*(*val_density)*val_velocity[iDim];
+  }
+  MLim[nDim+1][0] = dLim[nDim+2]*sq_vel/2.0;
+  MLim[nDim+1][nDim+1] = dLim[nDim+1]*1.0/Gamma_Minus_One;
+
+  /*--- Inv(d{r,v,p}/dU) ---*/
+
+  MInv[0][0] = 1.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    MInv[iDim+1][0] = -val_velocity[iDim]/(*val_density);
+    MInv[iDim+1][iDim+1] = 1.0/(*val_density);
+    MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity[iDim];
+  }
+  MInv[nDim+1][0] = Gamma_Minus_One*sq_vel/2.0;
+  MInv[nDim+1][nDim+1] = Gamma_Minus_One;
+
+  /*--- Now multiply them all together ---*/
+
+  for(iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      for (kVar = 0; kVar < nVar; kVar++) {
+        tmp[iVar][jVar] += val_Jacobian[iVar][kVar]*MLim[kVar][jVar];
+      }
+    }
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      val_Jacobian[iVar][jVar] = 0.0;
+
+  for(iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      for (kVar = 0; kVar < nVar; kVar++) {
+        val_Jacobian[iVar][jVar] += tmp[iVar][kVar]*MInv[kVar][jVar];
+      }
+    }
+  }
+
+  for(iVar = 0; iVar < nVar; iVar++) {
+    delete [] tmp[iVar];
+    delete [] MLim[iVar];
+    delete [] MInv[iVar];
+  }
+  delete [] tmp;
+  delete [] MLim;
+  delete [] MInv;
+  delete [] dLim;
+
+  AD_END_PASSIVE
+}
+
 void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                         su2double **val_Jacobian_j, const CConfig* config) {
 /*---
@@ -91,6 +178,8 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 }
 
 CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iVar, jVar, iDim;
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
@@ -104,7 +193,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
-  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
@@ -146,8 +234,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  const su2double RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
@@ -223,8 +310,13 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     Flux[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 
   if (implicit) {
-    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, kappa, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, kappa, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, Jacobian_j);
+
+    if (muscl) {
+      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i);
+      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j);
+    }
   }
 
   /*--- Finalize in children class ---*/
@@ -252,7 +344,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 }
 
 CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-              bool val_low_dissipation) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation) {}
+              bool val_low_dissipation, bool val_muscl) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation, val_muscl) {}
 
 void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j, const CConfig* config) {
@@ -293,8 +385,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
 }
 
-CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
+CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl) :
+                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false, val_muscl) {}
 
 void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, const CConfig* config) {
@@ -366,8 +458,8 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
 }
 
-CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
+CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl) :
+                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false, val_muscl) {}
 
 void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, const CConfig* config) {
@@ -510,6 +602,8 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
 
 CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
   /*--- Face area (norm or the normal vector) ---*/
@@ -629,8 +723,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   if (implicit) {
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because Flux ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   }
 
   for (iVar = 0; iVar < nVar; iVar ++) {

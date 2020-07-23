@@ -273,7 +273,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, UnitNormal, 1.0, Jacobian_i);
+      GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, Jacobian_i);
 
     }
     else {
@@ -408,7 +408,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, UnitNormal, 1.0, Jacobian_j);
+      GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, Jacobian_j);
 
     }
     else {
