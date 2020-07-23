@@ -2686,14 +2686,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
   const su2double K_v = 0.25;
 
-  const auto InnerIter        = config->GetInnerIter();
-  const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                                (InnerIter <= config->GetLimiterIter());
-
-  const unsigned short turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
-
   /*--- Init thread-shared variables to compute min/max values.
    *    Critical sections are used for this instead of reduction
    *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
