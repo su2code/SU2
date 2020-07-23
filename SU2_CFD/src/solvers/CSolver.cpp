@@ -1843,6 +1843,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
   }
 
 }
+
 void CSolver::CompleteComms(CGeometry *geometry,
                             const CConfig *config,
                             unsigned short commType) {
