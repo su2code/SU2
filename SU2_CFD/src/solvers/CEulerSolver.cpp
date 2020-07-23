@@ -3142,7 +3142,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Limiter_j = turbNodes->GetLimiter(jPoint);
         }
 
-        const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+        const su2double Kappa = config->GetMUSCL_Kappa();
 
         const su2double T_ij = 0.5*(tke_j - tke_i);
 
@@ -3203,7 +3203,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      const su2double Kappa = (piperno) ? 1.0/3.0 : config->GetMUSCL_Kappa();
+      const su2double Kappa = config->GetMUSCL_Kappa();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
