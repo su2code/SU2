@@ -1319,12 +1319,12 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   su2double Tve           = config->GetTemperature_ve_FreeStream();
 
   vector<su2double> energies;
- 
+
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
   case MUTATIONPP:
    //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-   cout << "Delete Me, Calling Mutation" << endl;
+   SU2_MPI::Error("The link to Mutation++ library is currently being developed and will soon be released!.", CURRENT_FUNCTION);
    break;
   case USER_DEFINED_NONEQ:
    FluidModel = new CUserDefinedTCLib(config, nDim, viscous);

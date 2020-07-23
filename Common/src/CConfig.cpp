@@ -3547,13 +3547,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only MUTATIONPP or USER_DEFINED_NONEQ fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
   }
 
-  cout << "cat: HELLOOO" << endl;
-
-  //CGarbacz: to delete
-  if ( Kind_FluidModel == MUTATIONPP ) {
-    SU2_MPI::Error("The link to Mutation++ library is currently being developed and will soon be released!.", CURRENT_FUNCTION);
-  }
-
   /*--- Check for Convective scheme available for NICFD ---*/
     if ((!ideal_gas) && (!noneq_gas)) {
       if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
