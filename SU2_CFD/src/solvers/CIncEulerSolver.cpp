@@ -1937,11 +1937,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
               break;
           }
 
-          /*--- Ensure projection and centered difference have same sign ---*/
-          
-          Limiter_i[iVar] *= (Project_Grad_i*V_ij >= 0.0);
-          Limiter_j[iVar] *= (Project_Grad_j*V_ij >= 0.0);
-
           /*--- Limit projection ---*/
 
           Project_Grad_i *= Limiter_i[iVar];
