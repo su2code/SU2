@@ -3136,6 +3136,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
+        /*--- Blend upwind and centered differences ---*/
+
+        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+
         /*--- Edge-based limiters ---*/
 
         if (limiter) {
@@ -3155,10 +3160,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Limiter_i[iVar] *= (Project_Grad_i*V_ij >= 0.0);
           Limiter_j[iVar] *= (Project_Grad_j*V_ij >= 0.0);
 
-          /*--- Blend upwind and centered differences ---*/
+          /*--- Limit projection ---*/
 
-          Project_Grad_i = 0.5*Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-          Project_Grad_j = 0.5*Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+          Project_Grad_i *= Limiter_i[iVar];
+          Project_Grad_j *= Limiter_j[iVar];
         }
         else {
           Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
