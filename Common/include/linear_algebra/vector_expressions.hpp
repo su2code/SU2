@@ -159,8 +159,8 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
 
 /*--- std::max/min have issues (maybe because they return by reference). ---*/
 
-#define max_impl(a,b) Scalar(a<b? b : a)
-#define min_impl(a,b) Scalar(b<a? b : a)
+#define max_impl(a,b) a<b? Scalar(b) : Scalar(a)
+#define min_impl(a,b) b<a? Scalar(b) : Scalar(a)
 MAKE_BINARY_FUN(max, max_, max_impl)
 MAKE_BINARY_FUN(min, min_, min_impl)
 MAKE_BINARY_FUN(pow, pow_, math::pow)
