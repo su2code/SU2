@@ -4324,16 +4324,7 @@ public:
    * \brief Get the MUSCL parameter.
    * \return MUSCL parameter.
    */
-  su2double GetMUSCL_Kappa(void) const { 
-    switch (Kind_SlopeLimit_Flow) { 
-      case VAN_ALBADA_EDGE:
-        return 0.0;
-      case PIPERNO:
-        return 1.0/3.0;
-      default:
-        return MUSCL_Kappa; 
-    }
-  }
+  su2double GetMUSCL_Kappa(void) const { return MUSCL_Kappa; }
 
   /*!
    * \brief Return true if an edge-based limiter is in use.
