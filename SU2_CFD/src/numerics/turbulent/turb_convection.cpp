@@ -30,7 +30,8 @@
 
 CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
-                       const CConfig* config) :
+                       const CConfig* config,
+                       bool val_muscl) :
   CNumerics(val_nDim, val_nVar, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
@@ -43,6 +44,9 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
+
+  muscl_kappa = 0.5*config->GetMUSCL_Kappa();
+  muscl = val_muscl;
 }
 
 CUpwScalar::~CUpwScalar(void) {
@@ -56,6 +60,18 @@ CUpwScalar::~CUpwScalar(void) {
     delete [] Jacobian_i;
     delete [] Jacobian_j;
   }
+}
+
+void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                                   const su2double *lim_i, const su2double *lim_j) {
+  AD_BEGIN_PASSIVE
+
+  unsigned short iVar;
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
+
+
+  AD_END_PASSIVE
 }
 
 CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
@@ -92,6 +108,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   a1 = 0.5*(q_ij-fabs(q_ij));
 
   FinishResidualCalc(config);
+
+  if (muscl) {
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_j, Limiter_i);
+  }
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
@@ -102,8 +123,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
-                               const CConfig* config) :
-                CUpwScalar(val_nDim, val_nVar, config) { }
+                               const CConfig* config,
+                               bool val_muscl) :
+                CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+1);
@@ -122,8 +144,9 @@ void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
-                                 const CConfig* config) :
-                 CUpwScalar(val_nDim, val_nVar, config) { }
+                                 const CConfig* config,
+                                 bool val_muscl) :
+                 CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+3);

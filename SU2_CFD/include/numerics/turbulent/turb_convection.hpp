@@ -53,6 +53,8 @@ protected:
   *Flux = nullptr,             /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,      /*!< \brief Flux Jacobian w.r.t. node i. */
   **Jacobian_j = nullptr;      /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double muscl_kappa;
+  bool muscl;
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
@@ -60,6 +62,16 @@ protected:
    * \brief A pure virtual function; Adds any extra variables to AD
    */
   virtual void ExtraADPreaccIn() = 0;
+
+  /*!
+   * \brief Compute the contribution of central differencing to the flux Jacobian.
+   * \param[in] val_kappa - MUSCL kappa blending parameter.
+   * \param[in/out] val_Jacobian - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[in] lim_i - Slope limiter at node i.
+   * \param[in] lim_j - Slope limiter at node j.
+   */
+  void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                   const su2double *lim_i, const su2double *lim_j);
 
   /*!
    * \brief Model-specific steps in the ComputeResidual method, derived classes
@@ -75,7 +87,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
   /*!
    * \brief Destructor of the class.
@@ -117,7 +129,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
 };
 
@@ -147,6 +159,6 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
 
 };
