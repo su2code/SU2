@@ -3141,30 +3141,31 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
         }
 
+        /*--- Blend upwind and centered differences ---*/
+
+        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+
+        /*--- Edge-based limiters ---*/
+
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
             case VAN_ALBADA_EDGE:
               Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
               Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
-              Project_Grad_i *= Limiter_i[0];
-              Project_Grad_j *= Limiter_j[0];
               break;
             case PIPERNO:
               Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
               Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
-              Project_Grad_i *= Limiter_i[0];
-              Project_Grad_j *= Limiter_j[0];
-              break;
-            default:
-              Project_Grad_i = 0.5*Limiter_i[0]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-              Project_Grad_j = 0.5*Limiter_j[0]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
               break;
           }
+
+          /*--- Limit projection ---*/
+
+          Project_Grad_i *= Limiter_i[0];
+          Project_Grad_j *= Limiter_j[0];
         }
-        else {
-          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
-        }
+
         tke_i += Project_Grad_i;
         tke_j -= Project_Grad_j;
       }
@@ -3210,8 +3211,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
+        /*--- Blend upwind and centered differences ---*/
+
         Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
         Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+
+        /*--- Edge-based limiters ---*/
 
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
@@ -3224,13 +3229,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
+
+          /*--- Limit projection ---*/
+
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
         }
-        else {
-          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
-        }
+        
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
       }

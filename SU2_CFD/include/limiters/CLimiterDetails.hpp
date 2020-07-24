@@ -76,16 +76,16 @@ namespace LimiterHelpers
 
   inline su2double vanAlbadaFunction(su2double proj, su2double delta)
   {
-    return delta*(proj + delta) / (pow(proj, 2) + pow(delta, 2) + epsilon());
+    return delta*(proj + delta) / (pow(proj, 2) + pow(delta, 2) + epsilon())  * (proj*delta >= 0.0);
   }
 
   inline su2double pipernoFunction(su2double proj, su2double delta)
   {
     const su2double sign = 1.0 - 2.0*(delta < 0.0);
     const su2double r = max(epsilon(), proj / (delta + sign*epsilon()));
-    return (1.0/3.0+2.0/(3.0*r)) * 
-           min((3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0),
-               1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
+    const su2double phi = min((3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0),
+                              1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
+    return (1.0/3.0 + 2.0/(3.0*r)) * phi * (proj*delta >= 0.0);
   }
 
   inline su2double raisedSine(su2double dist)
@@ -93,6 +93,7 @@ namespace LimiterHelpers
     su2double factor = 0.5*(1.0+dist+sin(PI_NUMBER*dist)/PI_NUMBER);
     return max(0.0, min(factor, 1.0));
   }
+
 }
 
 
