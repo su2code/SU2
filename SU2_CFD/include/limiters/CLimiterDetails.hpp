@@ -86,7 +86,7 @@ namespace LimiterHelpers
     const su2double phi = (1.0/3.0+2.0/(3.0*r)) * 
                        min((3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0),
                            1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
-    return phi*(proj*delta >= 0.0);
+    return phi;
   }
 
   inline su2double raisedSine(su2double dist)
