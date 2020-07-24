@@ -1913,8 +1913,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         su2double Project_Grad_j = -V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          const su2double Vector_ij = Coord_j[iDim] - Coord_i[iDim];
+          Project_Grad_i += Vector_ij*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij*Gradient_j[iVar][iDim];
         }
 
         /*--- Edge-based limiters ---*/
