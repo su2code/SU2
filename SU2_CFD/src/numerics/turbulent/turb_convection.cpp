@@ -62,8 +62,8 @@ CUpwScalar::~CUpwScalar(void) {
   }
 }
 
-void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
-                                   const su2double *lim_i, const su2double *lim_j) {
+void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+                             const su2double *lim_i, const su2double *lim_j) {
   AD_BEGIN_PASSIVE
 
   unsigned short iVar;

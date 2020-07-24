@@ -284,7 +284,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            bad_j ? Turb_j : solution_j);
 
       su2double ZeroVec[2] = {0.0};
-      numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
+      numerics->SetLimiter(bad_i? ZeroVec : TurbLim_i, bad_j? ZeroVec : TurbLim_j);
     }
 
     /*--- Update convective residual value ---*/
