@@ -2384,240 +2384,6 @@ void CSolver::ResetCFLAdapt() {
 }
 
 
-// void CSolver::AdaptCFLNumber(CGeometry **geometry,
-//                              CSolver   ***solver,
-//                              CConfig   *config) {
-
-//   /* Adapt the CFL number on all multigrid levels using an
-//    exponential progression with under-relaxation approach. */
-
-//   vector<su2double> MGFactor(config->GetnMGLevels()+1,1.0);
-//   const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
-//   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
-//   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
-//   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
-//   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
-
-//   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-//     /* Store the mean flow, and turbulence solvers more clearly. */
-
-//     CSolver *solverFlow = solver[iMesh][FLOW_SOL];
-//     CSolver *solverTurb = solver[iMesh][TURB_SOL];
-
-//     /* Compute the reduction factor for CFLs on the coarse levels. */
-
-//     if (iMesh == MESH_0) {
-//       MGFactor[iMesh] = 1.0;
-//     } else {
-//       const su2double CFLRatio = config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
-//       MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
-//     }
-
-//     /* Check whether we achieved the requested reduction in the linear
-//      solver residual within the specified number of linear iterations. */
-
-//     bool reduceCFL = false;
-//     su2double linResFlow = solverFlow->GetResLinSolver();
-//     su2double linResTurb = -1.0;
-//     if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-//       linResTurb = solverTurb->GetResLinSolver();
-//     }
-
-//     su2double maxLinResid = max(linResFlow, linResTurb);
-//     if (maxLinResid > 0.5) {
-//       reduceCFL = true;
-//     }
-
-//     /* Check that we are meeting our nonlinear residual reduction target
-//      over time so that we do not get stuck in limit cycles. */
-
-//     SU2_OMP_MASTER
-//     { /* Only the master thread updates the shared variables. */
-
-//     Old_Func = New_Func;
-//     unsigned short Res_Count = 100;
-//     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
-
-//     /* Store initial RMS residual for all variables. */
-
-//     if (config->GetInnerIter() == 0) {
-//       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-//         solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-//       }
-//       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-//         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-//           solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-//         }
-//       }
-//     }
-
-//     /* Sum the RMS residuals for all equations. */
-
-//     New_Func = 0.0;
-//     for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-//       New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
-//     }
-//     if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-//       for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-//         New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
-//       }
-//     }
-
-//     /* Compute the difference in the nonlinear residuals between the
-//      current and previous iterations. */
-
-//     NonLinRes_Func = (New_Func - Old_Func);
-//     NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
-
-//     /* Increment the counter, if we hit the max size, then start over. */
-
-//     NonLinRes_Counter++;
-//     if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
-
-//     /* Sum the total change in nonlinear residuals over the previous
-//      set of all stored iterations. */
-
-//     NonLinRes_Value = New_Func;
-//     if (config->GetTimeIter() >= Res_Count) {
-//       NonLinRes_Value = 0.0;
-//       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-//         NonLinRes_Value += NonLinRes_Series[iCounter];
-//     }
-
-//     /* If the sum is larger than a small fraction of the current nonlinear
-//      residual, then we are not decreasing the nonlinear residual at a high
-//      rate. In this situation, we force a reduction of the CFL in all cells.
-//      Reset the array so that we delay the next decrease for some iterations. */
-
-//     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-//       reduceCFL = true;
-//       NonLinRes_Counter = 0;
-//       New_Func = su2double(nVar);
-//       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-//         solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-//       }
-//       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-//         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-//           solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-//         }
-//       }
-//       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-//         NonLinRes_Series[iCounter] = New_Func;
-//     }
-
-//     }  /* End SU2_OMP_MASTER, now all threads update the CFL number. */
-//     SU2_OMP_BARRIER
-
-//     // if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-//     //   reduceCFL = true;
-//     // }
-
-//     /* Loop over all points on this grid and apply CFL adaption. */
-
-//     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
-
-//     SU2_OMP_MASTER
-//     if ((iMesh == MESH_0) && fullComms) {
-//       Min_CFL_Local = 1e30;
-//       Max_CFL_Local = 0.0;
-//       Avg_CFL_Local = 0.0;
-//     }
-
-//     SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
-//     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-
-//       /* Get the current local flow CFL number at this point. */
-
-//       su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
-
-//       /* Get the current under-relaxation parameters that were computed
-//        during the previous nonlinear update. If we have a turbulence model,
-//        take the minimum under-relaxation parameter between the mean flow
-//        and turbulence systems. */
-
-//       su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
-//       su2double underRelaxationTurb = 1.0;
-//       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-//         underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-//       const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
-
-//       /* If we apply a small under-relaxation parameter for stability,
-//        then we should reduce the CFL before the next iteration. If we
-//        are able to add the entire nonlinear update (under-relaxation = 1)
-//        then we schedule an increase the CFL number for the next iteration. */
-
-//       su2double CFLFactor = 1.0;
-//       if ((underRelaxation < 0.1)) {
-//         CFLFactor = CFLFactorDecrease;
-//       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
-//         CFLFactor = 1.0;
-//       } else {
-//         CFLFactor = CFLFactorIncrease;
-//       }
-
-//       /* Check if we are hitting the min or max and adjust. */
-
-//       if (CFL*CFLFactor <= CFLMin) {
-//         CFL       = CFLMin;
-//         CFLFactor = MGFactor[iMesh];
-//       } else if (CFL*CFLFactor >= CFLMax) {
-//         CFL       = CFLMax;
-//         CFLFactor = MGFactor[iMesh];
-//       }
-
-//       /* If we detect a stalled nonlinear residual, then force the CFL
-//        for all points to the minimum temporarily to restart the ramp. */
-
-//       if (reduceCFL) {
-//         CFL       = CFLMin;
-//         CFLFactor = MGFactor[iMesh];
-//       }
-
-//       /* Apply the adjustment to the CFL and store local values. */
-
-//       CFL *= CFLFactor;
-//       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-//       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-//         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
-//       }
-
-//       /* Store min and max CFL for reporting on the fine grid. */
-
-//       if ((iMesh == MESH_0) && fullComms) {
-//         myCFLMin = min(CFL,myCFLMin);
-//         myCFLMax = max(CFL,myCFLMax);
-//         myCFLSum += CFL;
-//       }
-
-//     }
-
-//     /* Reduce the min/max/avg local CFL numbers. */
-
-//     if ((iMesh == MESH_0) && fullComms) {
-//       SU2_OMP_CRITICAL
-//       { /* OpenMP reduction. */
-//         Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
-//         Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
-//         Avg_CFL_Local += myCFLSum;
-//       }
-//       SU2_OMP_BARRIER
-
-//       SU2_OMP_MASTER
-//       { /* MPI reduction. */
-//         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
-//         SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-//         SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-//         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
-//       }
-//       SU2_OMP_BARRIER
-//     }
-
-//   }
-
-// }
-
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver,
                              CConfig   *config) {
@@ -2634,6 +2400,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
+    /* Store the mean flow, and turbulence solvers more clearly. */
+
+    CSolver *solverFlow = solver[iMesh][FLOW_SOL];
+    CSolver *solverTurb = solver[iMesh][TURB_SOL];
+
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
     if (iMesh == MESH_0) {
@@ -2647,9 +2418,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     bool reduceCFL = false;
-    su2double linRes = GetResLinSolver();
+    su2double linResFlow = solverFlow->GetResLinSolver();
+    su2double linResTurb = -1.0;
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      linResTurb = solverTurb->GetResLinSolver();
+    }
 
-    if (linRes > 0.5) {
+    su2double maxLinResid = max(linResFlow, linResTurb);
+    if (maxLinResid > 0.5) {
       reduceCFL = true;
     }
 
@@ -2667,15 +2443,25 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     if (config->GetInnerIter() == 0) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Residual_Ini[iVar] = Residual_RMS[iVar];
+        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
+      }
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
+        }
       }
     }
 
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      New_Func += Residual_RMS[iVar]/Residual_Ini[iVar];
+    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+      New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
+    }
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+        New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
+      }
     }
 
     /* Compute the difference in the nonlinear residuals between the
@@ -2693,7 +2479,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      set of all stored iterations. */
 
     NonLinRes_Value = New_Func;
-    if (config->GetInnerIter() >= Res_Count) {
+    if (config->GetTimeIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Value += NonLinRes_Series[iCounter];
@@ -2708,14 +2494,24 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       reduceCFL = true;
       NonLinRes_Counter = 0;
       New_Func = su2double(nVar);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        Residual_Ini[iVar] = Residual_RMS[iVar];
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
+      }
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
+        }
+      }
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
     }
 
-    } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+    }  /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
+
+    // if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+    //   reduceCFL = true;
+    // }
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -2733,14 +2529,18 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Get the current local flow CFL number at this point. */
 
-      su2double CFL = base_nodes->GetLocalCFL(iPoint);
+      su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
 
       /* Get the current under-relaxation parameters that were computed
        during the previous nonlinear update. If we have a turbulence model,
        take the minimum under-relaxation parameter between the mean flow
        and turbulence systems. */
 
-      const su2double underRelaxation = base_nodes->GetUnderRelaxation(iPoint);
+      su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
+      su2double underRelaxationTurb = 1.0;
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -2748,7 +2548,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if (underRelaxation < 0.1) {
+      if ((underRelaxation < 0.1)) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
         CFLFactor = 1.0;
@@ -2777,7 +2577,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Apply the adjustment to the CFL and store local values. */
 
       CFL *= CFLFactor;
-      base_nodes->SetLocalCFL(iPoint, CFL);
+      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
+      }
 
       /* Store min and max CFL for reporting on the fine grid. */
 
@@ -2814,6 +2617,203 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   }
 
 }
+
+// void CSolver::AdaptCFLNumber(CGeometry **geometry,
+//                              CSolver   ***solver,
+//                              CConfig   *config) {
+
+//   /* Adapt the CFL number on all multigrid levels using an
+//    exponential progression with under-relaxation approach. */
+
+//   vector<su2double> MGFactor(config->GetnMGLevels()+1,1.0);
+//   const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
+//   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
+//   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
+//   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+//   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
+
+//   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+
+//     /* Compute the reduction factor for CFLs on the coarse levels. */
+
+//     if (iMesh == MESH_0) {
+//       MGFactor[iMesh] = 1.0;
+//     } else {
+//       const su2double CFLRatio = config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+//       MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
+//     }
+
+//     /* Check whether we achieved the requested reduction in the linear
+//      solver residual within the specified number of linear iterations. */
+
+//     bool reduceCFL = false;
+//     su2double linRes = GetResLinSolver();
+
+//     if (linRes > 0.5) {
+//       reduceCFL = true;
+//     }
+
+//     /* Check that we are meeting our nonlinear residual reduction target
+//      over time so that we do not get stuck in limit cycles. */
+
+//     SU2_OMP_MASTER
+//     { /* Only the master thread updates the shared variables. */
+
+//     Old_Func = New_Func;
+//     unsigned short Res_Count = 100;
+//     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
+
+//     /* Store initial RMS residual for all variables. */
+
+//     if (config->GetInnerIter() == 0) {
+//       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+//         Residual_Ini[iVar] = Residual_RMS[iVar];
+//       }
+//     }
+
+//     /* Sum the RMS residuals for all equations. */
+
+//     New_Func = 0.0;
+//     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+//       New_Func += Residual_RMS[iVar]/Residual_Ini[iVar];
+//     }
+
+//     /* Compute the difference in the nonlinear residuals between the
+//      current and previous iterations. */
+
+//     NonLinRes_Func = (New_Func - Old_Func);
+//     NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
+
+//     /* Increment the counter, if we hit the max size, then start over. */
+
+//     NonLinRes_Counter++;
+//     if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
+
+//     /* Sum the total change in nonlinear residuals over the previous
+//      set of all stored iterations. */
+
+//     NonLinRes_Value = New_Func;
+//     if (config->GetInnerIter() >= Res_Count) {
+//       NonLinRes_Value = 0.0;
+//       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+//         NonLinRes_Value += NonLinRes_Series[iCounter];
+//     }
+
+//     /* If the sum is larger than a small fraction of the current nonlinear
+//      residual, then we are not decreasing the nonlinear residual at a high
+//      rate. In this situation, we force a reduction of the CFL in all cells.
+//      Reset the array so that we delay the next decrease for some iterations. */
+
+//     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+//       reduceCFL = true;
+//       NonLinRes_Counter = 0;
+//       New_Func = su2double(nVar);
+//       for (unsigned short iVar = 0; iVar < nVar; iVar++)
+//         Residual_Ini[iVar] = Residual_RMS[iVar];
+//       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+//         NonLinRes_Series[iCounter] = New_Func;
+//     }
+
+//     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+//     SU2_OMP_BARRIER
+
+//     /* Loop over all points on this grid and apply CFL adaption. */
+
+//     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+
+//     SU2_OMP_MASTER
+//     if ((iMesh == MESH_0) && fullComms) {
+//       Min_CFL_Local = 1e30;
+//       Max_CFL_Local = 0.0;
+//       Avg_CFL_Local = 0.0;
+//     }
+
+//     SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+//     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+
+//       /* Get the current local flow CFL number at this point. */
+
+//       su2double CFL = base_nodes->GetLocalCFL(iPoint);
+
+//       /* Get the current under-relaxation parameters that were computed
+//        during the previous nonlinear update. If we have a turbulence model,
+//        take the minimum under-relaxation parameter between the mean flow
+//        and turbulence systems. */
+
+//       const su2double underRelaxation = base_nodes->GetUnderRelaxation(iPoint);
+
+//       /* If we apply a small under-relaxation parameter for stability,
+//        then we should reduce the CFL before the next iteration. If we
+//        are able to add the entire nonlinear update (under-relaxation = 1)
+//        then we schedule an increase the CFL number for the next iteration. */
+
+//       su2double CFLFactor = 1.0;
+//       if (underRelaxation < 0.1) {
+//         CFLFactor = CFLFactorDecrease;
+//       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+//         CFLFactor = 1.0;
+//       } else {
+//         CFLFactor = CFLFactorIncrease;
+//       }
+
+//       /* Check if we are hitting the min or max and adjust. */
+
+//       if (CFL*CFLFactor <= CFLMin) {
+//         CFL       = CFLMin;
+//         CFLFactor = MGFactor[iMesh];
+//       } else if (CFL*CFLFactor >= CFLMax) {
+//         CFL       = CFLMax;
+//         CFLFactor = MGFactor[iMesh];
+//       }
+
+//       /* If we detect a stalled nonlinear residual, then force the CFL
+//        for all points to the minimum temporarily to restart the ramp. */
+
+//       if (reduceCFL) {
+//         CFL       = CFLMin;
+//         CFLFactor = MGFactor[iMesh];
+//       }
+
+//       /* Apply the adjustment to the CFL and store local values. */
+
+//       CFL *= CFLFactor;
+//       base_nodes->SetLocalCFL(iPoint, CFL);
+
+//       /* Store min and max CFL for reporting on the fine grid. */
+
+//       if ((iMesh == MESH_0) && fullComms) {
+//         myCFLMin = min(CFL,myCFLMin);
+//         myCFLMax = max(CFL,myCFLMax);
+//         myCFLSum += CFL;
+//       }
+
+//     }
+
+//     /* Reduce the min/max/avg local CFL numbers. */
+
+//     if ((iMesh == MESH_0) && fullComms) {
+//       SU2_OMP_CRITICAL
+//       { /* OpenMP reduction. */
+//         Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
+//         Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
+//         Avg_CFL_Local += myCFLSum;
+//       }
+//       SU2_OMP_BARRIER
+
+//       SU2_OMP_MASTER
+//       { /* MPI reduction. */
+//         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
+//         SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+//         SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+//         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
+//       }
+//       SU2_OMP_BARRIER
+//     }
+
+//   }
+
+// }
 
 void CSolver::InitiateCommsAll(void *bufSend,
                                int *nElemSend,
