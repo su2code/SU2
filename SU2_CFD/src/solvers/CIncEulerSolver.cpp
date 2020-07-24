@@ -1905,16 +1905,19 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
+        /*--- Compute centered and upwind differences ---*/
+
         const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-        Project_Grad_i = -V_ij;
-        Project_Grad_j = -V_ij;
+        su2double Project_Grad_i = -V_ij;
+        su2double Project_Grad_j = -V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          const su2double Vector_ij = Coord_j[iDim] - Coord_i[iDim];
-          Project_Grad_i += Vector_ij*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_ij*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
+
+        /*--- Edge-based limiters ---*/
 
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
@@ -1927,6 +1930,14 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
               Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
+
+          /*--- Ensure projection and centered difference have same sign ---*/
+          
+          Limiter_i[iVar] *= (Project_Grad_i*V_ij >= 0.0);
+          Limiter_j[iVar] *= (Project_Grad_j*V_ij >= 0.0);
+
+          /*--- Blend upwind and centered differences ---*/
+
           Project_Grad_i = 0.5*Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
           Project_Grad_j = 0.5*Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
         }
