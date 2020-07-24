@@ -264,10 +264,11 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
 /*!
  * \brief Convective projected (onto normal) flux (compressible flow).
  */
-template<size_t nDim, size_t N>
-FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const CCompressiblePrimitives<nDim,N>& V,
-                                               const CCompressibleConservatives<nDim>& U,
+template<class PrimVarType, class ConsVarType, size_t nDim>
+FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
+                                               const ConsVarType& U,
                                                const VectorDbl<nDim>& normal) {
+  static_assert(ConsVarType::nVar == nDim+2,"");
   Double mdot = dot(U.momentum(), normal);
   VectorDbl<nDim+2> flux;
   flux(0) = mdot;

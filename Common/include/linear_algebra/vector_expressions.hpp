@@ -157,9 +157,15 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
   RETURNS( EXPR<Bcast<S>,V,S>(Bcast<S>(u), v.derived())                       \
 )                                                                             \
 
-MAKE_BINARY_FUN(max, max_, math::max)
-MAKE_BINARY_FUN(min, min_, math::min)
+/*--- std::max/min have issues (maybe because they return by reference). ---*/
+
+#define max_impl(a,b) Scalar(a<b? b : a)
+#define min_impl(a,b) Scalar(b<a? b : a)
+MAKE_BINARY_FUN(max, max_, max_impl)
+MAKE_BINARY_FUN(min, min_, min_impl)
 MAKE_BINARY_FUN(pow, pow_, math::pow)
+#undef max_impl
+#undef min_impl
 
 /*--- sts::plus and co. were tried, the code was horrendous (due to the forced
  * conversion between different types) and creating functions for these ops

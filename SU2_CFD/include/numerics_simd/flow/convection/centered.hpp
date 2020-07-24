@@ -138,8 +138,8 @@ public:
 
     MatrixDbl<nVar> jac_i, jac_j;
     if (implicit) {
-      jac_i = inviscidProjJac(gamma, avgV.velocity(), avgU.energy(), normal, 0.5);
-      jac_j = jac_i;
+      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.energy(), normal, 0.5);
+      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, 0.5);
     }
 
     /*--- Grid motion. ---*/
