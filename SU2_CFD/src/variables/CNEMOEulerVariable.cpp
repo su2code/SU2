@@ -92,6 +92,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Primitive and secondary variables ---*/
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
   Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
+  Secondary.resize(nPoint,nPrimVar) = su2double(0.0);
   
   dPdU.resize(nPoint, nVar)      = su2double(0.0);
   dTdU.resize(nPoint, nVar)      = su2double(0.0);
@@ -120,6 +121,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
+
+  /* Under-relaxation parameter. */
+  LocalCFL.resize(nPoint) = su2double(0.0);
 
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){

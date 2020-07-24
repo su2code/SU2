@@ -926,6 +926,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
+      cout << "cat: iPoint=" << iPoint<< endl;
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration. ---*/
@@ -2221,10 +2222,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   
           dTn = 0.0; dTven = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-            dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+            //dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+            //dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
           }
-          HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+          HeatFlux[iMarker][iVertex] = 0.0;//thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
 
         }  
 

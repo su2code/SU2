@@ -29,15 +29,20 @@
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
+#include "../variables/CNEMOEulerVariable.hpp"
+
+
 
 namespace detail {
 template <class VariableType>
 constexpr size_t flowSolMaxnVar() {
+  return 12;
+}
+template<>
+constexpr size_t flowSolMaxnVar<CNEMOEulerVariable>() {
   return 15;
 }
-// template<>
-// constexpr size_t flowSolMaxnVar<"your variable type">() { return "your size"; }
-}  // namespace detail
+} // namespace detail
 
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
@@ -1450,7 +1455,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Friction_Forces(const CGeometry* geometry, const CConfig* config) override;
+  void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it.

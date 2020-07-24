@@ -49,7 +49,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   unsigned long iPoint, counter_local, counter_global = 0;
-  unsigned short iDim, iMarker, iSpecies, nLineLets;
+  unsigned short iDim, iMarker, iSpecies, nLineLets, iVar;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   unsigned short direct_diff = config->GetDirectDiff();
@@ -100,6 +100,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Define geometric constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
   nMarker      = config->GetnMarker_All();
+  nDim         = geometry->GetnDim();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -118,6 +119,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
+
+  /*--- Define some auxiliary vectors related to the Source term evolution ---*/
+  Source = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
 
   MassFrac_Inf = config->GetGas_Composition();
 
@@ -276,7 +280,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
-    SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
+    SU2_MPI::Error("Oops! The CNEMOEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 
    /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
@@ -292,7 +296,7 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
     delete [] LowMach_Precontioner;
   }
 
-  if (nVertex != nullptr) delete [] nVertex;
+  if (Source != nullptr)  delete [] Source;
 }
 
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
@@ -1324,7 +1328,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   switch (config->GetKind_FluidModel()) {
   case MUTATIONPP:
    //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-   SU2_MPI::Error("The link to Mutation++ library is currently being developed and will soon be released!.", CURRENT_FUNCTION);
    break;
   case USER_DEFINED_NONEQ:
    FluidModel = new CUserDefinedTCLib(config, nDim, viscous);
