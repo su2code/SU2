@@ -3161,7 +3161,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               break;
           }
         }
-        }
         else {
           Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
           Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
