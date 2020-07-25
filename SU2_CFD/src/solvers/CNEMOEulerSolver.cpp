@@ -368,7 +368,6 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 
   ErrorCounter = SetPrimitive_Variables(solver_container, Output);
 
-
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
@@ -422,17 +421,17 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, bool Output) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  bool physical = true;
+  bool nonphysical = true;
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    physical = nodes->SetPrimVar(iPoint,FluidModel);
+    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
-    if (!physical) nonPhysicalPoints++;
+    if (nonphysical) nonPhysicalPoints++;
 
     /*--- Initialize the convective, source and viscous residual vector ---*/
 
