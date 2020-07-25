@@ -49,7 +49,9 @@ private:
   su2double *dkf, *dkb, *dRfok, *dRbok, *A;
   su2double *Cvvs;
   su2double *Cves;
-  vector<su2double> Cvvsst, estar, ws;
+  vector<su2double> Cvvsst, estar, ws; //cat: there's things to delete here i think
+
+  su2double* residual = nullptr;        /*!< \brief The source residual. */
 
 public:
 
@@ -70,30 +72,30 @@ public:
    */
   ~CSource_NEMO(void);
 
- /*!
-  * \brief Source residual of the chemistry.
-  * \param[out] val_residual - Pointer to the total residual.
-  * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-  * \param[in] config - Definition of the particular problem.
-  */
- void ComputeChemistry(su2double *val_residual, su2double *val_source, su2double **val_Jacobian_i, CConfig *config);
+  /*!
+   * \brief Source residual of the chemistry.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeChemistry(const CConfig* config) final;
 
- /*!
+  /*!
   * \brief Calculates constants used for Keq correlation.
   * \param[out] A - Pointer to coefficient array.
   * \param[in] val_reaction - Reaction number indicator.
   * \param[in] config - Definition of the particular problem.
   */
- void GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
+  void GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
+ 
+  /*!
+   * \brief Residual of the translational to vibrational energy.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeVibRelaxation(const CConfig* config) final;
 
- /*!
-  * \brief Residual of the rotational frame source term.
-  * \param[out] val_residual - Pointer to the total residual.
-  * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-  * \param[in] config - Definition of the particular problem.
-  */
- void ComputeVibRelaxation(su2double *val_residual,su2double *val_source, su2double **val_Jacobian_i, CConfig *config);
-
- void ComputeAxisymmetric(su2double *val_residual, su2double *val_source,su2double **val_Jacobian, CConfig *config);
+  /*!
+   * \brief Residual of axissymetric source term.
+   * \param[in] config - Definition of the particular problem.
+   */ 
+  ResidualType<> ComputeAxisymmetric(const CConfig* config) final;
 };
 

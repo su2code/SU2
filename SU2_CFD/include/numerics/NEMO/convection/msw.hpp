@@ -50,6 +50,8 @@ private:
     su2double **P_Tensor, **invP_Tensor;
     unsigned short nPrimVar, nPrimVarGrad;
 
+    su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+
 public:
 
     /*!
@@ -72,11 +74,8 @@ public:
 
     /*!
      * \brief Compute the Roe's flux between two nodes i and j.
-     * \param[out] val_residual - Pointer to the total residual.
-     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
      * \param[in] config - Definition of the particular problem.
      */
-    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    ResidualType<> ComputeResidual(const CConfig* config) final;
 
 };

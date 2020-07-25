@@ -74,6 +74,8 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
   dPdU_i  = new su2double [nVar];
   dPdU_j  = new su2double [nVar];
 
+  Flux   = new su2double[nVar];
+
 }
 
 CUpwAUSMPWplus_NEMO::~CUpwAUSMPWplus_NEMO(void) {
@@ -106,12 +108,10 @@ CUpwAUSMPWplus_NEMO::~CUpwAUSMPWplus_NEMO(void) {
   delete [] u_j;
   delete [] dPdU_i;
   delete [] dPdU_j;
+  delete [] Flux;
 }
 
-void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
-                                          su2double **val_Jacobian_i,
-                                          su2double **val_Jacobian_j,
-                                          CConfig *config         ) {
+CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *config) {
 
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
 
@@ -129,7 +129,7 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
 
   /*---- Initialize the residual vector ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = 0.0;
+    Flux[iVar] = 0.0;
 
   /*--- Calculate geometric quantities ---*/
   Area = 0;
@@ -258,9 +258,9 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
 
   /*--- Calculate the numerical flux ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = (mbLP*aij*FcL[iVar] + mbRM*aij*FcR[iVar])*Area;
+    Flux[iVar] = (mbLP*aij*FcL[iVar] + mbRM*aij*FcR[iVar])*Area;
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nSpecies+iDim] += (pLP*UnitNormal[iDim] + pRM*UnitNormal[iDim])*Area;
+    Flux[nSpecies+iDim] += (pLP*UnitNormal[iDim] + pRM*UnitNormal[iDim])*Area;
 
 //  if (implicit) //{
 //
@@ -510,4 +510,6 @@ void CUpwAUSMPWplus_NEMO::ComputeResidual(su2double *val_residual,
 //      }
 //    }
 //  }
+
+  return ResidualType<>(Flux, nullptr, nullptr);
 }

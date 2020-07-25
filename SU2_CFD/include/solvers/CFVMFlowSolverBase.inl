@@ -926,7 +926,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
-      cout << "cat: iPoint=" << iPoint<< endl;
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration. ---*/

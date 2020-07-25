@@ -58,6 +58,8 @@ private:
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
 
+  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+
 public:
 
   /*!
@@ -99,7 +101,7 @@ public:
                           su2double val_viscosity,
                           su2double val_therm_conductivity,
                           su2double val_therm_conductivity_ve,
-                          CConfig *config);
+                          const CConfig *config);
   /*!
    * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
@@ -127,18 +129,12 @@ public:
                           su2double val_dist_ij, su2double *val_normal,
                           su2double val_dS, su2double *val_Fv,
                           su2double **val_Jac_i, su2double **val_Jac_j,
-                          CConfig *config);
+                          const CConfig *config);
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual,
-                       su2double **val_Jacobian_i,
-                       su2double **val_Jacobian_j,
-                       CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) final;
 };
 
 /*!
@@ -168,6 +164,8 @@ private:
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
 
+  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+  
 public:
 
   /*!
@@ -209,7 +207,7 @@ public:
                           su2double val_viscosity,
                           su2double val_therm_conductivity,
                           su2double val_therm_conductivity_ve,
-                          CConfig *config);
+                          const CConfig *config);
 
   /*!
    * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
@@ -238,16 +236,11 @@ public:
                           su2double val_dist_ij, su2double *val_normal,
                           su2double val_dS, su2double *val_Fv,
                           su2double **val_Jac_i, su2double **val_Jac_j,
-                          CConfig *config);
-  /*!
+                          const CConfig *config);
+    /*!
    * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual,
-                       su2double **val_Jacobian_i,
-                       su2double **val_Jacobian_j,
-                       CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) final;
+  
 };

@@ -61,6 +61,7 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
 }
 
 CCentLax_NEMO::~CCentLax_NEMO(void) {
+  
   delete [] Diff_U;
   delete [] MeanU;
   delete [] MeanV;

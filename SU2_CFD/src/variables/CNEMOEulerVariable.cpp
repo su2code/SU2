@@ -99,8 +99,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   dTvedU.resize(nPoint, nVar)    = su2double(0.0);
   Cvves.resize(nPoint, nSpecies) = su2double(0.0);
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
-  Source.resize(nPoint,nVar)     = su2double(0.0);
-
+  
   /*--- Compressible flow, gradients primitive variables ---*/
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   Gradient.resize(nPoint,nVar,nDim,0.0);

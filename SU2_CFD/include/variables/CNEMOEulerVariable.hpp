@@ -76,8 +76,6 @@ protected:
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
 
-  MatrixType Source;         /*!< \brief Source terms of the problem */
-
 public:
 
   /*!
@@ -548,14 +546,5 @@ public:
    * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
-
-   /*!
-   * \brief Set the value of the source term, all variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] solution - Solution of the problem.
-   */
-  inline void SetSource(unsigned long iPoint, const su2double *source) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Source(iPoint,iVar) = source[iVar];
-  }
-
+  
 };

@@ -56,6 +56,8 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
 
+  Flux   = new su2double[nVar];
+
 }
 
 CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
@@ -70,12 +72,10 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
   delete [] rhos_j;
   delete [] u_i;
   delete [] u_j;
+  delete [] Flux;
 }
 
-void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
-                                    su2double **val_Jacobian_i,
-                                    su2double **val_Jacobian_j,
-                                    CConfig *config         ) {
+CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim, iVar, jVar, iSpecies;
   su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, Cvtrs,
@@ -192,10 +192,10 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
 
   /*--- Compute numerical flux ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
+    Flux[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
+    Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
 //  if (implicit)
 
@@ -412,4 +412,6 @@ void CUpwAUSM_NEMO::ComputeResidual(su2double *val_residual,
 //      }
 //    }
 //  }
+
+  return ResidualType<>(Flux, nullptr, nullptr);
 }

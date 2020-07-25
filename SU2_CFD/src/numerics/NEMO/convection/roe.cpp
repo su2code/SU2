@@ -65,6 +65,8 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
 
+  Flux   = new su2double[nVar];
+
 }
 
 CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
@@ -87,12 +89,10 @@ CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
   delete [] invP_Tensor;
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
+  delete [] Flux;
 }
 
-void CUpwRoe_NEMO::ComputeResidual(su2double *val_residual,
-                                   su2double **val_Jacobian_i,
-                                   su2double **val_Jacobian_j,
-                                   CConfig *config) {
+CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
 
@@ -177,10 +177,10 @@ void CUpwRoe_NEMO::ComputeResidual(su2double *val_residual,
 
   /*--- Calculate inviscid projected Jacobians ---*/
   // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
-  if (implicit){
-    GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
-  }
+  //if (implicit){
+  //  GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
+  //  GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
+  //}
 
   /*--- Difference of conserved variables at iPoint and jPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -188,7 +188,7 @@ void CUpwRoe_NEMO::ComputeResidual(su2double *val_residual,
 
   /*--- Roe's Flux approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5 * (ProjFlux_i[iVar] + ProjFlux_j[iVar]);
+    Flux[iVar] = 0.5 * (ProjFlux_i[iVar] + ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
 
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
@@ -196,14 +196,13 @@ void CUpwRoe_NEMO::ComputeResidual(su2double *val_residual,
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
-      val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-      if (implicit){
-        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
-      }
+      Flux[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+      //if (implicit){
+      //  val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+      //  val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+      //}
     }
   }
 
-  //AD::SetPreaccOut(val_residual, nVar);
-  //AD::EndPreacc();
+  return ResidualType<>(Flux, nullptr, nullptr);
 }

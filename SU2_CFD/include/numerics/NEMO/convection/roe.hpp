@@ -52,30 +52,29 @@ private:
     su2double *RoedPdU;
     unsigned short nPrimVar, nPrimVarGrad;
 
+    su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+
 public:
 
-    /*!
-     * \brief Constructor of the class.
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] val_nVar - Number of variables of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-    CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-               unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-               CConfig *config);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
+             unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+             CConfig *config);
 
-    /*!
-     * \brief Destructor of the class.
-     */
-    ~CUpwRoe_NEMO(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwRoe_NEMO(void);
 
-    /*!
-     * \brief Compute the Roe's flux between two nodes i and j.
-     * \param[out] val_residual - Pointer to the total residual.
-     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-     * \param[in] config - Definition of the particular problem.
-     */
-    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  /*!
+   * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) final;
 
 };

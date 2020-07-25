@@ -66,6 +66,8 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
+  Flux   = new su2double[nVar];
+
 }
 
 CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
@@ -88,12 +90,10 @@ CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
+  delete [] Flux;
 }
 
-void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
-                                    su2double **val_Jacobian_i,
-                                    su2double **val_Jacobian_j,
-                                    CConfig *config) {
+CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iSpecies, iVar, iDim;
 
@@ -160,7 +160,7 @@ void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
 
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_Flux_Tensor[iVar];
+    Flux[iVar] = Proj_Flux_Tensor[iVar];
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
@@ -169,12 +169,14 @@ void CAvgGrad_NEMO::ComputeResidual(su2double *val_residual,
       dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
     dist_ij = sqrt(dist_ij);
 
-    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
-                       Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
-                       val_Jacobian_i, val_Jacobian_j, config);
+    //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+    //                   Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
+    //                   dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
+    //                   val_Jacobian_i, val_Jacobian_j, config);
   }
+
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
 
 
@@ -186,7 +188,7 @@ void CAvgGrad_NEMO::GetViscousProjFlux(su2double *val_primvar,
                                        su2double val_viscosity,
                                        su2double val_therm_conductivity,
                                        su2double val_therm_conductivity_ve,
-                                       CConfig *config) {
+                                       const CConfig *config) {
 
   // Requires a slightly non-standard primitive vector:
   // Assumes -     V = [Y1, ... , Yn, T, Tve, ... ]
@@ -297,7 +299,7 @@ void CAvgGrad_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                        su2double val_dist_ij, su2double *val_normal,
                                        su2double val_dS, su2double *val_Fv,
                                        su2double **val_Jac_i, su2double **val_Jac_j,
-                                       CConfig *config) {
+                                       const CConfig *config) {
 
 //  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
 //  su2double rho, rho_i, rho_j, vel[3], T, Tve;
@@ -610,6 +612,8 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
   Proj_Mean_GradPrimVar_Edge = new su2double[nPrimVarGrad];
   Edge_Vector = new su2double[3];
 
+  Flux   = new su2double[nVar];
+
 }
 
 CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
@@ -630,6 +634,8 @@ CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
   delete [] Proj_Mean_GradPrimVar_Edge;
   delete [] Edge_Vector;
 
+  delete [] Flux;
+
 }
 
 void CAvgGradCorrected_NEMO::GetViscousProjFlux(su2double *val_primvar,
@@ -640,7 +646,7 @@ void CAvgGradCorrected_NEMO::GetViscousProjFlux(su2double *val_primvar,
                                                 su2double val_viscosity,
                                                 su2double val_therm_conductivity,
                                                 su2double val_therm_conductivity_ve,
-                                                CConfig *config) {
+                                                const CConfig *config) {
 
   // Requires a slightly non-standard primitive vector:
   // Assumes -     V = [Y1, ... , Yn, T, Tve, ... ]
@@ -754,7 +760,7 @@ void CAvgGradCorrected_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                                 su2double val_dist_ij, su2double *val_normal,
                                                 su2double val_dS, su2double *val_Fv,
                                                 su2double **val_Jac_i, su2double **val_Jac_j,
-                                                CConfig *config) {
+                                                const CConfig *config) {
 
 //  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
 //  su2double rho, rho_i, rho_j, vel[3], T, Tve;
@@ -1035,12 +1041,7 @@ void CAvgGradCorrected_NEMO::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 //      }
 }
 
-void CAvgGradCorrected_NEMO::ComputeResidual(su2double *val_residual,
-                                             su2double **val_Jacobian_i,
-                                             su2double **val_Jacobian_j,
-                                             CConfig *config) {
-
-
+CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iSpecies;
   su2double dist_ij_2;
@@ -1129,7 +1130,7 @@ void CAvgGradCorrected_NEMO::ComputeResidual(su2double *val_residual,
 
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_Flux_Tensor[iVar];
+    Flux[iVar] = Proj_Flux_Tensor[iVar];
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
@@ -1138,12 +1139,14 @@ void CAvgGradCorrected_NEMO::ComputeResidual(su2double *val_residual,
       dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
     dist_ij = sqrt(dist_ij);
 
-    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
-                       Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
-                       val_Jacobian_i, val_Jacobian_j, config);
+    //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+    //                   Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
+    //                   dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
+    //                   val_Jacobian_i, val_Jacobian_j, config);
 
   }
+
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
 

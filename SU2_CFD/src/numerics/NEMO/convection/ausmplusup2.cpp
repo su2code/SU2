@@ -75,6 +75,8 @@ CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned sho
     P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
   }
+
+  Flux   = new su2double[nVar];
 }
 
 CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
@@ -104,9 +106,10 @@ CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] Flux;
 }
 
-void CUpwAUSMPLUSUP2_NEMO::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim, iVar, jVar, kVar, iSpecies;
   su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, Cvtrs, rho_el_i, rho_el_j,
@@ -229,10 +232,10 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeResidual(su2double *val_residual, su2double **
 
   /*--- Compute numerical flux ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = (mfP*FcL[iVar]+mfM*FcR[iVar])*Area;
+    Flux[iVar] = (mfP*FcL[iVar]+mfM*FcR[iVar])*Area;
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
+    Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
   /*--- Roe's Jacobian -> checking if there is an improvement over NEMO AUSM Jacobian---*/
   //if (implicit){
@@ -535,4 +538,6 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeResidual(su2double *val_residual, su2double **
 //      }
 //    }
 //  }
+
+  return ResidualType<>(Flux, nullptr, nullptr);
 }

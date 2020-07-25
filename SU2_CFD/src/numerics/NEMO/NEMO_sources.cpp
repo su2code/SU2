@@ -34,7 +34,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
                            unsigned short val_nPrimVarGrad,
                            CConfig *config) : CNumerics(val_nDim,
                                                         val_nVar,
-                                                        config) {
+                                                        config) { //cat: delete there's things to delete here too :)
 
   unsigned short iVar, iSpecies;
 
@@ -81,6 +81,8 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
   }
+
+  residual = new su2double [nVar];
 }
 
 CSource_NEMO::~CSource_NEMO(void) {
@@ -116,12 +118,11 @@ CSource_NEMO::~CSource_NEMO(void) {
   delete [] dRfok;
   delete [] dRbok;
 
+  delete [] residual;
+
 }
 
-void CSource_NEMO::ComputeChemistry(su2double *val_residual,
-                                    su2double *val_source,
-                                    su2double **val_Jacobian_i,
-                                    CConfig *config) {
+CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) {
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, iVar, jVar;
@@ -132,12 +133,7 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.0;
-  }
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
+    residual[iVar] = 0.0;
   }
 
   /*--- Rename for convenience ---*/
@@ -152,9 +148,13 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
   ws = fluidmodel->GetNetProductionRates();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
-    val_residual[iSpecies] = ws[iSpecies] *Volume;
+    residual[iSpecies] = ws[iSpecies] *Volume;
 
-
+  //if (implicit) {
+  //  for (iVar = 0; iVar < nVar; iVar++)
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //      val_Jacobian_i[iVar][jVar] = 0.0;
+  //}
 //  if (implicit) {
 //    su2double dThf, dThb;
 //
@@ -273,13 +273,12 @@ void CSource_NEMO::ComputeChemistry(su2double *val_residual,
 //        } // != nSpecies
 //      } // ii
 //    } // implicit
+
+  return ResidualType<>(residual, nullptr, nullptr);
  
 }
 
-void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
-                                        su2double *val_source,
-                                        su2double **val_Jacobian_i,
-                                        CConfig *config) {
+CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *config) {
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
@@ -295,12 +294,7 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.0;
-  }
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
+    residual[iVar] = 0.0;
   }
 
   /*--- Rename for convenience ---*/
@@ -311,36 +305,42 @@ void CSource_NEMO::ComputeVibRelaxation(su2double *val_residual,
 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  val_residual[nSpecies+nDim+1] = fluidmodel->GetEveSourceTerm() * Volume;
+  residual[nSpecies+nDim+1] = fluidmodel->GetEveSourceTerm() * Volume;
 
-  /*---Set source term ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
+  //  if (implicit) {
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        val_Jacobian_i[iVar][jVar] = 0.0;
+//  }
 
-  if (implicit) {
+//  if (implicit) {
+//
+//    fluidmodel->SetTve(T);
+//    Cvvsst = fluidmodel->GetSpeciesCvVibEle();
+//
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        val_Jacobian_i[nSpecies+nDim+1][iVar] += rhos[iSpecies]/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
+//                                                          Cvve_i[iSpecies]*dTvedU_i[iVar])*Volume;
+//      }
+//    }
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
+//  }
 
-    fluidmodel->SetTve(T);
-    Cvvsst = fluidmodel->GetSpeciesCvVibEle();
-
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[nSpecies+nDim+1][iVar] += rhos[iSpecies]/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
-                                                          Cvve_i[iSpecies]*dTvedU_i[iVar])*Volume;
-      }
-    }
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
-  }
+  return ResidualType<>(residual, nullptr, nullptr);
 }
 
-void CSource_NEMO::ComputeAxisymmetric(su2double *val_residual,
-                                       su2double *val_source,
-                                       su2double **val_Jacobian,
-                                       CConfig *config) {
+CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *config) {
 
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
   su2double rho, rhou, rhov, rhoEve, vel2, H, yinv;
+
+    /*--- Initialize residual and Jacobian arrays ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    residual[iVar] = 0.0;
+  }
 
   /*--- Calculate inverse of y coordinate ---*/
   if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
@@ -359,72 +359,70 @@ void CSource_NEMO::ComputeAxisymmetric(su2double *val_residual,
     Y[iSpecies] = V_i[RHOS_INDEX+iSpecies] / rho;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    val_residual[iSpecies] = yinv*rhov*Y[iSpecies]*Volume;
-  val_residual[nSpecies]   = yinv*rhov*U_i[nSpecies]/rho*Volume;
-  val_residual[nSpecies+1] = yinv*rhov*U_i[nSpecies+1]/rho*Volume;
-  val_residual[nSpecies+2] = yinv*rhov*H*Volume;
-  val_residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
+    residual[iSpecies] = yinv*rhov*Y[iSpecies]*Volume;
+  residual[nSpecies]   = yinv*rhov*U_i[nSpecies]/rho*Volume;
+  residual[nSpecies+1] = yinv*rhov*U_i[nSpecies+1]/rho*Volume;
+  residual[nSpecies+2] = yinv*rhov*H*Volume;
+  residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
 
-  /*---Set source term ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
+//  if (implicit) {
+//
+//    /*--- Initialize ---*/
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        val_Jacobian[iVar][jVar] = 0.0;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+//        dYdr[iSpecies][jSpecies] = 0.0;
+//
+//    /*--- Calculate additional quantities ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+//        dYdr[iSpecies][jSpecies] += -1/rho*Ys[iSpecies];
+//      }
+//      dYdr[iSpecies][iSpecies] += 1/rho;
+//    }
+//
+//    /*--- Populate Jacobian ---*/
+//
+//    // Species density
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+//        val_Jacobian[iSpecies][jSpecies] = dYdr[iSpecies][jSpecies]*rhov;
+//      }
+//      val_Jacobian[iSpecies][nSpecies+1] = Y[iSpecies];
+//    }
+//
+//    // X-momentum
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
+//    val_Jacobian[nSpecies][nSpecies] = rhov/rho;
+//    val_Jacobian[nSpecies][nSpecies+1] = rhou/rho;
+//
+//    // Y-momentum
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Jacobian[nSpecies+1][iSpecies] = -rhov*rhov/(rho*rho);
+//    val_Jacobian[nSpecies+1][nSpecies+1] = 2*rhov/rho;
+//
+//    // Energy
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Jacobian[nSpecies+nDim][iSpecies]      = -H*rhov/rho + dPdU_i[iSpecies]*rhov/rho;
+//    val_Jacobian[nSpecies+nDim][nSpecies]        = dPdU_i[nSpecies]*rhov/rho;
+//    val_Jacobian[nSpecies+nDim][nSpecies+1]      = H + dPdU_i[nSpecies+1]*rhov/rho;
+//    val_Jacobian[nSpecies+nDim][nSpecies+nDim]   = (1+dPdU_i[nSpecies+nDim])*rhov/rho;
+//    val_Jacobian[nSpecies+nDim][nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1]*rhov/rho;
+//
+//    // Vib-el energy
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Jacobian[nSpecies+nDim+1][iSpecies] = -rhoEve*rhov/(rho*rho);
+//    val_Jacobian[nSpecies+nDim+1][nSpecies+1] = rhoEve/rho;
+//    val_Jacobian[nSpecies+nDim+1][nSpecies+nDim+1] = rhov/rho;
+//
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        val_Jacobian[iVar][jVar] *= yinv*Volume;
+//  }
 
-  if (implicit) {
-
-    /*--- Initialize ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian[iVar][jVar] = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-        dYdr[iSpecies][jSpecies] = 0.0;
-
-    /*--- Calculate additional quantities ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        dYdr[iSpecies][jSpecies] += -1/rho*Ys[iSpecies];
-      }
-      dYdr[iSpecies][iSpecies] += 1/rho;
-    }
-
-    /*--- Populate Jacobian ---*/
-
-    // Species density
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        val_Jacobian[iSpecies][jSpecies] = dYdr[iSpecies][jSpecies]*rhov;
-      }
-      val_Jacobian[iSpecies][nSpecies+1] = Y[iSpecies];
-    }
-
-    // X-momentum
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
-    val_Jacobian[nSpecies][nSpecies] = rhov/rho;
-    val_Jacobian[nSpecies][nSpecies+1] = rhou/rho;
-
-    // Y-momentum
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian[nSpecies+1][iSpecies] = -rhov*rhov/(rho*rho);
-    val_Jacobian[nSpecies+1][nSpecies+1] = 2*rhov/rho;
-
-    // Energy
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian[nSpecies+nDim][iSpecies]      = -H*rhov/rho + dPdU_i[iSpecies]*rhov/rho;
-    val_Jacobian[nSpecies+nDim][nSpecies]        = dPdU_i[nSpecies]*rhov/rho;
-    val_Jacobian[nSpecies+nDim][nSpecies+1]      = H + dPdU_i[nSpecies+1]*rhov/rho;
-    val_Jacobian[nSpecies+nDim][nSpecies+nDim]   = (1+dPdU_i[nSpecies+nDim])*rhov/rho;
-    val_Jacobian[nSpecies+nDim][nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1]*rhov/rho;
-
-    // Vib-el energy
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian[nSpecies+nDim+1][iSpecies] = -rhoEve*rhov/(rho*rho);
-    val_Jacobian[nSpecies+nDim+1][nSpecies+1] = rhoEve/rho;
-    val_Jacobian[nSpecies+nDim+1][nSpecies+nDim+1] = rhov/rho;
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian[iVar][jVar] *= yinv*Volume;
-  }
+  return ResidualType<>(residual, nullptr, nullptr);
 }
 
