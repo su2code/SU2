@@ -135,7 +135,7 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
-  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
+  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) override { Primitive(iPoint,iVar) = val_prim; }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -323,7 +323,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel);
+  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) override;
 
  /*!
   * \brief Set all the conserved variables.

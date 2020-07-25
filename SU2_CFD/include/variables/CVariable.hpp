@@ -37,6 +37,7 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../fluid/CFluidModel.hpp"
+#include "../fluid/CNEMOGas.hpp"
 #include "../../../Common/include/toolboxes/C2DContainer.hpp"
 
 
@@ -1417,6 +1418,13 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline virtual bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) { return true; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] fluidmodel - fluid model.
+   */
+  inline virtual bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) {return false;}
 
   /*!
    * \brief A virtual member.

@@ -128,7 +128,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel);
+  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) final;
 
   /*!
    * \brief Set the vorticity value.
@@ -151,7 +151,7 @@ public:
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return ThermalCond(iPoint); }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override {return ThermalCond(iPoint); }
 
   /*!
    * \brief Get the vib-el. thermal conductivity of the flow.

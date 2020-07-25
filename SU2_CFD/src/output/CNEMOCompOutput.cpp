@@ -386,7 +386,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     //if (nDim == 3)
     //  AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
-    //AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
+    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     //AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
   }
@@ -647,15 +647,15 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
 void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  //if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES) /*|| (config->GetKind_Solver()  == NEMO_RANS)*/) {
+  if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES) /*|| (config->GetKind_Solver()  == NEMO_RANS)*/) {
   // SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
   //  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
   //  if (nDim == 3)
   //    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
 
-   // SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
+    SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
   //  SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
-  //}
+  }
 }
 
 void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
