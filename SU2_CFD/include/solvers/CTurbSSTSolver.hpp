@@ -252,7 +252,7 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(su2double *val_inlet,
+  void SetInletAtVertex(const su2double *val_inlet,
                         unsigned short iMarker,
                         unsigned long iVertex) override;
 
@@ -269,8 +269,8 @@ public:
                              unsigned long val_inlet_point,
                              unsigned short val_kind_marker,
                              string val_marker,
-                             CGeometry *geometry,
-                             CConfig *config) const override;
+                             const CGeometry *geometry,
+                             const CConfig *config) const override;
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -280,7 +280,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker) override;
+  void SetUniformInlet(const CConfig* config, unsigned short iMarker) override;
 
   /*!
    * \brief Get the value of the turbulent kinetic energy.
