@@ -1998,6 +1998,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool axisymmetric = config->GetAxisymmetric();
   bool nemo = config->GetNEMOProblem();
 
+  /*--- Get the locations of the primitive variables for NEMO ---*/
+  if (nemo) {
+    unsigned short nSpecies = config->GetnSpecies();  
+    T_INDEX       = nSpecies;
+    TVE_INDEX     = nSpecies+1;
+  }
+
   /// TODO: Move these ifs to specialized functions.
 
   if (FlowRegime == COMPRESSIBLE) {
@@ -2221,11 +2228,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   
           dTn = 0.0; dTven = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            //dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-            //dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+            dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+            dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
           }
-          HeatFlux[iMarker][iVertex] = 0.0;//thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
-
+          HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
         }  
 
         /*--- Note that y+, and heat are computed at the

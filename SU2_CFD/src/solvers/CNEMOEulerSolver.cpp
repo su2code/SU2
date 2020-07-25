@@ -62,7 +62,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   su2double *Mvec_Inf;
   su2double Alpha, Beta;
   bool check_infty, nonPhys;
-  su2double Density_Inf, Soundspeed_Inf, sqvel;
+  su2double Soundspeed_Inf, sqvel;
   vector<su2double> Energies_Inf;
 
   /*--- Store the multigrid level. ---*/
@@ -1551,22 +1551,18 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     case USER_DEFINED_NONEQ:
       cout << "Fluid Model: USER_DEFINED_NONEQ "<< endl;
-      cout << "Mixture: " << config->GetGasModel() << endl;
-      cout << "Specific gas constant: " << config->GetGas_Constant();
-      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
       break;
-
     case MUTATIONPP:
       cout << "Fluid Model: MUTATIONPP "<< endl;
-      cout << "Mixture: " << config->GetGasModel() << endl;
-      cout << "Specific gas constant: " << config->GetGas_Constant();
-      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
       break;
+    }  
 
+    cout << "Mixture: " << config->GetGasModel() << endl;
+    cout << "Specific gas constant: " << config->GetGas_Constant();
+    if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
+    cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
+  
     if (viscous) {
       switch (config->GetKind_TransCoeffModel()) {
 
@@ -1728,7 +1724,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
     }
     cout << endl;
-  }
  }
 }
 
