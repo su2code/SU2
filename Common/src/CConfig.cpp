@@ -3181,6 +3181,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == USER_DEFINED_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
+  bool nemo = GetNEMOProblem();
 
   if (nZone > 1){
     Multizone_Problem = YES;
@@ -3548,11 +3549,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Check for Convective scheme available for NICFD ---*/
-    if ((!ideal_gas) && (!noneq_gas)) {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-        SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
-      }
-    }  
+  if ((!ideal_gas) && (!noneq_gas)) {
+    if (Kind_Upwind_Flow = ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) 
+      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);    
+  }  
+
+  if (nemo){
+    if (Kind_ConvNumScheme_Flow == SPACE_CENTERED || Kind_Upwind_Flow == ROE || Kind_Upwind_Flow == MSW || Kind_Upwind_Flow == AUSMPWPLUS)
+      SU2_MPI::Error("Only AUSM and AUSMPLUSUP2 upwind schemes are operational for NEMO. Feel free to fix the others!", CURRENT_FUNCTION);
+  }
 
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];

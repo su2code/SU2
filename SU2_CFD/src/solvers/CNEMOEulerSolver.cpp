@@ -1073,7 +1073,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute vibrational energy relaxation ---*/
     /// NOTE: Jacobians don't account for relaxation time derivatives
-    //numerics->ComputeVibRelaxation(Residual, Jacobian_i, config); //cat:delete
 
     auto residual = numerics->ComputeVibRelaxation(config);
 

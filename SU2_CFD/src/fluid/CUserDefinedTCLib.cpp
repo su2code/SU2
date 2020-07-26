@@ -271,7 +271,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Enthalpy_Formation[1] = 0.0;      //O2
     Enthalpy_Formation[2] = 3.0E6;    //NO
     Enthalpy_Formation[3] = 3.36E7;   //N
-    Enthalpy_Formation[4] = 1.54E7;   //
+    Enthalpy_Formation[4] = 1.54E7;   //O
     // Reference temperature (JANAF values, [K])
     Ref_Temperature[0] = 0.0;
     Ref_Temperature[1] = 0.0;
@@ -287,13 +287,13 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Blottner(1,0) = 4.49E-2;   Blottner(1,1) = -8.26E-2;  Blottner(1,2) = -9.20E0;  // O2
     Blottner(2,0) = 4.36E-2;   Blottner(2,1) = -3.36E-2;  Blottner(2,2) = -9.58E0;  // NO
     Blottner(3,0) = 1.16E-2;   Blottner(3,1) =  6.03E-1;  Blottner(3,2) = -1.24E1;  // N
-    Blottner(4,0) = 2.03E-2;   Blottner(4,1) =  4.29E-1;  Blottner(4,2) = -1.16E1;  // 
+    Blottner(4,0) = 2.03E-2;   Blottner(4,1) =  4.29E-1;  Blottner(4,2) = -1.16E1;  // O
     // Number of electron states
     nElStates[0] = 15;                    // N2
     nElStates[1] = 7;                     // O2
     nElStates[2] = 16;                    // NO
     nElStates[3] = 3;                     // N
-    nElStates[4] = 5;                     // 
+    nElStates[4] = 5;                     // O
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       maxEl = max(maxEl, nElStates[iSpecies]);
     /*--- Allocate and initialize electron data arrays ---*/

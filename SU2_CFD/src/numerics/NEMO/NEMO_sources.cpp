@@ -34,7 +34,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
                            unsigned short val_nPrimVarGrad,
                            CConfig *config) : CNumerics(val_nDim,
                                                         val_nVar,
-                                                        config) { //cat: delete there's things to delete here too :)
+                                                        config) {
 
   unsigned short iVar, iSpecies;
 
@@ -49,33 +49,15 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
   nSpecies     = config->GetnSpecies();
 
   /*--- Allocate arrays ---*/
-  RxnConstantTable = new su2double*[6];
-  for (iVar = 0; iVar < 6; iVar++)
-    RxnConstantTable[iVar] = new su2double[5];
-
-  tau_sr = new su2double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    tau_sr[iSpecies] = new su2double[nSpecies];
-
   alphak = new int[nSpecies];
   betak  = new int[nSpecies];
-  A      = new su2double[5];
-  X      = new su2double[nSpecies];
   Y      = new su2double[nSpecies];
-  evib   = new su2double[nSpecies];
-  Cvvs   = new su2double[nSpecies];
-  Cves   = new su2double[nSpecies];
-  tauP   = new su2double[nSpecies];
-  tauMW  = new su2double[nSpecies];
-  taus   = new su2double[nSpecies];
   dkf    = new su2double[nVar];
   dkb    = new su2double[nVar];
   dRfok  = new su2double[nVar];
   dRbok  = new su2double[nVar];
 
-  Cvvsst.resize(nSpecies,0.0);
   ws.resize(nSpecies,0.0);
-  //estar.resize(nSpecies,0.0);
 
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -90,27 +72,11 @@ CSource_NEMO::~CSource_NEMO(void) {
 
   /*--- Deallocate arrays ---*/
 
-  for (iVar = 0; iVar < 6; iVar++)
-    delete [] RxnConstantTable[iVar];
-  delete [] RxnConstantTable;
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] dYdr[iSpecies];
   delete [] dYdr;
 
-  for (iSpecies = 0;iSpecies < nSpecies; iSpecies++)
-    delete [] tau_sr[iSpecies];
-  delete [] tau_sr;
-
-  delete [] A;
-  delete [] X;
   delete [] Y;
-  delete [] evib;
-  delete [] Cvvs;
-  delete [] Cves;
-  delete [] tauP;
-  delete [] tauMW;
-  delete [] taus;
   delete [] alphak;
   delete [] betak;
   delete [] dkf;

@@ -1227,16 +1227,7 @@ public:
    */
   inline virtual ResidualType<> ComputeAxisymmetric(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
 
-
   /*!
-   * \brief Calculation of the translational-vibrational energy exchange source term
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] val_residual - residual of the source terms
-   * \param[out] val_Jacobian_i - Jacobian of the source terms //cat: delete
-   */
- // inline virtual void ComputeVibRelaxation(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config){}
-
-    /*!
    * \overload For numerics classes that store the residual/flux and Jacobians internally.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.

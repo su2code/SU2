@@ -38,18 +38,13 @@
  */
 class CSource_NEMO : public CNumerics {
 private:
-  bool   implicit, ionization;
+  bool   implicit;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
   int    *alphak, *betak;
   su2double *X; // Mole fraction
   su2double *Y, **dYdr; // Mass fraction
-  su2double **RxnConstantTable;
-  su2double *evib;
-  su2double **tau_sr, *tauP, *tauMW, *taus;
-  su2double *dkf, *dkb, *dRfok, *dRbok, *A;
-  su2double *Cvvs;
-  su2double *Cves;
-  vector<su2double> Cvvsst, estar, ws; //cat: there's things to delete here i think
+  su2double *dkf, *dkb, *dRfok, *dRbok;
+  vector<su2double> Cvvsst, ws; 
 
   su2double* residual = nullptr;        /*!< \brief The source residual. */
 

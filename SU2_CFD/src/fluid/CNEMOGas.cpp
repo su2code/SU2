@@ -101,15 +101,6 @@ su2double CNEMOGas::GetSoundSpeed(){
   }
   SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
 
- // cout <<setprecision(10)<< "cat: Ru=" << Ru << endl;
- //cout <<setprecision(10)<< "cat: conc=" << conc << endl;
-
-// cout<<endl<<endl;
-//
-// cout <<setprecision(10)<< "cat: rhoCvtr=" << rhoCvtr << endl;
-// cout <<setprecision(10)<< "cat: Pressure=" << Pressure << endl;
-// cout <<setprecision(10)<< "cat: Density=" << Density << endl;
-
   return(sqrt(SoundSpeed2));
 
 }
@@ -117,15 +108,6 @@ su2double CNEMOGas::GetSoundSpeed(){
 su2double CNEMOGas::GetPressure(){
 
   su2double P = 0.0;
-
- //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
- //  cout <<setprecision(20)<< "cat: rhos=" << rhos[iSpecies] << endl;
- //  cout <<setprecision(20)<< "cat: MolarMass=" << MolarMass[iSpecies] << endl;
- //}
-
- //cout <<setprecision(20)<< "cat: Ru=" << Ru << endl;
- //cout <<setprecision(20)<< "cat: T=" << T << endl;
- //cout <<setprecision(20)<< "cat: Tve=" << Tve << endl;
 
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
