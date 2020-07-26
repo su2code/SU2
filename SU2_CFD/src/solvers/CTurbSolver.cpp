@@ -382,8 +382,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   }
   
   /*--- Compute Jacobian correction for influence from all neighbors ---*/
-  CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
-  CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
+  // CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
+  // CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
   
 }
 
