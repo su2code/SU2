@@ -447,7 +447,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         }// iVar
       }// iDim
       
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+      // Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
       
       // if (jPoint != iPoint)
       //   Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
