@@ -97,7 +97,7 @@ public:
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
-  virtual void SetTDStateRhosTTv(vector<su2double> val_rhos, su2double val_temperature, su2double val_temperature_ve){}
+  virtual void SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){}
 
   /*!
    * \brief Set mixture thermodynamic state.
@@ -111,12 +111,12 @@ public:
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  virtual vector<su2double> GetSpeciesCvTraRot(){}
+  virtual vector<su2double>& GetSpeciesCvTraRot(){}
   
   /*!
    * \brief Get species V-E specific heats at constant volume.
    */
-  virtual vector<su2double> GetSpeciesCvVibEle(){}
+  virtual vector<su2double>& GetSpeciesCvVibEle(){}
 
   /*!
    * \brief Get specific heat ratio.
@@ -126,12 +126,12 @@ public:
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
    */
-  virtual vector<su2double> GetMixtureEnergies(){}
+  virtual vector<su2double>& GetMixtureEnergies(){}
   
   /*!
    * \brief Get species net production rates.
    */
-  virtual vector<su2double> GetNetProductionRates(){}
+  virtual vector<su2double>& GetNetProductionRates(){}
   
   /*!
    * \brief Get vibrational energy source term.
@@ -141,17 +141,17 @@ public:
   /*!
    * \brief Get vector of species V-E energy.
    */
-  virtual vector<su2double> GetSpeciesEve(su2double val_T){}
+  virtual vector<su2double>& GetSpeciesEve(su2double val_T){}
   
   /*!
    * \brief Get species enthalpies.
    */
-  virtual vector<su2double> GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
+  virtual vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
   
   /*!
    * \brief Get species diffusion coefficients.
    */
-  virtual vector<su2double> GetDiffusionCoeff(){}
+  virtual vector<su2double>& GetDiffusionCoeff(){}
   
   /*!
    * \brief Get viscosity.
@@ -161,12 +161,12 @@ public:
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
-  virtual vector<su2double> GetThermalConductivities(){}
+  virtual vector<su2double>& GetThermalConductivities(){}
   
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
+  virtual vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
   
   /*!
    * \brief Get speed of sound.
@@ -181,7 +181,7 @@ public:
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  virtual void GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU){}
+  virtual void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
   
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
@@ -191,7 +191,7 @@ public:
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  virtual void GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU){}
+  virtual void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
 
   /*!
    * \brief Set the translational temperature.
@@ -206,7 +206,7 @@ public:
   /*!
    * \brief Set species vibrational energies.
    */
-  inline void SetEves(vector<su2double> val_eves) { eves = val_eves; }
+  inline void SetEves(vector<su2double>& val_eves) { eves = val_eves; }
 
   /*!
    * \brief Get gas constant.
@@ -231,7 +231,7 @@ public:
   /*!
    * \brief Get species molar mass.
    */
-  inline vector<su2double> GetMolarMass() { return MolarMass; }
+  inline vector<su2double>& GetMolarMass() { return MolarMass; }
 
 
 };

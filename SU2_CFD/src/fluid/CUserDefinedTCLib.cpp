@@ -577,7 +577,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
 
 CUserDefinedTCLib::~CUserDefinedTCLib(){}
   
-void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double> val_rhos, su2double val_temperature, su2double val_temperature_ve){
+void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
   rhos = val_rhos;
   T    = val_temperature;
@@ -591,7 +591,7 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double> val_rhos, su2double 
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetSpeciesCvTraRot(){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
  
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
@@ -599,7 +599,7 @@ vector<su2double> CUserDefinedTCLib::GetSpeciesCvTraRot(){
   return Cvtrs;
 }
 
-vector<su2double> CUserDefinedTCLib::GetSpeciesCvVibEle(){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
 
   su2double thoTve, exptv, thsqr, num, num2, num3, denom, Cvvs, Cves; 
 
@@ -651,7 +651,7 @@ vector<su2double> CUserDefinedTCLib::GetSpeciesCvVibEle(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetMixtureEnergies(){
+vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
 
   su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
 
@@ -703,7 +703,7 @@ vector<su2double> CUserDefinedTCLib::GetMixtureEnergies(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
 
   su2double Ev, Eel, Ef, num, denom;
 
@@ -742,7 +742,7 @@ vector<su2double> CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetNetProductionRates(){
+vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
@@ -949,7 +949,7 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
 
   su2double ef;
   vector<su2double> cvtrs;
@@ -965,7 +965,7 @@ vector<su2double> CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2doub
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetDiffusionCoeff(){
+vector<su2double>& CUserDefinedTCLib::GetDiffusionCoeff(){
 
   if(Kind_TransCoeffModel == WILKE)
    DiffusionCoeffWBE();
@@ -987,7 +987,7 @@ su2double CUserDefinedTCLib::GetViscosity(){
     
 }
 
-vector<su2double> CUserDefinedTCLib::GetThermalConductivities(){
+vector<su2double>& CUserDefinedTCLib::GetThermalConductivities(){
 
   if(Kind_TransCoeffModel == WILKE)
     ThermalConductivitiesWBE();
@@ -1314,7 +1314,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 
 }
 
-vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
   su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax;
@@ -1376,7 +1376,7 @@ vector<su2double> CUserDefinedTCLib::GetTemperatures(vector<su2double> val_rhos,
   
 }
 
-void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU){
+void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
 
   // Note: Electron energy not included properly.
 
@@ -1491,7 +1491,7 @@ void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
 }    
 
 
-void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU){
+void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
 
   su2double rhoCvve;
 

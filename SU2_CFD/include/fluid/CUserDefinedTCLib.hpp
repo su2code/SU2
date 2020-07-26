@@ -95,17 +95,17 @@ public:
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
-  void SetTDStateRhosTTv(vector<su2double> val_rhos, su2double val_temperature, su2double val_temperature_ve);
+  void SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve);
 
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  vector<su2double> GetSpeciesCvTraRot();
+  vector<su2double>& GetSpeciesCvTraRot();
 
   /*!
    * \brief Get species V-E specific heats at constant volume.
    */
-  vector<su2double> GetSpeciesCvVibEle();
+  vector<su2double>& GetSpeciesCvVibEle();
 
   /*!
    * \brief Get specific heat ratio.
@@ -115,17 +115,17 @@ public:
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
    */
-  vector<su2double> GetMixtureEnergies();
+  vector<su2double>& GetMixtureEnergies();
 
   /*!
    * \brief Get vector of species V-E energy.
    */
-  vector<su2double> GetSpeciesEve(su2double val_T);
+  vector<su2double>& GetSpeciesEve(su2double val_T);
 
   /*!
    * \brief Get species net production rates.
    */
-  vector<su2double> GetNetProductionRates();
+  vector<su2double>& GetNetProductionRates();
 
   /*!
    * \brief Get vibrational energy source term.
@@ -135,12 +135,12 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  vector<su2double> GetSpeciesEnthalpy(su2double val_T, su2double *val_eves);
+  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves);
 
   /*!
    * \brief Get species diffusion coefficients.
    */
-  vector<su2double> GetDiffusionCoeff();
+  vector<su2double>& GetDiffusionCoeff();
 
   /*!
    * \brief Get viscosity.
@@ -150,17 +150,17 @@ public:
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
-  vector<su2double> GetThermalConductivities();
+  vector<su2double>& GetThermalConductivities();
 
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  vector<su2double> GetTemperatures(vector<su2double> rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel);
+  vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel);
 
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  void GetdPdU(su2double *V, vector<su2double> val_eves, su2double *val_dPdU);
+  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
 
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
@@ -170,7 +170,7 @@ public:
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  void GetdTvedU(su2double *V, vector<su2double> val_eves, su2double *val_dTvedU);
+  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 
   private:
 
