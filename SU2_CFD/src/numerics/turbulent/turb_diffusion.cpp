@@ -190,8 +190,16 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
   if (implicit) {
-    Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
-    Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;
+    // Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
+    // Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;
+
+    Jacobian_i[0][0] = -nu_e*proj_vector_ij/sigma;
+    Jacobian_j[0][0] = nu_e*proj_vector_ij/sigma;
+
+    CorrectJacobian(config);
+    
+    Jacobian_i[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
+    Jacobian_j[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
   }
 
 }
@@ -363,11 +371,9 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
     const su2double weight_j = 0.5 / (Volume_j);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_ic[iDim][0][0] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[0][0];
-      Jacobian_ic[iDim][1][1] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[1][1];
-      
-      Jacobian_jc[iDim][0][0] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[0][0];
-      Jacobian_jc[iDim][1][1] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[1][1];
+      for (unsigned short iVar= 0; iVar < nVar; iVar++) {
+      Jacobian_ic[iDim][iVar][iVar] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
+      Jacobian_jc[iDim][iVar][iVar] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
     }
   }
   
