@@ -706,12 +706,14 @@ enum ENUM_CENTERED {
   NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
   JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
+  JST_MAT = 3,        /*!< \brief JST with matrix dissipation. */
   JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
 static const MapType<string, ENUM_CENTERED> Centered_Map = {
   MakePair("NONE", NO_CENTERED)
   MakePair("JST", JST)
   MakePair("JST_KE", JST_KE)
+  MakePair("JST_MAT", JST_MAT)
   MakePair("LAX-FRIEDRICH", LAX)
 };
 

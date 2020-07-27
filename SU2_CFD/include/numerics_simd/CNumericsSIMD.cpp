@@ -54,10 +54,13 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
       }
       switch (config.GetKind_Centered_Flow()) {
         case JST:
-          obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh);
+          obj = new CJSTScheme<ViscousDecorator>(config, iMesh);
           break;
         case JST_KE:
           obj = new CJSTkeScheme<ViscousDecorator>(config, iMesh);
+          break;
+        case JST_MAT:
+          obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh);
           break;
       }
       break;

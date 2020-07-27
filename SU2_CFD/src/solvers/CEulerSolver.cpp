@@ -2226,6 +2226,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
                           (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
+  bool center_jst_mat   = (config->GetKind_Centered_Flow() == JST_MAT) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
@@ -2295,9 +2296,11 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Artificial dissipation ---*/
 
   if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if (center_jst) SetUndivided_Laplacian(geometry, config);
-    if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
+    if (!center_jst_mat) SetMax_Eigenvalue(geometry, config);
+    if (center_jst || center_jst_ke || center_jst_mat) {
+      SetCentered_Dissipation_Sensor(geometry, config);
+      if (!center_jst_ke) SetUndivided_Laplacian(geometry, config);
+    }
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
