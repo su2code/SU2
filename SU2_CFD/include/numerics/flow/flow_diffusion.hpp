@@ -64,7 +64,8 @@ protected:
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   WallShearStress,                        /*!< \brief Wall shear stress at point i and j (without wall functions). */
-  dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
+  dist_ij_2 = 0.0,                              /*!< \brief Length of the edge and face, squared */
+  proj_vector_ij = 0.0,                   /*!< \brief Vector used for projection of gradient correction. */
   Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
   *Proj_Mean_GradPrimVar_Edge = nullptr,  /*!< \brief Inner product of the Mean gradient and the edge vector. */
   Proj_Mean_GradTurbVar_Edge;                  /*!< \brief Inner product of the Mean turbulent gradient and the edge vector. */
@@ -109,18 +110,8 @@ protected:
    * This Jacobian is projected onto the normal vector, so it is of dimension
    * [nDim][nVar]
    *
-   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
-  void SetTauJacobian(const su2double* val_Mean_PrimVar,
-                      su2double val_laminar_viscosity,
-                      su2double val_eddy_viscosity,
-                      su2double val_proj_vector,
-                      su2double val_area,
-                      const su2double *val_normal);
+  void SetTauJacobian();
 
 
   /**
@@ -159,18 +150,10 @@ protected:
    * calculated before calling this function.
    *
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_dS - Area of the face between two nodes.
    * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
   void GetViscousProjJacs(const su2double *val_Mean_PrimVar,
-                          su2double val_proj_vector,
-                          su2double val_dS,
-                          const su2double *val_Proj_Visc_Flux,
-                          su2double **val_Proj_Jac_Tensor_i,
-                          su2double **val_Proj_Jac_Tensor_j,
-                          const CConfig *config);
+                          const su2double *val_Proj_Visc_Flux);
 
   /*!
    * \brief Apply a correction to the gradient to reduce the truncation error
@@ -178,14 +161,12 @@ protected:
    * \param[in] val_PrimVar_i - Primitive variables at point i
    * \param[in] val_PrimVar_j - Primitive variables at point j
    * \param[in] val_edge_vector - The vector between points i and j
-   * \param[in] val_dist_ij_2 - The distance between points i and j, squared
    * \param[in] val_nPrimVar - The number of primitive variables
    */
   void CorrectGradient(su2double** GradPrimVar,
                        const su2double* val_PrimVar_i,
                        const su2double* val_PrimVar_j,
                        const su2double* val_edge_vector,
-                       su2double val_proj_vector,
                        const unsigned short val_nPrimVar);
 
   /*!
