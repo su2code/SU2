@@ -159,27 +159,14 @@ public:
       }
     }
 
-    /*--- Compute the local spectral radius and the stretching factor. ---*/
-
-    const Double projVel_i = dot(V.i.velocity(), normal) - projGridVel;
-    const Double projVel_j = dot(V.j.velocity(), normal) - projGridVel;
-
-    const Double locLambda_i = abs(projVel_i) + V.i.speedSound()*area;
-    const Double locLambda_j = abs(projVel_j) + V.j.speedSound()*area;
-    const Double avgLambda = 0.5 * (locLambda_i + locLambda_j);
-
-    const auto lambda_i = gatherVariables(iPoint, solution.GetLambda());
-    const auto lambda_j = gatherVariables(jPoint, solution.GetLambda());
-    const Double phi_i = pow(0.25*lambda_i/avgLambda, stretchParam);
-    const Double phi_j = pow(0.25*lambda_j/avgLambda, stretchParam);
-    const Double stretchFactor = 4*phi_i*phi_j / (phi_i + phi_j) * avgLambda;
+    const Double projVel = dot(avgV.velocity(), normal) - projGridVel;
 
     /*--- Finalize in derived class (static polymorphism). ---*/
 
     const auto derived = static_cast<const Derived*>(this);
 
-    derived->finalizeFlux(flux, jac_i, jac_j, implicit, stretchFactor,
-                          V, diffU, iPoint, jPoint, geometry, solution);
+    derived->finalizeFlux(flux, jac_i, jac_j, implicit, area, projVel, avgV, V,
+                          diffU, iPoint, jPoint, geometry, solution, unitNormal);
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
@@ -210,6 +197,7 @@ private:
   using Base::nVar;
   using Base::gamma;
   using Base::fixFactor;
+  using Base::stretchParam;
   const su2double kappa2;
   const su2double kappa4;
 
@@ -232,7 +220,9 @@ public:
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
                                 bool implicit,
-                                Double stretchFactor,
+                                Double area,
+                                Double projVel,
+                                const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
                                 Int iPoint,
@@ -240,6 +230,9 @@ public:
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {
+
+    Double lambda = abs(projVel) + avgV.speedSound()*area;
+    lambda = correctedSpectralRadius(iPoint, jPoint, lambda, stretchParam, solution);
 
     /*--- Compute dissipation coefficients. ---*/
 
@@ -259,14 +252,140 @@ public:
     const auto lapl_j = gatherVariables<nVar>(jPoint, solution.GetUndivided_Laplacian());
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      flux(iVar) += (eps2*diffU(iVar) - eps4*(lapl_i(iVar)-lapl_j(iVar))) * stretchFactor;
+      flux(iVar) += (eps2*diffU(iVar) - eps4*(lapl_i(iVar)-lapl_j(iVar))) * lambda;
     }
 
     if (implicit) {
-      const Double dissip_i = fixFactor*(eps2 + eps4*(ni+1)) * stretchFactor;
-      const Double dissip_j = -fixFactor*(eps2 + eps4*(nj+1)) * stretchFactor;
+      const Double dissip_i = fixFactor * (eps2 + eps4*(ni+1)) * lambda;
+      const Double dissip_j = -fixFactor * (eps2 + eps4*(nj+1)) * lambda;
       scalarDissipationJacobian(V.i, gamma, dissip_i, jac_i);
       scalarDissipationJacobian(V.j, gamma, dissip_j, jac_j);
+    }
+  }
+};
+
+/*!
+ * \class CJSTmatScheme
+ * \brief JST scheme with matrix dissipation.
+ */
+template<class Decorator>
+class CJSTmatScheme : public CCenteredBase<CJSTmatScheme<Decorator>,Decorator> {
+private:
+  using Base = CCenteredBase<CJSTmatScheme<Decorator>,Decorator>;
+  using Base::nDim;
+  using Base::nVar;
+  using Base::gamma;
+  using Base::fixFactor;
+  const su2double kappa2;
+  const su2double kappa4;
+  const su2double entropyFix;
+
+public:
+  /*!
+   * \brief Constructor, forward everything to base.
+   */
+  template<class... Ts>
+  CJSTmatScheme(const CConfig& config, Ts&... args) : Base(config, args...),
+    kappa2(config.GetKappa_2nd_Flow()),
+    kappa4(config.GetKappa_4th_Flow()),
+    entropyFix(config.GetEntropyFix_Coeff()) {
+  }
+
+  /*!
+   * \brief Updates flux and Jacobians.
+   * \note "Ts" is here just in case other schemes in the family need extra args.
+   */
+  template<class PrimVarType, class... Ts>
+  FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
+                                MatrixDbl<nVar>& jac_i,
+                                MatrixDbl<nVar>& jac_j,
+                                bool implicit,
+                                Double area,
+                                Double projVel,
+                                const PrimVarType& avgV,
+                                const CPair<PrimVarType>& V,
+                                const VectorDbl<nVar>& diffU,
+                                Int iPoint,
+                                Int jPoint,
+                                const CGeometry& geometry,
+                                const CEulerVariable& solution,
+                                const VectorDbl<nDim>& unitNormal,
+                                Ts&...) const {
+
+    /*--- Compute scalar dissipation. ---*/
+
+    const auto ni = Base::numNeighbor(iPoint, geometry);
+    const auto nj = Base::numNeighbor(jPoint, geometry);
+    const Double sc2 = 3 * (ni+nj) / (ni*nj);
+    const Double sc4 = 0.25*pow(sc2, 2);
+
+    const auto si = gatherVariables(iPoint, solution.GetSensor());
+    const auto sj = gatherVariables(jPoint, solution.GetSensor());
+    const Double eps2 = kappa2 * 0.5*(si+sj) * sc2;
+    const Double eps4 = max(0.0, kappa4-eps2) * sc4;
+
+    const auto lapl_i = gatherVariables<nVar>(iPoint, solution.GetUndivided_Laplacian());
+    const auto lapl_j = gatherVariables<nVar>(jPoint, solution.GetUndivided_Laplacian());
+
+    VectorDbl<nVar> scalarDissip;
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      scalarDissip(iVar) = eps2*diffU(iVar) - eps4*(lapl_i(iVar)-lapl_j(iVar));
+    }
+
+    MatrixDbl<nVar> scalarJac;
+    if (implicit) {
+      scalarJac = Double(0.0);
+      Double factor = fixFactor * (eps2 + 0.5*eps4*(ni+nj+2));
+      scalarDissipationJacobian(avgV, gamma, factor, scalarJac);
+    }
+
+    /*--- Compute matrix dissipation terms. ---*/
+
+    const auto unitProjVel = dot(avgV.velocity(), unitNormal);
+
+    auto pMat = pMatrix(gamma, avgV.density(), avgV.velocity(),
+                        unitProjVel, avgV.speedSound(), unitNormal);
+
+    auto pMatInv = pMatrixInv(gamma, avgV.density(), avgV.velocity(),
+                              unitProjVel, avgV.speedSound(), unitNormal);
+
+    /*--- Compute limited absolute eigenvalues (times area). ---*/
+
+    VectorDbl<nVar> lambda;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      lambda(iDim) = projVel;
+    }
+    lambda(nDim) = projVel + avgV.speedSound()*area;
+    lambda(nDim+1) = projVel - avgV.speedSound()*area;
+
+    const Double maxLambda = max(lambda(nDim), -lambda(nDim+1));
+
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
+    }
+
+    /*--- Update flux and Jacobians with scaled dissipation terms. ---*/
+
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      for (size_t jVar = 0; jVar < nVar; ++jVar) {
+        /*--- Matrix scaling, P x |S * Lambda| x P^-1. ---*/
+
+        Double scale = 0.0;
+        for (size_t kVar = 0; kVar < nVar; ++kVar) {
+          scale += pMat(iVar,kVar) * lambda(kVar) * pMatInv(kVar,jVar);
+        }
+
+        /*--- Update flux and Jacobians. ---*/
+
+        flux(iVar) += scale * scalarDissip(jVar);
+
+        if (implicit) {
+          for (size_t kVar = 0; kVar < nVar; ++kVar) {
+            jac_i(iVar,kVar) += scale * scalarJac(jVar,kVar);
+            jac_j(iVar,kVar) -= scale * scalarJac(jVar,kVar);
+          }
+        }
+      }
     }
   }
 };
@@ -283,6 +402,7 @@ private:
   using Base::nVar;
   using Base::gamma;
   using Base::fixFactor;
+  using Base::stretchParam;
   const su2double kappa2;
 
 public:
@@ -303,7 +423,9 @@ public:
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
                                 bool implicit,
-                                Double stretchFactor,
+                                Double area,
+                                Double projVel,
+                                const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
                                 Int iPoint,
@@ -311,6 +433,9 @@ public:
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {
+
+    Double lambda = abs(projVel) + avgV.speedSound()*area;
+    lambda = correctedSpectralRadius(iPoint, jPoint, lambda, stretchParam, solution);
 
     /*--- Compute dissipation coefficient. ---*/
 
@@ -320,7 +445,7 @@ public:
 
     const auto si = gatherVariables(iPoint, solution.GetSensor());
     const auto sj = gatherVariables(jPoint, solution.GetSensor());
-    const Double dissip = kappa2 * 0.5*(si+sj) * sc2 * stretchFactor;
+    const Double dissip = kappa2 * 0.5*(si+sj) * sc2 * lambda;
 
     /*--- Update flux and Jacobians with dissipation term. ---*/
 
@@ -347,6 +472,7 @@ private:
   using Base::nVar;
   using Base::gamma;
   using Base::fixFactor;
+  using Base::stretchParam;
   const su2double kappa0;
 
 public:
@@ -367,19 +493,25 @@ public:
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
                                 bool implicit,
-                                Double stretchFactor,
+                                Double area,
+                                Double projVel,
+                                const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
                                 Int iPoint,
                                 Int jPoint,
                                 const CGeometry& geometry,
+                                const CEulerVariable& solution,
                                 Ts&...) const {
+
+    Double lambda = abs(projVel) + avgV.speedSound()*area;
+    lambda = correctedSpectralRadius(iPoint, jPoint, lambda, stretchParam, solution);
 
     /*--- Compute dissipation coefficient. ---*/
 
     const auto ni = Base::numNeighbor(iPoint, geometry);
     const auto nj = Base::numNeighbor(jPoint, geometry);
-    const Double dissip = kappa0 * nDim * (ni+nj) / (ni*nj) * stretchFactor;
+    const Double dissip = kappa0 * nDim * (ni+nj) / (ni*nj) * lambda;
 
     /*--- Update flux and Jacobians with dissipation term. ---*/
 

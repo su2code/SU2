@@ -82,10 +82,10 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
     auto proj_i = dot(grad_i[iVar], vector_ij);
     auto proj_j = dot(grad_j[iVar], vector_ij);
     auto delta_ij = V.j.all(iVar) - V.i.all(iVar);
-    auto delta_ij_2 = pow(delta_ij, 2);
+    auto delta_ij_2 = pow(delta_ij, 2) + 1e-6;
     /// TODO: Customize the limiter function.
-    auto lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2 + EPS);
-    auto lim_j = (delta_ij_2 + proj_j*delta_ij) / (pow(proj_j,2) + delta_ij_2 + EPS);
+    auto lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2);
+    auto lim_j = (delta_ij_2 + proj_j*delta_ij) / (pow(proj_j,2) + delta_ij_2);
     V.i.all(iVar) += lim_i * 0.5 * proj_i;
     V.j.all(iVar) -= lim_j * 0.5 * proj_j;
   }
@@ -139,45 +139,45 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iPoint, Int jPoint, bo
 /*!
  * \brief Compute and return the P tensor (compressible flow, ideal gas).
  */
-template<size_t nDim>
-FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const VectorDbl<nDim>& velocity,
+template<size_t nDim, class RandomAccessIterator>
+FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const RandomAccessIterator& velocity,
                                       Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMat;
-  const Double vel2 = 0.5*squaredNorm(velocity);
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
 
   if (nDim == 2) {
     pMat(0,0) = 1.0;
     pMat(0,1) = 0.0;
 
-    pMat(1,0) = velocity(0);
+    pMat(1,0) = velocity[0];
     pMat(1,1) = density*normal(1);
 
-    pMat(2,0) = velocity(1);
+    pMat(2,0) = velocity[1];
     pMat(2,1) = -density*normal(0);
 
     pMat(3,0) = vel2;
-    pMat(3,1) = density*(velocity(0)*normal(1) - velocity(1)*normal(0));
+    pMat(3,1) = density*(velocity[0]*normal(1) - velocity[1]*normal(0));
   }
   else {
     pMat(0,0) = normal(0);
     pMat(0,1) = normal(1);
     pMat(0,2) = normal(2);
 
-    pMat(1,0) = velocity(0)*normal(0);
-    pMat(1,1) = velocity(0)*normal(1) - density*normal(2);
-    pMat(1,2) = velocity(0)*normal(2) + density*normal(1);
+    pMat(1,0) = velocity[0]*normal(0);
+    pMat(1,1) = velocity[0]*normal(1) - density*normal(2);
+    pMat(1,2) = velocity[0]*normal(2) + density*normal(1);
 
-    pMat(2,0) = velocity(1)*normal(0) + density*normal(2);
-    pMat(2,1) = velocity(1)*normal(1);
-    pMat(2,2) = velocity(1)*normal(2) - density*normal(0);
+    pMat(2,0) = velocity[1]*normal(0) + density*normal(2);
+    pMat(2,1) = velocity[1]*normal(1);
+    pMat(2,2) = velocity[1]*normal(2) - density*normal(0);
 
-    pMat(3,0) = velocity(2)*normal(0) - density*normal(1);
-    pMat(3,1) = velocity(2)*normal(1) + density*normal(0);
-    pMat(3,2) = velocity(2)*normal(2);
+    pMat(3,0) = velocity[2]*normal(0) - density*normal(1);
+    pMat(3,1) = velocity[2]*normal(1) + density*normal(0);
+    pMat(3,2) = velocity[2]*normal(2);
 
-    pMat(4,0) = vel2*normal(0) + density*(velocity(1)*normal(2) - velocity(2)*normal(1));
-    pMat(4,1) = vel2*normal(1) - density*(velocity(0)*normal(2) - velocity(2)*normal(0));
-    pMat(4,2) = vel2*normal(2) + density*(velocity(0)*normal(1) - velocity(1)*normal(0));
+    pMat(4,0) = vel2*normal(0) + density*(velocity[1]*normal(2) - velocity[2]*normal(1));
+    pMat(4,1) = vel2*normal(1) - density*(velocity[0]*normal(2) - velocity[2]*normal(0));
+    pMat(4,2) = vel2*normal(2) + density*(velocity[0]*normal(1) - velocity[1]*normal(0));
   }
 
   /*--- Last two columns. ---*/
@@ -188,8 +188,8 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
   pMat(0,nDim+1) = rhoOnTwoC;
 
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    pMat(iDim+1,nDim) = rhoOnTwoC * velocity(iDim) + rhoOn2 * normal(iDim);
-    pMat(iDim+1,nDim+1) = rhoOnTwoC * velocity(iDim) - rhoOn2 * normal(iDim);
+    pMat(iDim+1,nDim) = rhoOnTwoC * velocity[iDim] + rhoOn2 * normal(iDim);
+    pMat(iDim+1,nDim+1) = rhoOnTwoC * velocity[iDim] - rhoOn2 * normal(iDim);
   }
 
   pMat(nDim+1,nDim) = rhoOnTwoC * vel2 + rhoOn2 * (projVel + speedSound/(gamma-1));
@@ -201,47 +201,47 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Vector
 /*!
  * \brief Compute and return the inverse P tensor (compressible flow, ideal gas).
  */
-template<size_t nDim>
-FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const VectorDbl<nDim>& velocity,
+template<size_t nDim, class RandomAccessIterator>
+FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const RandomAccessIterator& velocity,
                                          Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMatInv;
 
   const Double c2 = pow(speedSound,2);
-  const Double vel2 = 0.5*squaredNorm(velocity);
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
   const Double oneOnRho = 1 / density;
 
   if (nDim == 2) {
     Double tmp = (gamma-1)/c2;
     pMatInv(0,0) = 1.0 - tmp*vel2;
-    pMatInv(0,1) = tmp*velocity(0);
-    pMatInv(0,2) = tmp*velocity(1);
+    pMatInv(0,1) = tmp*velocity[0];
+    pMatInv(0,2) = tmp*velocity[1];
     pMatInv(0,3) = -tmp;
 
-    pMatInv(1,0) = (normal(0)*velocity(1)-normal(1)*velocity(0))*oneOnRho;
+    pMatInv(1,0) = (normal(0)*velocity[1]-normal(1)*velocity[0])*oneOnRho;
     pMatInv(1,1) = normal(1)*oneOnRho;
     pMatInv(1,2) = -normal(0)*oneOnRho;
     pMatInv(1,3) = 0.0;
   }
   else {
     Double tmp = (gamma-1)/c2 * normal(0);
-    pMatInv(0,0) = normal(0) - tmp*vel2 - (normal(2)*velocity(1)-normal(1)*velocity(2))*oneOnRho;
-    pMatInv(0,1) = tmp*velocity(0);
-    pMatInv(0,2) = tmp*velocity(1) + normal(2)*oneOnRho;
-    pMatInv(0,3) = tmp*velocity(2) - normal(1)*oneOnRho;
+    pMatInv(0,0) = normal(0) - tmp*vel2 - (normal(2)*velocity[1]-normal(1)*velocity[2])*oneOnRho;
+    pMatInv(0,1) = tmp*velocity[0];
+    pMatInv(0,2) = tmp*velocity[1] + normal(2)*oneOnRho;
+    pMatInv(0,3) = tmp*velocity[2] - normal(1)*oneOnRho;
     pMatInv(0,4) = -tmp;
 
     tmp = (gamma-1)/c2 * normal(1);
-    pMatInv(1,0) = normal(1) - tmp*vel2 + (normal(2)*velocity(0)-normal(0)*velocity(2))*oneOnRho;
-    pMatInv(1,1) = tmp*velocity(0) - normal(2)*oneOnRho;
-    pMatInv(1,2) = tmp*velocity(1);
-    pMatInv(1,3) = tmp*velocity(2) + normal(0)*oneOnRho;
+    pMatInv(1,0) = normal(1) - tmp*vel2 + (normal(2)*velocity[0]-normal(0)*velocity[2])*oneOnRho;
+    pMatInv(1,1) = tmp*velocity[0] - normal(2)*oneOnRho;
+    pMatInv(1,2) = tmp*velocity[1];
+    pMatInv(1,3) = tmp*velocity[2] + normal(0)*oneOnRho;
     pMatInv(1,4) = -tmp;
 
     tmp = (gamma-1)/c2 * normal(2);
-    pMatInv(2,0) = normal(2) - tmp*vel2 - (normal(1)*velocity(0)-normal(0)*velocity(1))*oneOnRho;
-    pMatInv(2,1) = tmp*velocity(0) + normal(1)*oneOnRho;
-    pMatInv(2,2) = tmp*velocity(1) - normal(0)*oneOnRho;
-    pMatInv(2,3) = tmp*velocity(2);
+    pMatInv(2,0) = normal(2) - tmp*vel2 - (normal(1)*velocity[0]-normal(0)*velocity[1])*oneOnRho;
+    pMatInv(2,1) = tmp*velocity[0] + normal(1)*oneOnRho;
+    pMatInv(2,2) = tmp*velocity[1] - normal(0)*oneOnRho;
+    pMatInv(2,3) = tmp*velocity[2];
     pMatInv(2,4) = -tmp;
   }
 
@@ -253,7 +253,7 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const Vec
     Double sign = (iVar==nDim)? 1 : -1;
     pMatInv(iVar,0) = -sign*projVel*oneOnRho + gamma_minus_1_on_rho_times_c * vel2;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      pMatInv(iVar,iDim+1) = sign*normal(iDim)*oneOnRho - gamma_minus_1_on_rho_times_c * velocity(iDim);
+      pMatInv(iVar,iDim+1) = sign*normal(iDim)*oneOnRho - gamma_minus_1_on_rho_times_c * velocity[iDim];
     }
     pMatInv(iVar,nDim+1) = gamma_minus_1_on_rho_times_c;
   }
@@ -367,6 +367,25 @@ FORCEINLINE Double roeDissipation(Int iPoint,
       assert(false);
       return 1.0;
   }
+}
+
+/*!
+ * \brief Correct spectral radius (avgLambda) for stretching.
+ */
+template<class VariableType, class T>
+FORCEINLINE Double correctedSpectralRadius(Int iPoint,
+                                           Int jPoint,
+                                           Double avgLambda,
+                                           T stretchParam,
+                                           const VariableType& solution) {
+
+  const auto lambda_i = gatherVariables(iPoint, solution.GetLambda());
+  const Double phi_i = pow(0.25*lambda_i/avgLambda, stretchParam);
+
+  const auto lambda_j = gatherVariables(jPoint, solution.GetLambda());
+  const Double phi_j = pow(0.25*lambda_j/avgLambda, stretchParam);
+
+  return 4*phi_i*phi_j / (phi_i + phi_j) * avgLambda;
 }
 
 /*!
