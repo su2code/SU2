@@ -139,7 +139,7 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
   AD::SetPreaccIn(Normal[iEdge], nDim);
 
   const su2double nx = coord_Elem_CG[1] - coord_Edge_CG[1];
-  const su2double ny = -(coord_Elem_CG[0] - coord_Edge_CG[0])
+  const su2double ny = -(coord_Elem_CG[0] - coord_Edge_CG[0]);
   const su2double sign = ((nx * vec_ij[0] + ny * vec_ij[1]) > 0) ? 1.0 : -1.0;
 
   Normal(iEdge,0) += sign*nx; 
