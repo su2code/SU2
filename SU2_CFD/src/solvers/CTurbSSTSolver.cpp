@@ -487,7 +487,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
       
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      CrossDiffusionJacobian(geometry, solver, config, iPoint);
+      // CrossDiffusionJacobian(geometry, solver, config, iPoint);
       
     }
 
@@ -789,7 +789,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      CorrectJacobian(geometry, solver, config, iPoint, iPoint, 1.0, visc_residual.jacobian_ic);
+      // CorrectJacobian(geometry, solver, config, iPoint, iPoint, 1.0, visc_residual.jacobian_ic);
         
     }
   }
@@ -904,7 +904,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       
       /*--- Compute Jacobian correction for influence from all neighbors ---*/
-      CorrectJacobian(geometry, solver, config, iPoint, iPoint, 1.0, visc_residual.jacobian_ic);
+      // CorrectJacobian(geometry, solver, config, iPoint, iPoint, 1.0, visc_residual.jacobian_ic);
 
     }
 

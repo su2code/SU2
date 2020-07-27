@@ -3901,9 +3901,8 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
     Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
 
     /*--- Momentum Jacobian ---*/
-    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+    for (unsigned short jDim = 0; jDim < nDim; jDim++)
       Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
-    }// jDim
 
     /*--- Energy Jacobian ---*/
     Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
@@ -3926,9 +3925,8 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
         Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
 
         /*--- Momentum Jacobian ---*/
-        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+        for (unsigned short jDim = 0; jDim < nDim; jDim++)
           Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
-        }// jDim
 
         /*--- Energy Jacobian ---*/
         Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
@@ -7401,7 +7399,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
       }//if viscous
     }//if GetDomain
@@ -7705,7 +7703,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
         
       }
@@ -9941,7 +9939,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
 
       }
@@ -10151,7 +10149,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
 
       }
