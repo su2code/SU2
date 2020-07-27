@@ -48,6 +48,9 @@
  * \version 6.2.0
  */
 class CNEMOEulerVariable : public CVariable {
+public:
+  static constexpr size_t MAXNVAR = 15;
+
 protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
