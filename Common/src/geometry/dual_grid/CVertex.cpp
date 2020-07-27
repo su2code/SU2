@@ -74,7 +74,7 @@ CVertex::~CVertex() {
 
 }
 
-void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
+void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) {
 
   su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0};
   unsigned short iDim;
@@ -101,7 +101,7 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
 }
 
-void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
+void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord_Elem_CG, nDim);

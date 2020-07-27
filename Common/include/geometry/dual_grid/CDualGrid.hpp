@@ -76,7 +76,7 @@ public:
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) = 0;
+  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) = 0;
 
   /*!
    * \overload
@@ -84,7 +84,7 @@ public:
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) = 0;
+  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) = 0;
 
   /*!
    * \brief A pure virtual member.

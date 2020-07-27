@@ -8763,6 +8763,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   su2double *Coord_Edge_CG = new su2double [nDim];
   su2double *Coord_Elem_CG = new su2double [nDim];
   su2double *Coord_Vertex = new su2double [nDim];
+  su2double *Vec_ij = new su2double [nDim];
 
   /*--- Loop over all the markers ---*/
 
@@ -8791,21 +8792,22 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
             Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
             Coord_Elem_CG[iDim] = bound[iMarker][iElem]->GetCG(iDim);
             Coord_Vertex[iDim] = node[iPoint]->GetCoord(iDim);
+            Vec_ij[iDim] = 0.0;
           }
           switch (nDim) {
             case 2:
 
               /*--- Store the 2D face ---*/
 
-              if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
-              if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
+              if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex, Vec_ij);
+              if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG, Vec_ij);
               break;
             case 3:
 
               /*--- Store the 3D face ---*/
 
-              if (iNeighbor_Nodes == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
-              if (iNeighbor_Nodes == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
+              if (iNeighbor_Nodes == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex, Vec_ij);
+              if (iNeighbor_Nodes == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex, Vec_ij);
               break;
           }
         }
@@ -8814,6 +8816,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   delete[] Coord_Edge_CG;
   delete[] Coord_Elem_CG;
   delete[] Coord_Vertex;
+  delete[] Vec_ij;
 
   /*--- Check if there is a normal with null area ---*/
 
