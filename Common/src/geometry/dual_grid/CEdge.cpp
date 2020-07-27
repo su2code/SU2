@@ -126,7 +126,7 @@ su2double CEdge::GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_El
 
 }
 
-void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
+void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) {
 
   unsigned short iDim;
   su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3];
@@ -146,15 +146,17 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
   Dim_Normal[1] = -0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0] );
   Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0] );
 
-  Normal[0] += Dim_Normal[0];
-  Normal[1] += Dim_Normal[1];
-  Normal[2] += Dim_Normal[2];
+  su2double sign = ((Dim_Normal[0]*val_vec_ij[0] + Dim_Normal[1]*val_vec_ij[1] + Dim_Normal[2]*val_vec_ij[2]) > 0) ? 1.0 : -1.0;
+
+  Normal[0] += Dim_Normal[0]*sign;
+  Normal[1] += Dim_Normal[1]*sign;
+  Normal[2] += Dim_Normal[2]*sign;
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
 }
 
-void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
+void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) {
 
   su2double Dim_Normal[2];
 
@@ -166,8 +168,10 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_El
   Dim_Normal[0] =   val_coord_Elem_CG[1] - val_coord_Edge_CG[1];
   Dim_Normal[1] = -(val_coord_Elem_CG[0] - val_coord_Edge_CG[0]);
 
-  Normal[0] += Dim_Normal[0];
-  Normal[1] += Dim_Normal[1];
+  su2double sign = ((Dim_Normal[0]*val_vec_ij[0] + Dim_Normal[1]*val_vec_ij[1]) > 0) ? 1.0 : -1.0;
+
+  Normal[0] += Dim_Normal[0]*sign;
+  Normal[1] += Dim_Normal[1]*sign;
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();

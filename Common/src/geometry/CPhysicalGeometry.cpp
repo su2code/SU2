@@ -9657,7 +9657,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
   long iEdge;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
+  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, *Vec_ij, Area,
   Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
   bool change_face_orientation;
 
@@ -9674,6 +9674,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   Coord_Elem_CG = new su2double [nDim];
   Coord_FaceiPoint = new su2double [nDim];
   Coord_FacejPoint = new su2double [nDim];
+  Vec_ij = new su2double [nDim];
 
   my_DomainVolume = 0.0;
   for (iElem = 0; iElem < nElem; iElem++)
@@ -9706,6 +9707,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         change_face_orientation = false;
         if (face_iPoint > face_jPoint) change_face_orientation = true;
         iEdge = FindEdge(face_iPoint, face_jPoint);
+        const su2double sign = (change_face_orientation) ? -1.0 : 1.0;
 
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
@@ -9713,13 +9715,13 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
           Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
+          Vec_ij[iDim] = sign*(Coord_FacejPoint[iDim]-Coord_FaceiPoint[iDim]);
         }
 
         switch (nDim) {
           case 2:
             /*--- Two dimensional problem ---*/
-            if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
-            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
+            edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Vec_ij);
             Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Area); my_DomainVolume +=Area;
             Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
@@ -9727,8 +9729,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             break;
           case 3:
             /*--- Three dimensional problem ---*/
-            if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
-            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG, Vec_ij);
             Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
             Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
@@ -9765,6 +9766,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   delete[] Coord_Elem_CG;
   delete[] Coord_FaceiPoint;
   delete[] Coord_FacejPoint;
+  delete[] Vec_ij;
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {

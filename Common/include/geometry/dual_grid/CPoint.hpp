@@ -801,14 +801,14 @@ public:
    *        definition of the function in all the derived classes).
    */
   inline void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG,
-                             su2double *val_coord_Elem_CG) override { }
+                             su2double *val_coord_Elem_CG, su2double *val_vec_ij) override { }
 
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) override { }
+  inline void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_vec_ij) override { }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
