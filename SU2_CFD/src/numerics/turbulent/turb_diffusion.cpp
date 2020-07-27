@@ -197,7 +197,7 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[0][0] = nu_e*proj_vector_ij/sigma;
 
     CorrectJacobian(config);
-    
+
     Jacobian_i[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
     Jacobian_j[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
   }
@@ -374,6 +374,7 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
       for (unsigned short iVar= 0; iVar < nVar; iVar++) {
       Jacobian_ic[iDim][iVar][iVar] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
       Jacobian_jc[iDim][iVar][iVar] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
+      }
     }
   }
   
