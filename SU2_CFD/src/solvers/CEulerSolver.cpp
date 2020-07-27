@@ -3235,7 +3235,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
         }
-        
+
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
@@ -3716,21 +3716,25 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
   /*--- Get norm of projection and distance vectors ---*/
 
   su2double Area2 = 0.0, ProjVec = 0.0, Dist2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    ProjVec += Normal[iDim]*EdgVec[iDim];
-    Dist2 += EdgVec[iDim]*EdgVec[iDim];
-    Area2 += Normal[iDim]*Normal[iDim];
+  if (iPoint == jPoint) {
+    Dist2 = 1.0;
+    ProjVec = 1.0;
   }
-  if (iPoint == jPoint) Dist2 = 1.0;
-  if (iPoint == jPoint) ProjVec = 1.0;
+  else {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
+      ProjVec += Normal[iDim]*EdgVec[iDim];
+      Dist2 += EdgVec[iDim]*EdgVec[iDim];
+      Area2 += Normal[iDim]*Normal[iDim];
+    }
+  }
 
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  // for (unsigned short iDim = 0; iDim < nDim; iDim++)
-  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*Area2/ProjVec;
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+  // for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*Area2/ProjVec;
 
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
@@ -3758,18 +3762,10 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
 
   /*--- Loop over neighbors ---*/
   for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-    /*--- Reset Jacobian matrix for neighbors ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-        Jacobian_j[iVar][jVar] = 0.0;
-
     const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
     const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
     const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
     const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
-
-    const su2double Density_k = nodes->GetDensity(kPoint);
-    const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
@@ -3783,30 +3779,8 @@ void CEulerSolver::StressTensorJacobian(CGeometry           *geometry,
         Jacobian_i[iDim+1][jDim+1] += Weight*Xi_i*(Normalk[iDim]*Vec[jDim] 
                                           - 2./3.*Normalk[jDim]*Vec[iDim] 
                                           + delta[iDim][jDim]*ProjVec);
-        Jacobian_j[iDim+1][jDim+1] += Weight*Xi_k*(Normalk[iDim]*Vec[jDim] 
-                                          - 2./3.*Normalk[jDim]*Vec[iDim] 
-                                          + delta[iDim][jDim]*ProjVec);
       }// jDim
-
-      /*--- Density and energy Jacobians involve sums, so we'll do that later for iPoint ---*/
-      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-        /*--- Momentum flux Jacobian wrt density ---*/
-        Jacobian_j[iDim+1][0] -= Jacobian_j[iDim+1][jDim+1]*nodesFlo->GetVelocity(kPoint,jDim);
-
-        /*--- Energy Jacobian wrt momentum ---*/
-        Jacobian_j[nVar-1][iDim+1] += Jacobian_j[iDim+1][jDim+1]*Mean_Velocity[jDim];
-      }
-
-      /*--- Energy Jacobian wrt density ---*/
-      Jacobian_j[nVar-1][0] += Jacobian_j[iDim+1][0]*Mean_Velocity[iDim];
-
     }// iDim
-
-    // Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    
-    // if (jPoint != iPoint)
-    //   Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-
   }// iNode
 
   /*--- Influence of boundary nodes ---*/
@@ -3868,21 +3842,25 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
   /*--- Get norm of projection and distance vectors ---*/
 
   su2double Area2 = 0.0, ProjVec = 0.0, Dist2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    ProjVec += Normal[iDim]*EdgVec[iDim];
-    Dist2 += EdgVec[iDim]*EdgVec[iDim];
-    Area2 += Normal[iDim]*Normal[iDim];
+  if (iPoint == jPoint) {
+    Dist2 = 1.0;
+    ProjVec = 1.0;
   }
-  if (iPoint == jPoint) Dist2 = 1.0;
-  if (iPoint == jPoint) ProjVec = 1.0;
+  else {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
+      ProjVec += Normal[iDim]*EdgVec[iDim];
+      Dist2 += EdgVec[iDim]*EdgVec[iDim];
+      Area2 += Normal[iDim]*Normal[iDim];
+    }
+  }
 
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  // for (unsigned short iDim = 0; iDim < nDim; iDim++)
-  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*Area2/ProjVec;
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+  // for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*Area2/ProjVec;
 
   /*--- Common factors for all Jacobian terms --*/
   const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
@@ -3908,20 +3886,10 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   /*--- Loop over neighbors ---*/
   for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-    /*--- Reset Jacobian matrix for neighbors ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-        Jacobian_j[iVar][jVar] = 0.0;
-
     const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
     const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
     const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
     const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
-
-    const su2double Vel2_k = nodes->GetVelocity2(kPoint);
-    const su2double Density_k = nodes->GetDensity(kPoint);
-    const su2double Pressure_k = nodes->GetPressure(kPoint);
-    const su2double Phi_k = Gamma_Minus_One/Density_k;
 
     su2double Weight = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -3931,23 +3899,14 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
-    Jacobian_j[nVar-1][0] += Weight*(-Pressure_k/(Density_k*Density_k)+0.5*Vel2_k);
 
     /*--- Momentum Jacobian ---*/
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
-      Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
     }// jDim
 
     /*--- Energy Jacobian ---*/
     Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
-    Jacobian_j[nVar-1][nVar-1] += Weight*Phi_k;
-
-    // Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    
-    // if (jPoint != iPoint)
-    //   Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-
   }// iNode
 
   /*--- Influence of boundary nodes ---*/
@@ -7442,7 +7401,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
       }//if viscous
     }//if GetDomain
@@ -7746,7 +7705,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
         
       }
@@ -9982,7 +9941,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
 
       }
@@ -10192,7 +10151,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
           
           /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
+          CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
 
       }

@@ -382,8 +382,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   }
   
   /*--- Compute Jacobian correction for influence from all neighbors ---*/
-  // CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
-  // CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
+  CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
+  CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
   
 }
 
@@ -432,26 +432,10 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
       const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
       const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
-      const su2double rk = nodesFlo->GetDensity(kPoint);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_j[iVar][jVar] = 0.;
-        }
-      }
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short iVar = 0; iVar < nVar; iVar++)
+          for (unsigned short jVar = 0; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*signk;
-            Jacobian_j[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*signk*ri/rk;
-          }// jVar
-        }// iVar
-      }// iDim
-      
-      // Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-      
-      // if (jPoint != iPoint)
-      //   Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-
     }// iNode
     
     /*--- Influence of boundary i on R(i,j) ---*/
