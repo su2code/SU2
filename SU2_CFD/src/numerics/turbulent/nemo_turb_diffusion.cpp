@@ -1,5 +1,5 @@
-/*!
- * \file turb_diffusion.cpp
+﻿/*!
+ * \file nemo_turb_diffusion.cpp
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -26,9 +26,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/turbulent/turb_diffusion.hpp"
+#include "../../../include/numerics/turbulent/nemo_turb_diffusion.hpp"
 
-CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
+CNEMOAvgGrad_Scalar::CNEMOAvgGrad_Scalar(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  bool correct_grad,
                                  const CConfig* config) :
@@ -50,7 +50,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   }
 }
 
-CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
+CNEMOAvgGrad_Scalar::~CNEMOAvgGrad_Scalar(void) {
 
   delete [] Proj_Mean_GradTurbVar_Normal;
   delete [] Proj_Mean_GradTurbVar_Edge;
@@ -67,7 +67,7 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
   }
 }
 
-CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* config) {
 
   unsigned short iVar, iDim;
 
@@ -136,13 +136,13 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
 }
 
-CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+CNEMOAvgGrad_TurbSA::CNEMOAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                  bool correct_grad, const CConfig* config) :
-                 CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
+                 CNEMOAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
 
-void CAvgGrad_TurbSA::ExtraADPreaccIn() { }
+void CNEMOAvgGrad_TurbSA::ExtraADPreaccIn() { }
 
-void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
+void CNEMOAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
 
   /*--- Compute mean effective viscosity ---*/
 
@@ -161,15 +161,15 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
 
 }
 
-CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim,
+CNEMOAvgGrad_TurbSA_Neg::CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim,
                                          unsigned short val_nVar,
                                          bool correct_grad,
                                          const CConfig* config) :
-                     CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
+                     CNEMOAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
 
-void CAvgGrad_TurbSA_Neg::ExtraADPreaccIn() { }
+void CNEMOAvgGrad_TurbSA_Neg::ExtraADPreaccIn() { }
 
-void CAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
+void CNEMOAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
 
   /*--- Compute mean effective viscosity ---*/
 
@@ -201,7 +201,7 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
 
 }
 
-CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
+CNEMOAvgGrad_TurbSST::CNEMOAvgGrad_TurbSST(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    const su2double *constants,
                                    bool correct_grad,
@@ -214,11 +214,11 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
 
 }
 
-void CAvgGrad_TurbSST::ExtraADPreaccIn() {
+void CNEMOAvgGrad_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 }
 
-void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
+void CNEMOAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;

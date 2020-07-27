@@ -1,5 +1,5 @@
 ﻿/*!
- * \file turb_diffusion.hpp
+ * \file nemo_turb_diffusion.hpp
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -31,7 +31,7 @@
 #include "../CNumerics.hpp"
 
 /*!
- * \class CAvgGrad_Scalar
+ * \class CNEMOAvgGrad_Scalar
  * \brief Template class for computing viscous residual of scalar values
  * \details This class serves as a template for the scalar viscous residual
  *   classes.  The general structure of a viscous residual calculation is the
@@ -44,7 +44,7 @@
  * \ingroup ViscDiscr
  * \author C. Pederson, A. Bueno, and F. Palacios
  */
-class CAvgGrad_Scalar : public CNumerics {
+class CNEMOAvgGrad_Scalar : public CNumerics {
 protected:
   su2double
   Edge_Vector[MAXNDIM] = {0.0},             /*!< \brief Vector from node i to node j. */
@@ -79,13 +79,13 @@ public:
    * \param[in] correct_gradient - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
+  CNEMOAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_gradient, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Scalar(void) override;
+  ~CNEMOAvgGrad_Scalar(void) override;
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
@@ -97,12 +97,12 @@ public:
 };
 
 /*!
- * \class CAvgGrad_TurbSA
+ * \class CNEMOAvgGrad_TurbSA
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
  */
-class CAvgGrad_TurbSA final : public CAvgGrad_Scalar {
+class CNEMOAvgGrad_TurbSA final : public CNEMOAvgGrad_Scalar {
 private:
   const su2double sigma = 2.0/3.0;
 
@@ -125,17 +125,17 @@ public:
    * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+  CNEMOAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_grad, const CConfig* config);
 };
 
 /*!
- * \class CAvgGrad_TurbSA_Neg
+ * \class CNEMOAvgGrad_TurbSA_Neg
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
  */
-class CAvgGrad_TurbSA_Neg final : public CAvgGrad_Scalar {
+class CNEMOAvgGrad_TurbSA_Neg final : public CNEMOAvgGrad_Scalar {
 private:
   const su2double sigma = 2.0/3.0;
   const su2double cn1 = 16.0;
@@ -159,17 +159,17 @@ public:
    * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+  CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
                       bool correct_grad, const CConfig* config);
 };
 
 /*!
- * \class CAvgGrad_TurbSST
+ * \class CNEMOAvgGrad_TurbSST
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
  */
-class CAvgGrad_TurbSST final : public CAvgGrad_Scalar {
+class CNEMOAvgGrad_TurbSST final : public CNEMOAvgGrad_Scalar {
 private:
   const su2double
   sigma_k1 = 0.0, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
@@ -199,7 +199,7 @@ public:
    * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+  CNEMOAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
                    const su2double* constants, bool correct_grad, const CConfig* config);
 
   /*!

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
@@ -1790,7 +1790,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+  bool tkeNeeded = (((config->GetKind_Solver() == NEMO_RANS )|| (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
 
   /*--- Allocate arrays ---*/
@@ -1943,8 +1943,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
-  //bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
-  //                   (config->GetKind_Solver() == DISC_ADJ_RANS))
+  //bool tkeNeeded = (((config->GetKind_Solver() == NEMO_RANS ) ||
+  //                   (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS))
   //                  && (config->GetKind_Turb_Model() == SST));
 
   /*--- Allocate arrays ---*/
@@ -2061,7 +2061,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   su2double Gas_Constant    = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded            = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+  bool tkeNeeded            = (((config->GetKind_Solver() == NEMO_RANS )|| (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS)) &&
                                (config->GetKind_Turb_Model() == SST));
   bool gravity              = (config->GetGravityForce());
   bool viscous              = config->GetViscous();
@@ -2348,7 +2348,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
   unsigned short RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+  bool tkeNeeded = (((config->GetKind_Solver() == NEMO_RANS )|| (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
 
   RuSI = UNIVERSAL_GAS_CONSTANT;

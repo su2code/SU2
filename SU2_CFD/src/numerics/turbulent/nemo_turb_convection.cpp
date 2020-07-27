@@ -1,5 +1,5 @@
-/*!
- * \file turb_convection.cpp
+﻿/*!
+ * \file nemo_turb_convection.cpp
  * \brief Implementation of numerics classes to compute convective
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -26,9 +26,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/turbulent/turb_convection.hpp"
+#include "../../../include/numerics/turbulent/nemo_turb_convection.hpp"
 
-CUpwScalar::CUpwScalar(unsigned short val_nDim,
+CNEMOUpwScalar::CNEMOUpwScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
@@ -45,7 +45,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   }
 }
 
-CUpwScalar::~CUpwScalar(void) {
+CNEMOUpwScalar::~CNEMOUpwScalar(void) {
 
   delete [] Flux;
   if (Jacobian_i != nullptr) {
@@ -58,7 +58,7 @@ CUpwScalar::~CUpwScalar(void) {
   }
 }
 
-CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOUpwScalar::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
 
@@ -100,17 +100,17 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
 }
 
-CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
+CNEMOUpwSca_TurbSA::NEMOCUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                const CConfig* config) :
-                CUpwScalar(val_nDim, val_nVar, config) { }
+                CNEMOUpwScalar(val_nDim, val_nVar, config) { }
 
-void CUpwSca_TurbSA::ExtraADPreaccIn() {
+void CNEMOUpwSca_TurbSA::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+1);
   AD::SetPreaccIn(V_j, nDim+1);
 }
 
-void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
+void CNEMOUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
   Flux[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
 
@@ -120,17 +120,17 @@ void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
   }
 }
 
-CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
+CNEMOUpwSca_TurbSST::CNEMOUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  const CConfig* config) :
-                 CUpwScalar(val_nDim, val_nVar, config) { }
+                 CNEMOUpwScalar(val_nDim, val_nVar, config) { }
 
-void CUpwSca_TurbSST::ExtraADPreaccIn() {
+void CNEMOUpwSca_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+3);
   AD::SetPreaccIn(V_j, nDim+3);
 }
 
-void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
+void CNEMOUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
   Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];

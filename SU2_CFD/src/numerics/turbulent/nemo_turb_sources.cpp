@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file turb_sources.cpp
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
@@ -26,9 +26,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/turbulent/turb_sources.hpp"
+#include "../../../include/numerics/turbulent/nemo_turb_sources.hpp"
 
-CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
+CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
@@ -57,15 +57,15 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
 
 }
 
-CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim,
+CNEMOSourcePieceWise_TurbSA::CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim,
                                                  unsigned short val_nVar,
                                                  const CConfig* config) :
-                         CSourceBase_TurbSA(val_nDim, val_nVar, config) {
+                         CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) {
 
   transition = (config->GetKind_Trans_Model() == BC);
 }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CConfig* config) {
 
 //  AD::StartPreacc();
 //  AD::SetPreaccIn(V_i, nDim+6);
@@ -216,12 +216,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
 }
 
-CSourcePieceWise_TurbSA_COMP::CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim,
+CNEMOSourcePieceWise_TurbSA_COMP::CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim,
                                                            unsigned short val_nVar,
                                                            const CConfig* config) :
-                              CSourceBase_TurbSA(val_nDim, val_nVar, config), c5(3.5) { }
+                              CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config), c5(3.5) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_COMP::ComputeResidual(const CConfig* config) {
 
   //  AD::StartPreacc();
   //  AD::SetPreaccIn(V_i, nDim+6);
@@ -336,12 +336,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
 
 }
 
-CSourcePieceWise_TurbSA_E::CSourcePieceWise_TurbSA_E(unsigned short val_nDim,
+CNEMOSourcePieceWise_TurbSA_E::CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim,
                                                      unsigned short val_nVar,
                                                      const CConfig* config) :
-                           CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+                           CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim, jDim;
 
@@ -463,12 +463,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
 
 }
 
-CSourcePieceWise_TurbSA_E_COMP::CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim,
+CNEMOSourcePieceWise_TurbSA_E_COMP::CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim,
                                                                unsigned short val_nVar,
                                                                const CConfig* config) :
-                                CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+                                CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
 
@@ -603,12 +603,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
 
 }
 
-CSourcePieceWise_TurbSA_Neg::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim,
+CNEMOSourcePieceWise_TurbSA_Neg::CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim,
                                                          unsigned short val_nVar,
                                                          const CConfig* config) :
-                             CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+                             CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_Neg::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
 
@@ -752,7 +752,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
 }
 
-CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
+CNEMOSourcePieceWise_TurbSST::CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim,
                                                    unsigned short val_nVar,
                                                    const su2double *constants,
                                                    su2double val_kine_Inf,
@@ -783,7 +783,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
 }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSST::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
@@ -906,7 +906,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 }
 
-void CSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
+void CNEMOSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
 {
     /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
 
@@ -935,7 +935,7 @@ void CSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
   }
 }
 
-void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
+void CNEMOSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
   unsigned short iDim, jDim;
   su2double **S_ij = new su2double* [3];
   su2double divVel = 0;
@@ -967,7 +967,7 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
   delete [] S_ij;
 }
 
-void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
+void CNEMOSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
 
   unsigned short iDim,jDim;
 
@@ -1066,7 +1066,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig*
 
 }
 
-void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
+void CNEMOSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
   unsigned short iDim, jDim;
   PerturbedStrainMag = 0;
   su2double **StrainRate = new su2double* [nDim];

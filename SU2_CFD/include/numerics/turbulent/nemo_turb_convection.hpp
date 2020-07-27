@@ -1,5 +1,5 @@
 ﻿/*!
- * \file turb_convection.hpp
+ * \file nemor_turb_convection.hpp
  * \brief Delarations of numerics classes for discretization of
  *        convective fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -44,7 +44,7 @@
  * \ingroup ConvDiscr
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
-class CUpwScalar : public CNumerics {
+class CNEMOUpwScalar : public CNumerics {
 protected:
   su2double
   q_ij = 0.0,                  /*!< \brief Projected velocity at the face. */
@@ -75,12 +75,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwScalar(void) override;
+  ~CNEMOUpwScalar(void) override;
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -97,7 +97,7 @@ public:
  * \ingroup ConvDiscr
  * \author A. Bueno.
  */
-class CUpwSca_TurbSA final : public CUpwScalar {
+class CNEMOUpwSca_TurbSA final : public CNEMOUpwScalar {
 private:
   /*!
    * \brief Adds any extra variables to AD
@@ -117,7 +117,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -127,7 +127,7 @@ public:
  * \ingroup ConvDiscr
  * \author A. Campos.
  */
-class CUpwSca_TurbSST final : public CUpwScalar {
+class CNEMOUpwSca_TurbSST final : public CNEMOUpwScalar {
 private:
   /*!
    * \brief Adds any extra variables to AD
@@ -147,6 +147,6 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
