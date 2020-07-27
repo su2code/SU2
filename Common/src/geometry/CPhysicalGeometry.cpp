@@ -7789,7 +7789,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Vec_ij[iDim] = dir*(Coord_FacejPoint[iDim] - Coord_FacejPoint[iDim]);
+          Vec_ij[iDim] = dir*(Coord_FacejPoint[iDim] - Coord_FaceiPoint[iDim]);
         }
 
         su2double Volume_i, Volume_j;
