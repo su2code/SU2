@@ -516,7 +516,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 }
 
 void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
-                                       const su2double *val_Proj_Visc_Flux,) {
+                                       const su2double *val_Proj_Visc_Flux) {
   
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double factor_i = 0.5/V_i[nDim+2];
