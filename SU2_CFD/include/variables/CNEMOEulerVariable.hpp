@@ -76,6 +76,11 @@ protected:
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
 
+
+  /*!< \brief Index definition for NEMO pritimive variables. */
+  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX, nSpecies;
+
 public:
 
   /*!
