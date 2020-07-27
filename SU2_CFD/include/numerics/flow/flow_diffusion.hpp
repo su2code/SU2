@@ -309,13 +309,11 @@ public:
    * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
    * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
    * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
   void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                            su2double val_laminar_viscosity,
                            su2double val_eddy_viscosity,
-                           su2double val_proj_vector,
                            su2double val_area,
                            const su2double *val_normal);
   
@@ -463,7 +461,6 @@ private:
                            su2double val_eddy_viscosity,
                            su2double val_thermal_conductivity,
                            su2double val_heat_capacity_cp,
-                           su2double val_proj_vector,
                            su2double val_area);
 
 public:
