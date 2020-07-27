@@ -342,12 +342,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-  if (sst)
-    numerics->SetTurbVar(nodes->GetPrimitive(iPoint),
-                         nodes->GetPrimitive(jPoint));
-  else
-    numerics->SetTurbVar(nodes->GetSolution(iPoint),
-                         nodes->GetSolution(jPoint));
+  numerics->SetTurbVar(sst ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint),
+                       sst ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint));
 
   numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                nodes->GetGradient(jPoint));
@@ -434,8 +430,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         for (unsigned short iVar = 0; iVar < nVar; iVar++)
-          for (unsigned short jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] += 0.5*Jacobian_ic[iDim][iVar][jVar]*Normalk[iDim]*sign*signk;
+          Jacobian_i[iVar][iVar] += 0.5*Jacobian_ic[iDim][iVar][iVar]*Normalk[iDim]*sign*signk;
     }// iNode
     
     /*--- Influence of boundary i on R(i,j) ---*/
@@ -444,13 +439,9 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-              for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                Jacobian_i[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Normal[iDim]*sign;
-              }// jVar
-            }// iVar
-          }// iDim
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            for (unsigned short iVar = 0; iVar < nVar; iVar++)
+                Jacobian_i[iVar][iVar] -= Jacobian_ic[iDim][iVar][iVar]*Normal[iDim]*sign;
         }// iVertex
       }// iMarker
     }// if physical boundary

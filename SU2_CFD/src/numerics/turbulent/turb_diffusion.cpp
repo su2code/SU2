@@ -330,18 +330,20 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     
     /*--- Jacobian wrt laminar viscosity ---*/
 
-    const su2double Cv = Gas_Constant/Gamma_Minus_One;
+    const su2double Cv    = Gas_Constant/Gamma_Minus_One;
     const su2double muref = config->GetMu_RefND();
-    const su2double Tref = config->GetMu_Temperature_RefND();
-    const su2double Sref = config->GetMu_SND();
+    const su2double Tref  = config->GetMu_Temperature_RefND();
+    const su2double Sref  = config->GetMu_SND();
     
-    const su2double T_i = V_i[0];
-    const su2double dmudT_i = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.));
-    const su2double factor_i = dmudT_i/(Density_i*Cv);
+    const su2double T_i      = V_i[0],
+                    dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
+                             * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),
+                    factor_i = dmudT_i/(Density_i*Cv);
     
-    const su2double T_j = V_j[0];
-    const su2double dmudT_j = muref*(Tref+Sref)/pow(Tref,1.5) * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.));
-    const su2double factor_j = dmudT_j/(Density_j*Cv);
+    const su2double T_j      = V_j[0],
+                    dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
+                             * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.)),
+                    factor_j = dmudT_j/(Density_j*Cv);
     
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
