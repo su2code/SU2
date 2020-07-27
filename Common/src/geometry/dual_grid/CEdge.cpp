@@ -97,7 +97,8 @@ su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
 void CEdge::SetNodes_Coord(unsigned long iEdge,
                            const su2double *coord_Edge_CG,
                            const su2double *coord_FaceElem_CG,
-                           const su2double *coord_Elem_CG) {
+                           const su2double *coord_Elem_CG, 
+                           const su2double *vec_ij) {
 
   constexpr unsigned long nDim = 3;
 
@@ -114,8 +115,12 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
 
   CrossProduct(vec_a, vec_b, Dim_Normal);
 
+  const su2double sign = ((Dim_Normal[0] * vec_ij[0] 
+                         + Dim_Normal[1] * vec_ij[1] 
+                         + Dim_Normal[2] * vec_ij[2]) > 0) ? 1.0 : -1.0;
+
   for (auto iDim = 0ul; iDim < nDim; ++iDim)
-    Normal(iEdge,iDim) += 0.5 * Dim_Normal[iDim];
+    Normal(iEdge,iDim) += sign * 0.5 * Dim_Normal[iDim];
 
   AD::SetPreaccOut(Normal[iEdge], nDim);
   AD::EndPreacc();
@@ -123,7 +128,8 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
 
 void CEdge::SetNodes_Coord(unsigned long iEdge,
                            const su2double *coord_Edge_CG,
-                           const su2double *coord_Elem_CG) {
+                           const su2double *coord_Elem_CG,
+                           const su2double *vec_ij) {
 
   constexpr unsigned long nDim = 2;
 
@@ -132,8 +138,12 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
   AD::SetPreaccIn(coord_Edge_CG, nDim);
   AD::SetPreaccIn(Normal[iEdge], nDim);
 
-  Normal(iEdge,0) += coord_Elem_CG[1] - coord_Edge_CG[1];
-  Normal(iEdge,1) -= coord_Elem_CG[0] - coord_Edge_CG[0];
+  const su2double nx = coord_Elem_CG[1] - coord_Edge_CG[1];
+  const su2double ny = -(coord_Elem_CG[0] - coord_Edge_CG[0])
+  const su2double sign = ((nx * vec_ij[0] + ny * vec_ij[1]) > 0) ? 1.0 : -1.0;
+
+  Normal(iEdge,0) += sign*nx; 
+  Normal(iEdge,1) += sign*ny;
 
   AD::SetPreaccOut(Normal[iEdge], nDim);
   AD::EndPreacc();

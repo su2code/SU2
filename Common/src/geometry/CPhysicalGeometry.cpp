@@ -7742,7 +7742,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
+  su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0}, Vec_ij[3] = {0.0};
 
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
@@ -7778,37 +7778,32 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
         }
 
-        /*--- We define a direction (from the smalest index to the greatest) --*/
-        const bool change_face_orientation = (face_iPoint > face_jPoint);
+        /*--- We define a direction (from the smallest index to the greatest) --*/
+        const su2double dir = (face_iPoint > face_jPoint) ? -1.0 : 1.0;
         const auto iEdge = FindEdge(face_iPoint, face_jPoint);
+
+        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
+        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
 
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
+          Vec_ij[iDim] = dir*(Coord_FacejPoint[iDim] - Coord_FacejPoint[iDim]);
         }
-
-        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
-        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
 
         su2double Volume_i, Volume_j;
 
         if (nDim == 2) {
           /*--- Two dimensional problem ---*/
-          if (change_face_orientation)
-            edges->SetNodes_Coord(iEdge, Coord_Elem_CG, Coord_Edge_CG);
-          else
-            edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
+          edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG, Vec_ij);
 
           Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
           Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
         }
         else {
           /*--- Three dimensional problem ---*/
-          if (change_face_orientation)
-            edges->SetNodes_Coord(iEdge, Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
-          else
-            edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+          edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG, Vec_ij);
 
           Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
           Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);

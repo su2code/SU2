@@ -130,25 +130,27 @@ public:
    * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
    * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] vec_ij - Vector between nodes i and j, to check normal direction.
    * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
    */
   void SetNodes_Coord(unsigned long iEdge,
                       const su2double* coord_Edge_CG,
                       const su2double* coord_FaceElem_CG,
-                      const su2double* coord_Elem_CG);
+                      const su2double* coord_Elem_CG,
+                      const su2double* vec_ij);
 
   /*!
    * \brief Set the face that corresponds to an edge (2D version).
    * \param[in] iEdge - Edge index.
    * \param[in] coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] vec_ij - Vector between nodes i and j, to check normal direction.
    * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
    */
   void SetNodes_Coord(unsigned long iEdge,
                       const su2double* coord_Edge_CG,
-                      const su2double* coord_Elem_CG);
+                      const su2double* coord_Elem_CG,
+                      const su2double* vec_ij);
 
   /*!
    * \brief Copy the the normal vector of a face.
