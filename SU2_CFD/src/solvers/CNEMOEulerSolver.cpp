@@ -1775,7 +1775,7 @@ void CNEMOEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
   }
 }
 
-void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, jDim, iSpecies, iVar, jVar, kVar;
@@ -2827,13 +2827,13 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
 }
 
-void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  /*--- Call the Euler wall routine ---*/
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-
-}
+//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
+//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+//
+//  /*--- Call the Euler wall routine ---*/
+//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+//
+//}
 
 void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
                                             CSolver **solution_container,

@@ -201,8 +201,8 @@ public:
      * \param[in] config - Definition of the particular problem.
      * \param[in] val_marker - Surface marker where the boundary condition is applied.
      */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
+  //void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+  //                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
      * \brief Impose the far-field boundary condition using characteristics.
